@@ -30,8 +30,3 @@ criterion = "0.3"
 [lib]
 name = "leafwing_input_manager"
 path = "src/lib.rs"
-
-[[bench]]
-name = "entity_spawning"
-path = "benches/entity_spawning.rs"
-harness = false
