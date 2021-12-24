@@ -60,20 +60,6 @@ jobs:
         # See tools/ci/src/main.rs for the commands this runs
         run: cargo run -p ci
 
-  mdbook:
-    runs-on: ubuntu-20.04
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup mdBook
-        uses: peaceiris/actions-mdbook@v1
-        with:
-          mdbook-version: 'latest'
-
-      - run: mdbook build
-
   check-markdown-links:
     runs-on: ubuntu-latest
     steps:
