@@ -11,10 +11,22 @@ use core::marker::PhantomData;
 use multimap::MultiMap;
 use strum::IntoEnumIterator;
 
-pub struct InputPlugin<InputAction: InputActionEnum> {
+pub struct InputManagerPlugin<InputAction: InputActionEnum> {
     _phantom: PhantomData<InputAction>,
 }
 
+// Manual impl is required as we do not want a Default bound on our generic type
+impl<InputAction: InputActionEnum> Default for InputManagerPlugin<InputAction> {
+    fn default() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+        }
+    }
+}
+
+/// A type that can be used to represent input-agnostic action representation
+///
+/// This trait should be implemented on the `InputAction` type that you want to pass into [InputManagerPlugin]
 pub trait InputActionEnum:
     Send + Sync + Copy + Eq + Hash + IntoEnumIterator + Display + 'static
 {
@@ -25,7 +37,7 @@ pub enum InputMapLabel {
     Processing,
 }
 
-impl<InputAction: InputActionEnum> Plugin for InputPlugin<InputAction> {
+impl<InputAction: InputActionEnum> Plugin for InputManagerPlugin<InputAction> {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputMap<InputAction, KeyCode>>()
             .init_resource::<InputMap<InputAction, GamepadButton, GamepadButtonType>>()
@@ -37,7 +49,13 @@ impl<InputAction: InputActionEnum> Plugin for InputPlugin<InputAction> {
     }
 }
 
-/// Input mapping resource
+/// Maps from raw inputs to an input-method agnostic representation
+///
+/// Multiple inputs of the same type can be mapped to the same action.
+/// A seperate resource of this type will be required for each input method you wish to support.
+///
+/// In almost all cases, the `InputType` type parameter (e.g. `Keycode`) will be the same as the
+/// `InputVariant` type parameter: gamepads are the only common exception.
 pub struct InputMap<InputAction, InputType, InputVariant = InputType>
 where
     InputAction: InputActionEnum,
@@ -58,6 +76,26 @@ where
             mmap: MultiMap::default(),
             _phantom: PhantomData::default(),
         }
+    }
+}
+
+impl<InputAction, InputType, InputVariant> InputMap<InputAction, InputType, InputVariant>
+where
+    InputAction: InputActionEnum,
+    InputVariant: Copy + Hash + Eq,
+{
+    /// Maps a particular `input` to the provided `action`
+    ///
+    /// This is commonly used to configure new inputs.
+    pub fn insert(&mut self, action: InputAction, input: InputVariant) {
+        self.mmap.insert(action, input);
+    }
+
+    /// Removes an 'action' from the map, returning the vector of 'input' at the key if the key was previously in the map.
+    ///
+    /// This can be used to reset keybindings in a granular fashion.
+    pub fn remove(&mut self, action: InputAction) {
+        self.mmap.remove(&action);
     }
 }
 
