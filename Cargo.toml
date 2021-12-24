@@ -18,7 +18,7 @@ opt-level = 3
 members = ["./", "tools/ci"]
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy/", default-features = false}
+bevy = { git = "https://github.com/bevyengine/bevy/", commit = "22c665fa39b16c62272b927db742ea62d67615e8", default-features = false}
 derive_more = "0.99"
 multimap = "0.8"
 strum = "0.23"
