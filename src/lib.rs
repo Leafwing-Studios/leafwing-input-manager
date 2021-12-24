@@ -3,167 +3,72 @@
 /// - inputs are stored in a global `ActionState` resource, which is a big collection of booleans
 /// - input handling is done holistically, by examining `ActionState`
 use bevy::prelude::*;
-use bevy::utils::{HashMap, HashSet};
+use bevy::utils::HashMap;
 
+use core::fmt::Display;
 use core::hash::Hash;
-use derive_more::{Deref, DerefMut, Display};
+use core::marker::PhantomData;
 use multimap::MultiMap;
-use std::marker::PhantomData;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 
-pub struct InputPlugin;
+pub struct InputPlugin<InputAction: InputActionEnum> {
+    _phantom: PhantomData<InputAction>,
+}
+
+pub trait InputActionEnum:
+    Send + Sync + Copy + Eq + Hash + IntoEnumIterator + Display + 'static
+{
+}
 
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
-pub enum InputLabel {
+pub enum InputMapLabel {
     Processing,
 }
 
-impl Plugin for InputPlugin {
+impl<InputAction: InputActionEnum> Plugin for InputPlugin<InputAction> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<GamepadLobby>()
-            .init_resource::<InputMap<KeyCode>>()
-            .init_resource::<InputMap<GamepadButton, GamepadButtonType>>()
-            .init_resource::<ActionState>()
+        app.init_resource::<InputMap<InputAction, KeyCode>>()
+            .init_resource::<InputMap<InputAction, GamepadButton, GamepadButtonType>>()
+            .init_resource::<ActionState<InputAction>>()
             .add_system_to_stage(
                 CoreStage::PreUpdate,
-                gamepad_conection_manager.before(InputLabel::Processing),
-            )
-            .add_system_to_stage(
-                CoreStage::PreUpdate,
-                update_action_state.label(InputLabel::Processing),
+                update_action_state::<InputAction>.label(InputMapLabel::Processing),
             );
     }
 }
 
-#[derive(Default, Deref, DerefMut)]
-pub struct GamepadLobby {
-    gamepads: HashSet<Gamepad>,
-}
-
-fn gamepad_conection_manager(
-    mut lobby: ResMut<GamepadLobby>,
-    mut gamepad_event: EventReader<GamepadEvent>,
-) {
-    for event in gamepad_event.iter() {
-        match &event {
-            GamepadEvent(gamepad, GamepadEventType::Connected) => {
-                lobby.gamepads.insert(*gamepad);
-                info!("{:?} Connected", gamepad);
-            }
-            GamepadEvent(gamepad, GamepadEventType::Disconnected) => {
-                lobby.gamepads.remove(gamepad);
-                info!("{:?} Disconnected", gamepad);
-            }
-            _ => (),
-        }
-    }
-}
-
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Display, EnumIter)]
-pub enum InputAction {
-    // Movement
-    Up,
-    Down,
-    Left,
-    Right,
-    // Abilities
-    Ability1,
-    Ability2,
-    Ability3,
-    Ability4,
-    Ultimate,
-    // Utilities
-    AimLock,
-    Emote,
-    Interact,
-}
-
-impl InputAction {
-    /*
-    pub const MOVEMENT: [(InputAction, Direction); 4] = [
-        (InputAction::Up, Direction::UP),
-        (InputAction::Down, Direction::DOWN),
-        (InputAction::Left, Direction::LEFT),
-        (InputAction::Right, Direction::RIGHT),
-    ];
-    */
-
-    pub const ABILITIES: [InputAction; 5] = [
-        InputAction::Ability1,
-        InputAction::Ability2,
-        InputAction::Ability3,
-        InputAction::Ability4,
-        InputAction::Ultimate,
-    ];
-}
-
 /// Input mapping resource
-struct InputMap<InputType, InputVariant = InputType> {
+pub struct InputMap<InputAction, InputType, InputVariant = InputType>
+where
+    InputAction: InputActionEnum,
+    InputVariant: Copy + Hash + Eq,
+{
     mmap: MultiMap<InputAction, InputVariant>,
     _phantom: PhantomData<InputType>,
 }
 
-impl Default for InputMap<KeyCode> {
+impl<InputAction, InputType, InputVariant> Default
+    for InputMap<InputAction, InputType, InputVariant>
+where
+    InputAction: InputActionEnum,
+    InputVariant: Copy + Hash + Eq,
+{
     fn default() -> Self {
-        let mut mmap = MultiMap::default();
-
-        // Movement
-        mmap.insert(InputAction::Up, KeyCode::Up);
-        mmap.insert(InputAction::Down, KeyCode::Down);
-        mmap.insert(InputAction::Left, KeyCode::Left);
-        mmap.insert(InputAction::Right, KeyCode::Right);
-
-        // Abilities
-        mmap.insert(InputAction::Ability1, KeyCode::Q);
-        mmap.insert(InputAction::Ability2, KeyCode::W);
-        mmap.insert(InputAction::Ability3, KeyCode::E);
-        mmap.insert(InputAction::Ability4, KeyCode::Space); // movement ability
-        mmap.insert(InputAction::Ultimate, KeyCode::R);
-
-        // Utilities
-        mmap.insert(InputAction::AimLock, KeyCode::Grave);
-        mmap.insert(InputAction::Emote, KeyCode::LShift);
-        mmap.insert(InputAction::Interact, KeyCode::F);
-
         Self {
-            mmap,
+            mmap: MultiMap::default(),
             _phantom: PhantomData::default(),
         }
     }
 }
 
-impl Default for InputMap<GamepadButton, GamepadButtonType> {
-    fn default() -> Self {
-        let mut mmap = MultiMap::default();
-
-        // Movement
-        mmap.insert(InputAction::Up, GamepadButtonType::DPadUp);
-        mmap.insert(InputAction::Down, GamepadButtonType::DPadDown);
-        mmap.insert(InputAction::Left, GamepadButtonType::DPadLeft);
-        mmap.insert(InputAction::Right, GamepadButtonType::DPadRight);
-
-        // Abilities
-        mmap.insert(InputAction::Ability1, GamepadButtonType::West);
-        mmap.insert(InputAction::Ability2, GamepadButtonType::North);
-        mmap.insert(InputAction::Ability3, GamepadButtonType::East);
-        mmap.insert(InputAction::Ability4, GamepadButtonType::South);
-        mmap.insert(InputAction::Ultimate, GamepadButtonType::LeftTrigger2);
-
-        // Utilities
-        mmap.insert(InputAction::AimLock, GamepadButtonType::RightTrigger);
-        mmap.insert(InputAction::Emote, GamepadButtonType::LeftTrigger);
-        mmap.insert(InputAction::Interact, GamepadButtonType::RightTrigger2);
-
-        Self {
-            mmap,
-            _phantom: PhantomData::default(),
-        }
-    }
-}
-
-impl<T: Copy + Hash + Eq> InputMap<T> {
-    pub fn pressed(&self, action: InputAction, input: &Input<T>) -> bool {
+// This handles the simple case, where InputVariant == InputType
+// See https://github.com/bevyengine/bevy/issues/3224 for why these aren't always the same
+impl<InputAction, InputType> InputMap<InputAction, InputType>
+where
+    InputAction: InputActionEnum,
+    InputType: Copy + Hash + Eq,
+{
+    pub fn pressed(&self, action: InputAction, input: &Input<InputType>) -> bool {
         let presses = self
             .mmap
             .get_vec(&action)
@@ -177,7 +82,7 @@ impl<T: Copy + Hash + Eq> InputMap<T> {
         false
     }
 
-    pub fn just_pressed(&self, action: InputAction, input: &Input<T>) -> bool {
+    pub fn just_pressed(&self, action: InputAction, input: &Input<InputType>) -> bool {
         let presses = self
             .mmap
             .get_vec(&action)
@@ -193,7 +98,7 @@ impl<T: Copy + Hash + Eq> InputMap<T> {
 }
 
 // Special-cased impl required due to https://github.com/bevyengine/bevy/issues/3224
-impl InputMap<GamepadButton, GamepadButtonType> {
+impl<InputAction: InputActionEnum> InputMap<InputAction, GamepadButton, GamepadButtonType> {
     pub fn pressed(
         &self,
         action: InputAction,
@@ -240,12 +145,12 @@ impl InputMap<GamepadButton, GamepadButtonType> {
 /// Resource that stores the currently and recently pressed actions
 ///
 /// Abstracts over all of the various input methods and bindings
-pub struct ActionState {
+pub struct ActionState<InputAction: InputActionEnum> {
     pressed: HashMap<InputAction, bool>,
     just_pressed: HashMap<InputAction, bool>,
 }
 
-impl ActionState {
+impl<InputAction: InputActionEnum> ActionState<InputAction> {
     pub fn pressed(&self, action: InputAction) -> bool {
         *self.pressed.get(&action).unwrap()
     }
@@ -255,7 +160,7 @@ impl ActionState {
     }
 }
 
-impl Default for ActionState {
+impl<InputAction: InputActionEnum> Default for ActionState<InputAction> {
     fn default() -> Self {
         let mut pressed = HashMap::<InputAction, bool>::default();
         let mut just_pressed = HashMap::<InputAction, bool>::default();
@@ -272,13 +177,13 @@ impl Default for ActionState {
     }
 }
 
-fn update_action_state(
+fn update_action_state<InputAction: InputActionEnum>(
     keyboard_input: Res<Input<KeyCode>>,
-    keyboard_map: Res<InputMap<KeyCode>>,
-    gamepad_lobby: Res<GamepadLobby>,
-    gamepad_map: Res<InputMap<GamepadButton, GamepadButtonType>>,
+    keyboard_map: Res<InputMap<InputAction, KeyCode>>,
+    gamepads: Res<Gamepads>,
+    gamepad_map: Res<InputMap<InputAction, GamepadButton, GamepadButtonType>>,
     gamepad_input: Res<Input<GamepadButton>>,
-    mut action_state: ResMut<ActionState>,
+    mut action_state: ResMut<ActionState<InputAction>>,
 ) {
     for action in InputAction::iter() {
         let keyboard_pressed = keyboard_map.pressed(action, &*keyboard_input);
@@ -286,7 +191,7 @@ fn update_action_state(
         let mut gamepad_pressed = false;
         let mut gamepad_just_pressed = false;
 
-        for &gamepad in gamepad_lobby.iter() {
+        for &gamepad in gamepads.iter() {
             if gamepad_map.pressed(action, &*gamepad_input, gamepad) {
                 gamepad_pressed = true;
             }
