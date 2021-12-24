@@ -1,7 +1,4 @@
-/// Input handling uses the following architecture:
-/// - input handling and ability determination is all handled in CoreStage::PreUpdate, to make sure entities are spawned in time
-/// - inputs are stored in a global `ActionState` resource, which is a big collection of booleans
-/// - input handling is done holistically, by examining `ActionState`
+use bevy::input::InputSystem;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
@@ -11,6 +8,16 @@ use core::marker::PhantomData;
 use multimap::MultiMap;
 use strum::IntoEnumIterator;
 
+/// [Plugin] that collects [Input] from disparate sources, producing an [ActionState] to consume in game logic
+///
+/// Resources
+/// - various [InputMap] resources ([KeyCode], [GamepadButton] and [MouseButton])
+/// - a central [ActionState] resource, which stores the current input state in an source-agnostic fashion
+///
+/// Systems:
+/// - [reset_action_state], which resets the action state each frame
+/// - [update_action_state] and [update_action_state_gamepads], which collects the input from the corresponding input type to update the action state
+///     - labeled [InputMapSystem]
 pub struct InputManagerPlugin<InputAction: InputActionEnum> {
     _phantom: PhantomData<InputAction>,
 }
@@ -33,18 +40,22 @@ pub trait InputActionEnum:
 }
 
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
-pub enum InputMapLabel {
-    Processing,
-}
+pub struct InputMapSystem;
 
 impl<InputAction: InputActionEnum> Plugin for InputManagerPlugin<InputAction> {
     fn build(&self, app: &mut App) {
         app.init_resource::<InputMap<InputAction, KeyCode>>()
+            .init_resource::<InputMap<InputAction, MouseButton>>()
             .init_resource::<InputMap<InputAction, GamepadButton, GamepadButtonType>>()
             .init_resource::<ActionState<InputAction>>()
-            .add_system_to_stage(
+            .add_system_set_to_stage(
                 CoreStage::PreUpdate,
-                update_action_state::<InputAction>.label(InputMapLabel::Processing),
+                SystemSet::new()
+                    .with_system(update_action_state::<InputAction, KeyCode>)
+                    .with_system(update_action_state::<InputAction, MouseButton>)
+                    .with_system(update_action_state_gamepads::<InputAction>)
+                    .label(InputMapSystem)
+                    .after(InputSystem),
             );
     }
 }
@@ -215,35 +226,54 @@ impl<InputAction: InputActionEnum> Default for ActionState<InputAction> {
     }
 }
 
-fn update_action_state<InputAction: InputActionEnum>(
-    keyboard_input: Res<Input<KeyCode>>,
-    keyboard_map: Res<InputMap<InputAction, KeyCode>>,
+/// Resets the action state to "nothing is pressed" each frame
+pub fn reset_action_state<InputAction: InputActionEnum>(
+    mut action_state: ResMut<ActionState<InputAction>>,
+) {
+    *action_state = ActionState::default();
+}
+
+/// Fetches an [Input] resource to update [ActionState] according to the [InputMap]
+pub fn update_action_state<
+    InputAction: InputActionEnum,
+    InputType: Send + Sync + Copy + Hash + Eq + 'static,
+>(
+    input: Res<Input<InputType>>,
+    input_map: Res<InputMap<InputAction, InputType>>,
+    mut action_state: ResMut<ActionState<InputAction>>,
+) {
+    for action in InputAction::iter() {
+        // A particular input type can add to the action state, but cannot revert it
+        if input_map.pressed(action, &*input) {
+            action_state.pressed.insert(action, true);
+        }
+
+        if input_map.just_pressed(action, &*input) {
+            action_state.just_pressed.insert(action, true);
+        }
+    }
+}
+
+/// Special-cased version of [update_action_state] for Gamepads
+///
+/// This system is intended for single-player games;
+/// all gamepads are mapped to a single [ActionState].
+/// You will want to modify this system if you want to handle multiple players correctly
+pub fn update_action_state_gamepads<InputAction: InputActionEnum>(
     gamepads: Res<Gamepads>,
     gamepad_map: Res<InputMap<InputAction, GamepadButton, GamepadButtonType>>,
     gamepad_input: Res<Input<GamepadButton>>,
     mut action_state: ResMut<ActionState<InputAction>>,
 ) {
     for action in InputAction::iter() {
-        let keyboard_pressed = keyboard_map.pressed(action, &*keyboard_input);
-        let keyboard_just_pressed = keyboard_map.just_pressed(action, &*keyboard_input);
-        let mut gamepad_pressed = false;
-        let mut gamepad_just_pressed = false;
-
         for &gamepad in gamepads.iter() {
             if gamepad_map.pressed(action, &*gamepad_input, gamepad) {
-                gamepad_pressed = true;
+                action_state.pressed.insert(action, true);
             }
 
             if gamepad_map.just_pressed(action, &*gamepad_input, gamepad) {
-                gamepad_just_pressed = true;
+                action_state.just_pressed.insert(action, true);
             }
         }
-
-        action_state
-            .pressed
-            .insert(action, keyboard_pressed | gamepad_pressed);
-        action_state
-            .just_pressed
-            .insert(action, keyboard_just_pressed | gamepad_just_pressed);
     }
 }
