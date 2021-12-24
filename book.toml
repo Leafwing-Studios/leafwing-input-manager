@@ -1,0 +1,6 @@
+[book]
+authors = ["Alice Cecile"]
+language = "en"
+multilingual = false
+src = "docs/src"
+title = "TEMPLATE"

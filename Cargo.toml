@@ -1,0 +1,37 @@
+[package]
+name = "template"
+description = "A Bevy + mdbook enabled template repo to build on."
+version = "0.0.0"
+authors = ["Leafwing Studios"]
+homepage = "https://github.com/leafwing-studios/template-repo"
+repository = "https://github.com/leafwing-studios/template-repo"
+license = "MIT + APACHE"
+edition = "2021"
+categories = ["games", "game-development"]
+keywords = ["bevy"]
+exclude = ["assets/**/*", "tools/**/*", "github/**/*"]
+
+[profile.dev]
+opt-level = 3
+
+[workspace]
+members = ["./", "tools/ci"]
+
+[dependencies]
+bevy = { version = "0.5", default-features = true, features = ["dynamic"]}
+
+[dev-dependencies]
+criterion = "0.3"
+
+[lib]
+name = "template_lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "template_bin"
+path = "src/main.rs"
+
+[[bench]]
+name = "entity_spawning"
+path = "benches/entity_spawning.rs"
+harness = false
