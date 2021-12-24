@@ -2,7 +2,7 @@
 name: Usability Friction
 about: Help us polish the user experience!
 title: ''
-labels: "T: usability", "S: needs-triage"
+labels: "usability"
 assignees: ''
 ---
 

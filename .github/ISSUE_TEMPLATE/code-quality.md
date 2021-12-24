@@ -2,7 +2,7 @@
 name: Code Quality
 about: Help us reduce tech debt and write better code!
 title: ''
-labels: "T: code-quality", "S: needs-triage"
+labels: "code-quality"
 assignees: ''
 ---
 
