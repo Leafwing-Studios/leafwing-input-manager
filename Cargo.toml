@@ -1,10 +1,10 @@
 [package]
-name = "template"
-description = "A Bevy + mdbook enabled template repo to build on."
+name = "leafwing-input-manager"
+description = "A straightforward stateful input manager for the Bevy game engine."
 version = "0.0.0"
 authors = ["Leafwing Studios"]
-homepage = "https://github.com/leafwing-studios/template-repo"
-repository = "https://github.com/leafwing-studios/template-repo"
+homepage = "https://leafwing-studios.com/"
+repository = "https://github.com/leafwing-studios/leafwing-input-manager"
 license = "MIT + APACHE"
 edition = "2021"
 categories = ["games", "game-development"]
@@ -18,18 +18,18 @@ opt-level = 3
 members = ["./", "tools/ci"]
 
 [dependencies]
-bevy = { version = "0.5", default-features = true, features = ["dynamic"]}
+bevy = { git = "https://github.com/bevyengine/bevy/", default-features = false}
+derive_more = "0.99"
+multimap = "0.8"
+strum = "0.23"
+strum_macros = "0.23"
 
 [dev-dependencies]
 criterion = "0.3"
 
 [lib]
-name = "template_lib"
+name = "leafwing_input_manager"
 path = "src/lib.rs"
-
-[[bin]]
-name = "template_bin"
-path = "src/main.rs"
 
 [[bench]]
 name = "entity_spawning"
