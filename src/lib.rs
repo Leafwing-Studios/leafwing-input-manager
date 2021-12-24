@@ -67,6 +67,7 @@ impl<InputAction: InputActionEnum> Plugin for InputManagerPlugin<InputAction> {
 ///
 /// In almost all cases, the `InputType` type parameter (e.g. `Keycode`) will be the same as the
 /// `InputVariant` type parameter: gamepads are the only common exception.
+#[derive(Component)]
 pub struct InputMap<InputAction, InputType, InputVariant = InputType>
 where
     InputAction: InputActionEnum,
@@ -194,6 +195,7 @@ impl<InputAction: InputActionEnum> InputMap<InputAction, GamepadButton, GamepadB
 /// Resource that stores the currently and recently pressed actions
 ///
 /// Abstracts over all of the various input methods and bindings
+#[derive(Component)]
 pub struct ActionState<InputAction: InputActionEnum> {
     pressed: HashMap<InputAction, bool>,
     just_pressed: HashMap<InputAction, bool>,
