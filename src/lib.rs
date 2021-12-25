@@ -2,6 +2,7 @@ use bevy::input::InputSystem;
 use bevy::prelude::*;
 
 use crate::action_state::ActionState;
+use crate::gamepad::AssociatedGamepad;
 use crate::input_map::InputMap;
 use core::fmt::Display;
 use core::hash::Hash;
@@ -9,6 +10,7 @@ use core::marker::PhantomData;
 use strum::IntoEnumIterator;
 
 pub mod action_state;
+pub mod gamepad;
 pub mod input_map;
 pub mod systems;
 
@@ -34,6 +36,7 @@ pub mod prelude {
 /// - [release_action_state], which releases all actions which are not currently pressed by any system
 ///     - labeled [InputMapSystem::Release]
 pub struct InputManagerPlugin<InputAction: InputActionEnum> {
+    single_player: bool,
     _phantom: PhantomData<InputAction>,
 }
 
@@ -41,6 +44,7 @@ pub struct InputManagerPlugin<InputAction: InputActionEnum> {
 impl<InputAction: InputActionEnum> Default for InputManagerPlugin<InputAction> {
     fn default() -> Self {
         Self {
+            single_player: true,
             _phantom: PhantomData::default(),
         }
     }
@@ -67,6 +71,7 @@ pub struct InputManagerBundle<InputAction: InputActionEnum> {
     gamepad_input_map: InputMap<InputAction, GamepadButton, GamepadButtonType>,
     mouse_input_map: InputMap<InputAction, MouseButton>,
     keyboard_input_map: InputMap<InputAction, KeyCode>,
+    associated_gamepad: AssociatedGamepad,
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
@@ -77,6 +82,7 @@ impl<InputAction: InputActionEnum> Default for InputManagerBundle<InputAction> {
             gamepad_input_map: InputMap::default(),
             mouse_input_map: InputMap::default(),
             keyboard_input_map: InputMap::default(),
+            associated_gamepad: AssociatedGamepad::default(),
         }
     }
 }
@@ -96,7 +102,7 @@ impl<InputAction: InputActionEnum> Plugin for InputManagerPlugin<InputAction> {
                 SystemSet::new()
                     .with_system(update_action_state::<InputAction, KeyCode>)
                     .with_system(update_action_state::<InputAction, MouseButton>)
-                    .with_system(update_action_state_gamepads::<InputAction>)
+                    .with_system(crate::gamepad::update_action_state_gamepads::<InputAction>)
                     .label(InputManagerSystem::Read)
                     .after(InputSystem),
             )
@@ -105,5 +111,21 @@ impl<InputAction: InputActionEnum> Plugin for InputManagerPlugin<InputAction> {
                     .label(InputManagerSystem::Release)
                     .after(InputManagerSystem::Read),
             );
+
+        if self.single_player {
+            app.add_system_to_stage(
+                CoreStage::PreUpdate,
+                crate::gamepad::update_action_state_any_gamepad::<InputAction>
+                    .label(InputManagerSystem::Read)
+                    .after(InputSystem),
+            );
+        } else {
+            app.add_system_to_stage(
+                CoreStage::PreUpdate,
+                crate::gamepad::update_action_state_gamepads::<InputAction>
+                    .label(InputManagerSystem::Read)
+                    .after(InputSystem),
+            );
+        }
     }
 }
