@@ -82,6 +82,7 @@ fn initialize_controls(mut query: Query<&mut InputMap<ARPGAction>>) {
 
     // This is a quick and hacky solution:
     // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
+    // and gracefully handle disconnects
     input_map.associated_gamepad = Some(Gamepad(0));
 
     // Movement

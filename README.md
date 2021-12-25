@@ -9,7 +9,7 @@ The mapping between inputs and actions is many-to-many, and easily configured an
 A single action can be triggered by multiple inputs (or set directly by UI elements or gameplay logic),
 and a single input can result in multiple actions being triggered, which can be handled contextually.
 
-This library is designed to support both single-player and local multiplayer games!
+This library seamlessly supports both single-player and local multiplayer games!
 Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` and `AssociatedGamepad` values appropriately.
 
 ## Instructions
@@ -17,10 +17,10 @@ Simply add the `InputManagerBundle` to each controllable entity, and customize t
 ### Getting started
 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
-2. Create an enum of the logical actions you want to represent, and implement the `Actionlike` for it.
+2. Create an enum of the logical actions you want to represent, and implement the `Actionlike` trait for it.
 3. Add the `InputManagerPlugin` to your `App`.
 4. Add the `InputManagerBundle` to your player entity (or entities!).
-5. Configure a mapping between your inputs and your actions by modifying the `InputMap` components on your player entity.
+5. Configure a mapping between your inputs and your actions by modifying the `InputMap` component on your player entity.
 6. Read the `ActionState` component on your player entity to check the collected input state!
 
 ### Running your game
@@ -45,7 +45,7 @@ Any contributions made are provided under the license(s) listed in this repo at 
 ### Testing
 
 1. Use doc tests aggressively to show how APIs should be used.
-You can use `#` to hide a setup line from the doc tests.
+You can use `#` to hide setup code from the doc tests, but use this sparingly.
 2. Unit test belong near the code they are testing. Use `#[cfg(test)]` on the test module to ignore it during builds, and `#[test]` on the test functions to ensure they are run.
 3. Integration tests should be stored in the top level `tests` folder, importing functions from `lib.rs`.
 
@@ -73,8 +73,5 @@ To manually rerun CI:
 
 ### Documentation
 
-Reference documentation is handled with standard Rust doc strings.
-Use `cargo doc --open` to build and then open the docs.
-
-Design docs (or other book-format documentation) is handled with [mdBook](https://rust-lang.github.io/mdBook/index.html).
-Install it with `cargo install mdbook`, then use `mdbook serve --open` to launch the docs.
+Documentation is handled with standard Rust doc strings.
+Use `cargo doc --open` to build and then open the docs locally.

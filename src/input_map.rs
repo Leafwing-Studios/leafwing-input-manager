@@ -5,11 +5,10 @@ use multimap::MultiMap;
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
-/// Multiple inputs of the same type can be mapped to the same action.
-/// A seperate resource of this type will be required for each input method you wish to support.
+/// Multiple inputs can be mapped to the same action,
+/// and each input can be mapped to multiple actions.
 ///
-/// In almost all cases, the `InputType` type parameter (e.g. `Keycode`) will be the same as the
-/// `InputVariant` type parameter: gamepads are the only common exception.
+/// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
 #[derive(Component, Debug)]
 pub struct InputMap<A: Actionlike> {
     pub map: MultiMap<A, Buttonlike>,
@@ -54,8 +53,18 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
+    /// Insert a mapping between `action` and `input`
+    ///
+    /// Existing mappings for that action will not be overwritten
     pub fn insert(&mut self, action: A, input: impl Into<Buttonlike>) {
         self.map.insert(action, input.into());
+    }
+
+    /// Clears all inputs registered for the `action`
+    ///
+    /// Returns all previously registered inputs, if any
+    pub fn remove(&mut self, action: A) -> Option<Vec<Buttonlike>> {
+        self.map.remove(&action)
     }
 }
 
