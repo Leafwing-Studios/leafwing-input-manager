@@ -13,7 +13,6 @@ fn main() {
         .add_plugin(InputManagerPlugin::<Action>::default())
         // The InputMap and ActionState components will be added to any entity with the Player component
         .add_startup_system(spawn_player)
-        .add_startup_system_to_stage(StartupStage::PostStartup, initialize_controls)
         // The ActionState can be used directly
         .add_system(cast_fireball)
         // Or multiple parts of it can be inspected
@@ -22,18 +21,6 @@ fn main() {
         .add_event::<PlayerWalk>()
         .add_system(player_walks)
         .run();
-}
-
-#[derive(Component)]
-pub struct Player;
-
-fn spawn_player(mut commands: Commands) {
-    commands
-        .spawn()
-        .insert(Player)
-        // This bundle must be added to your player entity
-        // (or whatever else you wish to control)
-        .insert_bundle(InputManagerBundle::<Action>::default());
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Display, EnumIter)]
@@ -69,47 +56,76 @@ impl Action {
     }
 }
 
-fn initialize_controls(mut query: Query<&mut InputMap<Action>>) {
-    // This allows us to replace `ARPGAction::Up` with `Up`,
-    // significantly reducing boilerplate
-    use Action::*;
-    let mut input_map = query.single_mut();
+#[derive(Component)]
+pub struct Player;
 
-    // This is a quick and hacky solution:
-    // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
-    // and gracefully handle disconnects
-    input_map.associated_gamepad = Some(Gamepad(0));
+#[derive(Bundle)]
+struct PlayerBundle {
+    player: Player,
+    // This bundle must be added to your player entity
+    // (or whatever else you wish to control)
+    #[bundle]
+    input_manager: InputManagerBundle<Action>,
+}
 
-    // Movement
-    input_map.insert(Up, KeyCode::Up);
-    input_map.insert(Up, GamepadButtonType::DPadUp);
+impl PlayerBundle {
+    fn default_input_map() -> InputMap<Action> {
+        // This allows us to replace `ARPGAction::Up` with `Up`,
+        // significantly reducing boilerplate
+        use Action::*;
+        let mut input_map = InputMap::default();
 
-    input_map.insert(Down, KeyCode::Down);
-    input_map.insert(Down, GamepadButtonType::DPadDown);
+        // This is a quick and hacky solution:
+        // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
+        // and gracefully handle disconnects
+        input_map.associated_gamepad = Some(Gamepad(0));
 
-    input_map.insert(Left, KeyCode::Left);
-    input_map.insert(Left, GamepadButtonType::DPadLeft);
+        // Movement
+        input_map.insert(Up, KeyCode::Up);
+        input_map.insert(Up, GamepadButtonType::DPadUp);
 
-    input_map.insert(Right, KeyCode::Right);
-    input_map.insert(Right, GamepadButtonType::DPadRight);
+        input_map.insert(Down, KeyCode::Down);
+        input_map.insert(Down, GamepadButtonType::DPadDown);
 
-    // Abilities
-    input_map.insert(Ability1, KeyCode::Q);
-    input_map.insert(Ability1, GamepadButtonType::West);
-    input_map.insert(Ability1, MouseButton::Left);
+        input_map.insert(Left, KeyCode::Left);
+        input_map.insert(Left, GamepadButtonType::DPadLeft);
 
-    input_map.insert(Ability2, KeyCode::W);
-    input_map.insert(Ability2, GamepadButtonType::North);
-    input_map.insert(Ability2, MouseButton::Right);
+        input_map.insert(Right, KeyCode::Right);
+        input_map.insert(Right, GamepadButtonType::DPadRight);
 
-    input_map.insert(Ability3, KeyCode::E);
-    input_map.insert(Ability3, GamepadButtonType::East);
+        // Abilities
+        input_map.insert(Ability1, KeyCode::Q);
+        input_map.insert(Ability1, GamepadButtonType::West);
+        input_map.insert(Ability1, MouseButton::Left);
 
-    input_map.insert(Ability4, KeyCode::Space);
-    input_map.insert(Ability4, GamepadButtonType::South);
+        input_map.insert(Ability2, KeyCode::W);
+        input_map.insert(Ability2, GamepadButtonType::North);
+        input_map.insert(Ability2, MouseButton::Right);
 
-    input_map.insert(Ultimate, KeyCode::R);
-    input_map.insert(Ultimate, GamepadButtonType::LeftTrigger2);
+        input_map.insert(Ability3, KeyCode::E);
+        input_map.insert(Ability3, GamepadButtonType::East);
+
+        input_map.insert(Ability4, KeyCode::Space);
+        input_map.insert(Ability4, GamepadButtonType::South);
+
+        input_map.insert(Ultimate, KeyCode::R);
+        input_map.insert(Ultimate, GamepadButtonType::LeftTrigger2);
+
+        input_map
+    }
+}
+
+fn spawn_player(mut commands: Commands) {
+    commands
+        .spawn_bundle(PlayerBundle {
+            player: Player,
+            input_manager: InputManagerBundle {
+                input_map: PlayerBundle::default_input_map(),
+                action_state: ActionState::default(),
+            },
+        })
+        .insert(Player)
+        .insert_bundle(InputManagerBundle::<Action>::default());
 }
 
 fn cast_fireball(query: Query<&ActionState<Action>, With<Player>>) {
