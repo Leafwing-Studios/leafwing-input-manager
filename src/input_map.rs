@@ -1,4 +1,4 @@
-use crate::InputActionEnum;
+use crate::Actionlike;
 use bevy::prelude::*;
 use core::fmt::Debug;
 use downcast_rs::Downcast;
@@ -14,15 +14,15 @@ use std::hash::Hash;
 /// In almost all cases, the `InputType` type parameter (e.g. `Keycode`) will be the same as the
 /// `InputVariant` type parameter: gamepads are the only common exception.
 #[derive(Component, Debug)]
-pub struct InputMap<InputAction: InputActionEnum> {
-    mouse: MultiMap<InputAction, MouseButton>,
-    keyboard: MultiMap<InputAction, KeyCode>,
-    gamepad: MultiMap<InputAction, GamepadButton>,
+pub struct InputMap<A: Actionlike> {
+    mouse: MultiMap<A, MouseButton>,
+    keyboard: MultiMap<A, KeyCode>,
+    gamepad: MultiMap<A, GamepadButton>,
 }
 
-impl<InputAction: InputActionEnum> InputMap<InputAction> {
+impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` stream?
-    pub fn pressed_by<I: Inputlike>(&self, action: InputAction, input_stream: &Input<I>) -> bool {
+    pub fn pressed_by<I: Inputlike>(&self, action: A, input_stream: &Input<I>) -> bool {
         // Mouse
         if TypeId::of::<I>() == TypeId::of::<MouseButton>() {
             let input_stream = input_stream
@@ -100,7 +100,7 @@ impl<InputAction: InputActionEnum> InputMap<InputAction> {
     }
 }
 
-impl<InputAction: InputActionEnum> Default for InputMap<InputAction> {
+impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         Self {
             mouse: MultiMap::default(),

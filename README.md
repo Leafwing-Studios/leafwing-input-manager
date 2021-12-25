@@ -17,7 +17,7 @@ Simply add the `InputManagerBundle` to each controllable entity, and customize t
 ### Getting started
 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
-2. Create an enum of the logical actions you want to represent, and implement the `InputActionEnum` for it.
+2. Create an enum of the logical actions you want to represent, and implement the `Actionlike` for it.
 3. Add the `InputManagerPlugin` to your `App`.
 4. Add the `InputManagerBundle` to your player entity (or entities!).
 5. Configure a mapping between your inputs and your actions by modifying the `InputMap` components on your player entity.

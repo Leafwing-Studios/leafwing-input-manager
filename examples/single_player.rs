@@ -55,8 +55,8 @@ enum ARPGAction {
     Interact,
 }
 
-// We need to implement this trait (and meet its bounds) in order to use our enum as an InputAction
-impl InputActionEnum for ARPGAction {}
+// We need to implement this trait (and meet its bounds) in order to use our enum as an A
+impl Actionlike for ARPGAction {}
 
 impl ARPGAction {
     // Lists like this can be very useful for quickly matching subsets of actions

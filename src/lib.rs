@@ -16,7 +16,7 @@ pub mod prelude {
     pub use crate::action_state::ActionState;
     pub use crate::input_map::InputMap;
 
-    pub use crate::{InputActionEnum, InputManagerBundle, InputManagerPlugin};
+    pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
 }
 
 /// A [Plugin] that collects [Input] from disparate sources, producing an [ActionState] to consume in game logic
@@ -33,12 +33,12 @@ pub mod prelude {
 ///     - labeled [InputMapSystem::Read]
 /// - [release_action_state], which releases all actions which are not currently pressed by any system
 ///     - labeled [InputMapSystem::Release]
-pub struct InputManagerPlugin<InputAction: InputActionEnum> {
-    _phantom: PhantomData<InputAction>,
+pub struct InputManagerPlugin<A: Actionlike> {
+    _phantom: PhantomData<A>,
 }
 
 // Deriving default induces an undesired bound on the generic
-impl<InputAction: InputActionEnum> Default for InputManagerPlugin<InputAction> {
+impl<A: Actionlike> Default for InputManagerPlugin<A> {
     fn default() -> Self {
         Self {
             _phantom: PhantomData::default(),
@@ -48,8 +48,8 @@ impl<InputAction: InputActionEnum> Default for InputManagerPlugin<InputAction> {
 
 /// A type that can be used to represent input-agnostic action representation
 ///
-/// This trait should be implemented on the `InputAction` type that you want to pass into [InputManagerPlugin]
-pub trait InputActionEnum:
+/// This trait should be implemented on the `A` type that you want to pass into [InputManagerPlugin]
+pub trait Actionlike:
     Send + Sync + Copy + Eq + Hash + IntoEnumIterator + Display + 'static
 {
 }
@@ -62,13 +62,13 @@ pub enum InputManagerSystem {
 }
 
 #[derive(Bundle)]
-pub struct InputManagerBundle<InputAction: InputActionEnum> {
-    action_state: ActionState<InputAction>,
-    input_map: InputMap<InputAction>,
+pub struct InputManagerBundle<A: Actionlike> {
+    action_state: ActionState<A>,
+    input_map: InputMap<A>,
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
-impl<InputAction: InputActionEnum> Default for InputManagerBundle<InputAction> {
+impl<A: Actionlike> Default for InputManagerBundle<A> {
     fn default() -> Self {
         Self {
             action_state: ActionState::default(),
@@ -77,26 +77,26 @@ impl<InputAction: InputActionEnum> Default for InputManagerBundle<InputAction> {
     }
 }
 
-impl<InputAction: InputActionEnum> Plugin for InputManagerPlugin<InputAction> {
+impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
         app.add_system(
-            tick_action_state::<InputAction>
+            tick_action_state::<A>
                 .label(InputManagerSystem::Reset)
                 .before(InputManagerSystem::Read),
         )
         .add_system_set_to_stage(
             CoreStage::PreUpdate,
             SystemSet::new()
-                .with_system(update_action_state::<InputAction, KeyCode>)
-                .with_system(update_action_state::<InputAction, MouseButton>)
-                .with_system(update_action_state::<InputAction, GamepadButton>)
+                .with_system(update_action_state::<A, KeyCode>)
+                .with_system(update_action_state::<A, MouseButton>)
+                .with_system(update_action_state::<A, GamepadButton>)
                 .label(InputManagerSystem::Read)
                 .after(InputSystem),
         )
         .add_system(
-            release_action_state::<InputAction>
+            release_action_state::<A>
                 .label(InputManagerSystem::Release)
                 .after(InputManagerSystem::Read),
         );
