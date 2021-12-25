@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use core::fmt::Debug;
 use downcast_rs::Downcast;
 use multimap::MultiMap;
-use std::any::{Any, TypeId};
+use std::any::TypeId;
 use std::hash::Hash;
 
 /// Maps from raw inputs to an input-method agnostic representation
@@ -87,10 +87,30 @@ impl<A: Actionlike> InputMap<A> {
         false
     }
 
-    pub fn insert<I: Inputlike>(&mut self, input: I) {}
+    pub fn insert<I: Inputlike>(&mut self, action: A, input: I) {
+        if TypeId::of::<I>() == TypeId::of::<MouseButton>() {
+            let input = input.as_any().downcast_ref::<MouseButton>().unwrap();
+            self.mouse.insert(action, *input);
+        }
+
+        if TypeId::of::<I>() == TypeId::of::<KeyCode>() {
+            let input = input.as_any().downcast_ref::<KeyCode>().unwrap();
+            self.keyboard.insert(action, *input);
+        }
+
+        if TypeId::of::<I>() == TypeId::of::<GamepadButton>() {
+            let input = input.as_any().downcast_ref::<GamepadButton>().unwrap();
+            self.gamepad.insert(action, *input);
+        }
+    }
 
     /// Extracts all input mappings of type I
     pub fn get_all<I: Inputlike>(&self) -> Self {
+        todo!()
+    }
+
+    /// Sets all mappings of type I to the provide mapping set
+    pub fn set_all<I: Inputlike>(&mut self, mapping: MultiMap<A, I>) {
         todo!()
     }
 

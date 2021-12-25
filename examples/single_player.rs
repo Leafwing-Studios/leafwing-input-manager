@@ -49,10 +49,6 @@ enum ARPGAction {
     Ability3,
     Ability4,
     Ultimate,
-    // Utilities
-    AimLock,
-    Emote,
-    Interact,
 }
 
 // We need to implement this trait (and meet its bounds) in order to use our enum as an A
@@ -82,48 +78,45 @@ fn initialize_controls(mut query: Query<&mut InputMap<ARPGAction>>) {
     // This allows us to replace `ARPGAction::Up` with `Up`,
     // significantly reducing boilerplate
     use ARPGAction::*;
+    let mut input_map = query.single_mut();
+
+    // This is a quick and hacky solution:
+    // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
+    let gamepad = Gamepad(0);
+
     // Movement
-    keyboard_map.insert(Up, KeyCode::Up);
-    gamepad_map.insert(Up, GamepadButtonType::DPadUp);
+    input_map.insert(Up, KeyCode::Up);
+    input_map.insert(Up, GamepadButton(gamepad, GamepadButtonType::DPadUp));
 
-    keyboard_map.insert(Down, KeyCode::Down);
-    gamepad_map.insert(Down, GamepadButtonType::DPadDown);
+    input_map.insert(Down, KeyCode::Down);
+    input_map.insert(Down, GamepadButton(gamepad, GamepadButtonType::DPadDown));
 
-    keyboard_map.insert(Left, KeyCode::Left);
-    gamepad_map.insert(Left, GamepadButtonType::DPadLeft);
+    input_map.insert(Left, KeyCode::Left);
+    input_map.insert(Left, GamepadButton(gamepad, GamepadButtonType::DPadLeft));
 
-    keyboard_map.insert(Right, KeyCode::Right);
-    gamepad_map.insert(Right, GamepadButtonType::DPadRight);
+    input_map.insert(Right, KeyCode::Right);
+    input_map.insert(Right, GamepadButton(gamepad, GamepadButtonType::DPadRight));
 
     // Abilities
-    keyboard_map.insert(Ability1, KeyCode::Q);
-    gamepad_map.insert(Ability1, GamepadButtonType::West);
-    mousebutton_map.insert(Ability1, MouseButton::Left);
+    input_map.insert(Ability1, KeyCode::Q);
+    input_map.insert(Ability1, GamepadButton(gamepad, GamepadButtonType::West));
+    input_map.insert(Ability1, MouseButton::Left);
 
-    keyboard_map.insert(Ability2, KeyCode::W);
-    gamepad_map.insert(Ability2, GamepadButtonType::North);
-    mousebutton_map.insert(Ability2, MouseButton::Right);
+    input_map.insert(Ability2, KeyCode::W);
+    input_map.insert(Ability2, GamepadButton(gamepad, GamepadButtonType::North));
+    input_map.insert(Ability2, MouseButton::Right);
 
-    keyboard_map.insert(Ability3, KeyCode::E);
-    gamepad_map.insert(Ability3, GamepadButtonType::East);
+    input_map.insert(Ability3, KeyCode::E);
+    input_map.insert(Ability3, GamepadButton(gamepad, GamepadButtonType::East));
 
-    keyboard_map.insert(Ability4, KeyCode::Space);
-    gamepad_map.insert(Ability4, GamepadButtonType::South);
+    input_map.insert(Ability4, KeyCode::Space);
+    input_map.insert(Ability4, GamepadButton(gamepad, GamepadButtonType::South));
 
-    keyboard_map.insert(Ultimate, KeyCode::R);
-    gamepad_map.insert(Ultimate, GamepadButtonType::LeftTrigger2);
-
-    // Utilities
-    keyboard_map.insert(AimLock, KeyCode::Grave);
-    gamepad_map.insert(AimLock, GamepadButtonType::RightTrigger);
-
-    keyboard_map.insert(Emote, KeyCode::LShift);
-    gamepad_map.insert(Emote, GamepadButtonType::LeftTrigger);
-
-    keyboard_map.insert(Interact, KeyCode::F);
-    keyboard_map.insert(Interact, KeyCode::Return); // We can bind multiple keys to the same action
-    mousebutton_map.insert(Interact, MouseButton::Left); // We can bind multiple actions to the same key
-    gamepad_map.insert(Interact, GamepadButtonType::RightTrigger2);
+    input_map.insert(Ultimate, KeyCode::R);
+    input_map.insert(
+        Ultimate,
+        GamepadButton(gamepad, GamepadButtonType::LeftTrigger2),
+    );
 }
 
 fn cast_fireball(query: Query<&ActionState<ARPGAction>, With<Player>>) {
