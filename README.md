@@ -1,40 +1,27 @@
 # About
 
-This is the Leafwing Studios' template repo, providing a quick, opinionated base for high-quality Bevy game projects (and libraries).
-We've shaved the yaks for you!
+A simple but robust input-action manager for Bevy: intended to be useful both as a plugin and a helpful library.
 
-The licenses here are provided for template purposes: this repository itself is provided under MIT-0.
-Feel free to use, hack and adopt this freely: no attribution needed.
+Inputs from various input sources (keyboard, mouse and gamepad) are collected into a common `ActionState` on your player entity,
+which can be conveniently used in your game logic.
+
+The mapping between inputs and actions is many-to-many, and easily configured and extended with the `InputMap` components on your player entity.
+A single action can be triggered by multiple inputs (or set directly by UI elements or gameplay logic),
+and a single input can result in multiple actions being triggered, which can be handled contextually.
+
+This library is designed to support both single-player and local multiplayer games!
+Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` and `AssociatedGamepad` values appropriately.
 
 ## Instructions
 
 ### Getting started
 
-[Use this template](https://github.com/Leafwing-Studios/template-repo/generate) by pressing the big green "Use this template" button in the top right corner of [this repo](https://github.com/Leafwing-Studios/template-repo) to create a new repository.
-
-This repository has dynamic linking enabled for much faster incremental compile times.
-If you're on Windows, you'll need to use the `nightly` Rust compiler.
-Swap by using `rustup default nightly`.
-
-If you are making a game:
-
-1. Enable the features you need from Bevy in `Cargo.toml`.
-2. Delete the `examples` folder.
-3. Start writing your game. Your logic should be stored in `lib.rs` (and other files that are pulled in from it).
-Then, add all of the plugins and build your `App` in `main.rs`.
-4. If you only care about your game working on `nightly`, remove `stable` from the `toolchain` field in `.github/workflows/ci.yml`.
-
-If you are making a standalone library:
-
-1. Delete `main.rs` and the `[[bin]]` section of the top-level `Cargo.toml`.
-2. Change `default-features` to `false` for the `bevy` dependency to avoid unnecessarily pulling in extra features for your users.
-
-Finally:
-
-1. Rename the lib and bin in `Cargo.toml` (and all imports to ensure your code compiles).
-2. Double check that the LICENSE matches your intent.
-3. Update this README to match your project, modifying `About`, `Getting Started` and other sections as needed.
-4. Consider cleaning up the issue and PR templates found in the `.github` folder to better match your needs.
+1. Add `leafwing-input-manager` to your `Cargo.toml`.
+2. Create an enum of the logical actions you want to represent, and implement the `InputActionEnum` for it.
+3. Add the `InputManagerPlugin` to your `App`.
+4. Add the `InputManagerBundle` to your player entity (or entities!).
+5. Configure a mapping between your inputs and your actions by modifying the `InputMap` components on your player entity.
+6. Read the `ActionState` component on your player entity to check the collected input state!
 
 ### Running your game
 
@@ -91,9 +78,3 @@ Use `cargo doc --open` to build and then open the docs.
 
 Design docs (or other book-format documentation) is handled with [mdBook](https://rust-lang.github.io/mdBook/index.html).
 Install it with `cargo install mdbook`, then use `mdbook serve --open` to launch the docs.
-
-### Benchmarking
-
-To run the benchmarks, use `cargo bench`.
-
-For more documentation on making your own benchmarks, check out [criterion's docs](https://bheisler.github.io/criterion.rs/book/index.html).
