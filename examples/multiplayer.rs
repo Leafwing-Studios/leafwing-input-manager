@@ -43,13 +43,26 @@ impl PlayerBundle {
                 input_map.insert(Action::Left, KeyCode::A);
                 input_map.insert(Action::Right, KeyCode::D);
                 input_map.insert(Action::Jump, KeyCode::W);
+
+                // This is a quick and hacky solution:
+                // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
+                // and gracefully handle disconnects
+                input_map.assign_gamepad(Gamepad(0));
             }
             Player::Two => {
                 input_map.insert(Action::Left, KeyCode::Left);
                 input_map.insert(Action::Right, KeyCode::Right);
                 input_map.insert(Action::Jump, KeyCode::Up);
+
+                input_map.assign_gamepad(Gamepad(1));
             }
         };
+
+        // Each player will use the same gamepad controls, but on seperate gamepads
+        input_map.insert(Action::Left, GamepadButtonType::DPadLeft);
+        input_map.insert(Action::Right, GamepadButtonType::DPadLeft);
+        input_map.insert(Action::Jump, GamepadButtonType::DPadUp);
+        input_map.insert(Action::Jump, GamepadButtonType::South);
 
         input_map
     }

@@ -12,7 +12,7 @@ use multimap::MultiMap;
 #[derive(Component, Debug)]
 pub struct InputMap<A: Actionlike> {
     pub map: MultiMap<A, Buttonlike>,
-    pub associated_gamepad: Option<Gamepad>,
+    associated_gamepad: Option<Gamepad>,
 }
 
 impl<A: Actionlike> InputMap<A> {
@@ -65,6 +65,15 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns all previously registered inputs, if any
     pub fn remove(&mut self, action: A) -> Option<Vec<Buttonlike>> {
         self.map.remove(&action)
+    }
+
+    /// Assigns a particular gamepad to the entity controlled by this input map
+    pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
+        self.associated_gamepad = Some(gamepad);
+    }
+
+    pub fn gamepad(&self) -> Option<Gamepad> {
+        self.associated_gamepad
     }
 }
 
