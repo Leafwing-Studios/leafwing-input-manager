@@ -16,7 +16,7 @@ pub mod prelude {
     pub use crate::action_state::ActionState;
     pub use crate::input_map::InputMap;
 
-    pub use crate::{InputActionEnum, InputManagerPlugin};
+    pub use crate::{InputActionEnum, InputManagerBundle, InputManagerPlugin};
 }
 
 /// A [Plugin] that collects [Input] from disparate sources, producing an [ActionState] to consume in game logic
@@ -33,17 +33,15 @@ pub mod prelude {
 ///     - labeled [InputMapSystem::Read]
 /// - [release_action_state], which releases all actions which are not currently pressed by any system
 ///     - labeled [InputMapSystem::Release]
-pub struct InputManagerPlugin<InputAction: InputActionEnum, PlayerMarker: Component> {
-    _unreachable: (PhantomData<InputAction>, PhantomData<PlayerMarker>),
+pub struct InputManagerPlugin<InputAction: InputActionEnum> {
+    _phantom: PhantomData<InputAction>,
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
-impl<InputAction: InputActionEnum, PlayerMarker: Component> Default
-    for InputManagerPlugin<InputAction, PlayerMarker>
-{
+impl<InputAction: InputActionEnum> Default for InputManagerPlugin<InputAction> {
     fn default() -> Self {
         Self {
-            _unreachable: (PhantomData::default(), PhantomData::default()),
+            _phantom: PhantomData::default(),
         }
     }
 }
@@ -63,16 +61,31 @@ pub enum InputManagerSystem {
     Release,
 }
 
-impl<InputAction: InputActionEnum, PlayerMarker: Component> Plugin
-    for InputManagerPlugin<InputAction, PlayerMarker>
-{
+#[derive(Bundle)]
+pub struct InputManagerBundle<InputAction: InputActionEnum> {
+    action_state: ActionState<InputAction>,
+    gamepad_input_map: InputMap<InputAction, GamepadButton, GamepadButtonType>,
+    mouse_input_map: InputMap<InputAction, MouseButton>,
+    keyboard_input_map: InputMap<InputAction, KeyCode>,
+}
+
+// Cannot use derive(Default), as it forces an undesirable bound on our generics
+impl<InputAction: InputActionEnum> Default for InputManagerBundle<InputAction> {
+    fn default() -> Self {
+        Self {
+            action_state: ActionState::default(),
+            gamepad_input_map: InputMap::default(),
+            mouse_input_map: InputMap::default(),
+            keyboard_input_map: InputMap::default(),
+        }
+    }
+}
+
+impl<InputAction: InputActionEnum> Plugin for InputManagerPlugin<InputAction> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
         app.init_resource::<InputMap<InputAction, KeyCode>>()
-            .init_resource::<InputMap<InputAction, MouseButton>>()
-            .init_resource::<InputMap<InputAction, GamepadButton, GamepadButtonType>>()
-            .init_resource::<ActionState<InputAction>>()
             .add_system(
                 tick_action_state::<InputAction>
                     .label(InputManagerSystem::Reset)

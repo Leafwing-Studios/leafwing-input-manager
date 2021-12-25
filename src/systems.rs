@@ -2,13 +2,15 @@ use crate::{ActionState, InputActionEnum, InputMap};
 use bevy::prelude::*;
 use core::hash::Hash;
 
-/// Clears the just-pressed and just-released values of the [ActionState]
+/// Clears the just-pressed and just-released values of all [ActionState]s
 ///
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action
 pub fn tick_action_state<InputAction: InputActionEnum>(
-    mut action_state: ResMut<ActionState<InputAction>>,
+    mut query: Query<&mut ActionState<InputAction>>,
 ) {
-    action_state.tick();
+    for mut action_state in query.iter_mut() {
+        action_state.tick();
+    }
 }
 
 /// Fetches an [Input] resource to update [ActionState] according to the [InputMap]
@@ -18,12 +20,14 @@ pub fn update_action_state<
 >(
     input: Res<Input<InputType>>,
     input_map: Res<InputMap<InputAction, InputType>>,
-    mut action_state: ResMut<ActionState<InputAction>>,
+    mut query: Query<&mut ActionState<InputAction>>,
 ) {
-    for action in InputAction::iter() {
-        // A particular input type can add to the action state, but cannot revert it
-        if input_map.pressed(action, &*input) {
-            action_state.press(action);
+    for mut action_state in query.iter_mut() {
+        for action in InputAction::iter() {
+            // A particular input type can add to the action state, but cannot revert it
+            if input_map.pressed(action, &*input) {
+                action_state.press(action);
+            }
         }
     }
 }
@@ -37,12 +41,14 @@ pub fn update_action_state_gamepads<InputAction: InputActionEnum>(
     gamepads: Res<Gamepads>,
     gamepad_map: Res<InputMap<InputAction, GamepadButton, GamepadButtonType>>,
     gamepad_input: Res<Input<GamepadButton>>,
-    mut action_state: ResMut<ActionState<InputAction>>,
+    mut query: Query<&mut ActionState<InputAction>>,
 ) {
-    for action in InputAction::iter() {
-        for &gamepad in gamepads.iter() {
-            if gamepad_map.pressed(action, &*gamepad_input, gamepad) {
-                action_state.press(action);
+    for mut action_state in query.iter_mut() {
+        for action in InputAction::iter() {
+            for &gamepad in gamepads.iter() {
+                if gamepad_map.pressed(action, &*gamepad_input, gamepad) {
+                    action_state.press(action);
+                }
             }
         }
     }
@@ -50,7 +56,9 @@ pub fn update_action_state_gamepads<InputAction: InputActionEnum>(
 
 /// Releases all [ActionState] actions that were not pressed since the last time [tick_action_state] ran
 pub fn release_action_state<InputAction: InputActionEnum>(
-    mut action_state: ResMut<ActionState<InputAction>>,
+    mut query: Query<&mut ActionState<InputAction>>,
 ) {
-    action_state.release_unpressed();
+    for mut action_state in query.iter_mut() {
+        action_state.release_unpressed();
+    }
 }

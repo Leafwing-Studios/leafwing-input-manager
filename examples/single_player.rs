@@ -10,7 +10,9 @@ fn main() {
         .add_plugins(MinimalPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<ARPGAction, Player>::default())
+        .add_plugin(InputManagerPlugin::<ARPGAction>::default())
+        // The InputMap and ActionState components will be added to any entity with the Player component
+        .add_startup_system(spawn_player)
         .add_startup_system(initialize_controls)
         // The ActionState can be used directly
         .add_system(cast_fireball)
@@ -24,6 +26,15 @@ fn main() {
 
 #[derive(Component)]
 pub struct Player;
+
+fn spawn_player(mut commands: Commands) {
+    commands
+        .spawn()
+        .insert(Player)
+        // This bundle must be added to your player entity
+        // (or whatever else you wish to control)
+        .insert_bundle(InputManagerBundle::<ARPGAction>::default());
+}
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Display, EnumIter)]
 enum ARPGAction {
@@ -119,13 +130,17 @@ fn initialize_controls(
     gamepad_map.insert(Interact, GamepadButtonType::RightTrigger2);
 }
 
-fn cast_fireball(action_state: Res<ActionState<ARPGAction>>) {
+fn cast_fireball(query: Query<&ActionState<ARPGAction>, With<Player>>) {
+    let action_state = query.single();
+
     if action_state.just_pressed(ARPGAction::Ability1) {
         println!("Fwoosh!");
     }
 }
 
-fn player_dash(action_state: Res<ActionState<ARPGAction>>) {
+fn player_dash(query: Query<&ActionState<ARPGAction>, With<Player>>) {
+    let action_state = query.single();
+
     if action_state.just_pressed(ARPGAction::Ability4) {
         let mut direction = Direction::NEUTRAL;
 
@@ -144,9 +159,11 @@ pub struct PlayerWalk {
 }
 
 fn player_walks(
-    action_state: Res<ActionState<ARPGAction>>,
+    query: Query<&ActionState<ARPGAction>, With<Player>>,
     mut event_writer: EventWriter<PlayerWalk>,
 ) {
+    let action_state = query.single();
+
     let mut direction = Direction::NEUTRAL;
 
     for input_direction in ARPGAction::DIRECTIONS {
