@@ -40,9 +40,15 @@ pub struct InputManagerPlugin<InputAction: InputActionEnum> {
     _phantom: PhantomData<InputAction>,
 }
 
-// Cannot use derive(Default), as it forces an undesirable bound on our generics
-impl<InputAction: InputActionEnum> Default for InputManagerPlugin<InputAction> {
-    fn default() -> Self {
+impl<InputAction: InputActionEnum> InputManagerPlugin<InputAction> {
+    pub fn single_player() -> Self {
+        Self {
+            single_player: true,
+            _phantom: PhantomData::default(),
+        }
+    }
+
+    pub fn multiplayer() -> Self {
         Self {
             single_player: true,
             _phantom: PhantomData::default(),

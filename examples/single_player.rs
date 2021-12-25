@@ -10,7 +10,7 @@ fn main() {
         .add_plugins(MinimalPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<ARPGAction>::default())
+        .add_plugin(InputManagerPlugin::<ARPGAction>::single_player())
         // The InputMap and ActionState components will be added to any entity with the Player component
         .add_startup_system(spawn_player)
         .add_startup_system(initialize_controls)
