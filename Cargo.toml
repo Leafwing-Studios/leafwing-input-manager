@@ -20,6 +20,7 @@ members = ["./", "tools/ci"]
 [dependencies]
 bevy = { git = "https://github.com/bevyengine/bevy/", commit = "22c665fa39b16c62272b927db742ea62d67615e8", default-features = false}
 derive_more = "0.99"
+downcast-rs = "1.2.0"
 multimap = "0.8"
 strum = "0.23"
 strum_macros = "0.23"

@@ -10,7 +10,7 @@ fn main() {
         .add_plugins(MinimalPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<ARPGAction>::single_player())
+        .add_plugin(InputManagerPlugin::<ARPGAction>::default())
         // The InputMap and ActionState components will be added to any entity with the Player component
         .add_startup_system(spawn_player)
         .add_startup_system(initialize_controls)
@@ -78,11 +78,7 @@ impl ARPGAction {
     }
 }
 
-fn initialize_controls(
-    mut keyboard_map: ResMut<InputMap<ARPGAction, KeyCode>>,
-    mut mousebutton_map: ResMut<InputMap<ARPGAction, MouseButton>>,
-    mut gamepad_map: ResMut<InputMap<ARPGAction, GamepadButton, GamepadButtonType>>,
-) {
+fn initialize_controls(mut query: Query<&mut InputMap<ARPGAction>>) {
     // This allows us to replace `ARPGAction::Up` with `Up`,
     // significantly reducing boilerplate
     use ARPGAction::*;

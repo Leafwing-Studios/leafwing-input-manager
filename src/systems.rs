@@ -1,6 +1,5 @@
-use crate::{ActionState, InputActionEnum, InputMap};
+use crate::{input_map::Inputlike, ActionState, InputActionEnum, InputMap};
 use bevy::prelude::*;
-use core::hash::Hash;
 
 /// Clears the just-pressed and just-released values of all [ActionState]s
 ///
@@ -14,18 +13,14 @@ pub fn tick_action_state<InputAction: InputActionEnum>(
 }
 
 /// Fetches an [Input] resource to update [ActionState] according to the [InputMap]
-pub fn update_action_state<
-    InputAction: InputActionEnum,
-    InputType: Send + Sync + Copy + Hash + Eq + 'static,
->(
+pub fn update_action_state<InputAction: InputActionEnum, InputType: Inputlike>(
     input: Res<Input<InputType>>,
-    input_map: Res<InputMap<InputAction, InputType>>,
-    mut query: Query<&mut ActionState<InputAction>>,
+    mut query: Query<(&mut ActionState<InputAction>, &InputMap<InputAction>)>,
 ) {
-    for mut action_state in query.iter_mut() {
+    for (mut action_state, input_map) in query.iter_mut() {
         for action in InputAction::iter() {
             // A particular input type can add to the action state, but cannot revert it
-            if input_map.pressed(action, &*input) {
+            if input_map.pressed_by(action, &*input) {
                 action_state.press(action);
             }
         }
