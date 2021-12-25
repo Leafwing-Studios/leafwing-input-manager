@@ -82,41 +82,38 @@ fn initialize_controls(mut query: Query<&mut InputMap<ARPGAction>>) {
 
     // This is a quick and hacky solution:
     // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
-    let gamepad = Gamepad(0);
+    input_map.associated_gamepad = Some(Gamepad(0));
 
     // Movement
     input_map.insert(Up, KeyCode::Up);
-    input_map.insert(Up, GamepadButton(gamepad, GamepadButtonType::DPadUp));
+    input_map.insert(Up, GamepadButtonType::DPadUp);
 
     input_map.insert(Down, KeyCode::Down);
-    input_map.insert(Down, GamepadButton(gamepad, GamepadButtonType::DPadDown));
+    input_map.insert(Down, GamepadButtonType::DPadDown);
 
     input_map.insert(Left, KeyCode::Left);
-    input_map.insert(Left, GamepadButton(gamepad, GamepadButtonType::DPadLeft));
+    input_map.insert(Left, GamepadButtonType::DPadLeft);
 
     input_map.insert(Right, KeyCode::Right);
-    input_map.insert(Right, GamepadButton(gamepad, GamepadButtonType::DPadRight));
+    input_map.insert(Right, GamepadButtonType::DPadRight);
 
     // Abilities
     input_map.insert(Ability1, KeyCode::Q);
-    input_map.insert(Ability1, GamepadButton(gamepad, GamepadButtonType::West));
+    input_map.insert(Ability1, GamepadButtonType::West);
     input_map.insert(Ability1, MouseButton::Left);
 
     input_map.insert(Ability2, KeyCode::W);
-    input_map.insert(Ability2, GamepadButton(gamepad, GamepadButtonType::North));
+    input_map.insert(Ability2, GamepadButtonType::North);
     input_map.insert(Ability2, MouseButton::Right);
 
     input_map.insert(Ability3, KeyCode::E);
-    input_map.insert(Ability3, GamepadButton(gamepad, GamepadButtonType::East));
+    input_map.insert(Ability3, GamepadButtonType::East);
 
     input_map.insert(Ability4, KeyCode::Space);
-    input_map.insert(Ability4, GamepadButton(gamepad, GamepadButtonType::South));
+    input_map.insert(Ability4, GamepadButtonType::South);
 
     input_map.insert(Ultimate, KeyCode::R);
-    input_map.insert(
-        Ultimate,
-        GamepadButton(gamepad, GamepadButtonType::LeftTrigger2),
-    );
+    input_map.insert(Ultimate, GamepadButtonType::LeftTrigger2);
 }
 
 fn cast_fireball(query: Query<&ActionState<ARPGAction>, With<Player>>) {

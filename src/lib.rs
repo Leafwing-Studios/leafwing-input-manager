@@ -86,12 +86,9 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 .label(InputManagerSystem::Reset)
                 .before(InputManagerSystem::Read),
         )
-        .add_system_set_to_stage(
+        .add_system_to_stage(
             CoreStage::PreUpdate,
-            SystemSet::new()
-                .with_system(update_action_state::<A, KeyCode>)
-                .with_system(update_action_state::<A, MouseButton>)
-                .with_system(update_action_state::<A, GamepadButton>)
+            update_action_state::<A>
                 .label(InputManagerSystem::Read)
                 .after(InputSystem),
         )
