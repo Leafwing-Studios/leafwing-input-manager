@@ -10,10 +10,10 @@ fn main() {
         .add_plugins(MinimalPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<ARPGAction>::default())
+        .add_plugin(InputManagerPlugin::<Action>::default())
         // The InputMap and ActionState components will be added to any entity with the Player component
         .add_startup_system(spawn_player)
-        .add_startup_system(initialize_controls)
+        .add_startup_system_to_stage(StartupStage::PostStartup, initialize_controls)
         // The ActionState can be used directly
         .add_system(cast_fireball)
         // Or multiple parts of it can be inspected
@@ -33,11 +33,11 @@ fn spawn_player(mut commands: Commands) {
         .insert(Player)
         // This bundle must be added to your player entity
         // (or whatever else you wish to control)
-        .insert_bundle(InputManagerBundle::<ARPGAction>::default());
+        .insert_bundle(InputManagerBundle::<Action>::default());
 }
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Display, EnumIter)]
-enum ARPGAction {
+enum Action {
     // Movement
     Up,
     Down,
@@ -52,32 +52,27 @@ enum ARPGAction {
 }
 
 // We need to implement this trait (and meet its bounds) in order to use our enum as an A
-impl Actionlike for ARPGAction {}
+impl Actionlike for Action {}
 
-impl ARPGAction {
+impl Action {
     // Lists like this can be very useful for quickly matching subsets of actions
-    const DIRECTIONS: [Self; 4] = [
-        ARPGAction::Up,
-        ARPGAction::Down,
-        ARPGAction::Left,
-        ARPGAction::Right,
-    ];
+    const DIRECTIONS: [Self; 4] = [Action::Up, Action::Down, Action::Left, Action::Right];
 
     fn direction(self) -> Direction {
         match self {
-            ARPGAction::Up => Direction::UP,
-            ARPGAction::Down => Direction::DOWN,
-            ARPGAction::Left => Direction::LEFT,
-            ARPGAction::Right => Direction::RIGHT,
+            Action::Up => Direction::UP,
+            Action::Down => Direction::DOWN,
+            Action::Left => Direction::LEFT,
+            Action::Right => Direction::RIGHT,
             _ => Direction::NEUTRAL,
         }
     }
 }
 
-fn initialize_controls(mut query: Query<&mut InputMap<ARPGAction>>) {
+fn initialize_controls(mut query: Query<&mut InputMap<Action>>) {
     // This allows us to replace `ARPGAction::Up` with `Up`,
     // significantly reducing boilerplate
-    use ARPGAction::*;
+    use Action::*;
     let mut input_map = query.single_mut();
 
     // This is a quick and hacky solution:
@@ -117,21 +112,21 @@ fn initialize_controls(mut query: Query<&mut InputMap<ARPGAction>>) {
     input_map.insert(Ultimate, GamepadButtonType::LeftTrigger2);
 }
 
-fn cast_fireball(query: Query<&ActionState<ARPGAction>, With<Player>>) {
+fn cast_fireball(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
 
-    if action_state.just_pressed(ARPGAction::Ability1) {
+    if action_state.just_pressed(Action::Ability1) {
         println!("Fwoosh!");
     }
 }
 
-fn player_dash(query: Query<&ActionState<ARPGAction>, With<Player>>) {
+fn player_dash(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
 
-    if action_state.just_pressed(ARPGAction::Ability4) {
+    if action_state.just_pressed(Action::Ability4) {
         let mut direction = Direction::NEUTRAL;
 
-        for input_direction in ARPGAction::DIRECTIONS {
+        for input_direction in Action::DIRECTIONS {
             if action_state.pressed(input_direction) {
                 direction += input_direction.direction();
             }
@@ -146,14 +141,14 @@ pub struct PlayerWalk {
 }
 
 fn player_walks(
-    query: Query<&ActionState<ARPGAction>, With<Player>>,
+    query: Query<&ActionState<Action>, With<Player>>,
     mut event_writer: EventWriter<PlayerWalk>,
 ) {
     let action_state = query.single();
 
     let mut direction = Direction::NEUTRAL;
 
-    for input_direction in ARPGAction::DIRECTIONS {
+    for input_direction in Action::DIRECTIONS {
         if action_state.pressed(input_direction) {
             direction += input_direction.direction();
         }

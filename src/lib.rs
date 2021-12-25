@@ -63,8 +63,8 @@ pub enum InputManagerSystem {
 
 #[derive(Bundle)]
 pub struct InputManagerBundle<A: Actionlike> {
-    action_state: ActionState<A>,
-    input_map: InputMap<A>,
+    pub action_state: ActionState<A>,
+    pub input_map: InputMap<A>,
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
