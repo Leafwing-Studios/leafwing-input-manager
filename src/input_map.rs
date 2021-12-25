@@ -83,8 +83,9 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        // If an invalid type is provided, return false
-        false
+        // If an invalid type is provided, panic really hard
+        // This should be very impossible because the `Inputlike` trait is sealed
+        unreachable!()
     }
 
     pub fn insert<I: Inputlike>(&mut self, action: A, input: I) {
@@ -132,10 +133,27 @@ impl<A: Actionlike> Default for InputMap<A> {
 
 // BLOCKED: Replace with Bevy standard once https://github.com/bevyengine/bevy/pull/3419 is merged
 /// A type that can be used as a button-like input
-pub trait Inputlike: Send + Sync + Debug + Copy + Hash + Eq + 'static {}
+///
+/// Because this trait is not object-safe, we must store the input mappings
+/// in seperate pre-defined storages within [InputMap].
+/// As a result, this trait has been sealed and cannot be implemented externally :(
+pub trait Inputlike: Send + Sync + Debug + Copy + Hash + Eq + private::Sealed + 'static {}
 
 impl Inputlike for KeyCode {}
 
 impl Inputlike for MouseButton {}
 
 impl Inputlike for GamepadButton {}
+
+mod private {
+    use super::*;
+
+    // Not actually pub because the `private` module isn't exposed
+    pub trait Sealed {}
+
+    impl Sealed for KeyCode {}
+
+    impl Sealed for MouseButton {}
+
+    impl Sealed for GamepadButton {}
+}
