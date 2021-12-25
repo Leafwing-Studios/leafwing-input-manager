@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use direction::Direction;
-use leafwing_input_manager::{ActionState, InputActionEnum, InputManagerPlugin, InputMap};
+use leafwing_input_manager::prelude::*;
 
 use derive_more::Display;
 use strum_macros::EnumIter;
@@ -9,8 +9,8 @@ fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
-        // We need to provide it with an enum, which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<ARPGAction>::default())
+        // We need to provide it with an enum which stores the possible actions a player could take
+        .add_plugin(InputManagerPlugin::<ARPGAction, Player>::default())
         .add_startup_system(initialize_controls)
         // The ActionState can be used directly
         .add_system(cast_fireball)
@@ -21,6 +21,9 @@ fn main() {
         .add_system(player_walks)
         .run();
 }
+
+#[derive(Component)]
+pub struct Player;
 
 #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Display, EnumIter)]
 enum ARPGAction {
