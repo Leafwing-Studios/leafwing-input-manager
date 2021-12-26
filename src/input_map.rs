@@ -1,5 +1,6 @@
 use crate::Actionlike;
 use bevy::prelude::*;
+use bevy::utils::HashSet;
 use core::fmt::Debug;
 use multimap::MultiMap;
 
@@ -11,7 +12,7 @@ use multimap::MultiMap;
 /// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
 #[derive(Component, Debug)]
 pub struct InputMap<A: Actionlike> {
-    pub map: MultiMap<A, Buttonlike>,
+    pub map: MultiMap<A, UserInput>,
     associated_gamepad: Option<Gamepad>,
 }
 
@@ -40,7 +41,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the `inputs` pressed?
     pub fn any_pressed(
         &self,
-        inputs: &Vec<Buttonlike>,
+        inputs: &Vec<UserInput>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
@@ -63,7 +64,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Are all of the `inputs` pressed?
     pub fn all_pressed(
         &self,
-        inputs: &Vec<Buttonlike>,
+        inputs: &Vec<UserInput>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
@@ -86,13 +87,13 @@ impl<A: Actionlike> InputMap<A> {
     /// Is the `input` pressed?
     pub fn matches(
         &self,
-        input: Buttonlike,
+        input: UserInput,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
         match input {
-            Buttonlike::Gamepad(gamepad_button) => {
+            UserInput::Gamepad(gamepad_button) => {
                 // If no gamepad is registered, we know for sure that no match was found
                 if let Some(gamepad) = self.associated_gamepad {
                     gamepad_input_stream.pressed(GamepadButton(gamepad, gamepad_button))
@@ -100,9 +101,9 @@ impl<A: Actionlike> InputMap<A> {
                     false
                 }
             }
-            Buttonlike::Keyboard(keycode) => keyboard_input_stream.pressed(keycode),
-            Buttonlike::Mouse(mouse_button) => mouse_input_stream.pressed(mouse_button),
-            Buttonlike::Combination(button_vec) => self.any_pressed(
+            UserInput::Keyboard(keycode) => keyboard_input_stream.pressed(keycode),
+            UserInput::Mouse(mouse_button) => mouse_input_stream.pressed(mouse_button),
+            UserInput::Combination(button_vec) => self.any_pressed(
                 button_vec,
                 gamepad_input_stream,
                 keyboard_input_stream,
@@ -114,14 +115,14 @@ impl<A: Actionlike> InputMap<A> {
     /// Insert a mapping between `action` and `input`
     ///
     /// Existing mappings for that action will not be overwritten
-    pub fn insert(&mut self, action: A, input: impl Into<Buttonlike>) {
+    pub fn insert(&mut self, action: A, input: impl Into<UserInput>) {
         self.map.insert(action, input.into());
     }
 
     /// Clears all inputs registered for the `action`
     ///
     /// Returns all previously registered inputs, if any
-    pub fn remove(&mut self, action: A) -> Option<Vec<Buttonlike>> {
+    pub fn remove(&mut self, action: A) -> Option<Vec<UserInput>> {
         self.map.remove(&action)
     }
 
@@ -150,29 +151,40 @@ impl<A: Actionlike> Default for InputMap<A> {
 /// require traits that are not object-safe.
 ///
 /// Please contact the maintainers if you need support for another type!
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum UserInput {
+    Single(Button),
+    Combination(HashSet<Button>),
+}
+
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Buttonlike {
+enum Button {
     Gamepad(GamepadButtonType),
     Keyboard(KeyCode),
     Mouse(MouseButton),
-    Combination(&'static Vec<Buttonlike>),
 }
 
-impl From<GamepadButtonType> for Buttonlike {
+impl From<GamepadButtonType> for UserInput {
     fn from(input: GamepadButtonType) -> Self {
-        Buttonlike::Gamepad(input)
+        UserInput::Gamepad(input)
     }
 }
 
-impl From<KeyCode> for Buttonlike {
+impl From<KeyCode> for UserInput {
     fn from(input: KeyCode) -> Self {
-        Buttonlike::Keyboard(input)
+        UserInput::Keyboard(input)
     }
 }
 
-impl From<MouseButton> for Buttonlike {
+impl From<MouseButton> for UserInput {
     fn from(input: MouseButton) -> Self {
-        Buttonlike::Mouse(input)
+        UserInput::Mouse(input)
+    }
+}
+
+impl From<Vec<UserInput>> for UserInput {
+    fn from(input: Vec<UserInput>) -> Self {
+        UserInput::Combination(&input)
     }
 }
