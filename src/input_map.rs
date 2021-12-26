@@ -46,14 +46,22 @@ impl<A: Actionlike> InputMap<A> {
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for &input in inputs {
-            // If any of the appropriate inputs match, the action is considered pressed
-            if self.matches(
-                input,
-                gamepad_input_stream,
-                keyboard_input_stream,
-                mouse_input_stream,
-            ) {
+        for input in inputs.clone() {
+            if match input {
+                UserInput::Single(button) => self.button_pressed(
+                    button,
+                    gamepad_input_stream,
+                    keyboard_input_stream,
+                    mouse_input_stream,
+                ),
+                UserInput::Combination(buttons) => self.all_buttons_pressed(
+                    &buttons,
+                    gamepad_input_stream,
+                    keyboard_input_stream,
+                    mouse_input_stream,
+                ),
+            } {
+                // If any of the appropriate inputs match, the action is considered pressed
                 return true;
             }
         }
@@ -61,18 +69,40 @@ impl<A: Actionlike> InputMap<A> {
         false
     }
 
-    /// Are all of the `inputs` pressed?
-    pub fn all_pressed(
+    /// Is the `button` pressed?
+    pub fn button_pressed(
         &self,
-        inputs: &Vec<UserInput>,
+        button: Button,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for &input in inputs {
+        match button {
+            Button::Gamepad(gamepad_button) => {
+                // If no gamepad is registered, we know for sure that no match was found
+                if let Some(gamepad) = self.associated_gamepad {
+                    gamepad_input_stream.pressed(GamepadButton(gamepad, gamepad_button))
+                } else {
+                    false
+                }
+            }
+            Button::Keyboard(keycode) => keyboard_input_stream.pressed(keycode),
+            Button::Mouse(mouse_button) => mouse_input_stream.pressed(mouse_button),
+        }
+    }
+
+    /// Are all of the `buttons` pressed?
+    pub fn all_buttons_pressed(
+        &self,
+        buttons: &HashSet<Button>,
+        gamepad_input_stream: &Input<GamepadButton>,
+        keyboard_input_stream: &Input<KeyCode>,
+        mouse_input_stream: &Input<MouseButton>,
+    ) -> bool {
+        for &button in buttons {
             // If any of the appropriate inputs failed to match, the action is considered pressed
-            if !self.matches(
-                input,
+            if !self.button_pressed(
+                button,
                 gamepad_input_stream,
                 keyboard_input_stream,
                 mouse_input_stream,
@@ -82,34 +112,6 @@ impl<A: Actionlike> InputMap<A> {
         }
         // If none of the inputs failed to match, return true
         true
-    }
-
-    /// Is the `input` pressed?
-    pub fn matches(
-        &self,
-        input: UserInput,
-        gamepad_input_stream: &Input<GamepadButton>,
-        keyboard_input_stream: &Input<KeyCode>,
-        mouse_input_stream: &Input<MouseButton>,
-    ) -> bool {
-        match input {
-            UserInput::Gamepad(gamepad_button) => {
-                // If no gamepad is registered, we know for sure that no match was found
-                if let Some(gamepad) = self.associated_gamepad {
-                    gamepad_input_stream.pressed(GamepadButton(gamepad, gamepad_button))
-                } else {
-                    false
-                }
-            }
-            UserInput::Keyboard(keycode) => keyboard_input_stream.pressed(keycode),
-            UserInput::Mouse(mouse_button) => mouse_input_stream.pressed(mouse_button),
-            UserInput::Combination(button_vec) => self.any_pressed(
-                button_vec,
-                gamepad_input_stream,
-                keyboard_input_stream,
-                mouse_input_stream,
-            ),
-        }
     }
 
     /// Insert a mapping between `action` and `input`
@@ -145,21 +147,26 @@ impl<A: Actionlike> Default for InputMap<A> {
     }
 }
 
-/// A button-like input type
+/// Some combination of user input, which may cross [Input] boundaries
 ///
-/// Unfortunately we cannot use a trait object here, as the types used by `Input`
-/// require traits that are not object-safe.
-///
-/// Please contact the maintainers if you need support for another type!
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Suitable for use in an [InputMap]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UserInput {
     Single(Button),
     Combination(HashSet<Button>),
 }
 
+/// A button-like input type
+///
+/// Commonly stored in the [UserInput] enum.
+///
+/// Unfortunately we cannot use a trait object here, as the types used by `Input`
+/// require traits that are not object-safe.
+///
+/// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum Button {
+pub enum Button {
     Gamepad(GamepadButtonType),
     Keyboard(KeyCode),
     Mouse(MouseButton),
@@ -167,24 +174,18 @@ enum Button {
 
 impl From<GamepadButtonType> for UserInput {
     fn from(input: GamepadButtonType) -> Self {
-        UserInput::Gamepad(input)
+        UserInput::Single(Button::Gamepad(input))
     }
 }
 
 impl From<KeyCode> for UserInput {
     fn from(input: KeyCode) -> Self {
-        UserInput::Keyboard(input)
+        UserInput::Single(Button::Keyboard(input))
     }
 }
 
 impl From<MouseButton> for UserInput {
     fn from(input: MouseButton) -> Self {
-        UserInput::Mouse(input)
-    }
-}
-
-impl From<Vec<UserInput>> for UserInput {
-    fn from(input: Vec<UserInput>) -> Self {
-        UserInput::Combination(&input)
+        UserInput::Single(Button::Mouse(input))
     }
 }
