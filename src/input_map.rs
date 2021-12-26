@@ -121,6 +121,14 @@ impl<A: Actionlike> InputMap<A> {
         self.map.insert(action, input.into());
     }
 
+    /// Insert a mapping between `action` and the combination of `buttons` provided
+    ///
+    /// Existing mappings for that action will not be overwritten.
+    /// Any iterator of [Button] can be supplied, but will be converted into a [HashSet] for storage and use.
+    pub fn combo(&mut self, action: A, buttons: impl IntoIterator<Item = Button>) {
+        self.map.insert(action, UserInput::combo(buttons));
+    }
+
     /// Clears all inputs registered for the `action`
     ///
     /// Returns all previously registered inputs, if any
@@ -155,6 +163,17 @@ impl<A: Actionlike> Default for InputMap<A> {
 pub enum UserInput {
     Single(Button),
     Combination(HashSet<Button>),
+}
+
+impl UserInput {
+    pub fn combo(buttons: impl IntoIterator<Item = Button>) -> Self {
+        let mut set: HashSet<Button> = HashSet::default();
+        for button in buttons {
+            set.insert(button);
+        }
+
+        UserInput::Combination(set)
+    }
 }
 
 /// A button-like input type
