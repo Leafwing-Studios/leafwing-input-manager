@@ -44,12 +44,12 @@ impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the `inputs` pressed?
     pub fn any_pressed(
         &self,
-        inputs: &Vec<UserInput>,
+        inputs: &[UserInput],
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for input in inputs.clone() {
+        for input in inputs.to_owned() {
             if match input {
                 UserInput::Single(button) => self.button_pressed(
                     button,
