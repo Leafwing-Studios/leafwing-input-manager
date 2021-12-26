@@ -75,6 +75,9 @@ pub mod prelude {
 ///     - labeled [InputManagerSystem::Reset]
 /// - [update_action_state](systems::update_action_state) which collects [Input] resources to update the [ActionState]
 ///     - labeled [InputManagerSystem::Read]
+/// - [update_action_state_from_interaction](systems::update_action_state_from_interaction), for triggering actions from buttons
+///    - powers the [ActionStateDriver](crate::action_state::ActionStateDriver) component baseod on an [Interaction] component
+///    - labeled [InputManagerSystem::Read]
 /// - [release_action_state](systems::release_action_state), which releases all actions which are not currently pressed by any system
 ///     - labeled [InputManagerSystem::Release]
 pub struct InputManagerPlugin<A: Actionlike> {
