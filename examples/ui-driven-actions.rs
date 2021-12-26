@@ -112,6 +112,6 @@ fn move_player(mut query: Query<(&ActionState<Action>, &mut Transform), With<Pla
     }
 
     if action_state.pressed(Action::Right) {
-        transform.translation.x -= 10.;
+        transform.translation.x += 10.;
     }
 }
