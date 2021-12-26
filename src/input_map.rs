@@ -49,10 +49,10 @@ impl<A: Actionlike> InputMap<A> {
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for input in inputs.to_owned() {
+        for input in inputs.clone() {
             if match input {
                 UserInput::Single(button) => self.button_pressed(
-                    button,
+                    *button,
                     gamepad_input_stream,
                     keyboard_input_stream,
                     mouse_input_stream,
