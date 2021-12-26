@@ -36,6 +36,7 @@ use multimap::MultiMap;
 /// input_map.insert(Action::Run, GamepadButtonType::South);
 /// input_map.insert(Action::Run, MouseButton::Left);
 /// input_map.insert(Action::Run, KeyCode::LShift);
+/// input_map.insert_multiple(Action::Hide, [GamepadButtonType::LeftTrigger, GamepadButtonType::RightTrigger]);
 ///
 /// // Combinations!
 /// input_map.insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R]);
@@ -151,15 +152,34 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between `action` and `input`
     ///
-    /// Existing mappings for that action will not be overwritten
+    /// Existing mappings for that action will not be overwritten.
     pub fn insert(&mut self, action: A, input: impl Into<UserInput>) {
         self.map.insert(action, input.into());
     }
 
-    /// Insert a mapping between `action` and the combination of `buttons` provided
+    /// Insert a mapping between `action` and the provided `inputs`
+    ///
+    /// This method creates multiple distinct bindings.
+    /// If you want to require multiple buttons to be pressed at once, use [insert_chord](Self::insert_chord).
+    /// Any iterator that can be converted into a [UserInput] can be supplied.
     ///
     /// Existing mappings for that action will not be overwritten.
-    /// Any iterator of [Button] can be supplied, but will be converted into a [HashSet] for storage and use.
+    pub fn insert_multiple(
+        &mut self,
+        action: A,
+        inputs: impl IntoIterator<Item = impl Into<UserInput>>,
+    ) {
+        for input in inputs {
+            self.map.insert(action, input.into());
+        }
+    }
+
+    /// Insert a mapping between `action` and the simultaneous combination of `buttons` provided
+    ///
+    /// Any iterator that can be converted into a [Button] can be supplied, but will be converted into a [HashSet] for storage and use.
+    /// Chords can also be added with the [insert](Self::insert) method, if the [UserInput::Chord] variant is constructed explicitly.
+    ///
+    /// Existing mappings for that action will not be overwritten.
     pub fn insert_chord(
         &mut self,
         action: A,
