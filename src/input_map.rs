@@ -21,7 +21,7 @@ use multimap::MultiMap;
 /// use strum_macros::EnumIter;
 ///
 /// // You can Run!
-/// #[derive(Clone, Copy, PartialEq, Eq, Hash, EnumIter, Display)]
+/// #[derive(Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
 /// enum Action {
 ///     Run,
 ///     Hide,
