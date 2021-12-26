@@ -23,7 +23,7 @@ Simply add the `InputManagerBundle` to each controllable entity, and customize t
 - Ergonomic insertion API that seamlessly blends multiple input types for you
   - `input_map.insert(Action::Jump, KeyCode::Space)` XOR `input_map.insert(Action::Jump, C)`? Why not both?
 - Full support for arbitrary button combinations: chord your heart out.
-  - `input_map.combo(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
+  - `input_map.insert_chord(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
 - Create an arbitrary number of strongly typed disjoint action sets: decouple your camera and player state.
 - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
 - Leafwing Studio's trademark `#![forbid(missing_docs)]`

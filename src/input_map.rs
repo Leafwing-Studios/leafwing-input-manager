@@ -12,6 +12,38 @@ use multimap::MultiMap;
 /// and each input can be mapped to multiple actions.
 ///
 /// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
+///
+/// # Example
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::input_map::Button;
+/// use derive_more::Display;
+/// use strum_macros::EnumIter;
+///
+/// // You can Run!
+/// #[derive(Clone, Copy, PartialEq, Eq, Hash, EnumIter, Display)]
+/// enum Action {
+///     Run,
+///     Hide,
+/// }
+///
+/// impl Actionlike for Action {}
+///
+/// let mut input_map: InputMap<Action> = InputMap::default();
+///
+/// // Basic insertion
+/// input_map.insert(Action::Run, GamepadButtonType::South);
+/// input_map.insert(Action::Run, MouseButton::Left);
+/// input_map.insert(Action::Run, KeyCode::LShift);
+///
+/// // Combinations!
+/// input_map.insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R]);
+/// input_map.insert_chord(Action::Hide, [Button::Keyboard(KeyCode::H), Button::Gamepad(GamepadButtonType::South), Button::Mouse(MouseButton::Middle)]);
+///
+/// // But you can't Hide :(
+/// input_map.clear(Action::Hide);
+///```
 #[derive(Component, Debug)]
 pub struct InputMap<A: Actionlike> {
     /// The raw [MultiMap] used to store the input mapping
@@ -49,7 +81,7 @@ impl<A: Actionlike> InputMap<A> {
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for input in inputs.clone() {
+        for input in inputs {
             if match input {
                 UserInput::Single(button) => self.button_pressed(
                     *button,
@@ -57,8 +89,8 @@ impl<A: Actionlike> InputMap<A> {
                     keyboard_input_stream,
                     mouse_input_stream,
                 ),
-                UserInput::Combination(buttons) => self.all_buttons_pressed(
-                    &buttons,
+                UserInput::Chord(buttons) => self.all_buttons_pressed(
+                    buttons,
                     gamepad_input_stream,
                     keyboard_input_stream,
                     mouse_input_stream,
@@ -128,14 +160,18 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Existing mappings for that action will not be overwritten.
     /// Any iterator of [Button] can be supplied, but will be converted into a [HashSet] for storage and use.
-    pub fn combo(&mut self, action: A, buttons: impl IntoIterator<Item = Button>) {
+    pub fn insert_chord(
+        &mut self,
+        action: A,
+        buttons: impl IntoIterator<Item = impl Into<Button>>,
+    ) {
         self.map.insert(action, UserInput::combo(buttons));
     }
 
     /// Clears all inputs registered for the `action`
     ///
     /// Returns all previously registered inputs, if any
-    pub fn remove(&mut self, action: A) -> Option<Vec<UserInput>> {
+    pub fn clear(&mut self, action: A) -> Option<Vec<UserInput>> {
         self.map.remove(&action)
     }
 
@@ -167,18 +203,36 @@ pub enum UserInput {
     /// A single button
     Single(Button),
     /// A combination of buttons, pressed simultaneously
-    Combination(HashSet<Button>),
+    Chord(HashSet<Button>),
 }
 
 impl UserInput {
     /// Creates a [UserInput::Combination] from an iterator of [Button]s
-    pub fn combo(buttons: impl IntoIterator<Item = Button>) -> Self {
+    pub fn combo(buttons: impl IntoIterator<Item = impl Into<Button>>) -> Self {
         let mut set: HashSet<Button> = HashSet::default();
         for button in buttons {
-            set.insert(button);
+            set.insert(button.into());
         }
 
-        UserInput::Combination(set)
+        UserInput::Chord(set)
+    }
+}
+
+impl From<GamepadButtonType> for UserInput {
+    fn from(input: GamepadButtonType) -> Self {
+        UserInput::Single(Button::Gamepad(input))
+    }
+}
+
+impl From<KeyCode> for UserInput {
+    fn from(input: KeyCode) -> Self {
+        UserInput::Single(Button::Keyboard(input))
+    }
+}
+
+impl From<MouseButton> for UserInput {
+    fn from(input: MouseButton) -> Self {
+        UserInput::Single(Button::Mouse(input))
     }
 }
 
@@ -201,20 +255,20 @@ pub enum Button {
     Mouse(MouseButton),
 }
 
-impl From<GamepadButtonType> for UserInput {
+impl From<GamepadButtonType> for Button {
     fn from(input: GamepadButtonType) -> Self {
-        UserInput::Single(Button::Gamepad(input))
+        Button::Gamepad(input)
     }
 }
 
-impl From<KeyCode> for UserInput {
+impl From<KeyCode> for Button {
     fn from(input: KeyCode) -> Self {
-        UserInput::Single(Button::Keyboard(input))
+        Button::Keyboard(input)
     }
 }
 
-impl From<MouseButton> for UserInput {
+impl From<MouseButton> for Button {
     fn from(input: MouseButton) -> Self {
-        UserInput::Single(Button::Mouse(input))
+        Button::Mouse(input)
     }
 }

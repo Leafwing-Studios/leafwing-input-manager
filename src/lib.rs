@@ -63,6 +63,9 @@ pub mod prelude {
 
 /// A [Plugin] that collects [Input] from disparate sources, producing an [ActionState] to consume in game logic
 ///
+/// This plugin needs to be passed in an [Actionlike] enum type that you've created for your game,
+/// which acts as a "virtual button" that can be comfortably consumed
+///
 /// Each [InputManagerBundle] contains:
 ///  - an [InputMap] component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
 ///  - an [ActionState] component, which stores the current input state for that entity in an source-agnostic fashion
@@ -89,11 +92,32 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
 
 /// A type that can be used to represent input-agnostic action representation
 ///
+/// Actions serve as "virtual buttons", cleanly abstracting over messy, customizable inputs
+/// in a way that can be easily consumed by your game logic.
+///
 /// This trait should be implemented on the `A` type that you want to pass into [InputManagerPlugin]
 ///
 /// # Example
 /// ```rust
-/// use
+/// use strum_macros::EnumIter;
+/// use leafwing_input_manager::Actionlike;
+///
+/// #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+/// enum PlayerAction {
+///    // Movement
+///    Up,
+///    Down,
+///    Left,
+///    Right,
+///    // Abilities
+///    Ability1,
+///    Ability2,
+///    Ability3,
+///    Ability4,
+///    Ultimate,
+/// }
+/// impl Actionlike for PlayerAction {}
+/// ```
 pub trait Actionlike: Send + Sync + Copy + Eq + Hash + IntoEnumIterator + 'static {}
 
 /// [SystemLabel]s for the [crate::systems] used by this crate
