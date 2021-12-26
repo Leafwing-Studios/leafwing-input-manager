@@ -1,10 +1,12 @@
+//! This module contains [ActionState] and its supporting methods and impls.
+
 use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
-/// Resource that stores the currently and recently pressed actions
+/// Stores the canonical input-method-agnostic representation of the inputs received
 ///
-/// Abstracts over all of the various input methods and bindings
+/// Intended to be used as a [Component] on entities that you wish to control directly from player input.
 #[derive(Component)]
 pub struct ActionState<A: Actionlike> {
     pressed: HashMap<A, bool>,
@@ -80,7 +82,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
-    fn default_map() -> HashMap<A, bool> {
+    pub fn default_map() -> HashMap<A, bool> {
         // PERF: optimize construction through pre-allocation or constification
         let mut map = HashMap::default();
 

@@ -10,7 +10,35 @@ A single action can be triggered by multiple inputs (or set directly by UI eleme
 and a single input can result in multiple actions being triggered, which can be handled contextually.
 
 This library seamlessly supports both single-player and local multiplayer games!
-Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` and `AssociatedGamepad` values appropriately.
+Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` appropriately.
+
+## Features
+
+- Full keyboard, mouse and joystick support for button-like inputs.
+- Store all your input mappings in a single `InputMap` component
+  - No more bespoke `Keybindings<KeyCode>`, `Keybindings<Gamepad>`
+- Look up your current input state in a single `ActionState` component
+  - Easily check player statistics while reading input
+  - A maximum of 16 system parameters got you down? Say goodbye to that input handling mega-system for good
+- Ergonomic insertion API that seamlessly blends multiple input types for you
+  - `input_map.insert(Action::Jump, KeyCode::Space)` XOR `input_map.insert(Action::Jump, C)`? Why not both?
+- Full support for arbitrary button combinations: chord your heart out.
+  - `input_map.combo(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
+- Create an arbitrary number of strongly typed disjoint action sets: decouple your camera and player state.
+- Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
+- Leafwing Studio's trademark `#![forbid(missing_docs)]`
+
+## Limitations
+
+- Only `KeyCode`, `MouseButton` and `GamepadButtonType` are supported due to object-safety limitations on the types stored in `bevy::Input`
+  - Please file an issue if you would like something more exotic!
+- No built-in support for non-button input types.
+  - e.g. gestures, mouse clicks, analogue sticks, touch.
+  - However, all methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
+- Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
+- Still in active development
+  - Many shiny features are missing: check the issue tracker!
+  - Unoptimized: performance has not yet been benchmarked or prioritized.
 
 ## Instructions
 

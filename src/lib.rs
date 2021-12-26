@@ -1,3 +1,45 @@
+#![forbid(missing_docs)]
+//! # About
+//!
+//! A simple but robust input-action manager for Bevy: intended to be useful both as a plugin and a helpful library.
+//!
+//! Inputs from various input sources (keyboard, mouse and gamepad) are collected into a common `ActionState` on your player entity,
+//! which can be conveniently used in your game logic.
+//!
+//! The mapping between inputs and actions is many-to-many, and easily configured and extended with the `InputMap` components on your player entity.
+//! A single action can be triggered by multiple inputs (or set directly by UI elements or gameplay logic),
+//! and a single input can result in multiple actions being triggered, which can be handled contextually.
+//!
+//! This library seamlessly supports both single-player and local multiplayer games!
+//! Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` appropriately.
+//!
+//! ## Features
+//!
+//! - Full keyboard, mouse and joystick support for button-like inputs.
+//! - Store all your input mappings in a single `InputMap` component
+//!   - No more bespoke `Keybindings<KeyCode>`, `Keybindings<Gamepad>`
+//! - Look up your current input state in a single `ActionState` component
+//!   - Easily check player statistics while reading input
+//!   - A maximum of 16 system parameters got you down? Say goodbye to that input handling mega-system for good
+//! - Ergonomic insertion API that seamlessly blends multiple input types for you
+//!   - `input_map.insert(Action::Jump, KeyCode::Space)` XOR `input_map.insert(Action::Jump, C)`? Why not both?
+//! - Full support for arbitrary button combinations: chord your heart out.
+//!   - `input_map.combo(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
+//! - Create an arbitrary number of strongly typed disjoint action sets: decouple your camera and player state.
+//! - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
+//! - Leafwing Studio's trademark `#![forbid(missing_docs)]`
+//!
+//! ## Limitations
+//!
+//! - Only `KeyCode`, `MouseButton` and `GamepadButtonType` are supported due to object-safety limitations on the types stored in `bevy::Input`
+//!   - Please file an issue if you would like something more exotic!
+//! - No built-in support for non-button input types.
+//!   - e.g. gestures, mouse clicks, analogue sticks, touch.
+//!   - However, all methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
+//! - Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
+//! - Still in active development
+//!   - Many shiny features are missing: check the issue tracker!
+//!   - Unoptimized: performance has not yet been benchmarked or prioritized.
 use bevy::input::InputSystem;
 use bevy::prelude::*;
 
@@ -12,6 +54,7 @@ pub mod action_state;
 pub mod input_map;
 pub mod systems;
 
+/// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::ActionState;
     pub use crate::input_map::InputMap;
@@ -21,18 +64,17 @@ pub mod prelude {
 
 /// A [Plugin] that collects [Input] from disparate sources, producing an [ActionState] to consume in game logic
 ///
-/// For each entity with a [PlayerMarker](Self::PlayerMarker) component,
-/// several components are inserted:
-///  - one [InputMap] component for each of [KeyCode], [GamepadButton] and [MouseButton]
-///  - an [ActionState] component, which stores the current input state for that player in an source-agnostic fashion
+/// Each [InputManagerBundle] contains:
+///  - an [InputMap] component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
+///  - an [ActionState] component, which stores the current input state for that entity in an source-agnostic fashion
 ///
 /// ## Systems
 /// - [tick_action_state](systems::tick_action_state), which resets the pressed and just_pressed fields of the [ActionState] each frame
-///     - labeled [InputMapSystem::Reset]
-/// - [update_action_state] and [update_action_state_gamepads], which collects the [Input] from the corresponding input type to update the [ActionState]
-///     - labeled [InputMapSystem::Read]
-/// - [release_action_state], which releases all actions which are not currently pressed by any system
-///     - labeled [InputMapSystem::Release]
+///     - labeled [InputManagerSystem::Reset]
+/// - [update_action_state](systems::update_action_state) which collects [Input] resources to update the [ActionState]
+///     - labeled [InputManagerSystem::Read]
+/// - [release_action_state](systems::release_action_state), which releases all actions which are not currently pressed by any system
+///     - labeled [InputManagerSystem::Release]
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
 }
@@ -54,16 +96,27 @@ pub trait Actionlike:
 {
 }
 
+/// [SystemLabel]s for the [crate::systems] used by this crate
+///
+/// `Reset` -> `Read` -> `Release`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
+    /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
     Reset,
+    /// Gathers input data to update the [ActionState]
     Read,
+    /// Decides whether or not to release an input after all [Input]s have been checked
     Release,
 }
 
+/// This [Bundle] allows entities to collect and interpret inputs from across input sources
+///
+/// Use with [InputManagerPlugin], providing the same enum type to both.
 #[derive(Bundle)]
 pub struct InputManagerBundle<A: Actionlike> {
+    /// An [ActionState] component
     pub action_state: ActionState<A>,
+    /// An [InputMap] component
     pub input_map: InputMap<A>,
 }
 

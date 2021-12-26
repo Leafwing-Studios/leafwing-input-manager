@@ -1,3 +1,5 @@
+//! This module contains [InputMap] and its supporting methods and impls.
+
 use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
@@ -12,6 +14,7 @@ use multimap::MultiMap;
 /// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
 #[derive(Component, Debug)]
 pub struct InputMap<A: Actionlike> {
+    /// The raw [MultiMap] used to store the input mapping
     pub map: MultiMap<A, UserInput>,
     associated_gamepad: Option<Gamepad>,
 }
@@ -161,11 +164,14 @@ impl<A: Actionlike> Default for InputMap<A> {
 /// Suitable for use in an [InputMap]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UserInput {
+    /// A single button
     Single(Button),
+    /// A combination of buttons, pressed simultaneously
     Combination(HashSet<Button>),
 }
 
 impl UserInput {
+    /// Creates a [UserInput::Combination] from an iterator of [Button]s
     pub fn combo(buttons: impl IntoIterator<Item = Button>) -> Self {
         let mut set: HashSet<Button> = HashSet::default();
         for button in buttons {
@@ -187,8 +193,11 @@ impl UserInput {
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Button {
+    /// A button on a gamepad
     Gamepad(GamepadButtonType),
+    /// A button on a keyboard
     Keyboard(KeyCode),
+    /// A button on a mouse
     Mouse(MouseButton),
 }
 
