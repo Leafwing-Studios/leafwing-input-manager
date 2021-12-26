@@ -27,6 +27,7 @@ strum_macros = "0.23"
 
 [dev-dependencies]
 criterion = "0.3"
+bevy = { git = "https://github.com/bevyengine/bevy/", commit = "22c665fa39b16c62272b927db742ea62d67615e8", default-features = true}
 
 [lib]
 name = "leafwing_input_manager"

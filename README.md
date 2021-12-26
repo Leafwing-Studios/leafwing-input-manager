@@ -15,6 +15,8 @@ Simply add the `InputManagerBundle` to each controllable entity, and customize t
 ## Features
 
 - Full keyboard, mouse and joystick support for button-like inputs.
+- Effortlessly wire UI buttons to game state with one simple component!
+  - When clicked, your button will send a virtual button press to the corresponding entity.
 - Store all your input mappings in a single `InputMap` component
   - No more bespoke `Keybindings<KeyCode>`, `Keybindings<Gamepad>`
 - Look up your current input state in a single `ActionState` component
@@ -32,9 +34,8 @@ Simply add the `InputManagerBundle` to each controllable entity, and customize t
 
 - Only `KeyCode`, `MouseButton` and `GamepadButtonType` are supported due to object-safety limitations on the types stored in `bevy::Input`
   - Please file an issue if you would like something more exotic!
-- No built-in support for non-button input types.
-  - e.g. gestures, mouse clicks, analogue sticks, touch.
-  - However, all methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
+- No built-in support for non-button input types (e.g. gestures or analog sticks).
+  - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
 - Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
 - Still in active development
   - Many shiny features are missing: check the issue tracker!

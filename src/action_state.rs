@@ -140,3 +140,14 @@ impl<A: Actionlike> Default for ActionState<A> {
         }
     }
 }
+
+/// A component that allows the attached entity to drive the [ActionState] of the associated entity
+///
+/// Used in [update_action_state_from_interaction](crate::systems::update_action_state_from_interaction).
+#[derive(Component, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ActionStateDriver<A: Actionlike> {
+    /// The action triggered by this entity
+    pub action: A,
+    /// The entity whose action state should be updated
+    pub entity: Entity,
+}

@@ -55,7 +55,7 @@ pub mod systems;
 
 /// Everything you need to get started
 pub mod prelude {
-    pub use crate::action_state::ActionState;
+    pub use crate::action_state::{ActionState, ActionStateDriver};
     pub use crate::input_map::InputMap;
 
     pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
@@ -158,7 +158,8 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
-        app.add_system(
+        app.add_system_to_stage(
+            CoreStage::PreUpdate,
             tick_action_state::<A>
                 .label(InputManagerSystem::Reset)
                 .before(InputManagerSystem::Read),
@@ -169,7 +170,14 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 .label(InputManagerSystem::Read)
                 .after(InputSystem),
         )
-        .add_system(
+        .add_system_to_stage(
+            CoreStage::PreUpdate,
+            update_action_state_from_interaction::<A>
+                .label(InputManagerSystem::Read)
+                .after(InputSystem),
+        )
+        .add_system_to_stage(
+            CoreStage::PreUpdate,
             release_action_state::<A>
                 .label(InputManagerSystem::Release)
                 .after(InputManagerSystem::Read),
