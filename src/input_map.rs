@@ -18,7 +18,6 @@ use multimap::MultiMap;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::input_map::Button;
-/// use derive_more::Display;
 /// use strum_macros::EnumIter;
 ///
 /// // You can Run!
