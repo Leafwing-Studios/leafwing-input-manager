@@ -45,7 +45,6 @@ use bevy::prelude::*;
 
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
-use core::fmt::Display;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use strum::IntoEnumIterator;
@@ -91,10 +90,11 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
 /// A type that can be used to represent input-agnostic action representation
 ///
 /// This trait should be implemented on the `A` type that you want to pass into [InputManagerPlugin]
-pub trait Actionlike:
-    Send + Sync + Copy + Eq + Hash + IntoEnumIterator + Display + 'static
-{
-}
+///
+/// # Example
+/// ```rust
+/// use
+pub trait Actionlike: Send + Sync + Copy + Eq + Hash + IntoEnumIterator + 'static {}
 
 /// [SystemLabel]s for the [crate::systems] used by this crate
 ///

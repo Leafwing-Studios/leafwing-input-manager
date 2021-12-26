@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
-use derive_more::Display;
 use strum_macros::EnumIter;
 
 fn main() {
@@ -12,7 +11,7 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Display, EnumIter)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 enum Action {
     Left,
     Right,
