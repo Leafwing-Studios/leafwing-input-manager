@@ -185,16 +185,138 @@ impl<A: Actionlike> InputMap<A> {
         self.map.insert(action, UserInput::combo(buttons));
     }
 
-    /// Clears all inputs registered for the `action`
+    /// Merges two [InputMap]s, adding both of their bindings to the resulting [InputMap]
+    ///
+    /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
+    pub fn merge(&self, other: &InputMap<A>) -> InputMap<A> {
+        let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
+            self.associated_gamepad
+        } else {
+            None
+        };
+
+        let mut new_map = InputMap {
+            map: MultiMap::default(),
+            associated_gamepad,
+        };
+
+        for action in A::iter() {
+            if let Some(self_bindings) = self.get(action, None) {
+                new_map.insert_multiple(action, self_bindings);
+            }
+
+            if let Some(other_bindings) = other.get(action, None) {
+                new_map.insert_multiple(action, other_bindings);
+            }
+        }
+
+        new_map
+    }
+
+    /// Returns the mapping between the `action` that uses the supplied `input_mode`
+    ///
+    /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
+    ///
+    /// For chords, an input will be returned if any of the contained buttons use that input mode.
+    ///
+    /// A copy of the values are returned, rather than a reference to them.
+    /// Use `self.map.get_vec` or `self.map.get_vec_mut` if you require a reference.
+    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<Vec<UserInput>> {
+        if let Some(full_vec) = self.map.get_vec(&action) {
+            if let Some(input_mode) = input_mode {
+                let mut matching_vec = Vec::default();
+                for input in full_vec {
+                    if input.matches_input_mode(input_mode) {
+                        matching_vec.push(input.clone());
+                    }
+                }
+
+                if matching_vec.is_empty() {
+                    None
+                } else {
+                    Some(matching_vec)
+                }
+            } else {
+                Some(full_vec.clone().to_vec())
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Clears all inputs registered for the `action` that use the supplied `input_mode`
+    ///
+    /// If `input_mode` is `None`, all inputs will be cleared regardless of input mode.
+    ///
+    /// For chords, an input will be removed if any of the contained buttons use that input mode.
     ///
     /// Returns all previously registered inputs, if any
-    pub fn clear(&mut self, action: A) -> Option<Vec<UserInput>> {
-        self.map.remove(&action)
+    pub fn clear_action(
+        &mut self,
+        action: A,
+        input_mode: Option<InputMode>,
+    ) -> Option<Vec<UserInput>> {
+        if let Some(input_mode) = input_mode {
+            // Pull out all the matching inputs
+            if let Some(full_vec) = self.map.remove(&action) {
+                let mut retained_vec = Vec::with_capacity(full_vec.len());
+                let mut removed_vec = Vec::with_capacity(full_vec.len());
+
+                for input in full_vec {
+                    if input.matches_input_mode(input_mode) {
+                        removed_vec.push(input);
+                    } else {
+                        retained_vec.push(input);
+                    }
+                }
+
+                // Put back the ones that didn't match
+                self.insert_multiple(action, retained_vec);
+
+                // Return the items that matched
+                if removed_vec.is_empty() {
+                    None
+                } else {
+                    Some(removed_vec)
+                }
+            } else {
+                None
+            }
+        } else {
+            self.map.remove(&action)
+        }
+    }
+
+    /// Clears all inputs that use the supplied `input_mode`
+    ///
+    /// If `input_mode` is `None`, all inputs will be cleared regardless of input mode.
+    ///
+    /// For chords, an input will be removed if any of the contained buttons use that input mode.
+    ///
+    /// Returns the subset of the action map that was removed
+    pub fn clear_input_mode(&mut self, input_mode: Option<InputMode>) -> InputMap<A> {
+        let mut cleared_input_map = InputMap {
+            map: MultiMap::default(),
+            associated_gamepad: self.associated_gamepad,
+        };
+
+        for action in A::iter() {
+            if let Some(removed_inputs) = self.clear_action(action, input_mode) {
+                cleared_input_map.insert_multiple(action, removed_inputs);
+            }
+        }
+
+        cleared_input_map
     }
 
     /// Assigns a particular [Gamepad] to the entity controlled by this input map
     pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
         self.associated_gamepad = Some(gamepad);
+    }
+
+    /// Clears any [Gamepad] associated with the entity controlled by this input map
+    pub fn clear_gamepad(&mut self) {
+        self.associated_gamepad = None;
     }
 
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
@@ -225,7 +347,7 @@ pub enum UserInput {
 }
 
 impl UserInput {
-    /// Creates a [UserInput::Combination] from an iterator of [Button]s
+    /// Creates a [UserInput::Chord] from an iterator of [Button]s
     pub fn combo(buttons: impl IntoIterator<Item = impl Into<Button>>) -> Self {
         let mut set: SmallSet<Button, 8> = SmallSet::new();
         for button in buttons {
@@ -233,6 +355,27 @@ impl UserInput {
         }
 
         UserInput::Chord(set)
+    }
+
+    /// Does this [UserInput] match the provided [InputMode]?
+    ///
+    /// For [UserInput::Chord], this will be true if any of the buttons in the combination match.
+    pub fn matches_input_mode(&self, input_mode: InputMode) -> bool {
+        match self {
+            UserInput::Single(button) => {
+                let button_mode: InputMode = (*button).into();
+                button_mode == input_mode
+            }
+            UserInput::Chord(set) => {
+                for button in set.clone() {
+                    let button_mode: InputMode = button.into();
+                    if button_mode == input_mode {
+                        return true;
+                    }
+                }
+                false
+            }
+        }
     }
 }
 
@@ -256,7 +399,37 @@ impl From<MouseButton> for UserInput {
 
 /// A button-like input type
 ///
-/// Commonly stored in the [UserInput] enum.
+/// See [Button] for the value-ful equivalent.
+/// Use the [From] or [Into] traits to convert from a [Button] to a [InputMode].
+///
+/// Unfortunately we cannot use a trait object here, as the types used by `Input`
+/// require traits that are not object-safe.
+///
+/// Please contact the maintainers if you need support for another type!
+#[non_exhaustive]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum InputMode {
+    /// A gamepad
+    Gamepad,
+    /// A keyboard
+    Keyboard,
+    /// A mouse
+    Mouse,
+}
+
+impl From<Button> for InputMode {
+    fn from(button: Button) -> Self {
+        match button {
+            Button::Gamepad(_) => InputMode::Gamepad,
+            Button::Keyboard(_) => InputMode::Keyboard,
+            Button::Mouse(_) => InputMode::Mouse,
+        }
+    }
+}
+
+/// The values of a button-like input type
+///
+/// See [InputMode] for the value-less equivalent. Commonly stored in the [UserInput] enum.
 ///
 /// Unfortunately we cannot use a trait object here, as the types used by `Input`
 /// require traits that are not object-safe.
