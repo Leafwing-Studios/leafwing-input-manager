@@ -1,8 +1,8 @@
 //! This module contains [InputMap] and its supporting methods and impls.
 
+use crate::smallset::SmallSet;
 use crate::Actionlike;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
 use core::fmt::Debug;
 use multimap::MultiMap;
 
@@ -129,12 +129,12 @@ impl<A: Actionlike> InputMap<A> {
     /// Are all of the `buttons` pressed?
     pub fn all_buttons_pressed(
         &self,
-        buttons: &HashSet<Button>,
+        buttons: &SmallSet<Button, 8>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for &button in buttons {
+        for button in buttons.clone() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(
                 button,
@@ -217,18 +217,19 @@ impl<A: Actionlike> Default for InputMap<A> {
 /// Some combination of user input, which may cross [Input] boundaries
 ///
 /// Suitable for use in an [InputMap]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum UserInput {
     /// A single button
     Single(Button),
     /// A combination of buttons, pressed simultaneously
-    Chord(HashSet<Button>),
+    /// Up to 8 (!!) buttons can be chorded together at once
+    Chord(SmallSet<Button, 8>),
 }
 
 impl UserInput {
     /// Creates a [UserInput::Combination] from an iterator of [Button]s
     pub fn combo(buttons: impl IntoIterator<Item = impl Into<Button>>) -> Self {
-        let mut set: HashSet<Button> = HashSet::default();
+        let mut set: SmallSet<Button, 8> = SmallSet::new();
         for button in buttons {
             set.insert(button.into());
         }

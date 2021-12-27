@@ -51,6 +51,7 @@ use strum::IntoEnumIterator;
 
 pub mod action_state;
 pub mod input_map;
+pub mod smallset;
 pub mod systems;
 
 /// Everything you need to get started

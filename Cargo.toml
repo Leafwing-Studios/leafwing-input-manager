@@ -18,7 +18,8 @@ opt-level = 3
 members = ["./", "tools/ci"]
 
 [dependencies]
-bevy = { git = "https://github.com/bevyengine/bevy/", commit = "22c665fa39b16c62272b927db742ea62d67615e8", default-features = false}
+arrayvec = "0.7.2"
+bevy = { git = "https://github.com/bevyengine/bevy/", commit = "22c665fa39b16c62272b927db742ea62d67615e8", default-features = false, features = ["render"]}
 downcast-rs = "1.2.0"
 multimap = "0.8"
 strum = "0.23"
