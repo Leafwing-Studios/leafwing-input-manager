@@ -11,14 +11,12 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 enum Action {
     Left,
     Right,
     Jump,
 }
-
-impl Actionlike for Action {}
 
 #[derive(Component)]
 enum Player {

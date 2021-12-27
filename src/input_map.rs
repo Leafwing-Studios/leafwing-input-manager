@@ -21,13 +21,11 @@ use multimap::MultiMap;
 /// use strum_macros::EnumIter;
 ///
 /// // You can Run!
-/// #[derive(Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
 /// enum Action {
 ///     Run,
 ///     Hide,
 /// }
-///
-/// impl Actionlike for Action {}
 ///
 /// let mut input_map: InputMap<Action> = InputMap::default();
 ///

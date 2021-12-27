@@ -15,7 +15,7 @@ exclude = ["assets/**/*", "tools/**/*", "github/**/*"]
 opt-level = 3
 
 [workspace]
-members = ["./", "tools/ci"]
+members = ["./", "tools/ci", "macros"]
 
 [dependencies]
 arrayvec = "0.7.2"
@@ -24,6 +24,7 @@ downcast-rs = "1.2.0"
 multimap = "0.8"
 strum = "0.23"
 strum_macros = "0.23"
+leafwing_input_manager_macros = { path = "macros" }
 
 [dev-dependencies]
 criterion = "0.3"

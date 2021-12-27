@@ -53,6 +53,8 @@ pub mod action_state;
 pub mod input_map;
 pub mod smallset;
 pub mod systems;
+// Importing the derive macro
+pub use leafwing_input_manager_macros::Actionlike;
 
 /// Everything you need to get started
 pub mod prelude {
@@ -104,9 +106,9 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
 /// # Example
 /// ```rust
 /// use strum_macros::EnumIter;
-/// use leafwing_input_manager::Actionlike;
+/// use leafwing_input_manager::{Actionlike, };
 ///
-/// #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Up,
@@ -120,7 +122,6 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
 ///    Ability4,
 ///    Ultimate,
 /// }
-/// impl Actionlike for PlayerAction {}
 /// ```
 pub trait Actionlike: Send + Sync + Copy + Eq + Hash + IntoEnumIterator + 'static {}
 

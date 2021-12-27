@@ -14,13 +14,11 @@ fn main() {
         .run();
 }
 
-#[derive(Component, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+#[derive(Actionlike, Component, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 enum Action {
     Left,
     Right,
 }
-
-impl Actionlike for Action {}
 
 #[derive(Component)]
 struct Player;

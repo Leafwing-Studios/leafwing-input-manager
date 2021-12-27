@@ -10,17 +10,15 @@ use bevy::utils::HashMap;
 ///
 /// # Example
 /// ```rust
-/// use leafwing_input_manager::{Actionlike, action_state::ActionState};
+/// use leafwing_input_manager::prelude::*;
 /// use strum_macros::EnumIter;
 ///
-/// #[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 /// enum Action {
 ///     Left,
 ///     Right,
 ///     Jump,
 /// }
-///
-/// impl Actionlike for Action {}
 ///
 /// let mut action_state = ActionState::<Action>::default();
 ///

@@ -22,7 +22,7 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 enum Action {
     // Movement
     Up,
@@ -36,9 +36,6 @@ enum Action {
     Ability4,
     Ultimate,
 }
-
-// We need to implement this trait (and meet its bounds) in order to use our enum as an A
-impl Actionlike for Action {}
 
 impl Action {
     // Lists like this can be very useful for quickly matching subsets of actions
