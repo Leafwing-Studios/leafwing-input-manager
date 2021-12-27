@@ -142,6 +142,16 @@ impl<T: PartialEq + Clone, const CAP: usize> IntoIterator for SmallSet<T, CAP> {
     }
 }
 
+impl<T: PartialEq + Clone, const CAP: usize> FromIterator<T> for SmallSet<T, CAP> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut set: SmallSet<T, CAP> = SmallSet::new();
+        for element in iter {
+            set.insert(element);
+        }
+        set
+    }
+}
+
 impl<T: PartialEq + Clone, const CAP: usize> PartialEq for SmallSet<T, CAP> {
     /// Uses an inefficient O(n^2) approach to avoid introducing additional trait bounds
     fn eq(&self, other: &Self) -> bool {
