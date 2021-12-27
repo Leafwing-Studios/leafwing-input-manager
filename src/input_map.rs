@@ -3,8 +3,8 @@
 use crate::smallset::SmallSet;
 use crate::Actionlike;
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use core::fmt::Debug;
-use multimap::MultiMap;
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
@@ -44,8 +44,8 @@ use multimap::MultiMap;
 ///```
 #[derive(Component, Debug)]
 pub struct InputMap<A: Actionlike> {
-    /// The raw [MultiMap] used to store the input mapping
-    pub map: MultiMap<A, UserInput>,
+    /// The raw [HashMap] [SmallSet] used to store the input mapping
+    pub map: HashMap<A, SmallSet<UserInput, 32>>,
     associated_gamepad: Option<Gamepad>,
 }
 
@@ -58,7 +58,7 @@ impl<A: Actionlike> InputMap<A> {
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        if let Some(matching_inputs) = self.map.get_vec(&action) {
+        if let Some(matching_inputs) = self.map.get(&action) {
             self.any_pressed(
                 matching_inputs,
                 gamepad_input_stream,
@@ -74,21 +74,21 @@ impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the `inputs` pressed?
     pub fn any_pressed(
         &self,
-        inputs: &[UserInput],
+        inputs: &SmallSet<UserInput, 32>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for input in inputs {
+        for input in inputs.clone() {
             if match input {
                 UserInput::Single(button) => self.button_pressed(
-                    *button,
+                    button,
                     gamepad_input_stream,
                     keyboard_input_stream,
                     mouse_input_stream,
                 ),
                 UserInput::Chord(buttons) => self.all_buttons_pressed(
-                    buttons,
+                    &buttons,
                     gamepad_input_stream,
                     keyboard_input_stream,
                     mouse_input_stream,
@@ -151,7 +151,13 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Existing mappings for that action will not be overwritten.
     pub fn insert(&mut self, action: A, input: impl Into<UserInput>) {
-        self.map.insert(action, input.into());
+        if let Some(existing_set) = self.map.get_mut(&action) {
+            existing_set.insert(input.into());
+        } else {
+            let mut new_set = SmallSet::new();
+            new_set.insert(input.into());
+            self.map.insert(action, new_set);
+        }
     }
 
     /// Insert a mapping between `action` and the provided `inputs`
@@ -167,7 +173,7 @@ impl<A: Actionlike> InputMap<A> {
         inputs: impl IntoIterator<Item = impl Into<UserInput>>,
     ) {
         for input in inputs {
-            self.map.insert(action, input.into());
+            self.insert(action, input);
         }
     }
 
@@ -182,7 +188,7 @@ impl<A: Actionlike> InputMap<A> {
         action: A,
         buttons: impl IntoIterator<Item = impl Into<Button>>,
     ) {
-        self.map.insert(action, UserInput::combo(buttons));
+        self.insert(action, UserInput::combo(buttons));
     }
 
     /// Merges two [InputMap]s, adding both of their bindings to the resulting [InputMap]
@@ -196,7 +202,7 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         let mut new_map = InputMap {
-            map: MultiMap::default(),
+            map: HashMap::default(),
             associated_gamepad,
         };
 
@@ -220,24 +226,24 @@ impl<A: Actionlike> InputMap<A> {
     /// For chords, an input will be returned if any of the contained buttons use that input mode.
     ///
     /// A copy of the values are returned, rather than a reference to them.
-    /// Use `self.map.get_vec` or `self.map.get_vec_mut` if you require a reference.
-    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<Vec<UserInput>> {
-        if let Some(full_vec) = self.map.get_vec(&action) {
+    /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
+    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<SmallSet<UserInput, 32>> {
+        if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
-                let mut matching_vec = Vec::default();
-                for input in full_vec {
+                let mut matching_set = SmallSet::new();
+                for input in full_set.clone() {
                     if input.matches_input_mode(input_mode) {
-                        matching_vec.push(input.clone());
+                        matching_set.insert(input.clone());
                     }
                 }
 
-                if matching_vec.is_empty() {
+                if matching_set.is_empty() {
                     None
                 } else {
-                    Some(matching_vec)
+                    Some(matching_set)
                 }
             } else {
-                Some(full_vec.clone().to_vec())
+                Some(full_set.clone())
             }
         } else {
             None
@@ -255,29 +261,29 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         action: A,
         input_mode: Option<InputMode>,
-    ) -> Option<Vec<UserInput>> {
+    ) -> Option<SmallSet<UserInput, 32>> {
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
-            if let Some(full_vec) = self.map.remove(&action) {
-                let mut retained_vec = Vec::with_capacity(full_vec.len());
-                let mut removed_vec = Vec::with_capacity(full_vec.len());
+            if let Some(full_set) = self.map.remove(&action) {
+                let mut retained_set: SmallSet<UserInput, 32> = SmallSet::new();
+                let mut removed_set: SmallSet<UserInput, 32> = SmallSet::new();
 
-                for input in full_vec {
+                for input in full_set {
                     if input.matches_input_mode(input_mode) {
-                        removed_vec.push(input);
+                        removed_set.insert(input);
                     } else {
-                        retained_vec.push(input);
+                        retained_set.insert(input);
                     }
                 }
 
                 // Put back the ones that didn't match
-                self.insert_multiple(action, retained_vec);
+                self.insert_multiple(action, retained_set);
 
                 // Return the items that matched
-                if removed_vec.is_empty() {
+                if removed_set.is_empty() {
                     None
                 } else {
-                    Some(removed_vec)
+                    Some(removed_set)
                 }
             } else {
                 None
@@ -296,7 +302,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns the subset of the action map that was removed
     pub fn clear_input_mode(&mut self, input_mode: Option<InputMode>) -> InputMap<A> {
         let mut cleared_input_map = InputMap {
-            map: MultiMap::default(),
+            map: HashMap::default(),
             associated_gamepad: self.associated_gamepad,
         };
 
@@ -328,7 +334,7 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         Self {
-            map: MultiMap::default(),
+            map: HashMap::default(),
             associated_gamepad: None,
         }
     }
