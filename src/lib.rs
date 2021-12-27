@@ -1,4 +1,8 @@
-#![forbid(missing_docs)]
+// I am deeply sorry for the false advertising;
+// we are currently blocked on https://github.com/rust-lang/rust-clippy/issues/8180 :(
+// However! CI will fail if any warnings are detected, so full documentation is in fact enforced.
+#![warn(missing_docs)]
+
 //! # About
 //!
 //! A simple but robust input-action manager for Bevy: intended to be useful both as a plugin and a helpful library.
