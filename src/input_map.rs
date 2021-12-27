@@ -13,6 +13,10 @@ use core::fmt::Debug;
 ///
 /// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
 ///
+/// A maximum of 32(!) bindings can be registered to each action.
+/// If there is any chance of hitting this limit,
+/// check the current number registered using the [n_registered](Self::n_registered) method.
+///
 /// # Example
 /// ```rust
 /// use bevy::prelude::*;
@@ -51,6 +55,7 @@ pub struct InputMap<A: Actionlike> {
 
 impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` stream?
+    #[must_use]
     pub fn pressed(
         &self,
         action: A,
@@ -72,6 +77,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Is at least one of the `inputs` pressed?
+    #[must_use]
     pub fn any_pressed(
         &self,
         inputs: &SmallSet<UserInput, 32>,
@@ -103,6 +109,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Is the `button` pressed?
+    #[must_use]
     pub fn button_pressed(
         &self,
         button: Button,
@@ -125,6 +132,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Are all of the `buttons` pressed?
+    #[must_use]
     pub fn all_buttons_pressed(
         &self,
         buttons: &SmallSet<Button, 8>,
@@ -194,6 +202,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Merges two [InputMap]s, adding both of their bindings to the resulting [InputMap]
     ///
     /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
+    #[must_use]
     pub fn merge(&self, other: &InputMap<A>) -> InputMap<A> {
         let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
             self.associated_gamepad
@@ -219,6 +228,19 @@ impl<A: Actionlike> InputMap<A> {
         new_map
     }
 
+    /// Returns how many bindings are currently registered for the provided action
+    ///
+    /// A maximum of 32 bindings across all input modes can be stored for each action,
+    /// and insert operations will panic if used when 32 bindings already exist.
+    #[must_use]
+    pub fn n_registered(&self, action: A) -> usize {
+        if let Some(set) = self.get(action, None) {
+            set.len()
+        } else {
+            0
+        }
+    }
+
     /// Returns the mapping between the `action` that uses the supplied `input_mode`
     ///
     /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
@@ -227,6 +249,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// A copy of the values are returned, rather than a reference to them.
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
+    #[must_use]
     pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<SmallSet<UserInput, 32>> {
         if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
@@ -300,6 +323,7 @@ impl<A: Actionlike> InputMap<A> {
     /// For chords, an input will be removed if any of the contained buttons use that input mode.
     ///
     /// Returns the subset of the action map that was removed
+    #[allow(clippy::return_self_not_must_use)]
     pub fn clear_input_mode(&mut self, input_mode: Option<InputMode>) -> InputMap<A> {
         let mut cleared_input_map = InputMap {
             map: HashMap::default(),
@@ -326,6 +350,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
+    #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
         self.associated_gamepad
     }

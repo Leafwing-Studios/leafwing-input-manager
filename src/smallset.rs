@@ -24,6 +24,7 @@ impl<T: PartialEq + Clone, const CAP: usize> SmallSet<T, CAP> {
     /// Create a new empty [SmallSet]
     ///
     /// The capacity is given by the generic parameter `CAP`.
+    #[must_use]
     pub fn new() -> Self {
         SmallSet {
             storage: ArrayVec::new(),
@@ -64,6 +65,7 @@ impl<T: PartialEq + Clone, const CAP: usize> SmallSet<T, CAP> {
     }
 
     /// Checks if the provided element is in the set
+    #[must_use]
     pub fn contains(self, element: &T) -> bool {
         for existing_element in self.storage.iter() {
             if *element == *existing_element {
@@ -76,6 +78,7 @@ impl<T: PartialEq + Clone, const CAP: usize> SmallSet<T, CAP> {
     /// Attempt to get a reference to the provided element from the set
     ///
     /// Returns `Some(&T)` to the first matching element found, or `None` if no matching element is found
+    #[must_use]
     pub fn get_mut(&mut self, element: &T) -> Option<&mut T> {
         for existing_element in self.storage.iter_mut() {
             if *element == *existing_element {
@@ -107,16 +110,19 @@ impl<T: PartialEq + Clone, const CAP: usize> SmallSet<T, CAP> {
     }
 
     /// Returns the current number of elements in the [SmallSet]
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.storage.len() == 0
     }
 
     /// Returns the current number of elements in the [SmallSet]
+    #[must_use]
     pub fn len(&self) -> usize {
         self.storage.len()
     }
 
     /// Return the capacity of the [SmallSet]
+    #[must_use]
     pub fn capacity(&self) -> usize {
         CAP
     }

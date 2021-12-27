@@ -86,11 +86,13 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Is this `action` currently pressed?
+    #[must_use]
     pub fn pressed(&self, action: A) -> bool {
         *self.pressed.get(&action).unwrap()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    #[must_use]
     pub fn just_pressed(&self, action: A) -> bool {
         *self.just_pressed.get(&action).unwrap()
     }
@@ -98,11 +100,13 @@ impl<A: Actionlike> ActionState<A> {
     /// Is this `action` currently released?
     ///
     /// This is always the logical negation of [pressed](ActionState::pressed)
+    #[must_use]
     pub fn released(&self, action: A) -> bool {
         !*self.pressed.get(&action).unwrap()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    #[must_use]
     pub fn just_released(&self, action: A) -> bool {
         *self.just_released.get(&action).unwrap()
     }
@@ -117,6 +121,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
+    #[must_use]
     pub fn default_map() -> HashMap<A, bool> {
         // PERF: optimize construction through pre-allocation or constification
         let mut map = HashMap::default();
