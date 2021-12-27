@@ -37,9 +37,6 @@ Simply add the `InputManagerBundle` to each controllable entity, and customize t
 - No built-in support for non-button input types (e.g. gestures or analog sticks).
   - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
 - Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
-- Still in active development
-  - Many shiny features are missing: check the issue tracker!
-  - Unoptimized: performance has not yet been benchmarked or prioritized.
 
 ## Instructions
 
