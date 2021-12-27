@@ -44,7 +44,7 @@ use core::fmt::Debug;
 /// input_map.insert_chord(Action::Hide, [Button::Keyboard(KeyCode::H), Button::Gamepad(GamepadButtonType::South), Button::Mouse(MouseButton::Middle)]);
 ///
 /// // But you can't Hide :(
-/// input_map.clear(Action::Hide);
+/// input_map.clear_action(Action::Hide);
 ///```
 #[derive(Component, Debug)]
 pub struct InputMap<A: Actionlike> {
