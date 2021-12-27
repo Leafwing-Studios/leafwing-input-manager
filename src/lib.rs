@@ -16,30 +16,29 @@
 //! ## Features
 //!
 //! - Full keyboard, mouse and joystick support for button-like inputs.
+//! - Effortlessly wire UI buttons to game state with one simple component!
+//!   - When clicked, your button will send a virtual button press to the corresponding entity.
 //! - Store all your input mappings in a single `InputMap` component
-//!   - No more bespoke `Keybindings<KeyCode>`, `Keybindings<Gamepad>`
+//!   - No more bespoke `Keybindings<KeyCode>`, `Keybindings<Gamepad>` headaches
 //! - Look up your current input state in a single `ActionState` component
 //!   - Easily check player statistics while reading input
-//!   - A maximum of 16 system parameters got you down? Say goodbye to that input handling mega-system for good
+//!   - That pesky maximum of 16 system parameters got you down? Say goodbye to that input handling mega-system
 //! - Ergonomic insertion API that seamlessly blends multiple input types for you
 //!   - `input_map.insert(Action::Jump, KeyCode::Space)` XOR `input_map.insert(Action::Jump, C)`? Why not both?
 //! - Full support for arbitrary button combinations: chord your heart out.
-//!   - `input_map.combo(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
+//!   - `input_map.insert_chord(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
 //! - Create an arbitrary number of strongly typed disjoint action sets: decouple your camera and player state.
 //! - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
 //! - Leafwing Studio's trademark `#![forbid(missing_docs)]`
 //!
 //! ## Limitations
 //!
-//! - Only `KeyCode`, `MouseButton` and `GamepadButtonType` are supported due to object-safety limitations on the types stored in `bevy::Input`
+//! - The `Button` enum only includes `KeyCode`, `MouseButton` and `GamepadButtonType`.
+//!   - This is due to object-safety limitations on the types stored in `bevy::input::Input`
 //!   - Please file an issue if you would like something more exotic!
-//! - No built-in support for non-button input types.
-//!   - e.g. gestures, mouse clicks, analogue sticks, touch.
-//!   - However, all methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
+//! - No built-in support for non-button input types (e.g. gestures or analog sticks).
+//!   - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
 //! - Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
-//! - Still in active development
-//!   - Many shiny features are missing: check the issue tracker!
-//!   - Unoptimized: performance has not yet been benchmarked or prioritized.
 use bevy::input::InputSystem;
 use bevy::prelude::*;
 
