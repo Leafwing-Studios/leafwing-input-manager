@@ -38,7 +38,7 @@ impl<T: PartialEq + Clone, const CAP: usize> SmallSet<T, CAP> {
         // Always insert
         if let Err(InsertionError::Overfull) = self.try_insert(element) {
             // But panic if the set was full
-            panic!("Set was full before insertion!")
+            panic!("Inserting this element would have overflowed the set!")
         }
     }
 
@@ -46,14 +46,14 @@ impl<T: PartialEq + Clone, const CAP: usize> SmallSet<T, CAP> {
     ///
     /// Returns Ok if this succeeds, or an error if this failed due to either capacity or a duplicate entry.
     pub fn try_insert(&mut self, element: T) -> Result<(), InsertionError> {
-        if self.len() == self.capacity() {
-            return Err(InsertionError::Overfull);
-        }
-
         for existing_element in self.storage.iter() {
             if element == *existing_element {
                 return Err(InsertionError::Duplicate);
             }
+        }
+
+        if self.len() == self.capacity() {
+            return Err(InsertionError::Overfull);
         }
 
         // SAFE: capacity was just checked, and capacity of storage and self always match
