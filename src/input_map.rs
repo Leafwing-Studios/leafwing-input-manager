@@ -15,10 +15,8 @@ use strum_macros::EnumIter;
 ///
 /// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
 ///
-/// You can configure the maximum number of bindings (total) that can be stored for each action
-/// by setting the value of the CAP const generic.
-/// By default, this is a very generous 16.
-/// Insertions will silently fail if you have reached this cap for the specific action you are attempting to insert bindings for.
+/// The maximum number of bindings (total) that can be stored for each action is 16.
+/// Insertions will silently fail if you have reached this cap.
 ///
 /// In addition, you can configure the per-mode cap for each [InputMode] using [InputMap::new] or [InputMap::set_per_mode_cap].
 /// This can be useful if your UI can only display one or two possible keybindings for each input mode.
@@ -53,14 +51,14 @@ use strum_macros::EnumIter;
 /// input_map.clear_action(Action::Hide, None);
 ///```
 #[derive(Component, Debug, PartialEq, Clone)]
-pub struct InputMap<A: Actionlike, const CAP: usize = 16> {
+pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] [ArraySet] used to store the input mapping
-    pub map: HashMap<A, ArraySet<UserInput, CAP>>,
+    pub map: HashMap<A, ArraySet<UserInput, 16>>,
     per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
 }
 
-impl<A: Actionlike, const CAP: usize> Default for InputMap<A, CAP> {
+impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         Self {
             map: HashMap::default(),
@@ -71,7 +69,7 @@ impl<A: Actionlike, const CAP: usize> Default for InputMap<A, CAP> {
 }
 
 // Constructors
-impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+impl<A: Actionlike> InputMap<A> {
     /// Creates a new empty [InputMap]
     ///
     /// The `per_mode_cap` controls the maximum number of inputs of each [InputMode] that can be stored.
@@ -90,7 +88,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 }
 
 // Check whether buttons are pressed
-impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` stream?
     #[must_use]
     pub fn pressed(
@@ -117,7 +115,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     #[must_use]
     pub fn any_pressed(
         &self,
-        inputs: &ArraySet<UserInput, CAP>,
+        inputs: &ArraySet<UserInput, 16>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
@@ -195,7 +193,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 }
 
 // Utilities
-impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+impl<A: Actionlike> InputMap<A> {
     /// Returns the mapping between the `action` that uses the supplied `input_mode`
     ///
     /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
@@ -206,11 +204,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     /// The order of these values is stable, in a first-in, first-out fashion.
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
     #[must_use]
-    pub fn get(
-        &self,
-        action: A,
-        input_mode: Option<InputMode>,
-    ) -> Option<ArraySet<UserInput, CAP>> {
+    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<ArraySet<UserInput, 16>> {
         if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
                 let mut matching_set = ArraySet::default();
@@ -250,7 +244,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 }
 
 // Insertion
-impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+impl<A: Actionlike> InputMap<A> {
     /// Insert a mapping between `action` and `input`
     ///
     /// Existing mappings for that action will not be overwritten.
@@ -264,7 +258,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         }
 
         // Don't overflow the set!
-        if self.n_registered(action, None) >= CAP {
+        if self.n_registered(action, None) >= 16 {
             return;
         }
 
@@ -324,10 +318,10 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         &mut self,
         action: A,
         input: impl Into<UserInput>,
-    ) -> Option<ArraySet<UserInput, CAP>> {
+    ) -> Option<ArraySet<UserInput, 16>> {
         let input = input.into();
 
-        let mut old_inputs: ArraySet<UserInput, CAP> = ArraySet::default();
+        let mut old_inputs: ArraySet<UserInput, 16> = ArraySet::default();
         for input_mode in input.input_modes() {
             if let Some(removed_inputs) = self.clear_action(action, Some(input_mode)) {
                 for removed_input in removed_inputs {
@@ -399,7 +393,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 }
 
 // Clearing
-impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+impl<A: Actionlike> InputMap<A> {
     /// Clears all inputs registered for the `action` that use the supplied `input_mode`
     ///
     /// If `input_mode` is `None`, all inputs will be cleared regardless of input mode.
@@ -411,12 +405,12 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         &mut self,
         action: A,
         input_mode: Option<InputMode>,
-    ) -> Option<ArraySet<UserInput, CAP>> {
+    ) -> Option<ArraySet<UserInput, 16>> {
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
             if let Some(full_set) = self.map.remove(&action) {
-                let mut retained_set: ArraySet<UserInput, CAP> = ArraySet::default();
-                let mut removed_set: ArraySet<UserInput, CAP> = ArraySet::default();
+                let mut retained_set: ArraySet<UserInput, 16> = ArraySet::default();
+                let mut removed_set: ArraySet<UserInput, 16> = ArraySet::default();
 
                 for input in full_set {
                     if input.matches_input_mode(input_mode) {
@@ -499,7 +493,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 }
 
 // Per-mode cap
-impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+impl<A: Actionlike> InputMap<A> {
     /// Returns the per-[InputMode] cap on input bindings for every action
     ///
     /// Each individual action can have at most this many bindings, making them easier to display and configure.
@@ -520,7 +514,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     ///
     /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
     pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
-        assert!(3 * per_mode_cap <= CAP);
+        assert!(3 * per_mode_cap <= 16);
 
         if per_mode_cap == 0 {
             self.per_mode_cap = None;
@@ -552,7 +546,7 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 }
 
 // Gamepads
-impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+impl<A: Actionlike> InputMap<A> {
     /// Assigns a particular [Gamepad] to the entity controlled by this input map
     pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
         self.associated_gamepad = Some(gamepad);
