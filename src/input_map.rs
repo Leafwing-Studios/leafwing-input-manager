@@ -13,10 +13,10 @@ use core::fmt::Debug;
 ///
 /// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
 ///
-/// You can configure the maximum number of bindings (total) that can be stored for each action.
-/// By default, this is a very generous 32.
-/// If there is any chance of hitting this limit,
-/// check the current number registered using the [n_registered](Self::n_registered) method.
+/// You can configure the maximum number of bindings (total) that can be stored for each action
+/// by setting the value of the CAP const generic.
+/// By default, this is a very generous 16.
+/// Insertions will silently fail if you have reached this cap for the specific action you are attempting to insert bindings for.
 ///
 /// # Example
 /// ```rust
@@ -48,7 +48,7 @@ use core::fmt::Debug;
 /// input_map.clear_action(Action::Hide, None);
 ///```
 #[derive(Component, Debug, PartialEq, Clone)]
-pub struct InputMap<A: Actionlike, const CAP: usize = 32> {
+pub struct InputMap<A: Actionlike, const CAP: usize = 16> {
     /// The raw [HashMap] [SmallSet] used to store the input mapping
     pub map: HashMap<A, SmallSet<UserInput, CAP>>,
     associated_gamepad: Option<Gamepad>,
@@ -160,11 +160,17 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     /// Insert a mapping between `action` and `input`
     ///
     /// Existing mappings for that action will not be overwritten.
+    /// If the set for this action is already full, this insertion will silently fail.
     pub fn insert(&mut self, action: A, input: impl Into<UserInput>) {
         let input = input.into();
 
         // Don't insert Null inputs into the map
         if input == UserInput::Null {
+            return;
+        }
+
+        // Don't overflow the set!
+        if self.n_registered(action) >= CAP {
             return;
         }
 
@@ -215,10 +221,10 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         &mut self,
         action: A,
         input: impl Into<UserInput>,
-    ) -> Option<SmallSet<UserInput, 32>> {
+    ) -> Option<SmallSet<UserInput, CAP>> {
         let input = input.into();
 
-        let mut old_inputs: SmallSet<UserInput, 32> = SmallSet::new();
+        let mut old_inputs: SmallSet<UserInput, CAP> = SmallSet::new();
         for input_mode in input.input_modes() {
             if let Some(removed_inputs) = self.clear_action(action, Some(input_mode)) {
                 for removed_input in removed_inputs {
@@ -265,8 +271,8 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 
     /// Returns how many bindings are currently registered for the provided action
     ///
-    /// A maximum of 32 bindings across all input modes can be stored for each action,
-    /// and insert operations will panic if used when 32 bindings already exist.
+    /// A maximum of `CAP` bindings across all input modes can be stored for each action,
+    /// and insert operations will silently fail if used when `CAP` bindings already exist.
     #[must_use]
     pub fn n_registered(&self, action: A) -> usize {
         if let Some(set) = self.get(action, None) {
