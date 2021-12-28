@@ -135,10 +135,10 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
         removed
     }
 
-    /// Are there exactly 0 elements in the [ArraySet]?
+    /// Return the capacity of the [ArraySet]
     #[must_use]
-    pub fn is_empty(&self) -> bool {
-        self.storage.len() == 0
+    pub fn capacity(&self) -> usize {
+        CAP
     }
 
     /// Returns the current number of elements in the [ArraySet]
@@ -147,10 +147,10 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
         self.storage.len()
     }
 
-    /// Return the capacity of the [ArraySet]
+    /// Are there exactly 0 elements in the [ArraySet]?
     #[must_use]
-    pub fn capacity(&self) -> usize {
-        CAP
+    pub fn is_empty(&self) -> bool {
+        self.storage.len() == 0
     }
 
     /// Removes all elements from the set without allocation
