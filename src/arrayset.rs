@@ -164,7 +164,7 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
     /// Returns the current number of elements in the [ArraySet]
     #[must_use]
     pub fn len(&self) -> usize {
-        self.storage.len()
+        self.storage.iter().filter(|e| e.is_some()).count()
     }
 
     /// Are there exactly 0 elements in the [ArraySet]?
