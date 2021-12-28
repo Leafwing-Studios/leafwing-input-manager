@@ -52,6 +52,22 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
         }
     }
 
+    /// Insert a new element to the set at the provided index
+    ///
+    /// This is a very fast O(1) operation, as we do not need to check for duplicates or find a free slot.
+    ///
+    /// Returns `Some(T)` if an element was found at that index, or `None` if no element was there.
+    ///
+    /// PANICS: panics if the provided index is larger than CAP.
+    pub fn insert_at(&mut self, element: T, index: usize) -> Option<T> {
+        assert!(index <= CAP);
+
+        let preexisting_element = self.remove_at(index);
+        self.storage[index] = Some(element);
+
+        preexisting_element
+    }
+
     /// Attempt to insert a new element to the set
     ///
     /// Returns Ok if this succeeds, or an error if this failed due to either capacity or a duplicate entry.
@@ -129,7 +145,11 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
     /// Removes the element at the provided index
     ///
     /// Returns `Some(T)` if an element was found at that index, or `None` if no element was there.
+    ///
+    /// PANICS: panics if the provided index is larger than CAP.
     pub fn remove_at(&mut self, index: usize) -> Option<T> {
+        assert!(index <= CAP);
+
         let removed = self.storage[index];
         self.storage[index] = None;
         removed
