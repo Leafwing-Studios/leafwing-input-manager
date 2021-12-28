@@ -42,8 +42,8 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
     }
 
     /// Returns the index of the next filled slot, if any
-    pub fn next_index(&self) -> Option<usize> {
-        for i in 0..CAP {
+    pub fn next_index(&self, cursor: usize) -> Option<usize> {
+        for i in cursor..CAP {
             if self.storage[i].is_some() {
                 return Some(i);
             }
@@ -52,8 +52,8 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
     }
 
     /// Returns the index of the next empty slot, if any
-    pub fn next_empty_index(&self) -> Option<usize> {
-        for i in 0..CAP {
+    pub fn next_empty_index(&self, cursor: usize) -> Option<usize> {
+        for i in cursor..CAP {
             if self.storage[i].is_none() {
                 return Some(i);
             }
@@ -63,7 +63,7 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
 
     /// Insert a new element to the set
     ///
-    /// PANICS: will panic if the set is full before insertion.
+    /// PANICS: will panic if the set is full and the item is not a duplicate
     pub fn insert(&mut self, element: T) {
         // Always insert
         if let Err(InsertionError::Overfull) = self.try_insert(element) {
@@ -72,15 +72,27 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
         }
     }
 
+    /// Inserts multiple new elements to the set
+    ///
+    /// PANICS: will panic if the set would overflow due to the insertion of non-duplicate items
+    pub fn insert_multiple(&mut self, elements: impl IntoIterator<Item = T>) {
+        for element in elements {
+            self.insert(element);
+        }
+    }
+
     /// Insert a new element to the set at the provided index
     ///
-    /// This is a very fast O(1) operation, as we do not need to check for duplicates or find a free slot.
-    ///
     /// Returns `Some(T)` if an element was found at that index, or `None` if no element was there.
+    /// If a matching element already exists in the set, `None` will be returned.
     ///
     /// PANICS: panics if the provided index is larger than CAP.
     pub fn insert_at(&mut self, element: T, index: usize) -> Option<T> {
         assert!(index <= CAP);
+
+        if self.contains(&element) {
+            return None;
+        }
 
         let preexisting_element = self.remove_at(index);
         self.storage[index] = Some(element);
@@ -96,9 +108,7 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
             return Err(InsertionError::Duplicate);
         }
 
-        let next_empty_index = self.next_empty_index();
-
-        if let Some(index) = next_empty_index {
+        if let Some(index) = self.next_empty_index(0) {
             self.insert_at(element, index);
             Ok(())
         } else {
@@ -139,6 +149,15 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
         } else {
             None
         }
+    }
+
+    /// Returns a copy of the value at the provided index of the underlying array
+    ///
+    /// PANICS: panics if the index is out-of-bounds or does not contain data
+    #[must_use]
+    pub fn get_unchecked(&self, index: usize) -> T {
+        assert!(index <= CAP);
+        self.storage[index].unwrap().clone()
     }
 
     /// Removes the element from the set, if it exists
@@ -193,20 +212,34 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
     }
 }
 
-impl<T: PartialEq + Clone + Copy, const CAP: usize> Iterator for ArraySet<T, CAP> {
+/// An [Iterator] struct for [ArraySet]
+#[derive(Default, Clone, Copy, PartialEq, Debug)]
+pub struct ArraySetIter<T: PartialEq + Clone + Copy, const CAP: usize> {
+    set: ArraySet<T, CAP>,
+    cursor: usize,
+}
+
+impl<T: PartialEq + Clone + Copy, const CAP: usize> Iterator for ArraySetIter<T, CAP> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut item = None;
-
-        while item.is_none() {
-            // Get the next item, and return it if it is non-empty
-            if let Some(filled_item) = self.storage.get(0) {
-                item = *filled_item;
-            }
+        if let Some(index) = self.set.next_index(self.cursor) {
+            self.cursor = index;
+            Some(self.set.get_unchecked(index).clone())
+        } else {
+            None
         }
+    }
+}
 
-        item
+impl<T: PartialEq + Clone + Copy, const CAP: usize> IntoIterator for ArraySet<T, CAP> {
+    type Item = T;
+    type IntoIter = ArraySetIter<T, CAP>;
+    fn into_iter(self) -> Self::IntoIter {
+        ArraySetIter {
+            set: self,
+            cursor: 0,
+        }
     }
 }
 
@@ -248,10 +281,139 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> PartialEq for ArraySet<T, CA
 }
 
 /// An error returned when attempting to insert into a [ArraySet]
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum InsertionError {
     /// The set was full before insertion was attempted
     Overfull,
     /// A matching entry already existed
     Duplicate,
+}
+
+mod tests {
+    use crate::arrayset::*;
+
+    impl<T: PartialEq + Clone + Copy + Ord, const CAP: usize> ArraySet<T, CAP> {
+        #[allow(dead_code)]
+        fn is_sorted(&self) -> bool {
+            let vec: Vec<T> = self.into_iter().collect();
+            let mut sorted_vec = vec.clone();
+            sorted_vec.sort();
+            vec == sorted_vec
+        }
+    }
+
+    #[test]
+    fn equality_ignores_order() {
+        let mut set_1: ArraySet<u8, 16> = ArraySet::default();
+        set_1.insert_multiple(7..=11);
+
+        let set_2: ArraySet<u8, 16> = ArraySet::from_iter(11..=7);
+        assert_eq!(set_1, set_2);
+    }
+
+    #[test]
+    fn reject_duplicates() {
+        let mut set: ArraySet<u8, 4> = ArraySet::default();
+        assert!(set.len() == 0);
+
+        set.insert(1);
+        assert!(set.len() == 1);
+
+        set.insert(1);
+        assert!(set.len() == 1);
+
+        let result = set.try_insert(1);
+        assert_eq!(result, Err(InsertionError::Duplicate));
+        assert!(set.len() == 1);
+
+        set.insert_at(1, 0);
+        assert!(set.len() == 1);
+
+        set.insert_at(1, 1);
+        assert!(set.len() == 1);
+    }
+
+    #[test]
+    fn reject_overfull() {
+        let mut set: ArraySet<u8, 2> = ArraySet::default();
+
+        set.insert_multiple(1..=2);
+        assert!(set.len() == set.capacity());
+
+        // Duplicates do not overflow
+        let ok_result = set.try_insert(1);
+        assert!(ok_result.is_ok());
+        assert!(set.len() == set.capacity());
+
+        // Non-duplicates fail to insert
+        let overfull_result = set.try_insert(3);
+        assert_eq!(overfull_result, Err(InsertionError::Overfull));
+        assert!(set.len() == set.capacity());
+    }
+
+    #[test]
+    #[should_panic]
+    fn panic_on_overfull_insertion() {
+        let mut set: ArraySet<u8, 2> = ArraySet::default();
+
+        set.insert_multiple(1..=2);
+        assert!(set.len() == set.capacity());
+
+        set.insert(3);
+    }
+
+    #[test]
+    fn in_order_iteration() {
+        let mut set: ArraySet<u8, 8> = ArraySet::default();
+        set.insert_multiple(0..8);
+        assert!(set.is_sorted());
+
+        set.remove_at(3);
+        assert!(set.is_sorted());
+
+        set.remove(&5);
+        assert!(set.is_sorted());
+
+        set.remove_at(0);
+        assert!(set.is_sorted());
+
+        set.remove_at(7);
+        assert!(set.is_sorted());
+
+        let mut backwards_set: ArraySet<u8, 8> = ArraySet::default();
+        backwards_set.insert_multiple(8..0);
+        assert!(!backwards_set.is_sorted());
+    }
+
+    #[test]
+    fn removal_returns_items() {
+        let mut set: ArraySet<u8, 8> = ArraySet::default();
+        set.insert_multiple(0..8);
+
+        let (index, value) = set.remove(&3).unwrap();
+        assert_eq!(index, 3);
+        assert_eq!(value, 3);
+
+        let value = set.remove_at(5).unwrap();
+        assert_eq!(value, 5);
+    }
+
+    #[test]
+    fn remove_and_insert_in_same_place() {
+        let mut set: ArraySet<u8, 8> = ArraySet::default();
+        set.insert_multiple(0..8);
+        assert!(set.is_sorted());
+
+        set.remove(&3);
+        assert!(set.is_sorted());
+
+        set.insert(3);
+        assert!(set.is_sorted());
+
+        set.remove_at(5);
+        assert!(set.get(5).is_none());
+
+        set.insert_at(5, 5);
+        assert!(set.is_sorted());
+    }
 }

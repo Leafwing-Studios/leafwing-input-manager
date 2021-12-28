@@ -353,7 +353,7 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         // We know that the input belongs to exactly one mode
-        let input_mode = input_modes.clone().next().unwrap();
+        let input_mode = input_modes.into_iter().next().unwrap();
         let removed = self.clear_at(action, input_mode, index);
         self.insert(action, input);
 
