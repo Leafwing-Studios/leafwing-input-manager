@@ -113,12 +113,13 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
 
     /// Removes the element from the set, if it exists
     ///
-    /// Returns `Some(T)` to the first matching element found, or `None` if no matching element is found
-    pub fn remove(&mut self, element: &T) -> Option<T> {
-        for i in 0..self.capacity() {
-            if let Some(existing_element) = &self.storage[i] {
+    /// Returns `Some(index, T)` for the first matching element found, or `None` if no matching element is found
+    pub fn remove(&mut self, element: &T) -> Option<(usize, T)> {
+        for index in 0..self.capacity() {
+            if let Some(existing_element) = &self.storage[index] {
                 if *element == *existing_element {
-                    return self.remove_at(i);
+                    let removed_element = self.remove_at(index).unwrap();
+                    return Some((index, removed_element));
                 }
             }
         }
