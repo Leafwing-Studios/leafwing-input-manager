@@ -808,4 +808,152 @@ mod tests {
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
     }
+
+    #[test]
+    fn mock_inputs() {
+        use crate::input_map::Button;
+        use bevy::prelude::*;
+        use strum::IntoEnumIterator;
+
+        // Setting up the input map
+        let mut input_map = InputMap::<Action>::default();
+        input_map.assign_gamepad(Gamepad(42));
+
+        // Gamepad
+        input_map.insert(Action::Run, GamepadButtonType::South);
+        input_map.insert_chord(
+            Action::Jump,
+            [GamepadButtonType::South, GamepadButtonType::North],
+        );
+
+        // Keyboard
+        input_map.insert(Action::Run, KeyCode::LShift);
+        input_map.insert(Action::Hide, KeyCode::LShift);
+
+        // Mouse
+        input_map.insert(Action::Run, MouseButton::Left);
+        input_map.insert(Action::Jump, MouseButton::Other(42));
+
+        // Cross-device chords
+        input_map.insert_chord(
+            Action::Hide,
+            [
+                Button::Keyboard(KeyCode::LControl),
+                Button::Mouse(MouseButton::Left),
+            ],
+        );
+
+        // Input streams
+        let mut gamepad_input_stream = Input::<GamepadButton>::default();
+        let mut keyboard_input_stream = Input::<KeyCode>::default();
+        let mut mouse_input_stream = Input::<MouseButton>::default();
+
+        // With no inputs, nothing should be detected
+        for action in Action::iter() {
+            assert!(!input_map.pressed(
+                action,
+                &gamepad_input_stream,
+                &keyboard_input_stream,
+                &mouse_input_stream,
+            ));
+        }
+
+        // Pressing the wrong gamepad
+        gamepad_input_stream.press(GamepadButton(Gamepad(0), GamepadButtonType::South));
+        for action in Action::iter() {
+            assert!(!input_map.pressed(
+                action,
+                &gamepad_input_stream,
+                &keyboard_input_stream,
+                &mouse_input_stream,
+            ));
+        }
+
+        // Pressing the correct gamepad
+        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
+        assert!(input_map.pressed(
+            Action::Run,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+        assert!(!input_map.pressed(
+            Action::Jump,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+
+        // Chord
+        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
+        assert!(input_map.pressed(
+            Action::Run,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+        assert!(input_map.pressed(
+            Action::Jump,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+
+        // Clearing inputs
+        gamepad_input_stream = Input::<GamepadButton>::default();
+        for action in Action::iter() {
+            assert!(!input_map.pressed(
+                action,
+                &gamepad_input_stream,
+                &keyboard_input_stream,
+                &mouse_input_stream,
+            ));
+        }
+
+        // Keyboard
+        keyboard_input_stream.press(KeyCode::LShift);
+        assert!(input_map.pressed(
+            Action::Run,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+        assert!(input_map.pressed(
+            Action::Hide,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+
+        keyboard_input_stream = Input::<KeyCode>::default();
+
+        // Mouse
+        mouse_input_stream.press(MouseButton::Left);
+        mouse_input_stream.press(MouseButton::Other(42));
+
+        assert!(input_map.pressed(
+            Action::Run,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+        assert!(input_map.pressed(
+            Action::Jump,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+
+        mouse_input_stream = Input::<MouseButton>::default();
+
+        // Cross-device chording
+        keyboard_input_stream.press(KeyCode::LControl);
+        mouse_input_stream.press(MouseButton::Left);
+        assert!(input_map.pressed(
+            Action::Hide,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        ));
+    }
 }
