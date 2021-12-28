@@ -18,18 +18,18 @@ pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>) {
 
 /// Fetches all of the releveant [Input] resources to update [ActionState] according to the [InputMap]
 pub fn update_action_state<A: Actionlike>(
-    gamepad_input: Res<Input<GamepadButton>>,
-    keyboard_input: Res<Input<KeyCode>>,
-    mouse_input: Res<Input<MouseButton>>,
+    gamepad_input_stream: Res<Input<GamepadButton>>,
+    keyboard_input_stream: Res<Input<KeyCode>>,
+    mouse_input_stream: Res<Input<MouseButton>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
     for (mut action_state, input_map) in query.iter_mut() {
-        for action in A::iter() {
-            // A particular input type can add to the action state, but cannot revert it
-            if input_map.pressed(action, &*gamepad_input, &*keyboard_input, &*mouse_input) {
-                action_state.press(action);
-            }
-        }
+        action_state.update(
+            input_map,
+            &*gamepad_input_stream,
+            &*keyboard_input_stream,
+            &*mouse_input_stream,
+        );
     }
 }
 
@@ -47,12 +47,5 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
                 .expect("Entity does not exist, or does not have an `ActionState` component.");
             action_state.press(action_state_driver.action);
         }
-    }
-}
-
-/// Releases all [ActionState] actions that were not pressed since the last time [tick_action_state] ran
-pub fn release_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>) {
-    for mut action_state in query.iter_mut() {
-        action_state.release_unpressed();
     }
 }

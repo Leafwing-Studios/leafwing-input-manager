@@ -1,6 +1,6 @@
 //! This module contains [ActionState] and its supporting methods and impls.
 
-use crate::Actionlike;
+use crate::{Actionlike, InputMap};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
@@ -46,19 +46,40 @@ use bevy::utils::HashMap;
 #[derive(Component)]
 pub struct ActionState<A: Actionlike> {
     pressed: HashMap<A, bool>,
-    pressed_this_tick: HashMap<A, bool>,
     just_pressed: HashMap<A, bool>,
     just_released: HashMap<A, bool>,
 }
 
 impl<A: Actionlike> ActionState<A> {
-    /// Clears all just_pressed and just_released state
+    /// Updates the [ActionState] based on the [InputMap] and the provided [Input]s
     ///
-    /// Also clears the internal field `pressed_this_tick`, so inputs can be correctly released
+    /// Presses and releases buttons according to the current state of the inputs.
+    /// Combine with [ActionState::tick] to update `just_pressed` and `just_released`.
+    pub fn update(
+        &mut self,
+        input_map: &InputMap<A>,
+        gamepad_input_stream: &Input<GamepadButton>,
+        keyboard_input_stream: &Input<KeyCode>,
+        mouse_input_stream: &Input<MouseButton>,
+    ) {
+        for action in A::iter() {
+            if input_map.pressed(
+                action,
+                gamepad_input_stream,
+                keyboard_input_stream,
+                mouse_input_stream,
+            ) {
+                self.press(action);
+            } else {
+                self.release(action);
+            }
+        }
+    }
+
+    /// Clears all `just_pressed` and `just_released` state
     pub fn tick(&mut self) {
         self.just_pressed = Self::default_map();
         self.just_released = Self::default_map();
-        self.pressed_this_tick = Self::default_map();
     }
 
     /// Press the `action` virtual button
@@ -67,7 +88,6 @@ impl<A: Actionlike> ActionState<A> {
             self.just_pressed.insert(action, true);
         }
         self.pressed.insert(action, true);
-        self.pressed_this_tick.insert(action, true);
     }
 
     /// Release the `action` virtual button
@@ -111,15 +131,6 @@ impl<A: Actionlike> ActionState<A> {
         *self.just_released.get(&action).unwrap()
     }
 
-    /// Release all actions that were not pressed this tick
-    pub fn release_unpressed(&mut self) {
-        for action in A::iter() {
-            if !*self.pressed_this_tick.get(&action).unwrap() {
-                self.release(action);
-            }
-        }
-    }
-
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
     #[must_use]
     pub fn default_map() -> HashMap<A, bool> {
@@ -137,7 +148,6 @@ impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> Self {
         Self {
             pressed: Self::default_map(),
-            pressed_this_tick: Self::default_map(),
             just_pressed: Self::default_map(),
             just_released: Self::default_map(),
         }
@@ -153,4 +163,101 @@ pub struct ActionStateDriver<A: Actionlike> {
     pub action: A,
     /// The entity whose action state should be updated
     pub entity: Entity,
+}
+
+mod tests {
+    use crate::prelude::*;
+    use strum_macros::EnumIter;
+
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    enum Action {
+        Run,
+        Jump,
+        Hide,
+    }
+
+    #[test]
+    fn press_lifecycle() {
+        use bevy::prelude::*;
+
+        // Action state
+        let mut action_state = ActionState::<Action>::default();
+
+        // Input map
+        let mut input_map = InputMap::default();
+        input_map.insert(Action::Run, KeyCode::R);
+
+        // Input streams
+        let gamepad_input_stream = Input::<GamepadButton>::default();
+        let mut keyboard_input_stream = Input::<KeyCode>::default();
+        let mouse_input_stream = Input::<MouseButton>::default();
+
+        // Starting state
+        action_state.update(
+            &input_map,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        );
+
+        assert!(!action_state.pressed(Action::Run));
+        assert!(!action_state.just_pressed(Action::Run));
+        assert!(action_state.released(Action::Run));
+        assert!(!action_state.just_released(Action::Run));
+
+        // Pressing
+        keyboard_input_stream.press(KeyCode::R);
+        action_state.update(
+            &input_map,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        );
+
+        assert!(action_state.pressed(Action::Run));
+        assert!(action_state.just_pressed(Action::Run));
+        assert!(!action_state.released(Action::Run));
+        assert!(!action_state.just_released(Action::Run));
+
+        // Waiting
+        action_state.tick();
+        action_state.update(
+            &input_map,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        );
+
+        assert!(action_state.pressed(Action::Run));
+        assert!(!action_state.just_pressed(Action::Run));
+        assert!(!action_state.released(Action::Run));
+        assert!(!action_state.just_released(Action::Run));
+
+        // Releasing
+        keyboard_input_stream.release(KeyCode::R);
+        action_state.update(
+            &input_map,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        );
+        assert!(!action_state.pressed(Action::Run));
+        assert!(!action_state.just_pressed(Action::Run));
+        assert!(action_state.released(Action::Run));
+        assert!(action_state.just_released(Action::Run));
+
+        // Waiting
+        action_state.tick();
+        action_state.update(
+            &input_map,
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
+        );
+
+        assert!(!action_state.pressed(Action::Run));
+        assert!(!action_state.just_pressed(Action::Run));
+        assert!(action_state.released(Action::Run));
+        assert!(!action_state.just_released(Action::Run));
+    }
 }

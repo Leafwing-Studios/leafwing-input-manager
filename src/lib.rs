@@ -84,8 +84,6 @@ pub mod prelude {
 /// - [update_action_state_from_interaction](systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [ActionStateDriver](crate::action_state::ActionStateDriver) component baseod on an [Interaction] component
 ///    - labeled [InputManagerSystem::Read]
-/// - [release_action_state](systems::release_action_state), which releases all actions which are not currently pressed by any system
-///     - labeled [InputManagerSystem::Release]
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
 }
@@ -130,15 +128,13 @@ pub trait Actionlike: Send + Sync + Copy + Eq + Hash + IntoEnumIterator + 'stati
 
 /// [SystemLabel]s for the [crate::systems] used by this crate
 ///
-/// `Reset` -> `Read` -> `Release`
+/// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
     /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
     Reset,
     /// Gathers input data to update the [ActionState]
-    Read,
-    /// Decides whether or not to release an input after all [Input]s have been checked
-    Release,
+    Update,
 }
 
 /// This [Bundle] allows entities to collect and interpret inputs from across input sources
@@ -170,25 +166,19 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
             CoreStage::PreUpdate,
             tick_action_state::<A>
                 .label(InputManagerSystem::Reset)
-                .before(InputManagerSystem::Read),
+                .before(InputManagerSystem::Update),
         )
         .add_system_to_stage(
             CoreStage::PreUpdate,
             update_action_state::<A>
-                .label(InputManagerSystem::Read)
+                .label(InputManagerSystem::Update)
                 .after(InputSystem),
         )
         .add_system_to_stage(
             CoreStage::PreUpdate,
             update_action_state_from_interaction::<A>
-                .label(InputManagerSystem::Read)
+                .label(InputManagerSystem::Update)
                 .after(InputSystem),
-        )
-        .add_system_to_stage(
-            CoreStage::PreUpdate,
-            release_action_state::<A>
-                .label(InputManagerSystem::Release)
-                .after(InputManagerSystem::Read),
         );
     }
 }
