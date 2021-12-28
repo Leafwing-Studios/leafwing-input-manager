@@ -13,7 +13,8 @@ use core::fmt::Debug;
 ///
 /// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
 ///
-/// A maximum of 32(!) bindings can be registered to each action.
+/// You can configure the maximum number of bindings (total) that can be stored for each action.
+/// By default, this is a very generous 32.
 /// If there is any chance of hitting this limit,
 /// check the current number registered using the [n_registered](Self::n_registered) method.
 ///
@@ -47,13 +48,13 @@ use core::fmt::Debug;
 /// input_map.clear_action(Action::Hide, None);
 ///```
 #[derive(Component, Debug, PartialEq, Clone)]
-pub struct InputMap<A: Actionlike> {
+pub struct InputMap<A: Actionlike, const CAP: usize = 32> {
     /// The raw [HashMap] [SmallSet] used to store the input mapping
-    pub map: HashMap<A, SmallSet<UserInput, 32>>,
+    pub map: HashMap<A, SmallSet<UserInput, CAP>>,
     associated_gamepad: Option<Gamepad>,
 }
 
-impl<A: Actionlike> InputMap<A> {
+impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` stream?
     #[must_use]
     pub fn pressed(
@@ -80,7 +81,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn any_pressed(
         &self,
-        inputs: &SmallSet<UserInput, 32>,
+        inputs: &SmallSet<UserInput, CAP>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
@@ -284,7 +285,11 @@ impl<A: Actionlike> InputMap<A> {
     /// A copy of the values are returned, rather than a reference to them.
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
     #[must_use]
-    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<SmallSet<UserInput, 32>> {
+    pub fn get(
+        &self,
+        action: A,
+        input_mode: Option<InputMode>,
+    ) -> Option<SmallSet<UserInput, CAP>> {
         if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
                 let mut matching_set = SmallSet::new();
@@ -318,12 +323,12 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         action: A,
         input_mode: Option<InputMode>,
-    ) -> Option<SmallSet<UserInput, 32>> {
+    ) -> Option<SmallSet<UserInput, CAP>> {
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
             if let Some(full_set) = self.map.remove(&action) {
-                let mut retained_set: SmallSet<UserInput, 32> = SmallSet::new();
-                let mut removed_set: SmallSet<UserInput, 32> = SmallSet::new();
+                let mut retained_set: SmallSet<UserInput, CAP> = SmallSet::new();
+                let mut removed_set: SmallSet<UserInput, CAP> = SmallSet::new();
 
                 for input in full_set {
                     if input.matches_input_mode(input_mode) {
