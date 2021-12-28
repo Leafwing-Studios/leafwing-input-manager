@@ -44,9 +44,9 @@ use core::fmt::Debug;
 /// input_map.insert_chord(Action::Hide, [Button::Keyboard(KeyCode::H), Button::Gamepad(GamepadButtonType::South), Button::Mouse(MouseButton::Middle)]);
 ///
 /// // But you can't Hide :(
-/// input_map.clear_action(Action::Hide);
+/// input_map.clear_action(Action::Hide, None);
 ///```
-#[derive(Component, Debug)]
+#[derive(Component, Debug, PartialEq, Clone)]
 pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] [SmallSet] used to store the input mapping
     pub map: HashMap<A, SmallSet<UserInput, 32>>,
@@ -99,6 +99,7 @@ impl<A: Actionlike> InputMap<A> {
                     keyboard_input_stream,
                     mouse_input_stream,
                 ),
+                UserInput::Null => false,
             } {
                 // If any of the appropriate inputs match, the action is considered pressed
                 return true;
@@ -159,11 +160,18 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Existing mappings for that action will not be overwritten.
     pub fn insert(&mut self, action: A, input: impl Into<UserInput>) {
+        let input = input.into();
+
+        // Don't insert Null inputs into the map
+        if input == UserInput::Null {
+            return;
+        }
+
         if let Some(existing_set) = self.map.get_mut(&action) {
-            existing_set.insert(input.into());
+            existing_set.insert(input);
         } else {
             let mut new_set = SmallSet::new();
-            new_set.insert(input.into());
+            new_set.insert(input);
             self.map.insert(action, new_set);
         }
     }
@@ -196,14 +204,40 @@ impl<A: Actionlike> InputMap<A> {
         action: A,
         buttons: impl IntoIterator<Item = impl Into<Button>>,
     ) {
-        self.insert(action, UserInput::combo(buttons));
+        self.insert(action, UserInput::chord(buttons));
     }
 
-    /// Merges two [InputMap]s, adding both of their bindings to the resulting [InputMap]
+    /// Replaces any existing inputs for the `action` of the same [InputMode] with the provided `input`
+    ///
+    /// Returns all previously registered inputs, if any
+    pub fn replace(
+        &mut self,
+        action: A,
+        input: impl Into<UserInput>,
+    ) -> Option<SmallSet<UserInput, 32>> {
+        let input = input.into();
+
+        let mut old_inputs: SmallSet<UserInput, 32> = SmallSet::new();
+        for input_mode in input.input_modes() {
+            if let Some(removed_inputs) = self.clear_action(action, Some(input_mode)) {
+                for removed_input in removed_inputs {
+                    old_inputs.insert(removed_input);
+                }
+            }
+        }
+
+        self.insert(action, input);
+
+        Some(old_inputs)
+    }
+
+    /// Merges the provided [InputMap] into the [InputMap] this method was called on
+    ///
+    /// This adds both of their bindings to the resulting [InputMap].
+    /// Like usual, any duplicate bindings are ignored.
     ///
     /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
-    #[must_use]
-    pub fn merge(&self, other: &InputMap<A>) -> InputMap<A> {
+    pub fn merge(&mut self, other: &InputMap<A>) {
         let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
             self.associated_gamepad
         } else {
@@ -225,7 +259,7 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        new_map
+        *self = new_map;
     }
 
     /// Returns how many bindings are currently registered for the provided action
@@ -375,23 +409,61 @@ pub enum UserInput {
     /// A combination of buttons, pressed simultaneously
     /// Up to 8 (!!) buttons can be chorded together at once
     Chord(SmallSet<Button, 8>),
+    /// A null user input, used for a safe default and error-handling
+    ///
+    /// This input can never be pressed.
+    Null,
+}
+
+impl Default for UserInput {
+    fn default() -> Self {
+        UserInput::Null
+    }
 }
 
 impl UserInput {
     /// Creates a [UserInput::Chord] from an iterator of [Button]s
-    pub fn combo(buttons: impl IntoIterator<Item = impl Into<Button>>) -> Self {
+    ///
+    /// If `buttons` has a length of 1, a [UserInput::Single] variant will be returned instead.
+    /// If `buttons` has a length of 0, a [UserInput::Null] variant will be returned instead.
+    pub fn chord(buttons: impl IntoIterator<Item = impl Into<Button>>) -> Self {
+        // We can't just check the length unless we add an ExactSizeIterator bound :(
+        let mut length: u8 = 0;
+
         let mut set: SmallSet<Button, 8> = SmallSet::new();
         for button in buttons {
+            length += 1;
             set.insert(button.into());
         }
 
-        UserInput::Chord(set)
+        match length {
+            0 => UserInput::Null,
+            1 => UserInput::Single(set.into_iter().next().unwrap()),
+            _ => UserInput::Chord(set),
+        }
+    }
+
+    /// Which [InputMode]s does this input contain?
+    pub fn input_modes(&self) -> SmallSet<InputMode, 3> {
+        let mut set = SmallSet::new();
+        match self {
+            UserInput::Null => (),
+            UserInput::Single(button) => set.insert((*button).into()),
+            UserInput::Chord(buttons) => {
+                for button in buttons.clone() {
+                    set.insert(button.into())
+                }
+            }
+        }
+        set
     }
 
     /// Does this [UserInput] match the provided [InputMode]?
     ///
     /// For [UserInput::Chord], this will be true if any of the buttons in the combination match.
     pub fn matches_input_mode(&self, input_mode: InputMode) -> bool {
+        // This is slightly faster than using Self::input_modes
+        // As we can return early
         match self {
             UserInput::Single(button) => {
                 let button_mode: InputMode = (*button).into();
@@ -406,7 +478,14 @@ impl UserInput {
                 }
                 false
             }
+            UserInput::Null => false,
         }
+    }
+}
+
+impl From<Button> for UserInput {
+    fn from(input: Button) -> Self {
+        UserInput::Single(input)
     }
 }
 
@@ -492,5 +571,241 @@ impl From<KeyCode> for Button {
 impl From<MouseButton> for Button {
     fn from(input: MouseButton) -> Self {
         Button::Mouse(input)
+    }
+}
+
+mod tests {
+    use crate::prelude::*;
+    use strum_macros::EnumIter;
+
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    enum Action {
+        Run,
+        Jump,
+        Hide,
+    }
+
+    #[test]
+    fn insertion_idempotency() {
+        use crate::smallset::SmallSet;
+        use bevy::input::keyboard::KeyCode;
+
+        let mut input_map = InputMap::<Action>::default();
+        input_map.insert(Action::Run, KeyCode::Space);
+
+        assert_eq!(
+            input_map.get(Action::Run, None),
+            Some(SmallSet::from_iter([KeyCode::Space.into()]))
+        );
+
+        // Duplicate insertions should not change anything
+        input_map.insert(Action::Run, KeyCode::Space);
+        assert_eq!(
+            input_map.get(Action::Run, None),
+            Some(SmallSet::from_iter([KeyCode::Space.into()]))
+        );
+    }
+
+    #[test]
+    fn multiple_insertion() {
+        use crate::input_map::{Button, UserInput};
+        use crate::smallset::SmallSet;
+        use bevy::input::keyboard::KeyCode;
+
+        let mut input_map_1 = InputMap::<Action>::default();
+        input_map_1.insert(Action::Run, KeyCode::Space);
+        input_map_1.insert(Action::Run, KeyCode::Return);
+
+        assert_eq!(
+            input_map_1.get(Action::Run, None),
+            Some(SmallSet::from_iter([
+                KeyCode::Space.into(),
+                KeyCode::Return.into()
+            ]))
+        );
+
+        let mut input_map_2 = InputMap::<Action>::default();
+        input_map_2.insert_multiple(Action::Run, [KeyCode::Space, KeyCode::Return]);
+
+        assert_eq!(input_map_1, input_map_2);
+
+        let mut input_map_3 = InputMap::<Action>::default();
+        input_map_3.insert_multiple(Action::Run, [KeyCode::Return, KeyCode::Space]);
+
+        assert_eq!(input_map_1, input_map_3);
+
+        let mut input_map_4 = InputMap::<Action>::default();
+        input_map_4.insert_multiple(
+            Action::Run,
+            [
+                Button::Keyboard(KeyCode::Space),
+                Button::Keyboard(KeyCode::Return),
+            ],
+        );
+
+        assert_eq!(input_map_1, input_map_4);
+
+        let mut input_map_5 = InputMap::<Action>::default();
+        input_map_5.insert_multiple(
+            Action::Run,
+            [
+                UserInput::Single(Button::Keyboard(KeyCode::Space)),
+                UserInput::Single(Button::Keyboard(KeyCode::Return)),
+            ],
+        );
+
+        assert_eq!(input_map_1, input_map_5);
+    }
+
+    #[test]
+    pub fn chord_coercion() {
+        use crate::input_map::{Button, UserInput};
+        use bevy::input::keyboard::KeyCode;
+
+        // Single items in a chord should be coerced to a singleton
+        let mut input_map_1 = InputMap::<Action>::default();
+        input_map_1.insert(Action::Run, KeyCode::Space);
+
+        let mut input_map_2 = InputMap::<Action>::default();
+        input_map_2.insert(Action::Run, UserInput::chord([KeyCode::Space]));
+
+        assert_eq!(input_map_1, input_map_2);
+
+        // Empty chords are converted to UserInput::Null, and then ignored
+        let mut input_map_3 = InputMap::<Action>::default();
+        let empty_vec: Vec<Button> = Vec::default();
+        input_map_3.insert_chord(Action::Run, empty_vec);
+
+        assert_eq!(input_map_3, InputMap::<Action>::default());
+    }
+
+    #[test]
+    fn input_clearing() {
+        use crate::input_map::{Button, InputMode};
+        use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
+
+        let mut input_map = InputMap::<Action>::default();
+        input_map.insert(Action::Run, KeyCode::Space);
+
+        let one_item_input_map = input_map.clone();
+
+        // Clearing without a specified input mode
+        input_map.clear_action(Action::Run, None);
+        assert_eq!(input_map, InputMap::default());
+
+        // Clearing with the non-matching input mode
+        input_map.insert(Action::Run, KeyCode::Space);
+        input_map.clear_action(Action::Run, Some(InputMode::Gamepad));
+        input_map.clear_action(Action::Run, Some(InputMode::Mouse));
+        assert_eq!(input_map, one_item_input_map);
+
+        // Clearing with the matching input mode
+        input_map.clear_action(Action::Run, Some(InputMode::Keyboard));
+        assert_eq!(input_map, InputMap::default());
+
+        // Clearing an entire input mode
+        input_map.insert_multiple(Action::Run, [KeyCode::Space, KeyCode::A]);
+        input_map.insert(Action::Hide, KeyCode::RBracket);
+        input_map.clear_input_mode(Some(InputMode::Keyboard));
+        assert_eq!(input_map, InputMap::default());
+
+        // Other stored inputs should be unaffected
+        input_map.insert(Action::Run, KeyCode::Space);
+        input_map.insert(Action::Hide, GamepadButtonType::South);
+        input_map.insert(Action::Run, MouseButton::Left);
+        input_map.clear_input_mode(Some(InputMode::Gamepad));
+        input_map.clear_action(Action::Run, Some(InputMode::Mouse));
+        assert_eq!(input_map, one_item_input_map);
+
+        // Clearing all inputs works
+        input_map.insert(Action::Hide, GamepadButtonType::South);
+        input_map.insert(Action::Run, MouseButton::Left);
+        let big_input_map = input_map.clone();
+        let removed_items = input_map.clear_input_mode(None);
+        assert_eq!(input_map, InputMap::default());
+
+        // Items are returned on clearing
+        assert_eq!(removed_items, big_input_map);
+
+        // Chords are removed if at least one button matches
+        input_map.insert_chord(Action::Run, [KeyCode::A, KeyCode::B]);
+        input_map.insert_chord(
+            Action::Run,
+            [GamepadButtonType::South, GamepadButtonType::West],
+        );
+        input_map.insert_chord(
+            Action::Run,
+            [
+                Button::Gamepad(GamepadButtonType::South),
+                Button::Keyboard(KeyCode::A),
+            ],
+        );
+
+        let removed_items = input_map.clear_input_mode(Some(InputMode::Gamepad));
+        let mut expected_removed_items = InputMap::default();
+        expected_removed_items.insert_chord(
+            Action::Run,
+            [GamepadButtonType::South, GamepadButtonType::West],
+        );
+        expected_removed_items.insert_chord(
+            Action::Run,
+            [
+                Button::Gamepad(GamepadButtonType::South),
+                Button::Keyboard(KeyCode::A),
+            ],
+        );
+
+        assert_eq!(removed_items, expected_removed_items);
+    }
+
+    #[test]
+    fn reset_to_default() {
+        use crate::input_map::InputMode;
+        use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
+
+        let mut input_map = InputMap::default();
+        let mut default_keyboard_map = InputMap::default();
+        default_keyboard_map.insert(Action::Run, KeyCode::LShift);
+        default_keyboard_map.insert_chord(Action::Hide, [KeyCode::LControl, KeyCode::H]);
+        let mut default_gamepad_map = InputMap::default();
+        default_gamepad_map.insert(Action::Run, GamepadButtonType::South);
+        default_gamepad_map.insert(Action::Hide, GamepadButtonType::East);
+
+        // Merging works
+        input_map.merge(&default_keyboard_map);
+        assert_eq!(input_map, default_keyboard_map);
+
+        // Merging is idempotent
+        input_map.merge(&default_keyboard_map);
+        assert_eq!(input_map, default_keyboard_map);
+
+        // Fully default settings
+        input_map.merge(&default_gamepad_map);
+        let default_input_map = input_map.clone();
+
+        // Changing from the default
+        input_map.replace(Action::Jump, KeyCode::J);
+
+        // Clearing all keyboard bindings works as expected
+        input_map.clear_input_mode(Some(InputMode::Keyboard));
+        assert_eq!(input_map, default_gamepad_map);
+
+        // Resetting to default works
+        input_map.merge(&default_keyboard_map);
+        assert_eq!(input_map, default_input_map);
+    }
+
+    #[test]
+    fn gamepad_swapping() {
+        use bevy::input::gamepad::Gamepad;
+
+        let mut input_map = InputMap::<Action>::default();
+        assert_eq!(input_map.gamepad(), None);
+
+        input_map.assign_gamepad(Gamepad(0));
+        assert_eq!(input_map.gamepad(), Some(Gamepad(0)));
+
+        input_map.clear_gamepad();
+        assert_eq!(input_map.gamepad(), None);
     }
 }
