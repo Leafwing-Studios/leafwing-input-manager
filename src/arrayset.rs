@@ -41,6 +41,26 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
         }
     }
 
+    /// Returns the index of the next filled slot, if any
+    pub fn next_index(&self) -> Option<usize> {
+        for i in 0..CAP {
+            if self.storage[i].is_some() {
+                return Some(i);
+            }
+        }
+        None
+    }
+
+    /// Returns the index of the next empty slot, if any
+    pub fn next_empty_index(&self) -> Option<usize> {
+        for i in 0..CAP {
+            if self.storage[i].is_none() {
+                return Some(i);
+            }
+        }
+        None
+    }
+
     /// Insert a new element to the set
     ///
     /// PANICS: will panic if the set is full before insertion.
@@ -75,21 +95,15 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
         if self.contains(&element) {
             return Err(InsertionError::Duplicate);
         }
-        let capacity = self.capacity();
 
-        if self.len() == self.capacity() {
-            return Err(InsertionError::Overfull);
+        let next_empty_index = self.next_empty_index();
+
+        if let Some(index) = next_empty_index {
+            self.insert_at(element, index);
+            Ok(())
+        } else {
+            Err(InsertionError::Overfull)
         }
-
-        for i in 0..capacity {
-            if self.storage[i].is_none() {
-                self.storage[i] = Some(element);
-                return Ok(());
-            }
-        }
-
-        // Insertion cannot have failed for any reason
-        unreachable!()
     }
 
     /// Is the provided element in the set?
@@ -131,7 +145,7 @@ impl<T: PartialEq + Clone + Copy, const CAP: usize> ArraySet<T, CAP> {
     ///
     /// Returns `Some(index, T)` for the first matching element found, or `None` if no matching element is found
     pub fn remove(&mut self, element: &T) -> Option<(usize, T)> {
-        for index in 0..self.capacity() {
+        for index in 0..CAP {
             if let Some(existing_element) = &self.storage[index] {
                 if *element == *existing_element {
                     let removed_element = self.remove_at(index).unwrap();
