@@ -1,10 +1,12 @@
 //! This module contains [InputMap] and its supporting methods and impls.
 
-use crate::smallset::SmallSet;
+use crate::arrayset::ArraySet;
 use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use core::fmt::Debug;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
@@ -17,6 +19,9 @@ use core::fmt::Debug;
 /// by setting the value of the CAP const generic.
 /// By default, this is a very generous 16.
 /// Insertions will silently fail if you have reached this cap for the specific action you are attempting to insert bindings for.
+///
+/// In addition, you can configure the per-mode cap for each [InputMode] using [InputMap::new] or [InputMap::set_per_mode_cap].
+/// This can be useful if your UI can only display one or two possible keybindings for each input mode.
 ///
 /// # Example
 /// ```rust
@@ -49,11 +54,42 @@ use core::fmt::Debug;
 ///```
 #[derive(Component, Debug, PartialEq, Clone)]
 pub struct InputMap<A: Actionlike, const CAP: usize = 16> {
-    /// The raw [HashMap] [SmallSet] used to store the input mapping
-    pub map: HashMap<A, SmallSet<UserInput, CAP>>,
+    /// The raw [HashMap] [ArraySet] used to store the input mapping
+    pub map: HashMap<A, ArraySet<UserInput, CAP>>,
+    per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
 }
 
+impl<A: Actionlike, const CAP: usize> Default for InputMap<A, CAP> {
+    fn default() -> Self {
+        Self {
+            map: HashMap::default(),
+            associated_gamepad: None,
+            per_mode_cap: None,
+        }
+    }
+}
+
+// Constructors
+impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+    /// Creates a new empty [InputMap]
+    ///
+    /// The `per_mode_cap` controls the maximum number of inputs of each [InputMode] that can be stored.
+    /// If a value of 0 is supplied, no cap will be provided (although the global `CAP` must still be obeyed).
+    ///
+    /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
+    pub fn new(per_mode_cap: usize) -> Self {
+        if per_mode_cap == 0 {
+            Self::default()
+        } else {
+            let mut input_map = Self::default();
+            input_map.set_per_mode_cap(per_mode_cap);
+            input_map
+        }
+    }
+}
+
+// Check whether buttons are pressed
 impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` stream?
     #[must_use]
@@ -81,12 +117,12 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     #[must_use]
     pub fn any_pressed(
         &self,
-        inputs: &SmallSet<UserInput, CAP>,
+        inputs: &ArraySet<UserInput, CAP>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for input in inputs.clone() {
+        for input in *inputs {
             if match input {
                 UserInput::Single(button) => self.button_pressed(
                     button,
@@ -137,12 +173,12 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     #[must_use]
     pub fn all_buttons_pressed(
         &self,
-        buttons: &SmallSet<Button, 8>,
+        buttons: &ArraySet<Button, 8>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for button in buttons.clone() {
+        for button in *buttons {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(
                 button,
@@ -156,7 +192,65 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         // If none of the inputs failed to match, return true
         true
     }
+}
 
+// Utilities
+impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+    /// Returns the mapping between the `action` that uses the supplied `input_mode`
+    ///
+    /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
+    ///
+    /// For chords, an input will be returned if any of the contained buttons use that input mode.
+    ///
+    /// A copy of the values are returned, rather than a reference to them.
+    /// The order of these values is stable, in a first-in, first-out fashion.
+    /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
+    #[must_use]
+    pub fn get(
+        &self,
+        action: A,
+        input_mode: Option<InputMode>,
+    ) -> Option<ArraySet<UserInput, CAP>> {
+        if let Some(full_set) = self.map.get(&action) {
+            if let Some(input_mode) = input_mode {
+                let mut matching_set = ArraySet::default();
+                for input in *full_set {
+                    if input.matches_input_mode(input_mode) {
+                        matching_set.insert(input);
+                    }
+                }
+
+                if matching_set.is_empty() {
+                    None
+                } else {
+                    Some(matching_set)
+                }
+            } else {
+                Some(*full_set)
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Returns how many bindings are currently registered for the provided action with the provided [InputMode]
+    ///
+    /// If `None` is provided, a total across all input modes will be provided.
+    ///
+    /// A maximum of `CAP` bindings across all input modes can be stored for each action,
+    /// and insert operations will silently fail if used when `CAP` bindings already exist.
+    #[must_use]
+    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> usize {
+        if let Some(set) = self.get(action, input_mode) {
+            set.len()
+        } else {
+            0
+        }
+    }
+}
+
+// Insertion
+impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     /// Insert a mapping between `action` and `input`
     ///
     /// Existing mappings for that action will not be overwritten.
@@ -170,14 +264,23 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         }
 
         // Don't overflow the set!
-        if self.n_registered(action) >= CAP {
+        if self.n_registered(action, None) >= CAP {
             return;
+        }
+
+        // Respect any per-input-mode caps that have been set
+        if let Some(per_mode_cap) = self.per_mode_cap {
+            for input_mode in input.input_modes() {
+                if self.n_registered(action, Some(input_mode)) >= per_mode_cap {
+                    return;
+                }
+            }
         }
 
         if let Some(existing_set) = self.map.get_mut(&action) {
             existing_set.insert(input);
         } else {
-            let mut new_set = SmallSet::new();
+            let mut new_set = ArraySet::default();
             new_set.insert(input);
             self.map.insert(action, new_set);
         }
@@ -221,10 +324,10 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         &mut self,
         action: A,
         input: impl Into<UserInput>,
-    ) -> Option<SmallSet<UserInput, CAP>> {
+    ) -> Option<ArraySet<UserInput, CAP>> {
         let input = input.into();
 
-        let mut old_inputs: SmallSet<UserInput, CAP> = SmallSet::new();
+        let mut old_inputs: ArraySet<UserInput, CAP> = ArraySet::default();
         for input_mode in input.input_modes() {
             if let Some(removed_inputs) = self.clear_action(action, Some(input_mode)) {
                 for removed_input in removed_inputs {
@@ -236,6 +339,31 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         self.insert(action, input);
 
         Some(old_inputs)
+    }
+
+    /// Replaces the input for the `action`of the same [InputMode] at the same index with the provided `input`
+    ///
+    /// If the input is a [UserInput::Chord] that combines multiple input modes or [UserInput::Null], this method will silently fail.
+    /// Returns the replaced input, if any.
+    pub fn replace_at(
+        &mut self,
+        action: A,
+        input: impl Into<UserInput>,
+        index: usize,
+    ) -> Option<UserInput> {
+        let input = input.into();
+        let input_modes = input.input_modes();
+
+        if input_modes.len() != 1 {
+            return None;
+        }
+
+        // We know that the input belongs to exactly one mode
+        let input_mode = input_modes.clone().next().unwrap();
+        let removed = self.clear_at(action, input_mode, index);
+        self.insert(action, input);
+
+        removed
     }
 
     /// Merges the provided [InputMap] into the [InputMap] this method was called on
@@ -252,8 +380,8 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         };
 
         let mut new_map = InputMap {
-            map: HashMap::default(),
             associated_gamepad,
+            ..Default::default()
         };
 
         for action in A::iter() {
@@ -268,56 +396,10 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 
         *self = new_map;
     }
+}
 
-    /// Returns how many bindings are currently registered for the provided action
-    ///
-    /// A maximum of `CAP` bindings across all input modes can be stored for each action,
-    /// and insert operations will silently fail if used when `CAP` bindings already exist.
-    #[must_use]
-    pub fn n_registered(&self, action: A) -> usize {
-        if let Some(set) = self.get(action, None) {
-            set.len()
-        } else {
-            0
-        }
-    }
-
-    /// Returns the mapping between the `action` that uses the supplied `input_mode`
-    ///
-    /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
-    ///
-    /// For chords, an input will be returned if any of the contained buttons use that input mode.
-    ///
-    /// A copy of the values are returned, rather than a reference to them.
-    /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
-    #[must_use]
-    pub fn get(
-        &self,
-        action: A,
-        input_mode: Option<InputMode>,
-    ) -> Option<SmallSet<UserInput, CAP>> {
-        if let Some(full_set) = self.map.get(&action) {
-            if let Some(input_mode) = input_mode {
-                let mut matching_set = SmallSet::new();
-                for input in full_set.clone() {
-                    if input.matches_input_mode(input_mode) {
-                        matching_set.insert(input.clone());
-                    }
-                }
-
-                if matching_set.is_empty() {
-                    None
-                } else {
-                    Some(matching_set)
-                }
-            } else {
-                Some(full_set.clone())
-            }
-        } else {
-            None
-        }
-    }
-
+// Clearing
+impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     /// Clears all inputs registered for the `action` that use the supplied `input_mode`
     ///
     /// If `input_mode` is `None`, all inputs will be cleared regardless of input mode.
@@ -329,12 +411,12 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         &mut self,
         action: A,
         input_mode: Option<InputMode>,
-    ) -> Option<SmallSet<UserInput, CAP>> {
+    ) -> Option<ArraySet<UserInput, CAP>> {
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
             if let Some(full_set) = self.map.remove(&action) {
-                let mut retained_set: SmallSet<UserInput, CAP> = SmallSet::new();
-                let mut removed_set: SmallSet<UserInput, CAP> = SmallSet::new();
+                let mut retained_set: ArraySet<UserInput, CAP> = ArraySet::default();
+                let mut removed_set: ArraySet<UserInput, CAP> = ArraySet::default();
 
                 for input in full_set {
                     if input.matches_input_mode(input_mode) {
@@ -361,6 +443,37 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
         }
     }
 
+    /// Clears the input for the `action` with the specified [InputMode] at the provided index
+    ///
+    /// Returns the removed input, if any
+    pub fn clear_at(
+        &mut self,
+        action: A,
+        input_mode: InputMode,
+        index: usize,
+    ) -> Option<UserInput> {
+        if let Some(mut bindings) = self.get(action, Some(input_mode)) {
+            if bindings.len() < index {
+                // Not enough matching bindings were found
+                return None;
+            }
+
+            // Clear out existing mappings for that input mode
+            self.clear_action(action, Some(input_mode));
+
+            // Remove the binding at the provided index
+            let removed = bindings.remove_at(index);
+
+            // Reinsert the other bindings
+            self.insert_multiple(action, bindings);
+
+            removed
+        } else {
+            // No matching bindings were found
+            None
+        }
+    }
+
     /// Clears all inputs that use the supplied `input_mode`
     ///
     /// If `input_mode` is `None`, all inputs will be cleared regardless of input mode.
@@ -371,8 +484,8 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     #[allow(clippy::return_self_not_must_use)]
     pub fn clear_input_mode(&mut self, input_mode: Option<InputMode>) -> InputMap<A> {
         let mut cleared_input_map = InputMap {
-            map: HashMap::default(),
             associated_gamepad: self.associated_gamepad,
+            ..Default::default()
         };
 
         for action in A::iter() {
@@ -383,7 +496,63 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
 
         cleared_input_map
     }
+}
 
+// Per-mode cap
+impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
+    /// Returns the per-[InputMode] cap on input bindings for every action
+    ///
+    /// Each individual action can have at most this many bindings, making them easier to display and configure.
+    pub fn per_mode_cap(&self) -> usize {
+        if let Some(cap) = self.per_mode_cap {
+            cap
+        } else {
+            0
+        }
+    }
+
+    /// Sets the per-[InputMode] cap on input bindings for every action
+    ///
+    /// Each individual action can have at most this many bindings, making them easier to display and configure.
+    /// Any excess actions will be removed, and returned from this method.
+    ///
+    /// Supplying a value of 0 removes any per-mode cap.
+    ///
+    /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
+    pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
+        assert!(3 * per_mode_cap <= CAP);
+
+        if per_mode_cap == 0 {
+            self.per_mode_cap = None;
+            return InputMap::default();
+        } else {
+            self.per_mode_cap = Some(per_mode_cap);
+        }
+
+        // Store the actions that get culled and then return them
+        let mut removed_actions = InputMap::default();
+
+        // Cull excess mappings
+        for action in A::iter() {
+            for input_mode in InputMode::iter() {
+                let n_registered = self.n_registered(action, Some(input_mode));
+                if n_registered > per_mode_cap {
+                    for i in per_mode_cap..n_registered {
+                        let removed_input = self.clear_at(action, input_mode, i);
+                        if let Some(input) = removed_input {
+                            removed_actions.insert(action, input);
+                        }
+                    }
+                }
+            }
+        }
+
+        removed_actions
+    }
+}
+
+// Gamepads
+impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     /// Assigns a particular [Gamepad] to the entity controlled by this input map
     pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
         self.associated_gamepad = Some(gamepad);
@@ -401,25 +570,18 @@ impl<A: Actionlike, const CAP: usize> InputMap<A, CAP> {
     }
 }
 
-impl<A: Actionlike> Default for InputMap<A> {
-    fn default() -> Self {
-        Self {
-            map: HashMap::default(),
-            associated_gamepad: None,
-        }
-    }
-}
-
 /// Some combination of user input, which may cross [Input] boundaries
 ///
 /// Suitable for use in an [InputMap]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum UserInput {
     /// A single button
     Single(Button),
     /// A combination of buttons, pressed simultaneously
-    /// Up to 8 (!!) buttons can be chorded together at once
-    Chord(SmallSet<Button, 8>),
+    ///
+    /// Up to 8 (!!) buttons can be chorded together at once.
+    /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
+    Chord(ArraySet<Button, 8>),
     /// A null user input, used for a safe default and error-handling
     ///
     /// This input can never be pressed.
@@ -441,7 +603,7 @@ impl UserInput {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: SmallSet<Button, 8> = SmallSet::new();
+        let mut set: ArraySet<Button, 8> = ArraySet::default();
         for button in buttons {
             length += 1;
             set.insert(button.into());
@@ -455,13 +617,13 @@ impl UserInput {
     }
 
     /// Which [InputMode]s does this input contain?
-    pub fn input_modes(&self) -> SmallSet<InputMode, 3> {
-        let mut set = SmallSet::new();
+    pub fn input_modes(&self) -> ArraySet<InputMode, 3> {
+        let mut set = ArraySet::default();
         match self {
             UserInput::Null => (),
             UserInput::Single(button) => set.insert((*button).into()),
             UserInput::Chord(buttons) => {
-                for button in buttons.clone() {
+                for button in *buttons {
                     set.insert(button.into())
                 }
             }
@@ -481,7 +643,7 @@ impl UserInput {
                 button_mode == input_mode
             }
             UserInput::Chord(set) => {
-                for button in set.clone() {
+                for button in *set {
                     let button_mode: InputMode = button.into();
                     if button_mode == input_mode {
                         return true;
@@ -528,7 +690,7 @@ impl From<MouseButton> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
 pub enum InputMode {
     /// A gamepad
     Gamepad,
@@ -598,7 +760,7 @@ mod tests {
 
     #[test]
     fn insertion_idempotency() {
-        use crate::smallset::SmallSet;
+        use crate::arrayset::ArraySet;
         use bevy::input::keyboard::KeyCode;
 
         let mut input_map = InputMap::<Action>::default();
@@ -606,21 +768,21 @@ mod tests {
 
         assert_eq!(
             input_map.get(Action::Run, None),
-            Some(SmallSet::from_iter([KeyCode::Space.into()]))
+            Some(ArraySet::from_iter([KeyCode::Space.into()]))
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(Action::Run, KeyCode::Space);
         assert_eq!(
             input_map.get(Action::Run, None),
-            Some(SmallSet::from_iter([KeyCode::Space.into()]))
+            Some(ArraySet::from_iter([KeyCode::Space.into()]))
         );
     }
 
     #[test]
     fn multiple_insertion() {
+        use crate::arrayset::ArraySet;
         use crate::input_map::{Button, UserInput};
-        use crate::smallset::SmallSet;
         use bevy::input::keyboard::KeyCode;
 
         let mut input_map_1 = InputMap::<Action>::default();
@@ -629,7 +791,7 @@ mod tests {
 
         assert_eq!(
             input_map_1.get(Action::Run, None),
-            Some(SmallSet::from_iter([
+            Some(ArraySet::from_iter([
                 KeyCode::Space.into(),
                 KeyCode::Return.into()
             ]))
