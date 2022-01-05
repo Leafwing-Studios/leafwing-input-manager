@@ -1,10 +1,9 @@
 //! This module contains [InputMap] and its supporting methods and impls.
 
-use crate::arrayset::ArraySet;
 use crate::Actionlike;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use core::fmt::Debug;
+use petitset::{PetitMap, PetitSet};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -50,10 +49,10 @@ use strum_macros::EnumIter;
 /// // But you can't Hide :(
 /// input_map.clear_action(Action::Hide, None);
 ///```
-#[derive(Component, Debug, PartialEq, Clone)]
+#[derive(Component, Debug, Clone, PartialEq)]
 pub struct InputMap<A: Actionlike> {
-    /// The raw [HashMap] [ArraySet] used to store the input mapping
-    pub map: HashMap<A, ArraySet<UserInput, 16>>,
+    /// The raw [PetitMap] of [PetitSet]s used to store the input mapping
+    pub map: PetitMap<A, PetitSet<UserInput, 16>, 50>,
     per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
 }
@@ -61,7 +60,7 @@ pub struct InputMap<A: Actionlike> {
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         Self {
-            map: HashMap::default(),
+            map: PetitMap::default(),
             associated_gamepad: None,
             per_mode_cap: None,
         }
@@ -115,7 +114,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn any_pressed(
         &self,
-        inputs: &ArraySet<UserInput, 16>,
+        inputs: &PetitSet<UserInput, 16>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
@@ -171,7 +170,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn all_buttons_pressed(
         &self,
-        buttons: &ArraySet<Button, 8>,
+        buttons: &PetitSet<Button, 8>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
@@ -204,10 +203,10 @@ impl<A: Actionlike> InputMap<A> {
     /// The order of these values is stable, in a first-in, first-out fashion.
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
     #[must_use]
-    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<ArraySet<UserInput, 16>> {
+    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<PetitSet<UserInput, 16>> {
         if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
-                let mut matching_set = ArraySet::default();
+                let mut matching_set = PetitSet::default();
                 for input in *full_set {
                     if input.matches_input_mode(input_mode) {
                         matching_set.insert(input);
@@ -274,7 +273,7 @@ impl<A: Actionlike> InputMap<A> {
         if let Some(existing_set) = self.map.get_mut(&action) {
             existing_set.insert(input);
         } else {
-            let mut new_set = ArraySet::default();
+            let mut new_set = PetitSet::default();
             new_set.insert(input);
             self.map.insert(action, new_set);
         }
@@ -318,10 +317,10 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         action: A,
         input: impl Into<UserInput>,
-    ) -> Option<ArraySet<UserInput, 16>> {
+    ) -> Option<PetitSet<UserInput, 16>> {
         let input = input.into();
 
-        let mut old_inputs: ArraySet<UserInput, 16> = ArraySet::default();
+        let mut old_inputs: PetitSet<UserInput, 16> = PetitSet::default();
         for input_mode in input.input_modes() {
             if let Some(removed_inputs) = self.clear_action(action, Some(input_mode)) {
                 for removed_input in removed_inputs {
@@ -405,14 +404,14 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         action: A,
         input_mode: Option<InputMode>,
-    ) -> Option<ArraySet<UserInput, 16>> {
+    ) -> Option<PetitSet<UserInput, 16>> {
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
-            if let Some(full_set) = self.map.remove(&action) {
-                let mut retained_set: ArraySet<UserInput, 16> = ArraySet::default();
-                let mut removed_set: ArraySet<UserInput, 16> = ArraySet::default();
+            if let Some((_index, bindings)) = self.map.remove(&action) {
+                let mut retained_set: PetitSet<UserInput, 16> = PetitSet::default();
+                let mut removed_set: PetitSet<UserInput, 16> = PetitSet::default();
 
-                for input in full_set {
+                for input in bindings {
                     if input.matches_input_mode(input_mode) {
                         removed_set.insert(input);
                     } else {
@@ -433,7 +432,11 @@ impl<A: Actionlike> InputMap<A> {
                 None
             }
         } else {
-            self.map.remove(&action)
+            if let Some((_index, bindings)) = self.map.remove(&action) {
+                Some(bindings)
+            } else {
+                None
+            }
         }
     }
 
@@ -567,7 +570,7 @@ impl<A: Actionlike> InputMap<A> {
 /// Some combination of user input, which may cross [Input] boundaries
 ///
 /// Suitable for use in an [InputMap]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum UserInput {
     /// A single button
     Single(Button),
@@ -575,7 +578,7 @@ pub enum UserInput {
     ///
     /// Up to 8 (!!) buttons can be chorded together at once.
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
-    Chord(ArraySet<Button, 8>),
+    Chord(PetitSet<Button, 8>),
     /// A null user input, used for a safe default and error-handling
     ///
     /// This input can never be pressed.
@@ -597,7 +600,7 @@ impl UserInput {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: ArraySet<Button, 8> = ArraySet::default();
+        let mut set: PetitSet<Button, 8> = PetitSet::default();
         for button in buttons {
             length += 1;
             set.insert(button.into());
@@ -611,8 +614,8 @@ impl UserInput {
     }
 
     /// Which [InputMode]s does this input contain?
-    pub fn input_modes(&self) -> ArraySet<InputMode, 3> {
-        let mut set = ArraySet::default();
+    pub fn input_modes(&self) -> PetitSet<InputMode, 3> {
+        let mut set = PetitSet::default();
         match self {
             UserInput::Null => (),
             UserInput::Single(button) => set.insert((*button).into()),
@@ -754,30 +757,30 @@ mod tests {
 
     #[test]
     fn insertion_idempotency() {
-        use crate::arrayset::ArraySet;
         use bevy::input::keyboard::KeyCode;
+        use petitset::PetitSet;
 
         let mut input_map = InputMap::<Action>::default();
         input_map.insert(Action::Run, KeyCode::Space);
 
         assert_eq!(
             input_map.get(Action::Run, None),
-            Some(ArraySet::from_iter([KeyCode::Space.into()]))
+            Some(PetitSet::from_iter([KeyCode::Space.into()]))
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(Action::Run, KeyCode::Space);
         assert_eq!(
             input_map.get(Action::Run, None),
-            Some(ArraySet::from_iter([KeyCode::Space.into()]))
+            Some(PetitSet::from_iter([KeyCode::Space.into()]))
         );
     }
 
     #[test]
     fn multiple_insertion() {
-        use crate::arrayset::ArraySet;
         use crate::input_map::{Button, UserInput};
         use bevy::input::keyboard::KeyCode;
+        use petitset::PetitSet;
 
         let mut input_map_1 = InputMap::<Action>::default();
         input_map_1.insert(Action::Run, KeyCode::Space);
@@ -785,7 +788,7 @@ mod tests {
 
         assert_eq!(
             input_map_1.get(Action::Run, None),
-            Some(ArraySet::from_iter([
+            Some(PetitSet::from_iter([
                 KeyCode::Space.into(),
                 KeyCode::Return.into()
             ]))

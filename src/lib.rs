@@ -53,7 +53,6 @@ use core::marker::PhantomData;
 use strum::IntoEnumIterator;
 
 pub mod action_state;
-pub mod arrayset;
 pub mod input_map;
 pub mod systems;
 // Importing the derive macro
