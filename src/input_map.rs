@@ -2,8 +2,9 @@
 
 use crate::Actionlike;
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use core::fmt::Debug;
-use petitset::{PetitMap, PetitSet};
+use petitset::PetitSet;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -51,8 +52,8 @@ use strum_macros::EnumIter;
 ///```
 #[derive(Component, Debug, Clone, PartialEq)]
 pub struct InputMap<A: Actionlike> {
-    /// The raw [PetitMap] of [PetitSet]s used to store the input mapping
-    pub map: PetitMap<A, PetitSet<UserInput, 16>, 50>,
+    /// The raw [HashMap] of [PetitSet]s used to store the input mapping
+    pub map: HashMap<A, PetitSet<UserInput, 16>>,
     per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
 }
@@ -60,7 +61,7 @@ pub struct InputMap<A: Actionlike> {
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         Self {
-            map: PetitMap::default(),
+            map: HashMap::default(),
             associated_gamepad: None,
             per_mode_cap: None,
         }
@@ -119,10 +120,10 @@ impl<A: Actionlike> InputMap<A> {
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for input in *inputs {
+        for input in inputs.iter() {
             if match input {
                 UserInput::Single(button) => self.button_pressed(
-                    button,
+                    *button,
                     gamepad_input_stream,
                     keyboard_input_stream,
                     mouse_input_stream,
@@ -175,7 +176,7 @@ impl<A: Actionlike> InputMap<A> {
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
-        for button in *buttons {
+        for &button in buttons.iter() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(
                 button,
@@ -207,9 +208,9 @@ impl<A: Actionlike> InputMap<A> {
         if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
                 let mut matching_set = PetitSet::default();
-                for input in *full_set {
+                for input in full_set.iter() {
                     if input.matches_input_mode(input_mode) {
-                        matching_set.insert(input);
+                        matching_set.insert(input.clone());
                     }
                 }
 
@@ -219,7 +220,7 @@ impl<A: Actionlike> InputMap<A> {
                     Some(matching_set)
                 }
             } else {
-                Some(*full_set)
+                Some(full_set.clone())
             }
         } else {
             None
@@ -407,7 +408,7 @@ impl<A: Actionlike> InputMap<A> {
     ) -> Option<PetitSet<UserInput, 16>> {
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
-            if let Some((_index, bindings)) = self.map.remove(&action) {
+            if let Some(bindings) = self.map.remove(&action) {
                 let mut retained_set: PetitSet<UserInput, 16> = PetitSet::default();
                 let mut removed_set: PetitSet<UserInput, 16> = PetitSet::default();
 
@@ -432,11 +433,7 @@ impl<A: Actionlike> InputMap<A> {
                 None
             }
         } else {
-            if let Some((_index, bindings)) = self.map.remove(&action) {
-                Some(bindings)
-            } else {
-                None
-            }
+            self.map.remove(&action)
         }
     }
 
@@ -459,7 +456,7 @@ impl<A: Actionlike> InputMap<A> {
             self.clear_action(action, Some(input_mode));
 
             // Remove the binding at the provided index
-            let removed = bindings.remove_at(index);
+            let removed = bindings.take_at(index);
 
             // Reinsert the other bindings
             self.insert_multiple(action, bindings);
@@ -516,6 +513,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Supplying a value of 0 removes any per-mode cap.
     ///
     /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
+    #[allow(clippy::return_self_not_must_use)]
     pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
         assert!(3 * per_mode_cap <= 16);
 
@@ -570,7 +568,7 @@ impl<A: Actionlike> InputMap<A> {
 /// Some combination of user input, which may cross [Input] boundaries
 ///
 /// Suitable for use in an [InputMap]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UserInput {
     /// A single button
     Single(Button),
@@ -618,10 +616,12 @@ impl UserInput {
         let mut set = PetitSet::default();
         match self {
             UserInput::Null => (),
-            UserInput::Single(button) => set.insert((*button).into()),
+            UserInput::Single(button) => {
+                set.insert((*button).into());
+            }
             UserInput::Chord(buttons) => {
-                for button in *buttons {
-                    set.insert(button.into())
+                for &button in buttons.iter() {
+                    set.insert(button.into());
                 }
             }
         }
@@ -640,8 +640,8 @@ impl UserInput {
                 button_mode == input_mode
             }
             UserInput::Chord(set) => {
-                for button in *set {
-                    let button_mode: InputMode = button.into();
+                for button in set.iter() {
+                    let button_mode: InputMode = (*button).into();
                     if button_mode == input_mode {
                         return true;
                     }
