@@ -29,7 +29,6 @@ bevy = { git = "https://github.com/bevyengine/bevy/", commit = "22c665fa39b16c62
 petitset = {git = "https://github.com/leafwing-studios/petitset"}
 
 [dev-dependencies]
-criterion = "0.3"
 bevy = {version = "0.5", default-features = true}
 derive_more = "0.99"
 
