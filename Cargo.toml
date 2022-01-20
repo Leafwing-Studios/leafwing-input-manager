@@ -18,18 +18,17 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [dependencies]
-bevy = {version = "0.5", default-features = false, features = ["render"]}
+bevy = {version = "0.6", default-features = false, features = ["render"]}
 petitset = "0.0"
 strum = "0.23"
 strum_macros = "0.23"
 leafwing_input_manager_macros = { path = "macros" }
 
 [patch.crates-io]
-bevy = { git = "https://github.com/bevyengine/bevy/", commit = "22c665fa39b16c62272b927db742ea62d67615e8"}
 petitset = {git = "https://github.com/leafwing-studios/petitset"}
 
 [dev-dependencies]
-bevy = {version = "0.5", default-features = true}
+bevy = {version = "0.6", default-features = true}
 derive_more = "0.99"
 
 [lib]
