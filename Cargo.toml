@@ -9,7 +9,7 @@ license = "MIT + APACHE"
 edition = "2021"
 categories = ["games", "game-development"]
 keywords = ["bevy"]
-exclude = ["assets/**/*", "tools/**/*", "github/**/*"]
+exclude = ["assets/**/*", "tools/**/*", ".github/**/*"]
 
 [profile.dev]
 opt-level = 3
