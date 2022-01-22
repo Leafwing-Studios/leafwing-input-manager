@@ -1,4 +1,4 @@
-//! This module contains [ActionState] and its supporting methods and impls.
+//! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::{Actionlike, InputMap};
 use bevy::prelude::*;
@@ -56,7 +56,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on the [`InputMap`] and the provided [`Input`]s
     ///
     /// Presses and releases buttons according to the current state of the inputs.
-    /// Combine with [ActionState::tick] to update `just_pressed` and `just_released`.
+    /// Combine with [`ActionState::tick`] to update `just_pressed` and `just_released`.
     pub fn update(
         &mut self,
         input_map: &InputMap<A>,
@@ -193,9 +193,9 @@ impl<A: Actionlike> Default for ActionState<A> {
     }
 }
 
-/// A component that allows the attached entity to drive the [ActionState] of the associated entity
+/// A component that allows the attached entity to drive the [`ActionState`] of the associated entity
 ///
-/// Used in [update_action_state_from_interaction](crate::systems::update_action_state_from_interaction).
+/// Used in [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction).
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ActionStateDriver<A: Actionlike> {
     /// The action triggered by this entity
@@ -206,7 +206,7 @@ pub struct ActionStateDriver<A: Actionlike> {
 
 /// Thresholds for when the `value` of a button will cause it to be pressed or released
 ///
-/// Both `pressed` and `released` must be in the range [0.0, 1.0]
+/// Both `pressed` and `released` must be between 0.0 and 1.0 inclusive,
 /// and `pressed` must be greater than `released`
 /// Defaults to 0.5 for both values
 #[derive(Debug, Clone)]

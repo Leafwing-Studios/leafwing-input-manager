@@ -2,6 +2,7 @@
 // we are currently blocked on the 0.24 release of `strum`, which fixes the issue with the `EnumIter` macro :(
 // However! CI will fail if any warnings are detected, so full documentation is in fact enforced.
 #![deny(missing_docs)]
+#![warn(clippy::doc_markdown)]
 
 //! # About
 //!
@@ -66,23 +67,23 @@ pub mod prelude {
     pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
 }
 
-/// A [Plugin] that collects [Input] from disparate sources, producing an [ActionState] to consume in game logic
+/// A [`Plugin`] that collects [`Input`] from disparate sources, producing an [`ActionState`] to consume in game logic
 ///
-/// This plugin needs to be passed in an [Actionlike] enum type that you've created for your game,
+/// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game,
 /// which acts as a "virtual button" that can be comfortably consumed
 ///
-/// Each [InputManagerBundle] contains:
-///  - an [InputMap] component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
-///  - an [ActionState] component, which stores the current input state for that entity in an source-agnostic fashion
+/// Each [`InputManagerBundle`] contains:
+///  - an [`InputMap`] component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
+///  - an [`ActionState`] component, which stores the current input state for that entity in an source-agnostic fashion
 ///
 /// ## Systems
-/// - [tick_action_state](systems::tick_action_state), which resets the pressed and just_pressed fields of the [ActionState] each frame
-///     - labeled [InputManagerSystem::Reset]
-/// - [update_action_state](systems::update_action_state) which collects [Input] resources to update the [ActionState]
-///     - labeled [InputManagerSystem::Read]
-/// - [update_action_state_from_interaction](systems::update_action_state_from_interaction), for triggering actions from buttons
-///    - powers the [ActionStateDriver](crate::action_state::ActionStateDriver) component baseod on an [Interaction] component
-///    - labeled [InputManagerSystem::Read]
+/// - [`tick_action_state`](systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
+///     - labeled [`InputManagerSystem::Reset`]
+/// - [`update_action_state`](systems::update_action_state) which collects [`Input`] resources to update the [`ActionState`]
+///     - labeled [`InputManagerSystem::Update`]
+/// - [`update_action_state_from_interaction`](systems::update_action_state_from_interaction), for triggering actions from buttons
+///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`] component
+///    - labeled [`InputManagerSystem::Update`]
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
 }
@@ -101,7 +102,7 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
 /// Actions serve as "virtual buttons", cleanly abstracting over messy, customizable inputs
 /// in a way that can be easily consumed by your game logic.
 ///
-/// This trait should be implemented on the `A` type that you want to pass into [InputManagerPlugin]
+/// This trait should be implemented on the `A` type that you want to pass into [`InputManagerPlugin`]
 ///
 /// # Example
 /// ```rust
@@ -125,7 +126,7 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
 /// ```
 pub trait Actionlike: Send + Sync + Copy + Eq + Hash + IntoEnumIterator + 'static {}
 
-/// [SystemLabel]s for the [crate::systems] used by this crate
+/// [`SystemLabel`]s for the [`crate::systems`] used by this crate
 ///
 /// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
@@ -136,9 +137,9 @@ pub enum InputManagerSystem {
     Update,
 }
 
-/// This [Bundle] allows entities to collect and interpret inputs from across input sources
+/// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
 ///
-/// Use with [InputManagerPlugin], providing the same enum type to both.
+/// Use with [`InputManagerPlugin`], providing the same enum type to both.
 #[derive(Bundle)]
 pub struct InputManagerBundle<A: Actionlike> {
     /// An [ActionState] component

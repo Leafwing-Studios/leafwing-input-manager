@@ -1,4 +1,4 @@
-//! The systems that power each [InputManagerPlugin](crate::InputManagerPlugin).
+//! The systems that power each [`InputManagerPlugin`](crate::InputManagerPlugin).
 
 use crate::{
     action_state::{ActionState, ActionStateDriver},

@@ -1,4 +1,4 @@
-//! This module contains [InputMap] and its supporting methods and impls.
+//! This module contains [`InputMap`] and its supporting methods and impls.
 
 use crate::Actionlike;
 use bevy::prelude::*;
@@ -70,9 +70,9 @@ impl<A: Actionlike> Default for InputMap<A> {
 
 // Constructors
 impl<A: Actionlike> InputMap<A> {
-    /// Creates a new empty [InputMap]
+    /// Creates a new empty [`InputMap`]
     ///
-    /// The `per_mode_cap` controls the maximum number of inputs of each [InputMode] that can be stored.
+    /// The `per_mode_cap` controls the maximum number of inputs of each [`InputMode`] that can be stored.
     /// If a value of 0 is supplied, no cap will be provided (although the global `CAP` must still be obeyed).
     ///
     /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
@@ -129,7 +129,7 @@ impl<A: Actionlike> InputMap<A> {
                     mouse_input_stream,
                 ),
                 UserInput::Chord(buttons) => self.all_buttons_pressed(
-                    &buttons,
+                    buttons,
                     gamepad_input_stream,
                     keyboard_input_stream,
                     mouse_input_stream,
@@ -227,7 +227,7 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
-    /// Returns how many bindings are currently registered for the provided action with the provided [InputMode]
+    /// Returns how many bindings are currently registered for the provided action with the provided [`InputMode`]
     ///
     /// If `None` is provided, a total across all input modes will be provided.
     ///
@@ -283,8 +283,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Insert a mapping between `action` and the provided `inputs`
     ///
     /// This method creates multiple distinct bindings.
-    /// If you want to require multiple buttons to be pressed at once, use [insert_chord](Self::insert_chord).
-    /// Any iterator that can be converted into a [UserInput] can be supplied.
+    /// If you want to require multiple buttons to be pressed at once, use [`insert_chord`](Self::insert_chord).
+    /// Any iterator that can be converted into a [`UserInput`] can be supplied.
     ///
     /// Existing mappings for that action will not be overwritten.
     pub fn insert_multiple(
@@ -299,7 +299,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between `action` and the simultaneous combination of `buttons` provided
     ///
-    /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [HashSet] for storage and use.
+    /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
     /// Existing mappings for that action will not be overwritten.
@@ -337,7 +337,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Replaces the input for the `action`of the same [`InputMode`] at the same index with the provided `input`
     ///
-    /// If the input is a [UserInput::Chord] that combines multiple input modes or [UserInput::Null], this method will silently fail.
+    /// If the input is a [`UserInput::Chord`] that combines multiple input modes or [`UserInput::Null`], this method will silently fail.
     /// Returns the replaced input, if any.
     pub fn replace_at(
         &mut self,
@@ -611,7 +611,7 @@ impl UserInput {
         }
     }
 
-    /// Which [InputMode]s does this input contain?
+    /// Which [`InputMode`]s does this input contain?
     pub fn input_modes(&self) -> PetitSet<InputMode, 3> {
         let mut set = PetitSet::default();
         match self {
