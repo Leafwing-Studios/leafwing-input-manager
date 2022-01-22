@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 mod common_ui;
+mod gameplay;
 mod input_binding_menu;
 
 fn main() {
