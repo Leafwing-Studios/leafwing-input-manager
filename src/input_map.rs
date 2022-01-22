@@ -200,11 +200,13 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// For chords, an input will be returned if any of the contained buttons use that input mode.
     ///
+    /// If no matching bindings are found, an empty [`PetitSet`] will be returned.
+    ///
     /// A copy of the values are returned, rather than a reference to them.
     /// The order of these values is stable, in a first-in, first-out fashion.
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
     #[must_use]
-    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> Option<PetitSet<UserInput, 16>> {
+    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
         if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
                 let mut matching_set = PetitSet::default();
@@ -215,15 +217,15 @@ impl<A: Actionlike> InputMap<A> {
                 }
 
                 if matching_set.is_empty() {
-                    None
+                    PetitSet::default()
                 } else {
-                    Some(matching_set)
+                    matching_set
                 }
             } else {
-                Some(full_set.clone())
+                full_set.clone()
             }
         } else {
-            None
+            PetitSet::default()
         }
     }
 
@@ -235,11 +237,7 @@ impl<A: Actionlike> InputMap<A> {
     /// and insert operations will silently fail if used when `CAP` bindings already exist.
     #[must_use]
     pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> usize {
-        if let Some(set) = self.get(action, input_mode) {
-            set.len()
-        } else {
-            0
-        }
+        self.get(action, input_mode).len()
     }
 }
 
@@ -379,13 +377,8 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         for action in A::iter() {
-            if let Some(self_bindings) = self.get(action, None) {
-                new_map.insert_multiple(action, self_bindings);
-            }
-
-            if let Some(other_bindings) = other.get(action, None) {
-                new_map.insert_multiple(action, other_bindings);
-            }
+            new_map.insert_multiple(action, self.get(action, None));
+            new_map.insert_multiple(action, other.get(action, None));
         }
 
         *self = new_map;
@@ -446,26 +439,22 @@ impl<A: Actionlike> InputMap<A> {
         input_mode: InputMode,
         index: usize,
     ) -> Option<UserInput> {
-        if let Some(mut bindings) = self.get(action, Some(input_mode)) {
-            if bindings.len() < index {
-                // Not enough matching bindings were found
-                return None;
-            }
-
-            // Clear out existing mappings for that input mode
-            self.clear_action(action, Some(input_mode));
-
-            // Remove the binding at the provided index
-            let removed = bindings.take_at(index);
-
-            // Reinsert the other bindings
-            self.insert_multiple(action, bindings);
-
-            removed
-        } else {
-            // No matching bindings were found
-            None
+        let mut bindings = self.get(action, Some(input_mode));
+        if bindings.len() < index {
+            // Not enough matching bindings were found
+            return None;
         }
+
+        // Clear out existing mappings for that input mode
+        self.clear_action(action, Some(input_mode));
+
+        // Remove the binding at the provided index
+        let removed = bindings.take_at(index);
+
+        // Reinsert the other bindings
+        self.insert_multiple(action, bindings);
+
+        removed
     }
 
     /// Clears all inputs that use the supplied `input_mode`
@@ -745,6 +734,7 @@ impl From<MouseButton> for Button {
 }
 
 mod tests {
+    use super::UserInput;
     use crate::prelude::*;
     use strum_macros::EnumIter;
 
@@ -765,14 +755,14 @@ mod tests {
 
         assert_eq!(
             input_map.get(Action::Run, None),
-            Some(PetitSet::from_iter([KeyCode::Space.into()]))
+            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(Action::Run, KeyCode::Space);
         assert_eq!(
             input_map.get(Action::Run, None),
-            Some(PetitSet::from_iter([KeyCode::Space.into()]))
+            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
         );
     }
 
@@ -788,10 +778,7 @@ mod tests {
 
         assert_eq!(
             input_map_1.get(Action::Run, None),
-            Some(PetitSet::from_iter([
-                KeyCode::Space.into(),
-                KeyCode::Return.into()
-            ]))
+            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into(), KeyCode::Return.into()])
         );
 
         let mut input_map_2 = InputMap::<Action>::default();
