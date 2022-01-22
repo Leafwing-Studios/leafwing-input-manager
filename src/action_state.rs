@@ -23,6 +23,7 @@ use bevy::utils::HashMap;
 /// let mut action_state = ActionState::<Action>::default();
 ///
 /// // Typically, this is done automatically by the `InputManagerPlugin` from user inputs
+/// // using the `ActionState::update` method
 /// action_state.press(Action::Jump);
 ///
 /// assert!(action_state.pressed(Action::Jump));
@@ -85,6 +86,13 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Directly set the the value of the `action` virtual button
+    ///
+    /// Sets the button to pressed / unpressed based on the threshold set.
+    /// This method is not called directly: button-press `values` are relatively rarely used,
+    /// and ambiguous in the case of a chord.
+    ///
+    /// Instead, call this method manually after [`ActionState::update`] is called to overwrite the value
+    /// with the appropriate value.
     pub fn set_value(&mut self, action: A, value: f32) {
         assert!(value >= 0.0);
         assert!(value <= 1.0);
