@@ -48,6 +48,8 @@ pub struct ActionState<A: Actionlike> {
     pressed: HashMap<A, bool>,
     just_pressed: HashMap<A, bool>,
     just_released: HashMap<A, bool>,
+    values: HashMap<A, f32>,
+    thresholds: HashMap<A, ButtonThresholds>,
 }
 
 impl<A: Actionlike> ActionState<A> {
@@ -82,12 +84,35 @@ impl<A: Actionlike> ActionState<A> {
         self.just_released = Self::default_map();
     }
 
+    /// Directly set the the value of the `action` virtual button
+    pub fn set_value(&mut self, action: A, value: f32) {
+        assert!(value >= 0.0);
+        assert!(value <= 1.0);
+
+        self.values.insert(action, value);
+
+        let thresholds = *self.thresholds.get(&action).unwrap_or_default();
+
+        if value >= thresholds.pressed() {
+            if !self.pressed(action) {
+                self.just_pressed.insert(action, true);
+            }
+            self.pressed.insert(action, true);
+        } else if value < thresholds.released() {
+            if !self.released(action) {
+                self.just_released.insert(action, true);
+            }
+            self.pressed.insert(action, false);
+        }
+    }
+
     /// Press the `action` virtual button
     pub fn press(&mut self, action: A) {
         if !self.pressed(action) {
             self.just_pressed.insert(action, true);
         }
         self.pressed.insert(action, true);
+        self.values.insert(action, 1.0);
     }
 
     /// Release the `action` virtual button
@@ -96,6 +121,7 @@ impl<A: Actionlike> ActionState<A> {
             self.just_released.insert(action, true);
         }
         self.pressed.insert(action, false);
+        self.values.insert(action, 0.0);
     }
 
     /// Releases all action virtual buttons
@@ -131,14 +157,22 @@ impl<A: Actionlike> ActionState<A> {
         *self.just_released.get(&action).unwrap()
     }
 
+    /// Returns "how pressed" the action is, as if it were a virtual analogue button
+    ///
+    /// When an action is fully released, its value will be 0.0.
+    /// When it is fully pressed, it will be 1.0.
+    pub fn value(&self, action: A) -> f32 {
+        *self.values.get(&action).unwrap()
+    }
+
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
     #[must_use]
-    pub fn default_map() -> HashMap<A, bool> {
+    pub fn default_map<V: Default>() -> HashMap<A, V> {
         // PERF: optimize construction through pre-allocation or constification
-        let mut map = HashMap::default();
+        let mut map: HashMap<A, V> = HashMap::default();
 
         for action in A::iter() {
-            map.insert(action, false);
+            map.insert(action, V::default());
         }
         map
     }
@@ -150,6 +184,8 @@ impl<A: Actionlike> Default for ActionState<A> {
             pressed: Self::default_map(),
             just_pressed: Self::default_map(),
             just_released: Self::default_map(),
+            values: Self::default_map(),
+            thresholds: Self::default_map(),
         }
     }
 }
@@ -163,6 +199,20 @@ pub struct ActionStateDriver<A: Actionlike> {
     pub action: A,
     /// The entity whose action state should be updated
     pub entity: Entity,
+}
+
+pub struct ButtonThresholds {
+    pressed: f32,
+    released: f32,
+}
+
+impl Default for ButtonThresholds {
+    fn default() -> Self {
+        Self {
+            pressed: 0.5,
+            released: 0.5,
+        }
+    }
 }
 
 mod tests {

@@ -1,7 +1,7 @@
 // I am deeply sorry for the false advertising;
-// we are currently blocked on https://github.com/rust-lang/rust-clippy/issues/8180 :(
+// we are currently blocked on the 0.24 release of `strum`, which fixes the issue with the `EnumIter` macro :(
 // However! CI will fail if any warnings are detected, so full documentation is in fact enforced.
-#![warn(missing_docs)]
+#![deny(missing_docs)]
 
 //! # About
 //!
