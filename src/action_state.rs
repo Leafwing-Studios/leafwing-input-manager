@@ -6,7 +6,7 @@ use bevy::utils::HashMap;
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
 ///
-/// Intended to be used as a [Component] on entities that you wish to control directly from player input.
+/// Intended to be used as a [`Component`] on entities that you wish to control directly from player input.
 ///
 /// # Example
 /// ```rust
@@ -51,7 +51,7 @@ pub struct ActionState<A: Actionlike> {
 }
 
 impl<A: Actionlike> ActionState<A> {
-    /// Updates the [ActionState] based on the [InputMap] and the provided [Input]s
+    /// Updates the [`ActionState`] based on the [`InputMap`] and the provided [`Input`]s
     ///
     /// Presses and releases buttons according to the current state of the inputs.
     /// Combine with [ActionState::tick] to update `just_pressed` and `just_released`.

@@ -7,7 +7,7 @@ use crate::{
 };
 use bevy::prelude::*;
 
-/// Clears the just-pressed and just-released values of all [ActionState]s
+/// Clears the just-pressed and just-released values of all [`ActionState`]s
 ///
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
 pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>) {
@@ -16,7 +16,7 @@ pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>) {
     }
 }
 
-/// Fetches all of the releveant [Input] resources to update [ActionState] according to the [InputMap]
+/// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
 pub fn update_action_state<A: Actionlike>(
     gamepad_input_stream: Res<Input<GamepadButton>>,
     keyboard_input_stream: Res<Input<KeyCode>>,
@@ -33,7 +33,7 @@ pub fn update_action_state<A: Actionlike>(
     }
 }
 
-/// When a button with a component `A` is clicked, press the corresponding virtual button in the [ActionState]
+/// When a button with a component `A` is clicked, press the corresponding virtual button in the [`ActionState`]
 ///
 /// The action triggered is determined by the variant stored in your UI-defined button.
 pub fn update_action_state_from_interaction<A: Actionlike>(

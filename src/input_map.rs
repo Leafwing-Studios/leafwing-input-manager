@@ -13,12 +13,12 @@ use strum_macros::EnumIter;
 /// Multiple inputs can be mapped to the same action,
 /// and each input can be mapped to multiple actions.
 ///
-/// The provided input types must be one of [GamepadButtonType], [KeyCode] or [MouseButton].
+/// The provided input types must be one of [`GamepadButtonType`], [`KeyCode`] or [`MouseButton`].
 ///
 /// The maximum number of bindings (total) that can be stored for each action is 16.
 /// Insertions will silently fail if you have reached this cap.
 ///
-/// In addition, you can configure the per-mode cap for each [InputMode] using [InputMap::new] or [InputMap::set_per_mode_cap].
+/// In addition, you can configure the per-mode cap for each [`InputMode`] using [`InputMap::new`] or [`InputMap::set_per_mode_cap`].
 /// This can be useful if your UI can only display one or two possible keybindings for each input mode.
 ///
 /// # Example
@@ -299,8 +299,8 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between `action` and the simultaneous combination of `buttons` provided
     ///
-    /// Any iterator that can be converted into a [Button] can be supplied, but will be converted into a [HashSet] for storage and use.
-    /// Chords can also be added with the [insert](Self::insert) method, if the [UserInput::Chord] variant is constructed explicitly.
+    /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [HashSet] for storage and use.
+    /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
     /// Existing mappings for that action will not be overwritten.
     pub fn insert_chord(
@@ -311,7 +311,7 @@ impl<A: Actionlike> InputMap<A> {
         self.insert(action, UserInput::chord(buttons));
     }
 
-    /// Replaces any existing inputs for the `action` of the same [InputMode] with the provided `input`
+    /// Replaces any existing inputs for the `action` of the same [`InputMode`] with the provided `input`
     ///
     /// Returns all previously registered inputs, if any
     pub fn replace(
@@ -335,7 +335,7 @@ impl<A: Actionlike> InputMap<A> {
         Some(old_inputs)
     }
 
-    /// Replaces the input for the `action`of the same [InputMode] at the same index with the provided `input`
+    /// Replaces the input for the `action`of the same [`InputMode`] at the same index with the provided `input`
     ///
     /// If the input is a [UserInput::Chord] that combines multiple input modes or [UserInput::Null], this method will silently fail.
     /// Returns the replaced input, if any.
@@ -360,9 +360,9 @@ impl<A: Actionlike> InputMap<A> {
         removed
     }
 
-    /// Merges the provided [InputMap] into the [InputMap] this method was called on
+    /// Merges the provided [`InputMap`] into the [`InputMap`] this method was called on
     ///
-    /// This adds both of their bindings to the resulting [InputMap].
+    /// This adds both of their bindings to the resulting [`InputMap`].
     /// Like usual, any duplicate bindings are ignored.
     ///
     /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
@@ -437,7 +437,7 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
-    /// Clears the input for the `action` with the specified [InputMode] at the provided index
+    /// Clears the input for the `action` with the specified [`InputMode`] at the provided index
     ///
     /// Returns the removed input, if any
     pub fn clear_at(
@@ -494,7 +494,7 @@ impl<A: Actionlike> InputMap<A> {
 
 // Per-mode cap
 impl<A: Actionlike> InputMap<A> {
-    /// Returns the per-[InputMode] cap on input bindings for every action
+    /// Returns the per-[`InputMode`] cap on input bindings for every action
     ///
     /// Each individual action can have at most this many bindings, making them easier to display and configure.
     pub fn per_mode_cap(&self) -> usize {
@@ -505,7 +505,7 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
-    /// Sets the per-[InputMode] cap on input bindings for every action
+    /// Sets the per-[`InputMode`] cap on input bindings for every action
     ///
     /// Each individual action can have at most this many bindings, making them easier to display and configure.
     /// Any excess actions will be removed, and returned from this method.
@@ -548,7 +548,7 @@ impl<A: Actionlike> InputMap<A> {
 
 // Gamepads
 impl<A: Actionlike> InputMap<A> {
-    /// Assigns a particular [Gamepad] to the entity controlled by this input map
+    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
     pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
         self.associated_gamepad = Some(gamepad);
     }
@@ -565,9 +565,9 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-/// Some combination of user input, which may cross [Input] boundaries
+/// Some combination of user input, which may cross [`Input`] boundaries
 ///
-/// Suitable for use in an [InputMap]
+/// Suitable for use in an [`InputMap`]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UserInput {
     /// A single button
@@ -590,10 +590,10 @@ impl Default for UserInput {
 }
 
 impl UserInput {
-    /// Creates a [UserInput::Chord] from an iterator of [Button]s
+    /// Creates a [`UserInput::Chord`] from an iterator of [`Button`]s
     ///
-    /// If `buttons` has a length of 1, a [UserInput::Single] variant will be returned instead.
-    /// If `buttons` has a length of 0, a [UserInput::Null] variant will be returned instead.
+    /// If `buttons` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
+    /// If `buttons` has a length of 0, a [`UserInput::Null`] variant will be returned instead.
     pub fn chord(buttons: impl IntoIterator<Item = impl Into<Button>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
@@ -628,9 +628,9 @@ impl UserInput {
         set
     }
 
-    /// Does this [UserInput] match the provided [InputMode]?
+    /// Does this [`UserInput`] match the provided [`InputMode`]?
     ///
-    /// For [UserInput::Chord], this will be true if any of the buttons in the combination match.
+    /// For [`UserInput::Chord`], this will be true if any of the buttons in the combination match.
     pub fn matches_input_mode(&self, input_mode: InputMode) -> bool {
         // This is slightly faster than using Self::input_modes
         // As we can return early
@@ -679,8 +679,8 @@ impl From<MouseButton> for UserInput {
 
 /// A button-like input type
 ///
-/// See [Button] for the value-ful equivalent.
-/// Use the [From] or [Into] traits to convert from a [Button] to a [InputMode].
+/// See [`Button`] for the value-ful equivalent.
+/// Use the [`From`] or [`Into`] traits to convert from a [`Button`] to a [`InputMode`].
 ///
 /// Unfortunately we cannot use a trait object here, as the types used by `Input`
 /// require traits that are not object-safe.
@@ -709,7 +709,7 @@ impl From<Button> for InputMode {
 
 /// The values of a button-like input type
 ///
-/// See [InputMode] for the value-less equivalent. Commonly stored in the [UserInput] enum.
+/// See [`InputMode`] for the value-less equivalent. Commonly stored in the [`UserInput`] enum.
 ///
 /// Unfortunately we cannot use a trait object here, as the types used by `Input`
 /// require traits that are not object-safe.
