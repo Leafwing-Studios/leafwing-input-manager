@@ -23,6 +23,7 @@ petitset = "0.1"
 strum = "0.23"
 strum_macros = "0.23"
 leafwing_input_manager_macros = { path = "macros" }
+thiserror = "1.0"
 
 [dev-dependencies]
 bevy = {version = "0.6", default-features = true}

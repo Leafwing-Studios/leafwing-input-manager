@@ -91,7 +91,10 @@ impl<A: Actionlike> ActionState<A> {
 
         self.values.insert(action, value);
 
-        let thresholds = *self.thresholds.get(&action).unwrap_or_default();
+        let thresholds = match self.thresholds.get(&action) {
+            Some(thresholds_ref) => thresholds_ref.clone(),
+            None => ButtonThresholds::default(),
+        };
 
         if value >= thresholds.pressed() {
             if !self.pressed(action) {
@@ -201,6 +204,12 @@ pub struct ActionStateDriver<A: Actionlike> {
     pub entity: Entity,
 }
 
+/// Thresholds for when the `value` of a button will cause it to be pressed or released
+///
+/// Both `pressed` and `released` must be in the range [0.0, 1.0]
+/// and `pressed` must be greater than `released`
+/// Defaults to 0.5 for both values
+#[derive(Debug, Clone)]
 pub struct ButtonThresholds {
     pressed: f32,
     released: f32,
@@ -214,6 +223,64 @@ impl Default for ButtonThresholds {
         }
     }
 }
+
+impl ButtonThresholds {
+    /// Gets the value at or above which the button is considered to be pressed
+    pub fn pressed(&self) -> f32 {
+        self.pressed
+    }
+
+    /// Gets the value below which the button is considered to be released
+    pub fn released(&self) -> f32 {
+        self.released
+    }
+
+    /// Sets the value of the pressed threshold.
+    ///
+    /// If the provided `value` is less than the `released` threshold,
+    /// it is increased to the `released` threshold and a
+    /// `ThresholdError(value_set_to)` error is returned.
+    ///
+    /// # Panics
+    /// Panics if the value provided is not between 0.0 and 1.0 inclusive.
+    pub fn set_pressed(&mut self, value: f32) -> Result<(), ThresholdError> {
+        assert!(value >= 0.0);
+        assert!(value <= 1.0);
+
+        if value >= self.released {
+            self.pressed = value;
+            Ok(())
+        } else {
+            self.pressed = self.released;
+            Err(ThresholdError(self.released))
+        }
+    }
+
+    /// Gets the value below which the button is considered to be released
+    ///
+    /// If the provided `value` is greater than the `pressed` threshold,
+    /// it is increased to the `pressed` threshold and a
+    /// `ThresholdError(value_set_to)` error is returned.
+    ///
+    /// # Panics
+    /// Panics if the value provided is not between 0.0 and 1.0 inclusive.
+    pub fn set_released(&mut self, value: f32) -> Result<(), ThresholdError> {
+        assert!(value >= 0.0);
+        assert!(value <= 1.0);
+
+        if value <= self.pressed {
+            self.pressed = value;
+            Ok(())
+        } else {
+            self.released = self.pressed;
+            Err(ThresholdError(self.pressed))
+        }
+    }
+}
+
+/// An error that resulted from inserting an invalid (but within range value) to [`ButtonThresholds`]
+#[derive(Debug, Clone)]
+pub struct ThresholdError(f32);
 
 mod tests {
     use crate::prelude::*;
