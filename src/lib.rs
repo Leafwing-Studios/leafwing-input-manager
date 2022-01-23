@@ -150,84 +150,49 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> Plugin
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
-        if TypeId::of::<UserState>() == TypeId::of::<()>() {
-            {
-                let input_manager_systems = SystemSet::new()
-                    .with_system(
-                        tick_action_state::<A>
-                            .label(InputManagerSystem::Reset)
-                            .before(InputManagerSystem::Update),
-                    )
-                    .with_system(
-                        update_action_state::<A>
-                            .label(InputManagerSystem::Update)
-                            .after(InputSystem),
-                    )
-                    .with_system(
-                        update_action_state_from_interaction::<A>
-                            .label(InputManagerSystem::Update)
-                            .after(InputSystem),
-                    );
+        let input_manager_systems = SystemSet::new()
+            .with_system(
+                tick_action_state::<A>
+                    .label(InputManagerSystem::Reset)
+                    .before(InputManagerSystem::Update),
+            )
+            .with_system(
+                update_action_state::<A>
+                    .label(InputManagerSystem::Update)
+                    .after(InputSystem),
+            )
+            .with_system(
+                update_action_state_from_interaction::<A>
+                    .label(InputManagerSystem::Update)
+                    .after(InputSystem),
+            );
 
-                app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
-            }
         // If a state has been provided
         // Only run this plugin's systems in the state variant provided
         // Note that this does not perform the standard looping behavior
         // as otherwise we would be limited to the stage that state was added in T_T
-        } else {
-            // Please forgive me, this whole state-handling API is impossibly janky.
+        if TypeId::of::<UserState>() != TypeId::of::<()>() {
             // https://github.com/bevyengine/rfcs/pull/45 will make special-casing state support unnecessary
-            // We can't use a SystemSet, as the run criteria must be reused,
-            // and the moved `state_variant` value cannot be shared across the systems
 
-            // Clone it out, so then we're not capturing any part of `Self`
-            let state_variant = self.state_variant.clone();
+            // Captured the state variant we want our systems to run in in a run-criteria closure
+            let desired_state_variant = self.state_variant.clone();
 
-            app.add_system(
-                tick_action_state::<A>
-                    .label(InputManagerSystem::Reset)
-                    .before(InputManagerSystem::Update)
-                    .with_run_criteria(move |res: Res<UserState>| {
-                        if *res == state_variant {
-                            ShouldRun::Yes
-                        } else {
-                            ShouldRun::No
-                        }
-                    }),
-            );
+            // The `SystemSet` methods take self by ownership, so we must store a new system set
+            let input_manager_systems =
+                input_manager_systems.with_run_criteria(move |current_state: Res<UserState>| {
+                    if *current_state == desired_state_variant {
+                        ShouldRun::Yes
+                    } else {
+                        ShouldRun::No
+                    }
+                });
 
-            // Clone it again, to prevent the use of the moved value!
-            let state_variant = self.state_variant.clone();
-
-            app.add_system(
-                update_action_state::<A>
-                    .label(InputManagerSystem::Update)
-                    .after(InputSystem)
-                    .with_run_criteria(move |res: Res<UserState>| {
-                        if *res == state_variant {
-                            ShouldRun::Yes
-                        } else {
-                            ShouldRun::No
-                        }
-                    }),
-            );
-
-            // One last time, you know the drill T_T
-            let state_variant = self.state_variant.clone();
-
-            app.add_system(
-                update_action_state_from_interaction::<A>
-                    .label(InputManagerSystem::Update)
-                    .after(InputSystem)
-                    .with_run_criteria(move |res: Res<UserState>| {
-                        if *res == state_variant {
-                            ShouldRun::Yes
-                        } else {
-                            ShouldRun::No
-                        }
-                    }),
-            );
+            // Add the systems to our app
+            app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
+        } else {
+            // Add the systems to our app
+            // Must be split, as the original `input_manager_systems` is consumed in the state branch
+            app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
         }
     }
 }
