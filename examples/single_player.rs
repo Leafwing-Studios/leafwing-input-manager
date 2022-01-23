@@ -7,7 +7,7 @@ fn main() {
         .add_plugins(MinimalPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugin(InputManagerPlugin::<ArpgAction>::default())
         // The InputMap and ActionState components will be added to any entity with the Player component
         .add_startup_system(spawn_player)
         // The ActionState can be used directly
@@ -21,7 +21,7 @@ fn main() {
 }
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
-enum Action {
+enum ArpgAction {
     // Movement
     Up,
     Down,
@@ -35,16 +35,21 @@ enum Action {
     Ultimate,
 }
 
-impl Action {
+impl ArpgAction {
     // Lists like this can be very useful for quickly matching subsets of actions
-    const DIRECTIONS: [Self; 4] = [Action::Up, Action::Down, Action::Left, Action::Right];
+    const DIRECTIONS: [Self; 4] = [
+        ArpgAction::Up,
+        ArpgAction::Down,
+        ArpgAction::Left,
+        ArpgAction::Right,
+    ];
 
     fn direction(self) -> Direction {
         match self {
-            Action::Up => Direction::UP,
-            Action::Down => Direction::DOWN,
-            Action::Left => Direction::LEFT,
-            Action::Right => Direction::RIGHT,
+            ArpgAction::Up => Direction::UP,
+            ArpgAction::Down => Direction::DOWN,
+            ArpgAction::Left => Direction::LEFT,
+            ArpgAction::Right => Direction::RIGHT,
             _ => Direction::NEUTRAL,
         }
     }
@@ -59,14 +64,14 @@ struct PlayerBundle {
     // This bundle must be added to your player entity
     // (or whatever else you wish to control)
     #[bundle]
-    input_manager: InputManagerBundle<Action>,
+    input_manager: InputManagerBundle<ArpgAction>,
 }
 
 impl PlayerBundle {
-    fn default_input_map() -> InputMap<Action> {
-        // This allows us to replace `Action::Up` with `Up`,
+    fn default_input_map() -> InputMap<ArpgAction> {
+        // This allows us to replace `ArpgAction::Up` with `Up`,
         // significantly reducing boilerplate
-        use Action::*;
+        use ArpgAction::*;
         let mut input_map = InputMap::default();
 
         // This is a quick and hacky solution:
@@ -119,21 +124,21 @@ fn spawn_player(mut commands: Commands) {
     });
 }
 
-fn cast_fireball(query: Query<&ActionState<Action>, With<Player>>) {
+fn cast_fireball(query: Query<&ActionState<ArpgAction>, With<Player>>) {
     let action_state = query.single();
 
-    if action_state.just_pressed(Action::Ability1) {
+    if action_state.just_pressed(ArpgAction::Ability1) {
         println!("Fwoosh!");
     }
 }
 
-fn player_dash(query: Query<&ActionState<Action>, With<Player>>) {
+fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
     let action_state = query.single();
 
-    if action_state.just_pressed(Action::Ability4) {
+    if action_state.just_pressed(ArpgAction::Ability4) {
         let mut direction = Direction::NEUTRAL;
 
-        for input_direction in Action::DIRECTIONS {
+        for input_direction in ArpgAction::DIRECTIONS {
             if action_state.pressed(input_direction) {
                 direction += input_direction.direction();
             }
@@ -148,14 +153,14 @@ pub struct PlayerWalk {
 }
 
 fn player_walks(
-    query: Query<&ActionState<Action>, With<Player>>,
+    query: Query<&ActionState<ArpgAction>, With<Player>>,
     mut event_writer: EventWriter<PlayerWalk>,
 ) {
     let action_state = query.single();
 
     let mut direction = Direction::NEUTRAL;
 
-    for input_direction in Action::DIRECTIONS {
+    for input_direction in ArpgAction::DIRECTIONS {
         if action_state.pressed(input_direction) {
             direction += input_direction.direction();
         }

@@ -1,3 +1,5 @@
+// TODO: This example is still incomplete!
+
 use bevy::prelude::*;
 
 mod common_ui;
