@@ -14,7 +14,7 @@ impl Display for UserInput {
             UserInput::Chord(button_set) => {
                 let mut string = String::default();
                 for button in button_set.iter() {
-                    string.push_str("+");
+                    string.push('+');
                     string.push_str(&button.to_string());
                 }
                 write!(f, "{string}")
