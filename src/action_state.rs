@@ -8,35 +8,52 @@ use bevy::utils::{Duration, Instant};
 /// The current state of a particular virtual button,
 /// corresponding to a single [`Actionlike`] action.
 ///
-/// If the [`Duration`] of the [`VirtualButtonState::Pressed`] or [`VirtualButtonState::Released`] state is
-/// [`Duration::ZERO`], the button is considered to be "just pressed" / "just released".
-/// If the [`Option<Instant>`](std::time::Instant) stored is `None`, the virtual button was pressed / released
-/// since the last time [`ActionState::tick`] was called.
+/// Detailed timing information for the button can be accessed through the stored [`Timing`] value
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum VirtualButtonState {
     /// This button is currently pressed
-    ///
-    /// The [`Instant`] records the app's [`Time`](bevy::core::Time) at the start of the tick it was first pressed.
-    /// The [`Duration`] stores how long the button has been pressed for.
-    Pressed(Option<Instant>, Duration),
+    Pressed(Timing),
     /// This button is currently released
+    Released(Timing),
+}
+
+/// Stores the timing information for a [`VirtualButtonState`]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
+pub struct Timing {
+    /// The [`Instant`] at which the button was pressed or released
     ///
-    /// The [`Instant`] records the app's [`Time`](bevy::core::Time) at the start of the tick after it was first released.
-    /// The [`Duration`] stores how long the button has been released for.
-    Released(Option<Instant>, Duration),
+    /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
+    /// If this is none, [`ActionState::update`] has not been called yet.
+    pub instant_started: Option<Instant>,
+    /// The [`Duration`] for which the button has been pressed or released.
+    ///
+    /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
+    pub current_duration: Duration,
+    /// The [`Duration`] for which the button was pressed or released before the state last changed.
+    pub previous_duration: Duration,
 }
 
 impl VirtualButtonState {
-    /// The state that buttons are put into when pressed
-    pub const JUST_PRESSED: VirtualButtonState = VirtualButtonState::Pressed(None, Duration::ZERO);
-    /// The state that buttons are put into when released
-    pub const JUST_RELEASED: VirtualButtonState =
-        VirtualButtonState::Released(None, Duration::ZERO);
+    /// Was the button pressed since the last time [`ActionState::update`] was called?
+    pub fn just_pressed(self) -> bool {
+        match self {
+            VirtualButtonState::Pressed(timing) => timing.instant_started.is_none(),
+            VirtualButtonState::Released(_timing) => false,
+        }
+    }
+
+    /// Was the button released since the last time [`ActionState::update`] was called?
+    pub fn just_released(self) -> bool {
+        match self {
+            VirtualButtonState::Pressed(_timing) => false,
+            VirtualButtonState::Released(timing) => timing.instant_started.is_none(),
+        }
+    }
 }
 
 impl Default for VirtualButtonState {
     fn default() -> Self {
-        VirtualButtonState::JUST_RELEASED
+        VirtualButtonState::Released(Timing::default())
     }
 }
 
@@ -131,7 +148,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// let mut action_state = ActionState::<Action>::default();
     /// // Virtual buttons start released
-    /// assert_eq!(action_state.state(Action::Run), VirtualButtonState::JUST_RELEASED);
+    /// assert!(action_state.state(Action::Run).just_released());
     /// assert!(action_state.just_released(Action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just released to no longer be just released
@@ -147,18 +164,32 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(action_state.pressed(Action::Jump));
     /// assert!(!action_state.just_pressed(Action::Jump));
     /// ```
-    pub fn tick(&mut self, current_time: Instant) {
+    pub fn tick(&mut self, current_instant: Instant) {
         use VirtualButtonState::*;
 
         for state in self.map.values_mut() {
             *state = match state {
-                Pressed(maybe_instant, _duration) => match maybe_instant {
-                    Some(instant) => Pressed(Some(*instant), current_time - *instant),
-                    None => Pressed(Some(current_time), Duration::ZERO),
+                Pressed(timing) => match timing.instant_started {
+                    Some(instant) => Pressed(Timing {
+                        current_duration: current_instant - instant,
+                        ..*timing
+                    }),
+                    None => Pressed(Timing {
+                        instant_started: Some(current_instant),
+                        current_duration: Duration::ZERO,
+                        ..*timing
+                    }),
                 },
-                Released(maybe_instant, _duration) => match maybe_instant {
-                    Some(instant) => Released(Some(*instant), current_time - *instant),
-                    None => Released(Some(current_time), Duration::ZERO),
+                Released(timing) => match timing.instant_started {
+                    Some(instant) => Released(Timing {
+                        current_duration: current_instant - instant,
+                        ..*timing
+                    }),
+                    None => Released(Timing {
+                        instant_started: Some(current_instant),
+                        current_duration: Duration::ZERO,
+                        ..*timing
+                    }),
                 },
             };
         }
@@ -176,15 +207,29 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Press the `action` virtual button
     pub fn press(&mut self, action: A) {
-        if let VirtualButtonState::Released(_, _) = self.state(action) {
-            self.map.insert(action, VirtualButtonState::JUST_PRESSED);
+        if let VirtualButtonState::Released(timing) = self.state(action) {
+            self.map.insert(
+                action,
+                VirtualButtonState::Pressed(Timing {
+                    instant_started: None,
+                    current_duration: Duration::ZERO,
+                    previous_duration: timing.current_duration,
+                }),
+            );
         }
     }
 
     /// Release the `action` virtual button
     pub fn release(&mut self, action: A) {
-        if let VirtualButtonState::Pressed(_, _) = self.state(action) {
-            self.map.insert(action, VirtualButtonState::JUST_RELEASED);
+        if let VirtualButtonState::Pressed(timing) = self.state(action) {
+            self.map.insert(
+                action,
+                VirtualButtonState::Released(Timing {
+                    instant_started: None,
+                    current_duration: Duration::ZERO,
+                    previous_duration: timing.current_duration,
+                }),
+            );
         }
     }
 
@@ -199,19 +244,15 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn pressed(&self, action: A) -> bool {
         match self.state(action) {
-            VirtualButtonState::Pressed(_, _) => true,
-            VirtualButtonState::Released(_, _) => false,
+            VirtualButtonState::Pressed(_) => true,
+            VirtualButtonState::Released(_) => false,
         }
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[must_use]
     pub fn just_pressed(&self, action: A) -> bool {
-        match self.state(action) {
-            // We cannot check that the duration is zero, or events will be double-counted
-            VirtualButtonState::Pressed(maybe_instant, _) => maybe_instant.is_none(),
-            VirtualButtonState::Released(_, _) => false,
-        }
+        self.state(action).just_pressed()
     }
 
     /// Is this `action` currently released?
@@ -220,19 +261,15 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn released(&self, action: A) -> bool {
         match self.state(action) {
-            VirtualButtonState::Pressed(_, _) => false,
-            VirtualButtonState::Released(_, _) => true,
+            VirtualButtonState::Pressed(_) => false,
+            VirtualButtonState::Released(_) => true,
         }
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
-        match self.state(action) {
-            VirtualButtonState::Pressed(_, _) => false,
-            // We cannot check that the duration is zero, or events will be double-counted
-            VirtualButtonState::Released(maybe_instant, _) => maybe_instant.is_none(),
-        }
+        self.state(action).just_released()
     }
 
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
