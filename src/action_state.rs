@@ -34,7 +34,26 @@ pub struct Timing {
 }
 
 impl VirtualButtonState {
+    /// Is the button currently pressed?
+    #[inline]
+    pub fn pressed(self) -> bool {
+        match self {
+            VirtualButtonState::Pressed(_) => true,
+            VirtualButtonState::Released(_) => false,
+        }
+    }
+
+    /// Is the button currently released?
+    #[inline]
+    pub fn released(self) -> bool {
+        match self {
+            VirtualButtonState::Pressed(_) => false,
+            VirtualButtonState::Released(_) => true,
+        }
+    }
+
     /// Was the button pressed since the last time [`ActionState::update`] was called?
+    #[inline]
     pub fn just_pressed(self) -> bool {
         match self {
             VirtualButtonState::Pressed(timing) => timing.instant_started.is_none(),
@@ -43,10 +62,42 @@ impl VirtualButtonState {
     }
 
     /// Was the button released since the last time [`ActionState::update`] was called?
+    #[inline]
     pub fn just_released(self) -> bool {
         match self {
             VirtualButtonState::Pressed(_timing) => false,
             VirtualButtonState::Released(timing) => timing.instant_started.is_none(),
+        }
+    }
+
+    /// The [`Instant`] at which the button was pressed or released
+    ///
+    /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
+    /// If this is none, [`ActionState::update`] has not been called yet.
+    #[inline]
+    pub fn instant_started(&self) -> Option<Instant> {
+        match self {
+            VirtualButtonState::Pressed(timing) => timing.instant_started,
+            VirtualButtonState::Released(timing) => timing.instant_started,
+        }
+    }
+
+    /// The [`Duration`] for which the button has been pressed or released.
+    ///
+    /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
+    #[inline]
+    pub fn current_duration(&self) -> Duration {
+        match self {
+            VirtualButtonState::Pressed(timing) => timing.current_duration,
+            VirtualButtonState::Released(timing) => timing.current_duration,
+        }
+    }
+    /// The [`Duration`] for which the button was pressed or released before the state last changed.
+    #[inline]
+    pub fn previous_duration(&self) -> Duration {
+        match self {
+            VirtualButtonState::Pressed(timing) => timing.previous_duration,
+            VirtualButtonState::Released(timing) => timing.previous_duration,
         }
     }
 }
@@ -243,10 +294,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Is this `action` currently pressed?
     #[must_use]
     pub fn pressed(&self, action: A) -> bool {
-        match self.state(action) {
-            VirtualButtonState::Pressed(_) => true,
-            VirtualButtonState::Released(_) => false,
-        }
+        self.state(action).pressed()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
@@ -260,10 +308,7 @@ impl<A: Actionlike> ActionState<A> {
     /// This is always the logical negation of [pressed](ActionState::pressed)
     #[must_use]
     pub fn released(&self, action: A) -> bool {
-        match self.state(action) {
-            VirtualButtonState::Pressed(_) => false,
-            VirtualButtonState::Released(_) => true,
-        }
+        self.state(action).released()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
@@ -476,5 +521,76 @@ mod tests {
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
         assert!(!action_state.just_released(Action::Run));
+    }
+
+    #[test]
+    fn durations() {
+        use bevy::utils::{Duration, Instant};
+        use std::thread::sleep;
+
+        let mut action_state = ActionState::<Action>::default();
+
+        // Virtual buttons start released
+        assert!(action_state.state(Action::Jump).released());
+        assert_eq!(action_state.state(Action::Jump).instant_started(), None,);
+        assert_eq!(
+            action_state.state(Action::Jump).current_duration(),
+            Duration::ZERO
+        );
+        assert_eq!(
+            action_state.state(Action::Jump).previous_duration(),
+            Duration::ZERO
+        );
+
+        // Pressing a button swaps the state
+        action_state.press(Action::Jump);
+        assert!(action_state.state(Action::Jump).pressed());
+        assert_eq!(action_state.state(Action::Jump).instant_started(), None);
+        assert_eq!(
+            action_state.state(Action::Jump).current_duration(),
+            Duration::ZERO
+        );
+        assert_eq!(
+            action_state.state(Action::Jump).previous_duration(),
+            Duration::ZERO
+        );
+
+        // Ticking time sets the instant for the new state
+        let t0 = Instant::now();
+        action_state.tick(t0);
+        assert_eq!(action_state.state(Action::Jump).instant_started(), Some(t0));
+        assert_eq!(
+            action_state.state(Action::Jump).current_duration(),
+            Duration::ZERO
+        );
+        assert_eq!(
+            action_state.state(Action::Jump).previous_duration(),
+            Duration::ZERO
+        );
+
+        // Time passes
+        sleep(Duration::from_micros(1));
+        let t1 = Instant::now();
+
+        // The duration is updated
+        action_state.tick(t1);
+        assert_eq!(action_state.state(Action::Jump).instant_started(), Some(t0));
+        assert_eq!(action_state.state(Action::Jump).current_duration(), t1 - t0);
+        assert_eq!(
+            action_state.state(Action::Jump).previous_duration(),
+            Duration::ZERO
+        );
+
+        // Releasing again, swapping the current duration to the previous one
+        action_state.release(Action::Jump);
+        assert_eq!(action_state.state(Action::Jump).instant_started(), None);
+        assert_eq!(
+            action_state.state(Action::Jump).current_duration(),
+            Duration::ZERO
+        );
+        assert_eq!(
+            action_state.state(Action::Jump).previous_duration(),
+            t1 - t0,
+        );
     }
 }
