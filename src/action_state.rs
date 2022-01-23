@@ -36,7 +36,7 @@ pub struct Timing {
 impl VirtualButtonState {
     /// Is the button currently pressed?
     #[inline]
-    pub fn pressed(self) -> bool {
+    pub fn pressed(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(_) => true,
             VirtualButtonState::Released(_) => false,
@@ -45,7 +45,7 @@ impl VirtualButtonState {
 
     /// Is the button currently released?
     #[inline]
-    pub fn released(self) -> bool {
+    pub fn released(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(_) => false,
             VirtualButtonState::Released(_) => true,
@@ -54,7 +54,7 @@ impl VirtualButtonState {
 
     /// Was the button pressed since the last time [`ActionState::update`] was called?
     #[inline]
-    pub fn just_pressed(self) -> bool {
+    pub fn just_pressed(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(timing) => timing.instant_started.is_none(),
             VirtualButtonState::Released(_timing) => false,
@@ -63,7 +63,7 @@ impl VirtualButtonState {
 
     /// Was the button released since the last time [`ActionState::update`] was called?
     #[inline]
-    pub fn just_released(self) -> bool {
+    pub fn just_released(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(_timing) => false,
             VirtualButtonState::Released(timing) => timing.instant_started.is_none(),
