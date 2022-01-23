@@ -44,11 +44,14 @@
 //! - No built-in support for non-button input types (e.g. gestures or analog sticks).
 //!   - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
 //! - Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
+use bevy::ecs::schedule::ShouldRun;
+use bevy::ecs::system::Resource;
 use bevy::input::InputSystem;
 use bevy::prelude::*;
 
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
+use core::any::TypeId;
 use core::hash::Hash;
 use core::marker::PhantomData;
 
@@ -92,8 +95,9 @@ pub mod prelude {
 /// - [`update_action_state_from_interaction`](systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`] component
 ///    - labeled [`InputManagerSystem::Update`]
-pub struct InputManagerPlugin<A: Actionlike> {
-    _phantom: PhantomData<A>,
+pub struct InputManagerPlugin<A: Actionlike, UserState: Resource + PartialEq + Clone = ()> {
+    _phantom: PhantomData<(A, UserState)>,
+    state_variant: UserState,
 }
 
 // Deriving default induces an undesired bound on the generic
@@ -101,6 +105,129 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
     fn default() -> Self {
         Self {
             _phantom: PhantomData::default(),
+            state_variant: (),
+        }
+    }
+}
+
+impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<A, UserState> {
+    /// Creates a version of this plugin that will only run in the specified `state_variant`
+    ///
+    /// # Example
+    /// ```rust
+    /// use bevy::prelude::*;
+    /// use leafwing_input_manager::*;
+    /// /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+    /// enum PlayerAction {
+    ///    // Movement
+    ///    Up,
+    ///    Down,
+    ///    Left,
+    ///    Right,
+    /// }
+    ///
+    /// #[derive(Debug, Clone, Eq, PartialEq, Hash)]
+    /// enum GameState {
+    ///     Playing,
+    ///     Paused,
+    ///     Menu,
+    /// }
+    ///
+    /// App::new().add_plugin(InputManagerPlugin::<PlayerAction, GameState>::run_iff_state(GameState::Playing));
+    /// ```
+    #[must_use]
+    pub fn run_iff_state(state_variant: UserState) -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+            state_variant,
+        }
+    }
+}
+
+impl<A: Actionlike, UserState: Resource + PartialEq + Clone> Plugin
+    for InputManagerPlugin<A, UserState>
+{
+    fn build(&self, app: &mut App) {
+        use crate::systems::*;
+
+        if TypeId::of::<UserState>() == TypeId::of::<()>() {
+            {
+                let input_manager_systems = SystemSet::new()
+                    .with_system(
+                        tick_action_state::<A>
+                            .label(InputManagerSystem::Reset)
+                            .before(InputManagerSystem::Update),
+                    )
+                    .with_system(
+                        update_action_state::<A>
+                            .label(InputManagerSystem::Update)
+                            .after(InputSystem),
+                    )
+                    .with_system(
+                        update_action_state_from_interaction::<A>
+                            .label(InputManagerSystem::Update)
+                            .after(InputSystem),
+                    );
+
+                app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
+            }
+        // If a state has been provided
+        // Only run this plugin's systems in the state variant provided
+        // Note that this does not perform the standard looping behavior
+        // as otherwise we would be limited to the stage that state was added in T_T
+        } else {
+            // Please forgive me, this whole state-handling API is impossibly janky.
+            // https://github.com/bevyengine/rfcs/pull/45 will make special-casing state support unnecessary
+            // We can't use a SystemSet, as the run criteria must be reused,
+            // and the moved `state_variant` value cannot be shared across the systems
+
+            // Clone it out, so then we're not capturing any part of `Self`
+            let state_variant = self.state_variant.clone();
+
+            app.add_system(
+                tick_action_state::<A>
+                    .label(InputManagerSystem::Reset)
+                    .before(InputManagerSystem::Update)
+                    .with_run_criteria(move |res: Res<UserState>| {
+                        if *res == state_variant {
+                            ShouldRun::Yes
+                        } else {
+                            ShouldRun::No
+                        }
+                    }),
+            );
+
+            // Clone it again, to prevent the use of the moved value!
+            let state_variant = self.state_variant.clone();
+
+            app.add_system(
+                update_action_state::<A>
+                    .label(InputManagerSystem::Update)
+                    .after(InputSystem)
+                    .with_run_criteria(move |res: Res<UserState>| {
+                        if *res == state_variant {
+                            ShouldRun::Yes
+                        } else {
+                            ShouldRun::No
+                        }
+                    }),
+            );
+
+            // One last time, you know the drill T_T
+            let state_variant = self.state_variant.clone();
+
+            app.add_system(
+                update_action_state_from_interaction::<A>
+                    .label(InputManagerSystem::Update)
+                    .after(InputSystem)
+                    .with_run_criteria(move |res: Res<UserState>| {
+                        if *res == state_variant {
+                            ShouldRun::Yes
+                        } else {
+                            ShouldRun::No
+                        }
+                    }),
+            );
         }
     }
 }
@@ -162,30 +289,5 @@ impl<A: Actionlike> Default for InputManagerBundle<A> {
             action_state: ActionState::default(),
             input_map: InputMap::default(),
         }
-    }
-}
-
-impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
-    fn build(&self, app: &mut App) {
-        use crate::systems::*;
-
-        app.add_system_to_stage(
-            CoreStage::PreUpdate,
-            tick_action_state::<A>
-                .label(InputManagerSystem::Reset)
-                .before(InputManagerSystem::Update),
-        )
-        .add_system_to_stage(
-            CoreStage::PreUpdate,
-            update_action_state::<A>
-                .label(InputManagerSystem::Update)
-                .after(InputSystem),
-        )
-        .add_system_to_stage(
-            CoreStage::PreUpdate,
-            update_action_state_from_interaction::<A>
-                .label(InputManagerSystem::Update)
-                .after(InputSystem),
-        );
     }
 }
