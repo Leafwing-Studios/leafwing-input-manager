@@ -134,10 +134,10 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     ///     Menu,
     /// }
     ///
-    /// App::new().add_plugin(InputManagerPlugin::<PlayerAction, GameState>::run_iff_state(GameState::Playing));
+    /// App::new().add_plugin(InputManagerPlugin::<PlayerAction, GameState>::run_in_state(GameState::Playing));
     /// ```
     #[must_use]
-    pub fn run_iff_state(state_variant: UserState) -> Self {
+    pub fn run_in_state(state_variant: UserState) -> Self {
         Self {
             _phantom: PhantomData::default(),
             state_variant,
