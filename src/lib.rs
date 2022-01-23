@@ -51,7 +51,6 @@ use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use core::hash::Hash;
 use core::marker::PhantomData;
-use strum::IntoEnumIterator;
 
 pub mod action_state;
 mod display_impl;
@@ -62,11 +61,16 @@ pub mod user_input;
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
 
+// Re-exporting the relevant strum macros and traits
+pub use strum::IntoEnumIterator;
+pub use strum_macros::EnumIter;
+
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
     pub use crate::input_map::InputMap;
     pub use crate::user_input::UserInput;
+    pub use crate::{EnumIter, IntoEnumIterator};
 
     pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
 }
@@ -110,8 +114,7 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
 ///
 /// # Example
 /// ```rust
-/// use strum_macros::EnumIter;
-/// use leafwing_input_manager::{Actionlike, };
+/// use leafwing_input_manager::{Actionlike, EnumIter};
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 /// enum PlayerAction {

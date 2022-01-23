@@ -11,7 +11,6 @@ use bevy::utils::HashMap;
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
-/// use strum_macros::EnumIter;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 /// enum Action {
@@ -292,7 +291,6 @@ pub struct ThresholdError(f32);
 
 mod tests {
     use crate::prelude::*;
-    use strum_macros::EnumIter;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
     enum Action {

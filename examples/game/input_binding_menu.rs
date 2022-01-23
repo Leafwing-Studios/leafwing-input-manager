@@ -1,9 +1,8 @@
 use bevy::prelude::*;
-use leafwing_input_manager::{input_map::InputMap, user_input::UserInput};
-use strum::IntoEnumIterator;
 
 use crate::common_ui::{FontType, Fonts, UiSetupLabels};
 use crate::gameplay::GameAction;
+use leafwing_input_manager::IntoEnumIterator;
 
 pub struct InputMenuPlugin;
 

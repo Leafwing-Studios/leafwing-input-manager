@@ -1,12 +1,11 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
 use crate::user_input::{InputButton, InputMode, UserInput};
-use crate::Actionlike;
+use crate::{Actionlike, IntoEnumIterator};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use core::fmt::Debug;
 use petitset::PetitSet;
-use strum::IntoEnumIterator;
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
@@ -26,7 +25,6 @@ use strum::IntoEnumIterator;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::InputButton;
-/// use strum_macros::EnumIter;
 ///
 /// // You can Run!
 /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
@@ -558,7 +556,6 @@ impl<A: Actionlike> InputMap<A> {
 
 mod tests {
     use crate::prelude::*;
-    use strum_macros::EnumIter;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
     enum Action {
@@ -792,7 +789,6 @@ mod tests {
     fn mock_inputs() {
         use crate::input_map::InputButton;
         use bevy::prelude::*;
-        use strum::IntoEnumIterator;
 
         // Setting up the input map
         let mut input_map = InputMap::<Action>::default();
