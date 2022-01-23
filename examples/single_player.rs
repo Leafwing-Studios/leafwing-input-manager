@@ -64,7 +64,7 @@ struct PlayerBundle {
 
 impl PlayerBundle {
     fn default_input_map() -> InputMap<Action> {
-        // This allows us to replace `ARPGAction::Up` with `Up`,
+        // This allows us to replace `Action::Up` with `Up`,
         // significantly reducing boilerplate
         use Action::*;
         let mut input_map = InputMap::default();
@@ -110,16 +110,13 @@ impl PlayerBundle {
 }
 
 fn spawn_player(mut commands: Commands) {
-    commands
-        .spawn_bundle(PlayerBundle {
-            player: Player,
-            input_manager: InputManagerBundle {
-                input_map: PlayerBundle::default_input_map(),
-                action_state: ActionState::default(),
-            },
-        })
-        .insert(Player)
-        .insert_bundle(InputManagerBundle::<Action>::default());
+    commands.spawn_bundle(PlayerBundle {
+        player: Player,
+        input_manager: InputManagerBundle {
+            input_map: PlayerBundle::default_input_map(),
+            action_state: ActionState::default(),
+        },
+    });
 }
 
 fn cast_fireball(query: Query<&ActionState<Action>, With<Player>>) {
