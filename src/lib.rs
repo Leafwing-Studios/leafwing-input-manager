@@ -54,8 +54,11 @@ use core::marker::PhantomData;
 use strum::IntoEnumIterator;
 
 pub mod action_state;
+mod display_impl;
 pub mod input_map;
 pub mod systems;
+pub mod user_input;
+
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
 
@@ -63,6 +66,7 @@ pub use leafwing_input_manager_macros::Actionlike;
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
     pub use crate::input_map::InputMap;
+    pub use crate::user_input::UserInput;
 
     pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
 }
