@@ -25,7 +25,7 @@ use strum::IntoEnumIterator;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::Button;
+/// use leafwing_input_manager::user_input::InputButton;
 /// use strum_macros::EnumIter;
 ///
 /// // You can Run!
@@ -45,7 +45,9 @@ use strum::IntoEnumIterator;
 ///
 /// // Combinations!
 /// input_map.insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R]);
-/// input_map.insert_chord(Action::Hide, [Button::Keyboard(KeyCode::H), Button::Gamepad(GamepadButtonType::South), Button::Mouse(MouseButton::Middle)]);
+/// input_map.insert_chord(Action::Hide, [InputButton::Keyboard(KeyCode::H),
+///                                       InputButton::Gamepad(GamepadButtonType::South),
+///                                       InputButton::Mouse(MouseButton::Middle)]);
 ///
 /// // But you can't Hide :(
 /// input_map.clear_action(Action::Hide, None);
