@@ -10,9 +10,14 @@ use bevy::prelude::*;
 /// Clears the just-pressed and just-released values of all [`ActionState`]s
 ///
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
-pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>) {
+pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>, time: Res<Time>) {
     for mut action_state in query.iter_mut() {
-        action_state.tick();
+        // If `Time` has not ever been advanced, something has gone horribly wrong
+        // and the user probably forgot to add the `core_plugin`.
+        action_state.tick(
+            time.last_update()
+                .expect("The `Time` resource has never been updated!"),
+        );
     }
 }
 
