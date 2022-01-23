@@ -2,7 +2,7 @@
 //! and use that in our gameplay logic!
 
 use bevy::prelude::*;
-use leafwing_input_manager::{action_state::VirtualButtonState, prelude::*};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()
@@ -14,6 +14,7 @@ fn main() {
         .add_system(hold_dash)
         .add_system(apply_velocity)
         .add_system(drag)
+        .add_system(wall_collisions)
         .run();
 }
 
@@ -82,20 +83,22 @@ fn spawn_camera(mut commands: Commands) {
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
 }
 
-/// The longer you hold, the faster you dash!
+/// The longer you hold, the faster you dash when released!
 fn hold_dash(mut player_query: Query<(&ActionState<Action>, &mut Velocity), With<Player>>) {
-    const VELOCITY_RATIO: f32 = 10.0;
+    const VELOCITY_RATIO: f32 = 1000.0;
 
     let (action_state, mut velocity) = player_query.single_mut();
 
-    if let VirtualButtonState::Released(timing) = action_state.state(Action::Left) {
-        // Move left
-        velocity.x -= VELOCITY_RATIO * timing.previous_duration.as_secs_f32();
+    let left_state = action_state.state(Action::Left);
+    if left_state.just_released() {
+        // Accelerate left
+        velocity.x -= VELOCITY_RATIO * left_state.previous_duration().as_secs_f32();
     }
 
-    if let VirtualButtonState::Released(timing) = action_state.state(Action::Right) {
-        // Move right
-        velocity.x += VELOCITY_RATIO * timing.previous_duration.as_secs_f32();
+    let right_state = action_state.state(Action::Right);
+    if right_state.just_released() {
+        // Accelerate right
+        velocity.x += VELOCITY_RATIO * right_state.previous_duration().as_secs_f32();
     }
 }
 
@@ -106,11 +109,24 @@ fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time: Res<Time>
 }
 
 fn drag(mut query: Query<&mut Velocity>, time: Res<Time>) {
-    // FIXME: this is giving very unexpected results.
-    const DRAG_COEFFICIENT: f32 = 0.5;
+    const DRAG_COEFFICIENT: f32 = 0.8;
     for mut velocity in query.iter_mut() {
-        // Reduce the velocity in proportion to the square of its speed,
+        // Reduce the velocity in proportion to its speed,
         // applied in the opposite direction as the object is moving.
-        velocity.x -= DRAG_COEFFICIENT * velocity.x * velocity.x.abs() * time.delta_seconds();
+        velocity.x -= DRAG_COEFFICIENT * velocity.x * time.delta_seconds();
+    }
+}
+
+fn wall_collisions(mut query: Query<(&Transform, &mut Velocity)>, windows: Res<Windows>) {
+    let window_width = windows.get_primary().unwrap().width();
+    let left_side = 0.0 - window_width / 2.0;
+    let right_side = 0.0 + window_width / 2.0;
+
+    for (transform, mut velocity) in query.iter_mut() {
+        // This doesn't account for sprite width, but this is a simple example
+        if (transform.translation.x < left_side) | (transform.translation.x > right_side) {
+            // Boing!
+            velocity.x *= -1.0;
+        }
     }
 }
