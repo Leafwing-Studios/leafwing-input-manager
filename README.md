@@ -12,6 +12,9 @@ and a single input can result in multiple actions being triggered, which can be 
 This library seamlessly supports both single-player and local multiplayer games!
 Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` appropriately.
 
+Of particular note: this plugin allows users to configure which state (i.e. `GameState::Playing`) it runs in.
+No more characters wandering around while your menu is open!
+
 ## Features
 
 - Full keyboard, mouse and joystick support for button-like inputs.
@@ -37,7 +40,7 @@ Simply add the `InputManagerBundle` to each controllable entity, and customize t
   - Please file an issue if you would like something more exotic!
 - No built-in support for non-button input types (e.g. gestures or analog sticks).
   - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
-- Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
+- Gamepads must be associated with each player by the app using this plugin: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
 
 ## Instructions
 

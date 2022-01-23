@@ -4,8 +4,6 @@
 #![deny(missing_docs)]
 #![warn(clippy::doc_markdown)]
 
-//! # About
-//!
 //! A simple but robust input-action manager for Bevy: intended to be useful both as a plugin and a helpful library.
 //!
 //! Inputs from various input sources (keyboard, mouse and gamepad) are collected into a common `ActionState` on your player entity,
@@ -17,6 +15,9 @@
 //!
 //! This library seamlessly supports both single-player and local multiplayer games!
 //! Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` appropriately.
+//!
+//! Of particular note: this plugin allows users to configure which state (i.e. `GameState::Playing`) it runs in.
+//! No more characters wandering around while your menu is open!
 //!
 //! ## Features
 //!
@@ -43,7 +44,7 @@
 //!   - Please file an issue if you would like something more exotic!
 //! - No built-in support for non-button input types (e.g. gestures or analog sticks).
 //!   - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
-//! - Gamepads must be associated with each player by the end game: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
+//! - Gamepads must be associated with each player by the app using this plugin: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
 use bevy::ecs::schedule::ShouldRun;
 use bevy::ecs::system::Resource;
 use bevy::input::InputSystem;
