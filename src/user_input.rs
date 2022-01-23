@@ -10,12 +10,12 @@ use strum_macros::EnumIter;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UserInput {
     /// A single button
-    Single(Button),
+    Single(InputButton),
     /// A combination of buttons, pressed simultaneously
     ///
     /// Up to 8 (!!) buttons can be chorded together at once.
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
-    Chord(PetitSet<Button, 8>),
+    Chord(PetitSet<InputButton, 8>),
     /// A null user input, used for a safe default and error-handling
     ///
     /// This input can never be pressed.
@@ -33,11 +33,11 @@ impl UserInput {
     ///
     /// If `buttons` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
     /// If `buttons` has a length of 0, a [`UserInput::Null`] variant will be returned instead.
-    pub fn chord(buttons: impl IntoIterator<Item = impl Into<Button>>) -> Self {
+    pub fn chord(buttons: impl IntoIterator<Item = impl Into<InputButton>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: PetitSet<Button, 8> = PetitSet::default();
+        let mut set: PetitSet<InputButton, 8> = PetitSet::default();
         for button in buttons {
             length += 1;
             set.insert(button.into());
@@ -92,27 +92,27 @@ impl UserInput {
     }
 }
 
-impl From<Button> for UserInput {
-    fn from(input: Button) -> Self {
+impl From<InputButton> for UserInput {
+    fn from(input: InputButton) -> Self {
         UserInput::Single(input)
     }
 }
 
 impl From<GamepadButtonType> for UserInput {
     fn from(input: GamepadButtonType) -> Self {
-        UserInput::Single(Button::Gamepad(input))
+        UserInput::Single(InputButton::Gamepad(input))
     }
 }
 
 impl From<KeyCode> for UserInput {
     fn from(input: KeyCode) -> Self {
-        UserInput::Single(Button::Keyboard(input))
+        UserInput::Single(InputButton::Keyboard(input))
     }
 }
 
 impl From<MouseButton> for UserInput {
     fn from(input: MouseButton) -> Self {
-        UserInput::Single(Button::Mouse(input))
+        UserInput::Single(InputButton::Mouse(input))
     }
 }
 
@@ -136,12 +136,12 @@ pub enum InputMode {
     Mouse,
 }
 
-impl From<Button> for InputMode {
-    fn from(button: Button) -> Self {
+impl From<InputButton> for InputMode {
+    fn from(button: InputButton) -> Self {
         match button {
-            Button::Gamepad(_) => InputMode::Gamepad,
-            Button::Keyboard(_) => InputMode::Keyboard,
-            Button::Mouse(_) => InputMode::Mouse,
+            InputButton::Gamepad(_) => InputMode::Gamepad,
+            InputButton::Keyboard(_) => InputMode::Keyboard,
+            InputButton::Mouse(_) => InputMode::Mouse,
         }
     }
 }
@@ -156,7 +156,7 @@ impl From<Button> for InputMode {
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Button {
+pub enum InputButton {
     /// A button on a gamepad
     Gamepad(GamepadButtonType),
     /// A button on a keyboard
@@ -165,20 +165,20 @@ pub enum Button {
     Mouse(MouseButton),
 }
 
-impl From<GamepadButtonType> for Button {
+impl From<GamepadButtonType> for InputButton {
     fn from(input: GamepadButtonType) -> Self {
-        Button::Gamepad(input)
+        InputButton::Gamepad(input)
     }
 }
 
-impl From<KeyCode> for Button {
+impl From<KeyCode> for InputButton {
     fn from(input: KeyCode) -> Self {
-        Button::Keyboard(input)
+        InputButton::Keyboard(input)
     }
 }
 
-impl From<MouseButton> for Button {
+impl From<MouseButton> for InputButton {
     fn from(input: MouseButton) -> Self {
-        Button::Mouse(input)
+        InputButton::Mouse(input)
     }
 }

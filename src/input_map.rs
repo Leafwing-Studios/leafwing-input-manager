@@ -1,6 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::user_input::{Button, InputMode, UserInput};
+use crate::user_input::{InputButton, InputMode, UserInput};
 use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -148,13 +148,13 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn button_pressed(
         &self,
-        button: Button,
+        button: InputButton,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
     ) -> bool {
         match button {
-            Button::Gamepad(gamepad_button) => {
+            InputButton::Gamepad(gamepad_button) => {
                 // If no gamepad is registered, we know for sure that no match was found
                 if let Some(gamepad) = self.associated_gamepad {
                     gamepad_input_stream.pressed(GamepadButton(gamepad, gamepad_button))
@@ -162,8 +162,8 @@ impl<A: Actionlike> InputMap<A> {
                     false
                 }
             }
-            Button::Keyboard(keycode) => keyboard_input_stream.pressed(keycode),
-            Button::Mouse(mouse_button) => mouse_input_stream.pressed(mouse_button),
+            InputButton::Keyboard(keycode) => keyboard_input_stream.pressed(keycode),
+            InputButton::Mouse(mouse_button) => mouse_input_stream.pressed(mouse_button),
         }
     }
 
@@ -171,7 +171,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn all_buttons_pressed(
         &self,
-        buttons: &PetitSet<Button, 8>,
+        buttons: &PetitSet<InputButton, 8>,
         gamepad_input_stream: &Input<GamepadButton>,
         keyboard_input_stream: &Input<KeyCode>,
         mouse_input_stream: &Input<MouseButton>,
@@ -304,7 +304,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_chord(
         &mut self,
         action: A,
-        buttons: impl IntoIterator<Item = impl Into<Button>>,
+        buttons: impl IntoIterator<Item = impl Into<InputButton>>,
     ) {
         self.insert(action, UserInput::chord(buttons));
     }
@@ -588,7 +588,7 @@ mod tests {
 
     #[test]
     fn multiple_insertion() {
-        use crate::input_map::{Button, UserInput};
+        use crate::user_input::{InputButton, UserInput};
         use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
@@ -615,8 +615,8 @@ mod tests {
         input_map_4.insert_multiple(
             Action::Run,
             [
-                Button::Keyboard(KeyCode::Space),
-                Button::Keyboard(KeyCode::Return),
+                InputButton::Keyboard(KeyCode::Space),
+                InputButton::Keyboard(KeyCode::Return),
             ],
         );
 
@@ -626,8 +626,8 @@ mod tests {
         input_map_5.insert_multiple(
             Action::Run,
             [
-                UserInput::Single(Button::Keyboard(KeyCode::Space)),
-                UserInput::Single(Button::Keyboard(KeyCode::Return)),
+                UserInput::Single(InputButton::Keyboard(KeyCode::Space)),
+                UserInput::Single(InputButton::Keyboard(KeyCode::Return)),
             ],
         );
 
@@ -636,7 +636,7 @@ mod tests {
 
     #[test]
     pub fn chord_coercion() {
-        use crate::input_map::{Button, UserInput};
+        use crate::input_map::{InputButton, UserInput};
         use bevy::input::keyboard::KeyCode;
 
         // Single items in a chord should be coerced to a singleton
@@ -650,7 +650,7 @@ mod tests {
 
         // Empty chords are converted to UserInput::Null, and then ignored
         let mut input_map_3 = InputMap::<Action>::default();
-        let empty_vec: Vec<Button> = Vec::default();
+        let empty_vec: Vec<InputButton> = Vec::default();
         input_map_3.insert_chord(Action::Run, empty_vec);
 
         assert_eq!(input_map_3, InputMap::<Action>::default());
@@ -658,7 +658,7 @@ mod tests {
 
     #[test]
     fn input_clearing() {
-        use crate::input_map::{Button, InputMode};
+        use crate::user_input::{InputButton, InputMode};
         use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 
         let mut input_map = InputMap::<Action>::default();
@@ -713,8 +713,8 @@ mod tests {
         input_map.insert_chord(
             Action::Run,
             [
-                Button::Gamepad(GamepadButtonType::South),
-                Button::Keyboard(KeyCode::A),
+                InputButton::Gamepad(GamepadButtonType::South),
+                InputButton::Keyboard(KeyCode::A),
             ],
         );
 
@@ -727,8 +727,8 @@ mod tests {
         expected_removed_items.insert_chord(
             Action::Run,
             [
-                Button::Gamepad(GamepadButtonType::South),
-                Button::Keyboard(KeyCode::A),
+                InputButton::Gamepad(GamepadButtonType::South),
+                InputButton::Keyboard(KeyCode::A),
             ],
         );
 
@@ -788,7 +788,7 @@ mod tests {
 
     #[test]
     fn mock_inputs() {
-        use crate::input_map::Button;
+        use crate::input_map::InputButton;
         use bevy::prelude::*;
         use strum::IntoEnumIterator;
 
@@ -815,8 +815,8 @@ mod tests {
         input_map.insert_chord(
             Action::Hide,
             [
-                Button::Keyboard(KeyCode::LControl),
-                Button::Mouse(MouseButton::Left),
+                InputButton::Keyboard(KeyCode::LControl),
+                InputButton::Mouse(MouseButton::Left),
             ],
         );
 
