@@ -20,8 +20,7 @@ members = ["./", "tools/ci", "macros"]
 [dependencies]
 bevy = {version = "0.6", default-features = false, features = ["render"]}
 petitset = "0.1"
-strum = "0.23"
-strum_macros = "0.23"
+strum = {version = "0.23", features = ["derive"]}
 leafwing_input_manager_macros = "0.1"
 thiserror = "1.0"
 

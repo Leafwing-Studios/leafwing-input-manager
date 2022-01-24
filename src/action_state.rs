@@ -429,6 +429,7 @@ pub struct ThresholdError(f32);
 
 mod tests {
     use crate::prelude::*;
+    use strum::EnumIter;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
     enum Action {

@@ -1,8 +1,8 @@
 //! Helpful abstractions over user input
 
-use crate::EnumIter;
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use petitset::PetitSet;
+use strum::EnumIter;
 
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///

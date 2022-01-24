@@ -556,6 +556,7 @@ impl<A: Actionlike> InputMap<A> {
 
 mod tests {
     use crate::prelude::*;
+    use strum::EnumIter;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
     enum Action {

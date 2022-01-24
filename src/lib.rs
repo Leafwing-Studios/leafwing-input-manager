@@ -65,16 +65,17 @@ pub mod user_input;
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
 
-// Re-exporting the relevant strum macros and traits
+// Re-exporting the relevant strum trait
+// We cannot re-export the strum macro, as it is not
+// hygenic: https://danielkeep.github.io/tlborm/book/mbe-min-hygiene.html
 pub use strum::IntoEnumIterator;
-pub use strum_macros::EnumIter;
 
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
     pub use crate::input_map::InputMap;
     pub use crate::user_input::UserInput;
-    pub use crate::{EnumIter, IntoEnumIterator};
+    pub use crate::IntoEnumIterator;
 
     pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
 }

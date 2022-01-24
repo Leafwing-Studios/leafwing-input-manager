@@ -3,6 +3,7 @@
 
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use strum::EnumIter;
 
 fn main() {
     App::new()
