@@ -116,6 +116,7 @@ impl Default for VirtualButtonState {
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
+/// use strum::EnumIter;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 /// enum Action {
@@ -189,6 +190,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use strum::EnumIter;
     /// use bevy::utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]

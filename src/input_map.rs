@@ -25,6 +25,7 @@ use petitset::PetitSet;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::InputButton;
+/// use strum::EnumIter;
 ///
 /// // You can Run!
 /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]

@@ -119,6 +119,8 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     /// ```rust
     /// use bevy::prelude::*;
     /// use leafwing_input_manager::*;
+    /// use strum::EnumIter;
+    ///
     /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
     /// enum PlayerAction {
     ///    // Movement
@@ -208,7 +210,8 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> Plugin
 ///
 /// # Example
 /// ```rust
-/// use leafwing_input_manager::{Actionlike, EnumIter};
+/// use leafwing_input_manager::Actionlike;
+/// use strum::EnumIter;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
 /// enum PlayerAction {
