@@ -249,6 +249,30 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Gets the [`VirtualButtonState`] of the corresponding `action`
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the state directly allows you to examine the detailed [`Timing`] information.
+    ///
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use strum::EnumIter;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut action_state = ActionState::<Action>::default();
+    /// let run_state = action_state.state(Action::Run);
+    /// // States can either be pressed or released,
+    /// // and store an internal `Timing`
+    /// if let VirtualButtonState::Pressed(timing) = run_state {
+    ///     let pressed_duration = timing.current_duration;
+    ///     let last_released_duration = timing.previous_duration;
+    /// }
+    /// ```
     #[inline]
     pub fn state(&self, action: A) -> VirtualButtonState {
         if let Some(state) = self.map.get(&action) {
@@ -256,6 +280,51 @@ impl<A: Actionlike> ActionState<A> {
         } else {
             VirtualButtonState::default()
         }
+    }
+
+    /// Manually sets the [`VirtualButtonState`] of the corresponding `action`
+    ///
+    /// You should almost always be using the [`ActionState::press`] and [`ActionState::release`] methods instead,
+    /// as they will ensure that the duration is correct.
+    ///
+    /// However, this method can be useful for testing,
+    /// or when transferring [`VirtualButtonState`] between action maps.
+    ///
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use strum::EnumIter;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    /// enum AbilitySlot {
+    ///     Slot1,
+    ///     Slot2,
+    /// }
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    ///
+    /// let mut ability_slot_state = ActionState::<AbilitySlot>::default();
+    /// let mut action_state = ActionState::<Action>::default();
+    ///
+    /// // Extract the state from the ability slot
+    /// let slot_1_state = ability_slot_state.state(AbilitySlot::Slot1);
+    ///
+    /// // And transfer it to the actual ability that we care about
+    /// // without losing timing information
+    /// action_state.set_state(Action::Run, slot_1_state);
+    /// ```
+    #[inline]
+    pub fn set_state(&mut self, action: A, state: VirtualButtonState) {
+        let stored_state = self
+            .map
+            .get_mut(&action)
+            .expect("Action {action} not found when setting state!");
+        *stored_state = state;
     }
 
     /// Press the `action` virtual button
