@@ -3,7 +3,7 @@
 use crate::user_input::{InputButton, InputMode, UserInput};
 use crate::{Actionlike, IntoEnumIterator};
 use bevy::prelude::*;
-use bevy::utils::HashMap;
+use bevy::utils::{HashMap, HashSet};
 use core::fmt::Debug;
 use petitset::PetitSet;
 
@@ -110,6 +110,29 @@ impl<A: Actionlike> InputMap<A> {
             // No matches can be found if no inputs are registred for that action
             false
         }
+    }
+
+    /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
+    pub fn which_pressed(
+        &self,
+        gamepad_input_stream: &Input<GamepadButton>,
+        keyboard_input_stream: &Input<KeyCode>,
+        mouse_input_stream: &Input<MouseButton>,
+    ) -> HashSet<A> {
+        let mut pressed_set = HashSet::default();
+
+        for action in A::iter() {
+            if self.pressed(
+                action,
+                gamepad_input_stream,
+                keyboard_input_stream,
+                mouse_input_stream,
+            ) {
+                pressed_set.insert(action);
+            }
+        }
+
+        pressed_set
     }
 
     /// Is at least one of the `inputs` pressed?

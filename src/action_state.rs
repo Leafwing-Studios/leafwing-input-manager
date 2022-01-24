@@ -1,9 +1,9 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::{Actionlike, InputMap};
+use crate::Actionlike;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use bevy::utils::{Duration, Instant};
+use bevy::utils::{HashMap, HashSet};
 
 /// The current state of a particular virtual button,
 /// corresponding to a single [`Actionlike`] action.
@@ -155,27 +155,20 @@ pub struct ActionState<A: Actionlike> {
 }
 
 impl<A: Actionlike> ActionState<A> {
-    /// Updates the [`ActionState`] based on the [`InputMap`] and the provided [`Input`]s
-    ///
-    /// Presses and releases buttons according to the current state of the inputs.
-    /// Combine with [`ActionState::tick`] to update `just_pressed` and `just_released`.
-    pub fn update(
-        &mut self,
-        input_map: &InputMap<A>,
-        gamepad_input_stream: &Input<GamepadButton>,
-        keyboard_input_stream: &Input<KeyCode>,
-        mouse_input_stream: &Input<MouseButton>,
-    ) {
+    /// Updates the [`ActionState`] based on a [`HashSet`] of pressed virtual buttons.
+    pub fn update(&mut self, pressed_set: HashSet<A>) {
         for action in A::iter() {
-            if input_map.pressed(
-                action,
-                gamepad_input_stream,
-                keyboard_input_stream,
-                mouse_input_stream,
-            ) {
-                self.press(action);
-            } else {
-                self.release(action);
+            match self.state(action) {
+                VirtualButtonState::Pressed(_) => {
+                    if !pressed_set.contains(&action) {
+                        self.release(action);
+                    }
+                }
+                VirtualButtonState::Released(_) => {
+                    if pressed_set.contains(&action) {
+                        self.press(action);
+                    }
+                }
             }
         }
     }
@@ -527,12 +520,11 @@ mod tests {
         let mouse_input_stream = Input::<MouseButton>::default();
 
         // Starting state
-        action_state.update(
-            &input_map,
+        action_state.update(input_map.which_pressed(
             &gamepad_input_stream,
             &keyboard_input_stream,
             &mouse_input_stream,
-        );
+        ));
 
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
@@ -541,12 +533,11 @@ mod tests {
 
         // Pressing
         keyboard_input_stream.press(KeyCode::R);
-        action_state.update(
-            &input_map,
+        action_state.update(input_map.which_pressed(
             &gamepad_input_stream,
             &keyboard_input_stream,
             &mouse_input_stream,
-        );
+        ));
 
         assert!(action_state.pressed(Action::Run));
         assert!(action_state.just_pressed(Action::Run));
@@ -555,12 +546,11 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now());
-        action_state.update(
-            &input_map,
+        action_state.update(input_map.which_pressed(
             &gamepad_input_stream,
             &keyboard_input_stream,
             &mouse_input_stream,
-        );
+        ));
 
         assert!(action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
@@ -569,12 +559,11 @@ mod tests {
 
         // Releasing
         keyboard_input_stream.release(KeyCode::R);
-        action_state.update(
-            &input_map,
+        action_state.update(input_map.which_pressed(
             &gamepad_input_stream,
             &keyboard_input_stream,
             &mouse_input_stream,
-        );
+        ));
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
@@ -582,12 +571,11 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now());
-        action_state.update(
-            &input_map,
+        action_state.update(input_map.which_pressed(
             &gamepad_input_stream,
             &keyboard_input_stream,
             &mouse_input_stream,
-        );
+        ));
 
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));

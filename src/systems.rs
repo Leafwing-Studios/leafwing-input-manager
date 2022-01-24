@@ -29,12 +29,13 @@ pub fn update_action_state<A: Actionlike>(
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
     for (mut action_state, input_map) in query.iter_mut() {
-        action_state.update(
-            input_map,
-            &*gamepad_input_stream,
-            &*keyboard_input_stream,
-            &*mouse_input_stream,
+        let pressed_set = input_map.which_pressed(
+            &gamepad_input_stream,
+            &keyboard_input_stream,
+            &mouse_input_stream,
         );
+
+        action_state.update(pressed_set);
     }
 }
 

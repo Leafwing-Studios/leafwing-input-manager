@@ -10,6 +10,18 @@
 
 - fixed minor mistakes in documentation
 
+## Version 0.2 (Unreleased)
+
+### Enhancements
+
+- added `ActionState::set_state`, to allow users to transfer `VirtualButtonState` between `ActionState` components without losing `Timing` information
+
+### Usability
+
+### Bugs
+
+- better decoupled `InputMap` and `ActionState`, ensuring that the `ActionState` component is no longer marked as `Changed` every frame
+
 ## Version 0.1.1
 
 ### Bugs
