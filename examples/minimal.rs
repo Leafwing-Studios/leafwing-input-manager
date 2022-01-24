@@ -5,6 +5,8 @@ use strum::EnumIter;
 fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
+        // Usually, this is included in `DefaultPlugins`
+        .add_plugin(bevy::input::InputPlugin)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
         .add_plugin(InputManagerPlugin::<Action>::default())

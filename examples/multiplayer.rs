@@ -5,6 +5,7 @@ use strum::EnumIter;
 fn main() {
     App::new()
         .add_plugins(MinimalPlugins)
+        .add_plugin(bevy::input::InputPlugin)
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_players)
         .run();
