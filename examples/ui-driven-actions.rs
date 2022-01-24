@@ -104,6 +104,9 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
 fn move_player(mut query: Query<(&ActionState<Action>, &mut Transform), With<Player>>) {
     let (action_state, mut transform) = query.single_mut();
 
+    // To only perform the action once when the button is first clicked,
+    // use `.just_pressed` instead.
+    // To trigger when the click is released, use `.just_released`
     if action_state.pressed(Action::Left) {
         transform.translation.x -= 10.;
     }
