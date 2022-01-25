@@ -1,6 +1,8 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
+use crate::input_map::InputMap;
 use crate::user_input::{InputButton, UserInput};
+use crate::Actionlike;
 use bevy::input::keyboard::KeyCode;
 use bevy::utils::HashSet;
 
@@ -20,8 +22,6 @@ pub enum ClashStrategy {
     /// All matching inputs will always be pressed
     PressAll,
     /// Only press the action that corresponds to the longest chord
-    ///
-    /// In the case of a tie, all tied actions will be pressed.
     PrioritizeLongest,
     /// If the [`UserInput`] contains a modifier key, press that action over any unmodified action.
     ///
@@ -105,5 +105,17 @@ impl UserInput {
                 Chord(other_set) => self_set.is_subset(other_set) && self_set != other_set,
             },
         }
+    }
+}
+
+impl<A: Actionlike> InputMap<A> {
+    /// Generate all possible clashing input sets
+    pub fn possible_clashes(&self) -> Vec<HashSet<UserInput>> {
+        todo!()
+    }
+
+    /// Resolve clashing inputs, returning the set of virtual buttons to press
+    pub fn resolve_clashes(&self) -> HashSet<A> {
+        todo!()
     }
 }
