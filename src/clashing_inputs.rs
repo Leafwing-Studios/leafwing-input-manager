@@ -3,7 +3,6 @@
 use crate::input_map::InputMap;
 use crate::user_input::{InputButton, UserInput};
 use crate::Actionlike;
-use bevy::input::keyboard::KeyCode;
 use bevy::utils::HashSet;
 use itertools::Itertools;
 use petitset::PetitSet;
@@ -28,53 +27,16 @@ pub enum ClashStrategy {
     PressAll,
     /// Only press the action that corresponds to the longest chord
     PrioritizeLongest,
-    /// If the [`UserInput`] contains a modifier key, press that action over any unmodified action.
+    /// If the [`UserInput`] contains a modifier key (defined at the input map level), press that action over any unmodified action.
     ///
     /// If more than one matching action uses a modifier, break ties based on number of modifiers.
     /// Further ties are broken using the `PrioritizeLongest` rule.
-    PrioritizeModified(HashSet<InputButton>),
+    PrioritizeModified,
     /// Use the order in which actions are defined in the enum to resolve clashing inputs
     ///
     /// Uses the iteration order returned by [IntoEnumIterator](crate::IntoEnumIterator),
     /// which is generated in order of the enum items by the `#[derive(EnumIter)]` macro.
     UseActionOrder,
-}
-
-impl ClashStrategy {
-    /// Creates a `ClashStrategy::PrioritizeModified` variant with the standard keyboard modifiers
-    ///
-    /// The list added is `[LAlt, RAlt, LControl, RControl, LShift, RShift, LWin, RWin]`
-    pub fn default_modifiers() -> ClashStrategy {
-        use KeyCode::*;
-
-        Self::custom_modifiers([LAlt, RAlt, LControl, RControl, LShift, RShift, LWin, RWin])
-    }
-
-    /// Creates a `ClashStrategy::PrioritizeModified` variant with a custom set of modifiers
-    ///
-    /// These do not need to all be keyboard modifiers,
-    /// although the iterator passed in must have a homogenous item type.
-    ///
-    /// # Example
-    /// ```rust
-    /// use leafwing_input_manager::user_input::InputButton;
-    /// use leafwing_input_manger::clashing_inputs::ClashStrategy;
-    ///
-    /// let clash_strategy = ClashStrategy::custom_modifiers(
-    /// 	[InputButton::Keyboard(KeyCode::LControl),
-    /// 	 InputButton::Mouse(MouseButton::Left),
-    ///      InputButton::Gamepad(GamepadButtonType::LeftTrigger),
-    /// 	]
-    /// )
-    /// ```
-    pub fn custom_modifiers(
-        modifiers: impl IntoIterator<Item = impl Into<InputButton>>,
-    ) -> ClashStrategy {
-        let hash_set: HashSet<InputButton> =
-            HashSet::from_iter(modifiers.into_iter().map(|buttonlike| buttonlike.into()));
-
-        ClashStrategy::PrioritizeModified(hash_set)
-    }
 }
 
 impl Default for ClashStrategy {
@@ -108,13 +70,13 @@ impl<A: Actionlike> InputMap<A> {
     /// Resolve clashing inputs, removing action presses that have been overruled
     pub fn handle_clashes(
         &self,
-        pressed_actions: &mut HashSet<A>,
-        pressed_inputs: PetitSet<UserInput, 500>,
+        _pressed_actions: &mut HashSet<A>,
+        _pressed_inputs: PetitSet<UserInput, 500>,
     ) {
         match self.clash_strategy {
             ClashStrategy::PressAll => (),
             ClashStrategy::PrioritizeLongest => (),
-            ClashStrategy::PrioritizeModified(_) => (),
+            ClashStrategy::PrioritizeModified => (),
             ClashStrategy::UseActionOrder => (),
         };
     }
@@ -130,8 +92,8 @@ impl<A: Actionlike> InputMap<A> {
         let mut clashes = Vec::default();
 
         for action_pair in pressed_actions.iter().combinations(2) {
-            let action_a = *action_pair.iter().next().unwrap();
-            let action_b = *action_pair.iter().next().unwrap();
+            let action_a = *action_pair.get(0).unwrap();
+            let action_b = *action_pair.get(0).unwrap();
 
             if let Some(clash) = self.clashes(action_a, action_b, pressed_inputs) {
                 clashes.push(clash);
@@ -163,7 +125,7 @@ impl<A: Actionlike> InputMap<A> {
         action_b: &A,
         pressed_inputs: &PetitSet<UserInput, 500>,
     ) -> Option<Clash<A>> {
-        let mut clash = Clash::new(action_a.clone(), action_b.clone());
+        let mut clash = Clash::new(*action_a, *action_b);
 
         for input_a in self
             .get(*action_a, None)
@@ -175,7 +137,7 @@ impl<A: Actionlike> InputMap<A> {
                 .iter()
                 .filter(|input| pressed_inputs.contains(input))
             {
-                if input_a.clashes(&input_b) {
+                if input_a.clashes(input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_a.clone());
                 }

@@ -3,6 +3,7 @@
 use crate::clashing_inputs::ClashStrategy;
 use crate::user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::{Actionlike, IntoEnumIterator};
+use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 use core::fmt::Debug;
@@ -65,16 +66,27 @@ pub struct InputMap<A: Actionlike> {
     associated_gamepad: Option<Gamepad>,
     /// How should clashing (overlapping) inputs be handled?
     pub clash_strategy: ClashStrategy,
+    /// Buttons that act like modifier keys, for the purpose of clash resolution
+    ///
+    /// By default, these are the [`KeyCode']s
+    /// `[LAlt, RAlt, LControl, RControl, LShift, RShift, LWin, RWin]`
+    pub modifier_buttons: HashSet<InputButton>,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
+        use KeyCode::*;
+
         Self {
             map: HashMap::default(),
             associated_gamepad: None,
             per_mode_cap: None,
             // This is the simplest, least surprising behavior.
             clash_strategy: ClashStrategy::PressAll,
+            modifier_buttons: HashSet::from_iter(
+                [LAlt, RAlt, LControl, RControl, LShift, RShift, LWin, RWin]
+                    .map(|keycode| keycode.into()),
+            ),
         }
     }
 }
