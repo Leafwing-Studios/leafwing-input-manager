@@ -1,6 +1,11 @@
 //! Helpful abstractions over user input
 
-use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
+use bevy::input::{
+    gamepad::{GamepadButton, GamepadButtonType},
+    keyboard::KeyCode,
+    mouse::MouseButton,
+    Input,
+};
 use petitset::PetitSet;
 use strum::EnumIter;
 
@@ -181,4 +186,17 @@ impl From<MouseButton> for InputButton {
     fn from(input: MouseButton) -> Self {
         InputButton::Mouse(input)
     }
+}
+
+/// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
+///
+/// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
+#[derive(Debug, Clone)]
+pub struct InputStreams<'a> {
+    /// A [`GamepadButton`] [`Input`] stream
+    pub gamepad: &'a Input<GamepadButton>,
+    /// A [`KeyCode`] [`Input`] stream
+    pub keyboard: &'a Input<KeyCode>,
+    /// A [`MouseButton`] [`Input`] stream
+    pub mouse: &'a Input<MouseButton>,
 }

@@ -504,6 +504,7 @@ mod tests {
 
     #[test]
     fn press_lifecycle() {
+        use crate::user_input::InputStreams;
         use bevy::prelude::*;
         use bevy::utils::Instant;
 
@@ -519,12 +520,14 @@ mod tests {
         let mut keyboard_input_stream = Input::<KeyCode>::default();
         let mouse_input_stream = Input::<MouseButton>::default();
 
+        let input_streams = InputStreams {
+            gamepad: &gamepad_input_stream,
+            keyboard: &keyboard_input_stream,
+            mouse: &mouse_input_stream,
+        };
+
         // Starting state
-        action_state.update(input_map.which_pressed(
-            &gamepad_input_stream,
-            &keyboard_input_stream,
-            &mouse_input_stream,
-        ));
+        action_state.update(input_map.which_pressed(&input_streams));
 
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
@@ -533,11 +536,14 @@ mod tests {
 
         // Pressing
         keyboard_input_stream.press(KeyCode::R);
-        action_state.update(input_map.which_pressed(
-            &gamepad_input_stream,
-            &keyboard_input_stream,
-            &mouse_input_stream,
-        ));
+
+        let input_streams = InputStreams {
+            gamepad: &gamepad_input_stream,
+            keyboard: &keyboard_input_stream,
+            mouse: &mouse_input_stream,
+        };
+
+        action_state.update(input_map.which_pressed(&input_streams));
 
         assert!(action_state.pressed(Action::Run));
         assert!(action_state.just_pressed(Action::Run));
@@ -546,11 +552,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now());
-        action_state.update(input_map.which_pressed(
-            &gamepad_input_stream,
-            &keyboard_input_stream,
-            &mouse_input_stream,
-        ));
+        action_state.update(input_map.which_pressed(&input_streams));
 
         assert!(action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
@@ -559,11 +561,13 @@ mod tests {
 
         // Releasing
         keyboard_input_stream.release(KeyCode::R);
-        action_state.update(input_map.which_pressed(
-            &gamepad_input_stream,
-            &keyboard_input_stream,
-            &mouse_input_stream,
-        ));
+        let input_streams = InputStreams {
+            gamepad: &gamepad_input_stream,
+            keyboard: &keyboard_input_stream,
+            mouse: &mouse_input_stream,
+        };
+
+        action_state.update(input_map.which_pressed(&input_streams));
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
@@ -571,11 +575,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now());
-        action_state.update(input_map.which_pressed(
-            &gamepad_input_stream,
-            &keyboard_input_stream,
-            &mouse_input_stream,
-        ));
+        action_state.update(input_map.which_pressed(&input_streams));
 
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));

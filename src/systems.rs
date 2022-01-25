@@ -3,6 +3,7 @@
 use crate::{
     action_state::{ActionState, ActionStateDriver},
     input_map::InputMap,
+    user_input::InputStreams,
     Actionlike,
 };
 use bevy::prelude::*;
@@ -28,12 +29,14 @@ pub fn update_action_state<A: Actionlike>(
     mouse_input_stream: Res<Input<MouseButton>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
+    let input_streams = InputStreams {
+        gamepad: &*gamepad_input_stream,
+        keyboard: &*keyboard_input_stream,
+        mouse: &*mouse_input_stream,
+    };
+
     for (mut action_state, input_map) in query.iter_mut() {
-        let pressed_set = input_map.which_pressed(
-            &gamepad_input_stream,
-            &keyboard_input_stream,
-            &mouse_input_stream,
-        );
+        let pressed_set = input_map.which_pressed(&input_streams);
 
         action_state.update(pressed_set);
     }
