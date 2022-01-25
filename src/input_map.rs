@@ -1,7 +1,7 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
 use crate::clashing_inputs::ClashStrategy;
-use crate::user_input::{InputButton, InputMode, UserInput};
+use crate::user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::{Actionlike, IntoEnumIterator};
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
