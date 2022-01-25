@@ -190,13 +190,15 @@ impl From<MouseButton> for InputButton {
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
+/// Each of these streams is optional; if a stream does not exist, it is treated as if it were entirely unpressed.
+///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
 #[derive(Debug, Clone)]
 pub struct InputStreams<'a> {
-    /// A [`GamepadButton`] [`Input`] stream
-    pub gamepad: &'a Input<GamepadButton>,
-    /// A [`KeyCode`] [`Input`] stream
-    pub keyboard: &'a Input<KeyCode>,
-    /// A [`MouseButton`] [`Input`] stream
-    pub mouse: &'a Input<MouseButton>,
+    /// An optional [`GamepadButton`] [`Input`] stream
+    pub gamepad: Option<&'a Input<GamepadButton>>,
+    /// An optional [`KeyCode`] [`Input`] stream
+    pub keyboard: Option<&'a Input<KeyCode>>,
+    /// An optional [`MouseButton`] [`Input`] stream
+    pub mouse: Option<&'a Input<MouseButton>>,
 }

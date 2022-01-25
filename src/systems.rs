@@ -23,16 +23,24 @@ pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>, t
 }
 
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
+///
+/// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
 pub fn update_action_state<A: Actionlike>(
-    gamepad_input_stream: Res<Input<GamepadButton>>,
-    keyboard_input_stream: Res<Input<KeyCode>>,
-    mouse_input_stream: Res<Input<MouseButton>>,
+    maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
+    maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
+    maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
+    let gamepad = maybe_gamepad_input_stream.as_deref();
+
+    let keyboard = maybe_keyboard_input_stream.as_deref();
+
+    let mouse = maybe_mouse_input_stream.as_deref();
+
     let input_streams = InputStreams {
-        gamepad: &*gamepad_input_stream,
-        keyboard: &*keyboard_input_stream,
-        mouse: &*mouse_input_stream,
+        gamepad,
+        keyboard,
+        mouse,
     };
 
     for (mut action_state, input_map) in query.iter_mut() {

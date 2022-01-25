@@ -142,15 +142,29 @@ impl<A: Actionlike> InputMap<A> {
             InputButton::Gamepad(gamepad_button) => {
                 // If no gamepad is registered, we know for sure that no match was found
                 if let Some(gamepad) = self.associated_gamepad {
-                    input_streams
-                        .gamepad
-                        .pressed(GamepadButton(gamepad, gamepad_button))
+                    if let Some(gamepad_stream) = input_streams.gamepad {
+                        gamepad_stream.pressed(GamepadButton(gamepad, gamepad_button))
+                    } else {
+                        false
+                    }
                 } else {
                     false
                 }
             }
-            InputButton::Keyboard(keycode) => input_streams.keyboard.pressed(keycode),
-            InputButton::Mouse(mouse_button) => input_streams.mouse.pressed(mouse_button),
+            InputButton::Keyboard(keycode) => {
+                if let Some(keyboard_stream) = input_streams.keyboard {
+                    keyboard_stream.pressed(keycode)
+                } else {
+                    false
+                }
+            }
+            InputButton::Mouse(mouse_button) => {
+                if let Some(mouse_stream) = input_streams.mouse {
+                    mouse_stream.pressed(mouse_button)
+                } else {
+                    false
+                }
+            }
         }
     }
 
@@ -806,9 +820,9 @@ mod tests {
         let mut mouse_input_stream = Input::<MouseButton>::default();
 
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
 
         // With no inputs, nothing should be detected
@@ -820,9 +834,9 @@ mod tests {
         gamepad_input_stream.press(GamepadButton(Gamepad(0), GamepadButtonType::South));
 
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
         for action in Action::iter() {
             assert!(!input_map.pressed(action, &input_streams));
@@ -832,9 +846,9 @@ mod tests {
         gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
 
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -844,9 +858,9 @@ mod tests {
         gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
 
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -855,9 +869,9 @@ mod tests {
         // Clearing inputs
         gamepad_input_stream = Input::<GamepadButton>::default();
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
 
         for action in Action::iter() {
@@ -868,9 +882,9 @@ mod tests {
         keyboard_input_stream.press(KeyCode::LShift);
 
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -883,9 +897,9 @@ mod tests {
         mouse_input_stream.press(MouseButton::Other(42));
 
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -898,9 +912,9 @@ mod tests {
         mouse_input_stream.press(MouseButton::Left);
 
         let input_streams = InputStreams {
-            gamepad: &gamepad_input_stream,
-            keyboard: &keyboard_input_stream,
-            mouse: &mouse_input_stream,
+            gamepad: Some(&gamepad_input_stream),
+            keyboard: Some(&keyboard_input_stream),
+            mouse: Some(&mouse_input_stream),
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams));

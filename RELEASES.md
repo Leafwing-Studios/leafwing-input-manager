@@ -7,7 +7,8 @@
 ### Usability
 
 - better decoupled `InputMap` and `ActionState`, providing an `InputMap::which_pressed` API and allowing `ActionState::update` to operate based on any `HashSet<A: Actionlike>` of pressed virtual buttons that you pass in
-- `InputMap` now uses a collected `InputStreams` struct in all of its methods
+- `InputMap` now uses a collected `InputStreams` struct in all of its methods, and input methods are now optional
+- `InputManagerPlugin` now works even if some input stream resources are missing
 
 ### Bug fixes
 
