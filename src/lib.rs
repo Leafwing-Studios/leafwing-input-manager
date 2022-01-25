@@ -57,6 +57,7 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 
 pub mod action_state;
+pub mod clashing_inputs;
 mod display_impl;
 pub mod input_map;
 pub mod systems;
@@ -73,10 +74,11 @@ pub use strum::IntoEnumIterator;
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
+    pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     pub use crate::user_input::UserInput;
-    pub use crate::IntoEnumIterator;
 
+    pub use crate::IntoEnumIterator;
     pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
 }
 
