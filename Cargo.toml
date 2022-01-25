@@ -23,6 +23,7 @@ petitset = "0.1"
 strum = {version = "0.23", features = ["derive"]}
 leafwing_input_manager_macros = "0.1"
 thiserror = "1.0"
+itertools = "0.10"
 
 [dev-dependencies]
 bevy = {version = "0.6", default-features = true}

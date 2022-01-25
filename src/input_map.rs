@@ -61,10 +61,10 @@ use petitset::PetitSet;
 pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] of [PetitSet]s used to store the input mapping
     pub map: HashMap<A, PetitSet<UserInput, 16>>,
-    /// How should overlapping inputs be handled?
-    pub clashing_inputs: ClashStrategy,
     per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
+    /// How should clashing (overlapping) inputs be handled?
+    pub clash_strategy: ClashStrategy,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
@@ -74,7 +74,7 @@ impl<A: Actionlike> Default for InputMap<A> {
             associated_gamepad: None,
             per_mode_cap: None,
             // This is the simplest, least surprising behavior.
-            clashing_inputs: ClashStrategy::PressAll,
+            clash_strategy: ClashStrategy::PressAll,
         }
     }
 }
@@ -101,6 +101,8 @@ impl<A: Actionlike> InputMap<A> {
 // Check whether buttons are pressed
 impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
+    ///
+    /// Does not check for clashing inputs.
     #[must_use]
     pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
         if let Some(matching_inputs) = self.map.get(&action) {
@@ -112,16 +114,26 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
+    ///
+    /// Accounts for clashing inputs according to the [`ClashStrategy`]
     pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
-        let mut pressed_set = HashSet::default();
+        let mut pressed_actions = HashSet::default();
+        let mut pressed_inputs = PetitSet::default();
 
+        // Generate the raw action presses
         for action in A::iter() {
-            if self.pressed(action, input_streams) {
-                pressed_set.insert(action);
+            for input in self.get(action, None) {
+                if self.input_pressed(&input, input_streams) {
+                    pressed_actions.insert(action);
+                    pressed_inputs.insert(input);
+                }
             }
         }
 
-        pressed_set
+        // Handle clashing inputs, possibly removing some pressed actions from the list
+        self.handle_clashes(&mut pressed_actions, pressed_inputs);
+
+        pressed_actions
     }
 
     /// Is at least one of the `inputs` pressed?
@@ -132,17 +144,22 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
     ) -> bool {
         for input in inputs.iter() {
-            if match input {
-                UserInput::Single(button) => self.button_pressed(*button, input_streams),
-                UserInput::Chord(buttons) => self.all_buttons_pressed(buttons, input_streams),
-                UserInput::Null => false,
-            } {
-                // If any of the appropriate inputs match, the action is considered pressed
+            if self.input_pressed(input, input_streams) {
                 return true;
             }
         }
         // If none of the inputs matched, return false
         false
+    }
+
+    /// Is the `input` pressed?
+    #[must_use]
+    pub fn input_pressed(&self, input: &UserInput, input_streams: &InputStreams) -> bool {
+        match input {
+            UserInput::Single(button) => self.button_pressed(*button, input_streams),
+            UserInput::Chord(buttons) => self.all_buttons_pressed(buttons, input_streams),
+            UserInput::Null => false,
+        }
     }
 
     /// Is the `button` pressed?
