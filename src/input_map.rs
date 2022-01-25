@@ -1,6 +1,7 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::user_input::{InputButton, InputMode, InputStreams, UserInput};
+use crate::clashing_inputs::ClashStrategy;
+use crate::user_input::{InputButton, InputMode, UserInput};
 use crate::{Actionlike, IntoEnumIterator};
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
@@ -19,6 +20,11 @@ use petitset::PetitSet;
 ///
 /// In addition, you can configure the per-mode cap for each [`InputMode`] using [`InputMap::new`] or [`InputMap::set_per_mode_cap`].
 /// This can be useful if your UI can only display one or two possible keybindings for each input mode.
+///
+/// By default, pressing a single button (or combination of buttons) can cause any number of actions to be triggered.
+/// For example, pressing both `S` and `Ctrl + S` in your text editor app would both enter the letter `s` and save your file.
+/// Set the `clashing_inputs` field of this struct with the [`ClashingInputs`] enum to configure
+/// how the input map should handle these cases.
 ///
 /// # Example
 /// ```rust
@@ -55,6 +61,8 @@ use petitset::PetitSet;
 pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] of [PetitSet]s used to store the input mapping
     pub map: HashMap<A, PetitSet<UserInput, 16>>,
+    /// How should overlapping inputs be handled?
+    pub clashing_inputs: ClashStrategy,
     per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
 }
@@ -65,6 +73,8 @@ impl<A: Actionlike> Default for InputMap<A> {
             map: HashMap::default(),
             associated_gamepad: None,
             per_mode_cap: None,
+            // This is the simplest, least surprising behavior.
+            clashing_inputs: ClashStrategy::PressAll,
         }
     }
 }
