@@ -26,9 +26,9 @@ pub enum ClashStrategy {
     /// If the [`UserInput`] contains a modifier key, press that action over any unmodified action.
     ///
     /// If more than one matching action uses a modifier, break ties based on number of modifiers.
-    /// If a tie persists, press all of them.
+    /// Further ties are broken using the `PrioritizeLongest` rule.
     PrioritizeModified(HashSet<InputButton>),
-    /// Use the order in which actions are defined in the enum to break ties
+    /// Use the order in which actions are defined in the enum to resolve clashing inputs
     ///
     /// Uses the iteration order returned by [IntoEnumIterator](crate::IntoEnumIterator),
     /// which is generated in order of the enum items by the `#[derive(EnumIter)]` macro.
