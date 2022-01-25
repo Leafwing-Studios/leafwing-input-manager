@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 0.2 (Unreleased)
+
+### Enhancements
+
+### Usability
+
+- better decoupled `InputMap` and `ActionState`, providing an `InputMap::which_pressed` API and allowing `ActionState::update` to operate based on any `HashSet<A: Actionlike>` of pressed virtual buttons that you pass in
+
+### Bug fixes
+
+- the `ActionState` component is no longer marked as `Changed` every frame
+
 ## Version 0.1.2
 
 ### Usability
@@ -10,21 +22,9 @@
 
 - fixed minor mistakes in documentation
 
-## Version 0.2 (Unreleased)
-
-### Enhancements
-
-- added `ActionState::set_state`, to allow users to transfer `VirtualButtonState` between `ActionState` components without losing `Timing` information
-
-### Usability
-
-### Bugs
-
-- better decoupled `InputMap` and `ActionState`, ensuring that the `ActionState` component is no longer marked as `Changed` every frame
-
 ## Version 0.1.1
 
-### Bugs
+### Bug fixes
 
 - fix failed `strum` re-export; users will need to pull in the derive macro `EnumIter` themselves
   - thanks to @Shatur for noticing this
