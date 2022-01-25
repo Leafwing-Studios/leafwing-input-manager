@@ -94,7 +94,8 @@ pub mod prelude {
 /// ## Systems
 /// - [`tick_action_state`](systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
 ///     - labeled [`InputManagerSystem::Reset`]
-/// - [`update_action_state`](systems::update_action_state) which collects [`Input`] resources to update the [`ActionState`]
+/// - [`cache_possible_clashes`](systems::cache_possible_clashes), which updates the cached list of potentially clashing actions
+/// - [`update_action_state`](systems::update_action_state), which collects [`Input`] resources to update the [`ActionState`]
 ///     - labeled [`InputManagerSystem::Update`]
 /// - [`update_action_state_from_interaction`](systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`] component
@@ -162,10 +163,12 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> Plugin
                     .label(InputManagerSystem::Reset)
                     .before(InputManagerSystem::Update),
             )
+            .with_system(cache_possible_clashes::<A>.label(PrivateSystems::RebuildCache))
             .with_system(
                 update_action_state::<A>
                     .label(InputManagerSystem::Update)
-                    .after(InputSystem),
+                    .after(InputSystem)
+                    .after(PrivateSystems::RebuildCache),
             )
             .with_system(
                 update_action_state_from_interaction::<A>
@@ -241,6 +244,12 @@ pub enum InputManagerSystem {
     Reset,
     /// Gathers input data to update the [ActionState]
     Update,
+}
+
+/// This [`SystemLabel`] cannot be made pub, as users must not be able to run systems between the cache's rebuild and use
+#[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
+enum PrivateSystems {
+    RebuildCache,
 }
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources

@@ -15,7 +15,7 @@ use petitset::PetitSet;
 /// - `S` and `W`: does not clash
 /// - `LControl + S` and `S`: clashes
 /// - `S` and `S`: does not clash
-/// - `LControl + S` and `LAlt + S`: clashes
+/// - `LControl + S` and ` LAlt + S`: clashes
 /// - `LControl + S`, `LAlt + S` and `LControl + LAlt + S`: clashes
 ///
 /// This strategy is only used when assessing the actions and input holistically,
@@ -91,59 +91,59 @@ impl<A: Actionlike> InputMap<A> {
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
-        for action_pair in pressed_actions.iter().combinations(2) {
-            let action_a = *action_pair.get(0).unwrap();
-            let action_b = *action_pair.get(0).unwrap();
+        // We can limit our search to the cached set of possibly clashing actions
+        for clash in &self.possible_clashes {
+            // Clashes can only occur if both actions were triggered
+            // This is not strictly necessary, but saves work
+            if !pressed_actions.contains(&clash.action_a)
+                || !pressed_actions.contains(&clash.action_b)
+            {
+                continue;
+            }
 
-            if let Some(clash) = self.clashes(action_a, action_b, pressed_inputs) {
-                clashes.push(clash);
+            // Check if the potential clash occured based on the pressed inputs
+            if let Some(clash) = check_clash(clash, pressed_inputs) {
+                clashes.push(clash)
             }
         }
 
         clashes
     }
 
+    /// Updates the cache of possible input clashes
+    pub fn cache_possible_clashes(&mut self) {
+        let mut clashes = Vec::default();
+
+        for action_pair in A::iter().combinations(2) {
+            let action_a = *action_pair.get(0).unwrap();
+            let action_b = *action_pair.get(0).unwrap();
+
+            if let Some(clash) = self.can_clash(action_a, action_b) {
+                clashes.push(clash);
+            }
+        }
+
+        self.possible_clashes = clashes;
+    }
+
     /// Is it possible for a pair of actions to clash given the provided input map?
-    // TODO: use this to cache
-    pub fn can_clash(&self, action_a: A, action_b: A) -> bool {
+    pub fn can_clash(&self, action_a: A, action_b: A) -> Option<Clash<A>> {
+        let mut clash = Clash::new(action_a, action_b);
+
         for input_a in self.get(action_a, None) {
             for input_b in self.get(action_b, None) {
                 if input_a.clashes(&input_b) {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
-    /// Given the `pressed_inputs`, are there any clashes between the two actions?
-    ///
-    /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
-    pub fn clashes(
-        &self,
-        action_a: &A,
-        action_b: &A,
-        pressed_inputs: &PetitSet<UserInput, 500>,
-    ) -> Option<Clash<A>> {
-        let mut clash = Clash::new(*action_a, *action_b);
-
-        for input_a in self
-            .get(*action_a, None)
-            .iter()
-            .filter(|input| pressed_inputs.contains(input))
-        {
-            for input_b in self
-                .get(*action_b, None)
-                .iter()
-                .filter(|input| pressed_inputs.contains(input))
-            {
-                if input_a.clashes(input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_a.clone());
                 }
             }
         }
-        None
+
+        if !clash.inputs_a.is_empty() {
+            Some(clash)
+        } else {
+            None
+        }
     }
 }
 
@@ -202,4 +202,40 @@ fn chord_chord_clash(
     }
 
     chord_a.is_subset(chord_b) || chord_b.is_subset(chord_a)
+}
+
+/// Given the `pressed_inputs`, does the provided clash actually occur?
+///
+/// Returns `Some(clash)` if they are clashing, and `None` if they are not.
+pub fn check_clash<A: Actionlike>(
+    clash: &Clash<A>,
+    pressed_inputs: &PetitSet<UserInput, 500>,
+) -> Option<Clash<A>> {
+    let mut actual_clash = Clash::new(clash.action_a, clash.action_b);
+
+    // For all inputs that were actually pressed that match action A
+    for input_a in clash
+        .inputs_a
+        .iter()
+        .filter(|input| pressed_inputs.contains(input))
+    {
+        // For all inputs that were actually pressed that match action B
+        for input_b in clash
+            .inputs_b
+            .iter()
+            .filter(|input| pressed_inputs.contains(input))
+        {
+            // If a clash was detected,
+            if input_a.clashes(input_b) {
+                actual_clash.inputs_a.push(input_a.clone());
+                actual_clash.inputs_b.push(input_a.clone());
+            }
+        }
+    }
+
+    if !clash.inputs_a.is_empty() {
+        Some(actual_clash)
+    } else {
+        None
+    }
 }
