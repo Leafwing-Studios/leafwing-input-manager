@@ -20,7 +20,7 @@
 
 - added `set_state` method, allowing users to transfer `VirtualButtonState` between `ActionState` without losing `Timing` information
 
-### Bugs
+### Bug fixes
 
 - fixed minor mistakes in documentation
 
