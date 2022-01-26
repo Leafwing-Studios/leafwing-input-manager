@@ -4,6 +4,10 @@
 
 ### Enhancements
 
+- configure how "clashing" inputs should be handled with the `ClashStrategy` field of your `InputMap`
+  - very useful for working with modifier keys
+  - if two actions are triggered
+
 ### Usability
 
 - better decoupled `InputMap` and `ActionState`, providing an `InputMap::which_pressed` API and allowing `ActionState::update` to operate based on any `HashSet<A: Actionlike>` of pressed virtual buttons that you pass in
