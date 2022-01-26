@@ -21,7 +21,7 @@ use petitset::PetitSet;
 /// This strategy is only used when assessing the actions and input holistically,
 /// in [`InputMap::which_pressed`], using [`InputMap::handle_clashes`].
 #[non_exhaustive]
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ClashStrategy {
     /// All matching inputs will always be pressed
     PressAll,
