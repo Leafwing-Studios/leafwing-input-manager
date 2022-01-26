@@ -12,3 +12,4 @@
 # Rules by tags #
 #################
 no-duplicate-heading: false
+line-length: false
