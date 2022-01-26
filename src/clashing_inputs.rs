@@ -47,7 +47,7 @@ impl Default for ClashStrategy {
 
 impl UserInput {
     /// Does `self` clash with `other`?
-    pub fn clashes(&self, other: &UserInput) -> bool {
+    fn clashes(&self, other: &UserInput) -> bool {
         use UserInput::*;
 
         match self {
@@ -86,10 +86,26 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
+    /// Updates the cache of possible input clashes
+    pub fn cache_possible_clashes(&mut self) {
+        let mut clashes = Vec::default();
+
+        for action_pair in A::iter().combinations(2) {
+            let action_a = *action_pair.get(0).unwrap();
+            let action_b = *action_pair.get(0).unwrap();
+
+            if let Some(clash) = self.can_clash(&action_a, &action_b) {
+                clashes.push(clash);
+            }
+        }
+
+        self.possible_clashes = clashes;
+    }
+
     /// Gets the set of clashing action-input pairs
     ///
     /// Returns both the action and [`UserInput`] for each clashing set
-    pub fn get_clashes(
+    fn get_clashes(
         &self,
         pressed_actions: &HashSet<A>,
         pressed_inputs: &HashSet<UserInput>,
@@ -115,24 +131,8 @@ impl<A: Actionlike> InputMap<A> {
         clashes
     }
 
-    /// Updates the cache of possible input clashes
-    pub fn cache_possible_clashes(&mut self) {
-        let mut clashes = Vec::default();
-
-        for action_pair in A::iter().combinations(2) {
-            let action_a = *action_pair.get(0).unwrap();
-            let action_b = *action_pair.get(0).unwrap();
-
-            if let Some(clash) = self.can_clash(&action_a, &action_b) {
-                clashes.push(clash);
-            }
-        }
-
-        self.possible_clashes = clashes;
-    }
-
     /// Is it possible for a pair of actions to clash given the provided input map?
-    pub fn can_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
+    fn can_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
         let mut clash = Clash::new(*action_a, *action_b);
 
         for input_a in self.get(*action_a, None) {
@@ -155,7 +155,7 @@ impl<A: Actionlike> InputMap<A> {
 /// A user-input clash, which stores the actions that are being clashed on,
 /// as well as the corresponding user inputs
 #[derive(Debug, Clone)]
-pub struct Clash<A: Actionlike> {
+pub(crate) struct Clash<A: Actionlike> {
     action_a: A,
     action_b: A,
     inputs_a: Vec<UserInput>,
@@ -171,16 +171,6 @@ impl<A: Actionlike> Clash<A> {
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
         }
-    }
-
-    /// Provides references to the actions that are clashing
-    pub fn actions(&self) -> (&A, &A) {
-        (&self.action_a, &self.action_b)
-    }
-
-    /// Provides references to the inputs that are clashing
-    pub fn inputs(&self) -> (&Vec<UserInput>, &Vec<UserInput>) {
-        (&self.inputs_a, &self.inputs_b)
     }
 }
 
@@ -212,7 +202,7 @@ fn chord_chord_clash(
 /// Given the `pressed_inputs`, does the provided clash actually occur?
 ///
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
-pub fn check_clash<A: Actionlike>(
+fn check_clash<A: Actionlike>(
     clash: &Clash<A>,
     pressed_inputs: &HashSet<UserInput>,
 ) -> Option<Clash<A>> {
@@ -246,7 +236,7 @@ pub fn check_clash<A: Actionlike>(
 }
 
 /// Which (if any) of the actions in the [`Clash`] should be discarded?
-pub fn resolve_clash<A: Actionlike>(
+fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: &ClashStrategy,
     pressed_inputs: &HashSet<UserInput>,
