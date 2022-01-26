@@ -6,6 +6,7 @@ use crate::Actionlike;
 use bevy::utils::HashSet;
 use itertools::Itertools;
 use petitset::PetitSet;
+use std::cmp::Ordering;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
@@ -260,7 +261,7 @@ fn resolve_clash<A: Actionlike>(
         for reason_b in reasons_b_is_pressed.iter() {
             // If there is at least one non-clashing reason why these buttons should both be pressed,
             // we can avoid resolving the clash completely
-            if !reason_a.clashes(&reason_b) {
+            if !reason_a.clashes(reason_b) {
                 return None;
             }
         }
@@ -284,15 +285,10 @@ fn resolve_clash<A: Actionlike>(
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
-            // A's longest matching input is shorter
-            if longest_a < longest_b {
-                Some(clash.action_a)
-            // B's longest matching input is shorter
-            } else if longest_b < longest_a {
-                Some(clash.action_b)
-            // A tie!
-            } else {
-                None
+            match longest_a.cmp(&longest_b) {
+                Ordering::Greater => Some(clash.action_b),
+                Ordering::Less => Some(clash.action_a),
+                Ordering::Equal => None,
             }
         }
         // Remove the clashing action wtih the fewest modifier keys
@@ -309,15 +305,10 @@ fn resolve_clash<A: Actionlike>(
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
-            // A's most modified input is less modified than B's
-            if most_modifiers_a < most_modifiers_b {
-                Some(clash.action_a)
-                // B's most modified input is less modified than B's
-            } else if most_modifiers_b < most_modifiers_a {
-                Some(clash.action_b)
-            // A tie!
-            } else {
-                None
+            match most_modifiers_a.cmp(&most_modifiers_b) {
+                Ordering::Greater => Some(clash.action_b),
+                Ordering::Less => Some(clash.action_a),
+                Ordering::Equal => None,
             }
         }
         // Remove the clashing action that comes later in the action enum

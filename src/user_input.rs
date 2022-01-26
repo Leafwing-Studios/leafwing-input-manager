@@ -106,6 +106,11 @@ impl UserInput {
         }
     }
 
+    /// Is the number of buttons in the [`UserInput`] 0?
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     /// How many of the provided `buttons` are found in the [`UserInput`]
     pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> u8 {
         match self {
