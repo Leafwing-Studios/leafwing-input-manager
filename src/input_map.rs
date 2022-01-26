@@ -143,7 +143,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
     ///
-    /// Remember to ensure that the clash cache is fresh by calling [`InputMap::cache_possible_clashes]
+    /// Remember to ensure that the clash cache is fresh by calling [`InputMap::cache_possible_clashes`]
     /// before using this method!
     pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
         let mut pressed_actions = HashSet::default();
