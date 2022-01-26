@@ -6,6 +6,7 @@ use bevy::input::{
     mouse::MouseButton,
     Input,
 };
+use bevy::utils::HashSet;
 use petitset::PetitSet;
 use strum::EnumIter;
 
@@ -14,6 +15,10 @@ use strum::EnumIter;
 /// Suitable for use in an [`InputMap`]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UserInput {
+    /// A null user input, used for a safe default and error-handling
+    ///
+    /// This input can never be pressed.
+    Null,
     /// A single button
     Single(InputButton),
     /// A combination of buttons, pressed simultaneously
@@ -21,10 +26,6 @@ pub enum UserInput {
     /// Up to 8 (!!) buttons can be chorded together at once.
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
     Chord(PetitSet<InputButton, 8>),
-    /// A null user input, used for a safe default and error-handling
-    ///
-    /// This input can never be pressed.
-    Null,
 }
 
 impl Default for UserInput {
@@ -102,6 +103,30 @@ impl UserInput {
             UserInput::Null => 0,
             UserInput::Single(_) => 1,
             UserInput::Chord(button_set) => button_set.len().try_into().unwrap(),
+        }
+    }
+
+    /// How many of the provided `buttons` are found in the [`UserInput`]
+    pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> u8 {
+        match self {
+            UserInput::Null => 0,
+            UserInput::Single(button) => {
+                if buttons.contains(button) {
+                    1
+                } else {
+                    0
+                }
+            }
+            UserInput::Chord(chord_buttons) => {
+                let mut n_matching = 0;
+                for button in buttons.iter() {
+                    if chord_buttons.contains(button) {
+                        n_matching += 1;
+                    }
+                }
+
+                n_matching
+            }
         }
     }
 }

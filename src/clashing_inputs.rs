@@ -75,8 +75,12 @@ impl<A: Actionlike> InputMap<A> {
     ) {
         for clash in self.get_clashes(pressed_actions, pressed_inputs) {
             // Remove the action in the pair that was overruled, if any
-            if let Some(culled_action) = resolve_clash(&clash, &self.clash_strategy, pressed_inputs)
-            {
+            if let Some(culled_action) = resolve_clash(
+                &clash,
+                &self.clash_strategy,
+                pressed_inputs,
+                &self.modifier_buttons,
+            ) {
                 pressed_actions.remove(&culled_action);
             }
         }
@@ -246,6 +250,7 @@ pub fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: &ClashStrategy,
     pressed_inputs: &HashSet<UserInput>,
+    modifiers: &HashSet<InputButton>,
 ) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&UserInput> = clash
@@ -270,6 +275,7 @@ pub fn resolve_clash<A: Actionlike>(
             }
         }
     }
+
     // There's a real clash; resolve it according to the `clash_strategy`
     match clash_strategy {
         // Do nothing
@@ -300,7 +306,30 @@ pub fn resolve_clash<A: Actionlike>(
             }
         }
         // Remove the clashing action wtih the fewest modifier keys
-        ClashStrategy::PrioritizeModified => todo!(),
+        ClashStrategy::PrioritizeModified => {
+            let most_modifiers_a: u8 = reasons_a_is_pressed
+                .iter()
+                .map(|input| input.n_matching(modifiers))
+                .reduce(|a, b| a.max(b))
+                .unwrap_or_default();
+
+            let most_modifiers_b: u8 = reasons_b_is_pressed
+                .iter()
+                .map(|input| input.n_matching(modifiers))
+                .reduce(|a, b| a.max(b))
+                .unwrap_or_default();
+
+            // A's most modified input is less modified than B's
+            if most_modifiers_a < most_modifiers_b {
+                Some(clash.action_a)
+                // B's most modified input is less modified than B's
+            } else if most_modifiers_b < most_modifiers_a {
+                Some(clash.action_b)
+            // A tie!
+            } else {
+                None
+            }
+        }
         // Remove the clashing action that comes later in the action enum
         ClashStrategy::UseActionOrder => {
             let mut action_to_remove = None;
