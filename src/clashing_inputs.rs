@@ -301,7 +301,21 @@ pub fn resolve_clash<A: Actionlike>(
         }
         // Remove the clashing action wtih the fewest modifier keys
         ClashStrategy::PrioritizeModified => todo!(),
-        // Remove the clashing action that comes later in the pair
-        ClashStrategy::UseActionOrder => todo!(),
+        // Remove the clashing action that comes later in the action enum
+        ClashStrategy::UseActionOrder => {
+            let mut action_to_remove = None;
+            for action in A::iter() {
+                if action == clash.action_a {
+                    action_to_remove = Some(clash.action_b);
+                    break;
+                }
+
+                if action == clash.action_b {
+                    action_to_remove = Some(clash.action_a);
+                    break;
+                }
+            }
+            action_to_remove
+        }
     }
 }
