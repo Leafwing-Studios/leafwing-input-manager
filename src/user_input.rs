@@ -95,6 +95,15 @@ impl UserInput {
             UserInput::Null => false,
         }
     }
+
+    /// The number of buttons in the [`UserInput`]
+    pub fn len(&self) -> u8 {
+        match self {
+            UserInput::Null => 0,
+            UserInput::Single(_) => 1,
+            UserInput::Chord(button_set) => button_set.len().try_into().unwrap(),
+        }
+    }
 }
 
 impl From<InputButton> for UserInput {

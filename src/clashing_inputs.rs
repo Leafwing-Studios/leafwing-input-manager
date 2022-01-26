@@ -75,8 +75,9 @@ impl<A: Actionlike> InputMap<A> {
     ) {
         for clash in self.get_clashes(pressed_actions, pressed_inputs) {
             // Remove the action in the pair that was overruled, if any
-            if let Some(culled_action) = resolve_clash(clash, pressed_inputs) {
-                pressed_actions.remove(culled_action);
+            if let Some(culled_action) = resolve_clash(&clash, &self.clash_strategy, pressed_inputs)
+            {
+                pressed_actions.remove(&culled_action);
             }
         }
     }
@@ -118,7 +119,7 @@ impl<A: Actionlike> InputMap<A> {
             let action_a = *action_pair.get(0).unwrap();
             let action_b = *action_pair.get(0).unwrap();
 
-            if let Some(clash) = self.can_clash(action_a, action_b) {
+            if let Some(clash) = self.can_clash(&action_a, &action_b) {
                 clashes.push(clash);
             }
         }
@@ -127,11 +128,11 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Is it possible for a pair of actions to clash given the provided input map?
-    pub fn can_clash(&self, action_a: A, action_b: A) -> Option<Clash<A>> {
-        let mut clash = Clash::new(action_a, action_b);
+    pub fn can_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
+        let mut clash = Clash::new(*action_a, *action_b);
 
-        for input_a in self.get(action_a, None) {
-            for input_b in self.get(action_b, None) {
+        for input_a in self.get(*action_a, None) {
+            for input_b in self.get(*action_b, None) {
                 if input_a.clashes(&input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_a.clone());
@@ -242,15 +243,62 @@ pub fn check_clash<A: Actionlike>(
 
 /// Which (if any) of the actions in the [`Clash`] should be discarded?
 pub fn resolve_clash<A: Actionlike>(
-    clash: Clash,
-    clash_strategy: ClashStrategy,
-    pressed_inputs: HashSet<UserInput>,
+    clash: &Clash<A>,
+    clash_strategy: &ClashStrategy,
+    pressed_inputs: &HashSet<UserInput>,
 ) -> Option<A> {
+    // Figure out why the actions are pressed
+    let reasons_a_is_pressed: Vec<&UserInput> = clash
+        .inputs_a
+        .iter()
+        .filter(|input| pressed_inputs.contains(input))
+        .collect();
+
+    let reasons_b_is_pressed: Vec<&UserInput> = clash
+        .inputs_b
+        .iter()
+        .filter(|input| pressed_inputs.contains(input))
+        .collect();
+
+    // Clashes are spurious if the virtual buttons are pressed for any non-clashing reason
+    for reason_a in reasons_a_is_pressed.iter() {
+        for reason_b in reasons_b_is_pressed.iter() {
+            // If there is at least one non-clashing reason why these buttons should both be pressed,
+            // we can avoid resolving the clash completely
+            if !reason_a.clashes(&reason_b) {
+                return None;
+            }
+        }
+    }
+    // There's a real clash; resolve it according to the `clash_strategy`
     match clash_strategy {
         // Do nothing
         ClashStrategy::PressAll => None,
         // Remove the clashing action with the shorter chord
-        ClashStrategy::PrioritizeLongest => todo!(),
+        ClashStrategy::PrioritizeLongest => {
+            let longest_a: u8 = reasons_a_is_pressed
+                .iter()
+                .map(|input| input.len())
+                .reduce(|a, b| a.max(b))
+                .unwrap_or_default();
+
+            let longest_b: u8 = reasons_b_is_pressed
+                .iter()
+                .map(|input| input.len())
+                .reduce(|a, b| a.max(b))
+                .unwrap_or_default();
+
+            // A's longest matching input is shorter
+            if longest_a < longest_b {
+                Some(clash.action_a)
+            // B's longest matching input is shorter
+            } else if longest_b < longest_a {
+                Some(clash.action_b)
+            // A tie!
+            } else {
+                None
+            }
+        }
         // Remove the clashing action wtih the fewest modifier keys
         ClashStrategy::PrioritizeModified => todo!(),
         // Remove the clashing action that comes later in the pair
