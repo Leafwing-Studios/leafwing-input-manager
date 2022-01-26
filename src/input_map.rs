@@ -144,7 +144,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Accounts for clashing inputs according to the [`ClashStrategy`]
     pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
         let mut pressed_actions = HashSet::default();
-        let mut pressed_inputs = PetitSet::default();
+        let mut pressed_inputs = HashSet::default();
 
         // Generate the raw action presses
         for action in A::iter() {

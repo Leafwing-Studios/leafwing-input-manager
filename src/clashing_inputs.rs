@@ -71,7 +71,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn handle_clashes(
         &self,
         _pressed_actions: &mut HashSet<A>,
-        _pressed_inputs: PetitSet<UserInput, 500>,
+        _pressed_inputs: HashSet<UserInput>,
     ) {
         match self.clash_strategy {
             ClashStrategy::PressAll => (),
@@ -87,7 +87,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn get_clashes(
         &self,
         pressed_actions: &HashSet<A>,
-        pressed_inputs: &PetitSet<UserInput, 500>,
+        pressed_inputs: &HashSet<UserInput>,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -209,7 +209,7 @@ fn chord_chord_clash(
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
 pub fn check_clash<A: Actionlike>(
     clash: &Clash<A>,
-    pressed_inputs: &PetitSet<UserInput, 500>,
+    pressed_inputs: &HashSet<UserInput>,
 ) -> Option<Clash<A>> {
     let mut actual_clash = Clash::new(clash.action_a, clash.action_b);
 

@@ -12,7 +12,7 @@ use strum::EnumIter;
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///
 /// Suitable for use in an [`InputMap`]
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum UserInput {
     /// A single button
     Single(InputButton),
