@@ -241,3 +241,18 @@ pub struct InputStreams<'a> {
     /// An optional [`MouseButton`] [`Input`] stream
     pub mouse: Option<&'a Input<MouseButton>>,
 }
+
+/// A mutable collection of [`Input`] structs, which can be used for mocking user inputs.
+///
+/// Each of these streams is optional; if a stream does not exist, inputs sent to them will be ignored.
+///
+/// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
+#[derive(Debug)]
+pub struct MutableInputStreams<'a> {
+    /// An optional [`GamepadButton`] [`Input`] stream
+    pub gamepad: Option<&'a mut Input<GamepadButton>>,
+    /// An optional [`KeyCode`] [`Input`] stream
+    pub keyboard: Option<&'a mut Input<KeyCode>>,
+    /// An optional [`MouseButton`] [`Input`] stream
+    pub mouse: Option<&'a mut Input<MouseButton>>,
+}

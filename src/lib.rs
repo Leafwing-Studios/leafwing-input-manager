@@ -60,6 +60,7 @@ pub mod action_state;
 pub mod clashing_inputs;
 mod display_impl;
 pub mod input_map;
+pub mod input_mocking;
 pub mod systems;
 pub mod user_input;
 
