@@ -53,6 +53,14 @@ pub trait MockInput {
     ///
     /// Provide the `Gamepad` identifier to control which gamepad you are emulating inputs from
     fn send_user_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+
+    /// Clears all user input streams, resetting them to their default state
+    ///
+    /// All buttons are released, and `just_pressed` and `just_released` information on the [`Input`] type are lost.
+    /// `just_pressed` and `just_released` on the [`ActionState`](crate::action_state::ActionState) will be kept.
+    ///
+    /// This will clear all [`Keycode`], [`GamepadButton`] and [`MouseButton`] input streams
+    fn reset_inputs(&mut self);
 }
 
 impl<'a> MutableInputStreams<'a> {
@@ -152,6 +160,28 @@ impl MockInput for World {
 
         mutable_input_streams.send_user_input_to_gamepad(input, gamepad);
     }
+
+    fn reset_inputs(&mut self) {
+        let mut input_system_state: SystemState<(
+            Option<ResMut<Input<GamepadButton>>>,
+            Option<ResMut<Input<KeyCode>>>,
+            Option<ResMut<Input<MouseButton>>>,
+        )> = SystemState::new(self);
+
+        let (maybe_gamepad, maybe_keyboard, maybe_mouse) = input_system_state.get_mut(self);
+
+        if let Some(mut gamepad) = maybe_gamepad {
+            *gamepad = Default::default();
+        }
+
+        if let Some(mut keyboard) = maybe_keyboard {
+            *keyboard = Default::default();
+        }
+
+        if let Some(mut mouse) = maybe_mouse {
+            *mouse = Default::default();
+        }
+    }
 }
 
 impl MockInput for App {
@@ -165,5 +195,9 @@ impl MockInput for App {
         gamepad: Option<Gamepad>,
     ) {
         self.world.send_user_input_to_gamepad(input, gamepad);
+    }
+
+    fn reset_inputs(&mut self) {
+        self.world.reset_inputs();
     }
 }
