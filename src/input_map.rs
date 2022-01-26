@@ -160,7 +160,9 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut pressed_actions, pressed_inputs);
+        if self.clash_strategy != ClashStrategy::PressAll {
+            self.handle_clashes(&mut pressed_actions, &pressed_inputs);
+        }
 
         pressed_actions
     }

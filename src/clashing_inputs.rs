@@ -70,15 +70,15 @@ impl<A: Actionlike> InputMap<A> {
     /// Resolve clashing inputs, removing action presses that have been overruled
     pub fn handle_clashes(
         &self,
-        _pressed_actions: &mut HashSet<A>,
-        _pressed_inputs: HashSet<UserInput>,
+        pressed_actions: &mut HashSet<A>,
+        pressed_inputs: &HashSet<UserInput>,
     ) {
-        match self.clash_strategy {
-            ClashStrategy::PressAll => (),
-            ClashStrategy::PrioritizeLongest => (),
-            ClashStrategy::PrioritizeModified => (),
-            ClashStrategy::UseActionOrder => (),
-        };
+        for clash in self.get_clashes(pressed_actions, pressed_inputs) {
+            // Remove the action in the pair that was overruled, if any
+            if let Some(culled_action) = resolve_clash(clash, pressed_inputs) {
+                pressed_actions.remove(culled_action);
+            }
+        }
     }
 
     /// Gets the set of clashing action-input pairs
@@ -237,5 +237,23 @@ pub fn check_clash<A: Actionlike>(
         Some(actual_clash)
     } else {
         None
+    }
+}
+
+/// Which (if any) of the actions in the [`Clash`] should be discarded?
+pub fn resolve_clash<A: Actionlike>(
+    clash: Clash,
+    clash_strategy: ClashStrategy,
+    pressed_inputs: HashSet<UserInput>,
+) -> Option<A> {
+    match clash_strategy {
+        // Do nothing
+        ClashStrategy::PressAll => None,
+        // Remove the clashing action with the shorter chord
+        ClashStrategy::PrioritizeLongest => todo!(),
+        // Remove the clashing action wtih the fewest modifier keys
+        ClashStrategy::PrioritizeModified => todo!(),
+        // Remove the clashing action that comes later in the pair
+        ClashStrategy::UseActionOrder => todo!(),
     }
 }
