@@ -60,7 +60,9 @@ pub mod action_state;
 pub mod clashing_inputs;
 mod display_impl;
 pub mod input_map;
-pub mod input_mocking;
+mod input_mocking;
+// Re-export this at the root level
+pub use input_mocking::MockInput;
 pub mod systems;
 pub mod user_input;
 

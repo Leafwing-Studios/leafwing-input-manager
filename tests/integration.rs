@@ -25,14 +25,10 @@ fn spawn_player(mut commands: Commands) {
         });
 }
 
-fn press_f(mut input: ResMut<Input<KeyCode>>) {
-    input.press(KeyCode::F);
-}
-
 #[test]
 fn action_state_change_detection() {
-    use bevy::ecs::schedule::ShouldRun;
     use bevy::input::InputPlugin;
+    use leafwing_input_manager::MockInput;
 
     let mut app = App::new();
 
@@ -40,21 +36,13 @@ fn action_state_change_detection() {
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
-        .add_system(
-            press_f.with_run_criteria(|mut run_this_frame: Local<bool>| {
-                // Run this system every other frame
-                let run_next_frame = !*run_this_frame;
-                *run_this_frame = run_next_frame;
-                if run_next_frame {
-                    ShouldRun::No
-                } else {
-                    ShouldRun::Yes
-                }
-            }),
-        )
         .add_system(action_state_changed_iff_input_changed);
 
-    for _ in 0..10 {
+    for i in 0..10 {
+        if i % 2 == 0 {
+            app.send_user_input(KeyCode::F);
+        }
+
         app.update();
     }
 
