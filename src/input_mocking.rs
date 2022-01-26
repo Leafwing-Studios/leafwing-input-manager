@@ -47,12 +47,12 @@ pub trait MockInput {
     ///
     /// Gamepad input will be sent by the first registed controller found.
     /// If none are found, gamepad input will be silently skipped.
-    fn send_user_input(&mut self, input: impl Into<UserInput>);
+    fn send_input(&mut self, input: impl Into<UserInput>);
 
     /// Send the specified `user_input` directly, using the specified gamepad
     ///
     /// Provide the `Gamepad` identifier to control which gamepad you are emulating inputs from
-    fn send_user_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+    fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
     /// Clears all user input streams, resetting them to their default state
     ///
@@ -126,21 +126,17 @@ impl<'a> MutableInputStreams<'a> {
 }
 
 impl MockInput for World {
-    fn send_user_input(&mut self, input: impl Into<UserInput>) {
+    fn send_input(&mut self, input: impl Into<UserInput>) {
         let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
             gamepads.iter().next().copied()
         } else {
             None
         };
 
-        self.send_user_input_to_gamepad(input, gamepad);
+        self.send_input_to_gamepad(input, gamepad);
     }
 
-    fn send_user_input_to_gamepad(
-        &mut self,
-        input: impl Into<UserInput>,
-        gamepad: Option<Gamepad>,
-    ) {
+    fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
         // You can make a system with this type signature if you'd like to mock user input
         // in a non-exclusive system
         let mut input_system_state: SystemState<(
@@ -185,16 +181,12 @@ impl MockInput for World {
 }
 
 impl MockInput for App {
-    fn send_user_input(&mut self, input: impl Into<UserInput>) {
-        self.world.send_user_input(input);
+    fn send_input(&mut self, input: impl Into<UserInput>) {
+        self.world.send_input(input);
     }
 
-    fn send_user_input_to_gamepad(
-        &mut self,
-        input: impl Into<UserInput>,
-        gamepad: Option<Gamepad>,
-    ) {
-        self.world.send_user_input_to_gamepad(input, gamepad);
+    fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        self.world.send_input_to_gamepad(input, gamepad);
     }
 
     fn reset_inputs(&mut self) {

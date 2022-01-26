@@ -40,7 +40,7 @@ fn action_state_change_detection() {
 
     for i in 0..10 {
         if i % 2 == 0 {
-            app.send_user_input(KeyCode::F);
+            app.send_input(KeyCode::F);
         }
 
         app.update();
