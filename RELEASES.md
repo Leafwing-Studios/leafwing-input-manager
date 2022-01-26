@@ -7,6 +7,7 @@
 - configure how "clashing" inputs should be handled with the `ClashStrategy` field of your `InputMap`
   - very useful for working with modifier keys
   - if two actions are triggered
+- ergonomic input mocking API at both the `App` and `World` level using the `MockInputs` trait
 
 ### Usability
 

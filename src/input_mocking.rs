@@ -5,7 +5,7 @@ use bevy::app::App;
 use bevy::ecs::system::{ResMut, SystemState};
 use bevy::ecs::world::World;
 use bevy::input::{
-    gamepad::{Gamepad, GamepadButton},
+    gamepad::{Gamepad, GamepadButton, Gamepads},
     keyboard::KeyCode,
     mouse::MouseButton,
     Input,
@@ -20,22 +20,50 @@ use bevy::input::{
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::MockInput;
+///
 /// let world = World::new();
 ///
-///
+/// // Pay respects!
+/// world.send_input(KeyCode::F);
 /// ```
 ///
 /// ```rust
+/// /// use bevy::prelude::*;
+/// use leafwing_input_manager::MockInput;
+/// let app = App::new();
 ///
+/// // Send inputs one at a time
+/// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
 ///
+/// for letter in B_E_V_Y {
+/// 	app.send_input(letter);
+/// }
+///
+/// // Or use chords!
+/// app.send_input(UserInput::chord(B_E_V_Y));
 /// ```
 pub trait MockInput {
     /// Send the specified `user_input` directly
-    fn send_user_input(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+    ///
+    /// Gamepad input will be sent by the first registed controller found.
+    /// If none are found, gamepad input will be silently skipped.
+    fn send_user_input(&mut self, input: impl Into<UserInput>);
+
+    /// Send the specified `user_input` directly, using the specified gamepad
+    ///
+    /// Provide the `Gamepad` identifier to control which gamepad you are emulating inputs from
+    fn send_user_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 }
 
-impl<'a> MockInput for MutableInputStreams<'a> {
-    fn send_user_input(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+impl<'a> MutableInputStreams<'a> {
+    /// Send the specified `user_input` directly, using the specified gamepad
+    ///
+    /// Called by the methods of [`MockInput`].
+    pub fn send_user_input_to_gamepad(
+        &mut self,
+        input: impl Into<UserInput>,
+        gamepad: Option<Gamepad>,
+    ) {
         let input_to_send: UserInput = input.into();
 
         let mut gamepad_buttons: Vec<GamepadButton> = Vec::default();
@@ -90,7 +118,21 @@ impl<'a> MockInput for MutableInputStreams<'a> {
 }
 
 impl MockInput for World {
-    fn send_user_input(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+    fn send_user_input(&mut self, input: impl Into<UserInput>) {
+        let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
+            gamepads.iter().next().copied()
+        } else {
+            None
+        };
+
+        self.send_user_input_to_gamepad(input, gamepad);
+    }
+
+    fn send_user_input_to_gamepad(
+        &mut self,
+        input: impl Into<UserInput>,
+        gamepad: Option<Gamepad>,
+    ) {
         // You can make a system with this type signature if you'd like to mock user input
         // in a non-exclusive system
         let mut input_system_state: SystemState<(
@@ -108,12 +150,20 @@ impl MockInput for World {
             mouse: maybe_mouse.as_deref_mut(),
         };
 
-        mutable_input_streams.send_user_input(input, gamepad);
+        mutable_input_streams.send_user_input_to_gamepad(input, gamepad);
     }
 }
 
 impl MockInput for App {
-    fn send_user_input(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        self.world.send_user_input(input, gamepad);
+    fn send_user_input(&mut self, input: impl Into<UserInput>) {
+        self.world.send_user_input(input);
+    }
+
+    fn send_user_input_to_gamepad(
+        &mut self,
+        input: impl Into<UserInput>,
+        gamepad: Option<Gamepad>,
+    ) {
+        self.world.send_user_input_to_gamepad(input, gamepad);
     }
 }

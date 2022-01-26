@@ -32,6 +32,8 @@ No more characters wandering around while your menu is open!
 - Sophisticated input disambiguation with the `ClashStrategy` enum: stop triggering individual buttons when you meant to press a chord!
 - Create an arbitrary number of strongly typed disjoint action sets: decouple your camera and player state.
 - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
+- Powerful and easy-to-use input mocking API for integration testing your Bevy applications
+  - `app.send_input(KeyCode::B)` or `world.send_input(UserInput::chord([KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y])`
 - Leafwing Studio's trademark `#![forbid(missing_docs)]`
 
 ## Limitations
