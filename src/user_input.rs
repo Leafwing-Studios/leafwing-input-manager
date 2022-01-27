@@ -112,6 +112,22 @@ impl UserInput {
     }
 
     /// How many of the provided `buttons` are found in the [`UserInput`]
+    ///
+    /// # Example
+    /// ```rust
+    /// use bevy::input::keyboard::KeyCode::*;
+    /// use bevy::utils::HashSet;
+    /// use leafwing_input_manager::user_input::UserInput;
+    ///
+    /// let buttons = HashSet::from_iter([LControl.into(), LAlt.into()]);
+    /// let a: UserInput  = A.into();
+    /// let ctrl_a = UserInput::chord([LControl, A]);
+    /// let ctrl_alt_a = UserInput::chord([LControl, LAlt, A]);
+    ///
+    /// assert_eq!(a.n_matching(&buttons), 0);
+    /// assert_eq!(ctrl_a.n_matching(&buttons), 1);
+    /// assert_eq!(ctrl_alt_a.n_matching(&buttons), 2);
+    /// ```
     pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> u8 {
         match self {
             UserInput::Null => 0,
