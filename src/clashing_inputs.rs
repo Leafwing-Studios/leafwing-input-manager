@@ -445,4 +445,130 @@ mod tests {
         input_map.clear_action(Action::Two, Some(InputMode::Keyboard));
         assert_eq!(input_map.possible_clashes.len(), 4);
     }
+
+    #[test]
+    fn resolve_prioritize_longest() {
+        use bevy::prelude::*;
+        use Action::*;
+
+        let input_map = test_input_map();
+        let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
+        let mut keyboard: Input<KeyCode> = Default::default();
+        keyboard.press(Key1);
+        keyboard.press(Key2);
+
+        let input_streams = InputStreams::from_keyboard(&keyboard);
+
+        assert_eq!(
+            resolve_clash(
+                &simple_clash,
+                &ClashStrategy::PrioritizeLongest,
+                &input_streams,
+                &HashSet::default(),
+            ),
+            Some(One)
+        );
+
+        let reversed_clash = input_map.possible_clash(&OneAndTwo, &One).unwrap();
+        assert_eq!(
+            resolve_clash(
+                &reversed_clash,
+                &ClashStrategy::PrioritizeLongest,
+                &input_streams,
+                &HashSet::default(),
+            ),
+            Some(One)
+        );
+
+        let chord_clash = input_map
+            .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
+            .unwrap();
+        keyboard.press(Key3);
+
+        let input_streams = InputStreams::from_keyboard(&keyboard);
+
+        assert_eq!(
+            resolve_clash(
+                &chord_clash,
+                &ClashStrategy::PrioritizeLongest,
+                &input_streams,
+                &HashSet::default(),
+            ),
+            Some(OneAndTwo)
+        );
+    }
+
+    #[test]
+    fn resolve_prioritize_modified() {
+        use bevy::prelude::*;
+        use Action::*;
+
+        let input_map = test_input_map();
+        let simple_clash = input_map.possible_clash(&One, &CtrlOne).unwrap();
+        let mut keyboard: Input<KeyCode> = Default::default();
+        keyboard.press(Key1);
+        keyboard.press(LControl);
+
+        let input_streams = InputStreams::from_keyboard(&keyboard);
+
+        assert_eq!(
+            resolve_clash(
+                &simple_clash,
+                &ClashStrategy::PrioritizeModified,
+                &input_streams,
+                &HashSet::default(),
+            ),
+            Some(One)
+        );
+
+        let chord_clash = input_map.possible_clash(&CtrlOne, &CtrlAltOne).unwrap();
+        keyboard.press(LAlt);
+
+        let input_streams = InputStreams::from_keyboard(&keyboard);
+
+        assert_eq!(
+            resolve_clash(
+                &chord_clash,
+                &ClashStrategy::PrioritizeModified,
+                &input_streams,
+                &HashSet::default(),
+            ),
+            Some(CtrlOne)
+        );
+    }
+
+    #[test]
+    fn resolve_use_action_order() {
+        use bevy::prelude::*;
+        use Action::*;
+
+        let input_map = test_input_map();
+        let simple_clash = input_map.possible_clash(&One, &CtrlOne).unwrap();
+        let reversed_clash = input_map.possible_clash(&CtrlOne, &One).unwrap();
+        let mut keyboard: Input<KeyCode> = Default::default();
+        keyboard.press(Key1);
+        keyboard.press(LControl);
+
+        let input_streams = InputStreams::from_keyboard(&keyboard);
+
+        assert_eq!(
+            resolve_clash(
+                &simple_clash,
+                &ClashStrategy::UseActionOrder,
+                &input_streams,
+                &HashSet::default(),
+            ),
+            Some(CtrlOne)
+        );
+
+        assert_eq!(
+            resolve_clash(
+                &reversed_clash,
+                &ClashStrategy::UseActionOrder,
+                &input_streams,
+                &HashSet::default(),
+            ),
+            Some(CtrlOne)
+        );
+    }
 }
