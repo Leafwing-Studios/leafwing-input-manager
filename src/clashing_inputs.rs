@@ -84,7 +84,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Updates the cache of possible input clashes
-    pub fn cache_possible_clashes(&mut self) {
+    pub(crate) fn cache_possible_clashes(&mut self) {
         let mut clashes = Vec::default();
 
         for action_pair in A::iter().combinations(2) {
