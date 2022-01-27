@@ -21,16 +21,17 @@ use bevy::input::{
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::MockInput;
 ///
-/// let world = World::new();
+/// let mut world = World::new();
 ///
 /// // Pay respects!
 /// world.send_input(KeyCode::F);
 /// ```
 ///
 /// ```rust
-/// /// use bevy::prelude::*;
-/// use leafwing_input_manager::MockInput;
-/// let app = App::new();
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::{MockInput, user_input::UserInput};
+///
+/// let mut app = App::new();
 ///
 /// // Send inputs one at a time
 /// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];

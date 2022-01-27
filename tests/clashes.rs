@@ -157,12 +157,12 @@ fn input_clash_handling() {
 
     app.assert_input_map_actions_eq(
         ClashStrategy::PressAll,
-        [One, Two, OneAndTwo, OneAndTwoAndThree],
+        [One, Two, OneAndTwo, TwoAndThree, OneAndTwoAndThree],
     );
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwoAndThree]);
     app.assert_input_map_actions_eq(
         ClashStrategy::PrioritizeModified,
-        [One, Two, OneAndTwo, OneAndTwoAndThree],
+        [One, Two, OneAndTwo, TwoAndThree, OneAndTwoAndThree],
     );
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One]);
 
@@ -176,7 +176,7 @@ fn input_clash_handling() {
 
     app.assert_input_map_actions_eq(
         ClashStrategy::PressAll,
-        [One, Two, OneAndTwo, OneAndTwoAndThree, CtrlOne],
+        [One, Two, OneAndTwo, TwoAndThree, OneAndTwoAndThree, CtrlOne],
     );
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwoAndThree]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeModified, [CtrlOne]);
