@@ -129,23 +129,17 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
     ///
-    /// Does not check for clashing inputs.
+    /// Accounts for clashing inputs according to the [`ClashStrategy`].
+    /// If you need to inspect many inputs at once, prefer [`InputMap::which_pressed`] instead.
     #[must_use]
     pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
-        if let Some(matching_inputs) = self.map.get(&action) {
-            input_streams.any_pressed(matching_inputs)
-        } else {
-            // No matches can be found if no inputs are registred for that action
-            false
-        }
+        let pressed_set = self.which_pressed(input_streams);
+        pressed_set.contains(&action)
     }
 
     /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
-    ///
-    /// Remember to ensure that the clash cache is fresh by calling [`InputMap::cache_possible_clashes`]
-    /// before using this method!
     pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
         let mut pressed_actions = HashSet::default();
 
