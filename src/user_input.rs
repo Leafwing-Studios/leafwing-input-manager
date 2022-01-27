@@ -256,3 +256,31 @@ pub struct MutableInputStreams<'a> {
     /// An optional [`MouseButton`] [`Input`] stream
     pub mouse: Option<&'a mut Input<MouseButton>>,
 }
+
+impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
+    fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
+        let gamepad = if let Some(mutable_ref) = mutable_streams.gamepad {
+            Some(&*mutable_ref)
+        } else {
+            None
+        };
+
+        let keyboard = if let Some(mutable_ref) = mutable_streams.keyboard {
+            Some(&*mutable_ref)
+        } else {
+            None
+        };
+
+        let mouse = if let Some(mutable_ref) = mutable_streams.mouse {
+            Some(&*mutable_ref)
+        } else {
+            None
+        };
+
+        InputStreams {
+            gamepad,
+            keyboard,
+            mouse,
+        }
+    }
+}
