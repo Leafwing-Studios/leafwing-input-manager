@@ -93,9 +93,9 @@ impl<A: Actionlike> InputMap<A> {
 
         for action_pair in A::iter().combinations(2) {
             let action_a = *action_pair.get(0).unwrap();
-            let action_b = *action_pair.get(0).unwrap();
+            let action_b = *action_pair.get(1).unwrap();
 
-            if let Some(clash) = self.can_clash(&action_a, &action_b) {
+            if let Some(clash) = self.possible_clash(&action_a, &action_b) {
                 clashes.push(clash);
             }
         }
@@ -132,15 +132,15 @@ impl<A: Actionlike> InputMap<A> {
         clashes
     }
 
-    /// Is it possible for a pair of actions to clash given the provided input map?
-    fn can_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
+    /// If the pair of actions could clash, how?
+    fn possible_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
         let mut clash = Clash::new(*action_a, *action_b);
 
         for input_a in self.get(*action_a, None) {
             for input_b in self.get(*action_b, None) {
                 if input_a.clashes(&input_b) {
                     clash.inputs_a.push(input_a.clone());
-                    clash.inputs_b.push(input_a.clone());
+                    clash.inputs_b.push(input_b.clone());
                 }
             }
         }
