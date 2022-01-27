@@ -36,7 +36,7 @@ use bevy::input::{
 /// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
 ///
 /// for letter in B_E_V_Y {
-/// 	app.send_input(letter);
+///     app.send_input(letter);
 /// }
 ///
 /// // Or use chords!
@@ -105,19 +105,19 @@ impl<'a> MutableInputStreams<'a> {
             }
         };
 
-        if let Some(gamepad_input) = self.gamepad.as_deref_mut() {
+        if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
                 gamepad_input.press(button);
             }
         }
 
-        if let Some(keyboard_input) = self.keyboard.as_deref_mut() {
+        if let Some(ref mut keyboard_input) = self.keyboard {
             for button in keyboard_buttons {
                 keyboard_input.press(button);
             }
         }
 
-        if let Some(mouse_input) = self.mouse.as_deref_mut() {
+        if let Some(ref mut mouse_input) = self.mouse {
             for button in mouse_buttons {
                 mouse_input.press(button);
             }

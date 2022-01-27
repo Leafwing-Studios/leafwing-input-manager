@@ -93,7 +93,7 @@ impl ClashTestExt for App {
         )> = SystemState::new(&mut self.world);
 
         let (input_map_query, maybe_gamepad, maybe_keyboard, maybe_mouse) =
-            input_system_state.get(&mut self.world);
+            input_system_state.get(&self.world);
 
         let input_streams = InputStreams {
             gamepad: maybe_gamepad.as_deref(),
