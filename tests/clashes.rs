@@ -99,6 +99,7 @@ impl ClashTestExt for App {
             gamepad: maybe_gamepad.as_deref(),
             keyboard: maybe_keyboard.as_deref(),
             mouse: maybe_mouse.as_deref(),
+            associated_gamepad: None,
         };
 
         let mut matching_input_map = InputMap::<Action>::default();

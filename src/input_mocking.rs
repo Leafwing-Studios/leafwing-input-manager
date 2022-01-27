@@ -67,11 +67,7 @@ impl<'a> MutableInputStreams<'a> {
     /// Send the specified `user_input` directly, using the specified gamepad
     ///
     /// Called by the methods of [`MockInput`].
-    pub fn send_user_input_to_gamepad(
-        &mut self,
-        input: impl Into<UserInput>,
-        gamepad: Option<Gamepad>,
-    ) {
+    pub fn send_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_send: UserInput = input.into();
 
         let mut gamepad_buttons: Vec<GamepadButton> = Vec::default();
@@ -83,7 +79,7 @@ impl<'a> MutableInputStreams<'a> {
             UserInput::Null => (),
             UserInput::Single(button) => match button {
                 InputButton::Gamepad(gamepad_buttontype) => {
-                    if let Some(gamepad) = gamepad {
+                    if let Some(gamepad) = self.associated_gamepad {
                         gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
                     }
                 }
@@ -94,7 +90,7 @@ impl<'a> MutableInputStreams<'a> {
                 for button in button_set {
                     match button {
                         InputButton::Gamepad(gamepad_buttontype) => {
-                            if let Some(gamepad) = gamepad {
+                            if let Some(gamepad) = self.associated_gamepad {
                                 gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
                             }
                         }
@@ -152,9 +148,10 @@ impl MockInput for World {
             gamepad: maybe_gamepad.as_deref_mut(),
             keyboard: maybe_keyboard.as_deref_mut(),
             mouse: maybe_mouse.as_deref_mut(),
+            associated_gamepad: gamepad,
         };
 
-        mutable_input_streams.send_user_input_to_gamepad(input, gamepad);
+        mutable_input_streams.send_user_input(input);
     }
 
     fn reset_inputs(&mut self) {

@@ -522,6 +522,7 @@ mod tests {
             gamepad: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: None,
+            associated_gamepad: None,
         };
 
         // Starting state
@@ -539,6 +540,7 @@ mod tests {
             gamepad: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: None,
+            associated_gamepad: None,
         };
 
         action_state.update(input_map.which_pressed(&input_streams));
@@ -563,6 +565,7 @@ mod tests {
             gamepad: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: None,
+            associated_gamepad: None,
         };
 
         action_state.update(input_map.which_pressed(&input_streams));

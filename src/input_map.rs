@@ -133,7 +133,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
         if let Some(matching_inputs) = self.map.get(&action) {
-            self.any_pressed(matching_inputs, input_streams)
+            input_streams.any_pressed(matching_inputs)
         } else {
             // No matches can be found if no inputs are registred for that action
             false
@@ -148,100 +148,22 @@ impl<A: Actionlike> InputMap<A> {
     /// before using this method!
     pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
         let mut pressed_actions = HashSet::default();
-        let mut pressed_inputs = HashSet::default();
 
         // Generate the raw action presses
         for action in A::iter() {
             for input in self.get(action, None) {
-                if self.input_pressed(&input, input_streams) {
+                if input_streams.input_pressed(&input) {
                     pressed_actions.insert(action);
-                    pressed_inputs.insert(input);
                 }
             }
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
         if self.clash_strategy != ClashStrategy::PressAll {
-            self.handle_clashes(&mut pressed_actions, &pressed_inputs);
+            self.handle_clashes(&mut pressed_actions, &input_streams);
         }
 
         pressed_actions
-    }
-
-    /// Is at least one of the `inputs` pressed?
-    #[must_use]
-    pub fn any_pressed(
-        &self,
-        inputs: &PetitSet<UserInput, 16>,
-        input_streams: &InputStreams,
-    ) -> bool {
-        for input in inputs.iter() {
-            if self.input_pressed(input, input_streams) {
-                return true;
-            }
-        }
-        // If none of the inputs matched, return false
-        false
-    }
-
-    /// Is the `input` pressed?
-    #[must_use]
-    pub fn input_pressed(&self, input: &UserInput, input_streams: &InputStreams) -> bool {
-        match input {
-            UserInput::Single(button) => self.button_pressed(*button, input_streams),
-            UserInput::Chord(buttons) => self.all_buttons_pressed(buttons, input_streams),
-            UserInput::Null => false,
-        }
-    }
-
-    /// Is the `button` pressed?
-    #[must_use]
-    pub fn button_pressed(&self, button: InputButton, input_streams: &InputStreams) -> bool {
-        match button {
-            InputButton::Gamepad(gamepad_button) => {
-                // If no gamepad is registered, we know for sure that no match was found
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(gamepad_stream) = input_streams.gamepad {
-                        gamepad_stream.pressed(GamepadButton(gamepad, gamepad_button))
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            }
-            InputButton::Keyboard(keycode) => {
-                if let Some(keyboard_stream) = input_streams.keyboard {
-                    keyboard_stream.pressed(keycode)
-                } else {
-                    false
-                }
-            }
-            InputButton::Mouse(mouse_button) => {
-                if let Some(mouse_stream) = input_streams.mouse {
-                    mouse_stream.pressed(mouse_button)
-                } else {
-                    false
-                }
-            }
-        }
-    }
-
-    /// Are all of the `buttons` pressed?
-    #[must_use]
-    pub fn all_buttons_pressed(
-        &self,
-        buttons: &PetitSet<InputButton, 8>,
-        input_streams: &InputStreams,
-    ) -> bool {
-        for &button in buttons.iter() {
-            // If any of the appropriate inputs failed to match, the action is considered pressed
-            if !self.button_pressed(button, input_streams) {
-                return false;
-            }
-        }
-        // If none of the inputs failed to match, return true
-        true
     }
 }
 
@@ -899,6 +821,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
 
         // With no inputs, nothing should be detected
@@ -913,6 +836,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
         for action in Action::iter() {
             assert!(!input_map.pressed(action, &input_streams));
@@ -925,6 +849,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -937,6 +862,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -948,6 +874,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
 
         for action in Action::iter() {
@@ -961,6 +888,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -976,6 +904,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -991,6 +920,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: None,
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams));

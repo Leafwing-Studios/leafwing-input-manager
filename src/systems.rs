@@ -37,13 +37,14 @@ pub fn update_action_state<A: Actionlike>(
 
     let mouse = maybe_mouse_input_stream.as_deref();
 
-    let input_streams = InputStreams {
-        gamepad,
-        keyboard,
-        mouse,
-    };
-
     for (mut action_state, input_map) in query.iter_mut() {
+        let input_streams = InputStreams {
+            gamepad,
+            keyboard,
+            mouse,
+            associated_gamepad: input_map.gamepad(),
+        };
+
         let pressed_set = input_map.which_pressed(&input_streams);
 
         action_state.update(pressed_set);

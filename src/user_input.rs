@@ -1,7 +1,7 @@
 //! Helpful abstractions over user input
 
 use bevy::input::{
-    gamepad::{GamepadButton, GamepadButtonType},
+    gamepad::{Gamepad, GamepadButton, GamepadButtonType},
     keyboard::KeyCode,
     mouse::MouseButton,
     Input,
@@ -240,6 +240,77 @@ pub struct InputStreams<'a> {
     pub keyboard: Option<&'a Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
     pub mouse: Option<&'a Input<MouseButton>>,
+    /// The [`Gamepad`] that this struct will detect inputs from
+    pub associated_gamepad: Option<Gamepad>,
+}
+
+impl<'a> InputStreams<'a> {
+    /// Is the `input` matched by the [`InputStreams`]?
+    pub fn input_pressed(&self, input: &UserInput) -> bool {
+        match input {
+            UserInput::Single(button) => self.button_pressed(*button),
+            UserInput::Chord(buttons) => self.all_buttons_pressed(&buttons),
+            UserInput::Null => false,
+        }
+    }
+
+    /// Is at least one of the `inputs` pressed?
+    #[must_use]
+    pub fn any_pressed(&self, inputs: &PetitSet<UserInput, 16>) -> bool {
+        for input in inputs.iter() {
+            if self.input_pressed(input) {
+                return true;
+            }
+        }
+        // If none of the inputs matched, return false
+        false
+    }
+
+    /// Is the `button` pressed?
+    #[must_use]
+    pub fn button_pressed(&self, button: InputButton) -> bool {
+        match button {
+            InputButton::Gamepad(gamepad_button) => {
+                // If no gamepad is registered, we know for sure that no match was found
+                if let Some(gamepad) = self.associated_gamepad {
+                    if let Some(gamepad_stream) = self.gamepad {
+                        gamepad_stream.pressed(GamepadButton(gamepad, gamepad_button))
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            }
+            InputButton::Keyboard(keycode) => {
+                if let Some(keyboard_stream) = self.keyboard {
+                    keyboard_stream.pressed(keycode)
+                } else {
+                    false
+                }
+            }
+            InputButton::Mouse(mouse_button) => {
+                if let Some(mouse_stream) = self.mouse {
+                    mouse_stream.pressed(mouse_button)
+                } else {
+                    false
+                }
+            }
+        }
+    }
+
+    /// Are all of the `buttons` pressed?
+    #[must_use]
+    pub fn all_buttons_pressed(&self, buttons: &PetitSet<InputButton, 8>) -> bool {
+        for &button in buttons.iter() {
+            // If any of the appropriate inputs failed to match, the action is considered pressed
+            if !self.button_pressed(button) {
+                return false;
+            }
+        }
+        // If none of the inputs failed to match, return true
+        true
+    }
 }
 
 /// A mutable collection of [`Input`] structs, which can be used for mocking user inputs.
@@ -255,6 +326,8 @@ pub struct MutableInputStreams<'a> {
     pub keyboard: Option<&'a mut Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
     pub mouse: Option<&'a mut Input<MouseButton>>,
+    /// The [`Gamepad`] that this struct will detect inputs from
+    pub associated_gamepad: Option<Gamepad>,
 }
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
@@ -281,6 +354,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad,
             keyboard,
             mouse,
+            associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
 }

@@ -1,7 +1,7 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
 use crate::input_map::InputMap;
-use crate::user_input::{InputButton, UserInput};
+use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
 use bevy::utils::HashSet;
 use itertools::Itertools;
@@ -69,17 +69,13 @@ impl UserInput {
 
 impl<A: Actionlike> InputMap<A> {
     /// Resolve clashing inputs, removing action presses that have been overruled
-    pub fn handle_clashes(
-        &self,
-        pressed_actions: &mut HashSet<A>,
-        pressed_inputs: &HashSet<UserInput>,
-    ) {
-        for clash in self.get_clashes(pressed_actions, pressed_inputs) {
+    pub fn handle_clashes(&self, pressed_actions: &mut HashSet<A>, input_streams: &InputStreams) {
+        for clash in self.get_clashes(pressed_actions, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(
                 &clash,
                 &self.clash_strategy,
-                pressed_inputs,
+                input_streams,
                 &self.modifier_buttons,
             ) {
                 pressed_actions.remove(&culled_action);
@@ -105,11 +101,11 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Gets the set of clashing action-input pairs
     ///
-    /// Returns both the action and [`UserInput`] for each clashing set
+    /// Returns both the action and [`UserInput`]s for each clashing set
     fn get_clashes(
         &self,
         pressed_actions: &HashSet<A>,
-        pressed_inputs: &HashSet<UserInput>,
+        input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -124,7 +120,7 @@ impl<A: Actionlike> InputMap<A> {
             }
 
             // Check if the potential clash occured based on the pressed inputs
-            if let Some(clash) = check_clash(clash, pressed_inputs) {
+            if let Some(clash) = check_clash(clash, input_streams) {
                 clashes.push(clash)
             }
         }
@@ -200,26 +196,23 @@ fn chord_chord_clash(
     chord_a.is_subset(chord_b) || chord_b.is_subset(chord_a)
 }
 
-/// Given the `pressed_inputs`, does the provided clash actually occur?
+/// Given the `input_streams`, does the provided clash actually occur?
 ///
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
-fn check_clash<A: Actionlike>(
-    clash: &Clash<A>,
-    pressed_inputs: &HashSet<UserInput>,
-) -> Option<Clash<A>> {
+fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
     let mut actual_clash = Clash::new(clash.action_a, clash.action_b);
 
     // For all inputs that were actually pressed that match action A
     for input_a in clash
         .inputs_a
         .iter()
-        .filter(|input| pressed_inputs.contains(input))
+        .filter(|&input| input_streams.input_pressed(input))
     {
         // For all inputs that were actually pressed that match action B
         for input_b in clash
             .inputs_b
             .iter()
-            .filter(|input| pressed_inputs.contains(input))
+            .filter(|&input| input_streams.input_pressed(input))
         {
             // If a clash was detected,
             if input_a.clashes(input_b) {
@@ -240,20 +233,20 @@ fn check_clash<A: Actionlike>(
 fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: &ClashStrategy,
-    pressed_inputs: &HashSet<UserInput>,
+    input_streams: &InputStreams,
     modifiers: &HashSet<InputButton>,
 ) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&UserInput> = clash
         .inputs_a
         .iter()
-        .filter(|input| pressed_inputs.contains(input))
+        .filter(|&input| input_streams.input_pressed(input))
         .collect();
 
     let reasons_b_is_pressed: Vec<&UserInput> = clash
         .inputs_b
         .iter()
-        .filter(|input| pressed_inputs.contains(input))
+        .filter(|&input| input_streams.input_pressed(input))
         .collect();
 
     // Clashes are spurious if the virtual buttons are pressed for any non-clashing reason
@@ -349,11 +342,10 @@ mod tests {
         CtrlAltOne,
     }
 
-    fn test_input_map(strategy: ClashStrategy) -> InputMap<Action> {
+    fn test_input_map() -> InputMap<Action> {
         use Action::*;
 
         let mut input_map = InputMap::default();
-        input_map.clash_strategy = strategy;
 
         input_map.insert(One, Key1);
         input_map.insert(Two, Key2);
@@ -387,7 +379,7 @@ mod tests {
     fn button_chord_clash_construction() {
         use Action::*;
 
-        let input_map = test_input_map(ClashStrategy::PressAll);
+        let input_map = test_input_map();
 
         let observed_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
         let correct_clash = Clash {
@@ -404,7 +396,7 @@ mod tests {
     fn chord_chord_clash_construction() {
         use Action::*;
 
-        let input_map = test_input_map(ClashStrategy::PressAll);
+        let input_map = test_input_map();
 
         let observed_clash = input_map
             .possible_clash(&OneAndTwoAndThree, &OneAndTwo)
@@ -423,7 +415,7 @@ mod tests {
     fn can_clash() {
         use Action::*;
 
-        let input_map = test_input_map(ClashStrategy::PressAll);
+        let input_map = test_input_map();
 
         assert!(input_map.possible_clash(&One, &Two).is_none());
         assert!(input_map.possible_clash(&One, &OneAndTwo).is_some());
@@ -438,7 +430,7 @@ mod tests {
     fn clash_caching() {
         use crate::user_input::InputMode;
 
-        let mut input_map = test_input_map(ClashStrategy::PressAll);
+        let mut input_map = test_input_map();
         // Possible clashes are cached upon initialization
         assert_eq!(input_map.possible_clashes.len(), 12);
 
