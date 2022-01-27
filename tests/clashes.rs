@@ -93,13 +93,18 @@ impl ClashTestExt for App {
         let input_streams = InputStreams::from_keyboard(&*keyboard);
 
         let mut matching_input_map = InputMap::<Action>::default();
+        let mut found = false;
 
         for input_map in input_map_query.iter() {
             if input_map.clash_strategy == clash_strategy {
                 matching_input_map = input_map.clone();
+                found = true;
                 break;
             }
         }
+
+        // Verify that we found the right input map
+        assert!(found);
 
         let keyboard_input = input_streams.keyboard.unwrap();
 
