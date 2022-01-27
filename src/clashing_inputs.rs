@@ -571,4 +571,26 @@ mod tests {
             Some(CtrlOne)
         );
     }
+
+    #[test]
+    fn handle_clashes() {
+        use bevy::prelude::*;
+        use Action::*;
+
+        let mut input_map = test_input_map();
+        input_map.clash_strategy = ClashStrategy::PrioritizeLongest;
+
+        let mut keyboard: Input<KeyCode> = Default::default();
+        keyboard.press(Key1);
+        keyboard.press(Key2);
+
+        let mut pressed_actions = HashSet::from_iter([One, Two, OneAndTwo]);
+
+        input_map.handle_clashes(
+            &mut pressed_actions,
+            &InputStreams::from_keyboard(&keyboard),
+        );
+
+        assert_eq!(pressed_actions, HashSet::from_iter([OneAndTwo]));
+    }
 }
