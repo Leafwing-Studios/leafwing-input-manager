@@ -1,5 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
+use crate::clashing_inputs::{Clash, ClashStrategy};
 use crate::user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::{Actionlike, IntoEnumIterator};
 use bevy::prelude::*;
@@ -19,6 +20,13 @@ use petitset::PetitSet;
 ///
 /// In addition, you can configure the per-mode cap for each [`InputMode`] using [`InputMap::new`] or [`InputMap::set_per_mode_cap`].
 /// This can be useful if your UI can only display one or two possible keybindings for each input mode.
+///
+/// By default, if two actions would be triggered by a combination of buttons,
+/// and one combination is a strict subset of the other, only the larger input is registered.
+/// For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
+/// but not enter the letters `s`.
+/// Set the `clashing_inputs` field of this struct with the [`ClashingInputs`] enum
+/// to configure this behavior.
 ///
 /// # Example
 /// ```rust
@@ -57,14 +65,22 @@ pub struct InputMap<A: Actionlike> {
     pub map: HashMap<A, PetitSet<UserInput, 16>>,
     per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
+    /// How should clashing (overlapping) inputs be handled?
+    pub clash_strategy: ClashStrategy,
+    /// A cached list of all pairs of actions that could potentially clash
+    pub(crate) possible_clashes: Vec<Clash<A>>,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
-        Self {
+        InputMap {
             map: HashMap::default(),
             associated_gamepad: None,
             per_mode_cap: None,
+            // This is the most commonly useful behavior.
+            clash_strategy: ClashStrategy::PrioritizeLongest,
+            // Empty input maps cannot have any clashes
+            possible_clashes: Vec::default(),
         }
     }
 }
@@ -91,98 +107,36 @@ impl<A: Actionlike> InputMap<A> {
 // Check whether buttons are pressed
 impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
+    ///
+    /// Accounts for clashing inputs according to the [`ClashStrategy`].
+    /// If you need to inspect many inputs at once, prefer [`InputMap::which_pressed`] instead.
     #[must_use]
     pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
-        if let Some(matching_inputs) = self.map.get(&action) {
-            self.any_pressed(matching_inputs, input_streams)
-        } else {
-            // No matches can be found if no inputs are registred for that action
-            false
-        }
+        let pressed_set = self.which_pressed(input_streams);
+        pressed_set.contains(&action)
     }
 
     /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
+    ///
+    /// Accounts for clashing inputs according to the [`ClashStrategy`].
     pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
-        let mut pressed_set = HashSet::default();
+        let mut pressed_actions = HashSet::default();
 
+        // Generate the raw action presses
         for action in A::iter() {
-            if self.pressed(action, input_streams) {
-                pressed_set.insert(action);
-            }
-        }
-
-        pressed_set
-    }
-
-    /// Is at least one of the `inputs` pressed?
-    #[must_use]
-    pub fn any_pressed(
-        &self,
-        inputs: &PetitSet<UserInput, 16>,
-        input_streams: &InputStreams,
-    ) -> bool {
-        for input in inputs.iter() {
-            if match input {
-                UserInput::Single(button) => self.button_pressed(*button, input_streams),
-                UserInput::Chord(buttons) => self.all_buttons_pressed(buttons, input_streams),
-                UserInput::Null => false,
-            } {
-                // If any of the appropriate inputs match, the action is considered pressed
-                return true;
-            }
-        }
-        // If none of the inputs matched, return false
-        false
-    }
-
-    /// Is the `button` pressed?
-    #[must_use]
-    pub fn button_pressed(&self, button: InputButton, input_streams: &InputStreams) -> bool {
-        match button {
-            InputButton::Gamepad(gamepad_button) => {
-                // If no gamepad is registered, we know for sure that no match was found
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(gamepad_stream) = input_streams.gamepad {
-                        gamepad_stream.pressed(GamepadButton(gamepad, gamepad_button))
-                    } else {
-                        false
-                    }
-                } else {
-                    false
-                }
-            }
-            InputButton::Keyboard(keycode) => {
-                if let Some(keyboard_stream) = input_streams.keyboard {
-                    keyboard_stream.pressed(keycode)
-                } else {
-                    false
-                }
-            }
-            InputButton::Mouse(mouse_button) => {
-                if let Some(mouse_stream) = input_streams.mouse {
-                    mouse_stream.pressed(mouse_button)
-                } else {
-                    false
+            for input in self.get(action, None) {
+                if input_streams.input_pressed(&input) {
+                    pressed_actions.insert(action);
                 }
             }
         }
-    }
 
-    /// Are all of the `buttons` pressed?
-    #[must_use]
-    pub fn all_buttons_pressed(
-        &self,
-        buttons: &PetitSet<InputButton, 8>,
-        input_streams: &InputStreams,
-    ) -> bool {
-        for &button in buttons.iter() {
-            // If any of the appropriate inputs failed to match, the action is considered pressed
-            if !self.button_pressed(button, input_streams) {
-                return false;
-            }
+        // Handle clashing inputs, possibly removing some pressed actions from the list
+        if self.clash_strategy != ClashStrategy::PressAll {
+            self.handle_clashes(&mut pressed_actions, input_streams);
         }
-        // If none of the inputs failed to match, return true
-        true
+
+        pressed_actions
     }
 }
 
@@ -264,12 +218,17 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         if let Some(existing_set) = self.map.get_mut(&action) {
+            // Add the new input binding to the existing set
             existing_set.insert(input);
         } else {
+            // Add the new input binding to a new set
             let mut new_set = PetitSet::default();
             new_set.insert(input);
             self.map.insert(action, new_set);
         }
+
+        // Cache clashes now, to ensure a clean state
+        self.cache_possible_clashes();
     }
 
     /// Insert a mapping between `action` and the provided `inputs`
@@ -375,6 +334,8 @@ impl<A: Actionlike> InputMap<A> {
             new_map.insert_multiple(action, other.get(action, None));
         }
 
+        new_map.cache_possible_clashes();
+
         *self = new_map;
     }
 }
@@ -393,6 +354,7 @@ impl<A: Actionlike> InputMap<A> {
         action: A,
         input_mode: Option<InputMode>,
     ) -> Option<PetitSet<UserInput, 16>> {
+        // FIXME: does not appear to be working correctly
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
             if let Some(bindings) = self.map.remove(&action) {
@@ -410,6 +372,9 @@ impl<A: Actionlike> InputMap<A> {
                 // Put back the ones that didn't match
                 self.insert_multiple(action, retained_set);
 
+                // Cache clashes now, to ensure a clean state
+                self.cache_possible_clashes();
+
                 // Return the items that matched
                 if removed_set.is_empty() {
                     None
@@ -420,7 +385,10 @@ impl<A: Actionlike> InputMap<A> {
                 None
             }
         } else {
-            self.map.remove(&action)
+            let removed = self.map.remove(&action);
+            // Cache clashes now, to ensure a clean state
+            self.cache_possible_clashes();
+            removed
         }
     }
 
@@ -447,6 +415,9 @@ impl<A: Actionlike> InputMap<A> {
 
         // Reinsert the other bindings
         self.insert_multiple(action, bindings);
+
+        // Cache clashes now, to ensure a clean state
+        self.cache_possible_clashes();
 
         removed
     }
@@ -823,6 +794,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         // With no inputs, nothing should be detected
@@ -837,6 +809,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
         for action in Action::iter() {
             assert!(!input_map.pressed(action, &input_streams));
@@ -849,6 +822,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -861,6 +835,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -872,6 +847,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         for action in Action::iter() {
@@ -885,6 +861,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -900,6 +877,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -915,6 +893,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams));

@@ -1,0 +1,15 @@
+---
+###########################
+###########################
+## Markdown Linter rules ##
+###########################
+###########################
+
+# Linter rules doc:
+# - https://github.com/DavidAnson/markdownlint
+
+#################
+# Rules by tags #
+#################
+no-duplicate-heading: false
+line-length: false

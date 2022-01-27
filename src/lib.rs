@@ -57,8 +57,12 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 
 pub mod action_state;
+pub mod clashing_inputs;
 mod display_impl;
 pub mod input_map;
+mod input_mocking;
+// Re-export this at the root level
+pub use input_mocking::MockInput;
 pub mod systems;
 pub mod user_input;
 
@@ -73,10 +77,11 @@ pub use strum::IntoEnumIterator;
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
+    pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     pub use crate::user_input::UserInput;
-    pub use crate::IntoEnumIterator;
 
+    pub use crate::IntoEnumIterator;
     pub use crate::{Actionlike, InputManagerBundle, InputManagerPlugin};
 }
 
@@ -92,7 +97,7 @@ pub mod prelude {
 /// ## Systems
 /// - [`tick_action_state`](systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
 ///     - labeled [`InputManagerSystem::Reset`]
-/// - [`update_action_state`](systems::update_action_state) which collects [`Input`] resources to update the [`ActionState`]
+/// - [`update_action_state`](systems::update_action_state), which collects [`Input`] resources to update the [`ActionState`]
 ///     - labeled [`InputManagerSystem::Update`]
 /// - [`update_action_state_from_interaction`](systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`] component

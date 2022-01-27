@@ -517,12 +517,7 @@ mod tests {
 
         // Input streams
         let mut keyboard_input_stream = Input::<KeyCode>::default();
-
-        let input_streams = InputStreams {
-            gamepad: None,
-            keyboard: Some(&keyboard_input_stream),
-            mouse: None,
-        };
+        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
         // Starting state
         action_state.update(input_map.which_pressed(&input_streams));
@@ -534,12 +529,7 @@ mod tests {
 
         // Pressing
         keyboard_input_stream.press(KeyCode::R);
-
-        let input_streams = InputStreams {
-            gamepad: None,
-            keyboard: Some(&keyboard_input_stream),
-            mouse: None,
-        };
+        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
         action_state.update(input_map.which_pressed(&input_streams));
 
@@ -559,11 +549,7 @@ mod tests {
 
         // Releasing
         keyboard_input_stream.release(KeyCode::R);
-        let input_streams = InputStreams {
-            gamepad: None,
-            keyboard: Some(&keyboard_input_stream),
-            mouse: None,
-        };
+        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
         action_state.update(input_map.which_pressed(&input_streams));
         assert!(!action_state.pressed(Action::Run));
