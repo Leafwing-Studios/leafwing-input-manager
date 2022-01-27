@@ -217,7 +217,7 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
             // If a clash was detected,
             if input_a.clashes(input_b) {
                 actual_clash.inputs_a.push(input_a.clone());
-                actual_clash.inputs_b.push(input_a.clone());
+                actual_clash.inputs_b.push(input_b.clone());
             }
         }
     }
