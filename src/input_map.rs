@@ -90,12 +90,13 @@ impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         use KeyCode::*;
 
-        Self {
+        InputMap {
             map: HashMap::default(),
             associated_gamepad: None,
             per_mode_cap: None,
             // This is the simplest, least surprising behavior.
             clash_strategy: ClashStrategy::PressAll,
+            // Empty input maps cannot have any clashes
             possible_clashes: Vec::default(),
             modifier_buttons: HashSet::from_iter(
                 [LAlt, RAlt, LControl, RControl, LShift, RShift, LWin, RWin]
@@ -322,12 +323,17 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         if let Some(existing_set) = self.map.get_mut(&action) {
+            // Add the new input binding to the existing set
             existing_set.insert(input);
         } else {
+            // Add the new input binding to a new set
             let mut new_set = PetitSet::default();
             new_set.insert(input);
             self.map.insert(action, new_set);
         }
+
+        // Cache clashes now, to ensure a clean state
+        self.cache_possible_clashes();
     }
 
     /// Insert a mapping between `action` and the provided `inputs`
@@ -433,6 +439,8 @@ impl<A: Actionlike> InputMap<A> {
             new_map.insert_multiple(action, other.get(action, None));
         }
 
+        new_map.cache_possible_clashes();
+
         *self = new_map;
     }
 }
@@ -451,6 +459,7 @@ impl<A: Actionlike> InputMap<A> {
         action: A,
         input_mode: Option<InputMode>,
     ) -> Option<PetitSet<UserInput, 16>> {
+        // FIXME: does not appear to be working correctly
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
             if let Some(bindings) = self.map.remove(&action) {
@@ -468,6 +477,9 @@ impl<A: Actionlike> InputMap<A> {
                 // Put back the ones that didn't match
                 self.insert_multiple(action, retained_set);
 
+                // Cache clashes now, to ensure a clean state
+                self.cache_possible_clashes();
+
                 // Return the items that matched
                 if removed_set.is_empty() {
                     None
@@ -478,7 +490,10 @@ impl<A: Actionlike> InputMap<A> {
                 None
             }
         } else {
-            self.map.remove(&action)
+            let removed = self.map.remove(&action);
+            // Cache clashes now, to ensure a clean state
+            self.cache_possible_clashes();
+            removed
         }
     }
 
@@ -505,6 +520,9 @@ impl<A: Actionlike> InputMap<A> {
 
         // Reinsert the other bindings
         self.insert_multiple(action, bindings);
+
+        // Cache clashes now, to ensure a clean state
+        self.cache_possible_clashes();
 
         removed
     }

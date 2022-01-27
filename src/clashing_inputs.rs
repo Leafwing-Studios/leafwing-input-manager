@@ -436,10 +436,21 @@ mod tests {
 
     #[test]
     fn clash_caching() {
-        let mut input_map = test_input_map(ClashStrategy::PressAll);
-        assert!(input_map.possible_clashes.is_empty());
+        use crate::user_input::InputMode;
 
-        input_map.cache_possible_clashes();
+        let mut input_map = test_input_map(ClashStrategy::PressAll);
+        // Possible clashes are cached upon initialization
         assert_eq!(input_map.possible_clashes.len(), 12);
+
+        // Possible clashes are cached upon binding insertion
+        input_map.insert(Action::Two, UserInput::chord([LControl, LAlt, Key1]));
+        assert_eq!(input_map.possible_clashes.len(), 15);
+
+        // Possible clashes are cached upon binding removal
+        input_map.clear_action(Action::One, None);
+        assert_eq!(input_map.possible_clashes.len(), 9);
+
+        input_map.clear_action(Action::Two, Some(InputMode::Keyboard));
+        assert_eq!(input_map.possible_clashes.len(), 4);
     }
 }

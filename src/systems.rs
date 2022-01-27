@@ -22,16 +22,6 @@ pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>, t
     }
 }
 
-/// Refreshes the cache of possible input clashes, to enable faster resolution
-// BLOCKED: this should run atomically before update_action_state
-pub fn cache_possible_clashes<A: Actionlike>(
-    mut query: Query<&mut InputMap<A>, Changed<InputMap<A>>>,
-) {
-    for mut input_map in query.iter_mut() {
-        input_map.cache_possible_clashes();
-    }
-}
-
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
