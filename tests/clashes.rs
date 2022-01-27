@@ -152,7 +152,7 @@ fn input_clash_handling() {
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeModified, [One, Two, OneAndTwo]);
-    app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One]);
+    app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
 
     // Three inputs
     app.reset_inputs();
@@ -170,7 +170,7 @@ fn input_clash_handling() {
         ClashStrategy::PrioritizeModified,
         [One, Two, OneAndTwo, TwoAndThree, OneAndTwoAndThree],
     );
-    app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One]);
+    app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
 
     // Modifier
     app.reset_inputs();
@@ -184,9 +184,15 @@ fn input_clash_handling() {
         ClashStrategy::PressAll,
         [One, Two, OneAndTwo, TwoAndThree, OneAndTwoAndThree, CtrlOne],
     );
-    app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwoAndThree]);
-    app.assert_input_map_actions_eq(ClashStrategy::PrioritizeModified, [CtrlOne]);
-    app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One]);
+    app.assert_input_map_actions_eq(
+        ClashStrategy::PrioritizeLongest,
+        [CtrlOne, OneAndTwoAndThree],
+    );
+    app.assert_input_map_actions_eq(
+        ClashStrategy::PrioritizeModified,
+        [CtrlOne, OneAndTwo, Two, TwoAndThree, OneAndTwoAndThree],
+    );
+    app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
 
     // Multiple modifiers
     app.reset_inputs();

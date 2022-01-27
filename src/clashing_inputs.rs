@@ -631,6 +631,4 @@ mod tests {
             );
         }
     }
-
-    mod regression_tests {}
 }
