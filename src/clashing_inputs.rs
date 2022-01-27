@@ -155,7 +155,7 @@ impl<A: Actionlike> InputMap<A> {
 
 /// A user-input clash, which stores the actions that are being clashed on,
 /// as well as the corresponding user inputs
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub(crate) struct Clash<A: Actionlike> {
     action_a: A,
     action_b: A,
@@ -327,5 +327,119 @@ fn resolve_clash<A: Actionlike>(
             }
             action_to_remove
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Actionlike;
+    use bevy::input::keyboard::KeyCode::*;
+    use strum::EnumIter;
+
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    enum Action {
+        One,
+        Two,
+        OneAndTwo,
+        TwoAndThree,
+        OneAndTwoAndThree,
+        CtrlOne,
+        AltOne,
+        CtrlAltOne,
+    }
+
+    fn test_input_map(strategy: ClashStrategy) -> InputMap<Action> {
+        use Action::*;
+
+        let mut input_map = InputMap::default();
+        input_map.clash_strategy = strategy;
+
+        input_map.insert(One, Key1);
+        input_map.insert(Two, Key2);
+        input_map.insert_chord(OneAndTwo, [Key1, Key2]);
+        input_map.insert_chord(TwoAndThree, [Key2, Key3]);
+        input_map.insert_chord(OneAndTwoAndThree, [Key1, Key2, Key3]);
+        input_map.insert_chord(CtrlOne, [LControl, Key1]);
+        input_map.insert_chord(AltOne, [LAlt, Key1]);
+        input_map.insert_chord(CtrlAltOne, [LControl, LAlt, Key1]);
+
+        input_map
+    }
+
+    #[test]
+    fn clash_detection() {
+        let a: UserInput = A.into();
+        let b: UserInput = B.into();
+        let c: UserInput = C.into();
+        let ab = UserInput::chord([A, B]);
+        let bc = UserInput::chord([B, C]);
+        let abc = UserInput::chord([A, B, C]);
+
+        assert!(!a.clashes(&b));
+        assert!(a.clashes(&ab));
+        assert!(!c.clashes(&ab));
+        assert!(!ab.clashes(&bc));
+        assert!(ab.clashes(&abc))
+    }
+
+    #[test]
+    fn button_chord_clash_construction() {
+        use Action::*;
+
+        let input_map = test_input_map(ClashStrategy::PressAll);
+
+        let observed_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
+        let correct_clash = Clash {
+            action_a: One,
+            action_b: OneAndTwo,
+            inputs_a: vec![Key1.into()],
+            inputs_b: vec![UserInput::chord([Key1, Key2])],
+        };
+
+        assert_eq!(observed_clash, correct_clash);
+    }
+
+    #[test]
+    fn chord_chord_clash_construction() {
+        use Action::*;
+
+        let input_map = test_input_map(ClashStrategy::PressAll);
+
+        let observed_clash = input_map
+            .possible_clash(&OneAndTwoAndThree, &OneAndTwo)
+            .unwrap();
+        let correct_clash = Clash {
+            action_a: OneAndTwoAndThree,
+            action_b: OneAndTwo,
+            inputs_a: vec![UserInput::chord([Key1, Key2, Key3])],
+            inputs_b: vec![UserInput::chord([Key1, Key2])],
+        };
+
+        assert_eq!(observed_clash, correct_clash);
+    }
+
+    #[test]
+    fn can_clash() {
+        use Action::*;
+
+        let input_map = test_input_map(ClashStrategy::PressAll);
+
+        assert!(input_map.possible_clash(&One, &Two).is_none());
+        assert!(input_map.possible_clash(&One, &OneAndTwo).is_some());
+        assert!(input_map.possible_clash(&One, &OneAndTwoAndThree).is_some());
+        assert!(input_map.possible_clash(&One, &TwoAndThree).is_none());
+        assert!(input_map
+            .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
+            .is_some());
+    }
+
+    #[test]
+    fn clash_caching() {
+        let mut input_map = test_input_map(ClashStrategy::PressAll);
+        assert!(input_map.possible_clashes.is_empty());
+
+        input_map.cache_possible_clashes();
+        assert_eq!(input_map.possible_clashes.len(), 12);
     }
 }
