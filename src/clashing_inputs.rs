@@ -464,7 +464,7 @@ mod tests {
                 &simple_clash,
                 &ClashStrategy::PrioritizeLongest,
                 &input_streams,
-                &HashSet::default(),
+                &input_map.modifier_buttons,
             ),
             Some(One)
         );
@@ -475,7 +475,7 @@ mod tests {
                 &reversed_clash,
                 &ClashStrategy::PrioritizeLongest,
                 &input_streams,
-                &HashSet::default(),
+                &input_map.modifier_buttons,
             ),
             Some(One)
         );
@@ -492,7 +492,7 @@ mod tests {
                 &chord_clash,
                 &ClashStrategy::PrioritizeLongest,
                 &input_streams,
-                &HashSet::default(),
+                &input_map.modifier_buttons,
             ),
             Some(OneAndTwo)
         );
@@ -516,7 +516,7 @@ mod tests {
                 &simple_clash,
                 &ClashStrategy::PrioritizeModified,
                 &input_streams,
-                &HashSet::default(),
+                &input_map.modifier_buttons,
             ),
             Some(One)
         );
@@ -531,7 +531,7 @@ mod tests {
                 &chord_clash,
                 &ClashStrategy::PrioritizeModified,
                 &input_streams,
-                &HashSet::default(),
+                &input_map.modifier_buttons,
             ),
             Some(CtrlOne)
         );
@@ -556,7 +556,7 @@ mod tests {
                 &simple_clash,
                 &ClashStrategy::UseActionOrder,
                 &input_streams,
-                &HashSet::default(),
+                &input_map.modifier_buttons,
             ),
             Some(CtrlOne)
         );
@@ -566,7 +566,7 @@ mod tests {
                 &reversed_clash,
                 &ClashStrategy::UseActionOrder,
                 &input_streams,
-                &HashSet::default(),
+                &input_map.modifier_buttons,
             ),
             Some(CtrlOne)
         );
