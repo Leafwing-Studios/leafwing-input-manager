@@ -21,10 +21,12 @@ use petitset::PetitSet;
 /// In addition, you can configure the per-mode cap for each [`InputMode`] using [`InputMap::new`] or [`InputMap::set_per_mode_cap`].
 /// This can be useful if your UI can only display one or two possible keybindings for each input mode.
 ///
-/// By default, pressing a single button (or combination of buttons) can cause any number of actions to be triggered.
-/// For example, pressing both `S` and `Ctrl + S` in your text editor app would both enter the letter `s` and save your file.
-/// Set the `clashing_inputs` field of this struct with the [`ClashingInputs`] enum to configure
-/// how the input map should handle these cases.
+/// By default, if two actions would be triggered by a combination of buttons,
+/// and one combination is a strict subset of the other, only the larger input is registered.
+/// For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
+/// but not enter the letters `s`.
+/// Set the `clashing_inputs` field of this struct with the [`ClashingInputs`] enum
+/// to configure this behavior.
 ///
 /// # Example
 /// ```rust
@@ -75,8 +77,8 @@ impl<A: Actionlike> Default for InputMap<A> {
             map: HashMap::default(),
             associated_gamepad: None,
             per_mode_cap: None,
-            // This is the simplest, least surprising behavior.
-            clash_strategy: ClashStrategy::PressAll,
+            // This is the most commonly useful behavior.
+            clash_strategy: ClashStrategy::PrioritizeLongest,
             // Empty input maps cannot have any clashes
             possible_clashes: Vec::default(),
         }

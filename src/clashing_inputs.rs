@@ -27,6 +27,8 @@ pub enum ClashStrategy {
     /// All matching inputs will always be pressed
     PressAll,
     /// Only press the action that corresponds to the longest chord
+    ///
+    /// This is the default strategy.
     PrioritizeLongest,
     /// Use the order in which actions are defined in the enum to resolve clashing inputs
     ///
@@ -37,7 +39,7 @@ pub enum ClashStrategy {
 
 impl Default for ClashStrategy {
     fn default() -> Self {
-        ClashStrategy::PressAll
+        ClashStrategy::PrioritizeLongest
     }
 }
 
