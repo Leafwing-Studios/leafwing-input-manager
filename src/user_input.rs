@@ -262,7 +262,7 @@ pub struct InputStreams<'a> {
 
 // Constructors
 impl<'a> InputStreams<'a> {
-    /// Construct [InputStreams] with only a [GamepadButton] input stream
+    /// Construct [`InputStreams`] with only a [`GamepadButton`] input stream
     pub fn from_gamepad(
         gamepad_input_stream: &'a Input<GamepadButton>,
         associated_gamepad: Gamepad,
@@ -275,7 +275,7 @@ impl<'a> InputStreams<'a> {
         }
     }
 
-    /// Construct [InputStreams] with only a [KeyCode] input stream
+    /// Construct [`InputStreams`] with only a [`KeyCode`] input stream
     pub fn from_keyboard(keyboard_input_stream: &'a Input<KeyCode>) -> Self {
         Self {
             gamepad: None,
@@ -285,7 +285,7 @@ impl<'a> InputStreams<'a> {
         }
     }
 
-    /// Construct [InputStreams] with only a [GamepadButton] input stream
+    /// Construct [`InputStreams`] with only a [`GamepadButton`] input stream
     pub fn from_mouse(mouse_input_stream: &'a Input<MouseButton>) -> Self {
         Self {
             gamepad: None,
@@ -302,7 +302,7 @@ impl<'a> InputStreams<'a> {
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
             UserInput::Single(button) => self.button_pressed(*button),
-            UserInput::Chord(buttons) => self.all_buttons_pressed(&buttons),
+            UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
             UserInput::Null => false,
         }
     }
@@ -385,23 +385,11 @@ pub struct MutableInputStreams<'a> {
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
-        let gamepad = if let Some(mutable_ref) = mutable_streams.gamepad {
-            Some(&*mutable_ref)
-        } else {
-            None
-        };
+        let gamepad = mutable_streams.gamepad.map(|mutable_ref| &*mutable_ref);
 
-        let keyboard = if let Some(mutable_ref) = mutable_streams.keyboard {
-            Some(&*mutable_ref)
-        } else {
-            None
-        };
+        let keyboard = mutable_streams.keyboard.map(|mutable_ref| &*mutable_ref);
 
-        let mouse = if let Some(mutable_ref) = mutable_streams.mouse {
-            Some(&*mutable_ref)
-        } else {
-            None
-        };
+        let mouse = mutable_streams.mouse.map(|mutable_ref| &*mutable_ref);
 
         InputStreams {
             gamepad,
