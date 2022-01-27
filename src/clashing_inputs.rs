@@ -71,6 +71,13 @@ impl<A: Actionlike> InputMap<A> {
     /// Resolve clashing inputs, removing action presses that have been overruled
     pub fn handle_clashes(&self, pressed_actions: &mut HashSet<A>, input_streams: &InputStreams) {
         for clash in self.get_clashes(pressed_actions, input_streams) {
+            // Skip clashes whose actions were not pressed
+            if !pressed_actions.contains(&clash.action_a)
+                & !pressed_actions.contains(&clash.action_b)
+            {
+                continue;
+            }
+
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(
                 &clash,
