@@ -244,6 +244,43 @@ pub struct InputStreams<'a> {
     pub associated_gamepad: Option<Gamepad>,
 }
 
+// Constructors
+impl<'a> InputStreams<'a> {
+    /// Construct [InputStreams] with only a [GamepadButton] input stream
+    pub fn from_gamepad(
+        gamepad_input_stream: &'a Input<GamepadButton>,
+        associated_gamepad: Gamepad,
+    ) -> Self {
+        Self {
+            gamepad: Some(gamepad_input_stream),
+            keyboard: None,
+            mouse: None,
+            associated_gamepad: Some(associated_gamepad),
+        }
+    }
+
+    /// Construct [InputStreams] with only a [KeyCode] input stream
+    pub fn from_keyboard(keyboard_input_stream: &'a Input<KeyCode>) -> Self {
+        Self {
+            gamepad: None,
+            keyboard: Some(keyboard_input_stream),
+            mouse: None,
+            associated_gamepad: None,
+        }
+    }
+
+    /// Construct [InputStreams] with only a [GamepadButton] input stream
+    pub fn from_mouse(mouse_input_stream: &'a Input<MouseButton>) -> Self {
+        Self {
+            gamepad: None,
+            keyboard: None,
+            mouse: Some(mouse_input_stream),
+            associated_gamepad: None,
+        }
+    }
+}
+
+// Input checking
 impl<'a> InputStreams<'a> {
     /// Is the `input` matched by the [`InputStreams`]?
     pub fn input_pressed(&self, input: &UserInput) -> bool {

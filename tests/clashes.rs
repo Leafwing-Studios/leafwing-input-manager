@@ -85,22 +85,12 @@ impl ClashTestExt for App {
     ) {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions.into_iter());
         // SystemState is love, SystemState is life
-        let mut input_system_state: SystemState<(
-            Query<&InputMap<Action>>,
-            Option<Res<Input<GamepadButton>>>,
-            Option<Res<Input<KeyCode>>>,
-            Option<Res<Input<MouseButton>>>,
-        )> = SystemState::new(&mut self.world);
+        let mut input_system_state: SystemState<(Query<&InputMap<Action>>, Res<Input<KeyCode>>)> =
+            SystemState::new(&mut self.world);
 
-        let (input_map_query, maybe_gamepad, maybe_keyboard, maybe_mouse) =
-            input_system_state.get(&self.world);
+        let (input_map_query, keyboard) = input_system_state.get(&self.world);
 
-        let input_streams = InputStreams {
-            gamepad: maybe_gamepad.as_deref(),
-            keyboard: maybe_keyboard.as_deref(),
-            mouse: maybe_mouse.as_deref(),
-            associated_gamepad: None,
-        };
+        let input_streams = InputStreams::from_keyboard(&*keyboard);
 
         let mut matching_input_map = InputMap::<Action>::default();
 

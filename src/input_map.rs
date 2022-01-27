@@ -821,7 +821,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         // With no inputs, nothing should be detected
@@ -836,7 +836,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
         for action in Action::iter() {
             assert!(!input_map.pressed(action, &input_streams));
@@ -849,7 +849,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -862,7 +862,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -874,7 +874,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         for action in Action::iter() {
@@ -888,7 +888,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -904,7 +904,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams));
@@ -920,7 +920,7 @@ mod tests {
             gamepad: Some(&gamepad_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: None,
+            associated_gamepad: Some(Gamepad(42)),
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams));
