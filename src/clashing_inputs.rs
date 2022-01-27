@@ -593,4 +593,23 @@ mod tests {
 
         assert_eq!(pressed_actions, HashSet::from_iter([OneAndTwo]));
     }
+
+    #[test]
+    fn which_pressed() {
+        use bevy::prelude::*;
+        use Action::*;
+
+        let mut input_map = test_input_map();
+        input_map.clash_strategy = ClashStrategy::PrioritizeLongest;
+
+        let mut keyboard: Input<KeyCode> = Default::default();
+        keyboard.press(Key1);
+        keyboard.press(Key2);
+        keyboard.press(LControl);
+
+        assert_eq!(
+            input_map.which_pressed(&InputStreams::from_keyboard(&keyboard)),
+            HashSet::from_iter([CtrlOne, OneAndTwo])
+        );
+    }
 }
