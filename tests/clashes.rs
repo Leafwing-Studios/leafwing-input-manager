@@ -54,13 +54,6 @@ fn spawn_input_maps(mut commands: Commands) {
     commands
         .spawn()
         .insert_bundle(InputManagerBundle::<Action> {
-            input_map: test_input_map(ClashStrategy::PrioritizeModified),
-            ..Default::default()
-        });
-
-    commands
-        .spawn()
-        .insert_bundle(InputManagerBundle::<Action> {
             input_map: test_input_map(ClashStrategy::UseActionOrder),
             ..Default::default()
         });
@@ -151,7 +144,6 @@ fn input_clash_handling() {
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwo]);
-    app.assert_input_map_actions_eq(ClashStrategy::PrioritizeModified, [One, Two, OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
 
     // Three inputs
@@ -166,10 +158,6 @@ fn input_clash_handling() {
         [One, Two, OneAndTwo, TwoAndThree, OneAndTwoAndThree],
     );
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwoAndThree]);
-    app.assert_input_map_actions_eq(
-        ClashStrategy::PrioritizeModified,
-        [One, Two, OneAndTwo, TwoAndThree, OneAndTwoAndThree],
-    );
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
 
     // Modifier
@@ -188,10 +176,6 @@ fn input_clash_handling() {
         ClashStrategy::PrioritizeLongest,
         [CtrlOne, OneAndTwoAndThree],
     );
-    app.assert_input_map_actions_eq(
-        ClashStrategy::PrioritizeModified,
-        [CtrlOne, OneAndTwo, Two, TwoAndThree, OneAndTwoAndThree],
-    );
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
 
     // Multiple modifiers
@@ -203,7 +187,6 @@ fn input_clash_handling() {
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, CtrlOne, AltOne, CtrlAltOne]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [CtrlAltOne]);
-    app.assert_input_map_actions_eq(ClashStrategy::PrioritizeModified, [CtrlAltOne]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One]);
 
     // Action order
@@ -214,6 +197,5 @@ fn input_clash_handling() {
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [Two, TwoAndThree]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [TwoAndThree]);
-    app.assert_input_map_actions_eq(ClashStrategy::PrioritizeModified, [Two, TwoAndThree]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [Two]);
 }

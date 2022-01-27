@@ -28,11 +28,6 @@ pub enum ClashStrategy {
     PressAll,
     /// Only press the action that corresponds to the longest chord
     PrioritizeLongest,
-    /// If the [`UserInput`] contains a modifier key (defined at the input map level), press that action over any unmodified action.
-    ///
-    /// If more than one matching action uses a modifier, break ties based on number of modifiers.
-    /// Further ties are broken using the `PrioritizeLongest` rule.
-    PrioritizeModified,
     /// Use the order in which actions are defined in the enum to resolve clashing inputs
     ///
     /// Uses the iteration order returned by [IntoEnumIterator](crate::IntoEnumIterator),
@@ -80,12 +75,8 @@ impl<A: Actionlike> InputMap<A> {
             }
 
             // Remove the action in the pair that was overruled, if any
-            if let Some(culled_action) = resolve_clash(
-                &clash,
-                &self.clash_strategy,
-                input_streams,
-                &self.modifier_buttons,
-            ) {
+            if let Some(culled_action) = resolve_clash(&clash, &self.clash_strategy, input_streams)
+            {
                 pressed_actions.remove(&culled_action);
             }
         }
@@ -249,7 +240,6 @@ fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: &ClashStrategy,
     input_streams: &InputStreams,
-    modifiers: &HashSet<InputButton>,
 ) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&UserInput> = clash
@@ -298,28 +288,7 @@ fn resolve_clash<A: Actionlike>(
                 Ordering::Less => Some(clash.action_a),
                 Ordering::Equal => None,
             }
-        }
-        // Remove the clashing action wtih the fewest modifier keys
-        ClashStrategy::PrioritizeModified => {
-            let most_modifiers_a: u8 = reasons_a_is_pressed
-                .iter()
-                .map(|input| input.n_matching(modifiers))
-                .reduce(|a, b| a.max(b))
-                .unwrap_or_default();
-
-            let most_modifiers_b: u8 = reasons_b_is_pressed
-                .iter()
-                .map(|input| input.n_matching(modifiers))
-                .reduce(|a, b| a.max(b))
-                .unwrap_or_default();
-
-            match most_modifiers_a.cmp(&most_modifiers_b) {
-                Ordering::Greater => Some(clash.action_b),
-                Ordering::Less => Some(clash.action_a),
-                Ordering::Equal => None,
-            }
-        }
-        // Remove the clashing action that comes later in the action enum
+        } // Remove the clashing action that comes later in the action enum
         ClashStrategy::UseActionOrder => {
             let mut action_to_remove = None;
             for action in A::iter() {
@@ -482,7 +451,6 @@ mod tests {
                     &simple_clash,
                     &ClashStrategy::PrioritizeLongest,
                     &input_streams,
-                    &input_map.modifier_buttons,
                 ),
                 Some(One)
             );
@@ -493,7 +461,6 @@ mod tests {
                     &reversed_clash,
                     &ClashStrategy::PrioritizeLongest,
                     &input_streams,
-                    &input_map.modifier_buttons,
                 ),
                 Some(One)
             );
@@ -510,48 +477,8 @@ mod tests {
                     &chord_clash,
                     &ClashStrategy::PrioritizeLongest,
                     &input_streams,
-                    &input_map.modifier_buttons,
                 ),
                 Some(OneAndTwo)
-            );
-        }
-
-        #[test]
-        fn resolve_prioritize_modified() {
-            use bevy::prelude::*;
-            use Action::*;
-
-            let input_map = test_input_map();
-            let simple_clash = input_map.possible_clash(&One, &CtrlOne).unwrap();
-            let mut keyboard: Input<KeyCode> = Default::default();
-            keyboard.press(Key1);
-            keyboard.press(LControl);
-
-            let input_streams = InputStreams::from_keyboard(&keyboard);
-
-            assert_eq!(
-                resolve_clash(
-                    &simple_clash,
-                    &ClashStrategy::PrioritizeModified,
-                    &input_streams,
-                    &input_map.modifier_buttons,
-                ),
-                Some(One)
-            );
-
-            let chord_clash = input_map.possible_clash(&CtrlOne, &CtrlAltOne).unwrap();
-            keyboard.press(LAlt);
-
-            let input_streams = InputStreams::from_keyboard(&keyboard);
-
-            assert_eq!(
-                resolve_clash(
-                    &chord_clash,
-                    &ClashStrategy::PrioritizeModified,
-                    &input_streams,
-                    &input_map.modifier_buttons,
-                ),
-                Some(CtrlOne)
             );
         }
 
@@ -574,7 +501,6 @@ mod tests {
                     &simple_clash,
                     &ClashStrategy::UseActionOrder,
                     &input_streams,
-                    &input_map.modifier_buttons,
                 ),
                 Some(CtrlOne)
             );
@@ -584,7 +510,6 @@ mod tests {
                     &reversed_clash,
                     &ClashStrategy::UseActionOrder,
                     &input_streams,
-                    &input_map.modifier_buttons,
                 ),
                 Some(CtrlOne)
             );

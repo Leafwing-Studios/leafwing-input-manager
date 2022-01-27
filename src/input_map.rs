@@ -3,7 +3,6 @@
 use crate::clashing_inputs::{Clash, ClashStrategy};
 use crate::user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::{Actionlike, IntoEnumIterator};
-use bevy::input::keyboard::KeyCode;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 use core::fmt::Debug;
@@ -58,7 +57,7 @@ use petitset::PetitSet;
 /// // But you can't Hide :(
 /// input_map.clear_action(Action::Hide, None);
 ///```
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, PartialEq)]
 pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] of [PetitSet]s used to store the input mapping
     pub map: HashMap<A, PetitSet<UserInput, 16>>,
@@ -68,28 +67,10 @@ pub struct InputMap<A: Actionlike> {
     pub clash_strategy: ClashStrategy,
     /// A cached list of all pairs of actions that could potentially clash
     pub(crate) possible_clashes: Vec<Clash<A>>,
-    /// Buttons that act like modifier keys, for the purpose of clash resolution
-    ///
-    /// By default, these are the [`KeyCode']s
-    /// `[LAlt, RAlt, LControl, RControl, LShift, RShift, LWin, RWin]`
-    pub modifier_buttons: HashSet<InputButton>,
-}
-
-impl<A: Actionlike> PartialEq for InputMap<A> {
-    /// [`InputMap`] equality ignores the cached `possible_clashes` field
-    fn eq(&self, other: &Self) -> bool {
-        self.map == other.map
-            && self.per_mode_cap == other.per_mode_cap
-            && self.associated_gamepad == other.associated_gamepad
-            && self.clash_strategy == other.clash_strategy
-            && self.modifier_buttons == other.modifier_buttons
-    }
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
-        use KeyCode::*;
-
         InputMap {
             map: HashMap::default(),
             associated_gamepad: None,
@@ -98,10 +79,6 @@ impl<A: Actionlike> Default for InputMap<A> {
             clash_strategy: ClashStrategy::PressAll,
             // Empty input maps cannot have any clashes
             possible_clashes: Vec::default(),
-            modifier_buttons: HashSet::from_iter(
-                [LAlt, RAlt, LControl, RControl, LShift, RShift, LWin, RWin]
-                    .map(|keycode| keycode.into()),
-            ),
         }
     }
 }
