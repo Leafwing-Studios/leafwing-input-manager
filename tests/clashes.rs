@@ -110,11 +110,19 @@ impl ClashTestExt for App {
             }
         }
 
+        let keyboard_input = input_streams.keyboard.unwrap();
+
         for action in Action::iter() {
             if pressed_actions.contains(&action) {
-                assert!(matching_input_map.pressed(action, &input_streams));
+                assert!(
+                    matching_input_map.pressed(action, &input_streams),
+                    "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
+                );
             } else {
-                assert!(!matching_input_map.pressed(action, &input_streams));
+                assert!(
+                    !matching_input_map.pressed(action, &input_streams),
+                    "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
+                );
             }
         }
     }
