@@ -48,6 +48,7 @@ impl Default for ClashStrategy {
 
 impl UserInput {
     /// Does `self` clash with `other`?
+    #[must_use]
     fn clashes(&self, other: &UserInput) -> bool {
         use UserInput::*;
 
@@ -109,6 +110,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Gets the set of clashing action-input pairs
     ///
     /// Returns both the action and [`UserInput`]s for each clashing set
+    #[must_use]
     fn get_clashes(
         &self,
         pressed_actions: &HashSet<A>,
@@ -136,6 +138,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// If the pair of actions could clash, how?
+    #[must_use]
     fn possible_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
         let mut clash = Clash::new(*action_a, *action_b);
 
@@ -168,6 +171,7 @@ pub(crate) struct Clash<A: Actionlike> {
 
 impl<A: Actionlike> Clash<A> {
     /// Creates a new clash between the two actions
+    #[must_use]
     fn new(action_a: A, action_b: A) -> Self {
         Self {
             action_a,
@@ -179,6 +183,7 @@ impl<A: Actionlike> Clash<A> {
 }
 
 /// Does the `button` clash with the `chord`?
+#[must_use]
 fn button_chord_clash(button: &InputButton, chord: &PetitSet<InputButton, 8>) -> bool {
     if chord.len() <= 1 {
         return false;
@@ -188,6 +193,7 @@ fn button_chord_clash(button: &InputButton, chord: &PetitSet<InputButton, 8>) ->
 }
 
 /// Does the `chord_a` clash with `chord_b`?
+#[must_use]
 fn chord_chord_clash(
     chord_a: &PetitSet<InputButton, 8>,
     chord_b: &PetitSet<InputButton, 8>,
@@ -206,6 +212,7 @@ fn chord_chord_clash(
 /// Given the `input_streams`, does the provided clash actually occur?
 ///
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
+#[must_use]
 fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
     let mut actual_clash = Clash::new(clash.action_a, clash.action_b);
 
@@ -237,6 +244,7 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
 }
 
 /// Which (if any) of the actions in the [`Clash`] should be discarded?
+#[must_use]
 fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: &ClashStrategy,
