@@ -326,7 +326,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
-    pub fn assign_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
+    pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
         self.associated_gamepad = Some(gamepad);
         self
     }
@@ -737,7 +737,7 @@ mod tests {
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
 
-        input_map.assign_gamepad(Gamepad(0));
+        input_map.set_gamepad(Gamepad(0));
         assert_eq!(input_map.gamepad(), Some(Gamepad(0)));
 
         input_map.clear_gamepad();
@@ -754,7 +754,7 @@ mod tests {
         let mut input_map = InputMap::<Action>::default();
         // Ignore clashing to isolate tests
         input_map.clash_strategy = ClashStrategy::PressAll;
-        input_map.assign_gamepad(Gamepad(42));
+        input_map.set_gamepad(Gamepad(42));
 
         // Gamepad
         input_map.insert(Action::Run, GamepadButtonType::South);
