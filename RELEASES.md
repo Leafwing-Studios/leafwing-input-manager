@@ -19,6 +19,7 @@
 ### Bug fixes
 
 - the `ActionState` component is no longer marked as `Changed` every frame
+- `InputManagerPlugin::run_in_state` now actually works!
 
 ## Version 0.1.2
 
@@ -35,7 +36,7 @@
 ### Bug fixes
 
 - fix failed `strum` re-export; users will need to pull in the derive macro `EnumIter` themselves
-  - thanks to @Shatur for noticing this
+  - thanks to `@Shatur` for noticing this
 
 ## Version 0.1
 
