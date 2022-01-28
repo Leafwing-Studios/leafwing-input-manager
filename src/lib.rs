@@ -74,7 +74,7 @@ pub mod prelude {
     pub use crate::{Actionlike, InputManagerBundle};
 }
 
-/// A type that can be used to represent input-agnostic action representation
+/// Allows a type to be used as a gameplay action in an input-agnostic fashion
 ///
 /// Actions serve as "virtual buttons", cleanly abstracting over messy, customizable inputs
 /// in a way that can be easily consumed by your game logic.
@@ -84,7 +84,6 @@ pub mod prelude {
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::Actionlike;
-
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 /// enum PlayerAction {
