@@ -16,3 +16,5 @@ repository = "https://github.com/leafwing-studios/leafwing-input-manager"
 [dependencies]
 syn = "1.0"
 quote = "1.0"
+proc-macro2 = "1.0"
+cargo-manifest = "0.2"

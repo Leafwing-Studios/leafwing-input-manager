@@ -314,9 +314,8 @@ mod tests {
     use super::*;
     use crate::Actionlike;
     use bevy::input::keyboard::KeyCode::*;
-    use strum::EnumIter;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     enum Action {
         One,
         Two,

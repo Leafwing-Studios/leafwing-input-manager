@@ -6,7 +6,6 @@
 use bevy::prelude::*;
 use leafwing_input_manager::clashing_inputs::ClashStrategy;
 use leafwing_input_manager::prelude::*;
-use strum::EnumIter;
 
 fn main() {
     App::new()
@@ -17,7 +16,7 @@ fn main() {
         .run()
 }
 
-#[derive(Actionlike, Debug, Clone, Copy, EnumIter, PartialEq, Eq, Hash)]
+#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TestAction {
     One,
     Two,

@@ -52,9 +52,9 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     /// use bevy::prelude::*;
     /// use bevy::input::InputPlugin;
     /// use leafwing_input_manager::prelude::*;
-    /// use strum::EnumIter;
+
     ///
-    /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+    /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
     /// enum PlayerAction {
     ///    // Movement
     ///    Up,
