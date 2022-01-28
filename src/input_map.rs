@@ -319,20 +319,22 @@ impl<A: Actionlike> InputMap<A> {
         removed_actions
     }
 
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
-    pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
-        self.associated_gamepad = Some(gamepad);
-    }
-
-    /// Clears any [Gamepad] associated with the entity controlled by this input map
-    pub fn clear_gamepad(&mut self) {
-        self.associated_gamepad = None;
-    }
-
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
     #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
         self.associated_gamepad
+    }
+
+    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
+    pub fn assign_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
+        self.associated_gamepad = Some(gamepad);
+        self
+    }
+
+    /// Clears any [Gamepad] associated with the entity controlled by this input map
+    pub fn clear_gamepad(&mut self) -> &mut Self {
+        self.associated_gamepad = None;
+        self
     }
 }
 
