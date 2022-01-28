@@ -427,6 +427,24 @@ impl<A: Actionlike> InputMap<A> {
     pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> u8 {
         self.get(action, input_mode).len() as u8
     }
+
+    /// How many input bindings are registered total?
+    ///
+    /// For more granular information, use [`InputMap::n_registered`] instead.
+    #[must_use]
+    pub fn len(&self) -> usize {
+        let mut i = 0;
+        for action in A::iter() {
+            i += self.n_registered(action, None) as usize;
+        }
+        i
+    }
+
+    /// Are any input bindings registered at all?
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 // Clearing
