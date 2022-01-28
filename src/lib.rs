@@ -196,10 +196,7 @@ impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
             // The `SystemSet` methods take self by ownership, so we must store a new system set
             let input_manager_systems = input_manager_systems.with_run_criteria(
                 move |current_state: Res<State<UserState>>| {
-                    let raw_state = *current_state;
-                    let current_state_variant: UserState = raw_state.into();
-
-                    if current_state_variant == desired_state_variant {
+                    if *current_state.current() == desired_state_variant {
                         ShouldRun::Yes
                     } else {
                         ShouldRun::No
