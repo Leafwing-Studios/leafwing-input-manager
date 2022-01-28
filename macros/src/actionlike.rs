@@ -7,7 +7,7 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     let enum_name = &ast.ident;
     let (impl_generics, type_generics, where_clause) = &ast.generics.split_for_impl();
 
-    let crate_module_path = crate::path::get_path();
+    let crate_path = crate::path::get_path();
 
     let variants = match &ast.data {
         Data::Enum(v) => &v.variants,
@@ -52,11 +52,11 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
 
     // FIXME: use path correctly
     quote! {
-        impl #impl_generics #crate_module_path::Actionlike for #enum_name #type_generics #where_clause {
-            fn iter() -> #crate_module_path::ActionIter<#enum_name> {
+        impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
+            fn iter() -> #crate_path::ActionIter<#enum_name> {
                 // FIXME: use array_token_stream
-                //#crate_module_path::ActionIter::#type_generics::from_iter([])
-                #crate_module_path::ActionIter::default()
+                //#crate_module_path::ActionIter::#type_generics::from_iter(#array_token_stream)
+                #crate_path::ActionIter::default()
             }
         }
     }
