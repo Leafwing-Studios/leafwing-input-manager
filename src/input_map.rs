@@ -266,8 +266,75 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-// Config
-impl<A: Actionlike> InputMap<A> {}
+// Configuration
+impl<A: Actionlike> InputMap<A> {
+    /// Returns the per-[`InputMode`] cap on input bindings for every action
+    ///
+    /// Each individual action can have at most this many bindings, making them easier to display and configure.
+    pub fn per_mode_cap(&self) -> usize {
+        if let Some(cap) = self.per_mode_cap {
+            cap
+        } else {
+            0
+        }
+    }
+
+    /// Sets the per-[`InputMode`] cap on input bindings for every action
+    ///
+    /// Each individual action can have at most this many bindings, making them easier to display and configure.
+    /// Any excess actions will be removed, and returned from this method.
+    ///
+    /// Supplying a value of 0 removes any per-mode cap.
+    ///
+    /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
+    #[allow(clippy::return_self_not_must_use)]
+    pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
+        assert!(3 * per_mode_cap <= 16);
+
+        if per_mode_cap == 0 {
+            self.per_mode_cap = None;
+            return InputMap::default();
+        } else {
+            self.per_mode_cap = Some(per_mode_cap);
+        }
+
+        // Store the actions that get culled and then return them
+        let mut removed_actions = InputMap::default();
+
+        // Cull excess mappings
+        for action in A::iter() {
+            for input_mode in InputMode::iter() {
+                let n_registered = self.n_registered(action, Some(input_mode));
+                if n_registered > per_mode_cap {
+                    for i in per_mode_cap..n_registered {
+                        let removed_input = self.clear_at(action, input_mode, i);
+                        if let Some(input) = removed_input {
+                            removed_actions.insert(action, input);
+                        }
+                    }
+                }
+            }
+        }
+
+        removed_actions
+    }
+
+    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
+    pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
+        self.associated_gamepad = Some(gamepad);
+    }
+
+    /// Clears any [Gamepad] associated with the entity controlled by this input map
+    pub fn clear_gamepad(&mut self) {
+        self.associated_gamepad = None;
+    }
+
+    /// Fetches the [Gamepad] associated with the entity controlled by this entity map
+    #[must_use]
+    pub fn gamepad(&self) -> Option<Gamepad> {
+        self.associated_gamepad
+    }
+}
 
 // Check whether buttons are pressed
 impl<A: Actionlike> InputMap<A> {
@@ -464,79 +531,6 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         cleared_input_map
-    }
-}
-
-// Per-mode cap
-impl<A: Actionlike> InputMap<A> {
-    /// Returns the per-[`InputMode`] cap on input bindings for every action
-    ///
-    /// Each individual action can have at most this many bindings, making them easier to display and configure.
-    pub fn per_mode_cap(&self) -> usize {
-        if let Some(cap) = self.per_mode_cap {
-            cap
-        } else {
-            0
-        }
-    }
-
-    /// Sets the per-[`InputMode`] cap on input bindings for every action
-    ///
-    /// Each individual action can have at most this many bindings, making them easier to display and configure.
-    /// Any excess actions will be removed, and returned from this method.
-    ///
-    /// Supplying a value of 0 removes any per-mode cap.
-    ///
-    /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
-    #[allow(clippy::return_self_not_must_use)]
-    pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
-        assert!(3 * per_mode_cap <= 16);
-
-        if per_mode_cap == 0 {
-            self.per_mode_cap = None;
-            return InputMap::default();
-        } else {
-            self.per_mode_cap = Some(per_mode_cap);
-        }
-
-        // Store the actions that get culled and then return them
-        let mut removed_actions = InputMap::default();
-
-        // Cull excess mappings
-        for action in A::iter() {
-            for input_mode in InputMode::iter() {
-                let n_registered = self.n_registered(action, Some(input_mode));
-                if n_registered > per_mode_cap {
-                    for i in per_mode_cap..n_registered {
-                        let removed_input = self.clear_at(action, input_mode, i);
-                        if let Some(input) = removed_input {
-                            removed_actions.insert(action, input);
-                        }
-                    }
-                }
-            }
-        }
-
-        removed_actions
-    }
-}
-
-// Gamepads
-impl<A: Actionlike> InputMap<A> {
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
-    pub fn assign_gamepad(&mut self, gamepad: Gamepad) {
-        self.associated_gamepad = Some(gamepad);
-    }
-
-    /// Clears any [Gamepad] associated with the entity controlled by this input map
-    pub fn clear_gamepad(&mut self) {
-        self.associated_gamepad = None;
-    }
-
-    /// Fetches the [Gamepad] associated with the entity controlled by this entity map
-    #[must_use]
-    pub fn gamepad(&self) -> Option<Gamepad> {
-        self.associated_gamepad
     }
 }
 
