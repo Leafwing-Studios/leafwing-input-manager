@@ -336,6 +336,12 @@ impl<A: Actionlike> InputMap<A> {
         self.associated_gamepad = None;
         self
     }
+
+    /// Sets the [`ClashStrategy`] for this input map
+    pub fn set_clash_strategy(&mut self, clash_strategy: ClashStrategy) -> &mut Self {
+        self.clash_strategy = clash_strategy;
+        self
+    }
 }
 
 // Check whether buttons are pressed
