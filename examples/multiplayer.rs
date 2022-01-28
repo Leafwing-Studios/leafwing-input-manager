@@ -33,33 +33,33 @@ struct PlayerBundle {
 
 impl PlayerBundle {
     fn input_map(player: Player) -> InputMap<Action> {
-        let mut input_map = InputMap::default();
-
-        match player {
-            Player::One => {
-                input_map.insert(Action::Left, KeyCode::A);
-                input_map.insert(Action::Right, KeyCode::D);
-                input_map.insert(Action::Jump, KeyCode::W);
-
-                // This is a quick and hacky solution:
-                // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
-                // and gracefully handle disconnects
-                input_map.set_gamepad(Gamepad(0));
-            }
-            Player::Two => {
-                input_map.insert(Action::Left, KeyCode::Left);
-                input_map.insert(Action::Right, KeyCode::Right);
-                input_map.insert(Action::Jump, KeyCode::Up);
-
-                input_map.set_gamepad(Gamepad(1));
-            }
+        let mut input_map = match player {
+            Player::One => InputMap::new([
+                (Action::Left, KeyCode::A),
+                (Action::Right, KeyCode::D),
+                (Action::Jump, KeyCode::W),
+            ])
+            // This is a quick and hacky solution:
+            // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
+            // and gracefully handle disconnects
+            .set_gamepad(Gamepad(0))
+            .build(),
+            Player::Two => InputMap::new([
+                (Action::Left, KeyCode::A),
+                (Action::Right, KeyCode::D),
+                (Action::Jump, KeyCode::W),
+            ])
+            .set_gamepad(Gamepad(1))
+            .build(),
         };
 
         // Each player will use the same gamepad controls, but on seperate gamepads
-        input_map.insert(Action::Left, GamepadButtonType::DPadLeft);
-        input_map.insert(Action::Right, GamepadButtonType::DPadLeft);
-        input_map.insert(Action::Jump, GamepadButtonType::DPadUp);
-        input_map.insert(Action::Jump, GamepadButtonType::South);
+        input_map.insert_multiple([
+            (Action::Left, GamepadButtonType::DPadLeft),
+            (Action::Right, GamepadButtonType::DPadRight),
+            (Action::Jump, GamepadButtonType::DPadUp),
+            (Action::Jump, GamepadButtonType::South),
+        ]);
 
         input_map
     }

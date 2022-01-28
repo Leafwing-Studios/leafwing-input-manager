@@ -35,14 +35,12 @@ fn spawn_input_map(mut commands: Commands) {
     let mut input_map = InputMap::default();
     // Setting the clash strategy; swap out the variant
     // to play with different behavior!
-    //input_map.clash_strategy = ClashStrategy::PressAll;
     input_map.clash_strategy = ClashStrategy::PrioritizeLongest;
+    //input_map.clash_strategy = ClashStrategy::PressAll;
     //input_map.clash_strategy = ClashStrategy::UseActionOrder;
 
     // Setting up input mappings in the obvious way
-    input_map.insert(One, Key1);
-    input_map.insert(Two, Key2);
-    input_map.insert(Three, Key3);
+    input_map.insert_multiple([(One, Key1), (Two, Key2), (Three, Key3)]);
 
     input_map.insert_chord(OneAndTwo, [Key1, Key2]);
     input_map.insert_chord(OneAndThree, [Key1, Key3]);

@@ -46,15 +46,13 @@ struct PlayerBundle {
 impl PlayerBundle {
     fn default_input_map() -> InputMap<Action> {
         use Action::*;
-        let mut input_map = InputMap::default();
 
-        input_map.insert(Left, KeyCode::A);
-        input_map.insert(Left, KeyCode::Left);
-
-        input_map.insert(Right, KeyCode::D);
-        input_map.insert(Right, KeyCode::Right);
-
-        input_map
+        InputMap::new([
+            (Left, KeyCode::A),
+            (Left, KeyCode::Left),
+            (Right, KeyCode::D),
+            (Right, KeyCode::Right),
+        ])
     }
 }
 
