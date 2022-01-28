@@ -4,9 +4,7 @@ use strum::EnumIter;
 
 fn main() {
     App::new()
-        .add_plugins(MinimalPlugins)
-        // Usually, this is included in `DefaultPlugins`
-        .add_plugin(bevy::input::InputPlugin)
+        .add_plugins(DefaultPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
         .add_plugin(InputManagerPlugin::<Action>::default())
@@ -35,7 +33,7 @@ fn spawn_player(mut commands: Commands) {
         .spawn()
         .insert(Player)
         .insert_bundle(InputManagerBundle::<Action> {
-            // Stores "which actions are being used"
+            // Stores "which virtual action buttons are currently pressed"
             action_state: ActionState::default(),
             // Stores input bindings
             input_map,

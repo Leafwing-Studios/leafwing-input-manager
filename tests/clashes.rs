@@ -132,7 +132,7 @@ fn input_clash_handling() {
 
     let mut app = App::new();
 
-    app.add_plugins(MinimalPlugins)
+    app.add_plugins(DefaultPlugins)
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_input_maps);
