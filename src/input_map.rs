@@ -107,94 +107,6 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-// Config
-impl<A: Actionlike> InputMap<A> {}
-
-// Check whether buttons are pressed
-impl<A: Actionlike> InputMap<A> {
-    /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
-    ///
-    /// Accounts for clashing inputs according to the [`ClashStrategy`].
-    /// If you need to inspect many inputs at once, prefer [`InputMap::which_pressed`] instead.
-    #[must_use]
-    pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
-        let pressed_set = self.which_pressed(input_streams);
-        pressed_set.contains(&action)
-    }
-
-    /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
-    ///
-    /// Accounts for clashing inputs according to the [`ClashStrategy`].
-    pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
-        let mut pressed_actions = HashSet::default();
-
-        // Generate the raw action presses
-        for action in A::iter() {
-            for input in self.get(action, None) {
-                if input_streams.input_pressed(&input) {
-                    pressed_actions.insert(action);
-                }
-            }
-        }
-
-        // Handle clashing inputs, possibly removing some pressed actions from the list
-        if self.clash_strategy != ClashStrategy::PressAll {
-            self.handle_clashes(&mut pressed_actions, input_streams);
-        }
-
-        pressed_actions
-    }
-}
-
-// Utilities
-impl<A: Actionlike> InputMap<A> {
-    /// Returns the mapping between the `action` that uses the supplied `input_mode`
-    ///
-    /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
-    ///
-    /// For chords, an input will be returned if any of the contained buttons use that input mode.
-    ///
-    /// If no matching bindings are found, an empty [`PetitSet`] will be returned.
-    ///
-    /// A copy of the values are returned, rather than a reference to them.
-    /// The order of these values is stable, in a first-in, first-out fashion.
-    /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
-    #[must_use]
-    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
-        if let Some(full_set) = self.map.get(&action) {
-            if let Some(input_mode) = input_mode {
-                let mut matching_set = PetitSet::default();
-                for input in full_set.iter() {
-                    if input.matches_input_mode(input_mode) {
-                        matching_set.insert(input.clone());
-                    }
-                }
-
-                if matching_set.is_empty() {
-                    PetitSet::default()
-                } else {
-                    matching_set
-                }
-            } else {
-                full_set.clone()
-            }
-        } else {
-            PetitSet::default()
-        }
-    }
-
-    /// Returns how many bindings are currently registered for the provided action with the provided [`InputMode`]
-    ///
-    /// If `None` is provided, a total across all input modes will be provided.
-    ///
-    /// A maximum of `CAP` bindings across all input modes can be stored for each action,
-    /// and insert operations will silently fail if used when `CAP` bindings already exist.
-    #[must_use]
-    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> usize {
-        self.get(action, input_mode).len()
-    }
-}
-
 // Insertion
 impl<A: Actionlike> InputMap<A> {
     /// Insert a mapping between `action` and `input`
@@ -347,6 +259,94 @@ impl<A: Actionlike> InputMap<A> {
         new_map.cache_possible_clashes();
 
         *self = new_map;
+    }
+}
+
+// Config
+impl<A: Actionlike> InputMap<A> {}
+
+// Check whether buttons are pressed
+impl<A: Actionlike> InputMap<A> {
+    /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
+    ///
+    /// Accounts for clashing inputs according to the [`ClashStrategy`].
+    /// If you need to inspect many inputs at once, prefer [`InputMap::which_pressed`] instead.
+    #[must_use]
+    pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
+        let pressed_set = self.which_pressed(input_streams);
+        pressed_set.contains(&action)
+    }
+
+    /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
+    ///
+    /// Accounts for clashing inputs according to the [`ClashStrategy`].
+    pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
+        let mut pressed_actions = HashSet::default();
+
+        // Generate the raw action presses
+        for action in A::iter() {
+            for input in self.get(action, None) {
+                if input_streams.input_pressed(&input) {
+                    pressed_actions.insert(action);
+                }
+            }
+        }
+
+        // Handle clashing inputs, possibly removing some pressed actions from the list
+        if self.clash_strategy != ClashStrategy::PressAll {
+            self.handle_clashes(&mut pressed_actions, input_streams);
+        }
+
+        pressed_actions
+    }
+}
+
+// Utilities
+impl<A: Actionlike> InputMap<A> {
+    /// Returns the mapping between the `action` that uses the supplied `input_mode`
+    ///
+    /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
+    ///
+    /// For chords, an input will be returned if any of the contained buttons use that input mode.
+    ///
+    /// If no matching bindings are found, an empty [`PetitSet`] will be returned.
+    ///
+    /// A copy of the values are returned, rather than a reference to them.
+    /// The order of these values is stable, in a first-in, first-out fashion.
+    /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
+    #[must_use]
+    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
+        if let Some(full_set) = self.map.get(&action) {
+            if let Some(input_mode) = input_mode {
+                let mut matching_set = PetitSet::default();
+                for input in full_set.iter() {
+                    if input.matches_input_mode(input_mode) {
+                        matching_set.insert(input.clone());
+                    }
+                }
+
+                if matching_set.is_empty() {
+                    PetitSet::default()
+                } else {
+                    matching_set
+                }
+            } else {
+                full_set.clone()
+            }
+        } else {
+            PetitSet::default()
+        }
+    }
+
+    /// Returns how many bindings are currently registered for the provided action with the provided [`InputMode`]
+    ///
+    /// If `None` is provided, a total across all input modes will be provided.
+    ///
+    /// A maximum of `CAP` bindings across all input modes can be stored for each action,
+    /// and insert operations will silently fail if used when `CAP` bindings already exist.
+    #[must_use]
+    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> usize {
+        self.get(action, input_mode).len()
     }
 }
 
