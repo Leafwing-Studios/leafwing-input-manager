@@ -126,6 +126,14 @@ impl<A: Actionlike> Iterator for ActionIter<A> {
     }
 }
 
+impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {}
+
+impl<A: Actionlike> DoubleEndedIterator for ActionIter<A> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        self.storage.pop_back()
+    }
+}
+
 // We can't derive this, because otherwise it won't work when A is not default
 impl<A: Actionlike> Default for ActionIter<A> {
     fn default() -> Self {
