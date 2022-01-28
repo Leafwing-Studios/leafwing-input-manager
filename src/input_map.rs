@@ -67,7 +67,7 @@ use petitset::PetitSet;
 pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] of [PetitSet]s used to store the input mapping
     pub map: HashMap<A, PetitSet<UserInput, 16>>,
-    per_mode_cap: Option<usize>,
+    per_mode_cap: Option<u8>,
     associated_gamepad: Option<Gamepad>,
     /// How should clashing (overlapping) inputs be handled?
     pub clash_strategy: ClashStrategy,
@@ -248,7 +248,7 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         action: A,
         input: impl Into<UserInput>,
-        index: usize,
+        index: u8,
     ) -> Option<UserInput> {
         let input = input.into();
         let input_modes = input.input_modes();
@@ -271,7 +271,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns the per-[`InputMode`] cap on input bindings for every action
     ///
     /// Each individual action can have at most this many bindings, making them easier to display and configure.
-    pub fn per_mode_cap(&self) -> usize {
+    pub fn per_mode_cap(&self) -> u8 {
         if let Some(cap) = self.per_mode_cap {
             cap
         } else {
@@ -288,7 +288,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
     #[allow(clippy::return_self_not_must_use)]
-    pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
+    pub fn set_per_mode_cap(&mut self, per_mode_cap: u8) -> InputMap<A> {
         assert!(3 * per_mode_cap <= 16);
 
         if per_mode_cap == 0 {
@@ -424,8 +424,8 @@ impl<A: Actionlike> InputMap<A> {
     /// A maximum of `CAP` bindings across all input modes can be stored for each action,
     /// and insert operations will silently fail if used when `CAP` bindings already exist.
     #[must_use]
-    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> usize {
-        self.get(action, input_mode).len()
+    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> u8 {
+        self.get(action, input_mode).len() as u8
     }
 }
 
@@ -486,14 +486,9 @@ impl<A: Actionlike> InputMap<A> {
     /// Clears the input for the `action` with the specified [`InputMode`] at the provided index
     ///
     /// Returns the removed input, if any
-    pub fn clear_at(
-        &mut self,
-        action: A,
-        input_mode: InputMode,
-        index: usize,
-    ) -> Option<UserInput> {
+    pub fn clear_at(&mut self, action: A, input_mode: InputMode, index: u8) -> Option<UserInput> {
         let mut bindings = self.get(action, Some(input_mode));
-        if bindings.len() < index {
+        if (bindings.len() as u8) < index {
             // Not enough matching bindings were found
             return None;
         }
@@ -502,7 +497,7 @@ impl<A: Actionlike> InputMap<A> {
         self.clear_action(action, Some(input_mode));
 
         // Remove the binding at the provided index
-        let removed = bindings.take_at(index);
+        let removed = bindings.take_at(index as usize);
 
         // Reinsert the other bindings
         for input in bindings.iter() {
