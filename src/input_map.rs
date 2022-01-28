@@ -43,7 +43,7 @@ use petitset::PetitSet;
 /// }
 ///
 /// // Construction
-/// let mut input_map: InputMap<Action> = InputMap::new([
+/// let mut input_map = InputMap::new([
 ///    // Note that the type of your iterators must be homogenous;
 ///    // you can use `InputButton` or `UserInput` if needed
 ///    // as unifiying types
@@ -53,12 +53,17 @@ use petitset::PetitSet;
 /// ])
 /// // Insertion
 /// .insert(Action::Run, MouseButton::Left)
-/// .insert(Action::Run, KeyCode::LShift
+/// .insert(Action::Run, KeyCode::LShift)
 /// // Chords
 /// .insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R])
 /// .insert_chord(Action::Hide, [InputButton::Keyboard(KeyCode::H),
 ///                              InputButton::Gamepad(GamepadButtonType::South),
-///                              InputButton::Mouse(MouseButton::Middle)]);
+///                              InputButton::Mouse(MouseButton::Middle)])
+/// // Configuration
+/// .set_clash_strategy(ClashStrategy::PressAll)
+/// // Converting from a `&mut T` into the `T` that we need
+/// .build();
+///
 ///
 /// // But you can't Hide :(
 /// input_map.clear_action(Action::Hide, None);
@@ -97,13 +102,59 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// # Example
     /// ```rust
+    /// use leafwing_input_manager::input_map::InputMap;
+    /// use leafwing_input_manager::Actionlike;
+    /// use strum::EnumIter;
+    /// use bevy::input::keyboard::KeyCode;
     ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    ///
+    /// let input_map = InputMap::new([
+    ///     (Action::Run, KeyCode::LShift),
+    ///     (Action::Jump, KeyCode::Space),
+    /// ]);
+    ///
+    /// assert_eq!(input_map.len(), 2);
     /// ```
     pub fn new(bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>) -> Self {
         let mut input_map = InputMap::default();
         input_map.insert_multiple(bindings);
 
         input_map
+    }
+
+    /// Constructs a new [`InputMap`] from a `&mut InputMap`, allowing you to insert or otherwise use it
+    ///
+    /// This is helpful when constructing input maps using the "builder pattern":
+    ///  1. Create a new [`InputMap`] struct using [`InputMap::default`] or [`InputMap::new`].
+    ///  2. Add bindings and configure the struct using a chain of method calls directly on this struct.
+    ///  3. Finish building your struct by calling `.build()`, receiving a concrete struct you can insert as a component.
+    ///
+    /// Note that this is not the *orginal* input map, as we do not have ownership of the struct.
+    /// Under the hood, this is just a more-readable call to `.clone()`.
+    ///
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    /// use strum::EnumIter;
+    /// use bevy::input::keyboard::KeyCode;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    ///
+    /// let input_map: InputMap<Action> = InputMap::default()
+    ///   .insert(Action::Jump, KeyCode::Space).build();
+    /// ```
+    #[must_use]
+    pub fn build(&mut self) -> Self {
+        self.clone()
     }
 }
 
@@ -113,24 +164,24 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Existing mappings for that action will not be overwritten.
     /// If the set for this action is already full, this insertion will silently fail.
-    pub fn insert(&mut self, action: A, input: impl Into<UserInput>) {
+    pub fn insert(&mut self, action: A, input: impl Into<UserInput>) -> &mut Self {
         let input = input.into();
 
         // Don't insert Null inputs into the map
         if input == UserInput::Null {
-            return;
+            return self;
         }
 
         // Don't overflow the set!
         if self.n_registered(action, None) >= 16 {
-            return;
+            return self;
         }
 
         // Respect any per-input-mode caps that have been set
         if let Some(per_mode_cap) = self.per_mode_cap {
             for input_mode in input.input_modes() {
                 if self.n_registered(action, Some(input_mode)) >= per_mode_cap {
-                    return;
+                    return self;
                 }
             }
         }
@@ -147,6 +198,8 @@ impl<A: Actionlike> InputMap<A> {
 
         // Cache clashes now, to ensure a clean state
         self.cache_possible_clashes();
+
+        self
     }
 
     /// Insert a mapping between `action` and the provided `inputs`
