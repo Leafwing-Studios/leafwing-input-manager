@@ -159,10 +159,12 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_multiple(
         &mut self,
         bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
-    ) {
+    ) -> &mut Self {
         for (action, input) in bindings {
             self.insert(action, input);
         }
+
+        self
     }
 
     /// Insert a mapping between `action` and the simultaneous combination of `buttons` provided
@@ -175,8 +177,43 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         action: A,
         buttons: impl IntoIterator<Item = impl Into<InputButton>>,
-    ) {
+    ) -> &mut Self {
         self.insert(action, UserInput::chord(buttons));
+        self
+    }
+
+    /// Merges the provided [`InputMap`] into the [`InputMap`] this method was called on
+    ///
+    /// This adds both of their bindings to the resulting [`InputMap`].
+    /// Like usual, any duplicate bindings are ignored.
+    ///
+    /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
+    pub fn merge(&mut self, other: &InputMap<A>) -> &mut Self {
+        let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
+            self.associated_gamepad
+        } else {
+            None
+        };
+
+        let mut new_map = InputMap {
+            associated_gamepad,
+            ..Default::default()
+        };
+
+        for action in A::iter() {
+            for input in self.get(action, None) {
+                new_map.insert(action, input);
+            }
+
+            for input in other.get(action, None) {
+                new_map.insert(action, input);
+            }
+        }
+
+        new_map.cache_possible_clashes();
+
+        *self = new_map;
+        self
     }
 
     /// Replaces any existing inputs for the `action` of the same [`InputMode`] with the provided `input`
@@ -226,39 +263,6 @@ impl<A: Actionlike> InputMap<A> {
         self.insert(action, input);
 
         removed
-    }
-
-    /// Merges the provided [`InputMap`] into the [`InputMap`] this method was called on
-    ///
-    /// This adds both of their bindings to the resulting [`InputMap`].
-    /// Like usual, any duplicate bindings are ignored.
-    ///
-    /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
-    pub fn merge(&mut self, other: &InputMap<A>) {
-        let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
-            self.associated_gamepad
-        } else {
-            None
-        };
-
-        let mut new_map = InputMap {
-            associated_gamepad,
-            ..Default::default()
-        };
-
-        for action in A::iter() {
-            for input in self.get(action, None) {
-                new_map.insert(action, input);
-            }
-
-            for input in other.get(action, None) {
-                new_map.insert(action, input);
-            }
-        }
-
-        new_map.cache_possible_clashes();
-
-        *self = new_map;
     }
 }
 
