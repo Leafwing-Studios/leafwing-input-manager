@@ -51,7 +51,7 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     /// ```rust
     /// use bevy::prelude::*;
     /// use bevy::input::InputPlugin;
-    /// use leafwing_input_manager::*;
+    /// use leafwing_input_manager::prelude::*;
     /// use strum::EnumIter;
     ///
     /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
