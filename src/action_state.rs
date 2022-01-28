@@ -36,6 +36,7 @@ pub struct Timing {
 impl VirtualButtonState {
     /// Is the button currently pressed?
     #[inline]
+    #[must_use]
     pub fn pressed(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(_) => true,
@@ -45,6 +46,7 @@ impl VirtualButtonState {
 
     /// Is the button currently released?
     #[inline]
+    #[must_use]
     pub fn released(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(_) => false,
@@ -54,6 +56,7 @@ impl VirtualButtonState {
 
     /// Was the button pressed since the last time [`ActionState::update`] was called?
     #[inline]
+    #[must_use]
     pub fn just_pressed(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(timing) => timing.instant_started.is_none(),
@@ -63,6 +66,7 @@ impl VirtualButtonState {
 
     /// Was the button released since the last time [`ActionState::update`] was called?
     #[inline]
+    #[must_use]
     pub fn just_released(&self) -> bool {
         match self {
             VirtualButtonState::Pressed(_timing) => false,
@@ -75,6 +79,7 @@ impl VirtualButtonState {
     /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
     /// If this is none, [`ActionState::update`] has not been called yet.
     #[inline]
+    #[must_use]
     pub fn instant_started(&self) -> Option<Instant> {
         match self {
             VirtualButtonState::Pressed(timing) => timing.instant_started,
@@ -86,6 +91,7 @@ impl VirtualButtonState {
     ///
     /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
     #[inline]
+    #[must_use]
     pub fn current_duration(&self) -> Duration {
         match self {
             VirtualButtonState::Pressed(timing) => timing.current_duration,
@@ -94,6 +100,7 @@ impl VirtualButtonState {
     }
     /// The [`Duration`] for which the button was pressed or released before the state last changed.
     #[inline]
+    #[must_use]
     pub fn previous_duration(&self) -> Duration {
         match self {
             VirtualButtonState::Pressed(timing) => timing.previous_duration,
@@ -267,6 +274,7 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// ```
     #[inline]
+    #[must_use]
     pub fn state(&self, action: A) -> VirtualButtonState {
         if let Some(state) = self.map.get(&action) {
             state.clone()
@@ -356,12 +364,14 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Is this `action` currently pressed?
+    #[inline]
     #[must_use]
     pub fn pressed(&self, action: A) -> bool {
         self.state(action).pressed()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: A) -> bool {
         self.state(action).just_pressed()
@@ -370,18 +380,21 @@ impl<A: Actionlike> ActionState<A> {
     /// Is this `action` currently released?
     ///
     /// This is always the logical negation of [pressed](ActionState::pressed)
+    #[inline]
     #[must_use]
     pub fn released(&self, action: A) -> bool {
         self.state(action).released()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    #[inline]
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
         self.state(action).just_released()
     }
 
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
+    #[inline]
     #[must_use]
     pub fn default_map<V: Default>() -> HashMap<A, V> {
         // PERF: optimize construction through pre-allocation or constification
@@ -435,11 +448,15 @@ impl Default for ButtonThresholds {
 
 impl ButtonThresholds {
     /// Gets the value at or above which the button is considered to be pressed
+    #[inline]
+    #[must_use]
     pub fn pressed(&self) -> f32 {
         self.pressed
     }
 
     /// Gets the value below which the button is considered to be released
+    #[inline]
+    #[must_use]
     pub fn released(&self) -> f32 {
         self.released
     }

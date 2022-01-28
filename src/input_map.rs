@@ -120,6 +120,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// assert_eq!(input_map.len(), 2);
     /// ```
+    #[must_use]
     pub fn new(bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>) -> Self {
         let mut input_map = InputMap::default();
         input_map.insert_multiple(bindings);
@@ -152,6 +153,7 @@ impl<A: Actionlike> InputMap<A> {
     /// let input_map: InputMap<Action> = InputMap::default()
     ///   .insert(Action::Jump, KeyCode::Space).build();
     /// ```
+    #[inline]
     #[must_use]
     pub fn build(&mut self) -> Self {
         self.clone()
@@ -412,6 +414,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
+    #[must_use]
     pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
         let mut pressed_actions = HashSet::default();
 
@@ -494,6 +497,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Are any input bindings registered at all?
+    #[inline]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
