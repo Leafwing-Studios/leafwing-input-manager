@@ -759,6 +759,8 @@ mod tests {
 
         // Setting up the input map
         let mut input_map = InputMap::<Action>::default();
+        // Ignore clashing to isolate tests
+        input_map.clash_strategy = ClashStrategy::PressAll;
         input_map.assign_gamepad(Gamepad(42));
 
         // Gamepad
@@ -829,6 +831,7 @@ mod tests {
         assert!(!input_map.pressed(Action::Jump, &input_streams));
 
         // Chord
+        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
         gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
 
         let input_streams = InputStreams {
