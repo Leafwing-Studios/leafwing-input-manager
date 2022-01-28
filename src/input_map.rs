@@ -42,19 +42,23 @@ use petitset::PetitSet;
 ///     Hide,
 /// }
 ///
-/// let mut input_map: InputMap<Action> = InputMap::default();
-///
-/// // Basic insertion
-/// input_map.insert(Action::Run, GamepadButtonType::South);
-/// input_map.insert(Action::Run, MouseButton::Left);
-/// input_map.insert(Action::Run, KeyCode::LShift);
-/// input_map.insert_multiple(Action::Hide, [GamepadButtonType::LeftTrigger, GamepadButtonType::RightTrigger]);
-///
-/// // Combinations!
-/// input_map.insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R]);
-/// input_map.insert_chord(Action::Hide, [InputButton::Keyboard(KeyCode::H),
-///                                       InputButton::Gamepad(GamepadButtonType::South),
-///                                       InputButton::Mouse(MouseButton::Middle)]);
+/// // Construction
+/// let mut input_map: InputMap<Action> = InputMap::new([
+///    // Note that the type of your iterators must be homogenous;
+///    // you can use `InputButton` or `UserInput` if needed
+///    // as unifiying types
+///   (Action::Run, GamepadButtonType::South),
+///   (Action::Hide, GamepadButtonType::LeftTrigger),
+///   (Action::Hide, GamepadButtonType::RightTrigger),
+/// ])
+/// // Insertion
+/// .insert(Action::Run, MouseButton::Left)
+/// .insert(Action::Run, KeyCode::LShift
+/// // Chords
+/// .insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R])
+/// .insert_chord(Action::Hide, [InputButton::Keyboard(KeyCode::H),
+///                              InputButton::Gamepad(GamepadButtonType::South),
+///                              InputButton::Mouse(MouseButton::Middle)]);
 ///
 /// // But you can't Hide :(
 /// input_map.clear_action(Action::Hide, None);
@@ -87,22 +91,24 @@ impl<A: Actionlike> Default for InputMap<A> {
 
 // Constructors
 impl<A: Actionlike> InputMap<A> {
-    /// Creates a new empty [`InputMap`]
+    /// Creates a new [`InputMap`] from an iterator of `(action, user_input)` pairs
     ///
-    /// The `per_mode_cap` controls the maximum number of inputs of each [`InputMode`] that can be stored.
-    /// If a value of 0 is supplied, no cap will be provided (although the global `CAP` must still be obeyed).
+    /// To create an empty input map, use the [`Default::default`] method instead.
     ///
-    /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
-    pub fn new(per_mode_cap: usize) -> Self {
-        if per_mode_cap == 0 {
-            Self::default()
-        } else {
-            let mut input_map = Self::default();
-            input_map.set_per_mode_cap(per_mode_cap);
-            input_map
-        }
+    /// # Example
+    /// ```rust
+    ///
+    /// ```
+    pub fn new(bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>) -> Self {
+        let mut input_map = InputMap::default();
+        input_map.insert_multiple(bindings);
+
+        input_map
     }
 }
+
+// Config
+impl<A: Actionlike> InputMap<A> {}
 
 // Check whether buttons are pressed
 impl<A: Actionlike> InputMap<A> {
@@ -240,10 +246,9 @@ impl<A: Actionlike> InputMap<A> {
     /// Existing mappings for that action will not be overwritten.
     pub fn insert_multiple(
         &mut self,
-        action: A,
-        inputs: impl IntoIterator<Item = impl Into<UserInput>>,
+        bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
     ) {
-        for input in inputs {
+        for (action, input) in bindings {
             self.insert(action, input);
         }
     }
@@ -330,8 +335,13 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         for action in A::iter() {
-            new_map.insert_multiple(action, self.get(action, None));
-            new_map.insert_multiple(action, other.get(action, None));
+            for input in self.get(action, None) {
+                new_map.insert(action, input);
+            }
+
+            for input in other.get(action, None) {
+                new_map.insert(action, input);
+            }
         }
 
         new_map.cache_possible_clashes();
@@ -370,7 +380,9 @@ impl<A: Actionlike> InputMap<A> {
                 }
 
                 // Put back the ones that didn't match
-                self.insert_multiple(action, retained_set);
+                for input in retained_set.iter() {
+                    self.insert(action, input.clone());
+                }
 
                 // Cache clashes now, to ensure a clean state
                 self.cache_possible_clashes();
@@ -414,7 +426,9 @@ impl<A: Actionlike> InputMap<A> {
         let removed = bindings.take_at(index);
 
         // Reinsert the other bindings
-        self.insert_multiple(action, bindings);
+        for input in bindings.iter() {
+            self.insert(action, input.clone());
+        }
 
         // Cache clashes now, to ensure a clean state
         self.cache_possible_clashes();
@@ -438,7 +452,10 @@ impl<A: Actionlike> InputMap<A> {
 
         for action in A::iter() {
             if let Some(removed_inputs) = self.clear_action(action, input_mode) {
-                cleared_input_map.insert_multiple(action, removed_inputs);
+                // Put back the ones that didn't match
+                for input in removed_inputs.iter() {
+                    cleared_input_map.insert(action, input.clone());
+                }
             }
         }
 
@@ -520,6 +537,7 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 mod tests {
+
     use crate::prelude::*;
     use strum::EnumIter;
 
@@ -553,7 +571,7 @@ mod tests {
 
     #[test]
     fn multiple_insertion() {
-        use crate::user_input::{InputButton, UserInput};
+        use crate::user_input::UserInput;
         use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
@@ -566,37 +584,12 @@ mod tests {
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into(), KeyCode::Return.into()])
         );
 
-        let mut input_map_2 = InputMap::<Action>::default();
-        input_map_2.insert_multiple(Action::Run, [KeyCode::Space, KeyCode::Return]);
+        let input_map_2 = InputMap::<Action>::new([
+            (Action::Run, KeyCode::Space),
+            (Action::Run, KeyCode::Return),
+        ]);
 
         assert_eq!(input_map_1, input_map_2);
-
-        let mut input_map_3 = InputMap::<Action>::default();
-        input_map_3.insert_multiple(Action::Run, [KeyCode::Return, KeyCode::Space]);
-
-        assert_eq!(input_map_1, input_map_3);
-
-        let mut input_map_4 = InputMap::<Action>::default();
-        input_map_4.insert_multiple(
-            Action::Run,
-            [
-                InputButton::Keyboard(KeyCode::Space),
-                InputButton::Keyboard(KeyCode::Return),
-            ],
-        );
-
-        assert_eq!(input_map_1, input_map_4);
-
-        let mut input_map_5 = InputMap::<Action>::default();
-        input_map_5.insert_multiple(
-            Action::Run,
-            [
-                UserInput::Single(InputButton::Keyboard(KeyCode::Space)),
-                UserInput::Single(InputButton::Keyboard(KeyCode::Return)),
-            ],
-        );
-
-        assert_eq!(input_map_1, input_map_5);
     }
 
     #[test]
@@ -646,7 +639,7 @@ mod tests {
         assert_eq!(input_map, InputMap::default());
 
         // Clearing an entire input mode
-        input_map.insert_multiple(Action::Run, [KeyCode::Space, KeyCode::A]);
+        input_map.insert_multiple([(Action::Run, KeyCode::Space), (Action::Run, KeyCode::A)]);
         input_map.insert(Action::Hide, KeyCode::RBracket);
         input_map.clear_input_mode(Some(InputMode::Keyboard));
         assert_eq!(input_map, InputMap::default());
