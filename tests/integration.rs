@@ -32,7 +32,7 @@ fn action_state_change_detection() {
 
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins)
+    app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
