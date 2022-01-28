@@ -55,6 +55,7 @@ use crate::input_map::InputMap;
 use core::any::TypeId;
 use core::hash::Hash;
 use core::marker::PhantomData;
+use std::fmt::Debug;
 
 pub mod action_state;
 pub mod clashing_inputs;
@@ -123,6 +124,7 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     /// # Example
     /// ```rust
     /// use bevy::prelude::*;
+    /// use bevy::input::InputPlugin;
     /// use leafwing_input_manager::*;
     /// use strum::EnumIter;
     ///
@@ -142,7 +144,12 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     ///     Menu,
     /// }
     ///
-    /// App::new().add_plugin(InputManagerPlugin::<PlayerAction, GameState>::run_in_state(GameState::Playing));
+    /// App::new()
+    /// .add_plugins(MinimalPlugins)
+    /// .add_plugin(InputPlugin)
+    /// .add_state(GameState::Playing)
+    /// .add_plugin(InputManagerPlugin::<PlayerAction, GameState>::run_in_state(GameState::Playing))
+    /// .update();
     /// ```
     #[must_use]
     pub fn run_in_state(state_variant: UserState) -> Self {
@@ -153,7 +160,7 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     }
 }
 
-impl<A: Actionlike, UserState: Resource + PartialEq + Clone> Plugin
+impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
     for InputManagerPlugin<A, UserState>
 {
     fn build(&self, app: &mut App) {
@@ -187,14 +194,18 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> Plugin
             let desired_state_variant = self.state_variant.clone();
 
             // The `SystemSet` methods take self by ownership, so we must store a new system set
-            let input_manager_systems =
-                input_manager_systems.with_run_criteria(move |current_state: Res<UserState>| {
-                    if *current_state == desired_state_variant {
+            let input_manager_systems = input_manager_systems.with_run_criteria(
+                move |current_state: Res<State<UserState>>| {
+                    let raw_state = *current_state;
+                    let current_state_variant: UserState = raw_state.into();
+
+                    if current_state_variant == desired_state_variant {
                         ShouldRun::Yes
                     } else {
                         ShouldRun::No
                     }
-                });
+                },
+            );
 
             // Add the systems to our app
             app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
