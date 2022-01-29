@@ -1,5 +1,3 @@
-#![feature(proc_macro_span)]
-
 //! Derives the [`Actionlike`] trait
 //
 //! This derive macro was inspired by the `strum` crate's `EnumIter` macro.
