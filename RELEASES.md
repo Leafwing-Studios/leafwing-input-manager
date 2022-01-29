@@ -17,6 +17,7 @@
 - `InputManagerPlugin` now works even if some input stream resources are missing
 - added the `input_pressed` method to `InputMap`, to check if a single input is pressed
 - renamed `InputMap::assign_gamepad` to `InputMap::set_gamepad` for consistency and clarity (it does not uniquely assign a gamepad)
+- removed `strum` dependency by reimplementing the funcitonality, allowing users to define actions with only the `Actionlike` trait
 
 ### Bug fixes
 
