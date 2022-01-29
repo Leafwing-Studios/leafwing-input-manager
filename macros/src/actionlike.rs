@@ -4,6 +4,10 @@ use proc_macro_crate::{crate_name, FoundCrate};
 use quote::quote;
 use syn::{Data, DeriveInput, Ident};
 
+/// This approach and implementation is inspired by the `strum` crate,
+/// Copyright (c) 2019 Peter Glotfelty
+/// available under the MIT License at https://github.com/Peternator7/strum
+
 pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     // Splitting the abstract syntax tree
     let enum_name = &ast.ident;
@@ -36,7 +40,9 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     };
 
     // Populate the array
-    let mut array_token_stream = Vec::new();
+    let mut match_items = Vec::new();
+    let mut index: usize = 0;
+
     for variant in variants {
         // The name of the enum variant
         let variant_identifier = variant.ident.clone();
@@ -61,15 +67,21 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
         };
 
         // Enum variant
-        array_token_stream.push(quote! {
-            #enum_name::#variant_identifier #params,
+        match_items.push(quote! {
+            #index => Some(#enum_name::#variant_identifier #params),
         });
+
+        // On to the next item!
+        index += 1;
     }
 
     quote! {
         impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
-            fn iter() -> #crate_path::ActionIter<#enum_name> {
-                #crate_path::ActionIter::from_iter([#(#array_token_stream)*])
+            fn get_at(index: usize) -> Option<Self>{
+                match index{
+                    #(#match_items)*
+                    _ => None,
+                }
             }
         }
     }

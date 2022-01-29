@@ -47,7 +47,7 @@ use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
 use core::hash::Hash;
-use std::collections::VecDeque;
+use std::marker::PhantomData;
 
 pub mod action_state;
 pub mod clashing_inputs;
@@ -85,7 +85,7 @@ pub mod prelude {
 /// ```rust
 /// use leafwing_input_manager::Actionlike;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Up,
@@ -102,50 +102,46 @@ pub mod prelude {
 /// ```
 pub trait Actionlike: Send + Sync + Copy + Eq + Hash + 'static {
     /// Iterates over the possible actions in the order they were defined
-    fn iter() -> ActionIter<Self>;
+    fn iter() -> ActionIter<Self> {
+        ActionIter::default()
+    }
+
+    /// Returns the default value for the action stored at the provided index if it exists
+    ///
+    /// This is mostly used internally, to enable space-efficient iteration.
+    fn get_at(index: usize) -> Option<Self>;
 }
 
 /// An iterator of [`Actionlike`] actions
 ///
 /// Created by calling [`Actionlike::iter`].
-///
-/// If you are attempting to manually implement the [`Actionlike`] trait,
-/// you should probably construct this using [`FromIterator::from_iter`].
 #[derive(Debug, Clone)]
 pub struct ActionIter<A: Actionlike> {
-    // We want to iterate on a first-in, first-out basis
-    storage: VecDeque<A>,
+    index: usize,
+    _phantom: PhantomData<A>,
 }
 
 impl<A: Actionlike> Iterator for ActionIter<A> {
     type Item = A;
 
     fn next(&mut self) -> Option<A> {
-        self.storage.pop_front()
+        let item = A::get_at(self.index);
+        if item.is_some() {
+            self.index += 1;
+        }
+
+        item
     }
 }
 
 impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {}
 
-impl<A: Actionlike> DoubleEndedIterator for ActionIter<A> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.storage.pop_back()
-    }
-}
-
 // We can't derive this, because otherwise it won't work when A is not default
 impl<A: Actionlike> Default for ActionIter<A> {
     fn default() -> Self {
         ActionIter {
-            storage: VecDeque::default(),
-        }
-    }
-}
-
-impl<A: Actionlike> FromIterator<A> for ActionIter<A> {
-    fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> Self {
-        ActionIter {
-            storage: VecDeque::from_iter(iter),
+            index: 0,
+            _phantom: PhantomData::default(),
         }
     }
 }
