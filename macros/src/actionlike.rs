@@ -40,14 +40,15 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     };
 
     // Populate the array
-    let mut match_items = Vec::new();
+    let mut get_at_match_items = Vec::new();
+    let mut index_match_items = Vec::new();
     let mut index: usize = 0;
 
     for variant in variants {
         // The name of the enum variant
         let variant_identifier = variant.ident.clone();
 
-        let params = match &variant.fields {
+        let get_at_params = match &variant.fields {
             // Unit fields have no parameters
             syn::Fields::Unit => quote! {},
             // Use the default values for tuple-like fields
@@ -66,9 +67,31 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
             }
         };
 
-        // Enum variant
-        match_items.push(quote! {
-            #index => Some(#enum_name::#variant_identifier #params),
+        let index_params = match &variant.fields {
+            // Unit fields have no parameters
+            syn::Fields::Unit => quote! {},
+            // Use the default values for tuple-like fields
+            syn::Fields::Unnamed(fields) => {
+                let underscores = ::std::iter::repeat(quote!(_)).take(fields.unnamed.len());
+                quote! { (#(#underscores),*) }
+            }
+            // Use the default values for tuple-like fields
+            syn::Fields::Named(fields) => {
+                let fields = fields
+                    .named
+                    .iter()
+                    .map(|field| field.ident.as_ref().unwrap());
+                quote! { {#(#fields: _),*} }
+            }
+        };
+
+        // Match items
+        get_at_match_items.push(quote! {
+            #index => Some(#enum_name::#variant_identifier #get_at_params),
+        });
+
+        index_match_items.push(quote! {
+            #enum_name::#variant_identifier #index_params => #index,
         });
 
         // On to the next item!
@@ -77,10 +100,17 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
 
     quote! {
         impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
-            fn get_at(index: usize) -> Option<Self>{
-                match index{
-                    #(#match_items)*
+            fn get_at(index: usize) -> Option<Self> {
+                match index {
+                    #(#get_at_match_items)*
                     _ => None,
+                }
+            }
+
+            fn index(&self) -> usize {
+                match self {
+                    #(#index_match_items)*
+                    _ => unreachable!()
                 }
             }
         }

@@ -18,6 +18,7 @@
 - added the `input_pressed` method to `InputMap`, to check if a single input is pressed
 - renamed `InputMap::assign_gamepad` to `InputMap::set_gamepad` for consistency and clarity (it does not uniquely assign a gamepad)
 - removed `strum` dependency by reimplementing the funcitonality, allowing users to define actions with only the `Actionlike` trait
+- added the `get_at` and `index` methods on the `Actionlike` trait, allowing you to fetch a specific action by its position in the defining enum and vice versa
 
 ### Bug fixes
 
