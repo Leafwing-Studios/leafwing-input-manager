@@ -613,7 +613,7 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 mod tests {
-
+    use crate as leafwing_input_manager;
     use crate::prelude::*;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]

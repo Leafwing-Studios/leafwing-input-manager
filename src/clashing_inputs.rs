@@ -312,6 +312,7 @@ fn resolve_clash<A: Actionlike>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate as leafwing_input_manager;
     use crate::Actionlike;
     use bevy::input::keyboard::KeyCode::*;
 

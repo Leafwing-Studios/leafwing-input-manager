@@ -509,6 +509,7 @@ impl ButtonThresholds {
 pub struct ThresholdError(f32);
 
 mod tests {
+    use crate as leafwing_input_manager;
     use crate::prelude::*;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]

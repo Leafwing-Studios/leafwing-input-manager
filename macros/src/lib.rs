@@ -8,7 +8,6 @@
 
 extern crate proc_macro;
 mod actionlike;
-mod path;
 use proc_macro::TokenStream;
 use syn::DeriveInput;
 
