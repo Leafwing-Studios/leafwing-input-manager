@@ -14,11 +14,8 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
         _ => panic!("`Actionlike` cannot be derived for non-enum types. Manually implement the trait instead."),
     };
 
-    let mut array_token_stream = Vec::new();
-    // Open the array
-    array_token_stream.push(quote! { "[" });
-
     // Populate the array
+    let mut array_token_stream = Vec::new();
     for variant in variants {
         // The name of the enum variant
         let variant_identifier = variant.ident.clone();
@@ -42,22 +39,16 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
             }
         };
 
+        // Enum variant
         array_token_stream.push(quote! {
-            #enum_name #variant_identifier #params,
-        })
+            #enum_name::#variant_identifier #params,
+        });
     }
-
-    // Close the array
-    array_token_stream.push(quote! { "]" });
-
-    // FIXME: use real output
-    array_token_stream = vec![quote! {"["}, quote! {"]"}];
 
     quote! {
         impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
             fn iter() -> #crate_path::ActionIter<#enum_name> {
-                //#crate_path::ActionIter::from_iter(#(#array_token_stream)*)
-                #crate_path::ActionIter::default()
+                #crate_path::ActionIter::from_iter([#(#array_token_stream)*])
             }
         }
     }
