@@ -37,8 +37,9 @@ impl LeafwingManifest {
                 let call_path = Span::call_site().source_file().path();
                 let call_path_str = call_path.to_string_lossy();
 
+                // FIXME: also needs to work for doc tests; these need to use the full path
                 if call_path_str.contains("tests") || call_path_str.contains("examples") {
-                    // If we are in the integration tests or examples of the crate,
+                    // If we are in the integration tests, doc tests or examples of the crate,
                     // the import uses `name`
                     return parse_str(name);
                 } else {
