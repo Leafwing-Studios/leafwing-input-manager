@@ -1,7 +1,4 @@
-// I am deeply sorry for the false advertising;
-// we are currently blocked on the 0.24 release of `strum`, which fixes the issue with the `EnumIter` macro :(
-// However! CI will fail if any warnings are detected, so full documentation is in fact enforced.
-#![deny(missing_docs)]
+#![forbid(missing_docs)]
 #![warn(clippy::doc_markdown)]
 
 //! A simple but robust input-action manager for Bevy: intended to be useful both as a plugin and a helpful library.
@@ -50,6 +47,7 @@ use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
 use core::hash::Hash;
+use std::marker::PhantomData;
 
 pub mod action_state;
 pub mod clashing_inputs;
@@ -65,11 +63,6 @@ pub mod user_input;
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
 
-// Re-exporting the relevant strum trait
-// We cannot re-export the strum macro, as it is not
-// hygenic: https://danielkeep.github.io/tlborm/book/mbe-min-hygiene.html
-pub use strum::IntoEnumIterator;
-
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
@@ -78,11 +71,10 @@ pub mod prelude {
     pub use crate::user_input::UserInput;
 
     pub use crate::plugin::InputManagerPlugin;
-    pub use crate::IntoEnumIterator;
     pub use crate::{Actionlike, InputManagerBundle};
 }
 
-/// A type that can be used to represent input-agnostic action representation
+/// Allows a type to be used as a gameplay action in an input-agnostic fashion
 ///
 /// Actions serve as "virtual buttons", cleanly abstracting over messy, customizable inputs
 /// in a way that can be easily consumed by your game logic.
@@ -92,9 +84,8 @@ pub mod prelude {
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::Actionlike;
-/// use strum::EnumIter;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Up,
@@ -109,7 +100,54 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Send + Sync + Copy + Eq + Hash + IntoEnumIterator + 'static {}
+pub trait Actionlike: Send + Sync + Copy + Eq + Hash + 'static {
+    /// Iterates over the possible actions in the order they were defined
+    fn iter() -> ActionIter<Self> {
+        ActionIter::default()
+    }
+
+    /// Returns the default value for the action stored at the provided index if it exists
+    ///
+    /// This is mostly used internally, to enable space-efficient iteration.
+    fn get_at(index: usize) -> Option<Self>;
+
+    /// Returns the position in the defining enum of the given action
+    fn index(&self) -> usize;
+}
+
+/// An iterator of [`Actionlike`] actions
+///
+/// Created by calling [`Actionlike::iter`].
+#[derive(Debug, Clone)]
+pub struct ActionIter<A: Actionlike> {
+    index: usize,
+    _phantom: PhantomData<A>,
+}
+
+impl<A: Actionlike> Iterator for ActionIter<A> {
+    type Item = A;
+
+    fn next(&mut self) -> Option<A> {
+        let item = A::get_at(self.index);
+        if item.is_some() {
+            self.index += 1;
+        }
+
+        item
+    }
+}
+
+impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {}
+
+// We can't derive this, because otherwise it won't work when A is not default
+impl<A: Actionlike> Default for ActionIter<A> {
+    fn default() -> Self {
+        ActionIter {
+            index: 0,
+            _phantom: PhantomData::default(),
+        }
+    }
+}
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
 ///

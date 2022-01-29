@@ -292,19 +292,11 @@ fn resolve_clash<A: Actionlike>(
             }
         } // Remove the clashing action that comes later in the action enum
         ClashStrategy::UseActionOrder => {
-            let mut action_to_remove = None;
-            for action in A::iter() {
-                if action == clash.action_a {
-                    action_to_remove = Some(clash.action_b);
-                    break;
-                }
-
-                if action == clash.action_b {
-                    action_to_remove = Some(clash.action_a);
-                    break;
-                }
+            match clash.action_a.index().cmp(&clash.action_b.index()) {
+                Ordering::Greater => Some(clash.action_a),
+                Ordering::Less => Some(clash.action_b),
+                Ordering::Equal => None,
             }
-            action_to_remove
         }
     }
 }
@@ -312,11 +304,11 @@ fn resolve_clash<A: Actionlike>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate as leafwing_input_manager;
     use crate::Actionlike;
     use bevy::input::keyboard::KeyCode::*;
-    use strum::EnumIter;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     enum Action {
         One,
         Two,

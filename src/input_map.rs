@@ -2,7 +2,7 @@
 
 use crate::clashing_inputs::{Clash, ClashStrategy};
 use crate::user_input::{InputButton, InputMode, InputStreams, UserInput};
-use crate::{Actionlike, IntoEnumIterator};
+use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 use core::fmt::Debug;
@@ -33,10 +33,10 @@ use petitset::PetitSet;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::InputButton;
-/// use strum::EnumIter;
+
 ///
 /// // You can Run!
-/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
 /// enum Action {
 ///     Run,
 ///     Hide,
@@ -104,10 +104,10 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
     /// use leafwing_input_manager::Actionlike;
-    /// use strum::EnumIter;
+
     /// use bevy::input::keyboard::KeyCode;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -141,10 +141,10 @@ impl<A: Actionlike> InputMap<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use strum::EnumIter;
+
     /// use bevy::input::keyboard::KeyCode;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -613,11 +613,10 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 mod tests {
-
+    use crate as leafwing_input_manager;
     use crate::prelude::*;
-    use strum::EnumIter;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     enum Action {
         Run,
         Jump,

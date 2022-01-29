@@ -3,9 +3,8 @@ use bevy::prelude::*;
 use bevy::utils::HashSet;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputStreams;
-use strum::EnumIter;
 
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 enum Action {
     One,
     Two,

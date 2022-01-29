@@ -8,7 +8,6 @@ use bevy::input::{
 };
 use bevy::utils::HashSet;
 use petitset::PetitSet;
-use strum::EnumIter;
 
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///
@@ -186,7 +185,7 @@ impl From<MouseButton> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum InputMode {
     /// A gamepad
     Gamepad,
@@ -194,6 +193,39 @@ pub enum InputMode {
     Keyboard,
     /// A mouse
     Mouse,
+}
+
+impl InputMode {
+    /// Iterates over the possible [`InputModes`](InputMode)
+    pub fn iter() -> InputModeIter {
+        InputModeIter::default()
+    }
+}
+
+/// An iterator of [`InputModes`](InputMode)
+///
+/// Created by calling [`InputMode::iter`]
+#[derive(Debug, Clone, Default)]
+pub struct InputModeIter {
+    cursor: u8,
+}
+
+impl Iterator for InputModeIter {
+    type Item = InputMode;
+
+    fn next(&mut self) -> Option<InputMode> {
+        let item = match self.cursor {
+            0 => Some(InputMode::Gamepad),
+            1 => Some(InputMode::Keyboard),
+            2 => Some(InputMode::Mouse),
+            _ => None,
+        };
+        if self.cursor <= 2 {
+            self.cursor += 1;
+        }
+
+        item
+    }
 }
 
 impl From<InputButton> for InputMode {

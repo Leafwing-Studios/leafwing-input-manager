@@ -123,9 +123,9 @@ impl Default for VirtualButtonState {
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
-/// use strum::EnumIter;
+
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 /// enum Action {
 ///     Left,
 ///     Right,
@@ -190,10 +190,10 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-    /// use strum::EnumIter;
+
     /// use bevy::utils::Instant;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -257,9 +257,9 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-    /// use strum::EnumIter;
+
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -295,15 +295,15 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-    /// use strum::EnumIter;
+
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum AbilitySlot {
     ///     Slot1,
     ///     Slot2,
     /// }
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -509,10 +509,10 @@ impl ButtonThresholds {
 pub struct ThresholdError(f32);
 
 mod tests {
+    use crate as leafwing_input_manager;
     use crate::prelude::*;
-    use strum::EnumIter;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, EnumIter, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     enum Action {
         Run,
         Jump,

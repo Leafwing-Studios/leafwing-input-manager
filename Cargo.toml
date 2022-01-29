@@ -20,8 +20,7 @@ members = ["./", "tools/ci", "macros"]
 [dependencies]
 bevy = {version = "0.6", default-features = false, features = ["render"]}
 petitset = "0.1"
-strum = {version = "0.23", features = ["derive"]}
-leafwing_input_manager_macros = "0.1"
+leafwing_input_manager_macros = "0.2"
 thiserror = "1.0"
 itertools = "0.10"
 
@@ -32,3 +31,6 @@ derive_more = "0.99"
 [lib]
 name = "leafwing_input_manager"
 path = "src/lib.rs"
+
+[patch.crates-io]
+leafwing_input_manager_macros = {path = "./macros"}
