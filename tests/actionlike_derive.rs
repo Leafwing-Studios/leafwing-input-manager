@@ -1,9 +1,6 @@
 //! When debugging this file, `cargo expand` is invaluable.
 //! See: https://github.com/dtolnay/cargo-expand
 //! use `cargo expand --test actionlike_derive`
-
-// FIXME: this import should not be needed
-use leafwing_input_manager::ActionIter;
 use leafwing_input_manager::Actionlike;
 
 #[derive(Actionlike, Hash, PartialEq, Eq, Clone, Copy)]

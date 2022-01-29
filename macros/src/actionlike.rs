@@ -50,11 +50,13 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     // Close the array
     array_token_stream.push(quote! { "]" });
 
+    // FIXME: use real output
+    array_token_stream = vec![quote! {"["}, quote! {"]"}];
+
     quote! {
         impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
             fn iter() -> #crate_path::ActionIter<#enum_name> {
-                // FIXME: use array_token_stream
-                //#crate_module_path::ActionIter::#type_generics::from_iter(#array_token_stream)
+                //#crate_path::ActionIter::from_iter(#(#array_token_stream)*)
                 #crate_path::ActionIter::default()
             }
         }
