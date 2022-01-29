@@ -42,9 +42,8 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     // Populate the array
     let mut get_at_match_items = Vec::new();
     let mut index_match_items = Vec::new();
-    let mut index: usize = 0;
 
-    for variant in variants {
+    for (index, variant) in variants.iter().enumerate() {
         // The name of the enum variant
         let variant_identifier = variant.ident.clone();
 
@@ -93,9 +92,6 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
         index_match_items.push(quote! {
             #enum_name::#variant_identifier #index_params => #index,
         });
-
-        // On to the next item!
-        index += 1;
     }
 
     quote! {
