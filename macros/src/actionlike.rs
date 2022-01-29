@@ -50,7 +50,6 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     // Close the array
     array_token_stream.push(quote! { "]" });
 
-    // FIXME: use path correctly
     quote! {
         impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
             fn iter() -> #crate_path::ActionIter<#enum_name> {

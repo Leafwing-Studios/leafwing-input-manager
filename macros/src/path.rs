@@ -1,12 +1,12 @@
 use cargo_manifest::Manifest;
-use proc_macro::TokenStream;
+use proc_macro::{Span, TokenStream};
 use std::{env, path::PathBuf};
 
 pub(crate) fn get_path() -> syn::Path {
     LeafwingManifest::default().get_path("leafwing_input_manager")
 }
 
-struct LeafwingManifest {
+pub struct LeafwingManifest {
     manifest: Manifest,
 }
 
@@ -29,33 +29,52 @@ impl LeafwingManifest {
     ///
     /// If it cannot be found, assume that the usage is internal
     fn get_path(&self, name: &str) -> syn::Path {
-        self.maybe_get_path(name)
-            .unwrap_or_else(|| parse_str("crate"))
-    }
+        // Check if we are in associated crate
+        if let Some(ref package) = self.manifest.package {
+            let package_name = formatted_package_name(&package.name);
 
-    /// Get the path of the crate from the dependencies
-    fn maybe_get_path(&self, name: &str) -> Option<syn::Path> {
-        // The fallback, in case nothing is found
-        let mut path = None;
+            if package_name == name {
+                let call_path = Span::call_site().source_file().path();
+                let call_path_str = call_path.to_string_lossy();
+
+                if call_path_str.contains("tests") || call_path_str.contains("examples") {
+                    // If we are in the integration tests or examples of the crate,
+                    // the import uses `name`
+                    return parse_str(name);
+                } else {
+                    // If we are in the unit tests and code of the crate,
+                    // the import uses `crate`
+                    return parse_str("crate");
+                }
+            }
+        }
 
         // Check direct dependencies
         if let Some(ref dependencies) = self.manifest.dependencies {
             if dependencies.get(name).is_some() {
-                path = Some(parse_str(name));
+                return parse_str(name);
             }
         }
 
         // Check dev dependencies
         if let Some(ref dependencies) = self.manifest.dev_dependencies {
             if dependencies.get(name).is_some() {
-                path = Some(parse_str(name));
+                return parse_str(name);
             }
         }
 
-        path
+        panic!("The package {name} was not found in `Cargo.toml`. Did you forget to add it?")
     }
 }
 
 fn parse_str<T: syn::parse::Parse>(path: &str) -> T {
     syn::parse(path.parse::<TokenStream>().unwrap()).unwrap()
+}
+
+/// The set of valid package names and rust identifiers are not identical
+///
+/// Convert the package name to match the rust identifier by making it lowercase
+/// and converting hyphens to underscores.
+fn formatted_package_name(string: &str) -> String {
+    string.to_lowercase().replace("-", "_")
 }
