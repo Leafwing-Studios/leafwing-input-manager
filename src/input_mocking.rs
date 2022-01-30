@@ -2,7 +2,9 @@
 
 use crate::user_input::{InputButton, MutableInputStreams, UserInput};
 use bevy::app::App;
-use bevy::ecs::system::{ResMut, SystemState};
+use bevy::ecs::component::Component;
+use bevy::ecs::query::With;
+use bevy::ecs::system::{Query, ResMut, SystemState};
 use bevy::ecs::world::World;
 use bevy::input::{
     gamepad::{Gamepad, GamepadButton, Gamepads},
@@ -10,6 +12,7 @@ use bevy::input::{
     mouse::MouseButton,
     Input,
 };
+use bevy::ui::Interaction;
 
 /// Send fake input events for testing purposes
 ///
@@ -60,8 +63,14 @@ pub trait MockInput {
     /// All buttons are released, and `just_pressed` and `just_released` information on the [`Input`] type are lost.
     /// `just_pressed` and `just_released` on the [`ActionState`](crate::action_state::ActionState) will be kept.
     ///
-    /// This will clear all [`Keycode`], [`GamepadButton`] and [`MouseButton`] input streams
+    /// This will clear all [`KeyCode`], [`GamepadButton`] and [`MouseButton`] input streams,
+    /// as well as any [`Interaction`] components
     fn reset_inputs(&mut self);
+
+    /// Presses all `bevy_ui` buttons with the matching `Marker` component
+    ///
+    /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    fn press_button<Marker: Component>(&mut self);
 }
 
 impl<'a> MutableInputStreams<'a> {
@@ -157,12 +166,18 @@ impl MockInput for World {
 
     fn reset_inputs(&mut self) {
         let mut input_system_state: SystemState<(
+            Query<&mut Interaction>,
             Option<ResMut<Input<GamepadButton>>>,
             Option<ResMut<Input<KeyCode>>>,
             Option<ResMut<Input<MouseButton>>>,
         )> = SystemState::new(self);
 
-        let (maybe_gamepad, maybe_keyboard, maybe_mouse) = input_system_state.get_mut(self);
+        let (mut interaction_query, maybe_gamepad, maybe_keyboard, maybe_mouse) =
+            input_system_state.get_mut(self);
+
+        for mut interaction in interaction_query.iter_mut() {
+            *interaction = Interaction::None;
+        }
 
         if let Some(mut gamepad) = maybe_gamepad {
             *gamepad = Default::default();
@@ -174,6 +189,14 @@ impl MockInput for World {
 
         if let Some(mut mouse) = maybe_mouse {
             *mouse = Default::default();
+        }
+    }
+
+    fn press_button<Marker: Component>(&mut self) {
+        let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
+
+        for mut interaction in button_query.iter_mut(self) {
+            *interaction = Interaction::Clicked;
         }
     }
 }
@@ -189,5 +212,9 @@ impl MockInput for App {
 
     fn reset_inputs(&mut self) {
         self.world.reset_inputs();
+    }
+
+    fn press_button<Marker: Component>(&mut self) {
+        self.world.press_button::<Marker>();
     }
 }

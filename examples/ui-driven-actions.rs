@@ -1,3 +1,5 @@
+//! Demonstrates how to connect `bevy_ui` buttons to [`ActionState`] components using the [`ActionStateDriver`] component on your button
+
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
@@ -64,6 +66,7 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
             color: Color::RED.into(),
             ..Default::default()
         })
+        // This component links the button to the entity with the `ActionState` component
         .insert(ActionStateDriver {
             action: Action::Left,
             entity: player_entity,

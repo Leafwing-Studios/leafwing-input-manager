@@ -30,14 +30,11 @@ fn respect_fades(mut respect: ResMut<Respect>) {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
-    let mut input_map = InputMap::<Action>::default();
-    input_map.insert(Action::PayRespects, KeyCode::F);
-
     commands
         .spawn()
         .insert(Player)
         .insert_bundle(InputManagerBundle::<Action> {
-            input_map,
+            input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
             ..Default::default()
         });
 }
@@ -125,4 +122,52 @@ fn run_in_state() {
     app.update();
     let respect = app.world.get_resource::<Respect>().unwrap();
     assert_eq!(respect.0, false);
+}
+
+#[test]
+fn action_state_driver() {
+    let mut app = App::new();
+
+    #[derive(Component)]
+    struct ButtonMarker;
+
+    fn setup(mut commands: Commands) {
+        let player_entity = commands
+            .spawn()
+            .insert(Player)
+            .insert_bundle(InputManagerBundle::<Action> {
+                input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
+                ..Default::default()
+            })
+            .id();
+
+        commands
+            .spawn()
+            .insert(ButtonMarker)
+            .insert(Interaction::None)
+            .insert(ActionStateDriver::<Action> {
+                action: Action::PayRespects,
+                entity: player_entity,
+            });
+    }
+
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(setup)
+        .init_resource::<Respect>();
+
+    let respect = app.world.get_resource::<Respect>().unwrap();
+    assert_eq!(respect.0, false);
+
+    app.update();
+
+    let respect = app.world.get_resource::<Respect>().unwrap();
+    assert_eq!(respect.0, false);
+
+    // Click button to pay respects
+    app.press_button::<ButtonMarker>();
+
+    app.update();
+    let respect = app.world.get_resource::<Respect>().unwrap();
+    assert_eq!(respect.0, true);
 }
