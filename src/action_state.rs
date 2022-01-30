@@ -1,6 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::Actionlike;
+use bevy::ecs::event::Events;
 use bevy::prelude::*;
 use bevy::utils::{Duration, Instant};
 use bevy::utils::{HashMap, HashSet};
@@ -163,6 +164,9 @@ pub struct ActionState<A: Actionlike> {
 
 impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a [`HashSet`] of pressed virtual buttons.
+    ///
+    /// The `pressed_set` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
+    /// which reads from the assorted [`Input`] resources.
     pub fn update(&mut self, pressed_set: HashSet<A>) {
         for action in A::iter() {
             match self.state(action.clone()) {
@@ -179,6 +183,16 @@ impl<A: Actionlike> ActionState<A> {
             }
         }
     }
+
+    /// Updates the [`ActionState`] based on a stream of [`RawAction`] events
+    ///
+    /// This is typically used to reconstruct and synchronize an action state across the network.
+    ///
+    /// # Example
+    /// ```rust
+    /// todo!()
+    /// ```
+    pub fn update_from_events(&mut self, events: impl Iterator<Item = RawAction<A>>) {}
 
     /// Advances the time for all virtual buttons
     ///
@@ -653,5 +667,29 @@ mod tests {
             action_state.state(Action::Jump).previous_duration(),
             t1 - t0,
         );
+    }
+}
+
+/// Stores presses and releases of buttons without timing information
+///
+/// These are typically accessed using the `Events<RawAction>`
+/// Uses a minimal storage format, in order to facilitate transport over the network.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum RawAction<A: Actionlike> {
+    /// The virtual button was pressed
+    Pressed(A),
+    /// The virtual button was released
+    Released(A),
+}
+
+impl<A: Actionlike> RawAction<A> {
+    /// Constructs an event stream from the difference between two [`ActionState`] states
+    ///
+    /// # Example
+    /// ```rust
+    /// todo!()
+    /// ```
+    fn from_action_state_difference() -> Events<RawAction<A>> {
+        todo!()
     }
 }
