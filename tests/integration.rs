@@ -127,7 +127,6 @@ fn run_in_state() {
 #[test]
 fn action_state_driver() {
     use bevy::input::InputPlugin;
-    use bevy::ui::UiPlugin;
 
     let mut app = App::new();
 
@@ -157,8 +156,9 @@ fn action_state_driver() {
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_plugin(InputPlugin)
-        .add_plugin(UiPlugin)
         .add_startup_system(setup)
+        .add_system(pay_respects)
+        .add_system(respect_fades)
         .init_resource::<Respect>();
 
     app.update();
@@ -169,12 +169,27 @@ fn action_state_driver() {
     // Click button to pay respects
     app.click_button::<ButtonMarker>();
 
+    // Verify that the button was in fact clicked
+    let mut button_query = app.world.query::<&Interaction>();
+    let interaction = button_query.iter(&app.world).next().unwrap();
+    assert_eq!(*interaction, Interaction::Clicked);
+
+    // Run the app once to process the clicks
     app.update();
+
+    // Check the action state
+    let mut action_state_query = app.world.query::<&ActionState<Action>>();
+    let action_state = action_state_query.iter(&app.world).next().unwrap();
+    assert!(action_state.pressed(Action::PayRespects));
+
+    // Check the effects of that action state
     let respect = app.world.get_resource::<Respect>().unwrap();
     assert_eq!(*respect, Respect(true));
 
     // Clear inputs
     app.reset_inputs();
+    app.update();
+
     let respect = app.world.get_resource::<Respect>().unwrap();
     assert_eq!(*respect, Respect(false));
 }
