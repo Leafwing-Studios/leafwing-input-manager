@@ -89,10 +89,10 @@ impl<A: Actionlike> InputMap<A> {
         let mut clashes = Vec::default();
 
         for action_pair in A::iter().combinations(2) {
-            let action_a = *action_pair.get(0).unwrap();
-            let action_b = *action_pair.get(1).unwrap();
+            let action_a = action_pair.get(0).unwrap();
+            let action_b = action_pair.get(1).unwrap();
 
-            if let Some(clash) = self.possible_clash(&action_a, &action_b) {
+            if let Some(clash) = self.possible_clash(action_a, action_b) {
                 clashes.push(clash);
             }
         }
@@ -133,10 +133,10 @@ impl<A: Actionlike> InputMap<A> {
     /// If the pair of actions could clash, how?
     #[must_use]
     fn possible_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
-        let mut clash = Clash::new(*action_a, *action_b);
+        let mut clash = Clash::new(action_a, action_b);
 
-        for input_a in self.get(*action_a, None) {
-            for input_b in self.get(*action_b, None) {
+        for input_a in self.get(action_a, None) {
+            for input_b in self.get(action_b, None) {
                 if input_a.clashes(&input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
@@ -165,10 +165,10 @@ pub(crate) struct Clash<A: Actionlike> {
 impl<A: Actionlike> Clash<A> {
     /// Creates a new clash between the two actions
     #[must_use]
-    fn new(action_a: A, action_b: A) -> Self {
+    fn new(action_a: &A, action_b: &A) -> Self {
         Self {
-            action_a,
-            action_b,
+            action_a: action_a.clone(),
+            action_b: action_b.clone(),
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
         }
@@ -207,7 +207,7 @@ fn chord_chord_clash(
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
 #[must_use]
 fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
-    let mut actual_clash = Clash::new(clash.action_a, clash.action_b);
+    let mut actual_clash = Clash::new(&clash.action_a, &clash.action_b);
 
     // For all inputs that were actually pressed that match action A
     for input_a in clash
@@ -286,15 +286,15 @@ fn resolve_clash<A: Actionlike>(
                 .unwrap_or_default();
 
             match longest_a.cmp(&longest_b) {
-                Ordering::Greater => Some(clash.action_b),
-                Ordering::Less => Some(clash.action_a),
+                Ordering::Greater => Some(clash.action_b.clone()),
+                Ordering::Less => Some(clash.action_a.clone()),
                 Ordering::Equal => None,
             }
         } // Remove the clashing action that comes later in the action enum
         ClashStrategy::UseActionOrder => {
             match clash.action_a.index().cmp(&clash.action_b.index()) {
-                Ordering::Greater => Some(clash.action_a),
-                Ordering::Less => Some(clash.action_b),
+                Ordering::Greater => Some(clash.action_a.clone()),
+                Ordering::Less => Some(clash.action_b.clone()),
                 Ordering::Equal => None,
             }
         }
@@ -420,10 +420,10 @@ mod tests {
             assert_eq!(input_map.possible_clashes.len(), 15);
 
             // Possible clashes are cached upon binding removal
-            input_map.clear_action(Action::One, None);
+            input_map.clear_action(&Action::One, None);
             assert_eq!(input_map.possible_clashes.len(), 9);
 
-            input_map.clear_action(Action::Two, Some(InputMode::Keyboard));
+            input_map.clear_action(&Action::Two, Some(InputMode::Keyboard));
             assert_eq!(input_map.possible_clashes.len(), 4);
         }
 

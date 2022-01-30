@@ -100,7 +100,7 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Send + Sync + Copy + Eq + Hash + 'static {
+pub trait Actionlike: Send + Sync + Clone + Eq + Hash + 'static {
     /// Iterates over the possible actions in the order they were defined
     fn iter() -> ActionIter<Self> {
         ActionIter::default()

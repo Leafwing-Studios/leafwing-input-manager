@@ -165,7 +165,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a [`HashSet`] of pressed virtual buttons.
     pub fn update(&mut self, pressed_set: HashSet<A>) {
         for action in A::iter() {
-            match self.state(action) {
+            match self.state(action.clone()) {
                 VirtualButtonState::Pressed(_) => {
                     if !pressed_set.contains(&action) {
                         self.release(action);
@@ -330,7 +330,7 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Press the `action` virtual button
     pub fn press(&mut self, action: A) {
-        if let VirtualButtonState::Released(timing) = self.state(action) {
+        if let VirtualButtonState::Released(timing) = self.state(action.clone()) {
             self.map.insert(
                 action,
                 VirtualButtonState::Pressed(Timing {
@@ -344,7 +344,7 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Release the `action` virtual button
     pub fn release(&mut self, action: A) {
-        if let VirtualButtonState::Pressed(timing) = self.state(action) {
+        if let VirtualButtonState::Pressed(timing) = self.state(action.clone()) {
             self.map.insert(
                 action,
                 VirtualButtonState::Released(Timing {
