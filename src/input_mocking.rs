@@ -306,23 +306,34 @@ mod test {
         use bevy::prelude::*;
 
         let mut world = World::new();
+        world.insert_resource(Input::<KeyCode>::default());
+        world.insert_resource(Input::<MouseButton>::default());
+        world.insert_resource(Input::<GamepadButton>::default());
 
         // BLOCKED: cannot use the less artifical APIs due to
         // https://github.com/bevyengine/bevy/issues/3808
         let gamepad = Some(Gamepad(0));
 
+        // Test that buttons are unpressed by default
         assert!(!world.pressed(KeyCode::Space));
         assert!(!world.pressed(MouseButton::Right));
         assert!(!world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
 
+        // Send inputs
         world.send_input(KeyCode::Space);
         world.send_input(MouseButton::Right);
-        world.send_input(GamepadButtonType::North);
+        world.send_input_to_gamepad(GamepadButtonType::North, gamepad);
 
+        // Verify that checking the resource value directly works
+        let keyboard_input: &Input<KeyCode> = world.get_resource().unwrap();
+        assert!(keyboard_input.pressed(KeyCode::Space));
+
+        // Test the convenient .pressed API
         assert!(world.pressed(KeyCode::Space));
         assert!(world.pressed(MouseButton::Right));
         assert!(world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
 
+        // Test that resetting inputs works
         world.reset_inputs();
 
         assert!(!world.pressed(KeyCode::Space));
