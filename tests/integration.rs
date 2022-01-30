@@ -165,7 +165,7 @@ fn action_state_driver() {
     assert_eq!(respect.0, false);
 
     // Click button to pay respects
-    app.press_button::<ButtonMarker>();
+    app.click_button::<ButtonMarker>();
 
     app.update();
     let respect = app.world.get_resource::<Respect>().unwrap();

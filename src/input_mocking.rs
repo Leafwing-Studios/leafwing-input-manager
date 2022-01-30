@@ -1,10 +1,10 @@
 //! Helpful utilities for testing input management by sending mock input events
 
-use crate::user_input::{InputButton, MutableInputStreams, UserInput};
+use crate::user_input::{InputButton, InputStreams, MutableInputStreams, UserInput};
 use bevy::app::App;
 use bevy::ecs::component::Component;
 use bevy::ecs::query::With;
-use bevy::ecs::system::{Query, ResMut, SystemState};
+use bevy::ecs::system::{Query, Res, ResMut, SystemState};
 use bevy::ecs::world::World;
 use bevy::input::{
     gamepad::{Gamepad, GamepadButton, Gamepads},
@@ -58,6 +58,22 @@ pub trait MockInput {
     /// Provide the `Gamepad` identifier to control which gamepad you are emulating inputs from
     fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
+    /// Is the provided `user_input` pressed?
+    ///
+    /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
+    /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
+    fn pressed(&mut self, input: impl Into<UserInput>) -> bool;
+
+    /// Is the provided `user_input` pressed for the provided [`Gamepad`]?
+    ///
+    /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
+    /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
+    fn pressed_for_gamepad(
+        &mut self,
+        input: impl Into<UserInput>,
+        gamepad: Option<Gamepad>,
+    ) -> bool;
+
     /// Clears all user input streams, resetting them to their default state
     ///
     /// All buttons are released, and `just_pressed` and `just_released` information on the [`Input`] type are lost.
@@ -70,7 +86,12 @@ pub trait MockInput {
     /// Presses all `bevy_ui` buttons with the matching `Marker` component
     ///
     /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
-    fn press_button<Marker: Component>(&mut self);
+    fn click_button<Marker: Component>(&mut self);
+
+    /// Hovers over all `bevy_ui` buttons with the matching `Marker` component
+    ///
+    /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    fn hover_button<Marker: Component>(&mut self);
 }
 
 impl<'a> MutableInputStreams<'a> {
@@ -164,6 +185,39 @@ impl MockInput for World {
         mutable_input_streams.send_user_input(input);
     }
 
+    fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
+        let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
+            gamepads.iter().next().copied()
+        } else {
+            None
+        };
+
+        self.pressed_for_gamepad(input, gamepad)
+    }
+
+    fn pressed_for_gamepad(
+        &mut self,
+        input: impl Into<UserInput>,
+        gamepad: Option<Gamepad>,
+    ) -> bool {
+        let mut input_system_state: SystemState<(
+            Option<Res<Input<GamepadButton>>>,
+            Option<Res<Input<KeyCode>>>,
+            Option<Res<Input<MouseButton>>>,
+        )> = SystemState::new(self);
+
+        let (maybe_gamepad, maybe_keyboard, maybe_mouse) = input_system_state.get(self);
+
+        let input_streams = InputStreams {
+            gamepad: maybe_gamepad.as_deref(),
+            keyboard: maybe_keyboard.as_deref(),
+            mouse: maybe_mouse.as_deref(),
+            associated_gamepad: gamepad,
+        };
+
+        input_streams.input_pressed(&input.into())
+    }
+
     fn reset_inputs(&mut self) {
         let mut input_system_state: SystemState<(
             Query<&mut Interaction>,
@@ -192,11 +246,19 @@ impl MockInput for World {
         }
     }
 
-    fn press_button<Marker: Component>(&mut self) {
+    fn click_button<Marker: Component>(&mut self) {
         let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
 
         for mut interaction in button_query.iter_mut(self) {
             *interaction = Interaction::Clicked;
+        }
+    }
+
+    fn hover_button<Marker: Component>(&mut self) {
+        let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
+
+        for mut interaction in button_query.iter_mut(self) {
+            *interaction = Interaction::Hovered;
         }
     }
 }
@@ -210,11 +272,114 @@ impl MockInput for App {
         self.world.send_input_to_gamepad(input, gamepad);
     }
 
+    fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
+        self.world.pressed(input)
+    }
+
+    fn pressed_for_gamepad(
+        &mut self,
+        input: impl Into<UserInput>,
+        gamepad: Option<Gamepad>,
+    ) -> bool {
+        self.world.pressed_for_gamepad(input, gamepad)
+    }
+
     fn reset_inputs(&mut self) {
         self.world.reset_inputs();
     }
 
-    fn press_button<Marker: Component>(&mut self) {
-        self.world.press_button::<Marker>();
+    fn click_button<Marker: Component>(&mut self) {
+        self.world.click_button::<Marker>();
+    }
+
+    fn hover_button<Marker: Component>(&mut self) {
+        self.world.hover_button::<Marker>();
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn button_inputs() {
+        use crate::input_mocking::MockInput;
+        use bevy::prelude::*;
+
+        let mut world = World::new();
+
+        // BLOCKED: cannot use the less artifical APIs due to
+        // https://github.com/bevyengine/bevy/issues/3808
+        let gamepad = Some(Gamepad(0));
+
+        assert!(!world.pressed(KeyCode::Space));
+        assert!(!world.pressed(MouseButton::Right));
+        assert!(!world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
+
+        world.send_input(KeyCode::Space);
+        world.send_input(MouseButton::Right);
+        world.send_input(GamepadButtonType::North);
+
+        assert!(world.pressed(KeyCode::Space));
+        assert!(world.pressed(MouseButton::Right));
+        assert!(world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
+
+        world.reset_inputs();
+
+        assert!(!world.pressed(KeyCode::Space));
+        assert!(!world.pressed(MouseButton::Right));
+        assert!(!world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
+    }
+
+    #[test]
+    fn ui_inputs() {
+        use crate::input_mocking::MockInput;
+        use bevy::prelude::*;
+
+        #[derive(Component)]
+        struct ButtonMarker;
+
+        let mut world = World::new();
+        // Marked button
+        world.spawn().insert(Interaction::None).insert(ButtonMarker);
+        // Unmarked button
+        world.spawn().insert(Interaction::None);
+
+        // Click the button
+        world.click_button::<ButtonMarker>();
+
+        let mut interaction_query = world.query::<(&Interaction, Option<&ButtonMarker>)>();
+        for (interaction, maybe_marker) in interaction_query.iter(&world) {
+            match maybe_marker {
+                Some(_) => assert_eq!(*interaction, Interaction::Clicked),
+                None => assert_eq!(*interaction, Interaction::None),
+            }
+        }
+
+        // Reset inputs
+        world.reset_inputs();
+
+        let mut interaction_query = world.query::<&Interaction>();
+        for interaction in interaction_query.iter(&world) {
+            assert_eq!(*interaction, Interaction::None)
+        }
+
+        // Hover over the button
+        world.hover_button::<ButtonMarker>();
+
+        let mut interaction_query = world.query::<(&Interaction, Option<&ButtonMarker>)>();
+        for (interaction, maybe_marker) in interaction_query.iter(&world) {
+            match maybe_marker {
+                Some(_) => assert_eq!(*interaction, Interaction::Hovered),
+                None => assert_eq!(*interaction, Interaction::None),
+            }
+        }
+
+        // Reset inputs
+        world.reset_inputs();
+
+        let mut interaction_query = world.query::<&Interaction>();
+        for interaction in interaction_query.iter(&world) {
+            assert_eq!(*interaction, Interaction::None)
+        }
     }
 }
