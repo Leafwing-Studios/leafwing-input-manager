@@ -124,7 +124,6 @@ impl Default for VirtualButtonState {
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
-
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 /// enum Action {
@@ -204,7 +203,6 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-
     /// use bevy::utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -271,7 +269,6 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum Action {
@@ -309,7 +306,6 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum AbilitySlot {
