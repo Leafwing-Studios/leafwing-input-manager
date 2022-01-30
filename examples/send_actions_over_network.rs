@@ -6,6 +6,7 @@
 //! Note that [`ActionState`] can also be serialized and sent directly.
 //! This approach will be less bandwidth efficient, but involve less complexity and CPU work.
 
+use bevy::ecs::event::{Events, ManualEventReader};
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionDiff;
 use leafwing_input_manager::prelude::*;
@@ -54,8 +55,8 @@ fn main() {
     assert!(player_state.pressed(FpsAction::Jump));
     assert!(player_state.pressed(FpsAction::Shoot));
 
-    // These events are serialized, transferred to the server and then deserialized
-    send_events::<ActionDiff<FpsAction>>(&client_app, &mut server_app);
+    // These events are transferred to the server
+    let event_reader = send_events::<ActionDiff<FpsAction>>(&client_app, &mut server_app, None);
 
     // The server processes the event stream
     server_app.update();
@@ -75,7 +76,8 @@ fn main() {
 
     // Sending over the new `ActionDiff` event stream,
     // we can see that the actions are now released on the server too
-    send_events::<ActionDiff<FpsAction>>(&client_app, &mut server_app);
+    let _event_reader =
+        send_events::<ActionDiff<FpsAction>>(&client_app, &mut server_app, Some(event_reader));
 
     let mut player_state_query = server_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&client_app.world).next().unwrap();
@@ -103,8 +105,30 @@ fn process_action_events(
 
 /// A simple mock network interface that copies a set of events from the client to the server
 ///
-/// The events are serialized and then deserialized to the hard drive;
-/// in real applications they would be serialized to a networking protocol instead
-fn send_events<A: Send + Sync + 'static + Clone>(client_app: &App, server_app: &mut App) {
-    todo!()
+/// The events are sent directly;
+/// in real applications they would be serialized to a networking protocol instead.
+///
+/// The [`ManualEventReader`] returned must be reused in order to avoid double-sending events
+#[must_use]
+fn send_events<A: Send + Sync + 'static + Clone>(
+    client_app: &App,
+    server_app: &mut App,
+    reader: Option<ManualEventReader<A>>,
+) -> ManualEventReader<A> {
+    let client_events: &Events<A> = client_app
+        .world
+        .get_resource()
+        .expect("Event resource was not found in client World.");
+    let mut server_events: Mut<Events<A>> = server_app
+        .world
+        .get_resource_mut()
+        .expect("Event resource was not found in client World.");
+
+    let mut reader = reader.unwrap_or(client_events.get_reader());
+
+    for event in reader.iter(client_events) {
+        server_events.send(event.clone());
+    }
+
+    reader
 }
