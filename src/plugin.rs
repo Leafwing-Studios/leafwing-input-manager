@@ -11,6 +11,7 @@ use bevy::ecs::prelude::*;
 use bevy::ecs::schedule::ShouldRun;
 use bevy::ecs::system::Resource;
 use bevy::input::InputSystem;
+use bevy::ui::UiSystem;
 
 /// A [`Plugin`] that collects [`Input`] from disparate sources, producing an [`ActionState`] to consume in game logic
 ///
@@ -105,7 +106,12 @@ impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
             )
             .with_system(
                 update_action_state_from_interaction::<A>
-                    .label(InputManagerSystem::Update)
+                    .label(InputManagerSystem::ManualControl)
+                    .after(InputManagerSystem::Reset)
+                    // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
+                    // not being pressed
+                    .after(InputManagerSystem::Update)
+                    .after(UiSystem::Focus)
                     .after(InputSystem),
             );
 
@@ -147,6 +153,10 @@ impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
 pub enum InputManagerSystem {
     /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
     Reset,
-    /// Gathers input data to update the [ActionState]
+    /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,
+    /// Manually control the [`ActionState`](crate::action_state::ActionState)
+    ///
+    /// Must run after [`InputManagerSystem::Update`] or the action state will be overriden
+    ManualControl,
 }
