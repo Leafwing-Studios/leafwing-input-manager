@@ -126,6 +126,9 @@ fn run_in_state() {
 
 #[test]
 fn action_state_driver() {
+    use bevy::input::InputPlugin;
+    use bevy::ui::UiPlugin;
+
     let mut app = App::new();
 
     #[derive(Component)]
@@ -153,6 +156,8 @@ fn action_state_driver() {
 
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugin(InputPlugin)
+        .add_plugin(UiPlugin)
         .add_startup_system(setup)
         .init_resource::<Respect>();
 
