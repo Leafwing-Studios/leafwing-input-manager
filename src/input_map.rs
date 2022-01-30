@@ -826,9 +826,11 @@ mod tests {
         use bevy::prelude::*;
 
         // Setting up the input map
-        let mut input_map = InputMap::<Action>::default();
-        // Ignore clashing to isolate tests
-        input_map.clash_strategy = ClashStrategy::PressAll;
+        let mut input_map = InputMap::<Action> {
+            // Ignore clashing to isolate tests
+            clash_strategy: ClashStrategy::PressAll,
+            ..Default::default()
+        };
         input_map.set_gamepad(Gamepad(42));
 
         // Gamepad
