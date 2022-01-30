@@ -3,16 +3,19 @@
 use crate::user_input::{InputButton, InputStreams, MutableInputStreams, UserInput};
 use bevy::app::App;
 use bevy::ecs::component::Component;
+use bevy::ecs::event::Events;
 use bevy::ecs::query::With;
 use bevy::ecs::system::{Query, Res, ResMut, SystemState};
 use bevy::ecs::world::World;
 use bevy::input::{
-    gamepad::{Gamepad, GamepadButton, Gamepads},
-    keyboard::KeyCode,
-    mouse::MouseButton,
+    gamepad::{Gamepad, GamepadButton, GamepadEvent, Gamepads},
+    keyboard::{KeyCode, KeyboardInput},
+    mouse::{MouseButton, MouseButtonInput, MouseWheel},
+    touch::{TouchInput, Touches},
     Input,
 };
 use bevy::ui::Interaction;
+use bevy::window::CursorMoved;
 
 /// Send fake input events for testing purposes
 ///
@@ -80,7 +83,7 @@ pub trait MockInput {
     /// `just_pressed` and `just_released` on the [`ActionState`](crate::action_state::ActionState) will be kept.
     ///
     /// This will clear all [`KeyCode`], [`GamepadButton`] and [`MouseButton`] input streams,
-    /// as well as any [`Interaction`] components
+    /// as well as any [`Interaction`] components and all input [`Events`].
     fn reset_inputs(&mut self);
 
     /// Presses all `bevy_ui` buttons with the matching `Marker` component
@@ -244,6 +247,17 @@ impl MockInput for World {
         if let Some(mut mouse) = maybe_mouse {
             *mouse = Default::default();
         }
+
+        self.insert_resource(Events::<GamepadEvent>::default());
+
+        self.insert_resource(Events::<KeyboardInput>::default());
+
+        self.insert_resource(Events::<MouseButtonInput>::default());
+        self.insert_resource(Events::<MouseWheel>::default());
+        self.insert_resource(Events::<CursorMoved>::default());
+
+        self.insert_resource(Touches::default());
+        self.insert_resource(Events::<TouchInput>::default());
     }
 
     fn click_button<Marker: Component>(&mut self) {
