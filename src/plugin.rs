@@ -31,7 +31,7 @@ use bevy::ui::UiSystem;
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`] component
 ///    - labeled [`InputManagerSystem::Update`]
 pub struct InputManagerPlugin<A: Actionlike, UserState: Resource + PartialEq + Clone = ()> {
-    _phantom: PhantomData<(A, UserState)>,
+    _phantom: PhantomData<A>,
     state_variant: UserState,
 }
 
