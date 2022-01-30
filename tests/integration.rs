@@ -10,7 +10,7 @@ enum Action {
 }
 
 // A resource that represents whether respects have been paid or not
-#[derive(Default)]
+#[derive(Default, PartialEq, Debug)]
 struct Respect(bool);
 
 fn pay_respects(
@@ -106,7 +106,7 @@ fn run_in_state() {
     app.send_input(KeyCode::F);
     app.update();
     let respect = app.world.get_resource::<Respect>().unwrap();
-    assert_eq!(respect.0, true);
+    assert_eq!(*respect, Respect(true));
 
     // Pause the game
     let mut game_state = app.world.get_resource_mut::<State<GameState>>().unwrap();
@@ -115,13 +115,13 @@ fn run_in_state() {
     // Now, all respect has faded
     app.update();
     let respect = app.world.get_resource::<Respect>().unwrap();
-    assert_eq!(respect.0, false);
+    assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
     app.send_input(KeyCode::F);
     app.update();
     let respect = app.world.get_resource::<Respect>().unwrap();
-    assert_eq!(respect.0, false);
+    assert_eq!(*respect, Respect(false));
 }
 
 #[test]
@@ -161,18 +161,20 @@ fn action_state_driver() {
         .add_startup_system(setup)
         .init_resource::<Respect>();
 
-    let respect = app.world.get_resource::<Respect>().unwrap();
-    assert_eq!(respect.0, false);
-
     app.update();
 
     let respect = app.world.get_resource::<Respect>().unwrap();
-    assert_eq!(respect.0, false);
+    assert_eq!(*respect, Respect(false));
 
     // Click button to pay respects
     app.click_button::<ButtonMarker>();
 
     app.update();
     let respect = app.world.get_resource::<Respect>().unwrap();
-    assert_eq!(respect.0, true);
+    assert_eq!(*respect, Respect(true));
+
+    // Clear inputs
+    app.reset_inputs();
+    let respect = app.world.get_resource::<Respect>().unwrap();
+    assert_eq!(*respect, Respect(false));
 }
