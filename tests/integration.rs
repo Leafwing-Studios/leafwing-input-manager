@@ -193,6 +193,3 @@ fn action_state_driver() {
     let respect = app.world.get_resource::<Respect>().unwrap();
     assert_eq!(*respect, Respect(false));
 }
-
-#[test]
-fn action_events() {}

@@ -183,7 +183,7 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Updates the [`ActionState`] based on a stream of [`RawAction`] events
+    /// Updates the [`ActionState`] based on a stream of [`ActionDiff`] events
     ///
     /// This is typically used to reconstruct and synchronize an action state across the network.
     ///
@@ -191,7 +191,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// todo!()
     /// ```
-    pub fn update_from_events(&mut self, events: impl Iterator<Item = RawAction<A>>) {}
+    pub fn update_from_events(&mut self, events: impl Iterator<Item = ActionDiff<A>>) {}
 
     /// Advances the time for all virtual buttons
     ///
@@ -668,24 +668,24 @@ mod tests {
 
 /// Stores presses and releases of buttons without timing information
 ///
-/// These are typically accessed using the `Events<RawAction>`
+/// These are typically accessed using the `Events<ActionDiff>`
 /// Uses a minimal storage format, in order to facilitate transport over the network.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum RawAction<A: Actionlike> {
+pub enum ActionDiff<A: Actionlike> {
     /// The virtual button was pressed
     Pressed(A),
     /// The virtual button was released
     Released(A),
 }
 
-impl<A: Actionlike> RawAction<A> {
+impl<A: Actionlike> ActionDiff<A> {
     /// Constructs an event stream from the difference between two [`ActionState`] states
     ///
     /// # Example
     /// ```rust
     /// todo!()
     /// ```
-    fn from_action_state_difference() -> Events<RawAction<A>> {
+    fn from_action_state_difference() -> Events<ActionDiff<A>> {
         todo!()
     }
 }
