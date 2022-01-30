@@ -158,7 +158,7 @@ fn action_state_driver() {
         .add_plugin(InputPlugin)
         .add_startup_system(setup)
         .add_system(pay_respects)
-        .add_system(respect_fades)
+        .add_system_to_stage(CoreStage::PreUpdate, respect_fades)
         .init_resource::<Respect>();
 
     app.update();
