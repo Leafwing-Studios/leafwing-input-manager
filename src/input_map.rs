@@ -66,7 +66,7 @@ use petitset::PetitSet;
 ///
 ///
 /// // But you can't Hide :(
-/// input_map.clear_action(Action::Hide, None);
+/// input_map.clear_action(&Action::Hide, None);
 ///```
 #[derive(Component, Debug, Clone, PartialEq)]
 pub struct InputMap<A: Actionlike> {
