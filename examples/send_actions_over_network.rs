@@ -7,11 +7,14 @@
 //! This approach will be less bandwidth efficient, but involve less complexity and CPU work.
 
 use bevy::ecs::event::{Events, ManualEventReader};
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionDiff;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::systems::{generate_action_diffs, process_action_diffs};
 use leafwing_input_manager::MockInput;
+
+use std::fmt::Debug;
 
 #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 enum FpsAction {
@@ -22,7 +25,7 @@ enum FpsAction {
 }
 
 /// This identifier uniquely identifies entities across the network
-#[derive(Component, Clone, PartialEq, Eq)]
+#[derive(Component, Clone, PartialEq, Eq, Debug)]
 struct StableId(u64);
 
 fn main() {
@@ -31,6 +34,7 @@ fn main() {
 
     client_app
         .add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<FpsAction>::default())
         // Creates an event stream of `ActionDiffs` to send to the server
         .add_system_to_stage(
@@ -61,6 +65,8 @@ fn main() {
     client_app.send_input(MouseButton::Left);
 
     // These are converted into actions when the client_app's `Schedule` runs
+    client_app.update();
+
     let mut player_state_query = client_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&client_app.world).next().unwrap();
     assert!(player_state.pressed(FpsAction::Jump));
@@ -75,11 +81,12 @@ fn main() {
 
     // And the actions are pressed on the server!
     let mut player_state_query = server_app.world.query::<&ActionState<FpsAction>>();
-    let player_state = player_state_query.iter(&client_app.world).next().unwrap();
+    let player_state = player_state_query.iter(&server_app.world).next().unwrap();
     assert!(player_state.pressed(FpsAction::Jump));
     assert!(player_state.pressed(FpsAction::Shoot));
 
     // If we wait a tick, the buttons will be released
+    client_app.reset_inputs();
     client_app.update();
     let mut player_state_query = client_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&client_app.world).next().unwrap();
@@ -94,8 +101,10 @@ fn main() {
         Some(event_reader),
     );
 
+    server_app.update();
+
     let mut player_state_query = server_app.world.query::<&ActionState<FpsAction>>();
-    let player_state = player_state_query.iter(&client_app.world).next().unwrap();
+    let player_state = player_state_query.iter(&server_app.world).next().unwrap();
     assert!(player_state.released(FpsAction::Jump));
     assert!(player_state.released(FpsAction::Shoot));
 }
@@ -127,7 +136,7 @@ fn spawn_player(mut commands: Commands) {
 ///
 /// The [`ManualEventReader`] returned must be reused in order to avoid double-sending events
 #[must_use]
-fn send_events<A: Send + Sync + 'static + Clone>(
+fn send_events<A: Send + Sync + 'static + Debug + Clone>(
     client_app: &App,
     server_app: &mut App,
     reader: Option<ManualEventReader<A>>,
@@ -145,7 +154,10 @@ fn send_events<A: Send + Sync + 'static + Clone>(
     let mut reader = reader.unwrap_or(client_events.get_reader());
 
     // Push the clients' events to the server
-    server_events.extend(reader.iter(client_events).cloned());
+    for client_event in reader.iter(client_events) {
+        dbg!(client_event.clone());
+        server_events.send(client_event.clone());
+    }
 
     // Return the event reader for reuse
     reader

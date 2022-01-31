@@ -114,7 +114,8 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                     id: event_id,
                 } => {
                     if event_id == id {
-                        action_state.press(action.clone())
+                        action_state.press(action.clone());
+                        continue;
                     }
                 }
                 ActionDiff::Released {
@@ -122,10 +123,11 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                     id: event_id,
                 } => {
                     if event_id == id {
-                        action_state.release(action.clone())
+                        action_state.release(action.clone());
+                        continue;
                     }
                 }
-            }
+            };
         }
     }
 }

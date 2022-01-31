@@ -155,7 +155,7 @@ impl Default for VirtualButtonState {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
-#[derive(Component)]
+#[derive(Component, Clone, Debug, PartialEq)]
 pub struct ActionState<A: Actionlike> {
     map: HashMap<A, VirtualButtonState>,
 }
