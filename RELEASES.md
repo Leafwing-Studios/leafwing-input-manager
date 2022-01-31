@@ -8,6 +8,9 @@
   - very useful for working with modifier keys
   - if two actions are triggered
 - ergonomic input mocking API at both the `App` and `World` level using the `MockInputs` trait
+- send `ActionState` across the network in a space-efficient fashion using the `ActionDiff` struct
+  - check out (or directly use) the `process_action_diff` and `generate_action_diff` systems to convert these to and from `ActionStates`
+  - add `InputManagerPlugin::server()` to your server `App` for a stripped down version of the input management functionality
 
 ### Usability
 
