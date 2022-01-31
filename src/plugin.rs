@@ -95,7 +95,7 @@ impl<A: Actionlike> InputManagerPlugin<A> {
     ///
     /// Inputs will not be processed; instead, [`ActionState`](crate::action_state::ActionState)
     /// should be copied directly from the state provided by the client,
-    /// or constructed from [`RawAction](crate::action_state::RawAction) event streams.
+    /// or constructed from [`ActionDiff`](crate::action_state::ActionDiff) event streams.
     #[must_use]
     pub fn server() -> Self {
         Self {
