@@ -123,7 +123,6 @@ impl Default for VirtualButtonState {
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
-
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 /// enum Action {
@@ -156,13 +155,16 @@ impl Default for VirtualButtonState {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
-#[derive(Component)]
+#[derive(Component, Clone, Debug, PartialEq)]
 pub struct ActionState<A: Actionlike> {
     map: HashMap<A, VirtualButtonState>,
 }
 
 impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a [`HashSet`] of pressed virtual buttons.
+    ///
+    /// The `pressed_set` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
+    /// which reads from the assorted [`Input`] resources.
     pub fn update(&mut self, pressed_set: HashSet<A>) {
         for action in A::iter() {
             match self.state(action.clone()) {
@@ -190,7 +192,6 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-
     /// use bevy::utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -257,7 +258,6 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum Action {
@@ -295,7 +295,6 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     /// enum AbilitySlot {
@@ -391,6 +390,32 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
         self.state(action).just_released()
+    }
+
+    #[must_use]
+    /// Which actions are currently pressed?
+    pub fn get_pressed(&self) -> HashSet<A> {
+        A::iter().filter(|a| self.pressed(a.clone())).collect()
+    }
+
+    #[must_use]
+    /// Which actions were just pressed?
+    pub fn get_just_pressed(&self) -> HashSet<A> {
+        A::iter().filter(|a| self.just_pressed(a.clone())).collect()
+    }
+
+    #[must_use]
+    /// Which actions are currently released?
+    pub fn get_released(&self) -> HashSet<A> {
+        A::iter().filter(|a| self.released(a.clone())).collect()
+    }
+
+    #[must_use]
+    /// Which actions were just released?
+    pub fn get_just_released(&self) -> HashSet<A> {
+        A::iter()
+            .filter(|a| self.just_released(a.clone()))
+            .collect()
     }
 
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
@@ -654,4 +679,29 @@ mod tests {
             t1 - t0,
         );
     }
+}
+
+/// Stores presses and releases of buttons without timing information
+///
+/// These are typically accessed using the `Events<ActionDiff>` resource.
+/// Uses a minimal storage format, in order to facilitate transport over the network.
+///
+/// `ID` should be a component type that stores a unique stable identifier for the entity
+/// that stores the corresponding [`ActionState`].
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
+    /// The virtual button was pressed
+    Pressed {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+    },
+    /// The virtual button was released
+    Released {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+    },
 }

@@ -33,6 +33,7 @@ use bevy::ui::UiSystem;
 pub struct InputManagerPlugin<A: Actionlike, UserState: Resource + PartialEq + Clone = ()> {
     _phantom: PhantomData<A>,
     state_variant: UserState,
+    machine: Machine,
 }
 
 // Deriving default induces an undesired bound on the generic
@@ -41,6 +42,7 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
         Self {
             _phantom: PhantomData::default(),
             state_variant: (),
+            machine: Machine::Client,
         }
     }
 }
@@ -83,8 +85,31 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
         Self {
             _phantom: PhantomData::default(),
             state_variant,
+            machine: Machine::Client,
         }
     }
+}
+
+impl<A: Actionlike> InputManagerPlugin<A> {
+    /// Creates a version of the plugin intended to run on the server
+    ///
+    /// Inputs will not be processed; instead, [`ActionState`](crate::action_state::ActionState)
+    /// should be copied directly from the state provided by the client,
+    /// or constructed from [`RawAction](crate::action_state::RawAction) event streams.
+    #[must_use]
+    pub fn server() -> Self {
+        Self {
+            _phantom: PhantomData::default(),
+            state_variant: (),
+            machine: Machine::Server,
+        }
+    }
+}
+
+/// Which machine is this plugin running on?
+enum Machine {
+    Server,
+    Client,
 }
 
 impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
@@ -93,27 +118,34 @@ impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
-        let input_manager_systems = SystemSet::new()
-            .with_system(
+        let input_manager_systems = match self.machine {
+            Machine::Client => SystemSet::new()
+                .with_system(
+                    tick_action_state::<A>
+                        .label(InputManagerSystem::Reset)
+                        .before(InputManagerSystem::Update),
+                )
+                .with_system(
+                    update_action_state::<A>
+                        .label(InputManagerSystem::Update)
+                        .after(InputSystem),
+                )
+                .with_system(
+                    update_action_state_from_interaction::<A>
+                        .label(InputManagerSystem::ManualControl)
+                        .after(InputManagerSystem::Reset)
+                        // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
+                        // not being pressed
+                        .after(InputManagerSystem::Update)
+                        .after(UiSystem::Focus)
+                        .after(InputSystem),
+                ),
+            Machine::Server => SystemSet::new().with_system(
                 tick_action_state::<A>
                     .label(InputManagerSystem::Reset)
                     .before(InputManagerSystem::Update),
-            )
-            .with_system(
-                update_action_state::<A>
-                    .label(InputManagerSystem::Update)
-                    .after(InputSystem),
-            )
-            .with_system(
-                update_action_state_from_interaction::<A>
-                    .label(InputManagerSystem::ManualControl)
-                    .after(InputManagerSystem::Reset)
-                    // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
-                    // not being pressed
-                    .after(InputManagerSystem::Update)
-                    .after(UiSystem::Focus)
-                    .after(InputSystem),
-            );
+            ),
+        };
 
         // If a state has been provided
         // Only run this plugin's systems in the state variant provided

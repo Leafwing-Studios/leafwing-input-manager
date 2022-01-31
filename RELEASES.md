@@ -8,6 +8,9 @@
   - very useful for working with modifier keys
   - if two actions are triggered
 - ergonomic input mocking API at both the `App` and `World` level using the `MockInputs` trait
+- send `ActionState` across the network in a space-efficient fashion using the `ActionDiff` struct
+  - check out (or directly use) the `process_action_diff` and `generate_action_diff` systems to convert these to and from `ActionStates`
+  - add `InputManagerPlugin::server()` to your server `App` for a stripped down version of the input management functionality
 
 ### Usability
 
@@ -20,6 +23,8 @@
 - removed `strum` dependency by reimplementing the funcitonality, allowing users to define actions with only the `Actionlike` trait
 - added the `get_at` and `index` methods on the `Actionlike` trait, allowing you to fetch a specific action by its position in the defining enum and vice versa
 - `Copy` bound on `Actionlike` trait relaxed to `Clone`, allowing you to store non-copy data in your enum variants
+- `Clone`, `PartialEq` and `Debug` trait impls for `ActionState`
+- `get_pressed`, `get_just_pressed`, `get_released` and `get_just_released` methods on `ActionState`, for conveniently checking many action states at once
 
 ### Bug fixes
 
