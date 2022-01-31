@@ -8,6 +8,7 @@ use bevy::input::{
 };
 use bevy::utils::HashSet;
 use petitset::PetitSet;
+use serde::{Deserialize, Serialize};
 
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///
@@ -247,7 +248,7 @@ impl From<InputButton> for InputMode {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum InputButton {
     /// A button on a gamepad
     Gamepad(GamepadButtonType),

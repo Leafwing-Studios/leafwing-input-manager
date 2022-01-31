@@ -4,6 +4,7 @@ use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::{Duration, Instant};
 use bevy::utils::{HashMap, HashSet};
+use serde::{Deserialize, Serialize};
 
 /// The current state of a particular virtual button,
 /// corresponding to a single [`Actionlike`] action.
@@ -688,7 +689,7 @@ mod tests {
 ///
 /// `ID` should be a component type that stores a unique stable identifier for the entity
 /// that stores the corresponding [`ActionState`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
     /// The virtual button was pressed
     Pressed {
