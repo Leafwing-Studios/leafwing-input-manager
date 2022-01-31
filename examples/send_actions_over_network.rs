@@ -10,6 +10,7 @@ use bevy::ecs::event::{Events, ManualEventReader};
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionDiff;
 use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::systems::{generate_action_diffs, process_action_diffs};
 use leafwing_input_manager::MockInput;
 
 #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -20,6 +21,10 @@ enum FpsAction {
     Shoot,
 }
 
+/// This identifier uniquely identifies entities across the network
+#[derive(Component, Clone, PartialEq, Eq)]
+struct StableId(u64);
+
 fn main() {
     // In a real use case, these apps would be running on seperate devices
     let mut client_app = App::new();
@@ -28,17 +33,23 @@ fn main() {
         .add_plugins(MinimalPlugins)
         .add_plugin(InputManagerPlugin::<FpsAction>::default())
         // Creates an event stream of `ActionDiffs` to send to the server
-        .add_system(generate_action_events)
-        .add_event::<ActionDiff<FpsAction>>()
+        .add_system_to_stage(
+            CoreStage::PostUpdate,
+            generate_action_diffs::<FpsAction, StableId>,
+        )
+        .add_event::<ActionDiff<FpsAction, StableId>>()
         .add_startup_system(spawn_player);
 
     let mut server_app = App::new();
     server_app
         .add_plugins(MinimalPlugins)
         .add_plugin(InputManagerPlugin::<FpsAction>::server())
-        .add_event::<ActionDiff<FpsAction>>()
+        .add_event::<ActionDiff<FpsAction, StableId>>()
         // Reads in the event stream of `ActionDiffs` to update the `ActionState`
-        .add_system_to_stage(CoreStage::PreUpdate, process_action_events)
+        .add_system_to_stage(
+            CoreStage::PreUpdate,
+            process_action_diffs::<FpsAction, StableId>,
+        )
         // Typically, the rest of this information would synchronized as well
         .add_startup_system(spawn_player);
 
@@ -56,7 +67,8 @@ fn main() {
     assert!(player_state.pressed(FpsAction::Shoot));
 
     // These events are transferred to the server
-    let event_reader = send_events::<ActionDiff<FpsAction>>(&client_app, &mut server_app, None);
+    let event_reader =
+        send_events::<ActionDiff<FpsAction, StableId>>(&client_app, &mut server_app, None);
 
     // The server processes the event stream
     server_app.update();
@@ -76,8 +88,11 @@ fn main() {
 
     // Sending over the new `ActionDiff` event stream,
     // we can see that the actions are now released on the server too
-    let _event_reader =
-        send_events::<ActionDiff<FpsAction>>(&client_app, &mut server_app, Some(event_reader));
+    let _event_reader = send_events::<ActionDiff<FpsAction, StableId>>(
+        &client_app,
+        &mut server_app,
+        Some(event_reader),
+    );
 
     let mut player_state_query = server_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&client_app.world).next().unwrap();
@@ -85,22 +100,24 @@ fn main() {
     assert!(player_state.released(FpsAction::Shoot));
 }
 
+#[derive(Component)]
+struct Player;
+
 fn spawn_player(mut commands: Commands) {
-    todo!()
-}
+    use FpsAction::*;
+    use KeyCode::*;
 
-fn generate_action_events(
-    action_state_query: Query<&ActionState<FpsAction>>,
-    action_diffs: EventWriter<ActionDiff<FpsAction>>,
-) {
-    todo!()
-}
-
-fn process_action_events(
-    action_state_query: Query<&mut ActionState<FpsAction>>,
-    action_diffs: EventReader<ActionDiff<FpsAction>>,
-) {
-    todo!()
+    commands
+        .spawn_bundle(InputManagerBundle {
+            input_map: InputMap::new([(MoveLeft, W), (MoveRight, D), (Jump, Space)])
+                .insert(Shoot, MouseButton::Left)
+                .build(),
+            action_state: ActionState::default(),
+        })
+        // This identifier must match on both the client and server
+        // and be unique between players
+        .insert(StableId(76))
+        .insert(Player);
 }
 
 /// A simple mock network interface that copies a set of events from the client to the server
@@ -124,11 +141,12 @@ fn send_events<A: Send + Sync + 'static + Clone>(
         .get_resource_mut()
         .expect("Event resource was not found in client World.");
 
+    // Get an event reader, one way or another
     let mut reader = reader.unwrap_or(client_events.get_reader());
 
-    for event in reader.iter(client_events) {
-        server_events.send(event.clone());
-    }
+    // Push the clients' events to the server
+    server_events.extend(reader.iter(client_events).cloned());
 
+    // Return the event reader for reuse
     reader
 }

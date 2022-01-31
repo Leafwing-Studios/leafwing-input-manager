@@ -1,7 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::Actionlike;
-use bevy::ecs::event::Events;
 use bevy::prelude::*;
 use bevy::utils::{Duration, Instant};
 use bevy::utils::{HashMap, HashSet};
@@ -182,16 +181,6 @@ impl<A: Actionlike> ActionState<A> {
             }
         }
     }
-
-    /// Updates the [`ActionState`] based on a stream of [`ActionDiff`] events
-    ///
-    /// This is typically used to reconstruct and synchronize an action state across the network.
-    ///
-    /// # Example
-    /// ```rust
-    /// todo!()
-    /// ```
-    pub fn update_from_events(&mut self, events: impl Iterator<Item = ActionDiff<A>>) {}
 
     /// Advances the time for all virtual buttons
     ///
@@ -401,6 +390,32 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
         self.state(action).just_released()
+    }
+
+    #[must_use]
+    /// Which actions are currently pressed?
+    pub fn get_pressed(&self) -> HashSet<A> {
+        A::iter().filter(|a| self.pressed(a.clone())).collect()
+    }
+
+    #[must_use]
+    /// Which actions were just pressed?
+    pub fn get_just_pressed(&self) -> HashSet<A> {
+        A::iter().filter(|a| self.just_pressed(a.clone())).collect()
+    }
+
+    #[must_use]
+    /// Which actions are currently released?
+    pub fn get_released(&self) -> HashSet<A> {
+        A::iter().filter(|a| self.released(a.clone())).collect()
+    }
+
+    #[must_use]
+    /// Which actions were just released?
+    pub fn get_just_released(&self) -> HashSet<A> {
+        A::iter()
+            .filter(|a| self.just_released(a.clone()))
+            .collect()
     }
 
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
@@ -668,24 +683,25 @@ mod tests {
 
 /// Stores presses and releases of buttons without timing information
 ///
-/// These are typically accessed using the `Events<ActionDiff>`
+/// These are typically accessed using the `Events<ActionDiff>` resource.
 /// Uses a minimal storage format, in order to facilitate transport over the network.
+///
+/// `ID` should be a component type that stores a unique stable identifier for the entity
+/// that stores the corresponding [`ActionState`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum ActionDiff<A: Actionlike> {
+pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
     /// The virtual button was pressed
-    Pressed(A),
+    Pressed {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+    },
     /// The virtual button was released
-    Released(A),
-}
-
-impl<A: Actionlike> ActionDiff<A> {
-    /// Constructs an event stream from the difference between two [`ActionState`] states
-    ///
-    /// # Example
-    /// ```rust
-    /// todo!()
-    /// ```
-    fn from_action_state_difference() -> Events<ActionDiff<A>> {
-        todo!()
-    }
+    Released {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+    },
 }

@@ -1,7 +1,7 @@
 //! The systems that power each [`InputManagerPlugin`](crate::InputManagerPlugin).
 
 use crate::{
-    action_state::{ActionState, ActionStateDriver},
+    action_state::{ActionDiff, ActionState, ActionStateDriver},
     input_map::InputMap,
     user_input::InputStreams,
     Actionlike,
@@ -64,6 +64,68 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
                 .get_mut(action_state_driver.entity)
                 .expect("Entity does not exist, or does not have an `ActionState` component.");
             action_state.press(action_state_driver.action.clone());
+        }
+    }
+}
+
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+///
+/// The `ID` generic type should be a stable entity identifer,
+/// suitable to be sent across a network.
+///
+/// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
+pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
+    action_state_query: Query<(&ActionState<A>, &ID)>,
+    mut action_diffs: EventWriter<ActionDiff<A, ID>>,
+) {
+    for (action_state, id) in action_state_query.iter() {
+        for action in action_state.get_just_pressed() {
+            action_diffs.send(ActionDiff::Pressed {
+                action: action.clone(),
+                id: id.clone(),
+            });
+        }
+
+        for action in action_state.get_just_released() {
+            action_diffs.send(ActionDiff::Released {
+                action: action.clone(),
+                id: id.clone(),
+            });
+        }
+    }
+}
+
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+///
+/// The `ID` generic type should be a stable entity identifer,
+/// suitable to be sent across a network.
+///
+/// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
+pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
+    mut action_state_query: Query<(&mut ActionState<A>, &ID)>,
+    mut action_diffs: EventReader<ActionDiff<A, ID>>,
+) {
+    // PERF: This would probably be faster with an index, but is much more fussy
+    for action_diff in action_diffs.iter() {
+        for (mut action_state, id) in action_state_query.iter_mut() {
+            match action_diff {
+                ActionDiff::Pressed {
+                    action,
+                    id: event_id,
+                } => {
+                    if event_id == id {
+                        action_state.press(action.clone())
+                    }
+                }
+                ActionDiff::Released {
+                    action,
+                    id: event_id,
+                } => {
+                    if event_id == id {
+                        action_state.release(action.clone())
+                    }
+                }
+            }
         }
     }
 }
