@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 use core::fmt::Debug;
 use petitset::PetitSet;
+use serde::{Deserialize, Serialize};
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
@@ -68,7 +69,7 @@ use petitset::PetitSet;
 /// // But you can't Hide :(
 /// input_map.clear_action(&Action::Hide, None);
 ///```
-#[derive(Component, Debug, Clone, PartialEq)]
+#[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] of [PetitSet]s used to store the input mapping
     pub map: HashMap<A, PetitSet<UserInput, 16>>,

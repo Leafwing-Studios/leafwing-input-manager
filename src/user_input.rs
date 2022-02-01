@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///
 /// Suitable for use in an [`InputMap`]
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UserInput {
     /// A null user input, used for a safe default and error-handling
     ///

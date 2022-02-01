@@ -6,6 +6,7 @@ use crate::Actionlike;
 use bevy::utils::HashSet;
 use itertools::Itertools;
 use petitset::PetitSet;
+use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
@@ -22,7 +23,7 @@ use std::cmp::Ordering;
 /// This strategy is only used when assessing the actions and input holistically,
 /// in [`InputMap::which_pressed`], using [`InputMap::handle_clashes`].
 #[non_exhaustive]
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum ClashStrategy {
     /// All matching inputs will always be pressed
     PressAll,
@@ -154,7 +155,7 @@ impl<A: Actionlike> InputMap<A> {
 
 /// A user-input clash, which stores the actions that are being clashed on,
 /// as well as the corresponding user inputs
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub(crate) struct Clash<A: Actionlike> {
     action_a: A,
     action_b: A,

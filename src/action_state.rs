@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// corresponding to a single [`Actionlike`] action.
 ///
 /// Detailed timing information for the button can be accessed through the stored [`Timing`] value
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum VirtualButtonState {
     /// This button is currently pressed
     Pressed(Timing),
@@ -19,12 +19,13 @@ pub enum VirtualButtonState {
 }
 
 /// Stores the timing information for a [`VirtualButtonState`]
-#[derive(Debug, Clone, PartialEq, PartialOrd, Default)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
     ///
     /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
     /// If this is none, [`ActionState::update`] has not been called yet.
+    #[serde(skip)]
     pub instant_started: Option<Instant>,
     /// The [`Duration`] for which the button has been pressed or released.
     ///
@@ -156,7 +157,7 @@ impl Default for VirtualButtonState {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
-#[derive(Component, Clone, Debug, PartialEq)]
+#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
     map: HashMap<A, VirtualButtonState>,
 }
