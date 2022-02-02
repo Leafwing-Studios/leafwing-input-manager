@@ -44,6 +44,9 @@ No more characters wandering around while your menu is open!
 
 ## Instructions
 
+**Development occurs on the `dev` branch, which is merged into `main` on each release.**
+This ensures the examples are in-sync with the latest release.
+
 ### Getting started
 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
