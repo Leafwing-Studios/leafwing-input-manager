@@ -1,6 +1,10 @@
 # Contributing
 
 This repository is open to community contributions!
+
+**Development occurs on the `dev` branch, which is merged into `main` on each release.**
+This ensures the examples are in-sync with the latest release.
+
 There are a few options if you'd like to help:
 
 1. File issues for bugs you find or new features you'd like.
