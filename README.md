@@ -1,19 +1,13 @@
 # About
 
-A simple but robust input-action manager for Bevy: intended to be useful both as a plugin and a helpful library.
+A straightforward but robust input-action manager for Bevy.
 
 Inputs from various input sources (keyboard, mouse and gamepad) are collected into a common `ActionState` on your player entity,
 which can be conveniently used in your game logic.
 
-The mapping between inputs and actions is many-to-many, and easily configured and extended with the `InputMap` components on your player entity.
+The mapping between inputs and actions is many-to-many, and easily configured and extended with the `InputMap` components on each player entity.
 A single action can be triggered by multiple inputs (or set directly by UI elements or gameplay logic),
 and a single input can result in multiple actions being triggered, which can be handled contextually.
-
-This library seamlessly supports both single-player and local multiplayer games!
-Simply add the `InputManagerBundle` to each controllable entity, and customize the `InputMap` appropriately.
-
-Of particular note: this plugin allows users to configure which state (i.e. `GameState::Playing`) it runs in.
-No more characters wandering around while your menu is open!
 
 ## Features
 
@@ -26,7 +20,7 @@ No more characters wandering around while your menu is open!
   - Easily check player statistics while reading input
   - That pesky maximum of 16 system parameters got you down? Say goodbye to that input handling mega-system
 - Ergonomic insertion API that seamlessly blends multiple input types for you
-  - `input_map.insert(Action::Jump, KeyCode::Space)` XOR `input_map.insert(Action::Jump, C)`? Why not both?
+  - `input_map.insert(Action::Jump, KeyCode::Space)` XOR `input_map.insert(Action::Jump, GamepadButtonType::South)`? Have both!
 - Full support for arbitrary button combinations: chord your heart out.
   - `input_map.insert_chord(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
 - Sophisticated input disambiguation with the `ClashStrategy` enum: stop triggering individual buttons when you meant to press a chord!
@@ -35,6 +29,7 @@ No more characters wandering around while your menu is open!
 - Networked multiplayer support: serializable structs, and a space-conscious `ActionDiff` representation to send on the wire
 - Powerful and easy-to-use input mocking API for integration testing your Bevy applications
   - `app.send_input(KeyCode::B)` or `world.send_input(UserInput::chord([KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y])`
+- Control which state this plugin is active in: stop wandering around while in a menu!
 - Leafwing Studio's trademark `#![forbid(missing_docs)]`
 
 ## Limitations
@@ -51,7 +46,7 @@ No more characters wandering around while your menu is open!
 ### Getting started
 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
-2. Create an enum of the logical actions you want to represent, and implement the `Actionlike` trait for it.
+2. Create an enum of the logical actions you want to represent, and derive the `Actionlike` trait for it.
 3. Add the `InputManagerPlugin` to your `App`.
 4. Add the `InputManagerBundle` to your player entity (or entities!).
 5. Configure a mapping between your inputs and your actions by modifying the `InputMap` component on your player entity.
