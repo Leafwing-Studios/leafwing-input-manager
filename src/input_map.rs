@@ -343,7 +343,6 @@ impl<A: Actionlike> InputMap<A> {
     /// Supplying a value of 0 removes any per-mode cap.
     ///
     /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
-    #[allow(clippy::return_self_not_must_use)]
     pub fn set_per_mode_cap(&mut self, per_mode_cap: u8) -> InputMap<A> {
         assert!(3 * per_mode_cap <= 16);
 
@@ -593,7 +592,6 @@ impl<A: Actionlike> InputMap<A> {
     /// For chords, an input will be removed if any of the contained buttons use that input mode.
     ///
     /// Returns the subset of the action map that was removed
-    #[allow(clippy::return_self_not_must_use)]
     pub fn clear_input_mode(&mut self, input_mode: Option<InputMode>) -> InputMap<A> {
         let mut cleared_input_map = InputMap {
             associated_gamepad: self.associated_gamepad,
