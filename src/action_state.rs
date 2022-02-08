@@ -169,15 +169,15 @@ impl<A: Actionlike> ActionState<A> {
     /// which reads from the assorted [`Input`] resources.
     pub fn update(&mut self, pressed_set: HashSet<A>) {
         for action in A::iter() {
-            match self.state(action.clone()) {
+            match self.state(&action) {
                 VirtualButtonState::Pressed(_) => {
                     if !pressed_set.contains(&action) {
-                        self.release(action);
+                        self.release(&action);
                     }
                 }
                 VirtualButtonState::Released(_) => {
                     if pressed_set.contains(&action) {
-                        self.press(action);
+                        self.press(&action);
                     }
                 }
             }
@@ -277,7 +277,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn state(&self, action: A) -> VirtualButtonState {
+    pub fn state(&self, action: &A) -> VirtualButtonState {
         if let Some(state) = self.map.get(&action) {
             state.clone()
         } else {
@@ -321,7 +321,7 @@ impl<A: Actionlike> ActionState<A> {
     /// action_state.set_state(Action::Run, slot_1_state);
     /// ```
     #[inline]
-    pub fn set_state(&mut self, action: A, state: VirtualButtonState) {
+    pub fn set_state(&mut self, action: &A, state: VirtualButtonState) {
         let stored_state = self
             .map
             .get_mut(&action)
@@ -330,10 +330,10 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Press the `action` virtual button
-    pub fn press(&mut self, action: A) {
-        if let VirtualButtonState::Released(timing) = self.state(action.clone()) {
+    pub fn press(&mut self, action: &A) {
+        if let VirtualButtonState::Released(timing) = self.state(&action) {
             self.map.insert(
-                action,
+                action.clone(),
                 VirtualButtonState::Pressed(Timing {
                     instant_started: None,
                     current_duration: Duration::ZERO,
@@ -344,10 +344,10 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Release the `action` virtual button
-    pub fn release(&mut self, action: A) {
-        if let VirtualButtonState::Pressed(timing) = self.state(action.clone()) {
+    pub fn release(&mut self, action: &A) {
+        if let VirtualButtonState::Pressed(timing) = self.state(&action) {
             self.map.insert(
-                action,
+                action.clone(),
                 VirtualButtonState::Released(Timing {
                     instant_started: None,
                     current_duration: Duration::ZERO,
@@ -360,22 +360,22 @@ impl<A: Actionlike> ActionState<A> {
     /// Releases all action virtual buttons
     pub fn release_all(&mut self) {
         for action in A::iter() {
-            self.release(action);
+            self.release(&action);
         }
     }
 
     /// Is this `action` currently pressed?
     #[inline]
     #[must_use]
-    pub fn pressed(&self, action: A) -> bool {
-        self.state(action).pressed()
+    pub fn pressed(&self, action: &A) -> bool {
+        self.state(&action).pressed()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
-    pub fn just_pressed(&self, action: A) -> bool {
-        self.state(action).just_pressed()
+    pub fn just_pressed(&self, action: &A) -> bool {
+        self.state(&action).just_pressed()
     }
 
     /// Is this `action` currently released?
@@ -383,41 +383,39 @@ impl<A: Actionlike> ActionState<A> {
     /// This is always the logical negation of [pressed](ActionState::pressed)
     #[inline]
     #[must_use]
-    pub fn released(&self, action: A) -> bool {
+    pub fn released(&self, action: &A) -> bool {
         self.state(action).released()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
-    pub fn just_released(&self, action: A) -> bool {
+    pub fn just_released(&self, action: &A) -> bool {
         self.state(action).just_released()
     }
 
     #[must_use]
     /// Which actions are currently pressed?
     pub fn get_pressed(&self) -> HashSet<A> {
-        A::iter().filter(|a| self.pressed(a.clone())).collect()
+        A::iter().filter(|a| self.pressed(a)).collect()
     }
 
     #[must_use]
     /// Which actions were just pressed?
     pub fn get_just_pressed(&self) -> HashSet<A> {
-        A::iter().filter(|a| self.just_pressed(a.clone())).collect()
+        A::iter().filter(|a| self.just_pressed(a)).collect()
     }
 
     #[must_use]
     /// Which actions are currently released?
     pub fn get_released(&self) -> HashSet<A> {
-        A::iter().filter(|a| self.released(a.clone())).collect()
+        A::iter().filter(|a| self.released(a)).collect()
     }
 
     #[must_use]
     /// Which actions were just released?
     pub fn get_just_released(&self) -> HashSet<A> {
-        A::iter()
-            .filter(|a| self.just_released(a.clone()))
-            .collect()
+        A::iter().filter(|a| self.just_released(a)).collect()
     }
 
     /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
@@ -566,10 +564,10 @@ mod tests {
         // Starting state
         action_state.update(input_map.which_pressed(&input_streams));
 
-        assert!(!action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(action_state.released(Action::Run));
-        assert!(action_state.just_released(Action::Run));
+        assert!(!action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(action_state.released(&Action::Run));
+        assert!(action_state.just_released(&Action::Run));
 
         // Pressing
         keyboard_input_stream.press(KeyCode::R);
@@ -577,38 +575,38 @@ mod tests {
 
         action_state.update(input_map.which_pressed(&input_streams));
 
-        assert!(action_state.pressed(Action::Run));
-        assert!(action_state.just_pressed(Action::Run));
-        assert!(!action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Run));
+        assert!(action_state.pressed(&Action::Run));
+        assert!(action_state.just_pressed(&Action::Run));
+        assert!(!action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Run));
 
         // Waiting
         action_state.tick(Instant::now());
         action_state.update(input_map.which_pressed(&input_streams));
 
-        assert!(action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(!action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Run));
+        assert!(action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(!action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Run));
 
         // Releasing
         keyboard_input_stream.release(KeyCode::R);
         let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
         action_state.update(input_map.which_pressed(&input_streams));
-        assert!(!action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(action_state.released(Action::Run));
-        assert!(action_state.just_released(Action::Run));
+        assert!(!action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(action_state.released(&Action::Run));
+        assert!(action_state.just_released(&Action::Run));
 
         // Waiting
         action_state.tick(Instant::now());
         action_state.update(input_map.which_pressed(&input_streams));
 
-        assert!(!action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Run));
+        assert!(!action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Run));
     }
 
     #[test]
@@ -619,40 +617,43 @@ mod tests {
         let mut action_state = ActionState::<Action>::default();
 
         // Virtual buttons start released
-        assert!(action_state.state(Action::Jump).released());
-        assert_eq!(action_state.state(Action::Jump).instant_started(), None,);
+        assert!(action_state.state(&Action::Jump).released());
+        assert_eq!(action_state.state(&Action::Jump).instant_started(), None,);
         assert_eq!(
-            action_state.state(Action::Jump).current_duration(),
+            action_state.state(&Action::Jump).current_duration(),
             Duration::ZERO
         );
         assert_eq!(
-            action_state.state(Action::Jump).previous_duration(),
+            action_state.state(&Action::Jump).previous_duration(),
             Duration::ZERO
         );
 
         // Pressing a button swaps the state
-        action_state.press(Action::Jump);
-        assert!(action_state.state(Action::Jump).pressed());
-        assert_eq!(action_state.state(Action::Jump).instant_started(), None);
+        action_state.press(&Action::Jump);
+        assert!(action_state.state(&Action::Jump).pressed());
+        assert_eq!(action_state.state(&Action::Jump).instant_started(), None);
         assert_eq!(
-            action_state.state(Action::Jump).current_duration(),
+            action_state.state(&Action::Jump).current_duration(),
             Duration::ZERO
         );
         assert_eq!(
-            action_state.state(Action::Jump).previous_duration(),
+            action_state.state(&Action::Jump).previous_duration(),
             Duration::ZERO
         );
 
         // Ticking time sets the instant for the new state
         let t0 = Instant::now();
         action_state.tick(t0);
-        assert_eq!(action_state.state(Action::Jump).instant_started(), Some(t0));
         assert_eq!(
-            action_state.state(Action::Jump).current_duration(),
+            action_state.state(&Action::Jump).instant_started(),
+            Some(t0)
+        );
+        assert_eq!(
+            action_state.state(&Action::Jump).current_duration(),
             Duration::ZERO
         );
         assert_eq!(
-            action_state.state(Action::Jump).previous_duration(),
+            action_state.state(&Action::Jump).previous_duration(),
             Duration::ZERO
         );
 
@@ -662,22 +663,28 @@ mod tests {
 
         // The duration is updated
         action_state.tick(t1);
-        assert_eq!(action_state.state(Action::Jump).instant_started(), Some(t0));
-        assert_eq!(action_state.state(Action::Jump).current_duration(), t1 - t0);
         assert_eq!(
-            action_state.state(Action::Jump).previous_duration(),
+            action_state.state(&Action::Jump).instant_started(),
+            Some(t0)
+        );
+        assert_eq!(
+            action_state.state(&Action::Jump).current_duration(),
+            t1 - t0
+        );
+        assert_eq!(
+            action_state.state(&Action::Jump).previous_duration(),
             Duration::ZERO
         );
 
         // Releasing again, swapping the current duration to the previous one
-        action_state.release(Action::Jump);
-        assert_eq!(action_state.state(Action::Jump).instant_started(), None);
+        action_state.release(&Action::Jump);
+        assert_eq!(action_state.state(&Action::Jump).instant_started(), None);
         assert_eq!(
-            action_state.state(Action::Jump).current_duration(),
+            action_state.state(&Action::Jump).current_duration(),
             Duration::ZERO
         );
         assert_eq!(
-            action_state.state(Action::Jump).previous_duration(),
+            action_state.state(&Action::Jump).previous_duration(),
             t1 - t0,
         );
     }

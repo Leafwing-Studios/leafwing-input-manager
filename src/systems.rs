@@ -63,7 +63,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
             let mut action_state = action_state_query
                 .get_mut(action_state_driver.entity)
                 .expect("Entity does not exist, or does not have an `ActionState` component.");
-            action_state.press(action_state_driver.action.clone());
+            action_state.press(&action_state_driver.action);
         }
     }
 }
@@ -114,7 +114,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                     id: event_id,
                 } => {
                     if event_id == id {
-                        action_state.press(action.clone());
+                        action_state.press(action);
                         continue;
                     }
                 }
@@ -123,7 +123,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                     id: event_id,
                 } => {
                     if event_id == id {
-                        action_state.release(action.clone());
+                        action_state.release(action);
                         continue;
                     }
                 }
