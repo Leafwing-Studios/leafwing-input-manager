@@ -1,8 +1,8 @@
 use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
+use leafwing_input_manager::buttonlike_user_input::InputStreams;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputStreams;
 
 #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 enum Action {

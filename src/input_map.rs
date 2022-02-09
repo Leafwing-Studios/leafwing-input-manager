@@ -1,7 +1,7 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
+use crate::buttonlike_user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::clashing_inputs::{Clash, ClashStrategy};
-use crate::user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
@@ -647,7 +647,7 @@ mod tests {
 
     #[test]
     fn multiple_insertion() {
-        use crate::user_input::UserInput;
+        use crate::buttonlike_user_input::UserInput;
         use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
@@ -692,7 +692,7 @@ mod tests {
 
     #[test]
     fn input_clearing() {
-        use crate::user_input::{InputButton, InputMode};
+        use crate::buttonlike_user_input::{InputButton, InputMode};
         use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 
         let mut input_map = InputMap::<Action>::default();
@@ -822,8 +822,8 @@ mod tests {
 
     #[test]
     fn mock_inputs() {
+        use crate::buttonlike_user_input::InputStreams;
         use crate::input_map::InputButton;
-        use crate::user_input::InputStreams;
         use bevy::prelude::*;
 
         // Setting up the input map

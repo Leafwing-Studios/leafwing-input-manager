@@ -1,7 +1,7 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
+use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
 use crate::input_map::InputMap;
-use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
 use bevy::utils::HashSet;
 use itertools::Itertools;
@@ -410,7 +410,7 @@ mod tests {
 
         #[test]
         fn clash_caching() {
-            use crate::user_input::InputMode;
+            use crate::buttonlike_user_input::InputMode;
 
             let mut input_map = test_input_map();
             // Possible clashes are cached upon initialization

@@ -548,7 +548,7 @@ mod tests {
 
     #[test]
     fn press_lifecycle() {
-        use crate::user_input::InputStreams;
+        use crate::buttonlike_user_input::InputStreams;
         use bevy::prelude::*;
         use bevy::utils::Instant;
 

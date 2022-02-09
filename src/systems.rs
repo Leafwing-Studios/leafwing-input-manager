@@ -2,8 +2,8 @@
 
 use crate::{
     action_state::{ActionDiff, ActionState, ActionStateDriver},
+    buttonlike_user_input::InputStreams,
     input_map::InputMap,
-    user_input::InputStreams,
     Actionlike,
 };
 use bevy::prelude::*;

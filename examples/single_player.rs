@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use direction::Direction;
+use leafwing_input_manager::axislike_user_input::Direction;
 use leafwing_input_manager::prelude::*;
 
 fn main() {
@@ -47,10 +47,10 @@ impl ArpgAction {
 
     fn direction(self) -> Direction {
         match self {
-            ArpgAction::Up => Direction::UP,
-            ArpgAction::Down => Direction::DOWN,
-            ArpgAction::Left => Direction::LEFT,
-            ArpgAction::Right => Direction::RIGHT,
+            ArpgAction::Up => Direction::NORTH,
+            ArpgAction::Down => Direction::SOUTH,
+            ArpgAction::Left => Direction::EAST,
+            ArpgAction::Right => Direction::WEST,
             _ => Direction::NEUTRAL,
         }
     }
@@ -145,7 +145,7 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
             }
         }
 
-        println!("Dashing in {}", direction);
+        println!("Dashing in {direction:?}");
     }
 }
 
@@ -169,113 +169,5 @@ fn player_walks(
 
     if direction != Direction::NEUTRAL {
         event_writer.send(PlayerWalk { direction });
-    }
-}
-
-/// A well-behaved [Direction] primitive for use in 2D games
-mod direction {
-    use bevy::math::const_vec2;
-    use bevy::prelude::*;
-    use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
-    use derive_more::Display;
-
-    /// A direction vector, defined relative to the XY plane.
-    ///
-    /// Its magnitude is either zero or one.
-    #[derive(Component, Clone, Copy, Debug, Display, PartialEq, Default)]
-    pub struct Direction {
-        unit_vector: Vec2,
-    }
-
-    impl Direction {
-        #[inline]
-        pub fn new(vec2: Vec2) -> Self {
-            Self {
-                unit_vector: vec2.normalize_or_zero(),
-            }
-        }
-
-        pub const NEUTRAL: Direction = Direction {
-            unit_vector: Vec2::ZERO,
-        };
-
-        pub const UP: Direction = Direction {
-            unit_vector: const_vec2!([0.0, 1.0]),
-        };
-
-        pub const DOWN: Direction = Direction {
-            unit_vector: const_vec2!([0.0, -1.0]),
-        };
-
-        pub const RIGHT: Direction = Direction {
-            unit_vector: const_vec2!([1.0, 0.0]),
-        };
-
-        pub const LEFT: Direction = Direction {
-            unit_vector: const_vec2!([-1.0, 0.0]),
-        };
-    }
-
-    impl Add for Direction {
-        type Output = Direction;
-        fn add(self, other: Direction) -> Direction {
-            Self {
-                unit_vector: (self.unit_vector + other.unit_vector).normalize_or_zero(),
-            }
-        }
-    }
-
-    impl AddAssign for Direction {
-        fn add_assign(&mut self, other: Direction) {
-            *self = *self + other;
-        }
-    }
-
-    impl Sub for Direction {
-        type Output = Direction;
-
-        fn sub(self, rhs: Direction) -> Direction {
-            Self {
-                unit_vector: (self.unit_vector - rhs.unit_vector).normalize_or_zero(),
-            }
-        }
-    }
-
-    impl SubAssign for Direction {
-        fn sub_assign(&mut self, other: Direction) {
-            *self = *self - other;
-        }
-    }
-
-    impl Mul<f32> for Direction {
-        type Output = Vec2;
-
-        fn mul(self, rhs: f32) -> Self::Output {
-            Vec2::new(self.unit_vector.x * rhs, self.unit_vector.y * rhs)
-        }
-    }
-
-    impl Mul<Direction> for f32 {
-        type Output = Vec2;
-
-        fn mul(self, rhs: Direction) -> Self::Output {
-            Vec2::new(self * rhs.unit_vector.x, self * rhs.unit_vector.y)
-        }
-    }
-
-    impl From<Direction> for Vec3 {
-        fn from(direction: Direction) -> Vec3 {
-            Vec3::new(direction.unit_vector.x, direction.unit_vector.y, 0.0)
-        }
-    }
-
-    impl Neg for Direction {
-        type Output = Self;
-
-        fn neg(self) -> Self {
-            Self {
-                unit_vector: -self.unit_vector,
-            }
-        }
     }
 }
