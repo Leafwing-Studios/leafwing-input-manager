@@ -151,7 +151,7 @@ fn send_events<A: Send + Sync + 'static + Debug + Clone>(
         .expect("Event resource was not found in client World.");
 
     // Get an event reader, one way or another
-    let mut reader = reader.unwrap_or(client_events.get_reader());
+    let mut reader = reader.unwrap_or_else(|| client_events.get_reader());
 
     // Push the clients' events to the server
     for client_event in reader.iter(client_events) {

@@ -278,7 +278,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn state(&self, action: &A) -> VirtualButtonState {
-        if let Some(state) = self.map.get(&action) {
+        if let Some(state) = self.map.get(action) {
             state.clone()
         } else {
             VirtualButtonState::default()
@@ -324,14 +324,14 @@ impl<A: Actionlike> ActionState<A> {
     pub fn set_state(&mut self, action: &A, state: VirtualButtonState) {
         let stored_state = self
             .map
-            .get_mut(&action)
+            .get_mut(action)
             .expect("Action {action} not found when setting state!");
         *stored_state = state;
     }
 
     /// Press the `action` virtual button
     pub fn press(&mut self, action: &A) {
-        if let VirtualButtonState::Released(timing) = self.state(&action) {
+        if let VirtualButtonState::Released(timing) = self.state(action) {
             self.map.insert(
                 action.clone(),
                 VirtualButtonState::Pressed(Timing {
@@ -345,7 +345,7 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Release the `action` virtual button
     pub fn release(&mut self, action: &A) {
-        if let VirtualButtonState::Pressed(timing) = self.state(&action) {
+        if let VirtualButtonState::Pressed(timing) = self.state(action) {
             self.map.insert(
                 action.clone(),
                 VirtualButtonState::Released(Timing {
@@ -368,14 +368,14 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
-        self.state(&action).pressed()
+        self.state(action).pressed()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
-        self.state(&action).just_pressed()
+        self.state(action).just_pressed()
     }
 
     /// Is this `action` currently released?
