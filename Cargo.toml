@@ -1,6 +1,6 @@
 [package]
 name = "leafwing-input-manager"
-description = "A straightforward stateful input manager for the Bevy game engine."
+description = "A powerfully direct stateful input manager for the Bevy game engine."
 version = "0.2.0"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
@@ -34,4 +34,5 @@ name = "leafwing_input_manager"
 path = "src/lib.rs"
 
 [patch.crates-io]
-leafwing_input_manager_macros = {path = "./macros"}
+# Use for local development
+#leafwing_input_manager_macros = {path = "./macros"}
