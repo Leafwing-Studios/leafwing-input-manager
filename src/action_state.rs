@@ -137,25 +137,25 @@ impl Default for VirtualButtonState {
 ///
 /// // Typically, this is done automatically by the `InputManagerPlugin` from user inputs
 /// // using the `ActionState::update` method
-/// action_state.press(Action::Jump);
+/// action_state.press(&Action::Jump);
 ///
-/// assert!(action_state.pressed(Action::Jump));
-/// assert!(action_state.just_pressed(Action::Jump));
-/// assert!(action_state.released(Action::Left));
+/// assert!(action_state.pressed(&Action::Jump));
+/// assert!(action_state.just_pressed(&Action::Jump));
+/// assert!(action_state.released(&Action::Left));
 ///
 /// // Resets just_pressed and just_released
 /// action_state.tick(Instant::now());
-/// assert!(action_state.pressed(Action::Jump));
-/// assert!(!action_state.just_pressed(Action::Jump));
+/// assert!(action_state.pressed(&Action::Jump));
+/// assert!(!action_state.just_pressed(&Action::Jump));
 ///
-/// action_state.release(Action::Jump);
-/// assert!(!action_state.pressed(Action::Jump));
-/// assert!(action_state.released(Action::Jump));
-/// assert!(action_state.just_released(Action::Jump));
+/// action_state.release(&Action::Jump);
+/// assert!(!action_state.pressed(&Action::Jump));
+/// assert!(action_state.released(&Action::Jump));
+/// assert!(action_state.just_released(&Action::Jump));
 ///
 /// action_state.tick(Instant::now());
-/// assert!(action_state.released(Action::Jump));
-/// assert!(!action_state.just_released(Action::Jump));
+/// assert!(action_state.released(&Action::Jump));
+/// assert!(!action_state.just_released(&Action::Jump));
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
@@ -204,21 +204,21 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// let mut action_state = ActionState::<Action>::default();
     /// // Virtual buttons start released
-    /// assert!(action_state.state(Action::Run).just_released());
-    /// assert!(action_state.just_released(Action::Jump));
+    /// assert!(action_state.state(&Action::Run).just_released());
+    /// assert!(action_state.just_released(&Action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just released to no longer be just released
     /// action_state.tick(Instant::now());
-    /// assert!(action_state.released(Action::Jump));
-    /// assert!(!action_state.just_released(Action::Jump));
+    /// assert!(action_state.released(&Action::Jump));
+    /// assert!(!action_state.just_released(&Action::Jump));
     ///
-    /// action_state.press(Action::Jump);
-    /// assert!(action_state.just_pressed(Action::Jump));
+    /// action_state.press(&Action::Jump);
+    /// assert!(action_state.just_pressed(&Action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just pressed to no longer be just pressed
     /// action_state.tick(Instant::now());
-    /// assert!(action_state.pressed(Action::Jump));
-    /// assert!(!action_state.just_pressed(Action::Jump));
+    /// assert!(action_state.pressed(&Action::Jump));
+    /// assert!(!action_state.just_pressed(&Action::Jump));
     /// ```
     pub fn tick(&mut self, current_instant: Instant) {
         use VirtualButtonState::*;
@@ -267,7 +267,7 @@ impl<A: Actionlike> ActionState<A> {
     ///     Jump,
     /// }
     /// let mut action_state = ActionState::<Action>::default();
-    /// let run_state = action_state.state(Action::Run);
+    /// let run_state = action_state.state(&Action::Run);
     /// // States can either be pressed or released,
     /// // and store an internal `Timing`
     /// if let VirtualButtonState::Pressed(timing) = run_state {
@@ -314,11 +314,11 @@ impl<A: Actionlike> ActionState<A> {
     /// let mut action_state = ActionState::<Action>::default();
     ///
     /// // Extract the state from the ability slot
-    /// let slot_1_state = ability_slot_state.state(AbilitySlot::Slot1);
+    /// let slot_1_state = ability_slot_state.state(&AbilitySlot::Slot1);
     ///
     /// // And transfer it to the actual ability that we care about
     /// // without losing timing information
-    /// action_state.set_state(Action::Run, slot_1_state);
+    /// action_state.set_state(&Action::Run, slot_1_state);
     /// ```
     #[inline]
     pub fn set_state(&mut self, action: &A, state: VirtualButtonState) {
