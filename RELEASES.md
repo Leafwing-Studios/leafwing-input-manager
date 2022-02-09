@@ -30,6 +30,7 @@
 
 - the `ActionState` component is no longer marked as `Changed` every frame
 - `InputManagerPlugin::run_in_state` now actually works!
+- virtually all methods now take actions and inputs by reference, rather than by ownership, eliminating unneccesary copies
 
 ## Version 0.1.2
 
