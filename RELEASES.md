@@ -1,5 +1,13 @@
 # Release Notes
 
+## Version 0.3 (Unreleased)
+
+### Enhancements
+
+### Usability
+
+### Bug fixes
+
 ## Version 0.2
 
 ### Enhancements
