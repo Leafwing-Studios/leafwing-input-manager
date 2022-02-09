@@ -6,6 +6,9 @@
 
 ### Usability
 
+- reverted change from by-reference to by-value APIs for `Actionlike` types.
+  - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overhwhelming majority of uses.
+
 ### Bug fixes
 
 ## Version 0.2

@@ -58,7 +58,7 @@ fn report_pressed_actions(
 ) {
     let action_state = query.single();
     for action in TestAction::iter() {
-        if action_state.just_pressed(&action) {
+        if action_state.just_pressed(action) {
             dbg!(action);
         }
     }

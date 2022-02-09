@@ -17,7 +17,7 @@ fn pay_respects(
     action_state: Query<&ActionState<Action>, With<Player>>,
     mut respect: ResMut<Respect>,
 ) {
-    if action_state.single().pressed(&Action::PayRespects) {
+    if action_state.single().pressed(Action::PayRespects) {
         respect.0 = true;
     }
 }
@@ -180,7 +180,7 @@ fn action_state_driver() {
     // Check the action state
     let mut action_state_query = app.world.query::<&ActionState<Action>>();
     let action_state = action_state_query.iter(&app.world).next().unwrap();
-    assert!(action_state.pressed(&Action::PayRespects));
+    assert!(action_state.pressed(Action::PayRespects));
 
     // Check the effects of that action state
     let respect = app.world.get_resource::<Respect>().unwrap();

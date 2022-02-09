@@ -39,7 +39,12 @@ pub mod prelude {
 /// Actions serve as "virtual buttons", cleanly abstracting over messy, customizable inputs
 /// in a way that can be easily consumed by your game logic.
 ///
-/// This trait should be implemented on the `A` type that you want to pass into [`InputManagerPlugin`]
+/// This trait should be implemented on the `A` type that you want to pass into [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
+///
+/// Generally, these types will be very small (often data-less) enums.
+/// As a result, the APIs in this crate accept actions by value, rather than reference.
+/// While `Copy` is not a required trait bound,
+/// users are strongly encouraged to derive `Copy` on these enums whenever possible to improve ergonomics.
 ///
 /// # Example
 /// ```rust

@@ -67,7 +67,7 @@ use serde::{Deserialize, Serialize};
 ///
 ///
 /// // But you can't Hide :(
-/// input_map.clear_action(&Action::Hide, None);
+/// input_map.clear_action(Action::Hide, None);
 ///```
 #[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InputMap<A: Actionlike> {
@@ -176,14 +176,14 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         // Don't overflow the set!
-        if self.n_registered(&action, None) >= 16 {
+        if self.n_registered(action.clone(), None) >= 16 {
             return self;
         }
 
         // Respect any per-input-mode caps that have been set
         if let Some(per_mode_cap) = self.per_mode_cap {
             for input_mode in input.input_modes() {
-                if self.n_registered(&action, Some(input_mode)) >= per_mode_cap {
+                if self.n_registered(action.clone(), Some(input_mode)) >= per_mode_cap {
                     return self;
                 }
             }
@@ -257,11 +257,11 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         for action in A::iter() {
-            for input in self.get(&action, None) {
+            for input in self.get(action.clone(), None) {
                 new_map.insert(action.clone(), input);
             }
 
-            for input in other.get(&action, None) {
+            for input in other.get(action.clone(), None) {
                 new_map.insert(action.clone(), input);
             }
         }
@@ -277,21 +277,21 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns all previously registered inputs, if any
     pub fn replace(
         &mut self,
-        action: &A,
+        action: A,
         input: impl Into<UserInput>,
     ) -> Option<PetitSet<UserInput, 16>> {
         let input = input.into();
 
         let mut old_inputs: PetitSet<UserInput, 16> = PetitSet::default();
         for input_mode in input.input_modes() {
-            if let Some(removed_inputs) = self.clear_action(action, Some(input_mode)) {
+            if let Some(removed_inputs) = self.clear_action(action.clone(), Some(input_mode)) {
                 for removed_input in removed_inputs {
                     old_inputs.insert(removed_input);
                 }
             }
         }
 
-        self.insert(action.clone(), input);
+        self.insert(action, input);
 
         Some(old_inputs)
     }
@@ -302,7 +302,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns the replaced input, if any.
     pub fn replace_at(
         &mut self,
-        action: &A,
+        action: A,
         input: impl Into<UserInput>,
         index: u8,
     ) -> Option<UserInput> {
@@ -315,8 +315,8 @@ impl<A: Actionlike> InputMap<A> {
 
         // We know that the input belongs to exactly one mode
         let input_mode = input_modes.into_iter().next().unwrap();
-        let removed = self.clear_at(action, input_mode, index);
-        self.insert(action.clone(), input);
+        let removed = self.clear_at(action.clone(), input_mode, index);
+        self.insert(action, input);
 
         removed
     }
@@ -357,12 +357,12 @@ impl<A: Actionlike> InputMap<A> {
         let mut removed_actions = InputMap::default();
 
         // Cull excess mappings
-        for ref action in A::iter() {
+        for action in A::iter() {
             for input_mode in InputMode::iter() {
-                let n_registered = self.n_registered(action, Some(input_mode));
+                let n_registered = self.n_registered(action.clone(), Some(input_mode));
                 if n_registered > per_mode_cap {
                     for i in per_mode_cap..n_registered {
-                        let removed_input = self.clear_at(action, input_mode, i);
+                        let removed_input = self.clear_at(action.clone(), input_mode, i);
                         if let Some(input) = removed_input {
                             removed_actions.insert(action.clone(), input);
                         }
@@ -420,9 +420,11 @@ impl<A: Actionlike> InputMap<A> {
 
         // Generate the raw action presses
         for action in A::iter() {
-            for input in self.get(&action, None) {
+            for input in self.get(action.clone(), None) {
                 if input_streams.input_pressed(&input) {
-                    pressed_actions.insert(action.clone());
+                    pressed_actions.insert(action);
+                    // No need to press more than once
+                    break;
                 }
             }
         }
@@ -450,8 +452,8 @@ impl<A: Actionlike> InputMap<A> {
     /// The order of these values is stable, in a first-in, first-out fashion.
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
     #[must_use]
-    pub fn get(&self, action: &A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
-        if let Some(full_set) = self.map.get(action) {
+    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
+        if let Some(full_set) = self.map.get(&action) {
             if let Some(input_mode) = input_mode {
                 let mut matching_set = PetitSet::default();
                 for input in full_set.iter() {
@@ -480,7 +482,7 @@ impl<A: Actionlike> InputMap<A> {
     /// A maximum of `CAP` bindings across all input modes can be stored for each action,
     /// and insert operations will silently fail if used when `CAP` bindings already exist.
     #[must_use]
-    pub fn n_registered(&self, action: &A, input_mode: Option<InputMode>) -> u8 {
+    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> u8 {
         self.get(action, input_mode).len() as u8
     }
 
@@ -490,7 +492,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn len(&self) -> usize {
         let mut i = 0;
-        for ref action in A::iter() {
+        for action in A::iter() {
             i += self.n_registered(action, None) as usize;
         }
         i
@@ -515,13 +517,13 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns all previously registered inputs, if any
     pub fn clear_action(
         &mut self,
-        action: &A,
+        action: A,
         input_mode: Option<InputMode>,
     ) -> Option<PetitSet<UserInput, 16>> {
         // FIXME: does not appear to be working correctly
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
-            if let Some(bindings) = self.map.remove(action) {
+            if let Some(bindings) = self.map.remove(&action) {
                 let mut retained_set: PetitSet<UserInput, 16> = PetitSet::default();
                 let mut removed_set: PetitSet<UserInput, 16> = PetitSet::default();
 
@@ -551,7 +553,7 @@ impl<A: Actionlike> InputMap<A> {
                 None
             }
         } else {
-            let removed = self.map.remove(action);
+            let removed = self.map.remove(&action);
             // Cache clashes now, to ensure a clean state
             self.cache_possible_clashes();
             removed
@@ -561,15 +563,15 @@ impl<A: Actionlike> InputMap<A> {
     /// Clears the input for the `action` with the specified [`InputMode`] at the provided index
     ///
     /// Returns the removed input, if any
-    pub fn clear_at(&mut self, action: &A, input_mode: InputMode, index: u8) -> Option<UserInput> {
-        let mut bindings = self.get(action, Some(input_mode));
+    pub fn clear_at(&mut self, action: A, input_mode: InputMode, index: u8) -> Option<UserInput> {
+        let mut bindings = self.get(action.clone(), Some(input_mode));
         if (bindings.len() as u8) < index {
             // Not enough matching bindings were found
             return None;
         }
 
         // Clear out existing mappings for that input mode
-        self.clear_action(action, Some(input_mode));
+        self.clear_action(action.clone(), Some(input_mode));
 
         // Remove the binding at the provided index
         let removed = bindings.take_at(index as usize);
@@ -598,8 +600,8 @@ impl<A: Actionlike> InputMap<A> {
             ..Default::default()
         };
 
-        for ref action in A::iter() {
-            if let Some(removed_inputs) = self.clear_action(action, input_mode) {
+        for action in A::iter() {
+            if let Some(removed_inputs) = self.clear_action(action.clone(), input_mode) {
                 // Put back the ones that didn't match
                 for input in removed_inputs.iter() {
                     cleared_input_map.insert(action.clone(), input.clone());
@@ -631,14 +633,14 @@ mod tests {
         input_map.insert(Action::Run, KeyCode::Space);
 
         assert_eq!(
-            input_map.get(&Action::Run, None),
+            input_map.get(Action::Run, None),
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(Action::Run, KeyCode::Space);
         assert_eq!(
-            input_map.get(&Action::Run, None),
+            input_map.get(Action::Run, None),
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
         );
     }
@@ -654,7 +656,7 @@ mod tests {
         input_map_1.insert(Action::Run, KeyCode::Return);
 
         assert_eq!(
-            input_map_1.get(&Action::Run, None),
+            input_map_1.get(Action::Run, None),
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into(), KeyCode::Return.into()])
         );
 
@@ -699,17 +701,17 @@ mod tests {
         let one_item_input_map = input_map.clone();
 
         // Clearing without a specified input mode
-        input_map.clear_action(&Action::Run, None);
+        input_map.clear_action(Action::Run, None);
         assert_eq!(input_map, InputMap::default());
 
         // Clearing with the non-matching input mode
         input_map.insert(Action::Run, KeyCode::Space);
-        input_map.clear_action(&Action::Run, Some(InputMode::Gamepad));
-        input_map.clear_action(&Action::Run, Some(InputMode::Mouse));
+        input_map.clear_action(Action::Run, Some(InputMode::Gamepad));
+        input_map.clear_action(Action::Run, Some(InputMode::Mouse));
         assert_eq!(input_map, one_item_input_map);
 
         // Clearing with the matching input mode
-        input_map.clear_action(&Action::Run, Some(InputMode::Keyboard));
+        input_map.clear_action(Action::Run, Some(InputMode::Keyboard));
         assert_eq!(input_map, InputMap::default());
 
         // Clearing an entire input mode
@@ -723,7 +725,7 @@ mod tests {
         input_map.insert(Action::Hide, GamepadButtonType::South);
         input_map.insert(Action::Run, MouseButton::Left);
         input_map.clear_input_mode(Some(InputMode::Gamepad));
-        input_map.clear_action(&Action::Run, Some(InputMode::Mouse));
+        input_map.clear_action(Action::Run, Some(InputMode::Mouse));
         assert_eq!(input_map, one_item_input_map);
 
         // Clearing all inputs works
@@ -793,7 +795,7 @@ mod tests {
         let default_input_map = input_map.clone();
 
         // Changing from the default
-        input_map.replace(&Action::Jump, KeyCode::J);
+        input_map.replace(Action::Jump, KeyCode::J);
 
         // Clearing all keyboard bindings works as expected
         input_map.clear_input_mode(Some(InputMode::Keyboard));

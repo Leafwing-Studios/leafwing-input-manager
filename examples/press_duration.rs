@@ -87,13 +87,13 @@ fn hold_dash(mut player_query: Query<(&ActionState<Action>, &mut Velocity), With
 
     let (action_state, mut velocity) = player_query.single_mut();
 
-    let left_state = action_state.state(&Action::Left);
+    let left_state = action_state.state(Action::Left);
     if left_state.just_released() {
         // Accelerate left
         velocity.x -= VELOCITY_RATIO * left_state.previous_duration().as_secs_f32();
     }
 
-    let right_state = action_state.state(&Action::Right);
+    let right_state = action_state.state(Action::Right);
     if right_state.just_released() {
         // Accelerate right
         velocity.x += VELOCITY_RATIO * right_state.previous_duration().as_secs_f32();

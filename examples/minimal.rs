@@ -40,7 +40,7 @@ fn spawn_player(mut commands: Commands) {
 fn jump(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
     // Each action has a virtual button of its own that you can check
-    if action_state.just_pressed(&Action::Jump) {
+    if action_state.just_pressed(Action::Jump) {
         println!("I'm jumping!");
     }
 }

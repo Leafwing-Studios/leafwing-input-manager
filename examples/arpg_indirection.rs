@@ -29,7 +29,7 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash, Copy)]
 enum Slot {
     Primary,
     Secondary,
@@ -40,7 +40,7 @@ enum Slot {
 }
 
 // The list of possible abilities is typically longer than the list of slots
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash, Copy)]
 enum Ability {
     Slash,
     Shoot,
@@ -110,10 +110,10 @@ fn copy_action_state(
 ) {
     for (slot_state, mut ability_state, ability_slot_map) in query.iter_mut() {
         for slot in Slot::iter() {
-            if let Some(matching_ability) = ability_slot_map.get(&slot) {
+            if let Some(&matching_ability) = ability_slot_map.get(&slot) {
                 // This copies the `VirtualButtonState` between the ActionStates,
                 // including information about how long the buttons have been pressed or released
-                ability_state.set_state(matching_ability, slot_state.state(&slot));
+                ability_state.set_state(matching_ability, slot_state.state(slot));
             }
         }
     }
