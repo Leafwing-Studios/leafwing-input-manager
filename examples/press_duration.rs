@@ -3,7 +3,6 @@
 
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
-use strum::EnumIter;
 
 fn main() {
     App::new()
@@ -19,7 +18,7 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum Action {
     Left,
     Right,
@@ -46,15 +45,13 @@ struct PlayerBundle {
 impl PlayerBundle {
     fn default_input_map() -> InputMap<Action> {
         use Action::*;
-        let mut input_map = InputMap::default();
 
-        input_map.insert(Left, KeyCode::A);
-        input_map.insert(Left, KeyCode::Left);
-
-        input_map.insert(Right, KeyCode::D);
-        input_map.insert(Right, KeyCode::Right);
-
-        input_map
+        InputMap::new([
+            (Left, KeyCode::A),
+            (Left, KeyCode::Left),
+            (Right, KeyCode::D),
+            (Right, KeyCode::Right),
+        ])
     }
 }
 
@@ -90,13 +87,13 @@ fn hold_dash(mut player_query: Query<(&ActionState<Action>, &mut Velocity), With
 
     let (action_state, mut velocity) = player_query.single_mut();
 
-    let left_state = action_state.state(Action::Left);
+    let left_state = action_state.state(&Action::Left);
     if left_state.just_released() {
         // Accelerate left
         velocity.x -= VELOCITY_RATIO * left_state.previous_duration().as_secs_f32();
     }
 
-    let right_state = action_state.state(Action::Right);
+    let right_state = action_state.state(&Action::Right);
     if right_state.just_released() {
         // Accelerate right
         velocity.x += VELOCITY_RATIO * right_state.previous_duration().as_secs_f32();

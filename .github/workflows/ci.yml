@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        toolchain: [stable, nightly]
+        toolchain: [stable]
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
@@ -53,7 +53,7 @@ jobs:
           key: ${{ runner.os }}-cargo-ci-${{ hashFiles('**/Cargo.toml') }}
       - uses: actions-rs/toolchain@v1
         with:
-          toolchain: nightly
+          toolchain: stable
           components: rustfmt, clippy
           override: true
       - name: CI job

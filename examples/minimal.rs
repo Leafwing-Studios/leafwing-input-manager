@@ -1,12 +1,9 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
-use strum::EnumIter;
 
 fn main() {
     App::new()
-        .add_plugins(MinimalPlugins)
-        // Usually, this is included in `DefaultPlugins`
-        .add_plugin(bevy::input::InputPlugin)
+        .add_plugins(DefaultPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
         .add_plugin(InputManagerPlugin::<Action>::default())
@@ -17,7 +14,8 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+// This is the list of "things in the game I want to be able to do based on input"
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum Action {
     Run,
     Jump,
@@ -27,26 +25,22 @@ enum Action {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
-    // Adding new bindings is easy!
-    let mut input_map = InputMap::default();
-    input_map.insert(Action::Jump, KeyCode::Space);
-
     commands
         .spawn()
         .insert(Player)
         .insert_bundle(InputManagerBundle::<Action> {
-            // Stores "which actions are being used"
+            // Stores "which virtual action buttons are currently pressed"
             action_state: ActionState::default(),
-            // Stores input bindings
-            input_map,
+            // Stores how those actions relate to inputs from your player
+            input_map: InputMap::new([(Action::Jump, KeyCode::Space)]),
         });
 }
 
-// Query for the ActionState component in your game logic systems!
+// Query for the `ActionState` component in your game logic systems!
 fn jump(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
-    // Each action variant has a virtual button of its own
-    if action_state.just_pressed(Action::Jump) {
+    // Each action has a virtual button of its own that you can check
+    if action_state.just_pressed(&Action::Jump) {
         println!("I'm jumping!");
     }
 }

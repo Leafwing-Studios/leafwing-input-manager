@@ -1,20 +1,17 @@
+//! Derives the [`Actionlike`] trait
+//
+//! This derive macro was inspired by the `strum` crate's `EnumIter` macro.
+//! Original source: https://github.com/Peternator7/strum,
+//! Copyright (c) 2019 Peter Glotfelty under the MIT License
+
 extern crate proc_macro;
-
+mod actionlike;
 use proc_macro::TokenStream;
-use quote::quote;
-use syn::{parse_macro_input, DeriveInput};
+use syn::DeriveInput;
 
-#[proc_macro_derive(Actionlike)]
-pub fn derive_actionlike(input: TokenStream) -> TokenStream {
-    // Parse the input tokens into a syntax tree
-    let ast = parse_macro_input!(input as DeriveInput);
-    let struct_name = &ast.ident;
+#[proc_macro_derive(Actionlike, attributes(strum))]
+pub fn actionlike(input: TokenStream) -> TokenStream {
+    let ast = syn::parse_macro_input!(input as DeriveInput);
 
-    // Build the output
-    let expanded = quote! {
-        impl Actionlike for #struct_name {}
-    };
-
-    // Hand the output tokens back to the compiler
-    TokenStream::from(expanded)
+    crate::actionlike::actionlike_inner(&ast).into()
 }

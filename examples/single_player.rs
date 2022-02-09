@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 use direction::Direction;
 use leafwing_input_manager::prelude::*;
-use strum::EnumIter;
 
 fn main() {
     App::new()
-        .add_plugins(MinimalPlugins)
+        .add_plugins(DefaultPlugins)
         .add_plugin(bevy::input::InputPlugin)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
@@ -22,7 +21,7 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, EnumIter)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum ArpgAction {
     // Movement
     Up,
@@ -79,7 +78,7 @@ impl PlayerBundle {
         // This is a quick and hacky solution:
         // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
         // and gracefully handle disconnects
-        input_map.assign_gamepad(Gamepad(0));
+        input_map.set_gamepad(Gamepad(0));
 
         // Movement
         input_map.insert(Up, KeyCode::Up);
@@ -129,7 +128,7 @@ fn spawn_player(mut commands: Commands) {
 fn cast_fireball(query: Query<&ActionState<ArpgAction>, With<Player>>) {
     let action_state = query.single();
 
-    if action_state.just_pressed(ArpgAction::Ability1) {
+    if action_state.just_pressed(&ArpgAction::Ability1) {
         println!("Fwoosh!");
     }
 }
@@ -137,11 +136,11 @@ fn cast_fireball(query: Query<&ActionState<ArpgAction>, With<Player>>) {
 fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
     let action_state = query.single();
 
-    if action_state.just_pressed(ArpgAction::Ability4) {
+    if action_state.just_pressed(&ArpgAction::Ability4) {
         let mut direction = Direction::NEUTRAL;
 
         for input_direction in ArpgAction::DIRECTIONS {
-            if action_state.pressed(input_direction) {
+            if action_state.pressed(&input_direction) {
                 direction += input_direction.direction();
             }
         }
@@ -163,7 +162,7 @@ fn player_walks(
     let mut direction = Direction::NEUTRAL;
 
     for input_direction in ArpgAction::DIRECTIONS {
-        if action_state.pressed(input_direction) {
+        if action_state.pressed(&input_direction) {
             direction += input_direction.direction();
         }
     }

@@ -1,8 +1,9 @@
 //! The systems that power each [`InputManagerPlugin`](crate::InputManagerPlugin).
 
 use crate::{
-    action_state::{ActionState, ActionStateDriver},
+    action_state::{ActionDiff, ActionState, ActionStateDriver},
     input_map::InputMap,
+    user_input::InputStreams,
     Actionlike,
 };
 use bevy::prelude::*;
@@ -22,19 +23,31 @@ pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>, t
 }
 
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
+///
+/// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
 pub fn update_action_state<A: Actionlike>(
-    gamepad_input_stream: Res<Input<GamepadButton>>,
-    keyboard_input_stream: Res<Input<KeyCode>>,
-    mouse_input_stream: Res<Input<MouseButton>>,
+    maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
+    maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
+    maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
+    let gamepad = maybe_gamepad_input_stream.as_deref();
+
+    let keyboard = maybe_keyboard_input_stream.as_deref();
+
+    let mouse = maybe_mouse_input_stream.as_deref();
+
     for (mut action_state, input_map) in query.iter_mut() {
-        action_state.update(
-            input_map,
-            &*gamepad_input_stream,
-            &*keyboard_input_stream,
-            &*mouse_input_stream,
-        );
+        let input_streams = InputStreams {
+            gamepad,
+            keyboard,
+            mouse,
+            associated_gamepad: input_map.gamepad(),
+        };
+
+        let pressed_set = input_map.which_pressed(&input_streams);
+
+        action_state.update(pressed_set);
     }
 }
 
@@ -50,7 +63,71 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
             let mut action_state = action_state_query
                 .get_mut(action_state_driver.entity)
                 .expect("Entity does not exist, or does not have an `ActionState` component.");
-            action_state.press(action_state_driver.action);
+            action_state.press(&action_state_driver.action);
+        }
+    }
+}
+
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+///
+/// The `ID` generic type should be a stable entity identifer,
+/// suitable to be sent across a network.
+///
+/// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
+pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
+    action_state_query: Query<(&ActionState<A>, &ID)>,
+    mut action_diffs: EventWriter<ActionDiff<A, ID>>,
+) {
+    for (action_state, id) in action_state_query.iter() {
+        for action in action_state.get_just_pressed() {
+            action_diffs.send(ActionDiff::Pressed {
+                action: action.clone(),
+                id: id.clone(),
+            });
+        }
+
+        for action in action_state.get_just_released() {
+            action_diffs.send(ActionDiff::Released {
+                action: action.clone(),
+                id: id.clone(),
+            });
+        }
+    }
+}
+
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+///
+/// The `ID` generic type should be a stable entity identifer,
+/// suitable to be sent across a network.
+///
+/// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
+pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
+    mut action_state_query: Query<(&mut ActionState<A>, &ID)>,
+    mut action_diffs: EventReader<ActionDiff<A, ID>>,
+) {
+    // PERF: This would probably be faster with an index, but is much more fussy
+    for action_diff in action_diffs.iter() {
+        for (mut action_state, id) in action_state_query.iter_mut() {
+            match action_diff {
+                ActionDiff::Pressed {
+                    action,
+                    id: event_id,
+                } => {
+                    if event_id == id {
+                        action_state.press(action);
+                        continue;
+                    }
+                }
+                ActionDiff::Released {
+                    action,
+                    id: event_id,
+                } => {
+                    if event_id == id {
+                        action_state.release(action);
+                        continue;
+                    }
+                }
+            };
         }
     }
 }
