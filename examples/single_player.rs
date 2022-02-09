@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use leafwing_input_manager::axislike_user_input::Direction;
+use leafwing_input_manager::geometric_primitives::Direction;
 use leafwing_input_manager::prelude::*;
 
 fn main() {
