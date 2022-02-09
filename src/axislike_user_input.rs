@@ -54,7 +54,10 @@ impl InputAxis {
     #[must_use]
     #[inline]
     pub fn rotation(&self) -> Option<Rotation> {
-        Rotation::from_xy(self.xy)
+        match Rotation::from_xy(self.xy) {
+            Ok(rotation) => Some(rotation),
+            Err(_) => None,
+        }
     }
 
     /// How far from the origin is this axis's position?

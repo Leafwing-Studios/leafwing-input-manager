@@ -1,12 +1,11 @@
 //! Missing Bevy primitives for working with 2D directions
 
-use bevy::math::{const_vec2, Vec2};
-use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 pub use direction::Direction;
 pub use rotation::Rotation;
 
 mod rotation {
-    use super::*;
+    use super::conversions::NearOriginInput;
+    use bevy::math::Vec2;
 
     /// A discretized 2-dimensional rotation
     ///
@@ -64,14 +63,13 @@ mod rotation {
         /// Constructs a [`Direction`] from an (x,y) Euclidean coordinate
         ///
         /// If both x and y are nearly 0 (the magnitude is less than [`EPSILON`](f32::EPSILON)), None will be returned instead.
-        #[must_use]
         #[inline]
-        pub fn from_xy(xy: Vec2) -> Option<Rotation> {
+        pub fn from_xy(xy: Vec2) -> Result<Rotation, NearOriginInput> {
             if xy.length_squared() < f32::EPSILON * f32::EPSILON {
-                return None;
+                Err(NearOriginInput)
             } else {
                 let radians = f32::atan2(xy.y, xy.x);
-                Some(Rotation::from_radians(radians))
+                Ok(Rotation::from_radians(radians))
             }
         }
 
@@ -121,7 +119,8 @@ mod direction {
     use bevy::math::Vec3;
     use std::f32::consts::SQRT_2;
 
-    use super::*;
+    use bevy::math::{const_vec2, Vec2};
+    use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
     /// A unit direction vector
     ///
@@ -135,6 +134,7 @@ mod direction {
         /// Creates a new [`Direction`] from a [`Vec2`]
         ///
         /// The [`Vec2`] will be normalized, or if it is near zero, [`Direction::NEUTRAL`] will be returned instead
+        #[must_use]
         #[inline]
         pub fn new(vec2: Vec2) -> Self {
             Self {
@@ -142,6 +142,18 @@ mod direction {
             }
         }
 
+        /// Returns the raw underlying [`Vec2`] unit vector of this direction
+        ///
+        /// This will always have a magnitude of 1, unless it is [`Direction::NEUTRAL`]
+        #[must_use]
+        #[inline]
+        pub fn unit_vector(&self) -> Vec2 {
+            self.unit_vector
+        }
+    }
+
+    // Constants
+    impl Direction {
         /// The neutral direction, which does not point anywhere
         ///
         /// This is the only constructable value with a magnitude other than 1.
@@ -244,6 +256,55 @@ mod direction {
             Self {
                 unit_vector: -self.unit_vector,
             }
+        }
+    }
+}
+
+mod conversions {
+    use super::{Direction, Rotation};
+    use bevy::math::Vec2;
+
+    /// A [`Vec2`] was supplied that was too close to the origin
+    pub struct NearOriginInput;
+
+    impl From<Rotation> for Direction {
+        fn from(rotation: Rotation) -> Direction {
+            Direction::new(rotation.into_xy())
+        }
+    }
+
+    impl From<Direction> for Option<Rotation> {
+        fn from(direction: Direction) -> Option<Rotation> {
+            match Rotation::from_xy(direction.unit_vector()) {
+                Ok(rotation) => Some(rotation),
+                Err(_) => None,
+            }
+        }
+    }
+
+    impl TryFrom<Vec2> for Rotation {
+        type Error = NearOriginInput;
+
+        fn try_from(vec2: Vec2) -> Result<Rotation, NearOriginInput> {
+            Rotation::from_xy(vec2)
+        }
+    }
+
+    impl From<Rotation> for Vec2 {
+        fn from(rotation: Rotation) -> Vec2 {
+            rotation.into_xy()
+        }
+    }
+
+    impl From<Vec2> for Direction {
+        fn from(vec2: Vec2) -> Direction {
+            Direction::new(vec2)
+        }
+    }
+
+    impl From<Direction> for Vec2 {
+        fn from(direction: Direction) -> Vec2 {
+            direction.unit_vector()
         }
     }
 }
