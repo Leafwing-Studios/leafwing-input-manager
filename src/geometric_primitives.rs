@@ -7,17 +7,18 @@ pub use vec2::Direction;
 mod rotation {
     use super::conversions::NearOriginInput;
     use bevy::math::Vec2;
+    use core::ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign};
 
     /// A discretized 2-dimensional rotation
     ///
-    /// Internally, these are stored in hundredths of a degree, and so can be cleanly added and reversed
+    /// Internally, these are stored in normalized tenths of a degree, and so can be cleanly added and reversed
     /// without accumulating error.
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd)]
     pub struct Rotation {
         /// Hundredth of a degree, measured clockwise from midnight (x=0, y=1)
         ///
-        /// 36000 make up a full circle.
-        centi_degrees: u16,
+        /// 3600 make up a full circle.
+        deci_degrees: u16,
     }
 
     // Useful methods
@@ -25,21 +26,21 @@ mod rotation {
         /// Creates a new [`Rotation`] from a whole number of hundredth of a degree
         ///
         /// Measured clockwise from midnight.
-        pub fn new(centi_degrees: u16) -> Rotation {
+        pub fn new(deci_degrees: u16) -> Rotation {
             Rotation {
-                centi_degrees: centi_degrees % Rotation::FULL_CIRCLE,
+                deci_degrees: deci_degrees % Rotation::FULL_CIRCLE,
             }
         }
 
         /// Returns the absolute distance, as a [`Rotation`], between `self` and `other`
         pub fn distance(&self, other: Rotation) -> Rotation {
-            if self.centi_degrees >= other.centi_degrees {
+            if self.deci_degrees >= other.deci_degrees {
                 Rotation {
-                    centi_degrees: self.centi_degrees - other.centi_degrees,
+                    deci_degrees: self.deci_degrees - other.deci_degrees,
                 }
             } else {
                 Rotation {
-                    centi_degrees: other.centi_degrees - self.centi_degrees,
+                    deci_degrees: other.deci_degrees - self.deci_degrees,
                 }
             }
         }
@@ -47,41 +48,27 @@ mod rotation {
 
     // Constants
     impl Rotation {
-        /// The number of centi-degrees that make up a full circle
-        pub const FULL_CIRCLE: u16 = 36000;
+        /// The number of deci-degrees that make up a full circle
+        pub const FULL_CIRCLE: u16 = 3600;
 
         /// The direction that points straight up
-        pub const NORTH: Rotation = Rotation { centi_degrees: 0 };
+        pub const NORTH: Rotation = Rotation { deci_degrees: 0 };
 
         /// The direction that points straight right
-        pub const EAST: Rotation = Rotation {
-            centi_degrees: 9000,
-        };
+        pub const EAST: Rotation = Rotation { deci_degrees: 900 };
         /// The direction that points straight down
-        pub const SOUTH: Rotation = Rotation {
-            centi_degrees: 18000,
-        };
+        pub const SOUTH: Rotation = Rotation { deci_degrees: 1800 };
         /// The direction that points straight left
-        pub const WEST: Rotation = Rotation {
-            centi_degrees: 27000,
-        };
+        pub const WEST: Rotation = Rotation { deci_degrees: 2700 };
 
         /// The direction that points halfway between up and right
-        pub const NORTHEAST: Rotation = Rotation {
-            centi_degrees: 4500,
-        };
+        pub const NORTHEAST: Rotation = Rotation { deci_degrees: 450 };
         /// The direction that points halfway between down and right
-        pub const SOUTHEAST: Rotation = Rotation {
-            centi_degrees: 13500,
-        };
+        pub const SOUTHEAST: Rotation = Rotation { deci_degrees: 1350 };
         /// The direction that points halfway between down and left
-        pub const SOUTHWEST: Rotation = Rotation {
-            centi_degrees: 22500,
-        };
+        pub const SOUTHWEST: Rotation = Rotation { deci_degrees: 2250 };
         /// The direction that points halfway between left and up
-        pub const NORTHWEST: Rotation = Rotation {
-            centi_degrees: 31500,
-        };
+        pub const NORTHWEST: Rotation = Rotation { deci_degrees: 3150 };
     }
 
     // Conversion methods
@@ -114,13 +101,13 @@ mod rotation {
             let normalized_radians: f32 = radians.into().div_euclid(TAU);
 
             Rotation {
-                centi_degrees: (normalized_radians * 36000. / TAU) as u16,
+                deci_degrees: (normalized_radians * 3600. / TAU) as u16,
             }
         }
 
         /// Converts this direction into radians, measured clockwise from midnight
         pub fn into_radians(self) -> f32 {
-            self.centi_degrees as f32 * std::f32::consts::TAU / 36000.
+            self.deci_degrees as f32 * std::f32::consts::TAU / 3600.
         }
 
         /// Construct a [`Direction`] from degrees, measured clockwise from midnight
@@ -130,13 +117,66 @@ mod rotation {
             let normalized_degrees: f32 = degrees.into().div_euclid(360.0);
 
             Rotation {
-                centi_degrees: (normalized_degrees * 100.0) as u16,
+                deci_degrees: (normalized_degrees * 10.0) as u16,
             }
         }
 
         /// Converts this direction into degrees, measured clockwise from midnight
         pub fn into_degrees(self) -> f32 {
-            self.centi_degrees as f32 / 100.
+            self.deci_degrees as f32 / 10.
+        }
+    }
+
+    impl Add for Rotation {
+        type Output = Rotation;
+        fn add(self, rhs: Self) -> Rotation {
+            Rotation::new(self.deci_degrees + rhs.deci_degrees)
+        }
+    }
+
+    impl Sub for Rotation {
+        type Output = Rotation;
+        fn sub(self, rhs: Self) -> Rotation {
+            if self.deci_degrees >= rhs.deci_degrees {
+                Rotation::new(self.deci_degrees - rhs.deci_degrees)
+            } else {
+                Rotation::new(self.deci_degrees + Rotation::FULL_CIRCLE - rhs.deci_degrees)
+            }
+        }
+    }
+
+    impl AddAssign for Rotation {
+        fn add_assign(&mut self, rhs: Self) {
+            self.deci_degrees = (self.deci_degrees + rhs.deci_degrees) % Rotation::FULL_CIRCLE;
+        }
+    }
+
+    impl SubAssign for Rotation {
+        fn sub_assign(&mut self, rhs: Self) {
+            self.deci_degrees = (self.deci_degrees - rhs.deci_degrees) % Rotation::FULL_CIRCLE;
+        }
+    }
+
+    impl Neg for Rotation {
+        type Output = Rotation;
+        fn neg(self) -> Rotation {
+            Rotation {
+                deci_degrees: Rotation::FULL_CIRCLE - self.deci_degrees,
+            }
+        }
+    }
+
+    impl Mul<f32> for Rotation {
+        type Output = Rotation;
+        fn mul(self, rhs: f32) -> Rotation {
+            Rotation::from_degrees(self.into_degrees() * rhs)
+        }
+    }
+
+    impl Mul<Rotation> for f32 {
+        type Output = Rotation;
+        fn mul(self, rhs: Rotation) -> Rotation {
+            Rotation::from_degrees(rhs.into_degrees() * self)
         }
     }
 }
