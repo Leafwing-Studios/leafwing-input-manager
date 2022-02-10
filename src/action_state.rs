@@ -325,11 +325,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn set_state(&mut self, action: A, state: VirtualButtonState) {
-        let stored_state = self
-            .map
-            .get_mut(&action.index())
-            .expect("Action {action} not found when setting state!");
-        *stored_state = state;
+        self.map.insert(action.index(), state);
     }
 
     /// Press the `action` virtual button
