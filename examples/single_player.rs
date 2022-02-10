@@ -21,16 +21,39 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Clone, Copy, Debug)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum ArpgAction {
     // Movement
-    Movement(Direction),
+    Up,
+    Down,
+    Left,
+    Right,
     // Abilities
     Ability1,
     Ability2,
     Ability3,
     Ability4,
     Ultimate,
+}
+
+impl ArpgAction {
+    // Lists like this can be very useful for quickly matching subsets of actions
+    const DIRECTIONS: [Self; 4] = [
+        ArpgAction::Up,
+        ArpgAction::Down,
+        ArpgAction::Left,
+        ArpgAction::Right,
+    ];
+
+    fn direction(self) -> Direction {
+        match self {
+            ArpgAction::Up => Direction::NORTH,
+            ArpgAction::Down => Direction::SOUTH,
+            ArpgAction::Left => Direction::EAST,
+            ArpgAction::Right => Direction::WEST,
+            _ => Direction::NEUTRAL,
+        }
+    }
 }
 
 #[derive(Component)]
@@ -47,7 +70,8 @@ struct PlayerBundle {
 
 impl PlayerBundle {
     fn default_input_map() -> InputMap<ArpgAction> {
-        // This allows us to significantly reducing boilerplate
+        // This allows us to replace `ArpgAction::Up` with `Up`,
+        // significantly reducing boilerplate
         use ArpgAction::*;
         let mut input_map = InputMap::default();
 
@@ -57,18 +81,17 @@ impl PlayerBundle {
         input_map.set_gamepad(Gamepad(0));
 
         // Movement
-        // FIXME: this doesn't work
-        input_map.insert(Movement(Direction::NORTH), KeyCode::Up);
-        input_map.insert(Movement(Direction::NORTH), GamepadButtonType::DPadUp);
+        input_map.insert(Up, KeyCode::Up);
+        input_map.insert(Up, GamepadButtonType::DPadUp);
 
-        input_map.insert(Movement(Direction::SOUTH), KeyCode::Down);
-        input_map.insert(Movement(Direction::SOUTH), GamepadButtonType::DPadDown);
+        input_map.insert(Down, KeyCode::Down);
+        input_map.insert(Down, GamepadButtonType::DPadDown);
 
-        input_map.insert(Movement(Direction::EAST), KeyCode::Left);
-        input_map.insert(Movement(Direction::EAST), GamepadButtonType::DPadLeft);
+        input_map.insert(Left, KeyCode::Left);
+        input_map.insert(Left, GamepadButtonType::DPadLeft);
 
-        input_map.insert(Movement(Direction::WEST), KeyCode::Right);
-        input_map.insert(Movement(Direction::WEST), GamepadButtonType::DPadRight);
+        input_map.insert(Right, KeyCode::Right);
+        input_map.insert(Right, GamepadButtonType::DPadRight);
 
         // Abilities
         input_map.insert(Ability1, KeyCode::Q);
@@ -114,14 +137,15 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
     let action_state = query.single();
 
     if action_state.just_pressed(ArpgAction::Ability4) {
-        // The internal `Direction::NEUTRAL` value is irrelevant;
-        // we merely need to get the information from the data
-        // FIXME: this is extremely ugly and unintuitive.
-        if let ArpgAction::Movement(direction) =
-            action_state.action_value(ArpgAction::Movement(Direction::NEUTRAL))
-        {
-            println!("Dashing in {direction:?}");
+        let mut direction = Direction::NEUTRAL;
+
+        for input_direction in ArpgAction::DIRECTIONS {
+            if action_state.pressed(input_direction) {
+                direction += input_direction.direction();
+            }
         }
+
+        println!("Dashing in {direction:?}");
     }
 }
 
@@ -135,11 +159,15 @@ fn player_walks(
 ) {
     let action_state = query.single();
 
-    if let ArpgAction::Movement(direction) =
-        action_state.action_value(ArpgAction::Movement(Direction::NEUTRAL))
-    {
-        if direction != Direction::NEUTRAL {
-            event_writer.send(PlayerWalk { direction });
+    let mut direction = Direction::NEUTRAL;
+
+    for input_direction in ArpgAction::DIRECTIONS {
+        if action_state.pressed(input_direction) {
+            direction += input_direction.direction();
         }
+    }
+
+    if direction != Direction::NEUTRAL {
+        event_writer.send(PlayerWalk { direction });
     }
 }
