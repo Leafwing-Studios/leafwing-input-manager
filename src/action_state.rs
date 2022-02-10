@@ -1,5 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
+use std::marker::PhantomData;
+
 use crate::Actionlike;
 use bevy::prelude::*;
 use bevy::utils::{Duration, Instant};
@@ -126,7 +128,7 @@ impl Default for VirtualButtonState {
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
 /// enum Action {
 ///     Left,
 ///     Right,
@@ -159,24 +161,25 @@ impl Default for VirtualButtonState {
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
-    map: HashMap<A, VirtualButtonState>,
+    map: HashMap<usize, VirtualButtonState>,
+    _phantom: PhantomData<A>,
 }
 
 impl<A: Actionlike> ActionState<A> {
-    /// Updates the [`ActionState`] based on a [`HashSet`] of pressed virtual buttons.
+    /// Updates the [`ActionState`] based on a [`HashSet`] of pressed virtual buttons' [`Actionlike::id`](Actionlike).
     ///
     /// The `pressed_set` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`] resources.
-    pub fn update(&mut self, pressed_set: HashSet<A>) {
+    pub fn update(&mut self, pressed_set: HashSet<usize>) {
         for action in A::iter() {
             match self.state(action.clone()) {
                 VirtualButtonState::Pressed(_) => {
-                    if !pressed_set.contains(&action) {
+                    if !pressed_set.contains(&action.index()) {
                         self.release(action);
                     }
                 }
                 VirtualButtonState::Released(_) => {
-                    if pressed_set.contains(&action) {
+                    if pressed_set.contains(&action.index()) {
                         self.press(action);
                     }
                 }
@@ -196,7 +199,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use leafwing_input_manager::action_state::VirtualButtonState;
     /// use bevy::utils::Instant;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -261,7 +264,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -278,7 +281,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn state(&self, action: A) -> VirtualButtonState {
-        if let Some(state) = self.map.get(&action) {
+        if let Some(state) = self.map.get(&action.index()) {
             state.clone()
         } else {
             VirtualButtonState::default()
@@ -298,13 +301,13 @@ impl<A: Actionlike> ActionState<A> {
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum AbilitySlot {
     ///     Slot1,
     ///     Slot2,
     /// }
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -324,7 +327,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn set_state(&mut self, action: A, state: VirtualButtonState) {
         let stored_state = self
             .map
-            .get_mut(&action)
+            .get_mut(&action.index())
             .expect("Action {action} not found when setting state!");
         *stored_state = state;
     }
@@ -333,7 +336,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn press(&mut self, action: A) {
         if let VirtualButtonState::Released(timing) = self.state(action.clone()) {
             self.map.insert(
-                action,
+                action.index(),
                 VirtualButtonState::Pressed(Timing {
                     instant_started: None,
                     current_duration: Duration::ZERO,
@@ -347,7 +350,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn release(&mut self, action: A) {
         if let VirtualButtonState::Pressed(timing) = self.state(action.clone()) {
             self.map.insert(
-                action,
+                action.index(),
                 VirtualButtonState::Released(Timing {
                     instant_started: None,
                     current_duration: Duration::ZERO,
@@ -396,48 +399,36 @@ impl<A: Actionlike> ActionState<A> {
 
     #[must_use]
     /// Which actions are currently pressed?
-    pub fn get_pressed(&self) -> HashSet<A> {
+    pub fn get_pressed(&self) -> Vec<A> {
         A::iter().filter(|a| self.pressed(a.clone())).collect()
     }
 
     #[must_use]
     /// Which actions were just pressed?
-    pub fn get_just_pressed(&self) -> HashSet<A> {
+    pub fn get_just_pressed(&self) -> Vec<A> {
         A::iter().filter(|a| self.just_pressed(a.clone())).collect()
     }
 
     #[must_use]
     /// Which actions are currently released?
-    pub fn get_released(&self) -> HashSet<A> {
+    pub fn get_released(&self) -> Vec<A> {
         A::iter().filter(|a| self.released(a.clone())).collect()
     }
 
     #[must_use]
     /// Which actions were just released?
-    pub fn get_just_released(&self) -> HashSet<A> {
+    pub fn get_just_released(&self) -> Vec<A> {
         A::iter()
             .filter(|a| self.just_released(a.clone()))
             .collect()
-    }
-
-    /// Creates a Hashmap with all of the possible A variants as keys, and false as the values
-    #[inline]
-    #[must_use]
-    pub fn default_map<V: Default>() -> HashMap<A, V> {
-        // PERF: optimize construction through pre-allocation or constification
-        let mut map: HashMap<A, V> = HashMap::default();
-
-        for action in A::iter() {
-            map.insert(action, V::default());
-        }
-        map
     }
 }
 
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> Self {
         Self {
-            map: Self::default_map(),
+            map: HashMap::default(),
+            _phantom: PhantomData::default(),
         }
     }
 }

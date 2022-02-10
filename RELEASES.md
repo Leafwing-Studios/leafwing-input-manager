@@ -4,10 +4,15 @@
 
 ### Enhancements
 
+- users can now feasibly store data in the enum variants of their `Actionlike` enums
+  - internally, matching is done based on the discriminant of the enum, not their value
+  - removed `Hash` and `Eq` bounds accordingly
+
 ### Usability
 
 - reverted change from by-reference to by-value APIs for `Actionlike` types.
-  - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overhwhelming majority of uses.
+  - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses.
+- relaxed `Hash` and `Eq` bounds on `Actionlike`
 
 ### Bug fixes
 

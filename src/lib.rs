@@ -6,7 +6,6 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use core::hash::Hash;
 use std::marker::PhantomData;
 
 pub mod action_state;
@@ -67,7 +66,7 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Send + Sync + Clone + Eq + Hash + 'static {
+pub trait Actionlike: Send + Sync + Clone + 'static {
     /// Iterates over the possible actions in the order they were defined
     fn iter() -> ActionIter<Self> {
         ActionIter::default()

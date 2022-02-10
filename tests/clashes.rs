@@ -118,6 +118,9 @@ impl ClashTestExt for App {
         assert_eq!(
             matching_input_map.which_pressed(&input_streams),
             pressed_actions
+                .iter()
+                .map(|action| action.index())
+                .collect()
         );
     }
 }

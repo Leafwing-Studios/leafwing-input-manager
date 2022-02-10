@@ -72,7 +72,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InputMap<A: Actionlike> {
     /// The raw [HashMap] of [PetitSet]s used to store the input mapping
-    pub map: HashMap<A, PetitSet<UserInput, 16>>,
+    pub map: HashMap<usize, PetitSet<UserInput, 16>>,
     per_mode_cap: Option<u8>,
     associated_gamepad: Option<Gamepad>,
     /// How should clashing (overlapping) inputs be handled?
@@ -189,14 +189,14 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        if let Some(existing_set) = self.map.get_mut(&action) {
+        if let Some(existing_set) = self.map.get_mut(&action.index()) {
             // Add the new input binding to the existing set
             existing_set.insert(input);
         } else {
             // Add the new input binding to a new set
             let mut new_set = PetitSet::default();
             new_set.insert(input);
-            self.map.insert(action, new_set);
+            self.map.insert(action.index(), new_set);
         }
 
         // Cache clashes now, to ensure a clean state
@@ -408,21 +408,22 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
         let pressed_set = self.which_pressed(input_streams);
-        pressed_set.contains(&action)
+        pressed_set.contains(&action.index())
     }
 
     /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
+    /// The `usize`s returned correspond to `Actionlike::index()`.
     #[must_use]
-    pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<A> {
+    pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<usize> {
         let mut pressed_actions = HashSet::default();
 
         // Generate the raw action presses
         for action in A::iter() {
             for input in self.get(action.clone(), None) {
                 if input_streams.input_pressed(&input) {
-                    pressed_actions.insert(action);
+                    pressed_actions.insert(action.index());
                     // No need to press more than once
                     break;
                 }
@@ -453,7 +454,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
     #[must_use]
     pub fn get(&self, action: A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
-        if let Some(full_set) = self.map.get(&action) {
+        if let Some(full_set) = self.map.get(&action.index()) {
             if let Some(input_mode) = input_mode {
                 let mut matching_set = PetitSet::default();
                 for input in full_set.iter() {
@@ -523,7 +524,7 @@ impl<A: Actionlike> InputMap<A> {
         // FIXME: does not appear to be working correctly
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
-            if let Some(bindings) = self.map.remove(&action) {
+            if let Some(bindings) = self.map.remove(&action.index()) {
                 let mut retained_set: PetitSet<UserInput, 16> = PetitSet::default();
                 let mut removed_set: PetitSet<UserInput, 16> = PetitSet::default();
 
@@ -553,7 +554,7 @@ impl<A: Actionlike> InputMap<A> {
                 None
             }
         } else {
-            let removed = self.map.remove(&action);
+            let removed = self.map.remove(&action.index());
             // Cache clashes now, to ensure a clean state
             self.cache_possible_clashes();
             removed
