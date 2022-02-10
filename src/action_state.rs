@@ -421,11 +421,25 @@ impl<A: Actionlike> ActionState<A> {
 }
 
 impl<A: Actionlike> Default for ActionState<A> {
-    fn default() -> Self {
-        Self {
+    fn default() -> ActionState<A> {
+        let mut action_state = Self {
             map: HashMap::default(),
             _phantom: PhantomData::default(),
+        };
+
+        // Initialize map in a fully released state
+        for action in A::iter() {
+            action_state.map.insert(
+                action.index(),
+                VirtualButtonState::Released(Timing {
+                    instant_started: None,
+                    current_duration: Duration::ZERO,
+                    previous_duration: Duration::ZERO,
+                }),
+            );
         }
+
+        action_state
     }
 }
 
@@ -693,4 +707,43 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
         /// The stable identifier of the entity
         id: ID,
     },
+}
+
+mod test {
+    use crate as leafwing_input_manager;
+    use crate::Actionlike;
+
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    enum Action {
+        Run,
+        Jump,
+    }
+
+    #[test]
+    fn time_tick_ticks_away() {
+        use crate::action_state::ActionState;
+        use std::time::Instant;
+
+        let mut action_state = ActionState::<Action>::default();
+
+        // Action states start fully released
+        dbg!(action_state.get_released());
+        dbg!(action_state.clone());
+
+        // Virtual buttons start released
+        assert!(action_state.state(Action::Run).just_released());
+        assert!(action_state.just_released(Action::Jump));
+
+        // Ticking time moves causes buttons that were just released to no longer be just released
+        action_state.tick(Instant::now());
+        assert!(action_state.released(Action::Jump));
+        assert!(!action_state.just_released(Action::Jump));
+        action_state.press(Action::Jump);
+        assert!(action_state.just_pressed(Action::Jump));
+
+        // Ticking time moves causes buttons that were just pressed to no longer be just pressed
+        action_state.tick(Instant::now());
+        assert!(action_state.pressed(Action::Jump));
+        assert!(!action_state.just_pressed(Action::Jump));
+    }
 }
