@@ -4,16 +4,17 @@
 
 ### Enhancements
 
-- users can now feasibly store data in the enum variants of their `Actionlike` enums
+- users can now store data in the enum variants of their `Actionlike` enums using `ActionState::action_value` and `set_action_value`
+  - this allows you to embed rich information about *how* the action should be done in an input-aware centralized fashion
   - internally, matching is done based on the discriminant of the enum, not their value
-  - removed `Hash` and `Eq` bounds accordingly
 - geometric primitives (`Direction` and `Rotation`) for working with rotation in 2 dimensions
 
 ### Usability
 
 - reverted change from by-reference to by-value APIs for `Actionlike` types.
-  - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses.
+  - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses
 - relaxed `Hash` and `Eq` bounds on `Actionlike`
+- `ActionState::state` and `set_state` methods renamed to `button_state` and `set_button_state` for clarity
 
 ### Bug fixes
 
