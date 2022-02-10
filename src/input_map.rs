@@ -4,7 +4,7 @@ use crate::buttonlike_user_input::{InputButton, InputMode, InputStreams, UserInp
 use crate::clashing_inputs::{Clash, ClashStrategy};
 use crate::Actionlike;
 use bevy::prelude::*;
-use bevy::utils::{HashMap, HashSet};
+use bevy::utils::HashSet;
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
@@ -71,8 +71,9 @@ use serde::{Deserialize, Serialize};
 ///```
 #[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InputMap<A: Actionlike> {
-    /// The raw [HashMap] of [PetitSet]s used to store the input mapping
-    pub map: HashMap<usize, PetitSet<UserInput, 16>>,
+    /// The raw vector of [PetitSet]s used to store the input mapping,
+    /// indexed by the `Actionlike::id` of `A`
+    map: Vec<PetitSet<UserInput, 16>>,
     per_mode_cap: Option<u8>,
     associated_gamepad: Option<Gamepad>,
     /// How should clashing (overlapping) inputs be handled?
@@ -84,7 +85,7 @@ pub struct InputMap<A: Actionlike> {
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
-            map: HashMap::default(),
+            map: A::iter().map(|_| PetitSet::default()).collect(),
             associated_gamepad: None,
             per_mode_cap: None,
             // This is the most commonly useful behavior.
@@ -189,15 +190,7 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        if let Some(existing_set) = self.map.get_mut(&action.index()) {
-            // Add the new input binding to the existing set
-            existing_set.insert(input);
-        } else {
-            // Add the new input binding to a new set
-            let mut new_set = PetitSet::default();
-            new_set.insert(input);
-            self.map.insert(action.index(), new_set);
-        }
+        self.map[action.index()].insert(input);
 
         // Cache clashes now, to ensure a clean state
         self.cache_possible_clashes();
@@ -284,10 +277,8 @@ impl<A: Actionlike> InputMap<A> {
 
         let mut old_inputs: PetitSet<UserInput, 16> = PetitSet::default();
         for input_mode in input.input_modes() {
-            if let Some(removed_inputs) = self.clear_action(action.clone(), Some(input_mode)) {
-                for removed_input in removed_inputs {
-                    old_inputs.insert(removed_input);
-                }
+            for removed_input in self.clear_action(action.clone(), Some(input_mode)) {
+                old_inputs.insert(removed_input);
             }
         }
 
@@ -454,25 +445,22 @@ impl<A: Actionlike> InputMap<A> {
     /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
     #[must_use]
     pub fn get(&self, action: A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
-        if let Some(full_set) = self.map.get(&action.index()) {
-            if let Some(input_mode) = input_mode {
-                let mut matching_set = PetitSet::default();
-                for input in full_set.iter() {
-                    if input.matches_input_mode(input_mode) {
-                        matching_set.insert(input.clone());
-                    }
+        let full_set = self.map[action.index()].clone();
+        if let Some(input_mode) = input_mode {
+            let mut matching_set = PetitSet::default();
+            for input in full_set.iter() {
+                if input.matches_input_mode(input_mode) {
+                    matching_set.insert(input.clone());
                 }
+            }
 
-                if matching_set.is_empty() {
-                    PetitSet::default()
-                } else {
-                    matching_set
-                }
+            if matching_set.is_empty() {
+                PetitSet::default()
             } else {
-                full_set.clone()
+                matching_set
             }
         } else {
-            PetitSet::default()
+            full_set
         }
     }
 
@@ -515,49 +503,45 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// For chords, an input will be removed if any of the contained buttons use that input mode.
     ///
-    /// Returns all previously registered inputs, if any
+    /// Returns all previously registered inputs
     pub fn clear_action(
         &mut self,
         action: A,
         input_mode: Option<InputMode>,
-    ) -> Option<PetitSet<UserInput, 16>> {
+    ) -> PetitSet<UserInput, 16> {
         // FIXME: does not appear to be working correctly
         if let Some(input_mode) = input_mode {
             // Pull out all the matching inputs
-            if let Some(bindings) = self.map.remove(&action.index()) {
-                let mut retained_set: PetitSet<UserInput, 16> = PetitSet::default();
-                let mut removed_set: PetitSet<UserInput, 16> = PetitSet::default();
+            let bindings = self.map[action.index()].clone();
+            self.map[action.index()] = PetitSet::default();
 
-                for input in bindings {
-                    if input.matches_input_mode(input_mode) {
-                        removed_set.insert(input);
-                    } else {
-                        retained_set.insert(input);
-                    }
-                }
+            let mut retained_set: PetitSet<UserInput, 16> = PetitSet::default();
+            let mut removed_set: PetitSet<UserInput, 16> = PetitSet::default();
 
-                // Put back the ones that didn't match
-                for input in retained_set.iter() {
-                    self.insert(action.clone(), input.clone());
-                }
-
-                // Cache clashes now, to ensure a clean state
-                self.cache_possible_clashes();
-
-                // Return the items that matched
-                if removed_set.is_empty() {
-                    None
+            for input in bindings {
+                if input.matches_input_mode(input_mode) {
+                    removed_set.insert(input);
                 } else {
-                    Some(removed_set)
+                    retained_set.insert(input);
                 }
-            } else {
-                None
             }
-        } else {
-            let removed = self.map.remove(&action.index());
+
+            // Put back the ones that didn't match
+            for input in retained_set.iter() {
+                self.insert(action.clone(), input.clone());
+            }
+
             // Cache clashes now, to ensure a clean state
             self.cache_possible_clashes();
-            removed
+
+            // Return the items that matched
+            removed_set
+        } else {
+            let previous_bindings = self.map[action.index()].clone();
+            self.map[action.index()] = PetitSet::default();
+            // Cache clashes now, to ensure a clean state
+            self.cache_possible_clashes();
+            previous_bindings
         }
     }
 
@@ -602,11 +586,9 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         for action in A::iter() {
-            if let Some(removed_inputs) = self.clear_action(action.clone(), input_mode) {
+            for input in self.clear_action(action.clone(), input_mode).iter() {
                 // Put back the ones that didn't match
-                for input in removed_inputs.iter() {
-                    cleared_input_map.insert(action.clone(), input.clone());
-                }
+                cleared_input_map.insert(action.clone(), input.clone());
             }
         }
 

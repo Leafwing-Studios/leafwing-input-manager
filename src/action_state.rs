@@ -2,8 +2,8 @@
 
 use crate::Actionlike;
 use bevy::prelude::*;
+use bevy::utils::HashSet;
 use bevy::utils::{Duration, Instant};
-use bevy::utils::{HashMap, HashSet};
 use serde::{Deserialize, Serialize};
 
 /// The current state of a particular virtual button,
@@ -165,8 +165,8 @@ impl Default for VirtualButtonState {
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
-    action_state: HashMap<usize, A>,
-    button_state: HashMap<usize, VirtualButtonState>,
+    action_values: Vec<A>,
+    button_states: Vec<VirtualButtonState>,
 }
 
 impl<A: Actionlike> ActionState<A> {
@@ -230,7 +230,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn tick(&mut self, current_instant: Instant) {
         use VirtualButtonState::*;
 
-        for state in self.button_state.values_mut() {
+        for state in self.button_states.iter_mut() {
             *state = match state {
                 Pressed(timing) => match timing.instant_started {
                     Some(instant) => Pressed(Timing {
@@ -285,11 +285,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn button_state(&self, action: A) -> VirtualButtonState {
-        if let Some(state) = self.button_state.get(&action.index()) {
-            state.clone()
-        } else {
-            VirtualButtonState::default()
-        }
+        self.button_states[action.index()].clone()
     }
 
     /// Manually sets the [`VirtualButtonState`] of the corresponding `action`
@@ -329,7 +325,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn set_button_state(&mut self, action: A, state: VirtualButtonState) {
-        self.button_state.insert(action.index(), state);
+        self.button_states.insert(action.index(), state);
     }
 
     /// Gets the stored value of the provided action variant
@@ -357,22 +353,20 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn action_value(&self, action: A) -> A {
-        self.action_state
-            .get(&action.index())
-            .expect("Could not find action; was this initialized correctly?")
-            .clone()
+        self.action_values[action.index()].clone()
     }
 
     /// Sets the stored value of the provided action variant to `action_value`
     #[inline]
     pub fn set_action_value(&mut self, action_value: A) {
-        self.action_state.insert(action_value.index(), action_value);
+        let index = action_value.index();
+        self.action_values[index] = action_value;
     }
 
     /// Press the `action` virtual button
     pub fn press(&mut self, action: A) {
         if let VirtualButtonState::Released(timing) = self.button_state(action.clone()) {
-            self.button_state.insert(
+            self.button_states.insert(
                 action.index(),
                 VirtualButtonState::Pressed(Timing {
                     instant_started: None,
@@ -386,7 +380,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Release the `action` virtual button
     pub fn release(&mut self, action: A) {
         if let VirtualButtonState::Pressed(timing) = self.button_state(action.clone()) {
-            self.button_state.insert(
+            self.button_states.insert(
                 action.index(),
                 VirtualButtonState::Released(Timing {
                     instant_started: None,
@@ -463,26 +457,18 @@ impl<A: Actionlike> ActionState<A> {
 
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
-        let mut action_state = Self {
-            button_state: HashMap::default(),
-            action_state: HashMap::default(),
-        };
-
-        // Initialize map in a fully released state
-        // with default values
-        for action in A::iter() {
-            action_state.button_state.insert(
-                action.index(),
-                VirtualButtonState::Released(Timing {
-                    instant_started: None,
-                    current_duration: Duration::ZERO,
-                    previous_duration: Duration::ZERO,
-                }),
-            );
-            action_state.action_state.insert(action.index(), action);
+        ActionState {
+            action_values: A::iter().collect(),
+            button_states: A::iter()
+                .map(|_| {
+                    VirtualButtonState::Released(Timing {
+                        instant_started: None,
+                        current_duration: Duration::ZERO,
+                        previous_duration: Duration::ZERO,
+                    })
+                })
+                .collect(),
         }
-
-        action_state
     }
 }
 
