@@ -33,7 +33,7 @@ use serde::{Deserialize, Serialize};
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputButton;
+/// use leafwing_input_manager::buttonlike_user_input::InputButton;
 
 ///
 /// // You can Run!
