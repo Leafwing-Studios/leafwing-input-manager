@@ -17,6 +17,8 @@
 
 ### Bug fixes
 
+- the `PartialOrd` implementation of `Timing` (and thus `VirtualButtonState`) now compares on the basis of the current duration that the button has been held / released for
+
 ## Version 0.2
 
 ### Enhancements

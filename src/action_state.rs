@@ -21,7 +21,7 @@ pub enum VirtualButtonState {
 }
 
 /// Stores the timing information for a [`VirtualButtonState`]
-#[derive(Debug, Clone, PartialEq, PartialOrd, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
     ///
@@ -35,6 +35,12 @@ pub struct Timing {
     pub current_duration: Duration,
     /// The [`Duration`] for which the button was pressed or released before the state last changed.
     pub previous_duration: Duration,
+}
+
+impl PartialOrd for Timing {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.current_duration.partial_cmp(&other.current_duration)
+    }
 }
 
 impl VirtualButtonState {
