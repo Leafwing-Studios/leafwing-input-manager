@@ -6,6 +6,8 @@ use bevy::math::Vec2;
 /// A high-level abstract user input that varies from -1 to 1, inclusive, along two axes
 ///
 /// The neutral origin is always at 0, 0.
+/// When constructed; the magnitude is capped at 1, but direction is preserved.
+///
 /// This struct should store the processed form of your raw inputs in a device-agnostic fashion.
 /// Any deadzone correction, rescaling or drift-correction should be done at an earlier level.
 #[derive(Debug, Clone, PartialEq)]
@@ -14,7 +16,19 @@ pub struct AxisPair {
 }
 
 // Constructors
-impl AxisPair {}
+impl AxisPair {
+    /// Creates a new [`AxisPair`] from the provided (x,y) coordinates
+    ///
+    /// The direction is preserved, by the magnitude will be clamped to at most 1.
+    pub fn new(xy: Vec2) -> AxisPair {
+        let magnitude = xy.length();
+        if magnitude <= 1. {
+            AxisPair { xy }
+        } else {
+            AxisPair { xy: xy / magnitude }
+        }
+    }
+}
 
 // Methods
 impl AxisPair {
