@@ -9,15 +9,15 @@ use bevy::math::Vec2;
 /// This struct should store the processed form of your raw inputs in a device-agnostic fashion.
 /// Any deadzone correction, rescaling or drift-correction should be done at an earlier level.
 #[derive(Debug, Clone, PartialEq)]
-pub struct InputAxis {
+pub struct AxisPair {
     xy: Vec2,
 }
 
 // Constructors
-impl InputAxis {}
+impl AxisPair {}
 
 // Methods
-impl InputAxis {
+impl AxisPair {
     /// The value along the x-axis, ranging from -1 to 1
     #[must_use]
     #[inline]
