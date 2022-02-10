@@ -1,10 +1,11 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::Actionlike;
-use bevy::prelude::*;
+use bevy::ecs::{component::Component, entity::Entity};
 use bevy::utils::HashSet;
 use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 
 /// The current state of a particular virtual button,
 /// corresponding to a single [`Actionlike`] action.
@@ -165,8 +166,8 @@ impl Default for VirtualButtonState {
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
-    action_values: Vec<A>,
     button_states: Vec<VirtualButtonState>,
+    _phantom: PhantomData<A>,
 }
 
 impl<A: Actionlike> ActionState<A> {
@@ -328,41 +329,6 @@ impl<A: Actionlike> ActionState<A> {
         self.button_states.insert(action.index(), state);
     }
 
-    /// Gets the stored value of the provided action variant
-    ///
-    /// Only the `Actionlike::id()` of `action` is used to perform this lookup.
-    ///
-    /// # Example
-    /// ```rust
-    /// use leafwing_input_manager::{Actionlike,
-    ///   geometric_primitives::Direction,
-    ///   action_state::ActionState};
-    ///
-    /// #[derive(Actionlike, Clone, PartialEq, Debug)]
-    /// enum Action {
-    ///     Move(Direction),
-    ///     Jump,
-    /// }
-    /// let mut action_state: ActionState<Action> = ActionState::default();
-    /// action_state.set_action_value(Action::Move(Direction::WEST));
-    ///
-    /// // The exact data passed in doesn't matter; only which variant is provided
-    /// let stored_action_value = action_state.action_value(Action::Move(Direction::NEUTRAL));
-    /// assert_eq!(stored_action_value, Action::Move(Direction::WEST));
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn action_value(&self, action: A) -> A {
-        self.action_values[action.index()].clone()
-    }
-
-    /// Sets the stored value of the provided action variant to `action_value`
-    #[inline]
-    pub fn set_action_value(&mut self, action_value: A) {
-        let index = action_value.index();
-        self.action_values[index] = action_value;
-    }
-
     /// Press the `action` virtual button
     pub fn press(&mut self, action: A) {
         if let VirtualButtonState::Released(timing) = self.button_state(action.clone()) {
@@ -458,7 +424,6 @@ impl<A: Actionlike> ActionState<A> {
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
-            action_values: A::iter().collect(),
             button_states: A::iter()
                 .map(|_| {
                     VirtualButtonState::Released(Timing {
@@ -468,6 +433,7 @@ impl<A: Actionlike> Default for ActionState<A> {
                     })
                 })
                 .collect(),
+            _phantom: PhantomData::default(),
         }
     }
 }
