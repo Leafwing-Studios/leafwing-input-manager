@@ -7,6 +7,7 @@
 - users can now feasibly store data in the enum variants of their `Actionlike` enums
   - internally, matching is done based on the discriminant of the enum, not their value
   - removed `Hash` and `Eq` bounds accordingly
+- geometric primitives (`Direction` and `Rotation`) for working with rotation in 2 dimensions
 
 ### Usability
 
