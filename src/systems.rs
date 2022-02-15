@@ -1,17 +1,21 @@
 //! The systems that power each [`InputManagerPlugin`](crate::InputManagerPlugin).
 
-use crate::{
-    action_state::{ActionDiff, ActionState, ActionStateDriver},
-    input_map::InputMap,
-    user_input::InputStreams,
-    Actionlike,
-};
+use crate::{action_state::{ActionDiff, ActionState, ActionStateDriver}, input_map::InputMap, user_input::InputStreams, Actionlike, InputResource};
 use bevy::prelude::*;
 
 /// Clears the just-pressed and just-released values of all [`ActionState`]s
 ///
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
-pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>, time: Res<Time>) {
+pub fn tick_action_state<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    resource: Option<ResMut<InputResource<A>>>,
+    time: Res<Time>,
+) {
+    if let Some(mut input_resource) = resource {
+        input_resource.action_state.tick(
+            time.last_update().expect("The `Time` resource has never been updated!")
+        )
+    }
     for mut action_state in query.iter_mut() {
         // If `Time` has not ever been advanced, something has gone horribly wrong
         // and the user probably forgot to add the `core_plugin`.
@@ -29,6 +33,7 @@ pub fn update_action_state<A: Actionlike>(
     maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
+    mut resource: Option<ResMut<InputResource<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
     let gamepad = maybe_gamepad_input_stream.as_deref();
@@ -36,6 +41,19 @@ pub fn update_action_state<A: Actionlike>(
     let keyboard = maybe_keyboard_input_stream.as_deref();
 
     let mouse = maybe_mouse_input_stream.as_deref();
+
+    if let Some(res) = &mut resource {
+        let input_streams = InputStreams {
+            gamepad,
+            keyboard,
+            mouse,
+            associated_gamepad: res.input_map.gamepad(),
+        };
+
+        let pressed_set = res.input_map.which_pressed(&input_streams);
+
+        res.action_state.update(pressed_set);
+    }
 
     for (mut action_state, input_map) in query.iter_mut() {
         let input_streams = InputStreams {

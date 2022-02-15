@@ -129,3 +129,20 @@ impl<A: Actionlike> Default for InputManagerBundle<A> {
         }
     }
 }
+
+/// Resource for Inputs
+pub struct InputResource<A: Actionlike> {
+    /// An [ActionState] component
+    pub action_state: ActionState<A>,
+    /// An [InputMap] component
+    pub input_map: InputMap<A>,
+}
+
+impl<A: Actionlike> Default for InputResource<A> {
+    fn default() -> Self {
+        Self {
+            action_state: ActionState::default(),
+            input_map: InputMap::default(),
+        }
+    }
+}
