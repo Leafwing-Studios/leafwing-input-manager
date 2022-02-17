@@ -17,7 +17,6 @@ mod input_mocking;
 pub use input_mocking::MockInput;
 pub mod axislike_user_input;
 pub mod buttonlike_user_input;
-pub mod geometric_primitives;
 pub mod plugin;
 pub mod systems;
 
