@@ -36,5 +36,5 @@ path = "src/lib.rs"
 
 [patch.crates-io]
 # Use for local development
-#leafwing_input_manager_macros = {path = "./macros"}
+leafwing_input_manager_macros = {path = "./macros"}
 leafwing_2d = {git = "https://github.com/leafwing-studios/leafwing_2d"}
