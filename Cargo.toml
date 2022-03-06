@@ -20,7 +20,7 @@ members = ["./", "tools/ci", "macros"]
 [dependencies]
 bevy = {version = "0.6", default-features = false, features = ["render", "serialize"]}
 petitset = {version = "0.2.1", features = ["serde_compat"]}
-leafwing_input_manager_macros = "0.2"
+leafwing_input_manager_macros = { path = "macros", version = "0.2" }
 leafwing_2d = "0.1"
 thiserror = "1.0"
 itertools = "0.10"
@@ -35,6 +35,4 @@ name = "leafwing_input_manager"
 path = "src/lib.rs"
 
 [patch.crates-io]
-# Use for local development
-leafwing_input_manager_macros = {path = "./macros"}
 leafwing_2d = {git = "https://github.com/leafwing-studios/leafwing_2d"}
