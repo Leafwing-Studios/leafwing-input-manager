@@ -176,7 +176,7 @@ impl<A: Actionlike> ActionState<A> {
     /// The `pressed_set` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`] resources.
     pub fn update(&mut self, pressed_set: HashSet<usize>) {
-        for action in A::iter() {
+        for action in A::variants() {
             match self.button_state(action.clone()) {
                 VirtualButtonState::Pressed(_) => {
                     if !pressed_set.contains(&action.index()) {
@@ -359,7 +359,7 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Releases all action virtual buttons
     pub fn release_all(&mut self) {
-        for action in A::iter() {
+        for action in A::variants() {
             self.release(action);
         }
     }
@@ -397,25 +397,27 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     /// Which actions are currently pressed?
     pub fn get_pressed(&self) -> Vec<A> {
-        A::iter().filter(|a| self.pressed(a.clone())).collect()
+        A::variants().filter(|a| self.pressed(a.clone())).collect()
     }
 
     #[must_use]
     /// Which actions were just pressed?
     pub fn get_just_pressed(&self) -> Vec<A> {
-        A::iter().filter(|a| self.just_pressed(a.clone())).collect()
+        A::variants()
+            .filter(|a| self.just_pressed(a.clone()))
+            .collect()
     }
 
     #[must_use]
     /// Which actions are currently released?
     pub fn get_released(&self) -> Vec<A> {
-        A::iter().filter(|a| self.released(a.clone())).collect()
+        A::variants().filter(|a| self.released(a.clone())).collect()
     }
 
     #[must_use]
     /// Which actions were just released?
     pub fn get_just_released(&self) -> Vec<A> {
-        A::iter()
+        A::variants()
             .filter(|a| self.just_released(a.clone()))
             .collect()
     }
@@ -424,7 +426,7 @@ impl<A: Actionlike> ActionState<A> {
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
-            button_states: A::iter()
+            button_states: A::variants()
                 .map(|_| {
                     VirtualButtonState::Released(Timing {
                         instant_started: None,

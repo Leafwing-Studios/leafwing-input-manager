@@ -26,7 +26,7 @@ use serde::{Deserialize, Serialize};
 /// and one combination is a strict subset of the other, only the larger input is registered.
 /// For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
 /// but not enter the letters `s`.
-/// Set the `clashing_inputs` field of this struct with the [`ClashingInputs`] enum
+/// Set the `clash_strategy` field of this struct with the [`ClashStrategy`](crate::clashing_inputs::ClashStrategy) enum
 /// to configure this behavior.
 ///
 /// # Example
@@ -85,7 +85,7 @@ pub struct InputMap<A: Actionlike> {
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
-            map: A::iter().map(|_| PetitSet::default()).collect(),
+            map: A::variants().map(|_| PetitSet::default()).collect(),
             associated_gamepad: None,
             per_mode_cap: None,
             // This is the most commonly useful behavior.
@@ -249,7 +249,7 @@ impl<A: Actionlike> InputMap<A> {
             ..Default::default()
         };
 
-        for action in A::iter() {
+        for action in A::variants() {
             for input in self.get(action.clone(), None) {
                 new_map.insert(action.clone(), input);
             }
@@ -348,7 +348,7 @@ impl<A: Actionlike> InputMap<A> {
         let mut removed_actions = InputMap::default();
 
         // Cull excess mappings
-        for action in A::iter() {
+        for action in A::variants() {
             for input_mode in InputMode::iter() {
                 let n_registered = self.n_registered(action.clone(), Some(input_mode));
                 if n_registered > per_mode_cap {
@@ -411,7 +411,7 @@ impl<A: Actionlike> InputMap<A> {
         let mut pressed_actions = HashSet::default();
 
         // Generate the raw action presses
-        for action in A::iter() {
+        for action in A::variants() {
             for input in self.get(action.clone(), None) {
                 if input_streams.input_pressed(&input) {
                     pressed_actions.insert(action.index());
@@ -481,7 +481,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn len(&self) -> usize {
         let mut i = 0;
-        for action in A::iter() {
+        for action in A::variants() {
             i += self.n_registered(action, None) as usize;
         }
         i
@@ -585,7 +585,7 @@ impl<A: Actionlike> InputMap<A> {
             ..Default::default()
         };
 
-        for action in A::iter() {
+        for action in A::variants() {
             for input in self.clear_action(action.clone(), input_mode).iter() {
                 // Put back the ones that didn't match
                 cleared_input_map.insert(action.clone(), input.clone());
@@ -854,7 +854,7 @@ mod tests {
         };
 
         // With no inputs, nothing should be detected
-        for action in Action::iter() {
+        for action in Action::variants() {
             assert!(!input_map.pressed(action, &input_streams));
         }
 
@@ -867,7 +867,7 @@ mod tests {
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
         };
-        for action in Action::iter() {
+        for action in Action::variants() {
             assert!(!input_map.pressed(action, &input_streams));
         }
 
@@ -907,7 +907,7 @@ mod tests {
             associated_gamepad: Some(Gamepad(42)),
         };
 
-        for action in Action::iter() {
+        for action in Action::variants() {
             assert!(!input_map.pressed(action, &input_streams));
         }
 

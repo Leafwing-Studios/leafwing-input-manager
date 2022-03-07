@@ -13,22 +13,22 @@ use bevy::ecs::system::Resource;
 use bevy::input::InputSystem;
 use bevy::ui::UiSystem;
 
-/// A [`Plugin`] that collects [`Input`] from disparate sources, producing an [`ActionState`] to consume in game logic
+/// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) to consume in game logic
 ///
 /// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game,
 /// which acts as a "virtual button" that can be comfortably consumed
 ///
-/// Each [`InputManagerBundle`] contains:
-///  - an [`InputMap`] component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
-///  - an [`ActionState`] component, which stores the current input state for that entity in an source-agnostic fashion
+/// Each [`InputManagerBundle`](crate::InputManagerBundle) contains:
+///  - an [`InputMap`](crate::input_map::InputMap) component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
+///  - an [`ActionState`](crate::action_state::ActionState) component, which stores the current input state for that entity in an source-agnostic fashion
 ///
 /// ## Systems
-/// - [`tick_action_state`](systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
+/// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
 ///     - labeled [`InputManagerSystem::Reset`]
-/// - [`update_action_state`](systems::update_action_state), which collects [`Input`] resources to update the [`ActionState`]
+/// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`](crate::action_state::ActionState)
 ///     - labeled [`InputManagerSystem::Update`]
-/// - [`update_action_state_from_interaction`](systems::update_action_state_from_interaction), for triggering actions from buttons
-///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`] component
+/// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
+///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`](bevy::ui::Interaction) component
 ///    - labeled [`InputManagerSystem::Update`]
 pub struct InputManagerPlugin<A: Actionlike, UserState: Resource + PartialEq + Clone = ()> {
     _phantom: PhantomData<A>,

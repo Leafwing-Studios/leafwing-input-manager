@@ -34,8 +34,8 @@ pub enum ClashStrategy {
     PrioritizeLongest,
     /// Use the order in which actions are defined in the enum to resolve clashing inputs
     ///
-    /// Uses the iteration order returned by [IntoEnumIterator](crate::IntoEnumIterator),
-    /// which is generated in order of the enum items by the `#[derive(EnumIter)]` macro.
+    /// Uses the iteration order returned by [`Actionlike::variants()`],
+    /// which is generated in order of the enum items by the `#[derive(Actionlike)]` macro.
     UseActionOrder,
 }
 
@@ -95,7 +95,7 @@ impl<A: Actionlike> InputMap<A> {
     pub(crate) fn cache_possible_clashes(&mut self) {
         let mut clashes = Vec::default();
 
-        for action_pair in A::iter().combinations(2) {
+        for action_pair in A::variants().combinations(2) {
             let action_a = action_pair.get(0).unwrap().clone();
             let action_b = action_pair.get(1).unwrap().clone();
 

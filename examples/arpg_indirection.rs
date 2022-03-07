@@ -109,7 +109,7 @@ fn copy_action_state(
     )>,
 ) {
     for (slot_state, mut ability_state, ability_slot_map) in query.iter_mut() {
-        for slot in Slot::iter() {
+        for slot in Slot::variants() {
             if let Some(&matching_ability) = ability_slot_map.get(&slot) {
                 // This copies the `VirtualButtonState` between the ActionStates,
                 // including information about how long the buttons have been pressed or released

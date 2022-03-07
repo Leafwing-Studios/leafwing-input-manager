@@ -100,7 +100,7 @@ impl ClashTestExt for App {
 
         let keyboard_input = input_streams.keyboard.unwrap();
 
-        for action in Action::iter() {
+        for action in Action::variants() {
             if pressed_actions.contains(&action) {
                 assert!(
                     matching_input_map.pressed(action, &input_streams),

@@ -179,7 +179,7 @@ impl From<MouseButton> for UserInput {
 /// A button-like input type
 ///
 /// See [`Button`] for the value-ful equivalent.
-/// Use the [`From`] or [`Into`] traits to convert from a [`Button`] to a [`InputMode`].
+/// Use the [`From`] or [`Into`] traits to convert from a [`InputButton`] to a [`InputMode`].
 ///
 /// Unfortunately we cannot use a trait object here, as the types used by `Input`
 /// require traits that are not object-safe.

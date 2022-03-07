@@ -67,7 +67,7 @@ pub mod prelude {
 /// ```
 pub trait Actionlike: Send + Sync + Clone + 'static {
     /// Iterates over the possible actions in the order they were defined
-    fn iter() -> ActionIter<Self> {
+    fn variants() -> ActionIter<Self> {
         ActionIter::default()
     }
 
@@ -116,7 +116,7 @@ impl<A: Actionlike> Default for ActionIter<A> {
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
 ///
-/// Use with [`InputManagerPlugin`], providing the same enum type to both.
+/// Use with [`InputManagerPlugin`](crate::plugin::InputManagerPlugin), providing the same enum type to both.
 #[derive(Bundle)]
 pub struct InputManagerBundle<A: Actionlike> {
     /// An [ActionState] component
