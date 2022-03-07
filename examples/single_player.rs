@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use leafwing_2d::orientation::Direction;
+use leafwing_2d::{errors::NearlySingularConversion, orientation::Direction};
 use leafwing_input_manager::prelude::*;
 
 fn main() {
@@ -45,13 +45,13 @@ impl ArpgAction {
         ArpgAction::Right,
     ];
 
-    fn direction(self) -> Direction {
+    fn direction(self) -> Option<Direction> {
         match self {
-            ArpgAction::Up => Direction::NORTH,
-            ArpgAction::Down => Direction::SOUTH,
-            ArpgAction::Left => Direction::EAST,
-            ArpgAction::Right => Direction::WEST,
-            _ => Direction::NEUTRAL,
+            ArpgAction::Up => Some(Direction::NORTH),
+            ArpgAction::Down => Some(Direction::SOUTH),
+            ArpgAction::Left => Some(Direction::EAST),
+            ArpgAction::Right => Some(Direction::WEST),
+            _ => None,
         }
     }
 }
@@ -137,15 +137,24 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
     let action_state = query.single();
 
     if action_state.just_pressed(ArpgAction::Ability4) {
-        let mut direction = Direction::NEUTRAL;
+        let mut direction_vector = Vec2::ZERO;
 
         for input_direction in ArpgAction::DIRECTIONS {
             if action_state.pressed(input_direction) {
-                direction += input_direction.direction();
+                if let Some(direction) = input_direction.direction() {
+                    // Sum the directions as 2D vectors
+                    direction_vector += Vec2::from(direction);
+                }
             }
         }
 
-        println!("Dashing in {direction:?}");
+        // Then reconvert at the end, normalizing the magnitude
+        let net_direction: Result<Direction, NearlySingularConversion> =
+            direction_vector.try_into();
+
+        if let Ok(direction) = net_direction {
+            println!("Dashing in {direction:?}");
+        }
     }
 }
 
@@ -159,15 +168,21 @@ fn player_walks(
 ) {
     let action_state = query.single();
 
-    let mut direction = Direction::NEUTRAL;
+    let mut direction_vector = Vec2::ZERO;
 
     for input_direction in ArpgAction::DIRECTIONS {
         if action_state.pressed(input_direction) {
-            direction += input_direction.direction();
+            if let Some(direction) = input_direction.direction() {
+                // Sum the directions as 2D vectors
+                direction_vector += Vec2::from(direction);
+            }
         }
     }
 
-    if direction != Direction::NEUTRAL {
+    // Then reconvert at the end, normalizing the magnitude
+    let net_direction: Result<Direction, NearlySingularConversion> = direction_vector.try_into();
+
+    if let Ok(direction) = net_direction {
         event_writer.send(PlayerWalk { direction });
     }
 }
