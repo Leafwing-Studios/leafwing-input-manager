@@ -181,12 +181,12 @@ impl<A: Actionlike> ActionState<A> {
                     if self.button_states[i].released() {
                         self.press(A::get_at(i).unwrap())
                     }
-                },
+                }
                 VirtualButtonState::Released(_) => {
                     if self.button_states[i].pressed() {
                         self.release(A::get_at(i).unwrap())
                     }
-                },
+                }
             }
         }
     }

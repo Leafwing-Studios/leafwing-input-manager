@@ -1,6 +1,6 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
-use crate::action_state::{VirtualButtonState, Timing};
+use crate::action_state::{Timing, VirtualButtonState};
 use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
 use crate::input_map::InputMap;
 use crate::Actionlike;
@@ -80,7 +80,8 @@ impl<A: Actionlike> InputMap<A> {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, &self.clash_strategy, input_streams)
             {
-                pressed_actions[culled_action.index()] = VirtualButtonState::Released(Timing::default());
+                pressed_actions[culled_action.index()] =
+                    VirtualButtonState::Released(Timing::default());
             }
         }
     }
@@ -116,16 +117,13 @@ impl<A: Actionlike> InputMap<A> {
         for clash in &self.possible_clashes {
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
-            if 
-                pressed_actions[clash.index_a].pressed() &&
-                pressed_actions[clash.index_b].pressed()
+            if pressed_actions[clash.index_a].pressed() && pressed_actions[clash.index_b].pressed()
             {
                 // Check if the potential clash occured based on the pressed inputs
                 if let Some(clash) = check_clash(clash, input_streams) {
                     clashes.push(clash)
                 }
             }
-
         }
 
         clashes
@@ -549,7 +547,7 @@ mod tests {
                 &mut pressed_actions,
                 &InputStreams::from_keyboard(&keyboard),
             );
-            
+
             let mut expected = vec![VirtualButtonState::default(); Action::N_VARIANTS];
             expected[OneAndTwo.index()] = VirtualButtonState::Pressed(Timing::default());
 

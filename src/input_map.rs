@@ -1,6 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::action_state::{VirtualButtonState, Timing};
+use crate::action_state::{Timing, VirtualButtonState};
 use crate::buttonlike_user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::clashing_inputs::{Clash, ClashStrategy};
 use crate::Actionlike;
@@ -390,8 +390,6 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-
-
 // Check whether buttons are pressed
 impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
@@ -416,7 +414,8 @@ impl<A: Actionlike> InputMap<A> {
         for action in A::variants() {
             for input in self.get(action.clone(), None) {
                 if input_streams.input_pressed(&input) {
-                    pressed_actions[action.index()] = VirtualButtonState::Pressed(Timing::default());
+                    pressed_actions[action.index()] =
+                        VirtualButtonState::Pressed(Timing::default());
                 }
             }
         }
