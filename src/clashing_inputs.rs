@@ -539,9 +539,12 @@ mod tests {
             keyboard.press(Key2);
 
             let mut pressed_actions = vec![VirtualButtonState::default(); Action::N_VARIANTS];
-            pressed_actions[One.index()] = VirtualButtonState::Pressed(Timing::default());
-            pressed_actions[Two.index()] = VirtualButtonState::Pressed(Timing::default());
-            pressed_actions[OneAndTwo.index()] = VirtualButtonState::Pressed(Timing::default());
+            pressed_actions[One.index()] =
+                VirtualButtonState::Pressed(Timing::default(), Vec::default());
+            pressed_actions[Two.index()] =
+                VirtualButtonState::Pressed(Timing::default(), Vec::default());
+            pressed_actions[OneAndTwo.index()] =
+                VirtualButtonState::Pressed(Timing::default(), Vec::default());
 
             input_map.handle_clashes(
                 &mut pressed_actions,
@@ -549,7 +552,8 @@ mod tests {
             );
 
             let mut expected = vec![VirtualButtonState::default(); Action::N_VARIANTS];
-            expected[OneAndTwo.index()] = VirtualButtonState::Pressed(Timing::default());
+            expected[OneAndTwo.index()] =
+                VirtualButtonState::Pressed(Timing::default(), Vec::default());
 
             assert_eq!(pressed_actions, expected);
         }

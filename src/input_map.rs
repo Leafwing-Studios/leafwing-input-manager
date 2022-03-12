@@ -412,11 +412,17 @@ impl<A: Actionlike> InputMap<A> {
 
         // Generate the raw action presses
         for action in A::variants() {
+            let mut inputs = Vec::new();
+
             for input in self.get(action.clone(), None) {
                 if input_streams.input_pressed(&input) {
-                    pressed_actions[action.index()] =
-                        VirtualButtonState::Pressed(Timing::default());
+                    inputs.push(input);
                 }
+            }
+
+            if !inputs.is_empty() {
+                pressed_actions[action.index()] =
+                    VirtualButtonState::Pressed(Timing::default(), inputs);
             }
         }
 

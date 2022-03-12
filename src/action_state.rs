@@ -1,5 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
+use crate::prelude::UserInput;
 use crate::Actionlike;
 use bevy::ecs::{component::Component, entity::Entity};
 use bevy::utils::{Duration, Instant};
@@ -10,10 +11,10 @@ use std::marker::PhantomData;
 /// corresponding to a single [`Actionlike`] action.
 ///
 /// Detailed timing information for the button can be accessed through the stored [`Timing`] value
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum VirtualButtonState {
     /// This button is currently pressed
-    Pressed(Timing),
+    Pressed(Timing, Vec<UserInput>),
     /// This button is currently released
     Released(Timing),
 }
@@ -41,13 +42,28 @@ impl PartialOrd for Timing {
     }
 }
 
+impl PartialOrd for VirtualButtonState {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        match self {
+            VirtualButtonState::Pressed(timing, _) => match other {
+                VirtualButtonState::Pressed(other_timing, _) => timing.partial_cmp(other_timing),
+                VirtualButtonState::Released(other_timing) => timing.partial_cmp(other_timing),
+            },
+            VirtualButtonState::Released(timing) => match other {
+                VirtualButtonState::Pressed(other_timing, _) => timing.partial_cmp(other_timing),
+                VirtualButtonState::Released(other_timing) => timing.partial_cmp(other_timing),
+            },
+        }
+    }
+}
+
 impl VirtualButtonState {
     /// Is the button currently pressed?
     #[inline]
     #[must_use]
     pub fn pressed(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(_) => true,
+            VirtualButtonState::Pressed(_, _) => true,
             VirtualButtonState::Released(_) => false,
         }
     }
@@ -57,7 +73,7 @@ impl VirtualButtonState {
     #[must_use]
     pub fn released(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(_) => false,
+            VirtualButtonState::Pressed(_, _) => false,
             VirtualButtonState::Released(_) => true,
         }
     }
@@ -67,7 +83,7 @@ impl VirtualButtonState {
     #[must_use]
     pub fn just_pressed(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(timing) => timing.instant_started.is_none(),
+            VirtualButtonState::Pressed(timing, _) => timing.instant_started.is_none(),
             VirtualButtonState::Released(_timing) => false,
         }
     }
@@ -77,7 +93,7 @@ impl VirtualButtonState {
     #[must_use]
     pub fn just_released(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(_timing) => false,
+            VirtualButtonState::Pressed(_timing, _) => false,
             VirtualButtonState::Released(timing) => timing.instant_started.is_none(),
         }
     }
@@ -90,7 +106,7 @@ impl VirtualButtonState {
     #[must_use]
     pub fn instant_started(&self) -> Option<Instant> {
         match self {
-            VirtualButtonState::Pressed(timing) => timing.instant_started,
+            VirtualButtonState::Pressed(timing, _) => timing.instant_started,
             VirtualButtonState::Released(timing) => timing.instant_started,
         }
     }
@@ -102,7 +118,7 @@ impl VirtualButtonState {
     #[must_use]
     pub fn current_duration(&self) -> Duration {
         match self {
-            VirtualButtonState::Pressed(timing) => timing.current_duration,
+            VirtualButtonState::Pressed(timing, _) => timing.current_duration,
             VirtualButtonState::Released(timing) => timing.current_duration,
         }
     }
@@ -111,7 +127,7 @@ impl VirtualButtonState {
     #[must_use]
     pub fn previous_duration(&self) -> Duration {
         match self {
-            VirtualButtonState::Pressed(timing) => timing.previous_duration,
+            VirtualButtonState::Pressed(timing, _) => timing.previous_duration,
             VirtualButtonState::Released(timing) => timing.previous_duration,
         }
     }
@@ -177,9 +193,12 @@ impl<A: Actionlike> ActionState<A> {
     pub fn update(&mut self, pressed_list: Vec<VirtualButtonState>) {
         for (i, button_state) in pressed_list.iter().enumerate() {
             match button_state {
-                VirtualButtonState::Pressed(_) => {
+                VirtualButtonState::Pressed(_, new_inputs) => {
                     if self.button_states[i].released() {
                         self.press(A::get_at(i).unwrap())
+                    }
+                    if let VirtualButtonState::Pressed(_, ref mut inputs) = self.button_states[i] {
+                        *inputs = new_inputs.clone();
                     }
                 }
                 VirtualButtonState::Released(_) => {
@@ -231,28 +250,24 @@ impl<A: Actionlike> ActionState<A> {
         use VirtualButtonState::*;
 
         for state in self.button_states.iter_mut() {
-            *state = match state {
-                Pressed(timing) => match timing.instant_started {
-                    Some(instant) => Pressed(Timing {
-                        current_duration: current_instant - instant,
-                        ..*timing
-                    }),
-                    None => Pressed(Timing {
-                        instant_started: Some(current_instant),
-                        current_duration: Duration::ZERO,
-                        ..*timing
-                    }),
+            match state {
+                Pressed(timing, _) => match timing.instant_started {
+                    Some(instant) => {
+                        timing.current_duration = current_instant - instant;
+                    }
+                    None => {
+                        timing.instant_started = Some(current_instant);
+                        timing.current_duration = Duration::ZERO;
+                    }
                 },
                 Released(timing) => match timing.instant_started {
-                    Some(instant) => Released(Timing {
-                        current_duration: current_instant - instant,
-                        ..*timing
-                    }),
-                    None => Released(Timing {
-                        instant_started: Some(current_instant),
-                        current_duration: Duration::ZERO,
-                        ..*timing
-                    }),
+                    Some(instant) => {
+                        timing.current_duration = current_instant - instant;
+                    }
+                    None => {
+                        timing.instant_started = Some(current_instant);
+                        timing.current_duration = Duration::ZERO;
+                    }
                 },
             };
         }
@@ -333,18 +348,21 @@ impl<A: Actionlike> ActionState<A> {
         if let VirtualButtonState::Released(timing) = self.button_state(action.clone()) {
             self.button_states.insert(
                 action.index(),
-                VirtualButtonState::Pressed(Timing {
-                    instant_started: None,
-                    current_duration: Duration::ZERO,
-                    previous_duration: timing.current_duration,
-                }),
+                VirtualButtonState::Pressed(
+                    Timing {
+                        instant_started: None,
+                        current_duration: Duration::ZERO,
+                        previous_duration: timing.current_duration,
+                    },
+                    Vec::default(),
+                ),
             );
         }
     }
 
     /// Release the `action` virtual button
     pub fn release(&mut self, action: A) {
-        if let VirtualButtonState::Pressed(timing) = self.button_state(action.clone()) {
+        if let VirtualButtonState::Pressed(timing, _) = self.button_state(action.clone()) {
             self.button_states.insert(
                 action.index(),
                 VirtualButtonState::Released(Timing {
@@ -419,6 +437,15 @@ impl<A: Actionlike> ActionState<A> {
         A::variants()
             .filter(|a| self.just_released(a.clone()))
             .collect()
+    }
+
+    /// Gets a vec of the [`UserInput`s](crate::buttonlike_user_inputs::UserInput) that most recently triggered this action. If the action's virtual button is released, or if the action was not triggered by actual input, then an empty vec is returned.
+    pub fn triggering_inputs(&self, action: A) -> Vec<UserInput> {
+        if let VirtualButtonState::Pressed(_, ref inputs) = self.button_states[action.index()] {
+            inputs.clone()
+        } else {
+            vec![]
+        }
     }
 }
 
