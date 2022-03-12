@@ -1,10 +1,10 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
+use crate::action_state::{VirtualButtonState, Timing};
 use crate::buttonlike_user_input::{InputButton, InputMode, InputStreams, UserInput};
 use crate::clashing_inputs::{Clash, ClashStrategy};
 use crate::Actionlike;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
@@ -390,6 +390,8 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
+
+
 // Check whether buttons are pressed
 impl<A: Actionlike> InputMap<A> {
     /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
@@ -398,8 +400,8 @@ impl<A: Actionlike> InputMap<A> {
     /// If you need to inspect many inputs at once, prefer [`InputMap::which_pressed`] instead.
     #[must_use]
     pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
-        let pressed_set = self.which_pressed(input_streams);
-        pressed_set.contains(&action.index())
+        let pressed_list = self.which_pressed(input_streams);
+        pressed_list[action.index()].pressed()
     }
 
     /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
@@ -407,16 +409,14 @@ impl<A: Actionlike> InputMap<A> {
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
     /// The `usize`s returned correspond to `Actionlike::index()`.
     #[must_use]
-    pub fn which_pressed(&self, input_streams: &InputStreams) -> HashSet<usize> {
-        let mut pressed_actions = HashSet::default();
+    pub fn which_pressed(&self, input_streams: &InputStreams) -> Vec<VirtualButtonState> {
+        let mut pressed_actions = vec![VirtualButtonState::default(); A::N_VARIANTS];
 
         // Generate the raw action presses
         for action in A::variants() {
             for input in self.get(action.clone(), None) {
                 if input_streams.input_pressed(&input) {
-                    pressed_actions.insert(action.index());
-                    // No need to press more than once
-                    break;
+                    pressed_actions[action.index()] = VirtualButtonState::Pressed(Timing::default());
                 }
             }
         }

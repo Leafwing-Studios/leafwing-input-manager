@@ -2,7 +2,6 @@
 
 use crate::Actionlike;
 use bevy::ecs::{component::Component, entity::Entity};
-use bevy::utils::HashSet;
 use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -171,23 +170,23 @@ pub struct ActionState<A: Actionlike> {
 }
 
 impl<A: Actionlike> ActionState<A> {
-    /// Updates the [`ActionState`] based on a [`HashSet`] of pressed virtual buttons' [`Actionlike::id`](Actionlike).
+    /// Updates the [`ActionState`] based on a [`Vec<VirtualButtonState>`] of pressed virtual buttons, ordered by [`Actionlike::id`](Actionlike).
     ///
-    /// The `pressed_set` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
+    /// The `pressed_list` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`] resources.
-    pub fn update(&mut self, pressed_set: HashSet<usize>) {
-        for action in A::variants() {
-            match self.button_state(action.clone()) {
+    pub fn update(&mut self, pressed_list: Vec<VirtualButtonState>) {
+        for (i, button_state) in pressed_list.iter().enumerate() {
+            match button_state {
                 VirtualButtonState::Pressed(_) => {
-                    if !pressed_set.contains(&action.index()) {
-                        self.release(action);
+                    if self.button_states[i].released() {
+                        self.press(A::get_at(i).unwrap())
                     }
-                }
+                },
                 VirtualButtonState::Released(_) => {
-                    if pressed_set.contains(&action.index()) {
-                        self.press(action);
+                    if self.button_states[i].pressed() {
+                        self.release(A::get_at(i).unwrap())
                     }
-                }
+                },
             }
         }
     }

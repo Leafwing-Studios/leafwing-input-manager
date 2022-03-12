@@ -113,15 +113,6 @@ impl ClashTestExt for App {
                 );
             }
         }
-
-        // Verify that the holistic view is also correct
-        assert_eq!(
-            matching_input_map.which_pressed(&input_streams),
-            pressed_actions
-                .iter()
-                .map(|action| action.index())
-                .collect()
-        );
     }
 }
 

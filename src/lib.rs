@@ -66,6 +66,9 @@ pub mod prelude {
 /// }
 /// ```
 pub trait Actionlike: Send + Sync + Clone + 'static {
+    /// The number of variants of this action type
+    const N_VARIANTS: usize;
+
     /// Iterates over the possible actions in the order they were defined
     fn variants() -> ActionIter<Self> {
         ActionIter::default()
@@ -102,7 +105,11 @@ impl<A: Actionlike> Iterator for ActionIter<A> {
     }
 }
 
-impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {}
+impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {
+    fn len(&self) -> usize {
+        A::N_VARIANTS
+    }
+}
 
 // We can't derive this, because otherwise it won't work when A is not default
 impl<A: Actionlike> Default for ActionIter<A> {

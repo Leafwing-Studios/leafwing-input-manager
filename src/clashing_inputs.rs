@@ -1,9 +1,9 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
+use crate::action_state::{VirtualButtonState, Timing};
 use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
 use crate::input_map::InputMap;
 use crate::Actionlike;
-use bevy::utils::HashSet;
 use itertools::Itertools;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
@@ -73,20 +73,14 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        pressed_actions: &mut HashSet<usize>,
+        pressed_actions: &mut Vec<VirtualButtonState>,
         input_streams: &InputStreams,
     ) {
         for clash in self.get_clashes(pressed_actions, input_streams) {
-            // Skip clashes whose actions were not pressed
-            if !pressed_actions.contains(&clash.index_a) & !pressed_actions.contains(&clash.index_b)
-            {
-                continue;
-            }
-
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, &self.clash_strategy, input_streams)
             {
-                pressed_actions.remove(&culled_action.index());
+                pressed_actions[culled_action.index()] = VirtualButtonState::Released(Timing::default());
             }
         }
     }
@@ -113,7 +107,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        pressed_actions: &HashSet<usize>,
+        pressed_actions: &Vec<VirtualButtonState>,
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
@@ -122,16 +116,16 @@ impl<A: Actionlike> InputMap<A> {
         for clash in &self.possible_clashes {
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
-            if !pressed_actions.contains(&clash.index_a)
-                || !pressed_actions.contains(&clash.index_b)
+            if 
+                pressed_actions[clash.index_a].pressed() &&
+                pressed_actions[clash.index_b].pressed()
             {
-                continue;
+                // Check if the potential clash occured based on the pressed inputs
+                if let Some(clash) = check_clash(clash, input_streams) {
+                    clashes.push(clash)
+                }
             }
 
-            // Check if the potential clash occured based on the pressed inputs
-            if let Some(clash) = check_clash(clash, input_streams) {
-                clashes.push(clash)
-            }
         }
 
         clashes
@@ -359,6 +353,8 @@ mod tests {
     }
 
     mod basic_functionality {
+        use crate::action_state::Timing;
+
         use super::*;
 
         #[test]
@@ -544,15 +540,20 @@ mod tests {
             keyboard.press(Key1);
             keyboard.press(Key2);
 
-            let mut pressed_actions =
-                HashSet::from_iter([One.index(), Two.index(), OneAndTwo.index()]);
+            let mut pressed_actions = vec![VirtualButtonState::default(); Action::N_VARIANTS];
+            pressed_actions[One.index()] = VirtualButtonState::Pressed(Timing::default());
+            pressed_actions[Two.index()] = VirtualButtonState::Pressed(Timing::default());
+            pressed_actions[OneAndTwo.index()] = VirtualButtonState::Pressed(Timing::default());
 
             input_map.handle_clashes(
                 &mut pressed_actions,
                 &InputStreams::from_keyboard(&keyboard),
             );
+            
+            let mut expected = vec![VirtualButtonState::default(); Action::N_VARIANTS];
+            expected[OneAndTwo.index()] = VirtualButtonState::Pressed(Timing::default());
 
-            assert_eq!(pressed_actions, HashSet::from_iter([OneAndTwo.index()]));
+            assert_eq!(pressed_actions, expected);
         }
 
         #[test]
@@ -568,10 +569,15 @@ mod tests {
             keyboard.press(Key2);
             keyboard.press(LControl);
 
-            assert_eq!(
-                input_map.which_pressed(&InputStreams::from_keyboard(&keyboard)),
-                HashSet::from_iter([CtrlOne.index(), OneAndTwo.index()])
-            );
+            let pressed_list = input_map.which_pressed(&InputStreams::from_keyboard(&keyboard));
+
+            for (i, button_state) in pressed_list.iter().enumerate() {
+                if i == CtrlOne.index() || i == OneAndTwo.index() {
+                    assert!(button_state.pressed());
+                } else {
+                    assert!(button_state.released());
+                }
+            }
         }
     }
 }
