@@ -73,7 +73,7 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        pressed_actions: &mut Vec<VirtualButtonState>,
+        pressed_actions: &mut [VirtualButtonState],
         input_streams: &InputStreams,
     ) {
         for clash in self.get_clashes(pressed_actions, input_streams) {
@@ -107,7 +107,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        pressed_actions: &Vec<VirtualButtonState>,
+        pressed_actions: &[VirtualButtonState],
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
