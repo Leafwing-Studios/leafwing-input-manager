@@ -125,6 +125,7 @@ fn run_in_state() {
 }
 
 #[test]
+#[cfg(feature = "ui")]
 fn action_state_driver() {
     use bevy::input::InputPlugin;
 

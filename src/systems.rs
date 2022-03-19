@@ -1,7 +1,9 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
+#[cfg(feature = "ui")]
+use crate::action_state::ActionStateDriver;
 use crate::{
-    action_state::{ActionDiff, ActionState, ActionStateDriver},
+    action_state::{ActionDiff, ActionState},
     buttonlike_user_input::InputStreams,
     input_map::InputMap,
     Actionlike,
@@ -54,6 +56,7 @@ pub fn update_action_state<A: Actionlike>(
 /// When a button with a component `A` is clicked, press the corresponding virtual button in the [`ActionState`]
 ///
 /// The action triggered is determined by the variant stored in your UI-defined button.
+#[cfg(feature = "ui")]
 pub fn update_action_state_from_interaction<A: Actionlike>(
     ui_query: Query<(&Interaction, &ActionStateDriver<A>)>,
     mut action_state_query: Query<&mut ActionState<A>>,

@@ -17,8 +17,12 @@ opt-level = 3
 [workspace]
 members = ["./", "tools/ci", "macros"]
 
+[features]
+default = ['ui']
+ui = ['bevy/bevy_ui']
+
 [dependencies]
-bevy = {version = "0.6", default-features = false, features = ["render", "serialize"]}
+bevy = {version = "0.6", default-features = false, features = ["serialize"]}
 petitset = {version = "0.2.1", features = ["serde_compat"]}
 leafwing_input_manager_macros = { path = "macros", version = "0.2" }
 leafwing_2d = "0.1"
@@ -27,7 +31,7 @@ itertools = "0.10"
 serde = {version = "1.0", features = ["derive"]}
 
 [dev-dependencies]
-bevy = {version = "0.6", default-features = true}
+bevy = {version = "0.6", default-features = false, features = ["bevy_sprite", "bevy_render"]}
 derive_more = "0.99"
 
 [lib]
