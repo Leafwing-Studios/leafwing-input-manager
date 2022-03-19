@@ -11,6 +11,7 @@ use bevy::ecs::prelude::*;
 use bevy::ecs::schedule::ShouldRun;
 use bevy::ecs::system::Resource;
 use bevy::input::InputSystem;
+#[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
 /// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) to consume in game logic
@@ -119,27 +120,36 @@ impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
         use crate::systems::*;
 
         let input_manager_systems = match self.machine {
-            Machine::Client => SystemSet::new()
-                .with_system(
-                    tick_action_state::<A>
-                        .label(InputManagerSystem::Reset)
-                        .before(InputManagerSystem::Update),
-                )
-                .with_system(
-                    update_action_state::<A>
-                        .label(InputManagerSystem::Update)
-                        .after(InputSystem),
-                )
-                .with_system(
-                    update_action_state_from_interaction::<A>
-                        .label(InputManagerSystem::ManualControl)
-                        .after(InputManagerSystem::Reset)
-                        // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
-                        // not being pressed
-                        .after(InputManagerSystem::Update)
-                        .after(UiSystem::Focus)
-                        .after(InputSystem),
-                ),
+            Machine::Client => {
+                let system_set = SystemSet::new()
+                    .with_system(
+                        tick_action_state::<A>
+                            .label(InputManagerSystem::Reset)
+                            .before(InputManagerSystem::Update),
+                    )
+                    .with_system(
+                        update_action_state::<A>
+                            .label(InputManagerSystem::Update)
+                            .after(InputSystem),
+                    );
+                #[cfg(feature = "ui")]
+                {
+                    system_set.with_system(
+                        update_action_state_from_interaction::<A>
+                            .label(InputManagerSystem::ManualControl)
+                            .after(InputManagerSystem::Reset)
+                            // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
+                            // not being pressed
+                            .after(InputManagerSystem::Update)
+                            .after(UiSystem::Focus)
+                            .after(InputSystem),
+                    )
+                }
+                #[cfg(not(feature = "ui"))]
+                {
+                    system_set
+                }
+            }
             Machine::Server => SystemSet::new().with_system(
                 tick_action_state::<A>
                     .label(InputManagerSystem::Reset)
