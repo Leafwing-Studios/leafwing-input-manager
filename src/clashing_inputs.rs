@@ -288,13 +288,13 @@ fn resolve_clash<A: Actionlike>(
         ClashStrategy::PressAll => None,
         // Remove the clashing action with the shorter chord
         ClashStrategy::PrioritizeLongest => {
-            let longest_a: u8 = reasons_a_is_pressed
+            let longest_a: usize = reasons_a_is_pressed
                 .iter()
                 .map(|input| input.len())
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
-            let longest_b: u8 = reasons_b_is_pressed
+            let longest_b: usize = reasons_b_is_pressed
                 .iter()
                 .map(|input| input.len())
                 .reduce(|a, b| a.max(b))
