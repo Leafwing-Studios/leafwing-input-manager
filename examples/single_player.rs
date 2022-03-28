@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use leafwing_2d::{errors::NearlySingularConversion, orientation::Direction};
 use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::{errors::NearlySingularConversion, orientation::Direction};
 
 fn main() {
     App::new()

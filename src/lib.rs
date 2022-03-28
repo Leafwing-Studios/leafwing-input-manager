@@ -11,12 +11,14 @@ use std::marker::PhantomData;
 pub mod action_state;
 pub mod clashing_inputs;
 mod display_impl;
+pub mod errors;
 pub mod input_map;
 mod input_mocking;
 // Re-export this at the root level
 pub use input_mocking::MockInput;
 pub mod axislike_user_input;
 pub mod buttonlike_user_input;
+pub mod orientation;
 pub mod plugin;
 pub mod systems;
 

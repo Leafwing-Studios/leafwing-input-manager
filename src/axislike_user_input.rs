@@ -1,7 +1,7 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equvalents)
 
+use crate::orientation::{Direction, Rotation};
 use bevy::math::Vec2;
-use leafwing_2d::orientation::{Direction, Rotation};
 
 /// A high-level abstract user input that varies from -1 to 1, inclusive, along two axes
 ///
