@@ -98,11 +98,11 @@ impl UserInput {
     }
 
     /// The number of buttons in the [`UserInput`]
-    pub fn len(&self) -> u8 {
+    pub fn len(&self) -> usize {
         match self {
             UserInput::Null => 0,
             UserInput::Single(_) => 1,
-            UserInput::Chord(button_set) => button_set.len().try_into().unwrap(),
+            UserInput::Chord(button_set) => button_set.len(),
         }
     }
 
@@ -128,7 +128,7 @@ impl UserInput {
     /// assert_eq!(ctrl_a.n_matching(&buttons), 1);
     /// assert_eq!(ctrl_alt_a.n_matching(&buttons), 2);
     /// ```
-    pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> u8 {
+    pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> usize {
         match self {
             UserInput::Null => 0,
             UserInput::Single(button) => {

@@ -74,7 +74,7 @@ pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
     map: Vec<PetitSet<UserInput, 16>>,
-    per_mode_cap: Option<u8>,
+    per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
     /// How should clashing (overlapping) inputs be handled?
     pub clash_strategy: ClashStrategy,
@@ -295,7 +295,7 @@ impl<A: Actionlike> InputMap<A> {
         action: A,
         input: impl Into<UserInput>,
         input_mode: Option<InputMode>,
-        index: u8,
+        index: usize,
     ) -> Option<UserInput> {
         let input = input.into();
         let removed = self.clear_at(action.clone(), input_mode, index);
@@ -310,7 +310,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns the per-[`InputMode`] cap on input bindings for every action
     ///
     /// Each individual action can have at most this many bindings, making them easier to display and configure.
-    pub fn per_mode_cap(&self) -> u8 {
+    pub fn per_mode_cap(&self) -> usize {
         if let Some(cap) = self.per_mode_cap {
             cap
         } else {
@@ -326,7 +326,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Supplying a value of 0 removes any per-mode cap.
     ///
     /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
-    pub fn set_per_mode_cap(&mut self, per_mode_cap: u8) -> InputMap<A> {
+    pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
         assert!(3 * per_mode_cap <= 16);
 
         if per_mode_cap == 0 {
@@ -468,8 +468,8 @@ impl<A: Actionlike> InputMap<A> {
     /// A maximum of `CAP` bindings across all input modes can be stored for each action,
     /// and insert operations will silently fail if used when `CAP` bindings already exist.
     #[must_use]
-    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> u8 {
-        self.get(action, input_mode).len() as u8
+    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> usize {
+        self.get(action, input_mode).len()
     }
 
     /// How many input bindings are registered total?
@@ -549,10 +549,10 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         action: A,
         input_mode: Option<InputMode>,
-        index: u8,
+        index: usize,
     ) -> Option<UserInput> {
         let mut bindings = self.get(action.clone(), input_mode);
-        if (bindings.len() as u8) < index {
+        if bindings.len() < index {
             // Not enough matching bindings were found
             return None;
         }
