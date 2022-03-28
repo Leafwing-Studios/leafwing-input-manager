@@ -287,25 +287,17 @@ impl<A: Actionlike> InputMap<A> {
         Some(old_inputs)
     }
 
-    /// Replaces the input for the `action`of the same [`InputMode`] at the same index with the provided `input`
+    /// Replaces the input for the `action` with the specified [`InputMode`] (if any) with the provided `input`
     ///
-    /// If the input is a [`UserInput::Chord`] that combines multiple input modes or [`UserInput::Null`], this method will silently fail.
     /// Returns the replaced input, if any.
     pub fn replace_at(
         &mut self,
         action: A,
         input: impl Into<UserInput>,
+        input_mode: Option<InputMode>,
         index: u8,
     ) -> Option<UserInput> {
         let input = input.into();
-        let input_modes = input.input_modes();
-
-        if input_modes.len() != 1 {
-            return None;
-        }
-
-        // We know that the input belongs to exactly one mode
-        let input_mode = input_modes.into_iter().next().unwrap();
         let removed = self.clear_at(action.clone(), input_mode, index);
         self.insert(action, input);
 
@@ -353,7 +345,7 @@ impl<A: Actionlike> InputMap<A> {
                 let n_registered = self.n_registered(action.clone(), Some(input_mode));
                 if n_registered > per_mode_cap {
                     for i in per_mode_cap..n_registered {
-                        let removed_input = self.clear_at(action.clone(), input_mode, i);
+                        let removed_input = self.clear_at(action.clone(), Some(input_mode), i);
                         if let Some(input) = removed_input {
                             removed_actions.insert(action.clone(), input);
                         }
@@ -550,18 +542,23 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
-    /// Clears the input for the `action` with the specified [`InputMode`] at the provided index
+    /// Clears the input for the `action` with the specified [`InputMode`] (if any) at the provided index
     ///
-    /// Returns the removed input, if any
-    pub fn clear_at(&mut self, action: A, input_mode: InputMode, index: u8) -> Option<UserInput> {
-        let mut bindings = self.get(action.clone(), Some(input_mode));
+    /// Returns the removed input, if any.
+    pub fn clear_at(
+        &mut self,
+        action: A,
+        input_mode: Option<InputMode>,
+        index: u8,
+    ) -> Option<UserInput> {
+        let mut bindings = self.get(action.clone(), input_mode);
         if (bindings.len() as u8) < index {
             // Not enough matching bindings were found
             return None;
         }
 
         // Clear out existing mappings for that input mode
-        self.clear_action(action.clone(), Some(input_mode));
+        self.clear_action(action.clone(), input_mode);
 
         // Remove the binding at the provided index
         let removed = bindings.take_at(index as usize);
