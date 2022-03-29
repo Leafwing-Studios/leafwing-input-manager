@@ -74,7 +74,6 @@ pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
     map: Vec<PetitSet<UserInput, 16>>,
-    per_mode_cap: Option<usize>,
     associated_gamepad: Option<Gamepad>,
     /// How should clashing (overlapping) inputs be handled?
     pub clash_strategy: ClashStrategy,
@@ -87,7 +86,6 @@ impl<A: Actionlike> Default for InputMap<A> {
         InputMap {
             map: A::variants().map(|_| PetitSet::default()).collect(),
             associated_gamepad: None,
-            per_mode_cap: None,
             // This is the most commonly useful behavior.
             clash_strategy: ClashStrategy::PrioritizeLongest,
             // Empty input maps cannot have any clashes
@@ -179,15 +177,6 @@ impl<A: Actionlike> InputMap<A> {
         // Don't overflow the set!
         if self.n_registered(action.clone(), None) >= 16 {
             return self;
-        }
-
-        // Respect any per-input-mode caps that have been set
-        if let Some(per_mode_cap) = self.per_mode_cap {
-            for input_mode in input.input_modes() {
-                if self.n_registered(action.clone(), Some(input_mode)) >= per_mode_cap {
-                    return self;
-                }
-            }
         }
 
         self.map[action.index()].insert(input);
@@ -307,56 +296,6 @@ impl<A: Actionlike> InputMap<A> {
 
 // Configuration
 impl<A: Actionlike> InputMap<A> {
-    /// Returns the per-[`InputMode`] cap on input bindings for every action
-    ///
-    /// Each individual action can have at most this many bindings, making them easier to display and configure.
-    pub fn per_mode_cap(&self) -> usize {
-        if let Some(cap) = self.per_mode_cap {
-            cap
-        } else {
-            0
-        }
-    }
-
-    /// Sets the per-[`InputMode`] cap on input bindings for every action
-    ///
-    /// Each individual action can have at most this many bindings, making them easier to display and configure.
-    /// Any excess actions will be removed, and returned from this method.
-    ///
-    /// Supplying a value of 0 removes any per-mode cap.
-    ///
-    /// PANICS: `3 * per_mode_cap` cannot exceed the global `CAP`, as we need space to store all mappings.
-    pub fn set_per_mode_cap(&mut self, per_mode_cap: usize) -> InputMap<A> {
-        assert!(3 * per_mode_cap <= 16);
-
-        if per_mode_cap == 0 {
-            self.per_mode_cap = None;
-            return InputMap::default();
-        } else {
-            self.per_mode_cap = Some(per_mode_cap);
-        }
-
-        // Store the actions that get culled and then return them
-        let mut removed_actions = InputMap::default();
-
-        // Cull excess mappings
-        for action in A::variants() {
-            for input_mode in InputMode::iter() {
-                let n_registered = self.n_registered(action.clone(), Some(input_mode));
-                if n_registered > per_mode_cap {
-                    for i in per_mode_cap..n_registered {
-                        let removed_input = self.clear_at(action.clone(), Some(input_mode), i);
-                        if let Some(input) = removed_input {
-                            removed_actions.insert(action.clone(), input);
-                        }
-                    }
-                }
-            }
-        }
-
-        removed_actions
-    }
-
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
     #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
