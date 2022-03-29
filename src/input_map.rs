@@ -460,15 +460,6 @@ mod tests {
     }
 
     #[test]
-    fn empty_chords() {
-        use crate::input_map::InputButton;
-
-        let mut input_map_3 = InputMap::<Action>::default();
-        let empty_vec: Vec<InputButton> = Vec::default();
-        input_map_3.insert_chord(Action::Run, empty_vec);
-    }
-
-    #[test]
     fn input_clearing() {
         use bevy::input::keyboard::KeyCode;
 
