@@ -165,6 +165,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Insert a mapping between `action` and `input`
     ///
     /// # Panics
+    ///
     /// Panics if the map is full and `input` is not a duplicate or `input` is [`UserInput::Null`].
     pub fn insert(&mut self, action: A, input: impl Into<UserInput>) -> &mut Self {
         let input = input.into();
@@ -187,6 +188,7 @@ impl<A: Actionlike> InputMap<A> {
     /// If a matching input already existed in the set, it will be moved to the supplied index. Any input that was previously there will be moved to the matching input’s original index.
     ///
     /// # Panics
+    ///
     /// Panics if the map is full and `input` is not a duplicate or `input` is [`UserInput::Null`].
     pub fn insert_at(&mut self, action: A, input: impl Into<UserInput>, index: usize) -> &mut Self {
         let input = input.into();
@@ -211,6 +213,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Any iterator that can be converted into a [`UserInput`] can be supplied.
     ///
     /// # Panics
+    ///
     /// Panics if the map is full and any of `inputs` is not a duplicate or any of `inputs` is [`UserInput::Null`].
     pub fn insert_multiple(
         &mut self,
@@ -229,6 +232,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
     /// # Panics
+    ///
     /// Panics if the map is full and `buttons` is not a duplicate.
     pub fn insert_chord(
         &mut self,
