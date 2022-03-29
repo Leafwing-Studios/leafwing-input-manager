@@ -52,14 +52,11 @@ impl UserInput {
         use UserInput::*;
 
         match self {
-            Null => false,
             Single(self_button) => match other {
-                Null => false,
                 Single(_) => false,
                 Chord(other_set) => button_chord_clash(self_button, other_set),
             },
             Chord(self_set) => match other {
-                Null => false,
                 Single(other_button) => button_chord_clash(other_button, self_set),
                 Chord(other_set) => chord_chord_clash(self_set, other_set),
             },

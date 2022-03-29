@@ -15,10 +15,6 @@ use serde::{Deserialize, Serialize};
 /// Suitable for use in an [`InputMap`]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UserInput {
-    /// A null user input, used for a safe default and error-handling
-    ///
-    /// This input can never be pressed.
-    Null,
     /// A single button
     Single(InputButton),
     /// A combination of buttons, pressed simultaneously
@@ -28,17 +24,10 @@ pub enum UserInput {
     Chord(PetitSet<InputButton, 8>),
 }
 
-impl Default for UserInput {
-    fn default() -> Self {
-        UserInput::Null
-    }
-}
-
 impl UserInput {
     /// Creates a [`UserInput::Chord`] from an iterator of [`Button`]s
     ///
     /// If `buttons` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
-    /// If `buttons` has a length of 0, a [`UserInput::Null`] variant will be returned instead.
     pub fn chord(buttons: impl IntoIterator<Item = impl Into<InputButton>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
@@ -50,7 +39,6 @@ impl UserInput {
         }
 
         match length {
-            0 => UserInput::Null,
             1 => UserInput::Single(set.into_iter().next().unwrap()),
             _ => UserInput::Chord(set),
         }
@@ -60,7 +48,6 @@ impl UserInput {
     pub fn input_modes(&self) -> PetitSet<InputMode, 3> {
         let mut set = PetitSet::default();
         match self {
-            UserInput::Null => (),
             UserInput::Single(button) => {
                 set.insert((*button).into());
             }
@@ -93,14 +80,12 @@ impl UserInput {
                 }
                 false
             }
-            UserInput::Null => false,
         }
     }
 
     /// The number of buttons in the [`UserInput`]
     pub fn len(&self) -> usize {
         match self {
-            UserInput::Null => 0,
             UserInput::Single(_) => 1,
             UserInput::Chord(button_set) => button_set.len(),
         }
@@ -130,7 +115,6 @@ impl UserInput {
     /// ```
     pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> usize {
         match self {
-            UserInput::Null => 0,
             UserInput::Single(button) => {
                 if buttons.contains(button) {
                     1
@@ -336,7 +320,6 @@ impl<'a> InputStreams<'a> {
         match input {
             UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            UserInput::Null => false,
         }
     }
 

@@ -166,14 +166,9 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// # Panics
     ///
-    /// Panics if the map is full and `input` is not a duplicate or `input` is [`UserInput::Null`].
+    /// Panics if the map is full and `input` is not a duplicate.
     pub fn insert(&mut self, action: A, input: impl Into<UserInput>) -> &mut Self {
         let input = input.into();
-
-        // Don't insert Null inputs into the map
-        if input == UserInput::Null {
-            panic!("Inserted input can't be {input:?}")
-        }
 
         self.map[action.index()].insert(input);
 
@@ -189,14 +184,9 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// # Panics
     ///
-    /// Panics if the map is full and `input` is not a duplicate or `input` is [`UserInput::Null`].
+    /// Panics if the map is full and `input` is not a duplicate.
     pub fn insert_at(&mut self, action: A, input: impl Into<UserInput>, index: usize) -> &mut Self {
         let input = input.into();
-
-        // Don't insert Null inputs into the map
-        if input == UserInput::Null {
-            panic!("Inserted input can't be {input:?}")
-        }
 
         self.map[action.index()].insert_at(input, index);
 
@@ -214,7 +204,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// # Panics
     ///
-    /// Panics if the map is full and any of `inputs` is not a duplicate or any of `inputs` is [`UserInput::Null`].
+    /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
         inputs: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
@@ -470,11 +460,9 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn chord_null_coercion() {
+    fn empty_chords() {
         use crate::input_map::InputButton;
 
-        // Empty chords are converted to UserInput::Null which causes panic
         let mut input_map_3 = InputMap::<Action>::default();
         let empty_vec: Vec<InputButton> = Vec::default();
         input_map_3.insert_chord(Action::Run, empty_vec);
