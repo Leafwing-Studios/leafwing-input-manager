@@ -455,7 +455,7 @@ mod tests {
     }
 
     #[test]
-    pub fn chord_singleton_coercion() {
+    fn chord_singleton_coercion() {
         use crate::input_map::UserInput;
         use bevy::input::keyboard::KeyCode;
 
