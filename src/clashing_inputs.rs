@@ -134,9 +134,9 @@ impl<A: Actionlike> InputMap<A> {
     fn possible_clash(&self, action_a: A, action_b: A) -> Option<Clash<A>> {
         let mut clash = Clash::new(action_a.clone(), action_b.clone());
 
-        for input_a in self.get(action_a, None) {
-            for input_b in self.get(action_b.clone(), None) {
-                if input_a.clashes(&input_b) {
+        for input_a in self.get(action_a).iter() {
+            for input_b in self.get(action_b.clone()).iter() {
+                if input_a.clashes(input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
                 }
@@ -426,8 +426,6 @@ mod tests {
 
         #[test]
         fn clash_caching() {
-            use crate::buttonlike_user_input::InputMode;
-
             let mut input_map = test_input_map();
             // Possible clashes are cached upon initialization
             assert_eq!(input_map.possible_clashes.len(), 12);
@@ -437,11 +435,8 @@ mod tests {
             assert_eq!(input_map.possible_clashes.len(), 15);
 
             // Possible clashes are cached upon binding removal
-            input_map.clear_action(Action::One, None);
+            input_map.clear_action(Action::One);
             assert_eq!(input_map.possible_clashes.len(), 9);
-
-            input_map.clear_action(Action::Two, Some(InputMode::Keyboard));
-            assert_eq!(input_map.possible_clashes.len(), 4);
         }
 
         #[test]

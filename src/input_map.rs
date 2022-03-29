@@ -1,7 +1,7 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
 use crate::action_state::{Timing, VirtualButtonState};
-use crate::buttonlike_user_input::{InputButton, InputMode, InputStreams, UserInput};
+use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
 use crate::clashing_inputs::{Clash, ClashStrategy};
 use crate::Actionlike;
 use bevy::prelude::*;
@@ -67,7 +67,7 @@ use serde::{Deserialize, Serialize};
 ///
 ///
 /// // But you can't Hide :(
-/// input_map.clear_action(Action::Hide, None);
+/// input_map.clear_action(Action::Hide);
 ///```
 #[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct InputMap<A: Actionlike> {
@@ -164,22 +164,39 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Insert a mapping between `action` and `input`
     ///
-    /// Existing mappings for that action will not be overwritten.
-    /// If the set for this action is already full, this insertion will silently fail.
+    /// # Panics
+    /// Panics if the map is full and `input` is not a duplicate or `input` is [`UserInput::Null`].
     pub fn insert(&mut self, action: A, input: impl Into<UserInput>) -> &mut Self {
         let input = input.into();
 
         // Don't insert Null inputs into the map
         if input == UserInput::Null {
-            return self;
-        }
-
-        // Don't overflow the set!
-        if self.n_registered(action.clone(), None) >= 16 {
-            return self;
+            panic!("Inserted input can't be {input:?}")
         }
 
         self.map[action.index()].insert(input);
+
+        // Cache clashes now, to ensure a clean state
+        self.cache_possible_clashes();
+
+        self
+    }
+
+    /// Insert a mapping between `action` and `input` at the provided index
+    ///
+    /// If a matching input already existed in the set, it will be moved to the supplied index. Any input that was previously there will be moved to the matching input’s original index.
+    ///
+    /// # Panics
+    /// Panics if the map is full and `input` is not a duplicate or `input` is [`UserInput::Null`].
+    pub fn insert_at(&mut self, action: A, input: impl Into<UserInput>, index: usize) -> &mut Self {
+        let input = input.into();
+
+        // Don't insert Null inputs into the map
+        if input == UserInput::Null {
+            panic!("Inserted input can't be {input:?}")
+        }
+
+        self.map[action.index()].insert_at(input, index);
 
         // Cache clashes now, to ensure a clean state
         self.cache_possible_clashes();
@@ -193,12 +210,13 @@ impl<A: Actionlike> InputMap<A> {
     /// If you want to require multiple buttons to be pressed at once, use [`insert_chord`](Self::insert_chord).
     /// Any iterator that can be converted into a [`UserInput`] can be supplied.
     ///
-    /// Existing mappings for that action will not be overwritten.
+    /// # Panics
+    /// Panics if the map is full and any of `inputs` is not a duplicate or any of `inputs` is [`UserInput::Null`].
     pub fn insert_multiple(
         &mut self,
-        bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
+        inputs: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
     ) -> &mut Self {
-        for (action, input) in bindings {
+        for (action, input) in inputs {
             self.insert(action, input);
         }
 
@@ -210,7 +228,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
-    /// Existing mappings for that action will not be overwritten.
+    /// # Panics
+    /// Panics if the map is full and `buttons` is not a duplicate.
     pub fn insert_chord(
         &mut self,
         action: A,
@@ -239,12 +258,12 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         for action in A::variants() {
-            for input in self.get(action.clone(), None) {
-                new_map.insert(action.clone(), input);
+            for input in self.get(action.clone()).iter() {
+                new_map.insert(action.clone(), input.clone());
             }
 
-            for input in other.get(action.clone(), None) {
-                new_map.insert(action.clone(), input);
+            for input in other.get(action.clone()).iter() {
+                new_map.insert(action.clone(), input.clone());
             }
         }
 
@@ -252,45 +271,6 @@ impl<A: Actionlike> InputMap<A> {
 
         *self = new_map;
         self
-    }
-
-    /// Replaces any existing inputs for the `action` of the same [`InputMode`] with the provided `input`
-    ///
-    /// Returns all previously registered inputs, if any
-    pub fn replace(
-        &mut self,
-        action: A,
-        input: impl Into<UserInput>,
-    ) -> Option<PetitSet<UserInput, 16>> {
-        let input = input.into();
-
-        let mut old_inputs: PetitSet<UserInput, 16> = PetitSet::default();
-        for input_mode in input.input_modes() {
-            for removed_input in self.clear_action(action.clone(), Some(input_mode)) {
-                old_inputs.insert(removed_input);
-            }
-        }
-
-        self.insert(action, input);
-
-        Some(old_inputs)
-    }
-
-    /// Replaces the input for the `action` with the specified [`InputMode`] (if any) with the provided `input`
-    ///
-    /// Returns the replaced input, if any.
-    pub fn replace_at(
-        &mut self,
-        action: A,
-        input: impl Into<UserInput>,
-        input_mode: Option<InputMode>,
-        index: usize,
-    ) -> Option<UserInput> {
-        let input = input.into();
-        let removed = self.clear_at(action.clone(), input_mode, index);
-        self.insert(action, input);
-
-        removed
     }
 }
 
@@ -345,9 +325,9 @@ impl<A: Actionlike> InputMap<A> {
         for action in A::variants() {
             let mut inputs = Vec::new();
 
-            for input in self.get(action.clone(), None) {
-                if input_streams.input_pressed(&input) {
-                    inputs.push(input);
+            for input in self.get(action.clone()).iter() {
+                if input_streams.input_pressed(input) {
+                    inputs.push(input.clone());
                 }
             }
 
@@ -368,57 +348,18 @@ impl<A: Actionlike> InputMap<A> {
 
 // Utilities
 impl<A: Actionlike> InputMap<A> {
-    /// Returns the mapping between the `action` that uses the supplied `input_mode`
-    ///
-    /// If `input_mode` is `None`, all inputs will be returned regardless of input mode.
-    ///
-    /// For chords, an input will be returned if any of the contained buttons use that input mode.
-    ///
-    /// If no matching bindings are found, an empty [`PetitSet`] will be returned.
-    ///
-    /// A copy of the values are returned, rather than a reference to them.
-    /// The order of these values is stable, in a first-in, first-out fashion.
-    /// Use `self.map.get` or `self.map.get_mut` if you require a reference.
+    /// Returns the `action` mappings
     #[must_use]
-    pub fn get(&self, action: A, input_mode: Option<InputMode>) -> PetitSet<UserInput, 16> {
-        let full_set = self.map[action.index()].clone();
-        if let Some(input_mode) = input_mode {
-            let mut matching_set = PetitSet::default();
-            for input in full_set.iter() {
-                if input.matches_input_mode(input_mode) {
-                    matching_set.insert(input.clone());
-                }
-            }
-
-            if matching_set.is_empty() {
-                PetitSet::default()
-            } else {
-                matching_set
-            }
-        } else {
-            full_set
-        }
-    }
-
-    /// Returns how many bindings are currently registered for the provided action with the provided [`InputMode`]
-    ///
-    /// If `None` is provided, a total across all input modes will be provided.
-    ///
-    /// A maximum of `CAP` bindings across all input modes can be stored for each action,
-    /// and insert operations will silently fail if used when `CAP` bindings already exist.
-    #[must_use]
-    pub fn n_registered(&self, action: A, input_mode: Option<InputMode>) -> usize {
-        self.get(action, input_mode).len()
+    pub fn get(&self, action: A) -> &PetitSet<UserInput, 16> {
+        &self.map[action.index()]
     }
 
     /// How many input bindings are registered total?
-    ///
-    /// For more granular information, use [`InputMap::n_registered`] instead.
     #[must_use]
     pub fn len(&self) -> usize {
         let mut i = 0;
         for action in A::variants() {
-            i += self.n_registered(action, None) as usize;
+            i += self.get(action).len();
         }
         i
     }
@@ -431,109 +372,26 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-// Clearing
+// Removing
 impl<A: Actionlike> InputMap<A> {
-    /// Clears all inputs registered for the `action` that use the supplied `input_mode`
-    ///
-    /// If `input_mode` is `None`, all inputs will be cleared regardless of input mode.
-    ///
-    /// For chords, an input will be removed if any of the contained buttons use that input mode.
-    ///
-    /// Returns all previously registered inputs
-    pub fn clear_action(
-        &mut self,
-        action: A,
-        input_mode: Option<InputMode>,
-    ) -> PetitSet<UserInput, 16> {
-        // FIXME: does not appear to be working correctly
-        if let Some(input_mode) = input_mode {
-            // Pull out all the matching inputs
-            let bindings = self.map[action.index()].clone();
-            self.map[action.index()] = PetitSet::default();
+    /// Clears all inputs registered for the `action`
+    pub fn clear_action(&mut self, action: A) {
+        self.map[action.index()].clear();
 
-            let mut retained_set: PetitSet<UserInput, 16> = PetitSet::default();
-            let mut removed_set: PetitSet<UserInput, 16> = PetitSet::default();
-
-            for input in bindings {
-                if input.matches_input_mode(input_mode) {
-                    removed_set.insert(input);
-                } else {
-                    retained_set.insert(input);
-                }
-            }
-
-            // Put back the ones that didn't match
-            for input in retained_set.iter() {
-                self.insert(action.clone(), input.clone());
-            }
-
-            // Cache clashes now, to ensure a clean state
-            self.cache_possible_clashes();
-
-            // Return the items that matched
-            removed_set
-        } else {
-            let previous_bindings = self.map[action.index()].clone();
-            self.map[action.index()] = PetitSet::default();
-            // Cache clashes now, to ensure a clean state
-            self.cache_possible_clashes();
-            previous_bindings
-        }
+        // Cache clashes now, to ensure a clean state
+        self.cache_possible_clashes();
     }
 
-    /// Clears the input for the `action` with the specified [`InputMode`] (if any) at the provided index
+    /// Removes the input for the `action` at the provided index
     ///
-    /// Returns the removed input, if any.
-    pub fn clear_at(
-        &mut self,
-        action: A,
-        input_mode: Option<InputMode>,
-        index: usize,
-    ) -> Option<UserInput> {
-        let mut bindings = self.get(action.clone(), input_mode);
-        if bindings.len() < index {
-            // Not enough matching bindings were found
-            return None;
-        }
-
-        // Clear out existing mappings for that input mode
-        self.clear_action(action.clone(), input_mode);
-
-        // Remove the binding at the provided index
-        let removed = bindings.take_at(index as usize);
-
-        // Reinsert the other bindings
-        for input in bindings.iter() {
-            self.insert(action.clone(), input.clone());
-        }
+    /// Returns `true` if an element was found.
+    pub fn remove_at(&mut self, action: A, index: usize) -> bool {
+        let found = self.map[action.index()].remove_at(index);
 
         // Cache clashes now, to ensure a clean state
         self.cache_possible_clashes();
 
-        removed
-    }
-
-    /// Clears all inputs that use the supplied `input_mode`
-    ///
-    /// If `input_mode` is `None`, all inputs will be cleared regardless of input mode.
-    ///
-    /// For chords, an input will be removed if any of the contained buttons use that input mode.
-    ///
-    /// Returns the subset of the action map that was removed
-    pub fn clear_input_mode(&mut self, input_mode: Option<InputMode>) -> InputMap<A> {
-        let mut cleared_input_map = InputMap {
-            associated_gamepad: self.associated_gamepad,
-            ..Default::default()
-        };
-
-        for action in A::variants() {
-            for input in self.clear_action(action.clone(), input_mode).iter() {
-                // Put back the ones that didn't match
-                cleared_input_map.insert(action.clone(), input.clone());
-            }
-        }
-
-        cleared_input_map
+        found
     }
 }
 
@@ -557,14 +415,14 @@ mod tests {
         input_map.insert(Action::Run, KeyCode::Space);
 
         assert_eq!(
-            input_map.get(Action::Run, None),
+            *input_map.get(Action::Run),
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(Action::Run, KeyCode::Space);
         assert_eq!(
-            input_map.get(Action::Run, None),
+            *input_map.get(Action::Run),
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
         );
     }
@@ -580,7 +438,7 @@ mod tests {
         input_map_1.insert(Action::Run, KeyCode::Return);
 
         assert_eq!(
-            input_map_1.get(Action::Run, None),
+            *input_map_1.get(Action::Run),
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into(), KeyCode::Return.into()])
         );
 
@@ -593,8 +451,8 @@ mod tests {
     }
 
     #[test]
-    pub fn chord_coercion() {
-        use crate::input_map::{InputButton, UserInput};
+    pub fn chord_singleton_coercion() {
+        use crate::input_map::UserInput;
         use bevy::input::keyboard::KeyCode;
 
         // Single items in a chord should be coerced to a singleton
@@ -605,97 +463,47 @@ mod tests {
         input_map_2.insert(Action::Run, UserInput::chord([KeyCode::Space]));
 
         assert_eq!(input_map_1, input_map_2);
+    }
 
-        // Empty chords are converted to UserInput::Null, and then ignored
+    #[test]
+    #[should_panic]
+    fn chord_null_coercion() {
+        use crate::input_map::InputButton;
+
+        // Empty chords are converted to UserInput::Null which causes panic
         let mut input_map_3 = InputMap::<Action>::default();
         let empty_vec: Vec<InputButton> = Vec::default();
         input_map_3.insert_chord(Action::Run, empty_vec);
-
-        assert_eq!(input_map_3, InputMap::<Action>::default());
     }
 
     #[test]
     fn input_clearing() {
-        use crate::buttonlike_user_input::{InputButton, InputMode};
-        use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
+        use bevy::input::keyboard::KeyCode;
 
         let mut input_map = InputMap::<Action>::default();
         input_map.insert(Action::Run, KeyCode::Space);
 
-        let one_item_input_map = input_map.clone();
-
-        // Clearing without a specified input mode
-        input_map.clear_action(Action::Run, None);
+        // Clearing action
+        input_map.clear_action(Action::Run);
         assert_eq!(input_map, InputMap::default());
 
-        // Clearing with the non-matching input mode
+        // Remove input at existing index
         input_map.insert(Action::Run, KeyCode::Space);
-        input_map.clear_action(Action::Run, Some(InputMode::Gamepad));
-        input_map.clear_action(Action::Run, Some(InputMode::Mouse));
-        assert_eq!(input_map, one_item_input_map);
-
-        // Clearing with the matching input mode
-        input_map.clear_action(Action::Run, Some(InputMode::Keyboard));
-        assert_eq!(input_map, InputMap::default());
-
-        // Clearing an entire input mode
-        input_map.insert_multiple([(Action::Run, KeyCode::Space), (Action::Run, KeyCode::A)]);
-        input_map.insert(Action::Hide, KeyCode::RBracket);
-        input_map.clear_input_mode(Some(InputMode::Keyboard));
-        assert_eq!(input_map, InputMap::default());
-
-        // Other stored inputs should be unaffected
-        input_map.insert(Action::Run, KeyCode::Space);
-        input_map.insert(Action::Hide, GamepadButtonType::South);
-        input_map.insert(Action::Run, MouseButton::Left);
-        input_map.clear_input_mode(Some(InputMode::Gamepad));
-        input_map.clear_action(Action::Run, Some(InputMode::Mouse));
-        assert_eq!(input_map, one_item_input_map);
-
-        // Clearing all inputs works
-        input_map.insert(Action::Hide, GamepadButtonType::South);
-        input_map.insert(Action::Run, MouseButton::Left);
-        let big_input_map = input_map.clone();
-        let removed_items = input_map.clear_input_mode(None);
-        assert_eq!(input_map, InputMap::default());
-
-        // Items are returned on clearing
-        assert_eq!(removed_items, big_input_map);
-
-        // Chords are removed if at least one button matches
-        input_map.insert_chord(Action::Run, [KeyCode::A, KeyCode::B]);
-        input_map.insert_chord(
-            Action::Run,
-            [GamepadButtonType::South, GamepadButtonType::West],
+        input_map.insert(Action::Run, KeyCode::LShift);
+        assert!(input_map.remove_at(Action::Run, 1));
+        assert!(
+            !input_map.remove_at(Action::Run, 1),
+            "Should return false on second removal at the same index"
         );
-        input_map.insert_chord(
-            Action::Run,
-            [
-                InputButton::Gamepad(GamepadButtonType::South),
-                InputButton::Keyboard(KeyCode::A),
-            ],
+        assert!(input_map.remove_at(Action::Run, 0));
+        assert!(
+            !input_map.remove_at(Action::Run, 0),
+            "Should return false on second removal at the same index"
         );
-
-        let removed_items = input_map.clear_input_mode(Some(InputMode::Gamepad));
-        let mut expected_removed_items = InputMap::default();
-        expected_removed_items.insert_chord(
-            Action::Run,
-            [GamepadButtonType::South, GamepadButtonType::West],
-        );
-        expected_removed_items.insert_chord(
-            Action::Run,
-            [
-                InputButton::Gamepad(GamepadButtonType::South),
-                InputButton::Keyboard(KeyCode::A),
-            ],
-        );
-
-        assert_eq!(removed_items, expected_removed_items);
     }
 
     #[test]
-    fn reset_to_default() {
-        use crate::input_map::InputMode;
+    fn merging() {
         use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
 
         let mut input_map = InputMap::default();
@@ -713,21 +521,6 @@ mod tests {
         // Merging is idempotent
         input_map.merge(&default_keyboard_map);
         assert_eq!(input_map, default_keyboard_map);
-
-        // Fully default settings
-        input_map.merge(&default_gamepad_map);
-        let default_input_map = input_map.clone();
-
-        // Changing from the default
-        input_map.replace(Action::Jump, KeyCode::J);
-
-        // Clearing all keyboard bindings works as expected
-        input_map.clear_input_mode(Some(InputMode::Keyboard));
-        assert_eq!(input_map, default_gamepad_map);
-
-        // Resetting to default works
-        input_map.merge(&default_keyboard_map);
-        assert_eq!(input_map, default_input_map);
     }
 
     #[test]
