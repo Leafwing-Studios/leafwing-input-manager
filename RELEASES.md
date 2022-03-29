@@ -21,6 +21,7 @@
   - removed methods that works with specific input mode.
   - removed `n_registered`, use `get(action).len()` instead.
   - added `insert_at` / `remove_at` to insert / remove input at specific index.
+  - use `usize` for sizes as in other Rust containers.
 
 ### Bug fixes
 
