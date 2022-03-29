@@ -16,6 +16,11 @@
   - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses
 - relaxed `Hash` and `Eq` bounds on `Actionlike`
 - `ActionState::state` and `set_state` methods renamed to `button_state` and `set_button_state` for clarity
+- removed `UserInput::Null`.
+- refactored `InputMap`.
+  - removed methods that works with specific input mode.
+  - removed `n_registered`, use `get(action).len()` instead.
+  - added `insert_at` / `remove_at` to insert / remove input at specific index.
 
 ### Bug fixes
 

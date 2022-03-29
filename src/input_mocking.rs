@@ -114,7 +114,6 @@ impl<'a> MutableInputStreams<'a> {
         let mut mouse_buttons: Vec<MouseButton> = Vec::default();
 
         match input_to_send {
-            UserInput::Null => (),
             UserInput::Single(button) => match button {
                 InputButton::Gamepad(gamepad_buttontype) => {
                     if let Some(gamepad) = self.associated_gamepad {
