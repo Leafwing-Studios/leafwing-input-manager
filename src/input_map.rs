@@ -8,6 +8,7 @@ use bevy::prelude::*;
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
+use std::slice::Iter;
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
@@ -91,6 +92,15 @@ impl<A: Actionlike> Default for InputMap<A> {
             // Empty input maps cannot have any clashes
             possible_clashes: Vec::default(),
         }
+    }
+}
+
+impl<'a, A: Actionlike> IntoIterator for &'a InputMap<A> {
+    type Item = &'a PetitSet<UserInput, 16>;
+    type IntoIter = Iter<'a, PetitSet<UserInput, 16>>;
+
+    fn into_iter(self) -> Iter<'a, PetitSet<UserInput, 16>> {
+        self.map.iter()
     }
 }
 
@@ -342,6 +352,11 @@ impl<A: Actionlike> InputMap<A> {
 
 // Utilities
 impl<A: Actionlike> InputMap<A> {
+    /// Iterate over mapped inputs
+    pub fn iter(&self) -> impl Iterator<Item = &PetitSet<UserInput, 16>> {
+        self.map.iter()
+    }
+
     /// Returns the `action` mappings
     #[must_use]
     pub fn get(&self, action: A) -> &PetitSet<UserInput, 16> {
