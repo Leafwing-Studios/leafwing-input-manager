@@ -99,7 +99,7 @@ impl<'a, A: Actionlike> IntoIterator for &'a InputMap<A> {
     type Item = &'a PetitSet<UserInput, 16>;
     type IntoIter = Iter<'a, PetitSet<UserInput, 16>>;
 
-    fn into_iter(self) -> Iter<'a, PetitSet<UserInput, 16>> {
+    fn into_iter(self) -> Self::IntoIter {
         self.map.iter()
     }
 }
