@@ -402,6 +402,18 @@ impl<A: Actionlike> InputMap<A> {
 
         found
     }
+
+    /// Removes the input for the `action`, if it exists
+    ///
+    /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
+    pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
+        let index = self.map[action.index()].remove(&input.into());
+
+        // Cache clashes now, to ensure a clean state
+        self.cache_possible_clashes();
+
+        index
+    }
 }
 
 mod tests {
