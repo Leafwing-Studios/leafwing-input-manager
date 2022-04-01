@@ -24,7 +24,7 @@ use std::marker::PhantomData;
 /// This strategy is only used when assessing the actions and input holistically,
 /// in [`InputMap::which_pressed`], using [`InputMap::handle_clashes`].
 #[non_exhaustive]
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum ClashStrategy {
     /// All matching inputs will always be pressed
     PressAll,
@@ -72,11 +72,11 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         pressed_actions: &mut [VirtualButtonState],
         input_streams: &InputStreams,
+        clash_strategy: ClashStrategy,
     ) {
         for clash in self.get_clashes(pressed_actions, input_streams) {
             // Remove the action in the pair that was overruled, if any
-            if let Some(culled_action) = resolve_clash(&clash, &self.clash_strategy, input_streams)
-            {
+            if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
                 pressed_actions[culled_action.index()] =
                     VirtualButtonState::Released(Timing::default());
             }
@@ -252,7 +252,7 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
 #[must_use]
 fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
-    clash_strategy: &ClashStrategy,
+    clash_strategy: ClashStrategy,
     input_streams: &InputStreams,
 ) -> Option<A> {
     // Figure out why the actions are pressed
@@ -452,7 +452,7 @@ mod tests {
             assert_eq!(
                 resolve_clash(
                     &simple_clash,
-                    &ClashStrategy::PrioritizeLongest,
+                    ClashStrategy::PrioritizeLongest,
                     &input_streams,
                 ),
                 Some(One)
@@ -462,7 +462,7 @@ mod tests {
             assert_eq!(
                 resolve_clash(
                     &reversed_clash,
-                    &ClashStrategy::PrioritizeLongest,
+                    ClashStrategy::PrioritizeLongest,
                     &input_streams,
                 ),
                 Some(One)
@@ -478,7 +478,7 @@ mod tests {
             assert_eq!(
                 resolve_clash(
                     &chord_clash,
-                    &ClashStrategy::PrioritizeLongest,
+                    ClashStrategy::PrioritizeLongest,
                     &input_streams,
                 ),
                 Some(OneAndTwo)
@@ -500,18 +500,14 @@ mod tests {
             let input_streams = InputStreams::from_keyboard(&keyboard);
 
             assert_eq!(
-                resolve_clash(
-                    &simple_clash,
-                    &ClashStrategy::UseActionOrder,
-                    &input_streams,
-                ),
+                resolve_clash(&simple_clash, ClashStrategy::UseActionOrder, &input_streams,),
                 Some(CtrlOne)
             );
 
             assert_eq!(
                 resolve_clash(
                     &reversed_clash,
-                    &ClashStrategy::UseActionOrder,
+                    ClashStrategy::UseActionOrder,
                     &input_streams,
                 ),
                 Some(CtrlOne)
@@ -523,8 +519,7 @@ mod tests {
             use bevy::prelude::*;
             use Action::*;
 
-            let mut input_map = test_input_map();
-            input_map.clash_strategy = ClashStrategy::PrioritizeLongest;
+            let input_map = test_input_map();
 
             let mut keyboard: Input<KeyCode> = Default::default();
             keyboard.press(Key1);
@@ -541,6 +536,7 @@ mod tests {
             input_map.handle_clashes(
                 &mut pressed_actions,
                 &InputStreams::from_keyboard(&keyboard),
+                ClashStrategy::PrioritizeLongest,
             );
 
             let mut expected = vec![VirtualButtonState::default(); Action::N_VARIANTS];
@@ -555,15 +551,17 @@ mod tests {
             use bevy::prelude::*;
             use Action::*;
 
-            let mut input_map = test_input_map();
-            input_map.clash_strategy = ClashStrategy::PrioritizeLongest;
+            let input_map = test_input_map();
 
             let mut keyboard: Input<KeyCode> = Default::default();
             keyboard.press(Key1);
             keyboard.press(Key2);
             keyboard.press(LControl);
 
-            let pressed_list = input_map.which_pressed(&InputStreams::from_keyboard(&keyboard));
+            let pressed_list = input_map.which_pressed(
+                &InputStreams::from_keyboard(&keyboard),
+                ClashStrategy::PressAll,
+            );
 
             for (i, button_state) in pressed_list.iter().enumerate() {
                 if i == CtrlOne.index() || i == OneAndTwo.index() {

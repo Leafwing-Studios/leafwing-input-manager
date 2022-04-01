@@ -588,7 +588,7 @@ mod tests {
         let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
         // Starting state
-        action_state.update(input_map.which_pressed(&input_streams));
+        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
@@ -599,7 +599,7 @@ mod tests {
         keyboard_input_stream.press(KeyCode::R);
         let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
-        action_state.update(input_map.which_pressed(&input_streams));
+        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(Action::Run));
         assert!(action_state.just_pressed(Action::Run));
@@ -608,7 +608,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now());
-        action_state.update(input_map.which_pressed(&input_streams));
+        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
@@ -619,7 +619,7 @@ mod tests {
         keyboard_input_stream.release(KeyCode::R);
         let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
-        action_state.update(input_map.which_pressed(&input_streams));
+        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
@@ -627,7 +627,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now());
-        action_state.update(input_map.which_pressed(&input_streams));
+        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));

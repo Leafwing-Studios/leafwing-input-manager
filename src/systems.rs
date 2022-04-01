@@ -5,6 +5,7 @@ use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
     buttonlike_user_input::InputStreams,
+    clashing_inputs::ClashStrategy,
     input_map::InputMap,
     Actionlike,
 };
@@ -31,6 +32,7 @@ pub fn update_action_state<A: Actionlike>(
     maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
+    clash_strategy: Res<ClashStrategy>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
     let gamepad = maybe_gamepad_input_stream.as_deref();
@@ -47,7 +49,7 @@ pub fn update_action_state<A: Actionlike>(
             associated_gamepad: input_map.gamepad(),
         };
 
-        let pressed_set = input_map.which_pressed(&input_streams);
+        let pressed_set = input_map.which_pressed(&input_streams, *clash_strategy);
 
         action_state.update(pressed_set);
     }

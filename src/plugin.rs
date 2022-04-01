@@ -1,5 +1,6 @@
 //! Contains main plugin exported by this crate.
 
+use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
 use core::any::TypeId;
 use core::hash::Hash;
@@ -185,6 +186,9 @@ impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
             // Must be split, as the original `input_manager_systems` is consumed in the state branch
             app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
         }
+
+        // Resources
+        app.init_resource::<ClashStrategy>();
     }
 }
 

@@ -27,7 +27,7 @@ use std::slice::Iter;
 /// and one combination is a strict subset of the other, only the larger input is registered.
 /// For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
 /// but not enter the letters `s`.
-/// Set the `clash_strategy` field of this struct with the [`ClashStrategy`](crate::clashing_inputs::ClashStrategy) enum
+/// Set the [`ClashStrategy`](crate::clashing_inputs::ClashStrategy) resource
 /// to configure this behavior.
 ///
 /// # Example
@@ -61,11 +61,6 @@ use std::slice::Iter;
 /// .insert_chord(Action::Hide, [InputButton::Keyboard(KeyCode::H),
 ///                              InputButton::Gamepad(GamepadButtonType::South),
 ///                              InputButton::Mouse(MouseButton::Middle)])
-/// // Configuration
-/// .set_clash_strategy(ClashStrategy::PressAll)
-/// // Converting from a `&mut T` into the `T` that we need
-/// .build();
-///
 ///
 /// // But you can't Hide :(
 /// input_map.clear_action(Action::Hide);
@@ -76,8 +71,6 @@ pub struct InputMap<A: Actionlike> {
     /// indexed by the `Actionlike::id` of `A`
     map: Vec<PetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
-    /// How should clashing (overlapping) inputs be handled?
-    pub clash_strategy: ClashStrategy,
     /// A cached list of all pairs of actions that could potentially clash
     pub(crate) possible_clashes: Vec<Clash<A>>,
 }
@@ -87,8 +80,6 @@ impl<A: Actionlike> Default for InputMap<A> {
         InputMap {
             map: A::variants().map(|_| PetitSet::default()).collect(),
             associated_gamepad: None,
-            // This is the most commonly useful behavior.
-            clash_strategy: ClashStrategy::PrioritizeLongest,
             // Empty input maps cannot have any clashes
             possible_clashes: Vec::default(),
         }
@@ -297,12 +288,6 @@ impl<A: Actionlike> InputMap<A> {
         self.associated_gamepad = None;
         self
     }
-
-    /// Sets the [`ClashStrategy`] for this input map
-    pub fn set_clash_strategy(&mut self, clash_strategy: ClashStrategy) -> &mut Self {
-        self.clash_strategy = clash_strategy;
-        self
-    }
 }
 
 // Check whether buttons are pressed
@@ -312,8 +297,13 @@ impl<A: Actionlike> InputMap<A> {
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
     /// If you need to inspect many inputs at once, prefer [`InputMap::which_pressed`] instead.
     #[must_use]
-    pub fn pressed(&self, action: A, input_streams: &InputStreams) -> bool {
-        let pressed_list = self.which_pressed(input_streams);
+    pub fn pressed(
+        &self,
+        action: A,
+        input_streams: &InputStreams,
+        clash_strategy: ClashStrategy,
+    ) -> bool {
+        let pressed_list = self.which_pressed(input_streams, clash_strategy);
         pressed_list[action.index()].pressed()
     }
 
@@ -322,7 +312,11 @@ impl<A: Actionlike> InputMap<A> {
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
     /// The `usize`s returned correspond to `Actionlike::index()`.
     #[must_use]
-    pub fn which_pressed(&self, input_streams: &InputStreams) -> Vec<VirtualButtonState> {
+    pub fn which_pressed(
+        &self,
+        input_streams: &InputStreams,
+        clash_strategy: ClashStrategy,
+    ) -> Vec<VirtualButtonState> {
         let mut pressed_actions = vec![VirtualButtonState::default(); A::N_VARIANTS];
 
         // Generate the raw action presses
@@ -342,9 +336,7 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        if self.clash_strategy != ClashStrategy::PressAll {
-            self.handle_clashes(&mut pressed_actions, input_streams);
-        }
+        self.handle_clashes(&mut pressed_actions, input_streams, clash_strategy);
 
         pressed_actions
     }
@@ -542,11 +534,7 @@ mod tests {
         use bevy::prelude::*;
 
         // Setting up the input map
-        let mut input_map = InputMap::<Action> {
-            // Ignore clashing to isolate tests
-            clash_strategy: ClashStrategy::PressAll,
-            ..Default::default()
-        };
+        let mut input_map = InputMap::<Action>::default();
         input_map.set_gamepad(Gamepad(42));
 
         // Gamepad
@@ -587,7 +575,7 @@ mod tests {
 
         // With no inputs, nothing should be detected
         for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams));
+            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
         }
 
         // Pressing the wrong gamepad
@@ -600,7 +588,7 @@ mod tests {
             associated_gamepad: Some(Gamepad(42)),
         };
         for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams));
+            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
         }
 
         // Pressing the correct gamepad
@@ -613,8 +601,8 @@ mod tests {
             associated_gamepad: Some(Gamepad(42)),
         };
 
-        assert!(input_map.pressed(Action::Run, &input_streams));
-        assert!(!input_map.pressed(Action::Jump, &input_streams));
+        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
+        assert!(!input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
 
         // Chord
         gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
@@ -627,8 +615,8 @@ mod tests {
             associated_gamepad: Some(Gamepad(42)),
         };
 
-        assert!(input_map.pressed(Action::Run, &input_streams));
-        assert!(input_map.pressed(Action::Jump, &input_streams));
+        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
+        assert!(input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
 
         // Clearing inputs
         gamepad_input_stream = Input::<GamepadButton>::default();
@@ -640,7 +628,7 @@ mod tests {
         };
 
         for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams));
+            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
         }
 
         // Keyboard
@@ -653,8 +641,8 @@ mod tests {
             associated_gamepad: Some(Gamepad(42)),
         };
 
-        assert!(input_map.pressed(Action::Run, &input_streams));
-        assert!(input_map.pressed(Action::Hide, &input_streams));
+        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
+        assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));
 
         keyboard_input_stream = Input::<KeyCode>::default();
 
@@ -669,8 +657,8 @@ mod tests {
             associated_gamepad: Some(Gamepad(42)),
         };
 
-        assert!(input_map.pressed(Action::Run, &input_streams));
-        assert!(input_map.pressed(Action::Jump, &input_streams));
+        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
+        assert!(input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
 
         mouse_input_stream = Input::<MouseButton>::default();
 
@@ -685,6 +673,6 @@ mod tests {
             associated_gamepad: Some(Gamepad(42)),
         };
 
-        assert!(input_map.pressed(Action::Hide, &input_streams));
+        assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));
     }
 }
