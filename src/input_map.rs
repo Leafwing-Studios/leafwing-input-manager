@@ -6,9 +6,9 @@ use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
 use bevy::prelude::*;
 use core::fmt::Debug;
-use std::marker::PhantomData;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 use std::slice::Iter;
 
 /// Maps from raw inputs to an input-method agnostic representation
@@ -67,6 +67,7 @@ use std::slice::Iter;
 /// input_map.clear_action(Action::Hide);
 ///```
 #[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
