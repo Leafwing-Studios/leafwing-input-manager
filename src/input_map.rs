@@ -2,10 +2,11 @@
 
 use crate::action_state::{Timing, VirtualButtonState};
 use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
-use crate::clashing_inputs::{Clash, ClashStrategy};
+use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
 use bevy::prelude::*;
 use core::fmt::Debug;
+use std::marker::PhantomData;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::slice::Iter;
@@ -71,8 +72,8 @@ pub struct InputMap<A: Actionlike> {
     /// indexed by the `Actionlike::id` of `A`
     map: Vec<PetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
-    /// A cached list of all pairs of actions that could potentially clash
-    pub(crate) possible_clashes: Vec<Clash<A>>,
+    #[serde(skip)]
+    marker: PhantomData<A>,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
@@ -80,8 +81,7 @@ impl<A: Actionlike> Default for InputMap<A> {
         InputMap {
             map: A::variants().map(|_| PetitSet::default()).collect(),
             associated_gamepad: None,
-            // Empty input maps cannot have any clashes
-            possible_clashes: Vec::default(),
+            marker: PhantomData,
         }
     }
 }
@@ -173,9 +173,6 @@ impl<A: Actionlike> InputMap<A> {
 
         self.map[action.index()].insert(input);
 
-        // Cache clashes now, to ensure a clean state
-        self.cache_possible_clashes();
-
         self
     }
 
@@ -190,9 +187,6 @@ impl<A: Actionlike> InputMap<A> {
         let input = input.into();
 
         self.map[action.index()].insert_at(input, index);
-
-        // Cache clashes now, to ensure a clean state
-        self.cache_possible_clashes();
 
         self
     }
@@ -261,8 +255,6 @@ impl<A: Actionlike> InputMap<A> {
                 new_map.insert(action.clone(), input.clone());
             }
         }
-
-        new_map.cache_possible_clashes();
 
         *self = new_map;
         self
@@ -378,33 +370,20 @@ impl<A: Actionlike> InputMap<A> {
     /// Clears all inputs registered for the `action`
     pub fn clear_action(&mut self, action: A) {
         self.map[action.index()].clear();
-
-        // Cache clashes now, to ensure a clean state
-        self.cache_possible_clashes();
     }
 
     /// Removes the input for the `action` at the provided index
     ///
     /// Returns `true` if an element was found.
     pub fn remove_at(&mut self, action: A, index: usize) -> bool {
-        let found = self.map[action.index()].remove_at(index);
-
-        // Cache clashes now, to ensure a clean state
-        self.cache_possible_clashes();
-
-        found
+        self.map[action.index()].remove_at(index)
     }
 
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
     pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
-        let index = self.map[action.index()].remove(&input.into());
-
-        // Cache clashes now, to ensure a clean state
-        self.cache_possible_clashes();
-
-        index
+        self.map[action.index()].remove(&input.into())
     }
 }
 

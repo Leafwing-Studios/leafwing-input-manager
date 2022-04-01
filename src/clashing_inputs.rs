@@ -84,7 +84,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Updates the cache of possible input clashes
-    pub(crate) fn cache_possible_clashes(&mut self) {
+    pub(crate) fn possible_clashes(&self) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
         for action_pair in A::variants().combinations(2) {
@@ -95,8 +95,7 @@ impl<A: Actionlike> InputMap<A> {
                 clashes.push(clash);
             }
         }
-
-        self.possible_clashes = clashes;
+        clashes
     }
 
     /// Gets the set of clashing action-input pairs
@@ -111,13 +110,13 @@ impl<A: Actionlike> InputMap<A> {
         let mut clashes = Vec::default();
 
         // We can limit our search to the cached set of possibly clashing actions
-        for clash in &self.possible_clashes {
+        for clash in self.possible_clashes() {
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
             if pressed_actions[clash.index_a].pressed() && pressed_actions[clash.index_b].pressed()
             {
                 // Check if the potential clash occured based on the pressed inputs
-                if let Some(clash) = check_clash(clash, input_streams) {
+                if let Some(clash) = check_clash(&clash, input_streams) {
                     clashes.push(clash)
                 }
             }
@@ -425,15 +424,15 @@ mod tests {
         fn clash_caching() {
             let mut input_map = test_input_map();
             // Possible clashes are cached upon initialization
-            assert_eq!(input_map.possible_clashes.len(), 12);
+            assert_eq!(input_map.possible_clashes().len(), 12);
 
             // Possible clashes are cached upon binding insertion
             input_map.insert(Action::Two, UserInput::chord([LControl, LAlt, Key1]));
-            assert_eq!(input_map.possible_clashes.len(), 15);
+            assert_eq!(input_map.possible_clashes().len(), 15);
 
             // Possible clashes are cached upon binding removal
             input_map.clear_action(Action::One);
-            assert_eq!(input_map.possible_clashes.len(), 9);
+            assert_eq!(input_map.possible_clashes().len(), 9);
         }
 
         #[test]
