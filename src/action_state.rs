@@ -340,22 +340,19 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn set_button_state(&mut self, action: A, state: VirtualButtonState) {
-        self.button_states.insert(action.index(), state);
+        self.button_states[action.index()] = state;
     }
 
     /// Press the `action` virtual button
     pub fn press(&mut self, action: A) {
         if let VirtualButtonState::Released(timing) = self.button_state(action.clone()) {
-            self.button_states.insert(
-                action.index(),
-                VirtualButtonState::Pressed(
-                    Timing {
-                        instant_started: None,
-                        current_duration: Duration::ZERO,
-                        previous_duration: timing.current_duration,
-                    },
-                    Vec::default(),
-                ),
+            self.button_states[action.index()] = VirtualButtonState::Pressed(
+                Timing {
+                    instant_started: None,
+                    current_duration: Duration::ZERO,
+                    previous_duration: timing.current_duration,
+                },
+                Vec::default(),
             );
         }
     }
@@ -363,14 +360,11 @@ impl<A: Actionlike> ActionState<A> {
     /// Release the `action` virtual button
     pub fn release(&mut self, action: A) {
         if let VirtualButtonState::Pressed(timing, _) = self.button_state(action.clone()) {
-            self.button_states.insert(
-                action.index(),
-                VirtualButtonState::Released(Timing {
-                    instant_started: None,
-                    current_duration: Duration::ZERO,
-                    previous_duration: timing.current_duration,
-                }),
-            );
+            self.button_states[action.index()] = VirtualButtonState::Released(Timing {
+                instant_started: None,
+                current_duration: Duration::ZERO,
+                previous_duration: timing.current_duration,
+            });
         }
     }
 
