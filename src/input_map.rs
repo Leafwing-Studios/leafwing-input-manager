@@ -67,6 +67,7 @@ use std::slice::Iter;
 /// input_map.clear_action(Action::Hide);
 ///```
 #[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
