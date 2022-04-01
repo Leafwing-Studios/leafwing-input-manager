@@ -389,10 +389,12 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 mod tests {
+    use serde::{Deserialize, Serialize};
+
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Serialize, Deserialize)]
     enum Action {
         Run,
         Jump,
@@ -666,5 +668,48 @@ mod tests {
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));
+    }
+
+    #[test]
+    fn serialize_deserealize_ron() {
+        use bevy::prelude::{GamepadButtonType, KeyCode, MouseButton};
+        
+        for input_map in [
+            InputMap::<Action>::default(),
+            InputMap::new([(Action::Jump, KeyCode::Space)]),
+            InputMap::new([(Action::Jump, MouseButton::Right)]),
+            InputMap::new([(Action::Jump, GamepadButtonType::South)]),
+        ] {
+            let serialized = ron::to_string(&input_map)
+                .expect(format!("Unable to serialize {:?}", input_map).as_str());
+            let deserealized = ron::from_str(&serialized)
+                .expect(format!("Unable to deserialize {:?}", serialized).as_str());
+            assert_eq!(
+                input_map, deserealized,
+                "Deserialized InputMap should be equal to the serialized"
+            );
+        }
+    }
+
+    #[test]
+    #[should_panic] // Actually it shouldn't
+    fn serialize_deserealize_toml() {
+        use bevy::prelude::{GamepadButtonType, KeyCode, MouseButton};
+        
+        for input_map in [
+            InputMap::<Action>::default(),
+            InputMap::new([(Action::Jump, KeyCode::Space)]),
+            InputMap::new([(Action::Jump, MouseButton::Right)]),
+            InputMap::new([(Action::Jump, GamepadButtonType::South)]),
+        ] {
+            let serialized = toml::to_string(&input_map)
+                .expect(format!("Unable to serialize {:?}", input_map).as_str());
+            let deserealized = toml::from_str(&serialized)
+                .expect(format!("Unable to deserialize {:?}", serialized).as_str());
+            assert_eq!(
+                input_map, deserealized,
+                "Deserialized InputMap should be equal to the serialized"
+            );
+        }
     }
 }

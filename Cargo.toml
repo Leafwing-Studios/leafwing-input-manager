@@ -33,6 +33,8 @@ serde = {version = "1.0", features = ["derive"]}
 [dev-dependencies]
 bevy = {version = "0.6", default-features = false, features = ["bevy_sprite", "bevy_text", "bevy_render", "bevy_core_pipeline", "x11"]}
 derive_more = "0.99"
+toml = "0.5"
+ron = "0.7"
 
 [lib]
 name = "leafwing_input_manager"
