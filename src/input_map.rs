@@ -6,9 +6,9 @@ use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
 use bevy::prelude::*;
 use core::fmt::Debug;
-use std::marker::PhantomData;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
+use std::marker::PhantomData;
 use std::slice::Iter;
 
 /// Maps from raw inputs to an input-method agnostic representation
