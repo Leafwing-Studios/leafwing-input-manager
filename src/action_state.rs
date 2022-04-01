@@ -375,6 +375,19 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
+    /// Changes the `action` to being held so calls to `just_pressed` return false.
+    pub fn make_held(&mut self, action: A) {
+        if let VirtualButtonState::Pressed(timing, user_input) = self.button_state(action.clone()) {
+            self.button_states[action.index()] = VirtualButtonState::Pressed(
+                Timing {
+                    instant_started: Some(Instant::now()),
+                    ..timing
+                },
+                user_input,
+            );
+        }
+    }
+
     /// Is this `action` currently pressed?
     #[inline]
     #[must_use]
