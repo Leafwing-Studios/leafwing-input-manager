@@ -559,7 +559,7 @@ mod tests {
 
             let pressed_list = input_map.which_pressed(
                 &InputStreams::from_keyboard(&keyboard),
-                ClashStrategy::PressAll,
+                ClashStrategy::PrioritizeLongest,
             );
 
             for (i, button_state) in pressed_list.iter().enumerate() {
