@@ -32,6 +32,7 @@ serde = {version = "1.0", features = ["derive"]}
 
 [dev-dependencies]
 bevy = {version = "0.6", default-features = false, features = ["bevy_sprite", "bevy_text", "bevy_render", "bevy_core_pipeline", "x11"]}
+bevy_egui = {version="0.12", default-features = false}
 derive_more = "0.99"
 
 [lib]
