@@ -38,6 +38,3 @@ derive_more = "0.99"
 [lib]
 name = "leafwing_input_manager"
 path = "src/lib.rs"
-
-[patch.crates-io]
-leafwing_2d = {git = "https://github.com/leafwing-studios/leafwing_2d"}
