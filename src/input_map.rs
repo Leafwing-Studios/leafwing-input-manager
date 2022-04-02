@@ -9,7 +9,6 @@ use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
-use std::slice::Iter;
 
 /// Maps from raw inputs to an input-method agnostic representation
 ///
@@ -84,15 +83,6 @@ impl<A: Actionlike> Default for InputMap<A> {
             associated_gamepad: None,
             marker: PhantomData,
         }
-    }
-}
-
-impl<'a, A: Actionlike> IntoIterator for &'a InputMap<A> {
-    type Item = &'a PetitSet<UserInput, 16>;
-    type IntoIter = Iter<'a, PetitSet<UserInput, 16>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.map.iter()
     }
 }
 
@@ -337,8 +327,16 @@ impl<A: Actionlike> InputMap<A> {
 
 // Utilities
 impl<A: Actionlike> InputMap<A> {
-    /// Iterate over mapped inputs
-    pub fn iter(&self) -> impl Iterator<Item = &PetitSet<UserInput, 16>> {
+    /// Returns an iterator over actions with their inputs
+    pub fn iter(&self) -> impl Iterator<Item = (A, &PetitSet<UserInput, 16>)> {
+        self.map
+            .iter()
+            .enumerate()
+            .map(|(action_index, inputs)| (A::get_at(action_index).unwrap(), inputs))
+    }
+
+    /// Returns an iterator over all mapped inputs
+    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<UserInput, 16>> {
         self.map.iter()
     }
 
