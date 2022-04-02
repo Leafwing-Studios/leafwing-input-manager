@@ -35,7 +35,6 @@ use std::marker::PhantomData;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::buttonlike_user_input::InputButton;
-
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -98,7 +97,6 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
     /// use leafwing_input_manager::Actionlike;
-
     /// use bevy::input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]

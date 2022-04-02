@@ -189,7 +189,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a [`Vec<VirtualButtonState>`] of pressed virtual buttons, ordered by [`Actionlike::id`](Actionlike).
     ///
     /// The `pressed_list` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
-    /// which reads from the assorted [`Input`] resources.
+    /// which reads from the assorted [`Input`](bevy::input::Input) resources.
     pub fn update(&mut self, pressed_list: Vec<VirtualButtonState>) {
         for (i, button_state) in pressed_list.iter().enumerate() {
             match button_state {
