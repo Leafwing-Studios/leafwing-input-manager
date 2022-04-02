@@ -292,7 +292,7 @@ impl<A: Actionlike> ActionState<A> {
     /// let run_state = action_state.button_state(Action::Run);
     /// // States can either be pressed or released,
     /// // and store an internal `Timing`
-    /// if let VirtualButtonState::Pressed(timing) = run_state {
+    /// if let VirtualButtonState::Pressed(timing, _reasons_pressed) = run_state {
     ///     let pressed_duration = timing.current_duration;
     ///     let last_released_duration = timing.previous_duration;
     /// }

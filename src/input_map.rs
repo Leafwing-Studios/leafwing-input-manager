@@ -38,6 +38,7 @@ use std::marker::PhantomData;
 
 ///
 /// // You can Run!
+/// // But you can't Hide :(
 /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
 /// enum Action {
 ///     Run,
@@ -52,17 +53,18 @@ use std::marker::PhantomData;
 ///   (Action::Run, GamepadButtonType::South),
 ///   (Action::Hide, GamepadButtonType::LeftTrigger),
 ///   (Action::Hide, GamepadButtonType::RightTrigger),
-/// ])
+/// ]);
+///
 /// // Insertion
-/// .insert(Action::Run, MouseButton::Left)
+/// input_map.insert(Action::Run, MouseButton::Left)
 /// .insert(Action::Run, KeyCode::LShift)
 /// // Chords
 /// .insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R])
 /// .insert_chord(Action::Hide, [InputButton::Keyboard(KeyCode::H),
 ///                              InputButton::Gamepad(GamepadButtonType::South),
-///                              InputButton::Mouse(MouseButton::Middle)])
+///                              InputButton::Mouse(MouseButton::Middle)]);
 ///
-/// // But you can't Hide :(
+/// // Removal
 /// input_map.clear_action(Action::Hide);
 ///```
 #[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
