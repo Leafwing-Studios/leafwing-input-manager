@@ -42,44 +42,6 @@ mod orientation_trait {
             );
         }
 
-        /// Computes the [`Orientation`] that must be applied to `self` so that it matches `target`
-        ///
-        /// The rotation will be performed in `rotation_direction` is supplied.
-        /// Otherwise, the shorter distance will be preferred.
-        ///
-        /// # Example
-        /// ```rust
-        /// use leafwing_input_manager::orientation::{Rotation, Orientation, RotationDirection};
-        ///
-        /// assert_eq!(Rotation::NORTH.orientation_to(Rotation::NORTH, None), Rotation::default());
-        /// assert_eq!(Rotation::NORTH.orientation_to(Rotation::EAST, Some(RotationDirection::Clockwise)), Rotation::new(900));
-        /// assert_eq!(Rotation::NORTH.orientation_to(Rotation::EAST, Some(RotationDirection::CounterClockwise)), Rotation::new(2700));
-        /// ```
-        #[inline]
-        #[must_use]
-        fn required_orientation_to(
-            &self,
-            target: Self,
-            rotation_direction: Option<RotationDirection>,
-        ) -> Self {
-            let self_rotation: Rotation = (*self).into();
-            let target_rotation: Rotation = target.into();
-
-            let rotation_to = target_rotation - self_rotation;
-
-            match rotation_direction {
-                Some(RotationDirection::Clockwise) => rotation_to.into(),
-                Some(RotationDirection::CounterClockwise) => (-rotation_to).into(),
-                None => {
-                    if rotation_to <= Rotation::new(1800) {
-                        rotation_to.into()
-                    } else {
-                        (-rotation_to).into()
-                    }
-                }
-            }
-        }
-
         /// Which [`RotationDirection`] is the shortest to rotate towards to reach `target`?
         ///
         /// In the case of ties, [`RotationDirection::Clockwise`] will be returned.
@@ -356,7 +318,7 @@ mod rotation {
         ///
         /// # Example
         /// ```rust
-        /// use bevy_math::Vec2;
+        /// use bevy::math::Vec2;
         /// use leafwing_input_manager::orientation::Rotation;
         ///
         /// assert_eq!(Rotation::from_xy(Vec2::new(0.0, 1.0)), Ok(Rotation::NORTH));
