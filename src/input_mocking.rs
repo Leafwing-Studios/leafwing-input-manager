@@ -1,23 +1,22 @@
 //! Helpful utilities for testing input management by sending mock input events
 
 use crate::buttonlike_user_input::{InputButton, InputStreams, MutableInputStreams, UserInput};
-use bevy::app::App;
-use bevy::ecs::event::Events;
-use bevy::ecs::system::{Res, ResMut, SystemState};
-use bevy::ecs::world::World;
-use bevy::input::{
+use bevy_app::App;
+use bevy_ecs::event::Events;
+use bevy_ecs::system::{Res, ResMut, SystemState};
+use bevy_ecs::world::World;
+#[cfg(feature = "ui")]
+use bevy_ecs::{component::Component, query::With, system::Query};
+use bevy_input::{
     gamepad::{Gamepad, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseWheel},
     touch::{TouchInput, Touches},
     Input,
 };
-use bevy::window::CursorMoved;
 #[cfg(feature = "ui")]
-use bevy::{
-    ecs::{component::Component, query::With, system::Query},
-    ui::Interaction,
-};
+use bevy_ui::Interaction;
+use bevy_window::CursorMoved;
 
 /// Send fake input events for testing purposes
 ///
@@ -371,7 +370,8 @@ mod test {
     #[cfg(feature = "ui")]
     fn ui_inputs() {
         use crate::input_mocking::MockInput;
-        use bevy::prelude::*;
+        use bevy_ecs::prelude::*;
+        use bevy_ui::Interaction;
 
         #[derive(Component)]
         struct ButtonMarker;

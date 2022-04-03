@@ -4,7 +4,10 @@ use crate::action_state::{Timing, VirtualButtonState};
 use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
 use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
-use bevy::prelude::*;
+
+use bevy_ecs::component::Component;
+use bevy_input::gamepad::Gamepad;
+
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
@@ -35,7 +38,6 @@ use std::marker::PhantomData;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::buttonlike_user_input::InputButton;
-
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -98,8 +100,7 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
     /// use leafwing_input_manager::Actionlike;
-
-    /// use bevy::input::keyboard::KeyCode;
+    /// use bevy_input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
@@ -136,7 +137,7 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
 
-    /// use bevy::input::keyboard::KeyCode;
+    /// use bevy_input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
@@ -401,7 +402,7 @@ mod tests {
 
     #[test]
     fn insertion_idempotency() {
-        use bevy::input::keyboard::KeyCode;
+        use bevy_input::keyboard::KeyCode;
         use petitset::PetitSet;
 
         let mut input_map = InputMap::<Action>::default();
@@ -423,7 +424,7 @@ mod tests {
     #[test]
     fn multiple_insertion() {
         use crate::buttonlike_user_input::UserInput;
-        use bevy::input::keyboard::KeyCode;
+        use bevy_input::keyboard::KeyCode;
         use petitset::PetitSet;
 
         let mut input_map_1 = InputMap::<Action>::default();
@@ -446,7 +447,7 @@ mod tests {
     #[test]
     fn chord_singleton_coercion() {
         use crate::input_map::UserInput;
-        use bevy::input::keyboard::KeyCode;
+        use bevy_input::keyboard::KeyCode;
 
         // Single items in a chord should be coerced to a singleton
         let mut input_map_1 = InputMap::<Action>::default();
@@ -460,7 +461,7 @@ mod tests {
 
     #[test]
     fn input_clearing() {
-        use bevy::input::keyboard::KeyCode;
+        use bevy_input::keyboard::KeyCode;
 
         let mut input_map = InputMap::<Action>::default();
         input_map.insert(Action::Run, KeyCode::Space);
@@ -486,7 +487,7 @@ mod tests {
 
     #[test]
     fn merging() {
-        use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
+        use bevy_input::{gamepad::GamepadButtonType, keyboard::KeyCode};
 
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
@@ -507,7 +508,7 @@ mod tests {
 
     #[test]
     fn gamepad_swapping() {
-        use bevy::input::gamepad::Gamepad;
+        use bevy_input::gamepad::Gamepad;
 
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);

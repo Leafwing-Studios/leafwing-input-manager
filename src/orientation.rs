@@ -7,8 +7,8 @@ pub use rotation_direction::RotationDirection;
 
 mod orientation_trait {
     use super::{Direction, Rotation, RotationDirection};
-    use bevy::math::Quat;
-    use bevy::transform::components::{GlobalTransform, Transform};
+    use bevy_math::Quat;
+    use bevy_transform::components::{GlobalTransform, Transform};
     use core::fmt::Debug;
 
     /// A type that can represent a orientation in 2D space
@@ -220,8 +220,8 @@ mod rotation_direction {
 
 mod rotation {
     use crate::errors::NearlySingularConversion;
-    use bevy::ecs::prelude::Component;
-    use bevy::math::Vec2;
+    use bevy_ecs::prelude::Component;
+    use bevy_math::Vec2;
     use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
     use derive_more::Display;
 
@@ -318,7 +318,7 @@ mod rotation {
         ///
         /// # Example
         /// ```rust
-        /// use bevy::math::Vec2;
+        /// use bevy_math::Vec2;
         /// use leafwing_input_manager::orientation::Rotation;
         ///
         /// assert_eq!(Rotation::from_xy(Vec2::new(0.0, 1.0)), Ok(Rotation::NORTH));
@@ -454,8 +454,8 @@ mod rotation {
 }
 
 mod direction {
-    use bevy::ecs::prelude::Component;
-    use bevy::math::{const_vec2, Vec2, Vec3};
+    use bevy_ecs::prelude::Component;
+    use bevy_math::{const_vec2, Vec2, Vec3};
     use core::ops::{Add, Div, Mul, Neg, Sub};
     use derive_more::Display;
     use std::f32::consts::SQRT_2;
@@ -467,7 +467,7 @@ mod direction {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::orientation::Direction;
-    /// use bevy::math::Vec2;
+    /// use bevy_math::Vec2;
     ///
     /// assert_eq!(Direction::NORTH.unit_vector(), Vec2::new(0.0, 1.0));
     /// assert_eq!(Direction::try_from(Vec2::ONE), Ok(Direction::NORTHEAST));
@@ -621,8 +621,8 @@ mod direction {
 mod conversions {
     use super::{Direction, Rotation};
     use crate::errors::NearlySingularConversion;
-    use bevy::math::{Quat, Vec2, Vec3};
-    use bevy::transform::components::{GlobalTransform, Transform};
+    use bevy_math::{Quat, Vec2, Vec3};
+    use bevy_transform::components::{GlobalTransform, Transform};
 
     impl From<Rotation> for Direction {
         fn from(rotation: Rotation) -> Direction {

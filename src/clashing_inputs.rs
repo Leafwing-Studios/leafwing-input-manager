@@ -315,7 +315,7 @@ mod tests {
     use super::*;
     use crate as leafwing_input_manager;
     use crate::Actionlike;
-    use bevy::input::keyboard::KeyCode::*;
+    use bevy_input::keyboard::KeyCode::*;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     enum Action {
