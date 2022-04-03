@@ -7,13 +7,13 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use bevy::app::{App, CoreStage, Plugin};
-use bevy::ecs::prelude::*;
-use bevy::ecs::schedule::ShouldRun;
-use bevy::ecs::system::Resource;
-use bevy::input::InputSystem;
+use bevy_app::{App, CoreStage, Plugin};
+use bevy_ecs::prelude::*;
+use bevy_ecs::schedule::ShouldRun;
+use bevy_ecs::system::Resource;
+use bevy_input::InputSystem;
 #[cfg(feature = "ui")]
-use bevy::ui::UiSystem;
+use bevy_ui::UiSystem;
 
 /// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) to consume in game logic
 ///
@@ -55,7 +55,7 @@ impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<
     /// # Example
     /// ```rust
     /// use bevy::prelude::*;
-    /// use bevy::input::InputPlugin;
+    /// use bevy_input::InputPlugin;
     /// use leafwing_input_manager::prelude::*;
 
     ///

@@ -9,7 +9,11 @@ use crate::{
     input_map::InputMap,
     Actionlike,
 };
-use bevy::prelude::*;
+use bevy_core::Time;
+use bevy_ecs::prelude::*;
+use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
+#[cfg(feature = "ui")]
+use bevy_ui::Interaction;
 
 /// Clears the just-pressed and just-released values of all [`ActionState`]s
 ///
@@ -73,7 +77,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
     }
 }
 
-/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`](bevy_ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifer,
 /// suitable to be sent across a network.
@@ -100,7 +104,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
     }
 }
 
-/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`](bevy_ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifer,
 /// suitable to be sent across a network.

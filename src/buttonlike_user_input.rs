@@ -1,12 +1,12 @@
 //! Helpful abstractions over user input
 
-use bevy::input::{
+use bevy_input::{
     gamepad::{Gamepad, GamepadButton, GamepadButtonType},
     keyboard::KeyCode,
     mouse::MouseButton,
     Input,
 };
-use bevy::utils::HashSet;
+use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
@@ -100,8 +100,8 @@ impl UserInput {
     ///
     /// # Example
     /// ```rust
-    /// use bevy::input::keyboard::KeyCode::*;
-    /// use bevy::utils::HashSet;
+    /// use bevy_input::keyboard::KeyCode::*;
+    /// use bevy_utils::HashSet;
     /// use leafwing_input_manager::buttonlike_user_input::UserInput;
     ///
     /// let buttons = HashSet::from_iter([LControl.into(), LAlt.into()]);

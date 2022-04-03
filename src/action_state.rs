@@ -2,8 +2,8 @@
 
 use crate::prelude::UserInput;
 use crate::Actionlike;
-use bevy::ecs::{component::Component, entity::Entity};
-use bevy::utils::{Duration, Instant};
+use bevy_ecs::{component::Component, entity::Entity};
+use bevy_utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -146,7 +146,7 @@ impl Default for VirtualButtonState {
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
-/// use bevy::utils::Instant;
+/// use bevy_utils::Instant;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
 /// enum Action {
@@ -220,7 +220,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::action_state::VirtualButtonState;
-    /// use bevy::utils::Instant;
+    /// use bevy_utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
@@ -581,7 +581,7 @@ mod tests {
     fn press_lifecycle() {
         use crate::buttonlike_user_input::InputStreams;
         use bevy::prelude::*;
-        use bevy::utils::Instant;
+        use bevy_utils::Instant;
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
@@ -644,7 +644,7 @@ mod tests {
 
     #[test]
     fn durations() {
-        use bevy::utils::{Duration, Instant};
+        use bevy_utils::{Duration, Instant};
         use std::thread::sleep;
 
         let mut action_state = ActionState::<Action>::default();

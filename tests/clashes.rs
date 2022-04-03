@@ -1,6 +1,6 @@
-use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
+use bevy_ecs::system::SystemState;
+use bevy_utils::HashSet;
 use leafwing_input_manager::buttonlike_user_input::InputStreams;
 use leafwing_input_manager::prelude::*;
 
@@ -82,7 +82,7 @@ impl ClashTestExt for App {
 
 #[test]
 fn input_clash_handling() {
-    use bevy::input::InputPlugin;
+    use bevy_input::InputPlugin;
     use leafwing_input_manager::MockInput;
     use Action::*;
     use KeyCode::*;

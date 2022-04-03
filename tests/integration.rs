@@ -1,6 +1,6 @@
 #![cfg(test)]
-use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
+use bevy_ecs::query::ChangeTrackers;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::MockInput;
 
@@ -46,7 +46,7 @@ fn reset_inputs(world: &mut World) {
 
 #[test]
 fn action_state_change_detection() {
-    use bevy::input::InputPlugin;
+    use bevy_input::InputPlugin;
 
     let mut app = App::new();
 
@@ -80,7 +80,7 @@ fn action_state_change_detection() {
 
 #[test]
 fn run_in_state() {
-    use bevy::input::InputPlugin;
+    use bevy_input::InputPlugin;
 
     #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
     enum GameState {
@@ -127,7 +127,8 @@ fn run_in_state() {
 #[test]
 #[cfg(feature = "ui")]
 fn action_state_driver() {
-    use bevy::input::InputPlugin;
+    use bevy_input::InputPlugin;
+    use bevy_ui::Interaction;
 
     let mut app = App::new();
 
