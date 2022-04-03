@@ -621,8 +621,8 @@ mod direction {
 mod conversions {
     use super::{Direction, Rotation};
     use crate::errors::NearlySingularConversion;
-    use bevy_transform::components::{GlobalTransform, Transform};
     use bevy_math::{Quat, Vec2, Vec3};
+    use bevy_transform::components::{GlobalTransform, Transform};
 
     impl From<Rotation> for Direction {
         fn from(rotation: Rotation) -> Direction {
