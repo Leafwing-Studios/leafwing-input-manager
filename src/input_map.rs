@@ -317,8 +317,10 @@ impl<A: Actionlike> InputMap<A> {
             }
 
             if !inputs.is_empty() {
-                pressed_actions[action.index()] =
-                    VirtualButtonState::Pressed(Timing::default(), inputs);
+                pressed_actions[action.index()] = VirtualButtonState::Pressed {
+                    timing: Timing::default(),
+                    reasons_pressed: inputs,
+                };
             }
         }
 

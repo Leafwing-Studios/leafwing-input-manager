@@ -419,13 +419,23 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
 /// The current state of a particular virtual button,
 /// corresponding to a single [`Actionlike`] action.
 ///
-/// Detailed timing information for the button can be accessed through the stored [`Timing`] value
+/// Detailed timing information for the button can be accessed through the stored [`Timing`] value.
+/// When the button is pressed, you can inspect *why* it was pressed,
+/// allowing you to access information about e.g. the degree to which a trigger was depressed or the exact inputs used.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum VirtualButtonState {
     /// This button is currently pressed
-    Pressed(Timing, Vec<UserInput>),
+    Pressed {
+        /// How long has this button been pressed for, and when was it first pressed?
+        timing: Timing,
+        /// What [`UserInput`]s were respsonsible for this button being pressed?
+        reasons_pressed: Vec<UserInput>,
+    },
     /// This button is currently released
-    Released(Timing),
+    Released {
+        /// How long has this button been released for, and when was it first pressed?
+        timing: Timing,
+    },
 }
 
 /// Stores the timing information for a [`VirtualButtonState`]
@@ -454,26 +464,61 @@ impl PartialOrd for Timing {
 impl PartialOrd for VirtualButtonState {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match self {
-            VirtualButtonState::Pressed(timing, _) => match other {
-                VirtualButtonState::Pressed(other_timing, _) => timing.partial_cmp(other_timing),
-                VirtualButtonState::Released(other_timing) => timing.partial_cmp(other_timing),
+            VirtualButtonState::Pressed {
+                timing,
+                reasons_pressed: _,
+            } => match other {
+                VirtualButtonState::Pressed {
+                    timing: other_timing,
+                    reasons_pressed: _,
+                } => timing.partial_cmp(other_timing),
+                VirtualButtonState::Released {
+                    timing: other_timing,
+                } => timing.partial_cmp(other_timing),
             },
-            VirtualButtonState::Released(timing) => match other {
-                VirtualButtonState::Pressed(other_timing, _) => timing.partial_cmp(other_timing),
-                VirtualButtonState::Released(other_timing) => timing.partial_cmp(other_timing),
+            VirtualButtonState::Released { timing } => match other {
+                VirtualButtonState::Pressed {
+                    timing: other_timing,
+                    reasons_pressed: _,
+                } => timing.partial_cmp(other_timing),
+                VirtualButtonState::Released {
+                    timing: other_timing,
+                } => timing.partial_cmp(other_timing),
             },
         }
     }
 }
 
 impl VirtualButtonState {
+    /// A [`VirtualButtonState`] that is just pressed, with no history
+    pub const PRESSED: VirtualButtonState = VirtualButtonState::Pressed {
+        timing: Timing {
+            instant_started: None,
+            current_duration: Duration::ZERO,
+            previous_duration: Duration::ZERO,
+        },
+        reasons_pressed: Vec::new(),
+    };
+
+    /// A [`VirtualButtonState`] that is just released, with no history
+    pub const RELEASED: VirtualButtonState = VirtualButtonState::Released {
+        timing: Timing {
+            instant_started: None,
+            current_duration: Duration::ZERO,
+            previous_duration: Duration::ZERO,
+        },
+    };
+
     /// Is the button currently pressed?
     #[inline]
     #[must_use]
     pub fn pressed(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(_, _) => true,
-            VirtualButtonState::Released(_) => false,
+            VirtualButtonState::Pressed {
+                timing: _,
+                reasons_pressed: _,
+            } => true,
+            VirtualButtonState::Released { timing: _ } => false,
         }
     }
 
@@ -482,8 +527,11 @@ impl VirtualButtonState {
     #[must_use]
     pub fn released(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(_, _) => false,
-            VirtualButtonState::Released(_) => true,
+            VirtualButtonState::Pressed {
+                timing: _,
+                reasons_pressed: _,
+            } => false,
+            VirtualButtonState::Released { timing: _ } => true,
         }
     }
 
@@ -492,8 +540,11 @@ impl VirtualButtonState {
     #[must_use]
     pub fn just_pressed(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(timing, _) => timing.instant_started.is_none(),
-            VirtualButtonState::Released(_timing) => false,
+            VirtualButtonState::Pressed {
+                timing,
+                reasons_pressed: _,
+            } => timing.instant_started.is_none(),
+            VirtualButtonState::Released { timing: _ } => false,
         }
     }
 
@@ -502,8 +553,11 @@ impl VirtualButtonState {
     #[must_use]
     pub fn just_released(&self) -> bool {
         match self {
-            VirtualButtonState::Pressed(_timing, _) => false,
-            VirtualButtonState::Released(timing) => timing.instant_started.is_none(),
+            VirtualButtonState::Pressed {
+                timing: _,
+                reasons_pressed: _,
+            } => false,
+            VirtualButtonState::Released { timing } => timing.instant_started.is_none(),
         }
     }
 
@@ -515,8 +569,11 @@ impl VirtualButtonState {
     #[must_use]
     pub fn instant_started(&self) -> Option<Instant> {
         match self {
-            VirtualButtonState::Pressed(timing, _) => timing.instant_started,
-            VirtualButtonState::Released(timing) => timing.instant_started,
+            VirtualButtonState::Pressed {
+                timing,
+                reasons_pressed: _,
+            } => timing.instant_started,
+            VirtualButtonState::Released { timing } => timing.instant_started,
         }
     }
 
@@ -527,8 +584,11 @@ impl VirtualButtonState {
     #[must_use]
     pub fn current_duration(&self) -> Duration {
         match self {
-            VirtualButtonState::Pressed(timing, _) => timing.current_duration,
-            VirtualButtonState::Released(timing) => timing.current_duration,
+            VirtualButtonState::Pressed {
+                timing,
+                reasons_pressed: _,
+            } => timing.current_duration,
+            VirtualButtonState::Released { timing } => timing.current_duration,
         }
     }
     /// The [`Duration`] for which the button was pressed or released before the state last changed.
@@ -536,14 +596,19 @@ impl VirtualButtonState {
     #[must_use]
     pub fn previous_duration(&self) -> Duration {
         match self {
-            VirtualButtonState::Pressed(timing, _) => timing.previous_duration,
-            VirtualButtonState::Released(timing) => timing.previous_duration,
+            VirtualButtonState::Pressed {
+                timing,
+                reasons_pressed: _,
+            } => timing.previous_duration,
+            VirtualButtonState::Released { timing } => timing.previous_duration,
         }
     }
 }
 
 impl Default for VirtualButtonState {
     fn default() -> Self {
-        VirtualButtonState::Released(Timing::default())
+        VirtualButtonState::Released {
+            timing: Timing::default(),
+        }
     }
 }
