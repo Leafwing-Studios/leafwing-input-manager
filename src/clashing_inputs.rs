@@ -1,7 +1,8 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
-use crate::action_state::{Timing, VirtualButtonState};
-use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
+use crate::buttonlike_user_input::{
+    InputButton, InputStreams, Timing, UserInput, VirtualButtonState,
+};
 use crate::input_map::InputMap;
 use crate::Actionlike;
 use itertools::Itertools;
@@ -347,7 +348,7 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::action_state::Timing;
+        use crate::buttonlike_user_input::Timing;
 
         use super::*;
 

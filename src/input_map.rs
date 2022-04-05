@@ -1,7 +1,8 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::action_state::{Timing, VirtualButtonState};
-use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
+use crate::buttonlike_user_input::{
+    InputButton, InputStreams, Timing, UserInput, VirtualButtonState,
+};
 use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
 
