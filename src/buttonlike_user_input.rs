@@ -428,7 +428,7 @@ pub enum VirtualButtonState {
     Pressed {
         /// How long has this button been pressed for, and when was it first pressed?
         timing: Timing,
-        /// What [`UserInput`]s were respsonsible for this button being pressed?
+        /// What [`UserInput`]s (including their values) were responsible for this button being pressed?
         reasons_pressed: Vec<UserInput>,
     },
     /// This button is currently released
