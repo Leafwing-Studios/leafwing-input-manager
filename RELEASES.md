@@ -19,6 +19,7 @@
 - removed `UserInput::Null`.
 - `InputManagerPlugin::run_in_state` was replaced with `InputDisabled<A: Actionlike>` resource. Insert this resource when you want to suppress input collection, and remove it when you're done.
 - refactored `InputMap`.
+- renamed `InputManagerSystem::Reset` into `InputManagerSystem::Tick`.
   - removed methods that works with specific input mode.
   - removed `n_registered`, use `get(action).len()` instead.
   - added `insert_at` / `remove_at` to insert / remove input at specific index.

@@ -69,52 +69,49 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
-        let input_manager_systems = match self.machine {
+        match self.machine {
             Machine::Client => {
-                let system_set = SystemSet::new()
-                    .with_system(
-                        tick_action_state::<A>
-                            .label(InputManagerSystem::Reset)
-                            .before(InputManagerSystem::Update),
-                    )
-                    .with_system(
-                        update_action_state::<A>
-                            .label(InputManagerSystem::Update)
-                            .after(InputSystem),
-                    )
-                    .with_system(
-                        release_on_disable::<A>
-                            .label(InputManagerSystem::ReleaseOnDisable)
-                            .after(InputManagerSystem::Update),
-                    );
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    tick_action_state::<A>
+                        .label(InputManagerSystem::Tick)
+                        .before(InputManagerSystem::Update),
+                )
+                .add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    update_action_state::<A>
+                        .label(InputManagerSystem::Update)
+                        .after(InputSystem),
+                )
+                .add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    release_on_disable::<A>
+                        .label(InputManagerSystem::ReleaseOnDisable)
+                        .after(InputManagerSystem::Update),
+                );
                 #[cfg(feature = "ui")]
-                {
-                    system_set.with_system(
-                        update_action_state_from_interaction::<A>
-                            .label(InputManagerSystem::ManualControl)
-                            .before(InputManagerSystem::ReleaseOnDisable)
-                            .after(InputManagerSystem::Reset)
-                            // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
-                            // not being pressed
-                            .after(InputManagerSystem::Update)
-                            .after(UiSystem::Focus)
-                            .after(InputSystem),
-                    )
-                }
-                #[cfg(not(feature = "ui"))]
-                {
-                    system_set
-                }
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    update_action_state_from_interaction::<A>
+                        .label(InputManagerSystem::ManualControl)
+                        .before(InputManagerSystem::ReleaseOnDisable)
+                        .after(InputManagerSystem::Tick)
+                        // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
+                        // not being pressed
+                        .after(InputManagerSystem::Update)
+                        .after(UiSystem::Focus)
+                        .after(InputSystem),
+                );
             }
-            Machine::Server => SystemSet::new().with_system(
-                tick_action_state::<A>
-                    .label(InputManagerSystem::Reset)
-                    .before(InputManagerSystem::Update),
-            ),
+            Machine::Server => {
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    tick_action_state::<A>
+                        .label(InputManagerSystem::Tick)
+                        .before(InputManagerSystem::Update),
+                );
+            }
         };
-
-        // Add the systems to our app
-        app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
 
         // Resources
         app.init_resource::<ClashStrategy>();
@@ -140,8 +137,8 @@ impl<A: Actionlike> Default for DisableInput<A> {
 /// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
-    /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
-    Reset,
+    /// Advances actions timers to clean up the state of the input manager and clear `just_pressed` and just_released`
+    Tick,
     /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,
     /// Release all actions in all [`ActionState`]s if [`DisableInput`] was added

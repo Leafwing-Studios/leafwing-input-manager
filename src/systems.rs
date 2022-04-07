@@ -16,8 +16,9 @@ use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, 
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
 
-/// Clears the just-pressed and just-released values of all [`ActionState`]s
+/// Advances actions timer.
 ///
+/// Clears the just-pressed and just-released values of all [`ActionState`]s.
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
 pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
