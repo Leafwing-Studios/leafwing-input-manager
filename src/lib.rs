@@ -32,6 +32,7 @@ pub mod prelude {
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
 
+    pub use crate::plugin::DisableInput;
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::{Actionlike, InputManagerBundle};
 }

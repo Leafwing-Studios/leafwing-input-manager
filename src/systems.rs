@@ -7,6 +7,7 @@ use crate::{
     buttonlike_user_input::InputStreams,
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
+    plugin::DisableInput,
     Actionlike,
 };
 use bevy_core::Time;
@@ -18,7 +19,15 @@ use bevy_ui::Interaction;
 /// Clears the just-pressed and just-released values of all [`ActionState`]s
 ///
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
-pub fn tick_action_state<A: Actionlike>(mut query: Query<&mut ActionState<A>>, time: Res<Time>) {
+pub fn tick_action_state<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    time: Res<Time>,
+    disable_input: Option<Res<DisableInput<A>>>,
+) {
+    if disable_input.is_some() {
+        return;
+    }
+
     for mut action_state in query.iter_mut() {
         // If `Time` has not ever been advanced, something has gone horribly wrong
         // and the user probably forgot to add the `core_plugin`.
@@ -38,7 +47,12 @@ pub fn update_action_state<A: Actionlike>(
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     clash_strategy: Res<ClashStrategy>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
+    disable_input: Option<Res<DisableInput<A>>>,
 ) {
+    if disable_input.is_some() {
+        return;
+    }
+
     let gamepad = maybe_gamepad_input_stream.as_deref();
 
     let keyboard = maybe_keyboard_input_stream.as_deref();
@@ -66,7 +80,12 @@ pub fn update_action_state<A: Actionlike>(
 pub fn update_action_state_from_interaction<A: Actionlike>(
     ui_query: Query<(&Interaction, &ActionStateDriver<A>)>,
     mut action_state_query: Query<&mut ActionState<A>>,
+    disable_input: Option<Res<DisableInput<A>>>,
 ) {
+    if disable_input.is_some() {
+        return;
+    }
+
     for (&interaction, action_state_driver) in ui_query.iter() {
         if interaction == Interaction::Clicked {
             let mut action_state = action_state_query
@@ -86,7 +105,12 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
     action_state_query: Query<(&ActionState<A>, &ID)>,
     mut action_diffs: EventWriter<ActionDiff<A, ID>>,
+    disable_input: Option<Res<DisableInput<A>>>,
 ) {
+    if disable_input.is_some() {
+        return;
+    }
+
     for (action_state, id) in action_state_query.iter() {
         for action in action_state.get_just_pressed() {
             action_diffs.send(ActionDiff::Pressed {
@@ -113,7 +137,12 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
 pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
     mut action_state_query: Query<(&mut ActionState<A>, &ID)>,
     mut action_diffs: EventReader<ActionDiff<A, ID>>,
+    disable_input: Option<Res<DisableInput<A>>>,
 ) {
+    if disable_input.is_some() {
+        return;
+    }
+
     // PERF: This would probably be faster with an index, but is much more fussy
     for action_diff in action_diffs.iter() {
         for (mut action_state, id) in action_state_query.iter_mut() {
@@ -137,6 +166,20 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                     }
                 }
             };
+        }
+    }
+}
+
+/// Release all inputs if [`DisableInput`] was added
+pub fn release_on_disable<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    disable_input: Option<Res<DisableInput<A>>>,
+) {
+    if let Some(disable_input) = disable_input {
+        if disable_input.is_added() {
+            for mut action_state in query.iter_mut() {
+                action_state.release_all();
+            }
         }
     }
 }
