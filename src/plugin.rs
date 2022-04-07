@@ -76,14 +76,14 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                     tick_action_state::<A>
                         .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
-                );
-                app.add_system_to_stage(
+                )
+                .add_system_to_stage(
                     CoreStage::PreUpdate,
                     update_action_state::<A>
                         .label(InputManagerSystem::Update)
                         .after(InputSystem),
-                );
-                app.add_system_to_stage(
+                )
+                .add_system_to_stage(
                     CoreStage::PreUpdate,
                     release_on_disable::<A>
                         .label(InputManagerSystem::ReleaseOnDisable)
