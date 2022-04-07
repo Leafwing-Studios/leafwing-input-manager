@@ -144,7 +144,7 @@ pub enum InputManagerSystem {
     Reset,
     /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,
-    /// Releases all pressed virtual buttons if input was disabled
+    /// Release all actions in all [`ActionState`]s if [`DisableInput`] was added
     ReleaseOnDisable,
     /// Manually control the [`ActionState`](crate::action_state::ActionState)
     ///
