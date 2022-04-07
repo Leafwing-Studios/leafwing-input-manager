@@ -121,7 +121,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     }
 }
 
-/// A resource which disables all input for the specified `A` if present in world
+/// A resource which disables all input for the specified [`Actionlike`] type `A` if present in world
 pub struct DisableInput<A: Actionlike> {
     _phantom: PhantomData<A>,
 }

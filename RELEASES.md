@@ -17,7 +17,7 @@
 - relaxed `Hash` and `Eq` bounds on `Actionlike`
 - `ActionState::state` and `set_state` methods renamed to `button_state` and `set_button_state` for clarity
 - removed `UserInput::Null`.
-- `InputManagerPlugin::run_in_state` was replaced with `InputDisabled<Actionlike>` resource. Insert when you want to suppress input collection.
+- `InputManagerPlugin::run_in_state` was replaced with `InputDisabled<A: Actionlike>` resource. Insert this resource when you want to suppress input collection, and remove it when you're done.
 - refactored `InputMap`.
   - removed methods that works with specific input mode.
   - removed `n_registered`, use `get(action).len()` instead.

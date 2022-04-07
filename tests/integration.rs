@@ -79,7 +79,7 @@ fn action_state_change_detection() {
 }
 
 #[test]
-fn input_disables() {
+fn disable_input() {
     use bevy_input::InputPlugin;
 
     let mut app = App::new();
