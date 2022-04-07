@@ -74,7 +74,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     tick_action_state::<A>
-                        .label(InputManagerSystem::Reset)
+                        .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
                 app.add_system_to_stage(
@@ -95,7 +95,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                     update_action_state_from_interaction::<A>
                         .label(InputManagerSystem::ManualControl)
                         .before(InputManagerSystem::ReleaseOnDisable)
-                        .after(InputManagerSystem::Reset)
+                        .after(InputManagerSystem::Tick)
                         // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
                         // not being pressed
                         .after(InputManagerSystem::Update)
@@ -107,7 +107,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     tick_action_state::<A>
-                        .label(InputManagerSystem::Reset)
+                        .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
             }
@@ -137,8 +137,8 @@ impl<A: Actionlike> Default for DisableInput<A> {
 /// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
-    /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
-    Reset,
+    /// Advances actions timers to clean up the state of the input manager and clear `just_pressed` and just_released`
+    Tick,
     /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,
     /// Release all actions in all [`ActionState`]s if [`DisableInput`] was added
