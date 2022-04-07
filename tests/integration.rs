@@ -79,25 +79,16 @@ fn action_state_change_detection() {
 }
 
 #[test]
-fn run_in_state() {
+fn input_disables() {
     use bevy_input::InputPlugin;
-
-    #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
-    enum GameState {
-        Playing,
-        Paused,
-    }
 
     let mut app = App::new();
 
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
         .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
-        .add_plugin(InputManagerPlugin::<Action, GameState>::run_in_state(
-            GameState::Playing,
-        ))
+        .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
-        .add_state(GameState::Playing)
         .init_resource::<Respect>()
         .add_system(pay_respects)
         .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
@@ -108,9 +99,8 @@ fn run_in_state() {
     let respect = app.world.get_resource::<Respect>().unwrap();
     assert_eq!(*respect, Respect(true));
 
-    // Pause the game
-    let mut game_state = app.world.get_resource_mut::<State<GameState>>().unwrap();
-    game_state.set(GameState::Paused).unwrap();
+    // Disable the input
+    app.init_resource::<DisableInput<Action>>();
 
     // Now, all respect has faded
     app.update();
