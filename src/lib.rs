@@ -21,9 +21,11 @@ pub mod buttonlike_user_input;
 pub mod orientation;
 pub mod plugin;
 pub mod systems;
+pub mod input_resource;
 
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
+use crate::prelude::UserInput;
 
 /// Everything you need to get started
 pub mod prelude {
@@ -31,6 +33,7 @@ pub mod prelude {
     pub use crate::buttonlike_user_input::UserInput;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
+    pub use crate::input_resource::InputResource;
 
     pub use crate::plugin::DisableInput;
     pub use crate::plugin::InputManagerPlugin;
