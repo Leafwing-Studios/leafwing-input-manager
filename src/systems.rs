@@ -50,7 +50,7 @@ pub fn tick_action_state<A: Actionlike>(
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
-#[allow(too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
     maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
