@@ -55,8 +55,8 @@ pub fn update_action_state<A: Actionlike>(
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     clash_strategy: Res<ClashStrategy>,
-    mut res_as: Option<ResMut<ActionState<A>>>,
-    mut res_im: Option<ResMut<InputMap<A>>>,
+    mut action_state_resource: Option<ResMut<ActionState<A>>>,
+    mut input_map_resource: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
     disable_input: Option<Res<DisableInput<A>>>,
 ) {
@@ -70,7 +70,9 @@ pub fn update_action_state<A: Actionlike>(
 
     let mouse = maybe_mouse_input_stream.as_deref();
 
-    if let (Some(input_map), Some(action_state)) = (&mut res_im, &mut res_as) {
+    if let (Some(input_map), Some(action_state)) =
+        (&mut input_map_resource, &mut action_state_resource)
+    {
         let input_streams = InputStreams {
             gamepad,
             keyboard,

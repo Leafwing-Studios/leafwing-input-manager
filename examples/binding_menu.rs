@@ -110,7 +110,7 @@ fn binding_window_system(
     mut input_events: InputEvents,
     active_binding: Option<ResMut<ActiveBinding>>,
     mut control_settings: ResMut<ControlSettings>,
-    ui_actions: Res<ActionState<UiAction>>,
+    ui_action_state: Res<ActionState<UiAction>>,
 ) {
     let mut active_binding = match active_binding {
         Some(active_binding) => active_binding,
@@ -145,7 +145,7 @@ fn binding_window_system(
                 });
             } else {
                 ui.label("Press any key now or Esc to cancel");
-                if ui_actions.just_pressed(UiAction::Back) {
+                if ui_action_state.just_pressed(UiAction::Back) {
                     commands.remove_resource::<ActiveBinding>();
                 } else if let Some(input_button) = input_events.input_button() {
                     let conflict_action =
