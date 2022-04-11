@@ -24,9 +24,17 @@ pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     time: Res<Time>,
     disable_input: Option<Res<DisableInput<A>>>,
+    resource: Option<ResMut<ActionState<A>>>,
 ) {
     if disable_input.is_some() {
         return;
+    }
+
+    if let Some(mut action_state) = resource {
+        action_state.tick(
+            time.last_update()
+                .expect("The `Time` resource has never been updated!"),
+        )
     }
 
     for mut action_state in query.iter_mut() {
@@ -42,11 +50,14 @@ pub fn tick_action_state<A: Actionlike>(
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
+#[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
     maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     clash_strategy: Res<ClashStrategy>,
+    mut action_state_resource: Option<ResMut<ActionState<A>>>,
+    mut input_map_resource: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
     disable_input: Option<Res<DisableInput<A>>>,
 ) {
@@ -59,6 +70,20 @@ pub fn update_action_state<A: Actionlike>(
     let keyboard = maybe_keyboard_input_stream.as_deref();
 
     let mouse = maybe_mouse_input_stream.as_deref();
+
+    if let (Some(input_map), Some(action_state)) =
+        (&mut input_map_resource, &mut action_state_resource)
+    {
+        let input_streams = InputStreams {
+            gamepad,
+            keyboard,
+            mouse,
+            associated_gamepad: input_map.gamepad(),
+        };
+
+        let pressed_set = input_map.which_pressed(&input_streams, *clash_strategy);
+        action_state.update(pressed_set);
+    }
 
     for (mut action_state, input_map) in query.iter_mut() {
         let input_streams = InputStreams {

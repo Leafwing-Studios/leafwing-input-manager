@@ -28,10 +28,11 @@ fn main() {
 
 fn spawn_player_system(mut commands: Commands, control_settings: Res<ControlSettings>) {
     commands.spawn().insert(control_settings.input.clone());
-    commands.spawn().insert_bundle(InputManagerBundle {
-        input_map: InputMap::<UiAction>::new([(UiAction::Back, KeyCode::Escape)]),
-        ..Default::default()
-    });
+    commands.insert_resource(InputMap::<UiAction>::new([(
+        UiAction::Back,
+        KeyCode::Escape,
+    )]));
+    commands.insert_resource(ActionState::<UiAction>::default());
 }
 
 fn controls_window_system(
@@ -109,7 +110,7 @@ fn binding_window_system(
     mut input_events: InputEvents,
     active_binding: Option<ResMut<ActiveBinding>>,
     mut control_settings: ResMut<ControlSettings>,
-    ui_actions: Query<&ActionState<UiAction>>,
+    ui_action_state: Res<ActionState<UiAction>>,
 ) {
     let mut active_binding = match active_binding {
         Some(active_binding) => active_binding,
@@ -144,7 +145,7 @@ fn binding_window_system(
                 });
             } else {
                 ui.label("Press any key now or Esc to cancel");
-                if ui_actions.single().just_pressed(UiAction::Back) {
+                if ui_action_state.just_pressed(UiAction::Back) {
                     commands.remove_resource::<ActiveBinding>();
                 } else if let Some(input_button) = input_events.input_button() {
                     let conflict_action =
