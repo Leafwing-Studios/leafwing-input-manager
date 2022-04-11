@@ -2,7 +2,14 @@
 
 #[cfg(feature = "ui")]
 use crate::action_state::ActionStateDriver;
-use crate::{action_state::{ActionDiff, ActionState}, buttonlike_user_input::InputStreams, clashing_inputs::ClashStrategy, input_map::InputMap, plugin::DisableInput, Actionlike};
+use crate::{
+    action_state::{ActionDiff, ActionState},
+    buttonlike_user_input::InputStreams,
+    clashing_inputs::ClashStrategy,
+    input_map::InputMap,
+    plugin::DisableInput,
+    Actionlike,
+};
 use bevy_core::Time;
 use bevy_ecs::prelude::*;
 use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
@@ -25,7 +32,8 @@ pub fn tick_action_state<A: Actionlike>(
 
     if let Some(mut action_state) = resource {
         action_state.tick(
-            time.last_update().expect("The `Time` resource has never been updated!")
+            time.last_update()
+                .expect("The `Time` resource has never been updated!"),
         )
     }
 

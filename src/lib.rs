@@ -24,7 +24,6 @@ pub mod systems;
 
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
-use crate::prelude::UserInput;
 
 /// Everything you need to get started
 pub mod prelude {

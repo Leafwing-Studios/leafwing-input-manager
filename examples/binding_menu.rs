@@ -8,10 +8,7 @@ use bevy_egui::{
     EguiContext, EguiPlugin,
 };
 use derive_more::Display;
-use leafwing_input_manager::{
-    buttonlike_user_input::InputButton,
-    prelude::*
-};
+use leafwing_input_manager::{buttonlike_user_input::InputButton, prelude::*};
 
 const UI_MARGIN: f32 = 10.0;
 
@@ -31,7 +28,10 @@ fn main() {
 
 fn spawn_player_system(mut commands: Commands, control_settings: Res<ControlSettings>) {
     commands.spawn().insert(control_settings.input.clone());
-    commands.insert_resource(InputMap::<UiAction>::new([(UiAction::Back, KeyCode::Escape)]));
+    commands.insert_resource(InputMap::<UiAction>::new([(
+        UiAction::Back,
+        KeyCode::Escape,
+    )]));
     commands.insert_resource(ActionState::<UiAction>::default());
 }
 
