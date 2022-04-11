@@ -95,7 +95,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike_user_input::VirtualButtonState;
     /// use bevy_utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
@@ -105,6 +105,7 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     ///
     /// let mut action_state = ActionState::<Action>::default();
+    ///
     /// // Virtual buttons start released
     /// assert!(action_state.button_state(Action::Run).just_released());
     /// assert!(action_state.just_released(Action::Jump));
@@ -136,7 +137,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike_user_input::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
@@ -145,9 +146,10 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// let mut action_state = ActionState::<Action>::default();
     /// let run_state = action_state.button_state(Action::Run);
+    ///
     /// // States can either be pressed or released,
     /// // and store an internal `Timing`
-    /// if let VirtualButtonState::Pressed(timing, _reasons_pressed) = run_state {
+    /// if let VirtualButtonState::Pressed{timing, reasons_pressed: _} = run_state {
     ///     let pressed_duration = timing.current_duration;
     ///     let last_released_duration = timing.previous_duration;
     /// }
@@ -169,7 +171,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike_user_input::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum AbilitySlot {
@@ -303,6 +305,34 @@ impl<A: Actionlike> ActionState<A> {
     /// The reasons (in terms of [`UserInput`]) that the button was pressed
     ///
     /// If the button is currently released, the `Vec<UserInput`> returned will be empty
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    /// use leafwing_input_manager::buttonlike_user_input::{VirtualButtonState, Timing};
+    /// use bevy_input::keyboard::KeyCode;
+    ///
+    /// #[derive(Actionlike, Clone)]
+    /// enum PlatformerAction{
+    ///     Move,
+    ///     Jump,
+    /// }
+    ///
+    /// let mut action_state = ActionState::<PlatformerAction>::default();
+    ///
+    /// // Usually this will be done automatically for you, via [`ActionState::update`]
+    /// action_state.set_button_state(PlatformerAction::Jump,
+    ///     VirtualButtonState::Pressed {
+    ///         // For the sake of this example, we don't care about the timing information
+    ///         timing: Timing::default(),
+    ///         reasons_pressed: vec![KeyCode::Space.into()],
+    ///     }
+    /// );
+    ///
+    /// let reasons_jumped = action_state.reasons_pressed(PlatformerAction::Jump);
+    /// assert_eq!(reasons_jumped[0], KeyCode::Space.into());
+    /// ```
     #[inline]
     #[must_use]
     pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {

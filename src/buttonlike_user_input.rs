@@ -685,6 +685,21 @@ impl VirtualButtonState {
     /// The reasons (in terms of [`UserInput`]) that the button was pressed
     ///
     /// If the button is currently released, the `Vec<UserInput`> returned will be empty
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::buttonlike_user_input::VirtualButtonState;
+    /// use bevy_input::keyboard::KeyCode;
+    ///
+    /// let mut state = VirtualButtonState::RELEASED;
+    ///
+    /// assert_eq!(state.reasons_pressed(), Vec::new());
+    ///
+    /// state.press(None, vec![KeyCode::Space.into()]);
+    /// assert!(state.pressed());
+    /// assert_eq!(state.reasons_pressed(), vec![KeyCode::Space.into()]);
+    /// ```
     #[inline]
     #[must_use]
     pub fn reasons_pressed(&self) -> Vec<UserInput> {
