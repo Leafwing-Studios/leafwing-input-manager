@@ -103,7 +103,7 @@ impl UserInput {
     /// ```rust
     /// use bevy_input::keyboard::KeyCode::*;
     /// use bevy_utils::HashSet;
-    /// use leafwing_input_manager::buttonlike::UserInput;
+    /// use leafwing_input_manager::user_input::UserInput;
     ///
     /// let buttons = HashSet::from_iter([LControl.into(), LAlt.into()]);
     /// let a: UserInput  = A.into();

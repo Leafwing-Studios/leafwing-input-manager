@@ -36,7 +36,7 @@ use bevy_window::CursorMoved;
 ///
 /// ```rust
 /// use bevy::prelude::*;
-/// use leafwing_input_manager::{MockInput, buttonlike::UserInput};
+/// use leafwing_input_manager::{MockInput, user_input::UserInput};
 ///
 /// let mut app = App::new();
 ///

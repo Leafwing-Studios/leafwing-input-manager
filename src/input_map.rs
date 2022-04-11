@@ -37,7 +37,7 @@ use std::marker::PhantomData;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::buttonlike::InputButton;
+/// use leafwing_input_manager::user_input::InputButton;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
