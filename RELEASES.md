@@ -4,6 +4,7 @@
 
 ### Enhancements
 
+- if desired, users are now able to use the `ActionState` and `InputMap` structs as standalone resources
 - users can now store data in the enum variants of their `Actionlike` enums using `ActionState::action_value` and `set_action_value`
   - this allows you to embed rich information about *how* the action should be done in an input-aware centralized fashion
   - internally, matching is done based on the discriminant of the enum, not their value
