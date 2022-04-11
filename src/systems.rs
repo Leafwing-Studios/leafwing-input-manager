@@ -4,7 +4,7 @@
 use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
-    buttonlike_user_input::InputStreams,
+    buttonlike::InputStreams,
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
     plugin::DisableInput,

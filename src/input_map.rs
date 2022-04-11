@@ -1,8 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::buttonlike_user_input::{
-    InputButton, InputStreams, Timing, UserInput, VirtualButtonState,
-};
+use crate::buttonlike::{InputButton, InputStreams, Timing, UserInput, VirtualButtonState};
 use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
 
@@ -38,7 +36,7 @@ use std::marker::PhantomData;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::buttonlike_user_input::InputButton;
+/// use leafwing_input_manager::buttonlike::InputButton;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -426,7 +424,7 @@ mod tests {
 
     #[test]
     fn multiple_insertion() {
-        use crate::buttonlike_user_input::UserInput;
+        use crate::buttonlike::UserInput;
         use bevy_input::keyboard::KeyCode;
         use petitset::PetitSet;
 
@@ -525,7 +523,7 @@ mod tests {
 
     #[test]
     fn mock_inputs() {
-        use crate::buttonlike_user_input::InputStreams;
+        use crate::buttonlike::InputStreams;
         use crate::input_map::InputButton;
         use bevy::prelude::*;
 

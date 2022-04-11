@@ -8,7 +8,7 @@ use bevy_egui::{
     EguiContext, EguiPlugin,
 };
 use derive_more::Display;
-use leafwing_input_manager::{buttonlike_user_input::InputButton, prelude::*};
+use leafwing_input_manager::{buttonlike::InputButton, prelude::*};
 
 const UI_MARGIN: f32 = 10.0;
 

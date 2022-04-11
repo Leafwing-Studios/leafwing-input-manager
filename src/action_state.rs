@@ -1,6 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::buttonlike_user_input::{Timing, UserInput, VirtualButtonState};
+use crate::buttonlike::{Timing, UserInput, VirtualButtonState};
 use crate::Actionlike;
 
 use bevy_ecs::{component::Component, entity::Entity};
@@ -95,7 +95,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike_user_input::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     /// use bevy_utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
@@ -137,7 +137,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike_user_input::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
@@ -171,7 +171,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike_user_input::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum AbilitySlot {
@@ -310,7 +310,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike_user_input::{VirtualButtonState, Timing};
+    /// use leafwing_input_manager::buttonlike::{VirtualButtonState, Timing};
     /// use bevy_input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone)]
@@ -375,7 +375,7 @@ mod tests {
 
     #[test]
     fn press_lifecycle() {
-        use crate::buttonlike_user_input::InputStreams;
+        use crate::buttonlike::InputStreams;
         use bevy::prelude::*;
         use bevy_utils::Instant;
 

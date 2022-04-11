@@ -1,8 +1,6 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
-use crate::buttonlike_user_input::{
-    InputButton, InputStreams, Timing, UserInput, VirtualButtonState,
-};
+use crate::buttonlike::{InputButton, InputStreams, Timing, UserInput, VirtualButtonState};
 use crate::input_map::InputMap;
 use crate::Actionlike;
 use itertools::Itertools;

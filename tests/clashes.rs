@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs::system::SystemState;
 use bevy_utils::HashSet;
-use leafwing_input_manager::buttonlike_user_input::InputStreams;
+use leafwing_input_manager::buttonlike::InputStreams;
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
