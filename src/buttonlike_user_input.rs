@@ -603,6 +603,21 @@ impl VirtualButtonState {
             VirtualButtonState::Released { timing } => timing.previous_duration,
         }
     }
+
+    /// The reasons (in terms of [`UserInput`]) that the button was pressed
+    ///
+    /// If the button is currently released, the `Vec<UserInput`> returned will be empty
+    #[inline]
+    #[must_use]
+    pub fn reasons_pressed(&self) -> Vec<UserInput> {
+        match self {
+            VirtualButtonState::Pressed {
+                timing: _,
+                reasons_pressed,
+            } => reasons_pressed.clone(),
+            VirtualButtonState::Released { timing: _ } => Vec::new(),
+        }
+    }
 }
 
 impl Default for VirtualButtonState {

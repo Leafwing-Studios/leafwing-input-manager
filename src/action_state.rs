@@ -336,8 +336,12 @@ impl<A: Actionlike> ActionState<A> {
             .collect()
     }
 
-    /// Gets a vec of the [`UserInput`s](crate::buttonlike_user_inputs::UserInput) that most recently triggered this action. If the action's virtual button is released, or if the action was not triggered by actual input, then an empty vec is returned.
-    pub fn triggering_inputs(&self, action: A) -> Vec<UserInput> {
+    /// The reasons (in terms of [`UserInput`]) that the button was pressed
+    ///
+    /// If the button is currently released, the `Vec<UserInput`> returned will be empty
+    #[inline]
+    #[must_use]
+    pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {
         if let VirtualButtonState::Pressed {
             timing: _,
             reasons_pressed: ref inputs,
@@ -345,7 +349,7 @@ impl<A: Actionlike> ActionState<A> {
         {
             inputs.clone()
         } else {
-            vec![]
+            Vec::new()
         }
     }
 }
