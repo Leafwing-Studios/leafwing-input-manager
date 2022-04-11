@@ -8,7 +8,6 @@ use bevy_ecs::prelude::*;
 use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
-use crate::input_resource::InputResource;
 
 /// Advances actions timer.
 ///
@@ -18,14 +17,14 @@ pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     time: Res<Time>,
     disable_input: Option<Res<DisableInput<A>>>,
-    resource: Option<ResMut<InputResource<A>>>,
+    resource: Option<ResMut<ActionState<A>>>,
 ) {
     if disable_input.is_some() {
         return;
     }
 
-    if let Some(mut input_resource) = resource {
-        input_resource.action_state.tick(
+    if let Some(mut action_state) = resource {
+        action_state.tick(
             time.last_update().expect("The `Time` resource has never been updated!")
         )
     }
@@ -48,7 +47,8 @@ pub fn update_action_state<A: Actionlike>(
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     clash_strategy: Res<ClashStrategy>,
-    mut resource: Option<ResMut<InputResource<A>>>,
+    mut res_as: Option<ResMut<ActionState<A>>>,
+    mut res_im: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
     disable_input: Option<Res<DisableInput<A>>>,
 ) {
@@ -62,17 +62,16 @@ pub fn update_action_state<A: Actionlike>(
 
     let mouse = maybe_mouse_input_stream.as_deref();
 
-    if let Some(res) = &mut resource {
+    if let (Some(input_map), Some(action_state)) = (&mut res_im, &mut res_as) {
         let input_streams = InputStreams {
             gamepad,
             keyboard,
             mouse,
-            associated_gamepad: res.input_map.gamepad(),
+            associated_gamepad: input_map.gamepad(),
         };
 
-        let pressed_set = res.input_map.which_pressed(&input_streams, *clash_strategy);
-
-        res.action_state.update(pressed_set);
+        let pressed_set = input_map.which_pressed(&input_streams, *clash_strategy);
+        action_state.update(pressed_set);
     }
 
     for (mut action_state, input_map) in query.iter_mut() {
