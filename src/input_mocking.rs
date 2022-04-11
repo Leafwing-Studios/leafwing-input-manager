@@ -1,6 +1,6 @@
 //! Helpful utilities for testing input management by sending mock input events
 
-use crate::buttonlike_user_input::{InputButton, InputStreams, MutableInputStreams, UserInput};
+use crate::user_input::{InputButton, InputStreams, MutableInputStreams, UserInput};
 use bevy_app::App;
 use bevy_ecs::event::Events;
 use bevy_ecs::system::{Res, ResMut, SystemState};
@@ -36,7 +36,7 @@ use bevy_window::CursorMoved;
 ///
 /// ```rust
 /// use bevy::prelude::*;
-/// use leafwing_input_manager::{MockInput, buttonlike_user_input::UserInput};
+/// use leafwing_input_manager::{MockInput, user_input::UserInput};
 ///
 /// let mut app = App::new();
 ///

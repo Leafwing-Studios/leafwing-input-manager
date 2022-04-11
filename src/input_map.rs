@@ -1,8 +1,8 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::action_state::{Timing, VirtualButtonState};
-use crate::buttonlike_user_input::{InputButton, InputStreams, UserInput};
+use crate::buttonlike::{Timing, VirtualButtonState};
 use crate::clashing_inputs::ClashStrategy;
+use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
 
 use bevy_ecs::component::Component;
@@ -37,7 +37,7 @@ use std::marker::PhantomData;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::buttonlike_user_input::InputButton;
+/// use leafwing_input_manager::user_input::InputButton;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -316,8 +316,10 @@ impl<A: Actionlike> InputMap<A> {
             }
 
             if !inputs.is_empty() {
-                pressed_actions[action.index()] =
-                    VirtualButtonState::Pressed(Timing::default(), inputs);
+                pressed_actions[action.index()] = VirtualButtonState::Pressed {
+                    timing: Timing::default(),
+                    reasons_pressed: inputs,
+                };
             }
         }
 
@@ -423,7 +425,7 @@ mod tests {
 
     #[test]
     fn multiple_insertion() {
-        use crate::buttonlike_user_input::UserInput;
+        use crate::user_input::UserInput;
         use bevy_input::keyboard::KeyCode;
         use petitset::PetitSet;
 
@@ -522,8 +524,8 @@ mod tests {
 
     #[test]
     fn mock_inputs() {
-        use crate::buttonlike_user_input::InputStreams;
         use crate::input_map::InputButton;
+        use crate::user_input::InputStreams;
         use bevy::prelude::*;
 
         // Setting up the input map

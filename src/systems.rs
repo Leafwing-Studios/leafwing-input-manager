@@ -4,10 +4,10 @@
 use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
-    buttonlike_user_input::InputStreams,
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
     plugin::DisableInput,
+    user_input::InputStreams,
     Actionlike,
 };
 use bevy_core::Time;

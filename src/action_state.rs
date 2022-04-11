@@ -1,143 +1,13 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::prelude::UserInput;
+use crate::buttonlike::{Timing, VirtualButtonState};
+use crate::user_input::UserInput;
 use crate::Actionlike;
+
 use bevy_ecs::{component::Component, entity::Entity};
-use bevy_utils::{Duration, Instant};
+use bevy_utils::Instant;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
-
-/// The current state of a particular virtual button,
-/// corresponding to a single [`Actionlike`] action.
-///
-/// Detailed timing information for the button can be accessed through the stored [`Timing`] value
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum VirtualButtonState {
-    /// This button is currently pressed
-    Pressed(Timing, Vec<UserInput>),
-    /// This button is currently released
-    Released(Timing),
-}
-
-/// Stores the timing information for a [`VirtualButtonState`]
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct Timing {
-    /// The [`Instant`] at which the button was pressed or released
-    ///
-    /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
-    /// If this is none, [`ActionState::update`] has not been called yet.
-    #[serde(skip)]
-    pub instant_started: Option<Instant>,
-    /// The [`Duration`] for which the button has been pressed or released.
-    ///
-    /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
-    pub current_duration: Duration,
-    /// The [`Duration`] for which the button was pressed or released before the state last changed.
-    pub previous_duration: Duration,
-}
-
-impl PartialOrd for Timing {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.current_duration.partial_cmp(&other.current_duration)
-    }
-}
-
-impl PartialOrd for VirtualButtonState {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        match self {
-            VirtualButtonState::Pressed(timing, _) => match other {
-                VirtualButtonState::Pressed(other_timing, _) => timing.partial_cmp(other_timing),
-                VirtualButtonState::Released(other_timing) => timing.partial_cmp(other_timing),
-            },
-            VirtualButtonState::Released(timing) => match other {
-                VirtualButtonState::Pressed(other_timing, _) => timing.partial_cmp(other_timing),
-                VirtualButtonState::Released(other_timing) => timing.partial_cmp(other_timing),
-            },
-        }
-    }
-}
-
-impl VirtualButtonState {
-    /// Is the button currently pressed?
-    #[inline]
-    #[must_use]
-    pub fn pressed(&self) -> bool {
-        match self {
-            VirtualButtonState::Pressed(_, _) => true,
-            VirtualButtonState::Released(_) => false,
-        }
-    }
-
-    /// Is the button currently released?
-    #[inline]
-    #[must_use]
-    pub fn released(&self) -> bool {
-        match self {
-            VirtualButtonState::Pressed(_, _) => false,
-            VirtualButtonState::Released(_) => true,
-        }
-    }
-
-    /// Was the button pressed since the last time [`ActionState::update`] was called?
-    #[inline]
-    #[must_use]
-    pub fn just_pressed(&self) -> bool {
-        match self {
-            VirtualButtonState::Pressed(timing, _) => timing.instant_started.is_none(),
-            VirtualButtonState::Released(_timing) => false,
-        }
-    }
-
-    /// Was the button released since the last time [`ActionState::update`] was called?
-    #[inline]
-    #[must_use]
-    pub fn just_released(&self) -> bool {
-        match self {
-            VirtualButtonState::Pressed(_timing, _) => false,
-            VirtualButtonState::Released(timing) => timing.instant_started.is_none(),
-        }
-    }
-
-    /// The [`Instant`] at which the button was pressed or released
-    ///
-    /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
-    /// If this is none, [`ActionState::update`] has not been called yet.
-    #[inline]
-    #[must_use]
-    pub fn instant_started(&self) -> Option<Instant> {
-        match self {
-            VirtualButtonState::Pressed(timing, _) => timing.instant_started,
-            VirtualButtonState::Released(timing) => timing.instant_started,
-        }
-    }
-
-    /// The [`Duration`] for which the button has been pressed or released.
-    ///
-    /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
-    #[inline]
-    #[must_use]
-    pub fn current_duration(&self) -> Duration {
-        match self {
-            VirtualButtonState::Pressed(timing, _) => timing.current_duration,
-            VirtualButtonState::Released(timing) => timing.current_duration,
-        }
-    }
-    /// The [`Duration`] for which the button was pressed or released before the state last changed.
-    #[inline]
-    #[must_use]
-    pub fn previous_duration(&self) -> Duration {
-        match self {
-            VirtualButtonState::Pressed(timing, _) => timing.previous_duration,
-            VirtualButtonState::Released(timing) => timing.previous_duration,
-        }
-    }
-}
-
-impl Default for VirtualButtonState {
-    fn default() -> Self {
-        VirtualButtonState::Released(Timing::default())
-    }
-}
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
 ///
@@ -193,15 +63,22 @@ impl<A: Actionlike> ActionState<A> {
     pub fn update(&mut self, pressed_list: Vec<VirtualButtonState>) {
         for (i, button_state) in pressed_list.iter().enumerate() {
             match button_state {
-                VirtualButtonState::Pressed(_, new_inputs) => {
+                VirtualButtonState::Pressed {
+                    timing: _,
+                    reasons_pressed: new_inputs,
+                } => {
                     if self.button_states[i].released() {
                         self.press(A::get_at(i).unwrap())
                     }
-                    if let VirtualButtonState::Pressed(_, ref mut inputs) = self.button_states[i] {
+                    if let VirtualButtonState::Pressed {
+                        timing: _,
+                        reasons_pressed: ref mut inputs,
+                    } = self.button_states[i]
+                    {
                         *inputs = new_inputs.clone();
                     }
                 }
-                VirtualButtonState::Released(_) => {
+                VirtualButtonState::Released { timing: _ } => {
                     if self.button_states[i].pressed() {
                         self.release(A::get_at(i).unwrap())
                     }
@@ -212,14 +89,14 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Advances the time for all virtual buttons
     ///
-    /// The underlying [`VirtualButtonState`] state will be advanced according to the `current_time`.
-    /// - if no [`Instant`] is set, the `current_time` will be set as the initial time at which the button was pressed / released
+    /// The underlying [`VirtualButtonState`] state will be advanced according to the `current_instant`.
+    /// - if no [`Instant`] is set, the `current_instant` will be set as the initial time at which the button was pressed / released
     /// - the [`Duration`] will advance to reflect elapsed time
     ///
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     /// use bevy_utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
@@ -229,6 +106,7 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     ///
     /// let mut action_state = ActionState::<Action>::default();
+    ///
     /// // Virtual buttons start released
     /// assert!(action_state.button_state(Action::Run).just_released());
     /// assert!(action_state.just_released(Action::Jump));
@@ -247,29 +125,8 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(!action_state.just_pressed(Action::Jump));
     /// ```
     pub fn tick(&mut self, current_instant: Instant) {
-        use VirtualButtonState::*;
-
         for state in self.button_states.iter_mut() {
-            match state {
-                Pressed(timing, _) => match timing.instant_started {
-                    Some(instant) => {
-                        timing.current_duration = current_instant - instant;
-                    }
-                    None => {
-                        timing.instant_started = Some(current_instant);
-                        timing.current_duration = Duration::ZERO;
-                    }
-                },
-                Released(timing) => match timing.instant_started {
-                    Some(instant) => {
-                        timing.current_duration = current_instant - instant;
-                    }
-                    None => {
-                        timing.instant_started = Some(current_instant);
-                        timing.current_duration = Duration::ZERO;
-                    }
-                },
-            };
+            state.tick(current_instant);
         }
     }
 
@@ -281,7 +138,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
@@ -290,9 +147,10 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// let mut action_state = ActionState::<Action>::default();
     /// let run_state = action_state.button_state(Action::Run);
+    ///
     /// // States can either be pressed or released,
     /// // and store an internal `Timing`
-    /// if let VirtualButtonState::Pressed(timing, _reasons_pressed) = run_state {
+    /// if let VirtualButtonState::Pressed{timing, reasons_pressed: _} = run_state {
     ///     let pressed_duration = timing.current_duration;
     ///     let last_released_duration = timing.previous_duration;
     /// }
@@ -314,7 +172,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::action_state::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum AbilitySlot {
@@ -344,28 +202,21 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Press the `action` virtual button
+    ///
+    /// No inititial instant or reasons why the button was pressed will be recorded
+    /// Instead, this is set through [`ActionState::tick()`]
+    #[inline]
     pub fn press(&mut self, action: A) {
-        if let VirtualButtonState::Released(timing) = self.button_state(action.clone()) {
-            self.button_states[action.index()] = VirtualButtonState::Pressed(
-                Timing {
-                    instant_started: None,
-                    current_duration: Duration::ZERO,
-                    previous_duration: timing.current_duration,
-                },
-                Vec::default(),
-            );
-        }
+        self.button_states[action.index()].press(None, Vec::new());
     }
 
     /// Release the `action` virtual button
+    ///
+    /// No inititial instant will be recorded
+    /// Instead, this is set through [`ActionState::tick()`]
+    #[inline]
     pub fn release(&mut self, action: A) {
-        if let VirtualButtonState::Pressed(timing, _) = self.button_state(action.clone()) {
-            self.button_states[action.index()] = VirtualButtonState::Released(Timing {
-                instant_started: None,
-                current_duration: Duration::ZERO,
-                previous_duration: timing.current_duration,
-            });
-        }
+        self.button_states[action.index()].release(None);
     }
 
     /// Releases all action virtual buttons
@@ -376,15 +227,21 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Changes the `action` to being held so calls to `just_pressed` return false.
+    // FIXME: does not work when initially released
+    #[inline]
     pub fn make_held(&mut self, action: A) {
-        if let VirtualButtonState::Pressed(timing, user_input) = self.button_state(action.clone()) {
-            self.button_states[action.index()] = VirtualButtonState::Pressed(
-                Timing {
+        if let VirtualButtonState::Pressed {
+            timing,
+            reasons_pressed: user_input,
+        } = self.button_state(action.clone())
+        {
+            self.button_states[action.index()] = VirtualButtonState::Pressed {
+                timing: Timing {
                     instant_started: Some(Instant::now()),
                     ..timing
                 },
-                user_input,
-            );
+                reasons_pressed: user_input,
+            };
         }
     }
 
@@ -446,13 +303,41 @@ impl<A: Actionlike> ActionState<A> {
             .collect()
     }
 
-    /// Gets a vec of the [`UserInput`s](crate::buttonlike_user_inputs::UserInput) that most recently triggered this action. If the action's virtual button is released, or if the action was not triggered by actual input, then an empty vec is returned.
-    pub fn triggering_inputs(&self, action: A) -> Vec<UserInput> {
-        if let VirtualButtonState::Pressed(_, ref inputs) = self.button_states[action.index()] {
-            inputs.clone()
-        } else {
-            vec![]
-        }
+    /// The reasons (in terms of [`UserInput`]) that the button was pressed
+    ///
+    /// If the button is currently released, the `Vec<UserInput`> returned will be empty
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    /// use leafwing_input_manager::buttonlike::{VirtualButtonState, Timing};
+    /// use bevy_input::keyboard::KeyCode;
+    ///
+    /// #[derive(Actionlike, Clone)]
+    /// enum PlatformerAction{
+    ///     Move,
+    ///     Jump,
+    /// }
+    ///
+    /// let mut action_state = ActionState::<PlatformerAction>::default();
+    ///
+    /// // Usually this will be done automatically for you, via [`ActionState::update`]
+    /// action_state.set_button_state(PlatformerAction::Jump,
+    ///     VirtualButtonState::Pressed {
+    ///         // For the sake of this example, we don't care about the timing information
+    ///         timing: Timing::default(),
+    ///         reasons_pressed: vec![KeyCode::Space.into()],
+    ///     }
+    /// );
+    ///
+    /// let reasons_jumped = action_state.reasons_pressed(PlatformerAction::Jump);
+    /// assert_eq!(reasons_jumped[0], KeyCode::Space.into());
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {
+        self.button_states[action.index()].reasons_pressed()
     }
 }
 
@@ -460,13 +345,7 @@ impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
             button_states: A::variants()
-                .map(|_| {
-                    VirtualButtonState::Released(Timing {
-                        instant_started: None,
-                        current_duration: Duration::ZERO,
-                        previous_duration: Duration::ZERO,
-                    })
-                })
+                .map(|_| VirtualButtonState::RELEASED)
                 .collect(),
             _phantom: PhantomData::default(),
         }
@@ -484,88 +363,6 @@ pub struct ActionStateDriver<A: Actionlike> {
     pub entity: Entity,
 }
 
-/// Thresholds for when the `value` of a button will cause it to be pressed or released
-///
-/// Both `pressed` and `released` must be between 0.0 and 1.0 inclusive,
-/// and `pressed` must be greater than `released`
-/// Defaults to 0.5 for both values
-#[derive(Debug, Clone)]
-pub struct ButtonThresholds {
-    pressed: f32,
-    released: f32,
-}
-
-impl Default for ButtonThresholds {
-    fn default() -> Self {
-        Self {
-            pressed: 0.5,
-            released: 0.5,
-        }
-    }
-}
-
-impl ButtonThresholds {
-    /// Gets the value at or above which the button is considered to be pressed
-    #[inline]
-    #[must_use]
-    pub fn pressed(&self) -> f32 {
-        self.pressed
-    }
-
-    /// Gets the value below which the button is considered to be released
-    #[inline]
-    #[must_use]
-    pub fn released(&self) -> f32 {
-        self.released
-    }
-
-    /// Sets the value of the pressed threshold.
-    ///
-    /// If the provided `value` is less than the `released` threshold,
-    /// it is increased to the `released` threshold and a
-    /// `ThresholdError(value_set_to)` error is returned.
-    ///
-    /// # Panics
-    /// Panics if the value provided is not between 0.0 and 1.0 inclusive.
-    pub fn set_pressed(&mut self, value: f32) -> Result<(), ThresholdError> {
-        assert!(value >= 0.0);
-        assert!(value <= 1.0);
-
-        if value >= self.released {
-            self.pressed = value;
-            Ok(())
-        } else {
-            self.pressed = self.released;
-            Err(ThresholdError(self.released))
-        }
-    }
-
-    /// Gets the value below which the button is considered to be released
-    ///
-    /// If the provided `value` is greater than the `pressed` threshold,
-    /// it is increased to the `pressed` threshold and a
-    /// `ThresholdError(value_set_to)` error is returned.
-    ///
-    /// # Panics
-    /// Panics if the value provided is not between 0.0 and 1.0 inclusive.
-    pub fn set_released(&mut self, value: f32) -> Result<(), ThresholdError> {
-        assert!(value >= 0.0);
-        assert!(value <= 1.0);
-
-        if value <= self.pressed {
-            self.pressed = value;
-            Ok(())
-        } else {
-            self.released = self.pressed;
-            Err(ThresholdError(self.pressed))
-        }
-    }
-}
-
-/// An error that resulted from inserting an invalid (but within range value) to [`ButtonThresholds`]
-#[derive(Debug, Clone)]
-pub struct ThresholdError(f32);
-
 mod tests {
     use crate as leafwing_input_manager;
     use crate::prelude::*;
@@ -579,7 +376,7 @@ mod tests {
 
     #[test]
     fn press_lifecycle() {
-        use crate::buttonlike_user_input::InputStreams;
+        use crate::user_input::InputStreams;
         use bevy::prelude::*;
         use bevy_utils::Instant;
 

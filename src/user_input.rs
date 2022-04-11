@@ -1,4 +1,4 @@
-//! Helpful abstractions over user input
+//! Helpful abstractions over user inputs of all sorts
 
 use bevy_input::{
     gamepad::{Gamepad, GamepadButton, GamepadButtonType},
@@ -6,13 +6,14 @@ use bevy_input::{
     mouse::MouseButton,
     Input,
 };
+
 use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///
-/// Suitable for use in an [`InputMap`]
+/// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UserInput {
     /// A single button
@@ -102,7 +103,7 @@ impl UserInput {
     /// ```rust
     /// use bevy_input::keyboard::KeyCode::*;
     /// use bevy_utils::HashSet;
-    /// use leafwing_input_manager::buttonlike_user_input::UserInput;
+    /// use leafwing_input_manager::user_input::UserInput;
     ///
     /// let buttons = HashSet::from_iter([LControl.into(), LAlt.into()]);
     /// let a: UserInput  = A.into();
