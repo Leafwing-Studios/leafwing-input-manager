@@ -509,6 +509,51 @@ impl VirtualButtonState {
         },
     };
 
+    /// Presses the virtual button
+    ///
+    /// Records:
+    ///
+    /// * the [`Duration`] for which the button was previously held
+    /// * the [`Instant`] that this button was pressed
+    /// * the [`UserInput`]s responsible for this button being pressed
+    #[inline]
+    pub fn press(&mut self, instant_started: Option<Instant>, reasons_pressed: Vec<UserInput>) {
+        if let VirtualButtonState::Released { timing } = self {
+            *self = VirtualButtonState::Pressed {
+                timing: Timing {
+                    instant_started,
+                    current_duration: Duration::ZERO,
+                    previous_duration: timing.previous_duration,
+                },
+                reasons_pressed,
+            }
+        }
+    }
+
+    /// Releases the virtual button
+    ///
+    /// Records:
+    ///
+    /// * the [`Duration`] for which the button was previously held
+    /// * the [`Instant`] that this button was pressed
+    /// * the [`UserInput`]s responsible for this button being pressed
+    #[inline]
+    pub fn release(&mut self, instant_started: Option<Instant>) {
+        if let VirtualButtonState::Pressed {
+            timing,
+            reasons_pressed: _,
+        } = self
+        {
+            *self = VirtualButtonState::Released {
+                timing: Timing {
+                    instant_started,
+                    current_duration: Duration::ZERO,
+                    previous_duration: timing.previous_duration,
+                },
+            }
+        }
+    }
+
     /// Is the button currently pressed?
     #[inline]
     #[must_use]
@@ -591,6 +636,7 @@ impl VirtualButtonState {
             VirtualButtonState::Released { timing } => timing.current_duration,
         }
     }
+
     /// The [`Duration`] for which the button was pressed or released before the state last changed.
     #[inline]
     #[must_use]

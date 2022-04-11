@@ -223,34 +223,21 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Press the `action` virtual button
+    ///
+    /// No inititial instant or reasons why the button was pressed will be recorded
+    /// Instead, this is set through [`ActionState::tick()`]
+    #[inline]
     pub fn press(&mut self, action: A) {
-        if let VirtualButtonState::Released { timing } = self.button_state(action.clone()) {
-            self.button_states[action.index()] = VirtualButtonState::Pressed {
-                timing: Timing {
-                    instant_started: None,
-                    current_duration: Duration::ZERO,
-                    previous_duration: timing.current_duration,
-                },
-                reasons_pressed: Vec::default(),
-            };
-        }
+        self.button_states[action.index()].press(None, Vec::new());
     }
 
     /// Release the `action` virtual button
+    ///
+    /// No inititial instant will be recorded
+    /// Instead, this is set through [`ActionState::tick()`]
+    #[inline]
     pub fn release(&mut self, action: A) {
-        if let VirtualButtonState::Pressed {
-            timing,
-            reasons_pressed: _,
-        } = self.button_state(action.clone())
-        {
-            self.button_states[action.index()] = VirtualButtonState::Released {
-                timing: Timing {
-                    instant_started: None,
-                    current_duration: Duration::ZERO,
-                    previous_duration: timing.current_duration,
-                },
-            };
-        }
+        self.button_states[action.index()].release(None);
     }
 
     /// Releases all action virtual buttons
@@ -262,6 +249,7 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Changes the `action` to being held so calls to `just_pressed` return false.
     // FIXME: does not work when initially released
+    #[inline]
     pub fn make_held(&mut self, action: A) {
         if let VirtualButtonState::Pressed {
             timing,
@@ -342,15 +330,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {
-        if let VirtualButtonState::Pressed {
-            timing: _,
-            reasons_pressed: ref inputs,
-        } = self.button_states[action.index()]
-        {
-            inputs.clone()
-        } else {
-            Vec::new()
-        }
+        self.button_states[action.index()].reasons_pressed()
     }
 }
 
