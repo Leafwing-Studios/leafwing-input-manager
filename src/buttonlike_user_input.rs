@@ -567,6 +567,38 @@ impl VirtualButtonState {
         }
     }
 
+    /// Advances the time for the virtual button
+    ///
+    /// The [`VirtualButtonState`] state will be advanced according to the `current_instant`.
+    /// - if no [`Instant`] is set, the `current_time` will be set as the initial time at which the button was pressed / released
+    /// - the [`Duration`] will advance to reflect elapsed time
+    #[inline]
+    pub fn tick(&mut self, current_instant: Instant) {
+        match self {
+            VirtualButtonState::Pressed {
+                timing,
+                reasons_pressed: _,
+            } => match timing.instant_started {
+                Some(instant) => {
+                    timing.current_duration = current_instant - instant;
+                }
+                None => {
+                    timing.instant_started = Some(current_instant);
+                    timing.current_duration = Duration::ZERO;
+                }
+            },
+            VirtualButtonState::Released { timing } => match timing.instant_started {
+                Some(instant) => {
+                    timing.current_duration = current_instant - instant;
+                }
+                None => {
+                    timing.instant_started = Some(current_instant);
+                    timing.current_duration = Duration::ZERO;
+                }
+            },
+        };
+    }
+
     /// Is the button currently released?
     #[inline]
     #[must_use]

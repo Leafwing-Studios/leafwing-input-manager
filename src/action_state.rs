@@ -4,7 +4,7 @@ use crate::buttonlike_user_input::{Timing, UserInput, VirtualButtonState};
 use crate::Actionlike;
 
 use bevy_ecs::{component::Component, entity::Entity};
-use bevy_utils::{Duration, Instant};
+use bevy_utils::Instant;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -88,8 +88,8 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Advances the time for all virtual buttons
     ///
-    /// The underlying [`VirtualButtonState`] state will be advanced according to the `current_time`.
-    /// - if no [`Instant`] is set, the `current_time` will be set as the initial time at which the button was pressed / released
+    /// The underlying [`VirtualButtonState`] state will be advanced according to the `current_instant`.
+    /// - if no [`Instant`] is set, the `current_instant` will be set as the initial time at which the button was pressed / released
     /// - the [`Duration`] will advance to reflect elapsed time
     ///
     /// # Example
@@ -123,32 +123,8 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(!action_state.just_pressed(Action::Jump));
     /// ```
     pub fn tick(&mut self, current_instant: Instant) {
-        use VirtualButtonState::*;
-
         for state in self.button_states.iter_mut() {
-            match state {
-                Pressed {
-                    timing,
-                    reasons_pressed: _,
-                } => match timing.instant_started {
-                    Some(instant) => {
-                        timing.current_duration = current_instant - instant;
-                    }
-                    None => {
-                        timing.instant_started = Some(current_instant);
-                        timing.current_duration = Duration::ZERO;
-                    }
-                },
-                Released { timing } => match timing.instant_started {
-                    Some(instant) => {
-                        timing.current_duration = current_instant - instant;
-                    }
-                    None => {
-                        timing.instant_started = Some(current_instant);
-                        timing.current_duration = Duration::ZERO;
-                    }
-                },
-            };
+            state.tick(current_instant);
         }
     }
 
