@@ -1,7 +1,8 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::buttonlike::{InputButton, InputStreams, Timing, UserInput, VirtualButtonState};
+use crate::buttonlike::{Timing, VirtualButtonState};
 use crate::clashing_inputs::ClashStrategy;
+use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
 
 use bevy_ecs::component::Component;
@@ -424,7 +425,7 @@ mod tests {
 
     #[test]
     fn multiple_insertion() {
-        use crate::buttonlike::UserInput;
+        use crate::user_input::UserInput;
         use bevy_input::keyboard::KeyCode;
         use petitset::PetitSet;
 
@@ -523,8 +524,8 @@ mod tests {
 
     #[test]
     fn mock_inputs() {
-        use crate::buttonlike::InputStreams;
         use crate::input_map::InputButton;
+        use crate::user_input::InputStreams;
         use bevy::prelude::*;
 
         // Setting up the input map

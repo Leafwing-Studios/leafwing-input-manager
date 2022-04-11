@@ -1,6 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::buttonlike::{Timing, UserInput, VirtualButtonState};
+use crate::buttonlike::{Timing, VirtualButtonState};
+use crate::user_input::UserInput;
 use crate::Actionlike;
 
 use bevy_ecs::{component::Component, entity::Entity};
@@ -375,7 +376,7 @@ mod tests {
 
     #[test]
     fn press_lifecycle() {
-        use crate::buttonlike::InputStreams;
+        use crate::user_input::InputStreams;
         use bevy::prelude::*;
         use bevy_utils::Instant;
 
