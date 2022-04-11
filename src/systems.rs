@@ -24,13 +24,13 @@ pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     time: Res<Time>,
     disable_input: Option<Res<DisableInput<A>>>,
-    resource: Option<ResMut<ActionState<A>>>,
+    action_state: Option<ResMut<ActionState<A>>>,
 ) {
     if disable_input.is_some() {
         return;
     }
 
-    if let Some(mut action_state) = resource {
+    if let Some(mut action_state) = action_state {
         action_state.tick(
             time.last_update()
                 .expect("The `Time` resource has never been updated!"),
@@ -56,8 +56,8 @@ pub fn update_action_state<A: Actionlike>(
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     clash_strategy: Res<ClashStrategy>,
-    mut action_state_resource: Option<ResMut<ActionState<A>>>,
-    mut input_map_resource: Option<ResMut<InputMap<A>>>,
+    mut action_state: Option<ResMut<ActionState<A>>>,
+    mut input_map: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
     disable_input: Option<Res<DisableInput<A>>>,
 ) {
@@ -71,9 +71,7 @@ pub fn update_action_state<A: Actionlike>(
 
     let mouse = maybe_mouse_input_stream.as_deref();
 
-    if let (Some(input_map), Some(action_state)) =
-        (&mut input_map_resource, &mut action_state_resource)
-    {
+    if let (Some(input_map), Some(action_state)) = (&mut input_map, &mut action_state) {
         let input_streams = InputStreams {
             gamepad,
             keyboard,
