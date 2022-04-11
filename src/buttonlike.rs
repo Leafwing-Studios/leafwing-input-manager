@@ -107,12 +107,15 @@ impl VirtualButtonState {
     /// * the [`UserInput`]s responsible for this button being pressed
     #[inline]
     pub fn press(&mut self, instant_started: Option<Instant>, reasons_pressed: Vec<UserInput>) {
-        if let VirtualButtonState::Released { timing } = self {
+        if let VirtualButtonState::Released {
+            timing: previous_timing,
+        } = self
+        {
             *self = VirtualButtonState::Pressed {
                 timing: Timing {
                     instant_started,
                     current_duration: Duration::ZERO,
-                    previous_duration: timing.previous_duration,
+                    previous_duration: previous_timing.current_duration,
                 },
                 reasons_pressed,
             }
@@ -129,7 +132,7 @@ impl VirtualButtonState {
     #[inline]
     pub fn release(&mut self, instant_started: Option<Instant>) {
         if let VirtualButtonState::Pressed {
-            timing,
+            timing: previous_timing,
             reasons_pressed: _,
         } = self
         {
@@ -137,7 +140,7 @@ impl VirtualButtonState {
                 timing: Timing {
                     instant_started,
                     current_duration: Duration::ZERO,
-                    previous_duration: timing.previous_duration,
+                    previous_duration: previous_timing.current_duration,
                 },
             }
         }
