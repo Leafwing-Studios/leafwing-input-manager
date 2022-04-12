@@ -10,8 +10,11 @@ use crate::{
     user_input::InputStreams,
     Actionlike,
 };
+
+use bevy_core::Time;
 use bevy_ecs::prelude::*;
 use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
+
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
 
@@ -23,19 +26,23 @@ pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     disable_input: Option<Res<DisableInput<A>>>,
     action_state: Option<ResMut<ActionState<A>>>,
+    time: Res<Time>,
 ) {
+    // Time must be initialized and have ticked at least once
+    let current_time = time.last_update().unwrap();
+
     if disable_input.is_some() {
         return;
     }
 
     if let Some(mut action_state) = action_state {
-        action_state.tick()
+        action_state.tick(current_time);
     }
 
     for mut action_state in query.iter_mut() {
         // If `Time` has not ever been advanced, something has gone horribly wrong
         // and the user probably forgot to add the `core_plugin`.
-        action_state.tick();
+        action_state.tick(current_time);
     }
 }
 
