@@ -376,11 +376,72 @@ pub struct ActionStateDriver<A: Actionlike> {
     pub entity: Entity,
 }
 
+/// Stores the timing information for a [`VirtualButtonState`]
+#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+pub struct Timing {
+    /// The [`Instant`] at which the button was pressed or released
+    /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
+    /// If this is none, [`Timing::tick`] has not been called yet.
+    #[serde(skip)]
+    pub instant_started: Option<Instant>,
+    /// The [`Duration`] for which the button has been pressed or released.
+    ///
+    /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
+    pub current_duration: Duration,
+    /// The [`Duration`] for which the button was pressed or released before the state last changed.
+    pub previous_duration: Duration,
+}
+
+impl PartialOrd for Timing {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.current_duration.partial_cmp(&other.current_duration)
+    }
+}
+
+impl Timing {
+    /// Advances the `current_duration` of this timer
+    ///
+    /// If the `instant_started` is None, it will be set to the current time.
+    /// This design allows us to ensure that the timing is always synchronized with the start of each frame.
+    pub fn tick(&mut self, current_time: Instant) {
+        if let Some(instant_started) = self.instant_started {
+            self.current_duration = current_time - instant_started;
+        } else {
+            self.instant_started = Some(current_time);
+        }
+    }
+}
+
+/// Stores presses and releases of buttons without timing information
+///
+/// These are typically accessed using the `Events<ActionDiff>` resource.
+/// Uses a minimal storage format, in order to facilitate transport over the network.
+///
+/// `ID` should be a component type that stores a unique stable identifier for the entity
+/// that stores the corresponding [`ActionState`].
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
+    /// The virtual button was pressed
+    Pressed {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+    },
+    /// The virtual button was released
+    Released {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+    },
+}
+
 mod tests {
     use crate as leafwing_input_manager;
-    use crate::prelude::*;
+    use crate::Actionlike;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     enum Action {
         Run,
         Jump,
@@ -389,6 +450,9 @@ mod tests {
 
     #[test]
     fn press_lifecycle() {
+        use crate::action_state::ActionState;
+        use crate::clashing_inputs::ClashStrategy;
+        use crate::input_map::InputMap;
         use crate::user_input::InputStreams;
         use bevy::prelude::*;
         use bevy_utils::Instant;
@@ -451,78 +515,6 @@ mod tests {
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
         assert!(!action_state.just_released(Action::Run));
-    }
-}
-
-/// Stores the timing information for a [`VirtualButtonState`]
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
-pub struct Timing {
-    /// The [`Instant`] at which the button was pressed or released
-    /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
-    /// If this is none, [`Timing::tick`] has not been called yet.
-    #[serde(skip)]
-    pub instant_started: Option<Instant>,
-    /// The [`Duration`] for which the button has been pressed or released.
-    ///
-    /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
-    pub current_duration: Duration,
-    /// The [`Duration`] for which the button was pressed or released before the state last changed.
-    pub previous_duration: Duration,
-}
-
-impl PartialOrd for Timing {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.current_duration.partial_cmp(&other.current_duration)
-    }
-}
-
-impl Timing {
-    /// Advances the `current_duration` of this timer
-    ///
-    /// If the `instant_started` is None, it will be set to the current time.
-    /// This design allows us to ensure that the timing is always synchronized with the start of each frame.
-    pub fn tick(&mut self, current_time: Instant) {
-        if let Some(instant_started) = self.instant_started {
-            self.current_duration = current_time - instant_started;
-        } else {
-            self.instant_started = Some(current_time);
-        }
-    }
-}
-
-/// Stores presses and releases of buttons without timing information
-///
-/// These are typically accessed using the `Events<ActionDiff>` resource.
-/// Uses a minimal storage format, in order to facilitate transport over the network.
-///
-/// `ID` should be a component type that stores a unique stable identifier for the entity
-/// that stores the corresponding [`ActionState`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
-    /// The virtual button was pressed
-    Pressed {
-        /// The value of the action
-        action: A,
-        /// The stable identifier of the entity
-        id: ID,
-    },
-    /// The virtual button was released
-    Released {
-        /// The value of the action
-        action: A,
-        /// The stable identifier of the entity
-        id: ID,
-    },
-}
-
-mod test {
-    use crate as leafwing_input_manager;
-    use crate::Actionlike;
-
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
-    enum Action {
-        Run,
-        Jump,
     }
 
     #[test]
