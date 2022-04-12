@@ -29,6 +29,7 @@ pub struct ActionData {
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
+/// use bevy_utils::Instant;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
 /// enum Action {
@@ -48,7 +49,7 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Left));
 ///
 /// // Resets just_pressed and just_released
-/// action_state.tick();
+/// action_state.tick(Instant::now());
 /// assert!(action_state.pressed(Action::Jump));
 /// assert!(!action_state.just_pressed(Action::Jump));
 ///
@@ -204,6 +205,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     pub fn press(&mut self, action: A) {
         self.action_data[action.index()].state.press();
+        self.action_data[action.index()].timing.flip();
     }
 
     /// Release the `action`
@@ -214,6 +216,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn release(&mut self, action: A) {
         self.action_data[action.index()].state.release();
         self.action_data[action.index()].reasons_pressed = Vec::new();
+        self.action_data[action.index()].timing.flip();
     }
 
     /// Releases all actions
@@ -290,7 +293,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use leafwing_input_manager::action_state{ActionData, Timing};
+    /// use leafwing_input_manager::action_state::{ActionData, Timing};
     /// use bevy_input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone)]
@@ -407,6 +410,15 @@ impl Timing {
             self.instant_started = Some(current_time);
         }
     }
+
+    /// Flips the metaphorical hourglass, storing `current_duration` in `previous_duration` and resetting `instant_started`
+    ///
+    /// This method is called whenever actions are pressed or released
+    pub fn flip(&mut self) {
+        self.previous_duration = self.current_duration;
+        self.current_duration = Duration::ZERO;
+        self.instant_started = None;
+    }
 }
 
 /// Stores presses and releases of buttons without timing information
@@ -471,7 +483,7 @@ mod tests {
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
-        assert!(action_state.just_released(Action::Run));
+        assert!(!action_state.just_released(Action::Run));
 
         // Pressing
         keyboard_input_stream.press(KeyCode::R);
