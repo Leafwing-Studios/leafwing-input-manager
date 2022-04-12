@@ -5,7 +5,7 @@ use crate::user_input::UserInput;
 use crate::Actionlike;
 
 use bevy_ecs::{component::Component, entity::Entity};
-use bevy_utils::Instant;
+use bevy_utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -226,23 +226,47 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Changes the `action` to being held so calls to `just_pressed` return false.
-    // FIXME: does not work when initially released
+    /// Fully resets the state of the `action`
+    ///
+    /// The action will be released, but will no longer be `just_pressed` or `just_released`,
+    /// all timing information will be lost and all `reasons_pressed` will be wiped.
+    ///
+    /// This is occsaionally useful to avoid triggering just-pressed and just-released events
+    /// during various transitions.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::Actionlike;
+    /// use leafwing_input_manager::ActionState;
+    ///
+    /// #[derive(Actionlike, Clone)]
+    /// enum MenuAction {
+    ///     Open,
+    ///     Close,
+    /// }
+    ///
+    /// let mut action_state = ActionState::<MenuAction>::default();
+    /// action_state.press(MenuAction::Open);
+    ///
+    /// assert!(action_state.pressed(MenuAction::Open));
+    /// assert!(action_state.just_pressed(MenuAction::Open));
+    ///
+    /// // Go directly to Released, do not pass Just Released,
+    /// // do not collect $200.
+    /// action_state.reset(MenuAction::Open);
+    ///
+    /// assert!(!action_state.just_pressed(MenuAction::Open));
+    /// assert!(!action_state.just_released(MenuAction::Open));
+    /// assert!(action_state.released(MenuAction::Open));
+    /// ```
     #[inline]
-    pub fn make_held(&mut self, action: A) {
-        if let VirtualButtonState::Pressed {
-            timing,
-            reasons_pressed: user_input,
-        } = self.button_state(action.clone())
-        {
-            self.button_states[action.index()] = VirtualButtonState::Pressed {
-                timing: Timing {
-                    instant_started: Some(Instant::now()),
-                    ..timing
-                },
-                reasons_pressed: user_input,
-            };
-        }
+    pub fn reset(&mut self, action: A, current_instant: Instant) {
+        self.button_states[action.index()] = VirtualButtonState::Released {
+            timing: Timing {
+                instant_started: Some(current_instant),
+                current_duration: Duration::ZERO,
+                previous_duration: Duration::ZERO,
+            },
+        };
     }
 
     /// Is this `action` currently pressed?
@@ -345,7 +369,7 @@ impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
             button_states: A::variants()
-                .map(|_| VirtualButtonState::RELEASED)
+                .map(|_| VirtualButtonState::JUST_RELEASED)
                 .collect(),
             _phantom: PhantomData::default(),
         }

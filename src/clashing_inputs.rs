@@ -524,9 +524,9 @@ mod tests {
             keyboard.press(Key2);
 
             let mut pressed_actions = vec![VirtualButtonState::default(); Action::N_VARIANTS];
-            pressed_actions[One.index()] = VirtualButtonState::PRESSED;
-            pressed_actions[Two.index()] = VirtualButtonState::PRESSED;
-            pressed_actions[OneAndTwo.index()] = VirtualButtonState::PRESSED;
+            pressed_actions[One.index()] = VirtualButtonState::JUST_PRESSED;
+            pressed_actions[Two.index()] = VirtualButtonState::JUST_PRESSED;
+            pressed_actions[OneAndTwo.index()] = VirtualButtonState::JUST_PRESSED;
 
             input_map.handle_clashes(
                 &mut pressed_actions,
@@ -535,7 +535,7 @@ mod tests {
             );
 
             let mut expected = vec![VirtualButtonState::default(); Action::N_VARIANTS];
-            expected[OneAndTwo.index()] = VirtualButtonState::PRESSED;
+            expected[OneAndTwo.index()] = VirtualButtonState::JUST_PRESSED;
 
             assert_eq!(pressed_actions, expected);
         }
