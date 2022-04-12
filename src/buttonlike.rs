@@ -284,7 +284,7 @@ impl VirtualButtonState {
     /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     /// use bevy_input::keyboard::KeyCode;
     ///
-    /// let mut state = VirtualButtonState::RELEASED;
+    /// let mut state = VirtualButtonState::JUST_RELEASED;
     ///
     /// assert_eq!(state.reasons_pressed(), Vec::new());
     ///
