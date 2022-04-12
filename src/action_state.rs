@@ -234,6 +234,10 @@ impl<A: Actionlike> ActionState<A> {
     /// This is occsaionally useful to avoid triggering just-pressed and just-released events
     /// during various transitions.
     ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
     /// ```rust
     /// use leafwing_input_manager::Actionlike;
     /// use leafwing_input_manager::action_state::ActionState;
@@ -258,6 +262,30 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(!action_state.just_pressed(MenuAction::Open));
     /// assert!(!action_state.just_released(MenuAction::Open));
     /// assert!(action_state.released(MenuAction::Open));
+    /// ```
+    ///
+    /// This system demonstrates how you might use this API in practice:
+    ///
+    /// ```rust
+    /// use bevy_ecs::prelude::*;
+    /// use bevy_core::Time;
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// #[derive(Actionlike, Clone)]
+    /// enum MenuAction {
+    ///     Open,
+    ///     Close,
+    /// }
+    ///
+    /// fn reset_menu(mut action_state: ResMut<ActionState<MenuAction>>, time: Res<Time>){
+    ///    let current_time = time.last_update().expect("Time has been updated at least once.");
+    ///    for action in MenuAction::variants(){
+    ///         // This causes the action to look as if it had been released on
+    ///         // the schedule tick before the current tick,
+    ///         // completely skipping over just_released
+    ///         action_state.reset(action, current_time);
+    ///    }
+    /// }
     /// ```
     #[inline]
     pub fn reset(&mut self, action: A, current_instant: Instant) {
