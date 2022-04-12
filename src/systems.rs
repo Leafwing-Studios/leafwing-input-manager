@@ -71,8 +71,7 @@ pub fn update_action_state<A: Actionlike>(
             associated_gamepad: input_map.gamepad(),
         };
 
-        let pressed_set = input_map.which_pressed(&input_streams, *clash_strategy);
-        action_state.update(pressed_set);
+        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
     }
 
     for (mut action_state, input_map) in query.iter_mut() {
@@ -83,9 +82,7 @@ pub fn update_action_state<A: Actionlike>(
             associated_gamepad: input_map.gamepad(),
         };
 
-        let pressed_set = input_map.which_pressed(&input_streams, *clash_strategy);
-
-        action_state.update(pressed_set);
+        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
     }
 }
 

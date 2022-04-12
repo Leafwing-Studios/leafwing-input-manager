@@ -1,5 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
+use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::user_input::{InputButton, InputStreams, UserInput};
@@ -289,21 +290,21 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let pressed_list = self.which_pressed(input_streams, clash_strategy);
-        pressed_list[action.index()].pressed()
+        let action_data = self.which_pressed(input_streams, clash_strategy);
+        action_data[action.index()].state.pressed()
     }
 
-    /// Returns a [`HashSet`] of the virtual buttons that are currently pressed
+    /// Returns the virtual buttons that are currently pressed, and the responsible [`UserInput`] for each action
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
-    /// The `usize`s returned correspond to `Actionlike::index()`.
+    /// The position in each vector corresponds to `Actionlike::index()`.
     #[must_use]
     pub fn which_pressed(
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> Vec<ButtonState> {
-        let mut pressed_actions = vec![ButtonState::default(); A::N_VARIANTS];
+    ) -> Vec<ActionData> {
+        let mut action_data = vec![ActionData::default(); A::N_VARIANTS];
 
         // Generate the raw action presses
         for action in A::variants() {
@@ -312,18 +313,21 @@ impl<A: Actionlike> InputMap<A> {
             for input in self.get(action.clone()).iter() {
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
+                    action_data[action.index()]
+                        .reasons_pressed
+                        .push(input.clone());
                 }
             }
 
             if !inputs.is_empty() {
-                pressed_actions[action.index()] = ButtonState::JustPressed;
+                action_data[action.index()].state = ButtonState::JustPressed;
             }
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut pressed_actions, input_streams, clash_strategy);
+        self.handle_clashes(&mut action_data, input_streams, clash_strategy);
 
-        pressed_actions
+        action_data
     }
 }
 

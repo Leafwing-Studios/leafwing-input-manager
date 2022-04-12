@@ -1,9 +1,10 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
-use crate::buttonlike::ButtonState;
+use crate::action_state::ActionData;
 use crate::input_map::InputMap;
 use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
+
 use itertools::Itertools;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
@@ -70,14 +71,14 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        pressed_actions: &mut [ButtonState],
+        action_data: &mut [ActionData],
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
-        for clash in self.get_clashes(pressed_actions, input_streams) {
+        for clash in self.get_clashes(action_data, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
-                pressed_actions[culled_action.index()] = ButtonState::Released;
+                action_data[culled_action.index()] = ActionData::default();
             }
         }
     }
@@ -103,7 +104,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        pressed_actions: &[ButtonState],
+        action_data: &[ActionData],
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
@@ -112,7 +113,8 @@ impl<A: Actionlike> InputMap<A> {
         for clash in self.possible_clashes() {
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
-            if pressed_actions[clash.index_a].pressed() && pressed_actions[clash.index_b].pressed()
+            if action_data[clash.index_a].state.pressed()
+                && action_data[clash.index_b].state.pressed()
             {
                 // Check if the potential clash occured based on the pressed inputs
                 if let Some(clash) = check_clash(&clash, input_streams) {
@@ -512,6 +514,7 @@ mod tests {
 
         #[test]
         fn handle_clashes() {
+            use crate::buttonlike::ButtonState;
             use bevy::prelude::*;
             use Action::*;
 
@@ -521,21 +524,21 @@ mod tests {
             keyboard.press(Key1);
             keyboard.press(Key2);
 
-            let mut pressed_actions = vec![ButtonState::default(); Action::N_VARIANTS];
-            pressed_actions[One.index()] = ButtonState::JustPressed;
-            pressed_actions[Two.index()] = ButtonState::JustPressed;
-            pressed_actions[OneAndTwo.index()] = ButtonState::JustPressed;
+            let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
+            action_data[One.index()].state = ButtonState::JustPressed;
+            action_data[Two.index()].state = ButtonState::JustPressed;
+            action_data[OneAndTwo.index()].state = ButtonState::JustPressed;
 
             input_map.handle_clashes(
-                &mut pressed_actions,
+                &mut action_data,
                 &InputStreams::from_keyboard(&keyboard),
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![ButtonState::default(); Action::N_VARIANTS];
-            expected[OneAndTwo.index()] = ButtonState::JustPressed;
+            let mut expected = vec![ActionData::default(); Action::N_VARIANTS];
+            expected[OneAndTwo.index()].state = ButtonState::JustPressed;
 
-            assert_eq!(pressed_actions, expected);
+            assert_eq!(action_data, expected);
         }
 
         #[test]
@@ -550,16 +553,16 @@ mod tests {
             keyboard.press(Key2);
             keyboard.press(LControl);
 
-            let pressed_list = input_map.which_pressed(
+            let action_data = input_map.which_pressed(
                 &InputStreams::from_keyboard(&keyboard),
                 ClashStrategy::PrioritizeLongest,
             );
 
-            for (i, button_state) in pressed_list.iter().enumerate() {
+            for (i, action_data) in action_data.iter().enumerate() {
                 if i == CtrlOne.index() || i == OneAndTwo.index() {
-                    assert!(button_state.pressed());
+                    assert!(action_data.state.pressed());
                 } else {
-                    assert!(button_state.released());
+                    assert!(action_data.state.released());
                 }
             }
         }

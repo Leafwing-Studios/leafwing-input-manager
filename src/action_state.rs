@@ -8,6 +8,15 @@ use bevy_ecs::{component::Component, entity::Entity};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
+/// Metadata about an [`Actionlike`] action
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ActionData {
+    /// Is the action pressed or released?
+    pub state: ButtonState,
+    /// What inputs were responsible for causing this action to be pressed?
+    pub reasons_pressed: Vec<UserInput>,
+}
+
 /// Stores the canonical input-method-agnostic representation of the inputs received
 ///
 /// Intended to be used as a [`Component`] on entities that you wish to control directly from player input.
@@ -49,23 +58,27 @@ use std::marker::PhantomData;
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
-    button_states: Vec<ButtonState>,
+    action_data: Vec<ActionData>,
     _phantom: PhantomData<A>,
 }
 
 impl<A: Actionlike> ActionState<A> {
-    /// Updates the [`ActionState`] based on a [`Vec<VirtualButtonState>`] of pressed virtual buttons, ordered by [`Actionlike::id`](Actionlike).
+    /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
     ///
-    /// The `pressed_list` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
+    /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`](bevy::input::Input) resources.
-    pub fn update(&mut self, pressed_list: Vec<ButtonState>) {
-        for (i, button_state) in pressed_list.iter().enumerate() {
-            match button_state {
-                ButtonState::JustPressed => self.press(A::get_at(i).unwrap()),
-                ButtonState::Pressed => self.press(A::get_at(i).unwrap()),
-                ButtonState::JustReleased => self.release(A::get_at(i).unwrap()),
-                ButtonState::Released => self.release(A::get_at(i).unwrap()),
+    pub fn update(&mut self, action_data: Vec<ActionData>) {
+        assert_eq!(action_data.len(), A::N_VARIANTS);
+
+        for (i, action) in A::variants().enumerate() {
+            match action_data[i].state {
+                ButtonState::JustPressed => self.press(action),
+                ButtonState::Pressed => self.press(action),
+                ButtonState::JustReleased => self.release(action),
+                ButtonState::Released => self.release(action),
             }
+
+            self.action_data[i].reasons_pressed = action_data[i].reasons_pressed.clone();
         }
     }
 
@@ -107,9 +120,7 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(!action_state.just_pressed(Action::Jump));
     /// ```
     pub fn tick(&mut self) {
-        for state in self.button_states.iter_mut() {
-            state.tick();
-        }
+        self.action_data.iter_mut().for_each(|ad| ad.state.tick());
     }
 
     /// Gets the [`VirtualButtonState`] of the corresponding `action`
@@ -140,7 +151,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn button_state(&self, action: A) -> ButtonState {
-        self.button_states[action.index()].clone()
+        self.action_data[action.index()].state
     }
 
     /// Manually sets the [`VirtualButtonState`] of the corresponding `action`
@@ -180,7 +191,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn set_button_state(&mut self, action: A, state: ButtonState) {
-        self.button_states[action.index()] = state;
+        self.action_data[action.index()].state = state;
     }
 
     /// Press the `action` virtual button
@@ -189,7 +200,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: A) {
-        self.button_states[action.index()].press();
+        self.action_data[action.index()].state.press();
     }
 
     /// Release the `action` virtual button
@@ -198,7 +209,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: A) {
-        self.button_states[action.index()].release();
+        self.action_data[action.index()].state.release();
+        self.action_data[action.index()].reasons_pressed = Vec::new();
     }
 
     /// Releases all action virtual buttons
@@ -300,14 +312,19 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {
-        todo!()
+        self.action_data[action.index()].reasons_pressed.clone()
     }
 }
 
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
-            button_states: A::variants().map(|_| ButtonState::Released).collect(),
+            action_data: A::variants()
+                .map(|_| ActionData {
+                    state: ButtonState::Released,
+                    reasons_pressed: Vec::new(),
+                })
+                .collect(),
             _phantom: PhantomData::default(),
         }
     }
@@ -384,6 +401,7 @@ mod tests {
         let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
+
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
