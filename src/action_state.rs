@@ -103,7 +103,7 @@ impl<A: Actionlike> ActionState<A> {
     /// let mut action_state = ActionState::<Action>::default();
     ///
     /// // Virtual buttons start released
-    /// assert!(action_state.button_state(Action::Run).just_released());
+    /// assert!(action_state.action_data(Action::Run).just_released());
     /// assert!(action_state.just_released(Action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just released to no longer be just released
@@ -123,10 +123,10 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.iter_mut().for_each(|ad| ad.state.tick());
     }
 
-    /// Gets the [`VirtualButtonState`] of the corresponding `action`
+    /// Gets a copy of the [`ActionData`] of the corresponding `action`
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
-    /// However, accessing the state directly allows you to examine the detailed [`Timing`] information.
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     ///
     /// # Example
     /// ```rust
@@ -139,7 +139,7 @@ impl<A: Actionlike> ActionState<A> {
     ///     Jump,
     /// }
     /// let mut action_state = ActionState::<Action>::default();
-    /// let run_state = action_state.button_state(Action::Run);
+    /// let run_state = action_state.action_data(Action::Run);
     ///
     /// // States can either be pressed or released,
     /// // and store an internal `Timing`
@@ -150,8 +150,8 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn button_state(&self, action: A) -> ButtonState {
-        self.action_data[action.index()].state
+    pub fn action_data(&self, action: A) -> ActionData {
+        self.action_data[action.index()].clone()
     }
 
     /// Manually sets the [`VirtualButtonState`] of the corresponding `action`
@@ -183,15 +183,15 @@ impl<A: Actionlike> ActionState<A> {
     /// let mut action_state = ActionState::<Action>::default();
     ///
     /// // Extract the state from the ability slot
-    /// let slot_1_state = ability_slot_state.button_state(AbilitySlot::Slot1);
+    /// let slot_1_state = ability_slot_state.action_data(AbilitySlot::Slot1);
     ///
     /// // And transfer it to the actual ability that we care about
     /// // without losing timing information
-    /// action_state.set_button_state(Action::Run, slot_1_state);
+    /// action_state.set_action_data(Action::Run, slot_1_state);
     /// ```
     #[inline]
-    pub fn set_button_state(&mut self, action: A, state: ButtonState) {
-        self.action_data[action.index()].state = state;
+    pub fn set_action_data(&mut self, action: A, data: ActionData) {
+        self.action_data[action.index()] = data;
     }
 
     /// Press the `action` virtual button
@@ -224,14 +224,14 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: A) -> bool {
-        self.button_state(action).pressed()
+        self.action_data[action.index()].state.pressed()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: A) -> bool {
-        self.button_state(action).just_pressed()
+        self.action_data[action.index()].state.just_pressed()
     }
 
     /// Is this `action` currently released?
@@ -240,14 +240,14 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn released(&self, action: A) -> bool {
-        self.button_state(action).released()
+        self.action_data[action.index()].state.released()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
-        self.button_state(action).just_released()
+        self.action_data[action.index()].state.just_released()
     }
 
     #[must_use]
@@ -298,7 +298,7 @@ impl<A: Actionlike> ActionState<A> {
     /// let mut action_state = ActionState::<PlatformerAction>::default();
     ///
     /// // Usually this will be done automatically for you, via [`ActionState::update`]
-    /// action_state.set_button_state(PlatformerAction::Jump,
+    /// action_state.set_action_data(PlatformerAction::Jump,
     ///     VirtualButtonState::Pressed {
     ///         // For the sake of this example, we don't care about the timing information
     ///         timing: Timing::default(),
@@ -463,9 +463,9 @@ mod test {
         dbg!(action_state.get_released());
         dbg!(action_state.clone());
 
-        // Virtual buttons start released
-        assert!(action_state.button_state(Action::Run).just_released());
-        assert!(action_state.just_released(Action::Jump));
+        // Virtual buttons start released (but not just released)
+        assert!(action_state.released(Action::Run));
+        assert!(!action_state.just_released(Action::Jump));
 
         // Ticking causes buttons that were just released to no longer be just released
         action_state.tick();
