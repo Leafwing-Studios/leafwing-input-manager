@@ -29,9 +29,9 @@ fn spawn_player(mut commands: Commands) {
         .spawn()
         .insert(Player)
         .insert_bundle(InputManagerBundle::<Action> {
-            // Stores "which virtual action buttons are currently pressed"
+            // Stores "which actions are currently pressed"
             action_state: ActionState::default(),
-            // Stores how those actions relate to inputs from your player
+            // Describes how to convert from player inputs into those actions
             input_map: InputMap::new([(Action::Jump, KeyCode::Space)]),
         });
 }
@@ -39,7 +39,7 @@ fn spawn_player(mut commands: Commands) {
 // Query for the `ActionState` component in your game logic systems!
 fn jump(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
-    // Each action has a virtual button of its own that you can check
+    // Each action has a button-like state of its own that you can check
     if action_state.just_pressed(Action::Jump) {
         println!("I'm jumping!");
     }

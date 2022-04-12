@@ -17,7 +17,7 @@ pub enum ButtonState {
 }
 
 impl ButtonState {
-    /// Causes just_pressed and just_released to become false
+    /// Causes [`just_pressed`](ButtonState::just_pressed) and [`just_released`](ButtonState::just_released) to become false
     ///
     /// [`JustPressed`](ButtonState::JustPressed) becomes [`Pressed`](ButtonState::Pressed) and
     /// [`JustReleased`](ButtonState::JustReleased) becomes [`Released`](ButtonState::Released)

@@ -268,7 +268,7 @@ fn resolve_clash<A: Actionlike>(
         .filter(|&input| input_streams.input_pressed(input))
         .collect();
 
-    // Clashes are spurious if the virtual buttons are pressed for any non-clashing reason
+    // Clashes are spurious if the actions are pressed for any non-clashing reason
     for reason_a in reasons_a_is_pressed.iter() {
         for reason_b in reasons_b_is_pressed.iter() {
             // If there is at least one non-clashing reason why these buttons should both be pressed,

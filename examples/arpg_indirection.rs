@@ -2,7 +2,7 @@
 //! The first layer corresponds to a "slot",
 //! which can then be set to a second-layer "ability" of the player's choice
 //!
-//! This example demonstrates how to model that pattern by copying [`VirtualButtonState`]
+//! This example demonstrates how to model that pattern by copying [`ActionData`]
 //! between two distinct [`ActionState`] components.
 
 use bevy::prelude::*;
@@ -111,7 +111,7 @@ fn copy_action_state(
     for (slot_state, mut ability_state, ability_slot_map) in query.iter_mut() {
         for slot in Slot::variants() {
             if let Some(&matching_ability) = ability_slot_map.get(&slot) {
-                // This copies the `VirtualButtonState` between the ActionStates,
+                // This copies the `ActionData` between the ActionStates,
                 // including information about how long the buttons have been pressed or released
                 ability_state.set_action_data(matching_ability, slot_state.action_data(slot));
             }

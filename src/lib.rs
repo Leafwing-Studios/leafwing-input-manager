@@ -40,7 +40,7 @@ pub mod prelude {
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion
 ///
-/// Actions serve as "virtual buttons", cleanly abstracting over messy, customizable inputs
+/// Actions are modelled as "virtual buttons", cleanly abstracting over messy, customizable inputs
 /// in a way that can be easily consumed by your game logic.
 ///
 /// This trait should be implemented on the `A` type that you want to pass into [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).

@@ -93,7 +93,7 @@ pub fn update_action_state<A: Actionlike>(
     }
 }
 
-/// When a button with a component `A` is clicked, press the corresponding virtual button in the [`ActionState`]
+/// When a button with a component of type `A` is clicked, press the corresponding action in the [`ActionState`]
 ///
 /// The action triggered is determined by the variant stored in your UI-defined button.
 #[cfg(feature = "ui")]

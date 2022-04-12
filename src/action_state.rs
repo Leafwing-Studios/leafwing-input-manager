@@ -87,16 +87,16 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Advances the time for all virtual buttons
+    /// Advances the time for all actions
     ///
-    /// The underlying [`VirtualButtonState`] state will be advanced according to the `current_instant`.
+    /// The underlying [`Timing`] and [`ButtonState`] will be advanced according to the `current_instant`.
     /// - if no [`Instant`] is set, the `current_instant` will be set as the initial time at which the button was pressed / released
     /// - the [`Duration`] will advance to reflect elapsed time
     ///
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
+    /// use leafwing_input_manager::buttonlike::ButtonState;
     /// use bevy_utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
@@ -107,9 +107,9 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// let mut action_state = ActionState::<Action>::default();
     ///
-    /// // Virtual buttons start released
-    /// assert!(action_state.action_data(Action::Run).just_released());
-    /// assert!(action_state.just_released(Action::Jump));
+    /// // Actions start released
+    /// assert!(action_state.released(Action::Jump));
+    /// assert!(!action_state.just_released(Action::Run));
     ///
     /// // Ticking time moves causes buttons that were just released to no longer be just released
     /// action_state.tick(Instant::now());
@@ -142,7 +142,6 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
@@ -150,14 +149,9 @@ impl<A: Actionlike> ActionState<A> {
     ///     Jump,
     /// }
     /// let mut action_state = ActionState::<Action>::default();
-    /// let run_state = action_state.action_data(Action::Run);
+    /// let run_data = action_state.action_data(Action::Run);
     ///
-    /// // States can either be pressed or released,
-    /// // and store an internal `Timing`
-    /// if let VirtualButtonState::Pressed{timing, reasons_pressed: _} = run_state {
-    ///     let pressed_duration = timing.current_duration;
-    ///     let last_released_duration = timing.previous_duration;
-    /// }
+    /// dbg!(run_data);
     /// ```
     #[inline]
     #[must_use]
@@ -165,18 +159,16 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()].clone()
     }
 
-    /// Manually sets the [`VirtualButtonState`] of the corresponding `action`
+    /// Manually sets the [`ActionData`] of the corresponding `action`
     ///
-    /// You should almost always be using the [`ActionState::press`] and [`ActionState::release`] methods instead,
-    /// as they will ensure that the duration is correct.
+    /// You should almost always use more direct methods, as they are simpler and less error-prone.
     ///
     /// However, this method can be useful for testing,
-    /// or when transferring [`VirtualButtonState`] between action maps.
+    /// or when transferring [`ActionData`] between action states.
     ///
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum AbilitySlot {
@@ -205,7 +197,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()] = data;
     }
 
-    /// Press the `action` virtual button
+    /// Press the `action`
     ///
     /// No inititial instant or reasons why the button was pressed will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
@@ -214,7 +206,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()].state.press();
     }
 
-    /// Release the `action` virtual button
+    /// Release the `action`
     ///
     /// No inititial instant will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
@@ -224,7 +216,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()].reasons_pressed = Vec::new();
     }
 
-    /// Releases all action virtual buttons
+    /// Releases all actions
     pub fn release_all(&mut self) {
         for action in A::variants() {
             self.release(action);
@@ -297,7 +289,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike::{VirtualButtonState, Timing};
+    /// use leafwing_input_manager::buttonlike::ButtonState;
+    /// use leafwing_input_manager::action_state{ActionData, Timing};
     /// use bevy_input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone)]
@@ -310,7 +303,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// // Usually this will be done automatically for you, via [`ActionState::update`]
     /// action_state.set_action_data(PlatformerAction::Jump,
-    ///     VirtualButtonState::Pressed {
+    ///   ActionData {
+    ///         state: ButtonState::JustPressed,
     ///         // For the sake of this example, we don't care about the timing information
     ///         timing: Timing::default(),
     ///         reasons_pressed: vec![KeyCode::Space.into()],
@@ -376,7 +370,10 @@ pub struct ActionStateDriver<A: Actionlike> {
     pub entity: Entity,
 }
 
-/// Stores the timing information for a [`VirtualButtonState`]
+/// Stores information about when an action was pressed or released
+///
+/// This struct is principally used as a field on [`ActionData`],
+/// which itself lives inside an [`ActionState`].
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
@@ -421,14 +418,14 @@ impl Timing {
 /// that stores the corresponding [`ActionState`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
-    /// The virtual button was pressed
+    /// The action was pressed
     Pressed {
         /// The value of the action
         action: A,
         /// The stable identifier of the entity
         id: ID,
     },
-    /// The virtual button was released
+    /// The action was released
     Released {
         /// The value of the action
         action: A,
@@ -528,7 +525,7 @@ mod tests {
         dbg!(action_state.get_released());
         dbg!(action_state.clone());
 
-        // Virtual buttons start released (but not just released)
+        // Actions start released (but not just released)
         assert!(action_state.released(Action::Run));
         assert!(!action_state.just_released(Action::Jump));
 
@@ -553,7 +550,7 @@ mod tests {
 
         let mut action_state = ActionState::<Action>::default();
 
-        // Virtual buttons start released
+        // Actions start released
         assert!(action_state.released(Action::Jump));
         assert_eq!(action_state.instant_started(Action::Jump), None,);
         assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
