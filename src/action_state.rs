@@ -237,6 +237,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::Actionlike;
     /// use leafwing_input_manager::action_state::ActionState;
+    /// use bevy_utils::Instant;
     ///
     /// #[derive(Actionlike, Clone)]
     /// enum MenuAction {
@@ -252,7 +253,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// // Go directly to Released, do not pass Just Released,
     /// // do not collect $200.
-    /// action_state.reset(MenuAction::Open);
+    /// action_state.reset(MenuAction::Open, Instant::now());
     ///
     /// assert!(!action_state.just_pressed(MenuAction::Open));
     /// assert!(!action_state.just_released(MenuAction::Open));
