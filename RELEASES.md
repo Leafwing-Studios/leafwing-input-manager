@@ -15,16 +15,20 @@
 
 - if desired, users are now able to use the `ActionState` and `InputMap` structs as standalone resources
 - the crate name now uses underscores (`leafwing_input_manager`) rather than hyphens (`leafwing-input-manager`) to play nicer with `cargo`
+- the complex `run_in_state` API has been removed: now just manually insert and remove the `DisableInput<A: Actionlike>` resource
 - reverted change from by-reference to by-value APIs for `Actionlike` types
   - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses
 - relaxed `Hash` and `Eq` bounds on `Actionlike`
 - `ActionState::state` and `set_state` methods renamed to `button_state` and `set_button_state` for clarity
-- added `ActionState::reset(action)` API to reset an action without triggering `just_released`
-- fleshed out `VirtualButtonState` API for better parity with `ActionState`
-- removed `UserInput::Null`
+- simplified `VirtualButtonState` into a trivial enum `ButtonState`
+  - other metadata (e.g. timing information and reasons pressed) is stored in the `ActionData` struct
+  - users can now access the `ActionData` struct directly for each action in a `ActionState` struct, allowing full manual control for unusual needs
+- removed a layer of indirection for fetching timing information: simply call `action_state.current_duration(Action::Jump)`, rather than `action_state.button_state(Action::Jump).current_duration()`
+- fleshed out `ButtonState` API for better parity with `ActionState`
+- removed `UserInput::Null`: this was never helpful and bloated match statements
 - `InputManagerPlugin::run_in_state` was replaced with `InputDisabled<A: Actionlike>` resource
   - insert this resource when you want to suppress input collection, and remove it when you're done
-- renamed `InputManagerSystem::Reset` into `InputManagerSystem::Tick`.
+- renamed the `InputManagerSystem::Reset` system label to `InputManagerSystem::Tick`.
 - refactored `InputMap`
   - removed methods that works with specific input mode.
   - removed `n_registered`, use `get(action).len()` instead.

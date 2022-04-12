@@ -13,7 +13,7 @@ and a single input can result in multiple actions being triggered, which can be 
 
 - Full keyboard, mouse and joystick support for button-like inputs.
 - Effortlessly wire UI buttons to game state with one simple component!
-  - When clicked, your button will send a virtual button press to the corresponding entity.
+  - When clicked, your button will press the appropriate action on the corresponding entity.
 - Store all your input mappings in a single `InputMap` component
   - No more bespoke `Keybindings<KeyCode>`, `Keybindings<Gamepad>` headaches
 - Look up your current input state in a single `ActionState` component

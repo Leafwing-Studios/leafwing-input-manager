@@ -12,10 +12,10 @@ use bevy_input::InputSystem;
 #[cfg(feature = "ui")]
 use bevy_ui::UiSystem;
 
-/// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) to consume in game logic
+/// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) that can be conveniently checked
 ///
-/// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game,
-/// which acts as a "virtual button" that can be comfortably consumed
+/// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game.
+/// Each variant represents a "virtual button" whose state is stored in an [`ActionState`](crate::action_state::ActionState) struct.
 ///
 /// Each [`InputManagerBundle`](crate::InputManagerBundle) contains:
 ///  - an [`InputMap`](crate::input_map::InputMap) component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"

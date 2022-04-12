@@ -10,9 +10,11 @@ use crate::{
     user_input::InputStreams,
     Actionlike,
 };
+
 use bevy_core::Time;
 use bevy_ecs::prelude::*;
 use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
+
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
 
@@ -22,28 +24,25 @@ use bevy_ui::Interaction;
 /// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
 pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
-    time: Res<Time>,
     disable_input: Option<Res<DisableInput<A>>>,
     action_state: Option<ResMut<ActionState<A>>>,
+    time: Res<Time>,
 ) {
+    // Time must be initialized and have ticked at least once
+    let current_time = time.last_update().unwrap();
+
     if disable_input.is_some() {
         return;
     }
 
     if let Some(mut action_state) = action_state {
-        action_state.tick(
-            time.last_update()
-                .expect("The `Time` resource has never been updated!"),
-        )
+        action_state.tick(current_time);
     }
 
     for mut action_state in query.iter_mut() {
         // If `Time` has not ever been advanced, something has gone horribly wrong
         // and the user probably forgot to add the `core_plugin`.
-        action_state.tick(
-            time.last_update()
-                .expect("The `Time` resource has never been updated!"),
-        );
+        action_state.tick(current_time);
     }
 }
 
@@ -79,8 +78,7 @@ pub fn update_action_state<A: Actionlike>(
             associated_gamepad: input_map.gamepad(),
         };
 
-        let pressed_set = input_map.which_pressed(&input_streams, *clash_strategy);
-        action_state.update(pressed_set);
+        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
     }
 
     for (mut action_state, input_map) in query.iter_mut() {
@@ -91,13 +89,11 @@ pub fn update_action_state<A: Actionlike>(
             associated_gamepad: input_map.gamepad(),
         };
 
-        let pressed_set = input_map.which_pressed(&input_streams, *clash_strategy);
-
-        action_state.update(pressed_set);
+        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
     }
 }
 
-/// When a button with a component `A` is clicked, press the corresponding virtual button in the [`ActionState`]
+/// When a button with a component of type `A` is clicked, press the corresponding action in the [`ActionState`]
 ///
 /// The action triggered is determined by the variant stored in your UI-defined button.
 #[cfg(feature = "ui")]
