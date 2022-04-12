@@ -1,11 +1,10 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::buttonlike::{ButtonState, Timing};
+use crate::buttonlike::ButtonState;
 use crate::user_input::UserInput;
 use crate::Actionlike;
 
 use bevy_ecs::{component::Component, entity::Entity};
-use bevy_utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -16,7 +15,6 @@ use std::marker::PhantomData;
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
-/// use bevy_utils::Instant;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
 /// enum Action {
@@ -36,7 +34,7 @@ use std::marker::PhantomData;
 /// assert!(action_state.released(Action::Left));
 ///
 /// // Resets just_pressed and just_released
-/// action_state.tick(Instant::now());
+/// action_state.tick();
 /// assert!(action_state.pressed(Action::Jump));
 /// assert!(!action_state.just_pressed(Action::Jump));
 ///
@@ -63,26 +61,10 @@ impl<A: Actionlike> ActionState<A> {
     pub fn update(&mut self, pressed_list: Vec<ButtonState>) {
         for (i, button_state) in pressed_list.iter().enumerate() {
             match button_state {
-                ButtonState::Pressed {
-                    timing: _,
-                    reasons_pressed: new_inputs,
-                } => {
-                    if self.button_states[i].released() {
-                        self.press(A::get_at(i).unwrap())
-                    }
-                    if let ButtonState::Pressed {
-                        timing: _,
-                        reasons_pressed: ref mut inputs,
-                    } = self.button_states[i]
-                    {
-                        *inputs = new_inputs.clone();
-                    }
-                }
-                ButtonState::Released { timing: _ } => {
-                    if self.button_states[i].pressed() {
-                        self.release(A::get_at(i).unwrap())
-                    }
-                }
+                ButtonState::JustPressed => self.press(A::get_at(i).unwrap()),
+                ButtonState::Pressed => self.press(A::get_at(i).unwrap()),
+                ButtonState::JustReleased => self.release(A::get_at(i).unwrap()),
+                ButtonState::Released => self.release(A::get_at(i).unwrap()),
             }
         }
     }
@@ -124,9 +106,9 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(action_state.pressed(Action::Jump));
     /// assert!(!action_state.just_pressed(Action::Jump));
     /// ```
-    pub fn tick(&mut self, current_instant: Instant) {
+    pub fn tick(&mut self) {
         for state in self.button_states.iter_mut() {
-            state.tick(current_instant);
+            state.tick();
         }
     }
 
@@ -207,7 +189,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: A) {
-        self.button_states[action.index()].press(None, Vec::new());
+        self.button_states[action.index()].press();
     }
 
     /// Release the `action` virtual button
@@ -216,7 +198,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: A) {
-        self.button_states[action.index()].release(None);
+        self.button_states[action.index()].release();
     }
 
     /// Releases all action virtual buttons
@@ -224,78 +206,6 @@ impl<A: Actionlike> ActionState<A> {
         for action in A::variants() {
             self.release(action);
         }
-    }
-
-    /// Fully resets the state of the `action`
-    ///
-    /// The action will be released, but will no longer be `just_pressed` or `just_released`,
-    /// all timing information will be lost and all `reasons_pressed` will be wiped.
-    ///
-    /// This is occsaionally useful to avoid triggering just-pressed and just-released events
-    /// during various transitions.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```rust
-    /// use leafwing_input_manager::Actionlike;
-    /// use leafwing_input_manager::action_state::ActionState;
-    /// use bevy_utils::Instant;
-    ///
-    /// #[derive(Actionlike, Clone)]
-    /// enum MenuAction {
-    ///     Open,
-    ///     Close,
-    /// }
-    ///
-    /// let mut action_state = ActionState::<MenuAction>::default();
-    /// action_state.press(MenuAction::Open);
-    ///
-    /// assert!(action_state.pressed(MenuAction::Open));
-    /// assert!(action_state.just_pressed(MenuAction::Open));
-    ///
-    /// // Go directly to Released, do not pass Just Released,
-    /// // do not collect $200.
-    /// action_state.reset(MenuAction::Open, Instant::now());
-    ///
-    /// assert!(!action_state.just_pressed(MenuAction::Open));
-    /// assert!(!action_state.just_released(MenuAction::Open));
-    /// assert!(action_state.released(MenuAction::Open));
-    /// ```
-    ///
-    /// This system demonstrates how you might use this API in practice:
-    ///
-    /// ```rust
-    /// use bevy_ecs::prelude::*;
-    /// use bevy_core::Time;
-    /// use leafwing_input_manager::prelude::*;
-    ///
-    /// #[derive(Actionlike, Clone)]
-    /// enum MenuAction {
-    ///     Open,
-    ///     Close,
-    /// }
-    ///
-    /// fn reset_menu(mut action_state: ResMut<ActionState<MenuAction>>, time: Res<Time>){
-    ///    let current_time = time.last_update().expect("Time has been updated at least once.");
-    ///    for action in MenuAction::variants(){
-    ///         // This causes the action to look as if it had been released on
-    ///         // the schedule tick before the current tick,
-    ///         // completely skipping over just_released
-    ///         action_state.reset(action, current_time);
-    ///    }
-    /// }
-    /// ```
-    #[inline]
-    pub fn reset(&mut self, action: A, current_instant: Instant) {
-        self.button_states[action.index()] = ButtonState::Released {
-            timing: Timing {
-                instant_started: Some(current_instant),
-                current_duration: Duration::ZERO,
-                previous_duration: Duration::ZERO,
-            },
-        };
     }
 
     /// Is this `action` currently pressed?
@@ -390,14 +300,14 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {
-        self.button_states[action.index()].reasons_pressed()
+        todo!()
     }
 }
 
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
-            button_states: A::variants().map(|_| ButtonState::JUST_RELEASED).collect(),
+            button_states: A::variants().map(|_| ButtonState::Released).collect(),
             _phantom: PhantomData::default(),
         }
     }
@@ -429,7 +339,6 @@ mod tests {
     fn press_lifecycle() {
         use crate::user_input::InputStreams;
         use bevy::prelude::*;
-        use bevy_utils::Instant;
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
@@ -462,7 +371,7 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Waiting
-        action_state.tick(Instant::now());
+        action_state.tick();
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(Action::Run));
@@ -481,102 +390,13 @@ mod tests {
         assert!(action_state.just_released(Action::Run));
 
         // Waiting
-        action_state.tick(Instant::now());
+        action_state.tick();
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(Action::Run));
         assert!(!action_state.just_pressed(Action::Run));
         assert!(action_state.released(Action::Run));
         assert!(!action_state.just_released(Action::Run));
-    }
-
-    #[test]
-    fn durations() {
-        use bevy_utils::{Duration, Instant};
-        use std::thread::sleep;
-
-        let mut action_state = ActionState::<Action>::default();
-
-        // Virtual buttons start released
-        assert!(action_state.button_state(Action::Jump).released());
-        assert_eq!(
-            action_state.button_state(Action::Jump).instant_started(),
-            None,
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).current_duration(),
-            Duration::ZERO
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).previous_duration(),
-            Duration::ZERO
-        );
-
-        // Pressing a button swaps the state
-        action_state.press(Action::Jump);
-        assert!(action_state.button_state(Action::Jump).pressed());
-        assert_eq!(
-            action_state.button_state(Action::Jump).instant_started(),
-            None
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).current_duration(),
-            Duration::ZERO
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).previous_duration(),
-            Duration::ZERO
-        );
-
-        // Ticking time sets the instant for the new state
-        let t0 = Instant::now();
-        action_state.tick(t0);
-        assert_eq!(
-            action_state.button_state(Action::Jump).instant_started(),
-            Some(t0)
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).current_duration(),
-            Duration::ZERO
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).previous_duration(),
-            Duration::ZERO
-        );
-
-        // Time passes
-        sleep(Duration::from_micros(1));
-        let t1 = Instant::now();
-
-        // The duration is updated
-        action_state.tick(t1);
-        assert_eq!(
-            action_state.button_state(Action::Jump).instant_started(),
-            Some(t0)
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).current_duration(),
-            t1 - t0
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).previous_duration(),
-            Duration::ZERO
-        );
-
-        // Releasing again, swapping the current duration to the previous one
-        action_state.release(Action::Jump);
-        assert_eq!(
-            action_state.button_state(Action::Jump).instant_started(),
-            None
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).current_duration(),
-            Duration::ZERO
-        );
-        assert_eq!(
-            action_state.button_state(Action::Jump).previous_duration(),
-            t1 - t0,
-        );
     }
 }
 
@@ -618,7 +438,6 @@ mod test {
     #[test]
     fn time_tick_ticks_away() {
         use crate::action_state::ActionState;
-        use std::time::Instant;
 
         let mut action_state = ActionState::<Action>::default();
 
@@ -630,15 +449,15 @@ mod test {
         assert!(action_state.button_state(Action::Run).just_released());
         assert!(action_state.just_released(Action::Jump));
 
-        // Ticking time moves causes buttons that were just released to no longer be just released
-        action_state.tick(Instant::now());
+        // Ticking causes buttons that were just released to no longer be just released
+        action_state.tick();
         assert!(action_state.released(Action::Jump));
         assert!(!action_state.just_released(Action::Jump));
         action_state.press(Action::Jump);
         assert!(action_state.just_pressed(Action::Jump));
 
-        // Ticking time moves causes buttons that were just pressed to no longer be just pressed
-        action_state.tick(Instant::now());
+        // Ticking causes buttons that were just pressed to no longer be just pressed
+        action_state.tick();
         assert!(action_state.pressed(Action::Jump));
         assert!(!action_state.just_pressed(Action::Jump));
     }

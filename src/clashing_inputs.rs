@@ -1,6 +1,6 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
-use crate::buttonlike::{ButtonState, Timing};
+use crate::buttonlike::ButtonState;
 use crate::input_map::InputMap;
 use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
@@ -77,9 +77,7 @@ impl<A: Actionlike> InputMap<A> {
         for clash in self.get_clashes(pressed_actions, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
-                pressed_actions[culled_action.index()] = ButtonState::Released {
-                    timing: Timing::default(),
-                };
+                pressed_actions[culled_action.index()] = ButtonState::Released;
             }
         }
     }
@@ -524,9 +522,9 @@ mod tests {
             keyboard.press(Key2);
 
             let mut pressed_actions = vec![ButtonState::default(); Action::N_VARIANTS];
-            pressed_actions[One.index()] = ButtonState::JUST_PRESSED;
-            pressed_actions[Two.index()] = ButtonState::JUST_PRESSED;
-            pressed_actions[OneAndTwo.index()] = ButtonState::JUST_PRESSED;
+            pressed_actions[One.index()] = ButtonState::JustPressed;
+            pressed_actions[Two.index()] = ButtonState::JustPressed;
+            pressed_actions[OneAndTwo.index()] = ButtonState::JustPressed;
 
             input_map.handle_clashes(
                 &mut pressed_actions,
@@ -535,7 +533,7 @@ mod tests {
             );
 
             let mut expected = vec![ButtonState::default(); Action::N_VARIANTS];
-            expected[OneAndTwo.index()] = ButtonState::JUST_PRESSED;
+            expected[OneAndTwo.index()] = ButtonState::JustPressed;
 
             assert_eq!(pressed_actions, expected);
         }

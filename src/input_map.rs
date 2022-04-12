@@ -1,6 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::buttonlike::{ButtonState, Timing};
+use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
@@ -316,10 +316,7 @@ impl<A: Actionlike> InputMap<A> {
             }
 
             if !inputs.is_empty() {
-                pressed_actions[action.index()] = ButtonState::Pressed {
-                    timing: Timing::default(),
-                    reasons_pressed: inputs,
-                };
+                pressed_actions[action.index()] = ButtonState::JustPressed;
             }
         }
 
