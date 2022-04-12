@@ -80,7 +80,7 @@ impl PartialOrd for VirtualButtonState {
 
 impl VirtualButtonState {
     /// A [`VirtualButtonState`] that is just pressed, with no history
-    pub const PRESSED: VirtualButtonState = VirtualButtonState::Pressed {
+    pub const JUST_PRESSED: VirtualButtonState = VirtualButtonState::Pressed {
         timing: Timing {
             instant_started: None,
             current_duration: Duration::ZERO,
@@ -90,7 +90,7 @@ impl VirtualButtonState {
     };
 
     /// A [`VirtualButtonState`] that is just released, with no history
-    pub const RELEASED: VirtualButtonState = VirtualButtonState::Released {
+    pub const JUST_RELEASED: VirtualButtonState = VirtualButtonState::Released {
         timing: Timing {
             instant_started: None,
             current_duration: Duration::ZERO,
@@ -284,7 +284,7 @@ impl VirtualButtonState {
     /// use leafwing_input_manager::buttonlike::VirtualButtonState;
     /// use bevy_input::keyboard::KeyCode;
     ///
-    /// let mut state = VirtualButtonState::RELEASED;
+    /// let mut state = VirtualButtonState::JUST_RELEASED;
     ///
     /// assert_eq!(state.reasons_pressed(), Vec::new());
     ///
