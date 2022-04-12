@@ -236,7 +236,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// ```rust
     /// use leafwing_input_manager::Actionlike;
-    /// use leafwing_input_manager::ActionState;
+    /// use leafwing_input_manager::action_state::ActionState;
     ///
     /// #[derive(Actionlike, Clone)]
     /// enum MenuAction {
