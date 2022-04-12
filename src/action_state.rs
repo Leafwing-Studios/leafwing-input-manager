@@ -1,6 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::buttonlike::{Timing, VirtualButtonState};
+use crate::buttonlike::{ButtonState, Timing};
 use crate::user_input::UserInput;
 use crate::Actionlike;
 
@@ -51,7 +51,7 @@ use std::marker::PhantomData;
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
-    button_states: Vec<VirtualButtonState>,
+    button_states: Vec<ButtonState>,
     _phantom: PhantomData<A>,
 }
 
@@ -60,17 +60,17 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// The `pressed_list` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`](bevy::input::Input) resources.
-    pub fn update(&mut self, pressed_list: Vec<VirtualButtonState>) {
+    pub fn update(&mut self, pressed_list: Vec<ButtonState>) {
         for (i, button_state) in pressed_list.iter().enumerate() {
             match button_state {
-                VirtualButtonState::Pressed {
+                ButtonState::Pressed {
                     timing: _,
                     reasons_pressed: new_inputs,
                 } => {
                     if self.button_states[i].released() {
                         self.press(A::get_at(i).unwrap())
                     }
-                    if let VirtualButtonState::Pressed {
+                    if let ButtonState::Pressed {
                         timing: _,
                         reasons_pressed: ref mut inputs,
                     } = self.button_states[i]
@@ -78,7 +78,7 @@ impl<A: Actionlike> ActionState<A> {
                         *inputs = new_inputs.clone();
                     }
                 }
-                VirtualButtonState::Released { timing: _ } => {
+                ButtonState::Released { timing: _ } => {
                     if self.button_states[i].pressed() {
                         self.release(A::get_at(i).unwrap())
                     }
@@ -157,7 +157,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn button_state(&self, action: A) -> VirtualButtonState {
+    pub fn button_state(&self, action: A) -> ButtonState {
         self.button_states[action.index()].clone()
     }
 
@@ -197,7 +197,7 @@ impl<A: Actionlike> ActionState<A> {
     /// action_state.set_button_state(Action::Run, slot_1_state);
     /// ```
     #[inline]
-    pub fn set_button_state(&mut self, action: A, state: VirtualButtonState) {
+    pub fn set_button_state(&mut self, action: A, state: ButtonState) {
         self.button_states[action.index()] = state;
     }
 
@@ -289,7 +289,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn reset(&mut self, action: A, current_instant: Instant) {
-        self.button_states[action.index()] = VirtualButtonState::Released {
+        self.button_states[action.index()] = ButtonState::Released {
             timing: Timing {
                 instant_started: Some(current_instant),
                 current_duration: Duration::ZERO,
@@ -397,9 +397,7 @@ impl<A: Actionlike> ActionState<A> {
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
-            button_states: A::variants()
-                .map(|_| VirtualButtonState::JUST_RELEASED)
-                .collect(),
+            button_states: A::variants().map(|_| ButtonState::JUST_RELEASED).collect(),
             _phantom: PhantomData::default(),
         }
     }

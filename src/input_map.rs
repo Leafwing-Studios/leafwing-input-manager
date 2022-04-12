@@ -1,6 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
-use crate::buttonlike::{Timing, VirtualButtonState};
+use crate::buttonlike::{ButtonState, Timing};
 use crate::clashing_inputs::ClashStrategy;
 use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
@@ -302,8 +302,8 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> Vec<VirtualButtonState> {
-        let mut pressed_actions = vec![VirtualButtonState::default(); A::N_VARIANTS];
+    ) -> Vec<ButtonState> {
+        let mut pressed_actions = vec![ButtonState::default(); A::N_VARIANTS];
 
         // Generate the raw action presses
         for action in A::variants() {
@@ -316,7 +316,7 @@ impl<A: Actionlike> InputMap<A> {
             }
 
             if !inputs.is_empty() {
-                pressed_actions[action.index()] = VirtualButtonState::Pressed {
+                pressed_actions[action.index()] = ButtonState::Pressed {
                     timing: Timing::default(),
                     reasons_pressed: inputs,
                 };

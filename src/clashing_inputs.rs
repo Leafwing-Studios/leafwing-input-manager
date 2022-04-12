@@ -1,6 +1,6 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
-use crate::buttonlike::{Timing, VirtualButtonState};
+use crate::buttonlike::{ButtonState, Timing};
 use crate::input_map::InputMap;
 use crate::user_input::{InputButton, InputStreams, UserInput};
 use crate::Actionlike;
@@ -70,14 +70,14 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        pressed_actions: &mut [VirtualButtonState],
+        pressed_actions: &mut [ButtonState],
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
         for clash in self.get_clashes(pressed_actions, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
-                pressed_actions[culled_action.index()] = VirtualButtonState::Released {
+                pressed_actions[culled_action.index()] = ButtonState::Released {
                     timing: Timing::default(),
                 };
             }
@@ -105,7 +105,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        pressed_actions: &[VirtualButtonState],
+        pressed_actions: &[ButtonState],
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
@@ -523,10 +523,10 @@ mod tests {
             keyboard.press(Key1);
             keyboard.press(Key2);
 
-            let mut pressed_actions = vec![VirtualButtonState::default(); Action::N_VARIANTS];
-            pressed_actions[One.index()] = VirtualButtonState::JUST_PRESSED;
-            pressed_actions[Two.index()] = VirtualButtonState::JUST_PRESSED;
-            pressed_actions[OneAndTwo.index()] = VirtualButtonState::JUST_PRESSED;
+            let mut pressed_actions = vec![ButtonState::default(); Action::N_VARIANTS];
+            pressed_actions[One.index()] = ButtonState::JUST_PRESSED;
+            pressed_actions[Two.index()] = ButtonState::JUST_PRESSED;
+            pressed_actions[OneAndTwo.index()] = ButtonState::JUST_PRESSED;
 
             input_map.handle_clashes(
                 &mut pressed_actions,
@@ -534,8 +534,8 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![VirtualButtonState::default(); Action::N_VARIANTS];
-            expected[OneAndTwo.index()] = VirtualButtonState::JUST_PRESSED;
+            let mut expected = vec![ButtonState::default(); Action::N_VARIANTS];
+            expected[OneAndTwo.index()] = ButtonState::JUST_PRESSED;
 
             assert_eq!(pressed_actions, expected);
         }
