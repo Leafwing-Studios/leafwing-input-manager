@@ -28,7 +28,7 @@
 - removed a layer of indirection for fetching timing information: simply call `action_state.current_duration(Action::Jump)`, rather than `action_state.button_state(Action::Jump).current_duration()`
 - fleshed out `ButtonState` API for better parity with `ActionState`
 - removed `UserInput::Null`: this was never helpful and bloated match statements
-- `InputManagerPlugin::run_in_state` was replaced with `InputDisabled<A: Actionlike>` resource
+- `InputManagerPlugin::run_in_state` was replaced with `ToggleActions<A: Actionlike>` resource which controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active.
   - insert this resource when you want to suppress input collection, and remove it when you're done
 - renamed the `InputManagerSystem::Reset` system label to `InputManagerSystem::Tick`.
 - refactored `InputMap`

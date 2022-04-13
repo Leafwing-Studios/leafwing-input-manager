@@ -6,12 +6,13 @@ use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
+    plugin::ToggleActions,
     user_input::InputStreams,
     Actionlike,
 };
 
 use bevy_core::Time;
-use bevy_ecs::prelude::*;
+use bevy_ecs::{prelude::*, schedule::ShouldRun};
 use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
 
 #[cfg(feature = "ui")]
@@ -161,5 +162,30 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 }
             };
         }
+    }
+}
+
+/// Release all inputs if [`DisableInput`] was added
+pub fn release_on_disable<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    resource: Option<ResMut<ActionState<A>>>,
+    toggle_actions: Res<ToggleActions<A>>,
+) {
+    if toggle_actions.is_changed() && !toggle_actions.enabled {
+        for mut action_state in query.iter_mut() {
+            action_state.release_all();
+        }
+        if let Some(mut action_state) = resource {
+            action_state.release_all();
+        }
+    }
+}
+
+/// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
+pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
+    if toggle_actions.enabled {
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
     }
 }

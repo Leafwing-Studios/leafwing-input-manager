@@ -74,20 +74,29 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     tick_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
                 .add_system_to_stage(
                     CoreStage::PreUpdate,
                     update_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Update)
                         .after(InputSystem),
+                )
+                .add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    release_on_disable::<A>
+                        .label(InputManagerSystem::ReleaseOnDisable)
+                        .after(InputManagerSystem::Update),
                 );
 
                 #[cfg(feature = "ui")]
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     update_action_state_from_interaction::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::ManualControl)
                         .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
@@ -102,6 +111,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     tick_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
@@ -109,7 +119,27 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
         };
 
         // Resources
-        app.init_resource::<ClashStrategy>();
+        app.init_resource::<ToggleActions<A>>()
+            .init_resource::<ClashStrategy>();
+    }
+}
+
+/// Controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active
+pub struct ToggleActions<A: Actionlike> {
+    /// When this is false, [`ActionState`]'s corresponding to `A` will ignore user inputs
+    ///
+    /// When this is set to false, all corresponding [`ActionState`]s are released
+    pub enabled: bool,
+    _phantom: PhantomData<A>,
+}
+
+// Implement manually to not require [`Default`] for `A`
+impl<A: Actionlike> Default for ToggleActions<A> {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            _phantom: PhantomData::<A>,
+        }
     }
 }
 

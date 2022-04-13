@@ -68,10 +68,6 @@ pub struct ActionState<A: Actionlike> {
     ///
     /// The position in this vector corresponds to [`Actionlike::index`].
     pub action_data: Vec<ActionData>,
-    /// While frozen, actions cannot be pressed or released
-    ///
-    /// However, `action_data` can be modified directly.
-    pub frozen: bool,
     _phantom: PhantomData<A>,
 }
 
@@ -212,10 +208,6 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     pub fn press(&mut self, action: A) {
         let index = action.index();
-        if self.frozen {
-            return;
-        }
-
         self.action_data[index].state.press();
         self.action_data[index].timing.flip();
     }
@@ -227,18 +219,12 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     pub fn release(&mut self, action: A) {
         let index = action.index();
-        if self.frozen {
-            return;
-        }
-
         self.action_data[index].state.release();
         self.action_data[index].reasons_pressed = Vec::new();
         self.action_data[index].timing.flip();
     }
 
     /// Releases all actions
-    ///
-    /// Note that this does not work while the action state is frozen: be sure to call this first!
     pub fn release_all(&mut self) {
         for action in A::variants() {
             self.release(action);
@@ -364,60 +350,12 @@ impl<A: Actionlike> ActionState<A> {
     pub fn previous_duration(&self, action: A) -> Duration {
         self.action_data[action.index()].timing.previous_duration
     }
-
-    /// Causes actions to ignore any requests to press or release them
-    ///
-    /// Frequently combined with [`ActionState::release_all`],
-    /// in order to prevent actions from repeatedly firing while frozen.
-    /// Can be reversed via [`ActionState::unfreeze`].
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use leafwing_input_manager::Actionlike;
-    /// use leafwing_input_manager::action_state::ActionState;
-    ///
-    /// #[derive(Actionlike, Clone)]
-    /// enum Instruction {
-    ///     PatHead,
-    ///     TurnAround,
-    /// }
-    ///
-    /// let mut action_state = ActionState::<Instruction>::default();
-    ///
-    /// // Simon says pat your head
-    /// action_state.press(Instruction::PatHead);
-    /// assert!(action_state.pressed(Instruction::PatHead));
-    ///
-    /// // Stop patting your head
-    /// action_state.freeze();
-    /// action_state.release(Instruction::PatHead);
-    /// assert!(action_state.pressed(Instruction::PatHead));
-    ///
-    /// // Turn around
-    /// action_state.press(Instruction::TurnAround);
-    /// assert!(action_state.released(Instruction::TurnAround));
-    ///
-    /// // Simon says turn around
-    /// action_state.unfreeze();
-    /// action_state.press(Instruction::TurnAround);
-    /// assert!(action_state.pressed(Instruction::TurnAround));
-    /// ```
-    pub fn freeze(&mut self) {
-        self.frozen = true;
-    }
-
-    /// Reverses [`ActionState::freeze`], allowing actions to be modified again
-    pub fn unfreeze(&mut self) {
-        self.frozen = false;
-    }
 }
 
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
             action_data: A::variants().map(|_| ActionData::default()).collect(),
-            frozen: false,
             _phantom: PhantomData::default(),
         }
     }

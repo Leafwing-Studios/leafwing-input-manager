@@ -22,7 +22,8 @@ fn pay_respects(
         if action_state.pressed(Action::PayRespects) {
             respect.0 = true;
         }
-    } else if let Some(action_state) = action_state_resource {
+    }
+    if let Some(action_state) = action_state_resource {
         if action_state.pressed(Action::PayRespects) {
             respect.0 = true;
         }
@@ -91,10 +92,13 @@ fn disable_input() {
 
     let mut app = App::new();
 
+    // Here we spawn a player and creating a global action state to check if [`DisableInput`]
+    // releases correctly both
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
         .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
         .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
         .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
         .init_resource::<Respect>()
@@ -107,10 +111,12 @@ fn disable_input() {
     let respect = app.world.get_resource::<Respect>().unwrap();
     assert_eq!(*respect, Respect(true));
 
-    // Release and freeze the action state
-    let mut action_state = app.world.get_resource_mut::<ActionState<Action>>().unwrap();
-    action_state.release_all();
-    action_state.freeze();
+    // Disable the input
+    let mut toggle_actions = app
+        .world
+        .get_resource_mut::<ToggleActions<Action>>()
+        .unwrap();
+    toggle_actions.enabled = false;
 
     // Now, all respect has faded
     app.update();
