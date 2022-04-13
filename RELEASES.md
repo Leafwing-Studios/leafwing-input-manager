@@ -36,6 +36,7 @@
   - added `insert_at` / `remove_at` to insert / remove input at specific index.
   - added `remove` remove input for specific mapping.
   - use `usize` for sizes as in other Rust containers.
+- added `UserInput::raw_inputs`, which breaks down a `UserInput` into the constituent Bevy types (e.g. `KeyCode` and `MouseButton`)
 
 ### Bug fixes
 

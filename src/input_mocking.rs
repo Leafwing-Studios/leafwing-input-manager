@@ -1,6 +1,6 @@
 //! Helpful utilities for testing input management by sending mock input events
 
-use crate::user_input::{InputButton, InputStreams, MutableInputStreams, UserInput};
+use crate::user_input::{InputStreams, MutableInputStreams, UserInput};
 use bevy_app::App;
 use bevy_ecs::event::Events;
 use bevy_ecs::system::{Res, ResMut, SystemState};
@@ -121,40 +121,14 @@ impl<'a> MutableInputStreams<'a> {
     /// Called by the methods of [`MockInput`].
     pub fn send_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_send: UserInput = input.into();
-
-        let mut gamepad_buttons: Vec<GamepadButton> = Vec::default();
-
-        let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
-        let mut mouse_buttons: Vec<MouseButton> = Vec::default();
-
-        match input_to_send {
-            UserInput::Single(button) => match button {
-                InputButton::Gamepad(gamepad_buttontype) => {
-                    if let Some(gamepad) = self.associated_gamepad {
-                        gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
-                    }
-                }
-                InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
-                InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
-            },
-            UserInput::Chord(button_set) => {
-                for button in button_set {
-                    match button {
-                        InputButton::Gamepad(gamepad_buttontype) => {
-                            if let Some(gamepad) = self.associated_gamepad {
-                                gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
-                            }
-                        }
-                        InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
-                        InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
-                    }
-                }
-            }
-        };
+        let (gamepad_buttons, keyboard_buttons, mouse_buttons) = input_to_send.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
-                gamepad_input.press(button);
+                if let Some(associated_gamepad) = self.associated_gamepad {
+                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    gamepad_input.press(gamepad_button);
+                }
             }
         }
 
@@ -176,40 +150,14 @@ impl<'a> MutableInputStreams<'a> {
     /// Called by the methods of [`MockInput`].
     pub fn release_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_release: UserInput = input.into();
-
-        let mut gamepad_buttons: Vec<GamepadButton> = Vec::default();
-
-        let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
-        let mut mouse_buttons: Vec<MouseButton> = Vec::default();
-
-        match input_to_release {
-            UserInput::Single(button) => match button {
-                InputButton::Gamepad(gamepad_buttontype) => {
-                    if let Some(gamepad) = self.associated_gamepad {
-                        gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
-                    }
-                }
-                InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
-                InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
-            },
-            UserInput::Chord(button_set) => {
-                for button in button_set {
-                    match button {
-                        InputButton::Gamepad(gamepad_buttontype) => {
-                            if let Some(gamepad) = self.associated_gamepad {
-                                gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
-                            }
-                        }
-                        InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
-                        InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
-                    }
-                }
-            }
-        };
+        let (gamepad_buttons, keyboard_buttons, mouse_buttons) = input_to_release.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
-                gamepad_input.release(button);
+                if let Some(associated_gamepad) = self.associated_gamepad {
+                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    gamepad_input.release(gamepad_button);
+                }
             }
         }
 
