@@ -10,6 +10,7 @@
 - added geometric primitives (`Direction` and `Rotation`) for working with rotations in 2 dimensions
 - added `reasons_pressed` API on `ActionState`, which records the triggering inputs
   - you can use this to extract exact input information from analog inputs (like triggers or joysticks)
+- added the ability to release user inputs during input mocking
 
 ### Usability
 

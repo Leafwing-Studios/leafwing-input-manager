@@ -63,8 +63,19 @@ pub trait MockInput {
     ///
     /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
-    /// Provide the `Gamepad` identifier to control which gamepad you are emulating inputs from
+    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating inputs from
     fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+
+    /// Releases the specified `user_input` directly
+    ///
+    /// Gamepad input will be released by the first registed controller found.
+    /// If none are found, gamepad input will be silently skipped.
+    fn release_input(&mut self, input: impl Into<UserInput>);
+
+    /// Releases the specified `user_input` directly, using the specified gamepad
+    ///
+    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating inputs from
+    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
     /// Is the provided `user_input` pressed?
     ///
@@ -159,6 +170,61 @@ impl<'a> MutableInputStreams<'a> {
             }
         }
     }
+
+    /// Releases the specified `user_input` directly, using the specified gamepad
+    ///
+    /// Called by the methods of [`MockInput`].
+    pub fn release_user_input(&mut self, input: impl Into<UserInput>) {
+        let input_to_release: UserInput = input.into();
+
+        let mut gamepad_buttons: Vec<GamepadButton> = Vec::default();
+
+        let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
+        let mut mouse_buttons: Vec<MouseButton> = Vec::default();
+
+        match input_to_release {
+            UserInput::Single(button) => match button {
+                InputButton::Gamepad(gamepad_buttontype) => {
+                    if let Some(gamepad) = self.associated_gamepad {
+                        gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
+                    }
+                }
+                InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
+                InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
+            },
+            UserInput::Chord(button_set) => {
+                for button in button_set {
+                    match button {
+                        InputButton::Gamepad(gamepad_buttontype) => {
+                            if let Some(gamepad) = self.associated_gamepad {
+                                gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
+                            }
+                        }
+                        InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
+                        InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
+                    }
+                }
+            }
+        };
+
+        if let Some(ref mut gamepad_input) = self.gamepad {
+            for button in gamepad_buttons {
+                gamepad_input.release(button);
+            }
+        }
+
+        if let Some(ref mut keyboard_input) = self.keyboard {
+            for button in keyboard_buttons {
+                keyboard_input.release(button);
+            }
+        }
+
+        if let Some(ref mut mouse_input) = self.mouse {
+            for button in mouse_buttons {
+                mouse_input.release(button);
+            }
+        }
+    }
 }
 
 impl MockInput for World {
@@ -192,6 +258,36 @@ impl MockInput for World {
         };
 
         mutable_input_streams.send_user_input(input);
+    }
+
+    fn release_input(&mut self, input: impl Into<UserInput>) {
+        let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
+            gamepads.iter().next().copied()
+        } else {
+            None
+        };
+
+        self.release_input_for_gamepad(input, gamepad);
+    }
+
+    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        let mut input_system_state: SystemState<(
+            Option<ResMut<Input<GamepadButton>>>,
+            Option<ResMut<Input<KeyCode>>>,
+            Option<ResMut<Input<MouseButton>>>,
+        )> = SystemState::new(self);
+
+        let (mut maybe_gamepad, mut maybe_keyboard, mut maybe_mouse) =
+            input_system_state.get_mut(self);
+
+        let mut mutable_input_streams = MutableInputStreams {
+            gamepad: maybe_gamepad.as_deref_mut(),
+            keyboard: maybe_keyboard.as_deref_mut(),
+            mouse: maybe_mouse.as_deref_mut(),
+            associated_gamepad: gamepad,
+        };
+
+        mutable_input_streams.release_user_input(input);
     }
 
     fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
@@ -297,6 +393,14 @@ impl MockInput for App {
 
     fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
         self.world.send_input_to_gamepad(input, gamepad);
+    }
+
+    fn release_input(&mut self, input: impl Into<UserInput>) {
+        self.world.release_input(input);
+    }
+
+    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        self.world.release_input_for_gamepad(input, gamepad);
     }
 
     fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
