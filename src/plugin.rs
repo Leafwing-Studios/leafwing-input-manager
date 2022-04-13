@@ -74,20 +74,29 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     tick_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
                 .add_system_to_stage(
                     CoreStage::PreUpdate,
                     update_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Update)
                         .after(InputSystem),
+                )
+                .add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    release_on_disable::<A>
+                        .label(InputManagerSystem::ReleaseOnDisable)
+                        .after(InputManagerSystem::Update),
                 );
 
                 #[cfg(feature = "ui")]
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     update_action_state_from_interaction::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::ManualControl)
                         .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
@@ -102,6 +111,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
                     tick_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
@@ -110,6 +120,20 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 
         // Resources
         app.init_resource::<ClashStrategy>();
+    }
+}
+
+/// A resource which disables all input for the specified [`Actionlike`] type `A` if present in world
+pub struct DisableInput<A: Actionlike> {
+    _phantom: PhantomData<A>,
+}
+
+// Implement manually to not require [`Default`] for `A`
+impl<A: Actionlike> Default for DisableInput<A> {
+    fn default() -> Self {
+        Self {
+            _phantom: PhantomData::<A>,
+        }
     }
 }
 
