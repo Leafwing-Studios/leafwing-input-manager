@@ -383,7 +383,7 @@ impl<A: Actionlike> ActionState<A> {
     ///     TurnAround,
     /// }
     ///
-    /// let action_state = ActionState::<Instruction>()::default();
+    /// let mut action_state = ActionState::<Instruction>::default();
     ///
     /// // Simon says pat your head
     /// action_state.press(Instruction::PatHead);
