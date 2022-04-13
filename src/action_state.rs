@@ -24,7 +24,7 @@ pub struct ActionData {
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
 ///
-/// Intended to be used as a [`Component`] on entities that you wish to control directly from player input.
+/// Can be used as either a resource or as a [`Component`] on entities that you wish to control directly from player input.
 ///
 /// # Example
 /// ```rust
@@ -64,7 +64,14 @@ pub struct ActionData {
 /// ```
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
-    action_data: Vec<ActionData>,
+    /// The [`ActionData`] of each action
+    ///
+    /// The position in this vector corresponds to [`Actionlike::index`].
+    pub action_data: Vec<ActionData>,
+    /// While frozen, actions cannot be pressed or released
+    ///
+    /// However, `action_data` can be modified directly.
+    pub frozen: bool,
     _phantom: PhantomData<A>,
 }
 
@@ -204,8 +211,13 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: A) {
-        self.action_data[action.index()].state.press();
-        self.action_data[action.index()].timing.flip();
+        let index = action.index();
+        if self.frozen {
+            return;
+        }
+
+        self.action_data[index].state.press();
+        self.action_data[index].timing.flip();
     }
 
     /// Release the `action`
@@ -214,9 +226,14 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: A) {
-        self.action_data[action.index()].state.release();
-        self.action_data[action.index()].reasons_pressed = Vec::new();
-        self.action_data[action.index()].timing.flip();
+        let index = action.index();
+        if self.frozen {
+            return;
+        }
+
+        self.action_data[index].state.release();
+        self.action_data[index].reasons_pressed = Vec::new();
+        self.action_data[index].timing.flip();
     }
 
     /// Releases all actions
@@ -330,12 +347,12 @@ impl<A: Actionlike> ActionState<A> {
     /// This ensures that all of our actions are assigned a timing and duration
     /// that corresponds exactly to the start of a frame, rather than relying on idiosyncratic timing.
     pub fn instant_started(&self, action: A) -> Option<Instant> {
-        self.action_data[A::index(&action)].timing.instant_started
+        self.action_data[action.index()].timing.instant_started
     }
 
     /// The [`Duration`] for which the action has been held or released
     pub fn current_duration(&self, action: A) -> Duration {
-        self.action_data[A::index(&action)].timing.current_duration
+        self.action_data[action.index()].timing.current_duration
     }
 
     /// The [`Duration`] for which the action was last held or released
@@ -343,20 +360,60 @@ impl<A: Actionlike> ActionState<A> {
     /// This is a snapshot of the [`ActionState::current_duration`] state at the time
     /// the action was last pressed or released.
     pub fn previous_duration(&self, action: A) -> Duration {
-        self.action_data[A::index(&action)].timing.previous_duration
+        self.action_data[action.index()].timing.previous_duration
+    }
+
+    /// Causes actions to ignore any requests to press or release them
+    ///
+    /// Can be reversed via [`ActionState::unfreeze`]
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::Actionlike;
+    /// use leafwing_input_manager::action_state::ActionState;
+    ///
+    /// #[derive(Actionlike, Clone)]
+    /// enum Instruction {
+    ///     PatHead,
+    ///     TurnAround,
+    /// }
+    ///
+    /// let action_state = ActionState::<Instruction>()::default();
+    ///
+    /// // Simon says pat your head
+    /// action_state.press(Instruction::PatHead);
+    /// assert!(action_state.pressed(Instruction::PatHead));
+    ///
+    /// // Stop patting your head
+    /// action_state.freeze();
+    /// action_state.release(Instruction::PatHead);
+    /// assert!(action_state.pressed(Instruction::PatHead));
+    ///
+    /// // Turn around
+    /// action_state.press(Instruction::TurnAround);
+    /// assert!(action_state.released(Instruction::TurnAround));
+    ///
+    /// // Simon says turn around
+    /// action_state.unfreeze();
+    /// action_state.press(Instruction::TurnAround);
+    /// assert!(action_state.pressed(Instruction::TurnAround));
+    /// ```
+    pub fn freeze(&mut self) {
+        self.frozen = true;
+    }
+
+    /// Reverses [`ActionState::freeze`], allowing actions to be modified again
+    pub fn unfreeze(&mut self) {
+        self.frozen = false;
     }
 }
 
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
-            action_data: A::variants()
-                .map(|_| ActionData {
-                    state: ButtonState::Released,
-                    reasons_pressed: Vec::new(),
-                    timing: Timing::default(),
-                })
-                .collect(),
+            action_data: A::variants().map(|_| ActionData::default()).collect(),
+            frozen: false,
             _phantom: PhantomData::default(),
         }
     }

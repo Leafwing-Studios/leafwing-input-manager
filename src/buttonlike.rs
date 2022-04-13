@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 /// The current state of a particular button,
 /// usually corresponding to a single [`Actionlike`] action.
+///
+/// By default, buttons are [`ButtonState::Released`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ButtonState {
     /// The button was pressed since the most recent tick
