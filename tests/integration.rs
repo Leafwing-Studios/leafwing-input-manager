@@ -112,7 +112,11 @@ fn disable_input() {
     assert_eq!(*respect, Respect(true));
 
     // Disable the input
-    app.init_resource::<DisableInput<Action>>();
+    let mut toggle_actions = app
+        .world
+        .get_resource_mut::<ToggleActions<Action>>()
+        .unwrap();
+    toggle_actions.enabled = false;
 
     // Now, all respect has faded
     app.update();

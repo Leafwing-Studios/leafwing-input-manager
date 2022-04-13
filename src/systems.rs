@@ -6,7 +6,7 @@ use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
-    plugin::DisableInput,
+    plugin::ToggleActions,
     user_input::InputStreams,
     Actionlike,
 };
@@ -169,27 +169,23 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
 pub fn release_on_disable<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     resource: Option<ResMut<ActionState<A>>>,
-    disable_input: Option<Res<DisableInput<A>>>,
+    toggle_actions: Res<ToggleActions<A>>,
 ) {
-    if let Some(disable_input) = disable_input {
-        if disable_input.is_added() {
-            for mut action_state in query.iter_mut() {
-                action_state.release_all();
-            }
-            if let Some(mut action_state) = resource {
-                action_state.release_all();
-            }
+    if toggle_actions.is_changed() && !toggle_actions.enabled {
+        for mut action_state in query.iter_mut() {
+            action_state.release_all();
+        }
+        if let Some(mut action_state) = resource {
+            action_state.release_all();
         }
     }
 }
 
 /// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
-pub(super) fn run_if_enabled<A: Actionlike>(
-    disable_input: Option<Res<DisableInput<A>>>,
-) -> ShouldRun {
-    if disable_input.is_some() {
-        ShouldRun::No
-    } else {
+pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
+    if toggle_actions.enabled {
         ShouldRun::Yes
+    } else {
+        ShouldRun::No
     }
 }

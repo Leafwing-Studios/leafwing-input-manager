@@ -33,8 +33,8 @@ pub mod prelude {
     pub use crate::input_map::InputMap;
     pub use crate::user_input::UserInput;
 
-    pub use crate::plugin::DisableInput;
     pub use crate::plugin::InputManagerPlugin;
+    pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
 }
 

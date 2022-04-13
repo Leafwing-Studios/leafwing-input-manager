@@ -119,19 +119,25 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
         };
 
         // Resources
-        app.init_resource::<ClashStrategy>();
+        app.init_resource::<ToggleActions<A>>()
+            .init_resource::<ClashStrategy>();
     }
 }
 
-/// A resource which disables all input for the specified [`Actionlike`] type `A` if present in world
-pub struct DisableInput<A: Actionlike> {
+/// Controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active
+pub struct ToggleActions<A: Actionlike> {
+    /// When this is false, [`ActionState`]'s corresponding to `A` will ignore user inputs
+    ///
+    /// When this is set to false, all corresponding [`ActionState`]s are released
+    pub enabled: bool,
     _phantom: PhantomData<A>,
 }
 
 // Implement manually to not require [`Default`] for `A`
-impl<A: Actionlike> Default for DisableInput<A> {
+impl<A: Actionlike> Default for ToggleActions<A> {
     fn default() -> Self {
         Self {
+            enabled: true,
             _phantom: PhantomData::<A>,
         }
     }
