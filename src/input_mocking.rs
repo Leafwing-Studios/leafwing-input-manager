@@ -53,11 +53,15 @@ use bevy_window::CursorMoved;
 pub trait MockInput {
     /// Send the specified `user_input` directly
     ///
+    /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
+    ///
     /// Gamepad input will be sent by the first registed controller found.
     /// If none are found, gamepad input will be silently skipped.
     fn send_input(&mut self, input: impl Into<UserInput>);
 
     /// Send the specified `user_input` directly, using the specified gamepad
+    ///
+    /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
     /// Provide the `Gamepad` identifier to control which gamepad you are emulating inputs from
     fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
