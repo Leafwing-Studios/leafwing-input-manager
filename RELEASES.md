@@ -10,6 +10,7 @@
 - added geometric primitives (`Direction` and `Rotation`) for working with rotations in 2 dimensions
 - added `reasons_pressed` API on `ActionState`, which records the triggering inputs
   - you can use this to extract exact input information from analog inputs (like triggers or joysticks)
+- added the ability to release user inputs during input mocking
 
 ### Usability
 
@@ -35,6 +36,7 @@
   - added `insert_at` / `remove_at` to insert / remove input at specific index.
   - added `remove` remove input for specific mapping.
   - use `usize` for sizes as in other Rust containers.
+- added `UserInput::raw_inputs`, which breaks down a `UserInput` into the constituent Bevy types (e.g. `KeyCode` and `MouseButton`)
 
 ### Bug fixes
 

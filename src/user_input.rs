@@ -135,6 +135,32 @@ impl UserInput {
             }
         }
     }
+
+    /// Returns the raw inputs that make up this [`UserInput`]
+    pub fn raw_inputs(&self) -> (Vec<GamepadButtonType>, Vec<KeyCode>, Vec<MouseButton>) {
+        let mut gamepad_buttons: Vec<GamepadButtonType> = Vec::default();
+        let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
+        let mut mouse_buttons: Vec<MouseButton> = Vec::default();
+
+        match self {
+            UserInput::Single(button) => match *button {
+                InputButton::Gamepad(variant) => gamepad_buttons.push(variant),
+                InputButton::Keyboard(variant) => keyboard_buttons.push(variant),
+                InputButton::Mouse(variant) => mouse_buttons.push(variant),
+            },
+            UserInput::Chord(button_set) => {
+                for button in button_set.iter() {
+                    match button {
+                        InputButton::Gamepad(variant) => gamepad_buttons.push(*variant),
+                        InputButton::Keyboard(variant) => keyboard_buttons.push(*variant),
+                        InputButton::Mouse(variant) => mouse_buttons.push(*variant),
+                    }
+                }
+            }
+        };
+
+        (gamepad_buttons, keyboard_buttons, mouse_buttons)
+    }
 }
 
 impl From<InputButton> for UserInput {
