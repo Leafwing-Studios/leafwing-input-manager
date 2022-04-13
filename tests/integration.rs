@@ -14,11 +14,18 @@ enum Action {
 struct Respect(bool);
 
 fn pay_respects(
-    action_state: Query<&ActionState<Action>, With<Player>>,
+    action_state_query: Query<&ActionState<Action>, With<Player>>,
+    action_state_resource: Option<Res<ActionState<Action>>>,
     mut respect: ResMut<Respect>,
 ) {
-    if action_state.single().pressed(Action::PayRespects) {
-        respect.0 = true;
+    if let Ok(action_state) = action_state_query.get_single() {
+        if action_state.pressed(Action::PayRespects) {
+            respect.0 = true;
+        }
+    } else if let Some(action_state) = action_state_resource {
+        if action_state.pressed(Action::PayRespects) {
+            respect.0 = true;
+        }
     }
 }
 
@@ -88,7 +95,8 @@ fn disable_input() {
         .add_plugin(InputPlugin)
         .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
         .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
+        .init_resource::<ActionState<Action>>()
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
         .init_resource::<Respect>()
         .add_system(pay_respects)
         .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
@@ -99,8 +107,10 @@ fn disable_input() {
     let respect = app.world.get_resource::<Respect>().unwrap();
     assert_eq!(*respect, Respect(true));
 
-    // Disable the input
-    app.init_resource::<DisableInput<Action>>();
+    // Release and freeze the action state
+    let mut action_state = app.world.get_resource_mut::<ActionState<Action>>().unwrap();
+    action_state.release_all();
+    action_state.freeze();
 
     // Now, all respect has faded
     app.update();

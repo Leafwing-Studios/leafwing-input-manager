@@ -237,6 +237,8 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Releases all actions
+    ///
+    /// Note that this does not work while the action state is frozen: be sure to call this first!
     pub fn release_all(&mut self) {
         for action in A::variants() {
             self.release(action);
@@ -365,7 +367,9 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Causes actions to ignore any requests to press or release them
     ///
-    /// Can be reversed via [`ActionState::unfreeze`]
+    /// Frequently combined with [`ActionState::release_all`],
+    /// in order to prevent actions from repeatedly firing while frozen.
+    /// Can be reversed via [`ActionState::unfreeze`].
     ///
     /// # Example
     ///
