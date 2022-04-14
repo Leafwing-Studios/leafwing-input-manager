@@ -20,6 +20,11 @@ pub struct ActionData {
     pub reasons_pressed: Vec<UserInput>,
     /// When was the button pressed / released, and how long has it been held for?
     pub timing: Timing,
+    /// Was this action consumed by [`ActionState::consume`]?
+    ///
+    /// Actions that are consumed cannot be pressed again until they are explicitly released.
+    /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
+    pub consumed: bool,
 }
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
@@ -203,22 +208,77 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Press the `action`
     ///
-    /// No inititial instant or reasons why the button was pressed will be recorded
+    /// No initial instant or reasons why the button was pressed will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: A) {
         let index = action.index();
+        // Consumed actions cannot be pressed until they are released
+        if self.action_data[index].consumed {
+            return;
+        }
+
         self.action_data[index].state.press();
         self.action_data[index].timing.flip();
     }
 
     /// Release the `action`
     ///
-    /// No inititial instant will be recorded
+    /// No initial instant will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: A) {
         let index = action.index();
+        // Once released, consumed actions can be pressed again
+        self.action_data[index].consumed = false;
+        self.action_data[index].state.release();
+        self.action_data[index].reasons_pressed = Vec::new();
+        self.action_data[index].timing.flip();
+    }
+
+    /// Consumes the `action`
+    ///
+    /// The action will be released, and will not be able to be pressed again
+    /// until it would have otherwise been released by [`ActionState::release`],
+    /// [`ActionState::release_all`] or [`ActionState::update`].
+    ///
+    /// No initial instant will be recorded
+    /// Instead, this is set through [`ActionState::tick()`]
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// enum Action {
+    ///     Eat,
+    ///     Sleep,
+    /// }
+    ///
+    /// let mut action_state = ActionState::<Action>::default();
+    ///
+    /// action_state.press(Action::Eat);
+    /// assert!(action_state.pressed(Action::Eat));
+    ///
+    /// // Consuming actions releases them
+    /// action_state.consume(Action::Eat);
+    /// assert!(action_state.released(Action::Eat));
+    ///
+    /// // Doesn't work, as the action was consumed
+    /// action_state.press(Action::Eat);
+    /// assert!(action_state.released(Action::Eat));
+    ///
+    /// // Releasing consumed actions allows them to be pressed again
+    /// action_state.release(Action::Eat);
+    /// action_state.press(Action::Eat);
+    /// assert!(action_state.pressed(Action::Eat));
+    /// ```
+    #[inline]
+    pub fn consume(&mut self, action: A) {
+        let index = action.index();
+        // This is the only difference from release(action)
+        self.action_data[index].consumed = true;
         self.action_data[index].state.release();
         self.action_data[index].reasons_pressed = Vec::new();
         self.action_data[index].timing.flip();
@@ -298,7 +358,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use leafwing_input_manager::action_state::{ActionData, Timing};
+    /// use leafwing_input_manager::action_state::ActionData;
     /// use bevy_input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone)]
@@ -313,9 +373,10 @@ impl<A: Actionlike> ActionState<A> {
     /// action_state.set_action_data(PlatformerAction::Jump,
     ///   ActionData {
     ///         state: ButtonState::JustPressed,
-    ///         // For the sake of this example, we don't care about the timing information
-    ///         timing: Timing::default(),
+    ///         // Manually setting the reason why this action was pressed
     ///         reasons_pressed: vec![KeyCode::Space.into()],
+    ///         // For the sake of this example, we don't care about any other fields
+    ///         ..Default::default()
     ///     }
     /// );
     ///
