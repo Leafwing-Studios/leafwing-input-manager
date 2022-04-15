@@ -143,12 +143,10 @@ fn send_events<A: Send + Sync + 'static + Debug + Clone>(
 ) -> ManualEventReader<A> {
     let client_events: &Events<A> = client_app
         .world
-        .get_resource()
-        .expect("Event resource was not found in client World.");
+        .resource()
     let mut server_events: Mut<Events<A>> = server_app
         .world
-        .get_resource_mut()
-        .expect("Event resource was not found in client World.");
+        .resource_mut();
 
     // Get an event reader, one way or another
     let mut reader = reader.unwrap_or_else(|| client_events.get_reader());

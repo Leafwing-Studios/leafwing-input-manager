@@ -23,9 +23,9 @@ fn main() {
         .add_system(open_sub_menu)
         // We want to ensure that if both the main menu and submenu are open
         // only the submenu is closed if the user hits (or holds) Escape
-        .add_system(close_menu::<SubMenu>.before("main_menu"))
+        .add_system(close_menu::<SubMenu>.before(close_menu::<MainMenu>))
         // We can do this by ordering our systems and using `ActionState::consume`
-        .add_system(close_menu::<MainMenu>.label("main_menu"))
+        .add_system(close_menu::<MainMenu>)
         .run()
 }
 

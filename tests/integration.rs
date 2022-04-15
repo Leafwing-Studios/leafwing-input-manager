@@ -108,25 +108,22 @@ fn disable_input() {
     // Press F to pay respects
     app.send_input(KeyCode::F);
     app.update();
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
     // Disable the input
-    let mut toggle_actions = app
-        .world
-        .get_resource_mut::<ToggleActions<Action>>()
-        .unwrap();
+    let mut toggle_actions = app.world.resource_mut::<ToggleActions<Action>>();
     toggle_actions.enabled = false;
 
     // Now, all respect has faded
     app.update();
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
     app.send_input(KeyCode::F);
     app.update();
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }
 
@@ -171,7 +168,7 @@ fn action_state_driver() {
 
     app.update();
 
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // Click button to pay respects
@@ -191,13 +188,13 @@ fn action_state_driver() {
     assert!(action_state.pressed(Action::PayRespects));
 
     // Check the effects of that action state
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
     // Clear inputs
     app.reset_inputs();
     app.update();
 
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }
