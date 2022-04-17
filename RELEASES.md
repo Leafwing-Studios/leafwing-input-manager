@@ -1,17 +1,15 @@
 # Release Notes
 
-## Version 0.3 (Unreleased)
+## Version 0.3
 
 ### Enhancements
 
-- users can now store data in the enum variants of their `Actionlike` enums using `ActionState::action_value` and `set_action_value`
-  - this allows you to embed rich information about *how* the action should be done in an input-aware centralized fashion
-  - internally, matching is done based on the discriminant of the enum, not their value
-- added geometric primitives (`Direction` and `Rotation`) for working with rotations in 2 dimensions
 - added `reasons_pressed` API on `ActionState`, which records the triggering inputs
   - you can use this to extract exact input information from analog inputs (like triggers or joysticks)
 - added the ability to release user inputs during input mocking
 - added `ActionState::consume(action)`, which allows you to consume a pressed action, ensuring it is not pressed until after it is otherwise released
+- added geometric primitives (`Direction` and `Rotation`) for working with rotations in 2 dimensions
+  - stay tuned for first-class directional input support!
 
 ### Usability
 
@@ -40,7 +38,7 @@
 
 ### Bug fixes
 
-- the `PartialOrd` implementation of `Timing` (and thus `VirtualButtonState`) now correctly compares values on the basis of the current duration that the button has been held / released for
+- the `PartialOrd` implementation of `Timing` now correctly compares values on the basis of the current duration that the button has been held / released for
 
 ## Version 0.2
 
