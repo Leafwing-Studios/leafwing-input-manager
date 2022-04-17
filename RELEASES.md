@@ -14,7 +14,6 @@
 ### Usability
 
 - if desired, users are now able to use the `ActionState` and `InputMap` structs as standalone resources
-- the crate name now uses underscores (`leafwing_input_manager`) rather than hyphens (`leafwing-input-manager`) to play nicer with `cargo`
 - reverted change from by-reference to by-value APIs for `Actionlike` types
   - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses
 - relaxed `Hash` and `Eq` bounds on `Actionlike`
