@@ -1,5 +1,5 @@
 [package]
-name = "leafwing_input_manager"
+name = "leafwing-input-manager"
 description = "A powerfully direct stateful input manager for the Bevy game engine."
 version = "0.3.0"
 authors = ["Leafwing Studios"]
