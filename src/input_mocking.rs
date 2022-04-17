@@ -406,7 +406,7 @@ mod test {
         world.send_input_to_gamepad(GamepadButtonType::North, gamepad);
 
         // Verify that checking the resource value directly works
-        let keyboard_input: &Input<KeyCode> = world.get_resource().unwrap();
+        let keyboard_input: &Input<KeyCode> = world.resource();
         assert!(keyboard_input.pressed(KeyCode::Space));
 
         // Test the convenient .pressed API
