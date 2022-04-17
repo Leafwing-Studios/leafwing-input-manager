@@ -1,5 +1,45 @@
 # Release Notes
 
+## Version 0.3
+
+### Enhancements
+
+- added `reasons_pressed` API on `ActionState`, which records the triggering inputs
+  - you can use this to extract exact input information from analog inputs (like triggers or joysticks)
+- added the ability to release user inputs during input mocking
+- added `ActionState::consume(action)`, which allows you to consume a pressed action, ensuring it is not pressed until after it is otherwise released
+- added geometric primitives (`Direction` and `Rotation`) for working with rotations in 2 dimensions
+  - stay tuned for first-class directional input support!
+
+### Usability
+
+- if desired, users are now able to use the `ActionState` and `InputMap` structs as standalone resources
+- the crate name now uses underscores (`leafwing_input_manager`) rather than hyphens (`leafwing-input-manager`) to play nicer with `cargo`
+- reverted change from by-reference to by-value APIs for `Actionlike` types
+  - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses
+- relaxed `Hash` and `Eq` bounds on `Actionlike`
+- `InputManagerPlugin::run_in_state` was replaced with `ToggleActions<A: Actionlike>` resource which controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active.
+- `ActionState::state` and `set_state` methods renamed to `button_state` and `set_button_state` for clarity
+- simplified `VirtualButtonState` into a trivial enum `ButtonState`
+  - other metadata (e.g. timing information and reasons pressed) is stored in the `ActionData` struct
+  - users can now access the `ActionData` struct directly for each action in a `ActionState` struct, allowing full manual control for unusual needs
+- removed a layer of indirection for fetching timing information: simply call `action_state.current_duration(Action::Jump)`, rather than `action_state.button_state(Action::Jump).current_duration()`
+- fleshed out `ButtonState` API for better parity with `ActionState`
+- removed `UserInput::Null`: this was never helpful and bloated match statements
+  - insert this resource when you want to suppress input collection, and remove it when you're done
+- renamed the `InputManagerSystem::Reset` system label to `InputManagerSystem::Tick`.
+- refactored `InputMap`
+  - removed methods that works with specific input mode.
+  - removed `n_registered`, use `get(action).len()` instead.
+  - added `insert_at` / `remove_at` to insert / remove input at specific index.
+  - added `remove` remove input for specific mapping.
+  - use `usize` for sizes as in other Rust containers.
+- added `UserInput::raw_inputs`, which breaks down a `UserInput` into the constituent Bevy types (e.g. `KeyCode` and `MouseButton`)
+
+### Bug fixes
+
+- the `PartialOrd` implementation of `Timing` now correctly compares values on the basis of the current duration that the button has been held / released for
+
 ## Version 0.2
 
 ### Enhancements

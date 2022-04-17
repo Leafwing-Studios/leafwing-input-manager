@@ -1,38 +1,36 @@
 //! Contains main plugin exported by this crate.
 
+use crate::clashing_inputs::ClashStrategy;
 use crate::Actionlike;
-use core::any::TypeId;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use bevy::app::{App, CoreStage, Plugin};
-use bevy::ecs::prelude::*;
-use bevy::ecs::schedule::ShouldRun;
-use bevy::ecs::system::Resource;
-use bevy::input::InputSystem;
-use bevy::ui::UiSystem;
+use bevy_app::{App, CoreStage, Plugin};
+use bevy_ecs::prelude::*;
+use bevy_input::InputSystem;
+#[cfg(feature = "ui")]
+use bevy_ui::UiSystem;
 
-/// A [`Plugin`] that collects [`Input`] from disparate sources, producing an [`ActionState`] to consume in game logic
+/// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) that can be conveniently checked
 ///
-/// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game,
-/// which acts as a "virtual button" that can be comfortably consumed
+/// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game.
+/// Each variant represents a "virtual button" whose state is stored in an [`ActionState`](crate::action_state::ActionState) struct.
 ///
-/// Each [`InputManagerBundle`] contains:
-///  - an [`InputMap`] component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
-///  - an [`ActionState`] component, which stores the current input state for that entity in an source-agnostic fashion
+/// Each [`InputManagerBundle`](crate::InputManagerBundle) contains:
+///  - an [`InputMap`](crate::input_map::InputMap) component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
+///  - an [`ActionState`](crate::action_state::ActionState) component, which stores the current input state for that entity in an source-agnostic fashion
 ///
 /// ## Systems
-/// - [`tick_action_state`](systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
+/// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
 ///     - labeled [`InputManagerSystem::Reset`]
-/// - [`update_action_state`](systems::update_action_state), which collects [`Input`] resources to update the [`ActionState`]
+/// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`](crate::action_state::ActionState)
 ///     - labeled [`InputManagerSystem::Update`]
-/// - [`update_action_state_from_interaction`](systems::update_action_state_from_interaction), for triggering actions from buttons
-///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`] component
+/// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
+///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`](bevy::ui::Interaction) component
 ///    - labeled [`InputManagerSystem::Update`]
-pub struct InputManagerPlugin<A: Actionlike, UserState: Resource + PartialEq + Clone = ()> {
+pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
-    state_variant: UserState,
     machine: Machine,
 }
 
@@ -41,50 +39,6 @@ impl<A: Actionlike> Default for InputManagerPlugin<A> {
     fn default() -> Self {
         Self {
             _phantom: PhantomData::default(),
-            state_variant: (),
-            machine: Machine::Client,
-        }
-    }
-}
-
-impl<A: Actionlike, UserState: Resource + PartialEq + Clone> InputManagerPlugin<A, UserState> {
-    /// Creates a version of this plugin that will only run in the specified `state_variant`
-    ///
-    /// # Example
-    /// ```rust
-    /// use bevy::prelude::*;
-    /// use bevy::input::InputPlugin;
-    /// use leafwing_input_manager::prelude::*;
-
-    ///
-    /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
-    /// enum PlayerAction {
-    ///    // Movement
-    ///    Up,
-    ///    Down,
-    ///    Left,
-    ///    Right,
-    /// }
-    ///
-    /// #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-    /// enum GameState {
-    ///     Playing,
-    ///     Paused,
-    ///     Menu,
-    /// }
-    ///
-    /// App::new()
-    /// .add_plugins(MinimalPlugins)
-    /// .add_plugin(InputPlugin)
-    /// .add_state(GameState::Playing)
-    /// .add_plugin(InputManagerPlugin::<PlayerAction, GameState>::run_in_state(GameState::Playing))
-    /// .update();
-    /// ```
-    #[must_use]
-    pub fn run_in_state(state_variant: UserState) -> Self {
-        Self {
-            _phantom: PhantomData::default(),
-            state_variant,
             machine: Machine::Client,
         }
     }
@@ -100,7 +54,6 @@ impl<A: Actionlike> InputManagerPlugin<A> {
     pub fn server() -> Self {
         Self {
             _phantom: PhantomData::default(),
-            state_variant: (),
             machine: Machine::Server,
         }
     }
@@ -112,68 +65,80 @@ enum Machine {
     Client,
 }
 
-impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
-    for InputManagerPlugin<A, UserState>
-{
+impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
-        let input_manager_systems = match self.machine {
-            Machine::Client => SystemSet::new()
-                .with_system(
+        match self.machine {
+            Machine::Client => {
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
                     tick_action_state::<A>
-                        .label(InputManagerSystem::Reset)
+                        .with_run_criteria(run_if_enabled::<A>)
+                        .label(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
-                .with_system(
+                .add_system_to_stage(
+                    CoreStage::PreUpdate,
                     update_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Update)
                         .after(InputSystem),
                 )
-                .with_system(
+                .add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    release_on_disable::<A>
+                        .label(InputManagerSystem::ReleaseOnDisable)
+                        .after(InputManagerSystem::Update),
+                );
+
+                #[cfg(feature = "ui")]
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
                     update_action_state_from_interaction::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::ManualControl)
-                        .after(InputManagerSystem::Reset)
+                        .before(InputManagerSystem::ReleaseOnDisable)
+                        .after(InputManagerSystem::Tick)
                         // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
                         // not being pressed
                         .after(InputManagerSystem::Update)
                         .after(UiSystem::Focus)
                         .after(InputSystem),
-                ),
-            Machine::Server => SystemSet::new().with_system(
-                tick_action_state::<A>
-                    .label(InputManagerSystem::Reset)
-                    .before(InputManagerSystem::Update),
-            ),
+                );
+            }
+            Machine::Server => {
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    tick_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
+                        .label(InputManagerSystem::Tick)
+                        .before(InputManagerSystem::Update),
+                );
+            }
         };
 
-        // If a state has been provided
-        // Only run this plugin's systems in the state variant provided
-        // Note that this does not perform the standard looping behavior
-        // as otherwise we would be limited to the stage that state was added in T_T
-        if TypeId::of::<UserState>() != TypeId::of::<()>() {
-            // https://github.com/bevyengine/rfcs/pull/45 will make special-casing state support unnecessary
+        // Resources
+        app.init_resource::<ToggleActions<A>>()
+            .init_resource::<ClashStrategy>();
+    }
+}
 
-            // Captured the state variant we want our systems to run in in a run-criteria closure
-            let desired_state_variant = self.state_variant.clone();
+/// Controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active
+pub struct ToggleActions<A: Actionlike> {
+    /// When this is false, [`ActionState`]'s corresponding to `A` will ignore user inputs
+    ///
+    /// When this is set to false, all corresponding [`ActionState`]s are released
+    pub enabled: bool,
+    _phantom: PhantomData<A>,
+}
 
-            // The `SystemSet` methods take self by ownership, so we must store a new system set
-            let input_manager_systems = input_manager_systems.with_run_criteria(
-                move |current_state: Res<State<UserState>>| {
-                    if *current_state.current() == desired_state_variant {
-                        ShouldRun::Yes
-                    } else {
-                        ShouldRun::No
-                    }
-                },
-            );
-
-            // Add the systems to our app
-            app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
-        } else {
-            // Add the systems to our app
-            // Must be split, as the original `input_manager_systems` is consumed in the state branch
-            app.add_system_set_to_stage(CoreStage::PreUpdate, input_manager_systems);
+// Implement manually to not require [`Default`] for `A`
+impl<A: Actionlike> Default for ToggleActions<A> {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            _phantom: PhantomData::<A>,
         }
     }
 }
@@ -183,10 +148,12 @@ impl<A: Actionlike, UserState: Resource + Eq + Debug + Clone + Hash> Plugin
 /// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
-    /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
-    Reset,
+    /// Advances actions timers to clean up the state of the input manager and clear `just_pressed` and just_released`
+    Tick,
     /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,
+    /// Release all actions in all [`ActionState`]s if [`DisableInput`] was added
+    ReleaseOnDisable,
     /// Manually control the [`ActionState`](crate::action_state::ActionState)
     ///
     /// Must run after [`InputManagerSystem::Update`] or the action state will be overriden

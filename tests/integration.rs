@@ -1,10 +1,10 @@
 #![cfg(test)]
-use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
+use bevy_ecs::query::ChangeTrackers;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::MockInput;
 
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug)]
 enum Action {
     PayRespects,
 }
@@ -14,11 +14,19 @@ enum Action {
 struct Respect(bool);
 
 fn pay_respects(
-    action_state: Query<&ActionState<Action>, With<Player>>,
+    action_state_query: Query<&ActionState<Action>, With<Player>>,
+    action_state_resource: Option<Res<ActionState<Action>>>,
     mut respect: ResMut<Respect>,
 ) {
-    if action_state.single().pressed(&Action::PayRespects) {
-        respect.0 = true;
+    if let Ok(action_state) = action_state_query.get_single() {
+        if action_state.pressed(Action::PayRespects) {
+            respect.0 = true;
+        }
+    }
+    if let Some(action_state) = action_state_resource {
+        if action_state.pressed(Action::PayRespects) {
+            respect.0 = true;
+        }
     }
 }
 
@@ -46,7 +54,7 @@ fn reset_inputs(world: &mut World) {
 
 #[test]
 fn action_state_change_detection() {
-    use bevy::input::InputPlugin;
+    use bevy_input::InputPlugin;
 
     let mut app = App::new();
 
@@ -79,25 +87,20 @@ fn action_state_change_detection() {
 }
 
 #[test]
-fn run_in_state() {
-    use bevy::input::InputPlugin;
-
-    #[derive(Clone, Copy, PartialEq, Eq, Debug, Hash)]
-    enum GameState {
-        Playing,
-        Paused,
-    }
+fn disable_input() {
+    use bevy_input::InputPlugin;
 
     let mut app = App::new();
 
+    // Here we spawn a player and creating a global action state to check if [`DisableInput`]
+    // releases correctly both
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
         .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
-        .add_plugin(InputManagerPlugin::<Action, GameState>::run_in_state(
-            GameState::Playing,
-        ))
+        .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
-        .add_state(GameState::Playing)
+        .init_resource::<ActionState<Action>>()
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
         .init_resource::<Respect>()
         .add_system(pay_respects)
         .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
@@ -105,28 +108,30 @@ fn run_in_state() {
     // Press F to pay respects
     app.send_input(KeyCode::F);
     app.update();
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
-    // Pause the game
-    let mut game_state = app.world.get_resource_mut::<State<GameState>>().unwrap();
-    game_state.set(GameState::Paused).unwrap();
+    // Disable the input
+    let mut toggle_actions = app.world.resource_mut::<ToggleActions<Action>>();
+    toggle_actions.enabled = false;
 
     // Now, all respect has faded
     app.update();
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
     app.send_input(KeyCode::F);
     app.update();
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }
 
 #[test]
+#[cfg(feature = "ui")]
 fn action_state_driver() {
-    use bevy::input::InputPlugin;
+    use bevy_input::InputPlugin;
+    use bevy_ui::Interaction;
 
     let mut app = App::new();
 
@@ -163,7 +168,7 @@ fn action_state_driver() {
 
     app.update();
 
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // Click button to pay respects
@@ -180,16 +185,16 @@ fn action_state_driver() {
     // Check the action state
     let mut action_state_query = app.world.query::<&ActionState<Action>>();
     let action_state = action_state_query.iter(&app.world).next().unwrap();
-    assert!(action_state.pressed(&Action::PayRespects));
+    assert!(action_state.pressed(Action::PayRespects));
 
     // Check the effects of that action state
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
     // Clear inputs
     app.reset_inputs();
     app.update();
 
-    let respect = app.world.get_resource::<Respect>().unwrap();
+    let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }

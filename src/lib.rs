@@ -5,17 +5,20 @@
 
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
-use bevy::ecs::prelude::*;
-use core::hash::Hash;
+use bevy_ecs::prelude::*;
 use std::marker::PhantomData;
 
 pub mod action_state;
 pub mod clashing_inputs;
 mod display_impl;
+pub mod errors;
 pub mod input_map;
 mod input_mocking;
-// Re-export this at the root level
+// Re-export this at the root level for convenience
 pub use input_mocking::MockInput;
+pub mod axislike;
+pub mod buttonlike;
+pub mod orientation;
 pub mod plugin;
 pub mod systems;
 pub mod user_input;
@@ -31,15 +34,21 @@ pub mod prelude {
     pub use crate::user_input::UserInput;
 
     pub use crate::plugin::InputManagerPlugin;
+    pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
 }
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion
 ///
-/// Actions serve as "virtual buttons", cleanly abstracting over messy, customizable inputs
+/// Actions are modelled as "virtual buttons", cleanly abstracting over messy, customizable inputs
 /// in a way that can be easily consumed by your game logic.
 ///
-/// This trait should be implemented on the `A` type that you want to pass into [`InputManagerPlugin`]
+/// This trait should be implemented on the `A` type that you want to pass into [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
+///
+/// Generally, these types will be very small (often data-less) enums.
+/// As a result, the APIs in this crate accept actions by value, rather than reference.
+/// While `Copy` is not a required trait bound,
+/// users are strongly encouraged to derive `Copy` on these enums whenever possible to improve ergonomics.
 ///
 /// # Example
 /// ```rust
@@ -60,9 +69,12 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Send + Sync + Clone + Eq + Hash + 'static {
+pub trait Actionlike: Send + Sync + Clone + 'static {
+    /// The number of variants of this action type
+    const N_VARIANTS: usize;
+
     /// Iterates over the possible actions in the order they were defined
-    fn iter() -> ActionIter<Self> {
+    fn variants() -> ActionIter<Self> {
         ActionIter::default()
     }
 
@@ -97,7 +109,11 @@ impl<A: Actionlike> Iterator for ActionIter<A> {
     }
 }
 
-impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {}
+impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {
+    fn len(&self) -> usize {
+        A::N_VARIANTS
+    }
+}
 
 // We can't derive this, because otherwise it won't work when A is not default
 impl<A: Actionlike> Default for ActionIter<A> {
@@ -111,7 +127,7 @@ impl<A: Actionlike> Default for ActionIter<A> {
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
 ///
-/// Use with [`InputManagerPlugin`], providing the same enum type to both.
+/// Use with [`InputManagerPlugin`](crate::plugin::InputManagerPlugin), providing the same enum type to both.
 #[derive(Bundle)]
 pub struct InputManagerBundle<A: Actionlike> {
     /// An [ActionState] component

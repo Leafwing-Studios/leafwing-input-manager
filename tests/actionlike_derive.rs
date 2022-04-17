@@ -35,7 +35,7 @@ fn in_order_iteration() {
     let constructed_vec = vec![SimpleAction::Zero, SimpleAction::One, SimpleAction::Two];
     let reversed_vec = vec![SimpleAction::Two, SimpleAction::One, SimpleAction::Zero];
 
-    let iterated_vec: Vec<SimpleAction> = SimpleAction::iter().collect();
+    let iterated_vec: Vec<SimpleAction> = SimpleAction::variants().collect();
 
     assert_eq!(constructed_vec, iterated_vec);
     assert!(iterated_vec != reversed_vec);

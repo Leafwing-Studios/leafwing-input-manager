@@ -13,6 +13,8 @@ fn main() {
         .add_plugin(InputManagerPlugin::<TestAction>::default())
         .add_startup_system(spawn_input_map)
         .add_system(report_pressed_actions)
+        // Change the value of this resource to change how clashes should be handled in your game
+        .insert_resource(ClashStrategy::PrioritizeLongest)
         .run()
 }
 
@@ -32,11 +34,6 @@ fn spawn_input_map(mut commands: Commands) {
     use TestAction::*;
 
     let mut input_map = InputMap::default();
-    // Setting the clash strategy; swap out the variant
-    // to play with different behavior!
-    input_map.clash_strategy = ClashStrategy::PrioritizeLongest;
-    //input_map.clash_strategy = ClashStrategy::PressAll;
-    //input_map.clash_strategy = ClashStrategy::UseActionOrder;
 
     // Setting up input mappings in the obvious way
     input_map.insert_multiple([(One, Key1), (Two, Key2), (Three, Key3)]);
@@ -57,8 +54,8 @@ fn report_pressed_actions(
     query: Query<&ActionState<TestAction>, Changed<ActionState<TestAction>>>,
 ) {
     let action_state = query.single();
-    for action in TestAction::iter() {
-        if action_state.just_pressed(&action) {
+    for action in TestAction::variants() {
+        if action_state.just_pressed(action) {
             dbg!(action);
         }
     }

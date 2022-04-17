@@ -2,11 +2,11 @@
 //! The first layer corresponds to a "slot",
 //! which can then be set to a second-layer "ability" of the player's choice
 //!
-//! This example demonstrates how to model that pattern by copying [`VirtualButtonState`]
+//! This example demonstrates how to model that pattern by copying [`ActionData`]
 //! between two distinct [`ActionState`] components.
 
 use bevy::prelude::*;
-use bevy::utils::HashMap;
+use bevy_utils::HashMap;
 use derive_more::{Deref, DerefMut};
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::*;
@@ -29,7 +29,7 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash, Copy)]
 enum Slot {
     Primary,
     Secondary,
@@ -40,7 +40,7 @@ enum Slot {
 }
 
 // The list of possible abilities is typically longer than the list of slots
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Copy)]
 enum Ability {
     Slash,
     Shoot,
@@ -109,11 +109,11 @@ fn copy_action_state(
     )>,
 ) {
     for (slot_state, mut ability_state, ability_slot_map) in query.iter_mut() {
-        for slot in Slot::iter() {
-            if let Some(matching_ability) = ability_slot_map.get(&slot) {
-                // This copies the `VirtualButtonState` between the ActionStates,
+        for slot in Slot::variants() {
+            if let Some(&matching_ability) = ability_slot_map.get(&slot) {
+                // This copies the `ActionData` between the ActionStates,
                 // including information about how long the buttons have been pressed or released
-                ability_state.set_state(matching_ability, slot_state.state(&slot));
+                ability_state.set_action_data(matching_ability, slot_state.action_data(slot));
             }
         }
     }

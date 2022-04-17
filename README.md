@@ -13,18 +13,17 @@ and a single input can result in multiple actions being triggered, which can be 
 
 - Full keyboard, mouse and joystick support for button-like inputs.
 - Effortlessly wire UI buttons to game state with one simple component!
-  - When clicked, your button will send a virtual button press to the corresponding entity.
+  - When clicked, your button will press the appropriate action on the corresponding entity.
 - Store all your input mappings in a single `InputMap` component
   - No more bespoke `Keybindings<KeyCode>`, `Keybindings<Gamepad>` headaches
 - Look up your current input state in a single `ActionState` component
-  - Easily check player statistics while reading input
   - That pesky maximum of 16 system parameters got you down? Say goodbye to that input handling mega-system
 - Ergonomic insertion API that seamlessly blends multiple input types for you
-  - `input_map.insert(Action::Jump, KeyCode::Space)` XOR `input_map.insert(Action::Jump, GamepadButtonType::South)`? Have both!
+  - Can't decide between `input_map.insert(Action::Jump, KeyCode::Space)` and `input_map.insert(Action::Jump, GamepadButtonType::South)`? Have both!
 - Full support for arbitrary button combinations: chord your heart out.
   - `input_map.insert_chord(Action::Console, [KeyCode::LCtrl, KeyCode::Shift, KeyCode::C])`
 - Sophisticated input disambiguation with the `ClashStrategy` enum: stop triggering individual buttons when you meant to press a chord!
-- Create an arbitrary number of strongly typed disjoint action sets: decouple your camera and player state.
+- Create an arbitrary number of strongly typed disjoint action sets by adding multiple copies of this plugin: decouple your camera and player state.
 - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
 - Networked multiplayer support: serializable structs, and a space-conscious `ActionDiff` representation to send on the wire
 - Powerful and easy-to-use input mocking API for integration testing your Bevy applications
@@ -39,7 +38,7 @@ and a single input can result in multiple actions being triggered, which can be 
   - Please file an issue if you would like something more exotic!
 - No built-in support for non-button input types (e.g. gestures or analog sticks).
   - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
-- Gamepads must be associated with each player by the app using this plugin: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
+- Gamepads must be manually assigned to each input map: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
 
 ## Instructions
 
@@ -48,7 +47,7 @@ This ensures the examples are in-sync with the latest release.
 
 ### Getting started
 
-1. Add `leafwing-input-manager` to your `Cargo.toml`.
+1. Add `leafwing_input_manager` to your `Cargo.toml`.
 2. Create an enum of the logical actions you want to represent, and derive the `Actionlike` trait for it.
 3. Add the `InputManagerPlugin` to your `App`.
 4. Add the `InputManagerBundle` to your player entity (or entities!).

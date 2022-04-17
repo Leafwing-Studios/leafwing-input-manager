@@ -1,21 +1,22 @@
 //! Helpful utilities for testing input management by sending mock input events
 
-use crate::user_input::{InputButton, InputStreams, MutableInputStreams, UserInput};
-use bevy::app::App;
-use bevy::ecs::component::Component;
-use bevy::ecs::event::Events;
-use bevy::ecs::query::With;
-use bevy::ecs::system::{Query, Res, ResMut, SystemState};
-use bevy::ecs::world::World;
-use bevy::input::{
+use crate::user_input::{InputStreams, MutableInputStreams, UserInput};
+use bevy_app::App;
+use bevy_ecs::event::Events;
+use bevy_ecs::system::{Res, ResMut, SystemState};
+use bevy_ecs::world::World;
+#[cfg(feature = "ui")]
+use bevy_ecs::{component::Component, query::With, system::Query};
+use bevy_input::{
     gamepad::{Gamepad, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseWheel},
     touch::{TouchInput, Touches},
     Input,
 };
-use bevy::ui::Interaction;
-use bevy::window::CursorMoved;
+#[cfg(feature = "ui")]
+use bevy_ui::Interaction;
+use bevy_window::CursorMoved;
 
 /// Send fake input events for testing purposes
 ///
@@ -52,14 +53,29 @@ use bevy::window::CursorMoved;
 pub trait MockInput {
     /// Send the specified `user_input` directly
     ///
+    /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
+    ///
     /// Gamepad input will be sent by the first registed controller found.
     /// If none are found, gamepad input will be silently skipped.
     fn send_input(&mut self, input: impl Into<UserInput>);
 
     /// Send the specified `user_input` directly, using the specified gamepad
     ///
-    /// Provide the `Gamepad` identifier to control which gamepad you are emulating inputs from
+    /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
+    ///
+    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating inputs from
     fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+
+    /// Releases the specified `user_input` directly
+    ///
+    /// Gamepad input will be released by the first registed controller found.
+    /// If none are found, gamepad input will be silently skipped.
+    fn release_input(&mut self, input: impl Into<UserInput>);
+
+    /// Releases the specified `user_input` directly, using the specified gamepad
+    ///
+    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating inputs from
+    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
     /// Is the provided `user_input` pressed?
     ///
@@ -89,11 +105,13 @@ pub trait MockInput {
     /// Presses all `bevy_ui` buttons with the matching `Marker` component
     ///
     /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    #[cfg(feature = "ui")]
     fn click_button<Marker: Component>(&mut self);
 
     /// Hovers over all `bevy_ui` buttons with the matching `Marker` component
     ///
     /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self);
 }
 
@@ -103,41 +121,14 @@ impl<'a> MutableInputStreams<'a> {
     /// Called by the methods of [`MockInput`].
     pub fn send_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_send: UserInput = input.into();
-
-        let mut gamepad_buttons: Vec<GamepadButton> = Vec::default();
-
-        let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
-        let mut mouse_buttons: Vec<MouseButton> = Vec::default();
-
-        match input_to_send {
-            UserInput::Null => (),
-            UserInput::Single(button) => match button {
-                InputButton::Gamepad(gamepad_buttontype) => {
-                    if let Some(gamepad) = self.associated_gamepad {
-                        gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
-                    }
-                }
-                InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
-                InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
-            },
-            UserInput::Chord(button_set) => {
-                for button in button_set {
-                    match button {
-                        InputButton::Gamepad(gamepad_buttontype) => {
-                            if let Some(gamepad) = self.associated_gamepad {
-                                gamepad_buttons.push(GamepadButton(gamepad, gamepad_buttontype));
-                            }
-                        }
-                        InputButton::Keyboard(keycode) => keyboard_buttons.push(keycode),
-                        InputButton::Mouse(mouse_button) => mouse_buttons.push(mouse_button),
-                    }
-                }
-            }
-        };
+        let (gamepad_buttons, keyboard_buttons, mouse_buttons) = input_to_send.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
-                gamepad_input.press(button);
+                if let Some(associated_gamepad) = self.associated_gamepad {
+                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    gamepad_input.press(gamepad_button);
+                }
             }
         }
 
@@ -150,6 +141,35 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut mouse_input) = self.mouse {
             for button in mouse_buttons {
                 mouse_input.press(button);
+            }
+        }
+    }
+
+    /// Releases the specified `user_input` directly, using the specified gamepad
+    ///
+    /// Called by the methods of [`MockInput`].
+    pub fn release_user_input(&mut self, input: impl Into<UserInput>) {
+        let input_to_release: UserInput = input.into();
+        let (gamepad_buttons, keyboard_buttons, mouse_buttons) = input_to_release.raw_inputs();
+
+        if let Some(ref mut gamepad_input) = self.gamepad {
+            for button in gamepad_buttons {
+                if let Some(associated_gamepad) = self.associated_gamepad {
+                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    gamepad_input.release(gamepad_button);
+                }
+            }
+        }
+
+        if let Some(ref mut keyboard_input) = self.keyboard {
+            for button in keyboard_buttons {
+                keyboard_input.release(button);
+            }
+        }
+
+        if let Some(ref mut mouse_input) = self.mouse {
+            for button in mouse_buttons {
+                mouse_input.release(button);
             }
         }
     }
@@ -188,6 +208,36 @@ impl MockInput for World {
         mutable_input_streams.send_user_input(input);
     }
 
+    fn release_input(&mut self, input: impl Into<UserInput>) {
+        let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
+            gamepads.iter().next().copied()
+        } else {
+            None
+        };
+
+        self.release_input_for_gamepad(input, gamepad);
+    }
+
+    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        let mut input_system_state: SystemState<(
+            Option<ResMut<Input<GamepadButton>>>,
+            Option<ResMut<Input<KeyCode>>>,
+            Option<ResMut<Input<MouseButton>>>,
+        )> = SystemState::new(self);
+
+        let (mut maybe_gamepad, mut maybe_keyboard, mut maybe_mouse) =
+            input_system_state.get_mut(self);
+
+        let mut mutable_input_streams = MutableInputStreams {
+            gamepad: maybe_gamepad.as_deref_mut(),
+            keyboard: maybe_keyboard.as_deref_mut(),
+            mouse: maybe_mouse.as_deref_mut(),
+            associated_gamepad: gamepad,
+        };
+
+        mutable_input_streams.release_user_input(input);
+    }
+
     fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
         let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
             gamepads.iter().next().copied()
@@ -222,19 +272,24 @@ impl MockInput for World {
     }
 
     fn reset_inputs(&mut self) {
+        #[cfg(feature = "ui")]
+        {
+            let mut interraction_system_state: SystemState<Query<&mut Interaction>> =
+                SystemState::new(self);
+            let mut interaction_query = interraction_system_state.get_mut(self);
+
+            for mut interaction in interaction_query.iter_mut() {
+                *interaction = Interaction::None;
+            }
+        }
+
         let mut input_system_state: SystemState<(
-            Query<&mut Interaction>,
             Option<ResMut<Input<GamepadButton>>>,
             Option<ResMut<Input<KeyCode>>>,
             Option<ResMut<Input<MouseButton>>>,
         )> = SystemState::new(self);
 
-        let (mut interaction_query, maybe_gamepad, maybe_keyboard, maybe_mouse) =
-            input_system_state.get_mut(self);
-
-        for mut interaction in interaction_query.iter_mut() {
-            *interaction = Interaction::None;
-        }
+        let (maybe_gamepad, maybe_keyboard, maybe_mouse) = input_system_state.get_mut(self);
 
         if let Some(mut gamepad) = maybe_gamepad {
             *gamepad = Default::default();
@@ -260,6 +315,7 @@ impl MockInput for World {
         self.insert_resource(Events::<TouchInput>::default());
     }
 
+    #[cfg(feature = "ui")]
     fn click_button<Marker: Component>(&mut self) {
         let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
 
@@ -268,6 +324,7 @@ impl MockInput for World {
         }
     }
 
+    #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self) {
         let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
 
@@ -286,6 +343,14 @@ impl MockInput for App {
         self.world.send_input_to_gamepad(input, gamepad);
     }
 
+    fn release_input(&mut self, input: impl Into<UserInput>) {
+        self.world.release_input(input);
+    }
+
+    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        self.world.release_input_for_gamepad(input, gamepad);
+    }
+
     fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
         self.world.pressed(input)
     }
@@ -302,10 +367,12 @@ impl MockInput for App {
         self.world.reset_inputs();
     }
 
+    #[cfg(feature = "ui")]
     fn click_button<Marker: Component>(&mut self) {
         self.world.click_button::<Marker>();
     }
 
+    #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self) {
         self.world.hover_button::<Marker>();
     }
@@ -339,7 +406,7 @@ mod test {
         world.send_input_to_gamepad(GamepadButtonType::North, gamepad);
 
         // Verify that checking the resource value directly works
-        let keyboard_input: &Input<KeyCode> = world.get_resource().unwrap();
+        let keyboard_input: &Input<KeyCode> = world.resource();
         assert!(keyboard_input.pressed(KeyCode::Space));
 
         // Test the convenient .pressed API
@@ -356,9 +423,11 @@ mod test {
     }
 
     #[test]
+    #[cfg(feature = "ui")]
     fn ui_inputs() {
         use crate::input_mocking::MockInput;
-        use bevy::prelude::*;
+        use bevy_ecs::prelude::*;
+        use bevy_ui::Interaction;
 
         #[derive(Component)]
         struct ButtonMarker;

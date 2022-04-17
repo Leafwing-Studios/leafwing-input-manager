@@ -1,24 +1,21 @@
-//! Helpful abstractions over user input
+//! Helpful abstractions over user inputs of all sorts
 
-use bevy::input::{
+use bevy_input::{
     gamepad::{Gamepad, GamepadButton, GamepadButtonType},
     keyboard::KeyCode,
     mouse::MouseButton,
     Input,
 };
-use bevy::utils::HashSet;
+
+use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///
-/// Suitable for use in an [`InputMap`]
+/// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UserInput {
-    /// A null user input, used for a safe default and error-handling
-    ///
-    /// This input can never be pressed.
-    Null,
     /// A single button
     Single(InputButton),
     /// A combination of buttons, pressed simultaneously
@@ -28,17 +25,10 @@ pub enum UserInput {
     Chord(PetitSet<InputButton, 8>),
 }
 
-impl Default for UserInput {
-    fn default() -> Self {
-        UserInput::Null
-    }
-}
-
 impl UserInput {
     /// Creates a [`UserInput::Chord`] from an iterator of [`Button`]s
     ///
     /// If `buttons` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
-    /// If `buttons` has a length of 0, a [`UserInput::Null`] variant will be returned instead.
     pub fn chord(buttons: impl IntoIterator<Item = impl Into<InputButton>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
@@ -50,7 +40,6 @@ impl UserInput {
         }
 
         match length {
-            0 => UserInput::Null,
             1 => UserInput::Single(set.into_iter().next().unwrap()),
             _ => UserInput::Chord(set),
         }
@@ -60,7 +49,6 @@ impl UserInput {
     pub fn input_modes(&self) -> PetitSet<InputMode, 3> {
         let mut set = PetitSet::default();
         match self {
-            UserInput::Null => (),
             UserInput::Single(button) => {
                 set.insert((*button).into());
             }
@@ -93,16 +81,14 @@ impl UserInput {
                 }
                 false
             }
-            UserInput::Null => false,
         }
     }
 
     /// The number of buttons in the [`UserInput`]
-    pub fn len(&self) -> u8 {
+    pub fn len(&self) -> usize {
         match self {
-            UserInput::Null => 0,
             UserInput::Single(_) => 1,
-            UserInput::Chord(button_set) => button_set.len().try_into().unwrap(),
+            UserInput::Chord(button_set) => button_set.len(),
         }
     }
 
@@ -115,8 +101,8 @@ impl UserInput {
     ///
     /// # Example
     /// ```rust
-    /// use bevy::input::keyboard::KeyCode::*;
-    /// use bevy::utils::HashSet;
+    /// use bevy_input::keyboard::KeyCode::*;
+    /// use bevy_utils::HashSet;
     /// use leafwing_input_manager::user_input::UserInput;
     ///
     /// let buttons = HashSet::from_iter([LControl.into(), LAlt.into()]);
@@ -128,9 +114,8 @@ impl UserInput {
     /// assert_eq!(ctrl_a.n_matching(&buttons), 1);
     /// assert_eq!(ctrl_alt_a.n_matching(&buttons), 2);
     /// ```
-    pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> u8 {
+    pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> usize {
         match self {
-            UserInput::Null => 0,
             UserInput::Single(button) => {
                 if buttons.contains(button) {
                     1
@@ -149,6 +134,32 @@ impl UserInput {
                 n_matching
             }
         }
+    }
+
+    /// Returns the raw inputs that make up this [`UserInput`]
+    pub fn raw_inputs(&self) -> (Vec<GamepadButtonType>, Vec<KeyCode>, Vec<MouseButton>) {
+        let mut gamepad_buttons: Vec<GamepadButtonType> = Vec::default();
+        let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
+        let mut mouse_buttons: Vec<MouseButton> = Vec::default();
+
+        match self {
+            UserInput::Single(button) => match *button {
+                InputButton::Gamepad(variant) => gamepad_buttons.push(variant),
+                InputButton::Keyboard(variant) => keyboard_buttons.push(variant),
+                InputButton::Mouse(variant) => mouse_buttons.push(variant),
+            },
+            UserInput::Chord(button_set) => {
+                for button in button_set.iter() {
+                    match button {
+                        InputButton::Gamepad(variant) => gamepad_buttons.push(*variant),
+                        InputButton::Keyboard(variant) => keyboard_buttons.push(*variant),
+                        InputButton::Mouse(variant) => mouse_buttons.push(*variant),
+                    }
+                }
+            }
+        };
+
+        (gamepad_buttons, keyboard_buttons, mouse_buttons)
     }
 }
 
@@ -179,7 +190,7 @@ impl From<MouseButton> for UserInput {
 /// A button-like input type
 ///
 /// See [`Button`] for the value-ful equivalent.
-/// Use the [`From`] or [`Into`] traits to convert from a [`Button`] to a [`InputMode`].
+/// Use the [`From`] or [`Into`] traits to convert from a [`InputButton`] to a [`InputMode`].
 ///
 /// Unfortunately we cannot use a trait object here, as the types used by `Input`
 /// require traits that are not object-safe.
@@ -336,7 +347,6 @@ impl<'a> InputStreams<'a> {
         match input {
             UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            UserInput::Null => false,
         }
     }
 

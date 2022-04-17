@@ -1,0 +1,7 @@
+{
+	"default": true,
+	"line-length": {
+		"line_length": 400
+	},
+	"no-duplicate-header": false
+}

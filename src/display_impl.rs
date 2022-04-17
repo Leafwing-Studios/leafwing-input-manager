@@ -6,8 +6,6 @@ use std::fmt::Display;
 impl Display for UserInput {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            // The empty string
-            UserInput::Null => write!(f, ""),
             // The representation of the button
             UserInput::Single(button) => write!(f, "{button}"),
             // The representation of each button, seperated by "+"

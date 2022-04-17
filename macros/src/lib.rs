@@ -9,7 +9,7 @@ mod actionlike;
 use proc_macro::TokenStream;
 use syn::DeriveInput;
 
-#[proc_macro_derive(Actionlike, attributes(strum))]
+#[proc_macro_derive(Actionlike)]
 pub fn actionlike(input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(input as DeriveInput);
 
