@@ -35,15 +35,13 @@ bevy_ui = {version = "0.7", default-features = false, optional = true}
 bevy_window = {version = "0.7", default-features = false}
 
 petitset = {version = "0.2.1", features = ["serde_compat"]}
-derive_more = "0.99"
-thiserror = "1.0"
+derive_more = {version = "0.99", default-features = false, features = ["display", "error"]}
 itertools = "0.10"
 serde = {version = "1.0", features = ["derive"]}
 
 [dev-dependencies]
 bevy = {version = "0.7", default-features = false, features = ["bevy_sprite", "bevy_text", "bevy_ui", "bevy_render", "bevy_core_pipeline", "x11"]}
 bevy_egui = {version="0.13", default-features = false}
-derive_more = "0.99"
 
 [lib]
 name = "leafwing_input_manager"

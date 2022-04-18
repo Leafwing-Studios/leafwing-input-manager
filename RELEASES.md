@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 0.3.1
+
+### Usability
+
+- reduced required `derive_more` features
+- removed `thiserror` dependency
+
 ## Version 0.3
 
 ### Enhancements
