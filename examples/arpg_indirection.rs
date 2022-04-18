@@ -7,7 +7,6 @@
 
 use bevy::prelude::*;
 use bevy_utils::HashMap;
-use derive_more::{Deref, DerefMut};
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::*;
 
