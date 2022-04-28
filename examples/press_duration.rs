@@ -1,5 +1,7 @@
 //! We can check how long each action has been pressed for,
 //! and use that in our gameplay logic!
+//!
+//! Press Left / Right or A / D to move your character to the left and right!
 
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
