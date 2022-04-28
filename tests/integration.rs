@@ -198,3 +198,87 @@ fn action_state_driver() {
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }
+
+#[test]
+fn duration() {
+    use bevy_input::InputPlugin;
+    use bevy_utils::Duration;
+
+    fn hold_f_to_pay_respects(
+        action_state: Res<ActionState<Action>>,
+        mut respect: ResMut<Respect>,
+    ) {
+        dbg!(action_state.previous_duration(Action::PayRespects));
+        dbg!(action_state.current_duration(Action::PayRespects));
+
+        if action_state.pressed(Action::PayRespects)
+            // Unrealistically disrespectful, but makes the tests faster
+            && action_state.current_duration(Action::PayRespects) > Duration::from_micros(5)
+        {
+            respect.0 = true;
+        }
+    }
+
+    let mut app = App::new();
+
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(spawn_player)
+        .init_resource::<ActionState<Action>>()
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
+        .init_resource::<Respect>()
+        .add_system(hold_f_to_pay_respects);
+
+    // Initializing
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(false));
+
+    app.send_input(KeyCode::F);
+    app.update();
+
+    std::thread::sleep(Duration::from_micros(1));
+
+    // We haven't held for long enough
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(false));
+
+    app.release_input(KeyCode::F);
+    std::thread::sleep(Duration::from_micros(10));
+
+    // Waiting while released doesn't work
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(false));
+
+    // Press and hold
+    app.send_input(KeyCode::F);
+    app.update();
+    std::thread::sleep(Duration::from_micros(10));
+    app.update();
+
+    // Now it works!
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(true));
+
+    // Double-check on the duration...
+    let current_duration = app
+        .world
+        .resource::<ActionState<Action>>()
+        .current_duration(Action::PayRespects);
+
+    assert!(current_duration > Duration::from_micros(5));
+
+    // Double-checking that the swap to previous_duration works
+    app.release_input(KeyCode::F);
+    app.update();
+
+    let previous_duration = app
+        .world
+        .resource::<ActionState<Action>>()
+        .previous_duration(Action::PayRespects);
+    assert_eq!(current_duration, previous_duration);
+}
