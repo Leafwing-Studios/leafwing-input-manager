@@ -218,8 +218,11 @@ impl<A: Actionlike> ActionState<A> {
             return;
         }
 
+        if self.released(action) {
+            self.action_data[index].timing.flip();
+        }
+
         self.action_data[index].state.press();
-        self.action_data[index].timing.flip();
     }
 
     /// Release the `action`
@@ -231,9 +234,13 @@ impl<A: Actionlike> ActionState<A> {
         let index = action.index();
         // Once released, consumed actions can be pressed again
         self.action_data[index].consumed = false;
+
+        if self.pressed(action) {
+            self.action_data[index].timing.flip();
+            self.action_data[index].reasons_pressed = Vec::new();
+        }
+
         self.action_data[index].state.release();
-        self.action_data[index].reasons_pressed = Vec::new();
-        self.action_data[index].timing.flip();
     }
 
     /// Consumes the `action`
