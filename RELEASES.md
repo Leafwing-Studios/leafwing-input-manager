@@ -7,6 +7,10 @@
 - reduced required `derive_more` features
 - removed `thiserror` dependency
 
+### Bug fixes
+
+- fixed serious bug that broke all functionality relating to durations that buttons were pressed or released for
+
 ## Version 0.3
 
 ### Enhancements
