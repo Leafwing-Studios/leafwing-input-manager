@@ -301,6 +301,7 @@ fn do_nothing() {
     app.update();
     let action_state = app.world.resource::<ActionState<Action>>();
     let t0 = action_state.instant_started(Action::PayRespects);
+    assert!(t0.is_some());
     let mut duration_last_update = Duration::ZERO;
 
     for _ in 0..3 {
