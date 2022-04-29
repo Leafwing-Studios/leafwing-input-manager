@@ -593,10 +593,6 @@ mod tests {
 
         let mut action_state = ActionState::<Action>::default();
 
-        // Action states start fully released
-        dbg!(action_state.get_released());
-        dbg!(action_state.clone());
-
         // Actions start released (but not just released)
         assert!(action_state.released(Action::Run));
         assert!(!action_state.just_released(Action::Jump));
