@@ -204,16 +204,15 @@ fn duration() {
     use bevy_input::InputPlugin;
     use bevy_utils::Duration;
 
+    const RESPECTFUL_DURATION: Duration = Duration::from_micros(5);
+
     fn hold_f_to_pay_respects(
         action_state: Res<ActionState<Action>>,
         mut respect: ResMut<Respect>,
     ) {
-        dbg!(action_state.previous_duration(Action::PayRespects));
-        dbg!(action_state.current_duration(Action::PayRespects));
-
         if action_state.pressed(Action::PayRespects)
             // Unrealistically disrespectful, but makes the tests faster
-            && action_state.current_duration(Action::PayRespects) > Duration::from_micros(5)
+            && action_state.current_duration(Action::PayRespects) > RESPECTFUL_DURATION
         {
             respect.0 = true;
         }
@@ -236,29 +235,55 @@ fn duration() {
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
+    // We haven't held for long enough
     app.send_input(KeyCode::F);
     app.update();
 
     std::thread::sleep(Duration::from_micros(1));
 
-    // We haven't held for long enough
     app.update();
+
+    let duration_held = app
+        .world
+        .resource::<ActionState<Action>>()
+        .current_duration(Action::PayRespects);
+    assert!(duration_held <= RESPECTFUL_DURATION);
+
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
+    // Waiting while released doesn't work
     app.release_input(KeyCode::F);
     std::thread::sleep(Duration::from_micros(10));
 
-    // Waiting while released doesn't work
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
+    let duration_released = app
+        .world
+        .resource::<ActionState<Action>>()
+        .current_duration(Action::PayRespects);
+    assert!(duration_released > RESPECTFUL_DURATION);
+
     // Press and hold
     app.send_input(KeyCode::F);
+
     app.update();
     std::thread::sleep(Duration::from_micros(10));
     app.update();
+    app.update();
+
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
+
+    let duration_held = app
+        .world
+        .resource::<ActionState<Action>>()
+        .current_duration(Action::PayRespects);
+    assert!(duration_held > RESPECTFUL_DURATION);
 
     // Now it works!
     let respect = app.world.resource::<Respect>();
@@ -324,7 +349,6 @@ fn do_nothing() {
         assert!(action_state.current_duration(Action::PayRespects) > duration_last_update);
 
         duration_last_update = action_state.current_duration(Action::PayRespects);
-
-        dbg!(action_state);
+        dbg!(duration_last_update);
     }
 }
