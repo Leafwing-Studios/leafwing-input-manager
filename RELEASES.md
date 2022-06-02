@@ -7,6 +7,10 @@
 - reduced required `derive_more` features
 - removed `thiserror` dependency
 
+### Docs
+
+- properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
+
 ## Version 0.3
 
 ### Enhancements
