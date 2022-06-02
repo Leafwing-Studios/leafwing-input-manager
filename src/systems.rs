@@ -171,7 +171,7 @@ pub fn release_on_disable<A: Actionlike>(
     resource: Option<ResMut<ActionState<A>>>,
     toggle_actions: Res<ToggleActions<A>>,
 ) {
-    if toggle_actions.is_changed() && !toggle_actions.enabled {
+    if toggle_actions.is_changed() && *toggle_actions == ToggleActions::Disabled {
         for mut action_state in query.iter_mut() {
             action_state.release_all();
         }
@@ -183,7 +183,7 @@ pub fn release_on_disable<A: Actionlike>(
 
 /// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
 pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
-    if toggle_actions.enabled {
+    if *toggle_actions == ToggleActions::Enabled {
         ShouldRun::Yes
     } else {
         ShouldRun::No

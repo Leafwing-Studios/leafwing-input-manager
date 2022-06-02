@@ -23,7 +23,7 @@ use bevy_ui::UiSystem;
 ///
 /// ## Systems
 ///
-/// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource is set.
+/// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource.
 /// This can be useful when working with states to pause the game, navigate menus or so on.
 ///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
@@ -131,22 +131,31 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 
 /// Controls whether or not the [`ActionState`](crate::action_state::ActionState) / [`InputMap`](crate::input_map::InputMap) pairs of type `A` are active
 ///
-/// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
-pub struct ToggleActions<A: Actionlike> {
-    /// When this is false, [`ActionState`](crate::action_state::ActionState)'s corresponding to `A` will ignore user inputs
+/// If this resource does not exist, actions work normally, as if `ToggleActions::Enabled`.
+#[derive(Eq, Debug)]
+pub enum ToggleActions<A: Actionlike> {
+    /// Actions of type `A` work normally.
+    Enabled,
+    /// Actions of type `A` will never be pressed.
     ///
     /// When this is set to false, all corresponding [`ActionState`]s are released
-    pub enabled: bool,
-    _phantom: PhantomData<A>,
+    Disabled,
+    // Trick to create phantom-data containing enums taken from:
+    // https://github.com/rust-lang/rust/issues/32739#issuecomment-627765543
+    #[doc(hidden)]
+    _Phantom(std::convert::Infallible, PhantomData<A>),
+}
+
+impl<A: Actionlike> PartialEq for ToggleActions<A> {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+    }
 }
 
 // Implement manually to not require [`Default`] for `A`
 impl<A: Actionlike> Default for ToggleActions<A> {
     fn default() -> Self {
-        Self {
-            enabled: true,
-            _phantom: PhantomData::<A>,
-        }
+        ToggleActions::Enabled
     }
 }
 
