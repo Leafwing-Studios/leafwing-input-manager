@@ -10,6 +10,7 @@
 ### Docs
 
 - properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
+- added doc examples to `ActionStateDriver`, which allows you to trigger actions based on entity properties
 
 ## Version 0.3
 
