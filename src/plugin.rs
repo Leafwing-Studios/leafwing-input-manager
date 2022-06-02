@@ -26,6 +26,13 @@ use bevy_ui::UiSystem;
 /// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource is set.
 /// This can be useful when working with states to pause the game, navigate menus or so on.
 ///
+/// **WARNING:** Theses systems run during [`CoreStage::PreUpdate`].
+/// If you have systems that care about inputs and actions that also run during this stage,
+/// you must define an ordering between your systems or behavior will be very erratic.
+/// The stable labels for these systems are available under [`InputManagerSystem`] enum.
+///
+/// Complete list:
+///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
 ///     - labeled [`InputManagerSystem::Reset`]
 /// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`](crate::action_state::ActionState)
