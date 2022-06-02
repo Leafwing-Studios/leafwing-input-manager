@@ -11,10 +11,10 @@ use crate::{
     Actionlike,
 };
 
-use bevy_core::Time;
 use bevy_ecs::{prelude::*, schedule::ShouldRun};
 use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
 
+use bevy_time::Time;
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
 

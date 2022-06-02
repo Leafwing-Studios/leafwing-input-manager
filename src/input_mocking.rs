@@ -126,7 +126,7 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    let gamepad_button = GamepadButton{gamepad: associated_gamepad, button_type: button};
                     gamepad_input.press(gamepad_button);
                 }
             }
@@ -155,7 +155,7 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    let gamepad_button = GamepadButton{gamepad: associated_gamepad, button_type: button};
                     gamepad_input.release(gamepad_button);
                 }
             }
