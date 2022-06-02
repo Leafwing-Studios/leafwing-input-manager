@@ -113,7 +113,7 @@ fn disable_input() {
 
     // Disable the input
     let mut toggle_actions = app.world.resource_mut::<ToggleActions<Action>>();
-    toggle_actions.enabled = false;
+    *toggle_actions = ToggleActions::Disabled;
 
     // Now, all respect has faded
     app.update();
