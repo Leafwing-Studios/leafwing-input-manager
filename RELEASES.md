@@ -10,6 +10,8 @@
 ### Docs
 
 - properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
+- document the need to add system ordering when you have other functionality running during `CoreStage::PreUpdate`
+- hint to users that they may want to use multiple `Actionlike` enums
 
 ## Version 0.3
 
