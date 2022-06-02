@@ -124,9 +124,11 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     }
 }
 
-/// Controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active
+/// Controls whether or not the [`ActionState`](crate::action_state::ActionState) / [`InputMap`](crate::input_map::InputMap) pairs of type `A` are active
+///
+/// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
 pub struct ToggleActions<A: Actionlike> {
-    /// When this is false, [`ActionState`]'s corresponding to `A` will ignore user inputs
+    /// When this is false, [`ActionState`](crate::action_state::ActionState)'s corresponding to `A` will ignore user inputs
     ///
     /// When this is set to false, all corresponding [`ActionState`]s are released
     pub enabled: bool,
@@ -152,7 +154,7 @@ pub enum InputManagerSystem {
     Tick,
     /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,
-    /// Release all actions in all [`ActionState`]s if [`DisableInput`] was added
+    /// Release all actions in all [`ActionState`](crate::action_state::ActionState)s if [`ToggleActions`](crate::plugin::ToggleActions) was added
     ReleaseOnDisable,
     /// Manually control the [`ActionState`](crate::action_state::ActionState)
     ///

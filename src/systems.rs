@@ -165,7 +165,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
     }
 }
 
-/// Release all inputs if [`DisableInput`] was added
+/// Release all inputs if the [`ToggleActions<A>`] resource exists and its `enabled` field is false.
 pub fn release_on_disable<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     resource: Option<ResMut<ActionState<A>>>,
