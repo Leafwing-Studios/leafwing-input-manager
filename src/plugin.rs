@@ -22,6 +22,10 @@ use bevy_ui::UiSystem;
 ///  - an [`ActionState`](crate::action_state::ActionState) component, which stores the current input state for that entity in an source-agnostic fashion
 ///
 /// ## Systems
+///
+/// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource is set.
+/// This can be useful when working with states to pause the game, navigate menus or so on.
+///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
 ///     - labeled [`InputManagerSystem::Reset`]
 /// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`](crate::action_state::ActionState)
@@ -29,6 +33,7 @@ use bevy_ui::UiSystem;
 /// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`](bevy::ui::Interaction) component
 ///    - labeled [`InputManagerSystem::Update`]
+/// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
     machine: Machine,
@@ -124,9 +129,11 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     }
 }
 
-/// Controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active
+/// Controls whether or not the [`ActionState`](crate::action_state::ActionState) / [`InputMap`](crate::input_map::InputMap) pairs of type `A` are active
+///
+/// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
 pub struct ToggleActions<A: Actionlike> {
-    /// When this is false, [`ActionState`]'s corresponding to `A` will ignore user inputs
+    /// When this is false, [`ActionState`](crate::action_state::ActionState)'s corresponding to `A` will ignore user inputs
     ///
     /// When this is set to false, all corresponding [`ActionState`]s are released
     pub enabled: bool,
@@ -152,7 +159,7 @@ pub enum InputManagerSystem {
     Tick,
     /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,
-    /// Release all actions in all [`ActionState`]s if [`DisableInput`] was added
+    /// Release all actions in all [`ActionState`](crate::action_state::ActionState)s if [`ToggleActions`](crate::plugin::ToggleActions) was added
     ReleaseOnDisable,
     /// Manually control the [`ActionState`](crate::action_state::ActionState)
     ///
