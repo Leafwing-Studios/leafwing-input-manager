@@ -104,11 +104,3 @@ fn jump(query: Query<&ActionState<Action>, With<Player>>) {
 ```
 
 This snippet is the `minimal.rs` example from the [`examples`](./examples) folder: check there for more in-depth learning materials!
-
-### Running your game
-
-Use `cargo run`.
-This repo is set up to always build with full optimizations, so there's no need for a `--release` flag in most cases.
-Dynamic linking is enabled to ensure build times stay snappy.
-
-To run an example, use `cargo run --example_name`, where `example_name` is the file name of the example without the `.rs` extension.
