@@ -11,6 +11,12 @@
 
 - properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
 
+## Version 0.4
+
+### Usability
+
+- `ToggleActions<A>` is now an enum, rather than storing an internal bool
+
 ## Version 0.3
 
 ### Enhancements
