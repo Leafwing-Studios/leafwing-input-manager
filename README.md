@@ -54,7 +54,7 @@ This ensures the examples are in-sync with the latest release.
 5. Configure a mapping between your inputs and your actions by modifying the `InputMap` component on your player entity.
 6. Read the `ActionState` component on your player entity to check the collected input state!
 
-```rust
+```rust, ignore
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
