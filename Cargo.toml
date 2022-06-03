@@ -22,7 +22,7 @@ default = ['ui']
 ui = ['bevy_ui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.2" }
+leafwing_input_manager_macros = { path = "macros", version = "0.3" }
 
 bevy_app = {version = "0.7", default-features = false}
 bevy_core = {version = "0.7", default-features = false}
