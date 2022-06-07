@@ -41,14 +41,14 @@ impl PlayerBundle {
             // This is a quick and hacky solution:
             // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
             // and gracefully handle disconnects
-            .set_gamepad(Gamepad(0))
+            .set_gamepad(Gamepad { id: 0 })
             .build(),
             Player::Two => InputMap::new([
                 (Action::Left, KeyCode::A),
                 (Action::Right, KeyCode::D),
                 (Action::Jump, KeyCode::W),
             ])
-            .set_gamepad(Gamepad(1))
+            .set_gamepad(Gamepad { id: 1 })
             .build(),
         };
 

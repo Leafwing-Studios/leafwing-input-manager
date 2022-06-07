@@ -126,7 +126,10 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton{gamepad: associated_gamepad, button_type: button};
+                    let gamepad_button = GamepadButton {
+                        gamepad: associated_gamepad,
+                        button_type: button,
+                    };
                     gamepad_input.press(gamepad_button);
                 }
             }
@@ -155,7 +158,10 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton{gamepad: associated_gamepad, button_type: button};
+                    let gamepad_button = GamepadButton {
+                        gamepad: associated_gamepad,
+                        button_type: button,
+                    };
                     gamepad_input.release(gamepad_button);
                 }
             }
@@ -393,7 +399,7 @@ mod test {
 
         // BLOCKED: cannot use the less artifical APIs due to
         // https://github.com/bevyengine/bevy/issues/3808
-        let gamepad = Some(Gamepad(0));
+        let gamepad = Some(Gamepad { id: 0 });
 
         // Test that buttons are unpressed by default
         assert!(!world.pressed(KeyCode::Space));

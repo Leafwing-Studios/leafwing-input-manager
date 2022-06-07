@@ -78,7 +78,7 @@ impl PlayerBundle {
         // This is a quick and hacky solution:
         // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
         // and gracefully handle disconnects
-        input_map.set_gamepad(Gamepad(0));
+        input_map.set_gamepad(Gamepad { id: 0 });
 
         // Movement
         input_map.insert(Up, KeyCode::Up);

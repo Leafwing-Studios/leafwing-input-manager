@@ -370,7 +370,10 @@ impl<'a> InputStreams<'a> {
                 // If no gamepad is registered, we know for sure that no match was found
                 if let Some(gamepad) = self.associated_gamepad {
                     if let Some(gamepad_stream) = self.gamepad {
-                        gamepad_stream.pressed(GamepadButton{gamepad, button_type: gamepad_button})
+                        gamepad_stream.pressed(GamepadButton {
+                            gamepad,
+                            button_type: gamepad_button,
+                        })
                     } else {
                         false
                     }
