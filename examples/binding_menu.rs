@@ -1,13 +1,12 @@
 use bevy::{
     ecs::system::SystemParam,
-    input::{keyboard::KeyboardInput, mouse::MouseButtonInput},
+    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
 use bevy_egui::{
     egui::{Align2, Area, Grid, Window},
     EguiContext, EguiPlugin,
 };
-use bevy_input::ButtonState;
 use derive_more::Display;
 use leafwing_input_manager::{prelude::*, user_input::InputButton};
 
