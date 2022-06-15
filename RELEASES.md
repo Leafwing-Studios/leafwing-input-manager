@@ -11,6 +11,13 @@
 
 - fixed serious bug that broke all functionality relating to durations that buttons were pressed or released for
 
+### Docs
+
+- properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
+- added doc examples to `ActionStateDriver`, which allows you to trigger actions based on entity properties
+- document the need to add system ordering when you have other functionality running during `CoreStage::PreUpdate`
+- hint to users that they may want to use multiple `Actionlike` enums
+
 ## Version 0.3
 
 ### Enhancements
@@ -25,7 +32,6 @@
 ### Usability
 
 - if desired, users are now able to use the `ActionState` and `InputMap` structs as standalone resources
-- the crate name now uses underscores (`leafwing_input_manager`) rather than hyphens (`leafwing-input-manager`) to play nicer with `cargo`
 - reverted change from by-reference to by-value APIs for `Actionlike` types
   - this is more ergonomic (derive `Copy` when you can!), and somewhat faster in the overwhelming majority of uses
 - relaxed `Hash` and `Eq` bounds on `Actionlike`

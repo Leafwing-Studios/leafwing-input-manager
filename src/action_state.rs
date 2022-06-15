@@ -431,7 +431,46 @@ impl<A: Actionlike> Default for ActionState<A> {
 
 /// A component that allows the attached entity to drive the [`ActionState`] of the associated entity
 ///
-/// Used in [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction).
+/// # Examples
+///
+/// By default, [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction) uses this component
+/// in order to connect `bevy_ui` buttons to the corresponding `ActionState`.
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
+///
+/// #[derive(Actionlike, Clone, Copy)]
+/// enum DanceDance {
+///     Left,
+///     Right,
+///     Up,
+///     Down,
+/// }
+///
+/// // Spawn entity to track dance inputs
+/// let mut world = World::new();
+/// let dance_tracker = world
+///     .spawn()
+///     .insert(ActionState::<DanceDance>::default())
+///     .id();
+///
+/// // Spawn a button, which is wired up to the dance tracker
+/// // When used with InputManagerPlugin<DanceDance>, this button will press the DanceDance::Left action when it is pressed.
+/// world
+///     .spawn()
+///     .insert_bundle(ButtonBundle::default())
+///     // This component links the button to the entity with the `ActionState` component
+///     .insert(ActionStateDriver {
+///         action: DanceDance::Left,
+///         entity: dance_tracker,
+///     });
+///```
+///
+/// Writing your own systems that use the [`ActionStateDriver`] component is easy,
+/// although this should be reserved for cases where the entity whose value you want to check
+/// is distinct from the entity whose [`ActionState`] you want to set.
+/// Check the source code of [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction) for an example of how this is done.
 #[derive(Component, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ActionStateDriver<A: Actionlike> {
     /// The action triggered by this entity
