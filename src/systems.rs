@@ -28,16 +28,16 @@ pub fn tick_action_state<A: Actionlike>(
     time: Res<Time>,
 ) {
     // Time must be initialized and have ticked at least once
-    let current_time = time.last_update().unwrap();
+    if let Some(current_time) = time.last_update() {
+        if let Some(mut action_state) = action_state {
+            action_state.tick(current_time);
+        }
 
-    if let Some(mut action_state) = action_state {
-        action_state.tick(current_time);
-    }
-
-    for mut action_state in query.iter_mut() {
-        // If `Time` has not ever been advanced, something has gone horribly wrong
-        // and the user probably forgot to add the `core_plugin`.
-        action_state.tick(current_time);
+        for mut action_state in query.iter_mut() {
+            // If `Time` has not ever been advanced, something has gone horribly wrong
+            // and the user probably forgot to add the `core_plugin`.
+            action_state.tick(current_time);
+        }
     }
 }
 
