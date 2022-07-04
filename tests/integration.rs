@@ -222,7 +222,6 @@ fn duration() {
 
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
-        .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
@@ -232,16 +231,28 @@ fn duration() {
 
     // Initializing
     app.update();
+    assert!(!app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // We haven't held for long enough
     app.send_input(KeyCode::F);
     app.update();
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
 
     std::thread::sleep(Duration::from_micros(1));
 
     app.update();
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
 
     let duration_held = app
         .world
@@ -254,9 +265,15 @@ fn duration() {
 
     // Waiting while released doesn't work
     app.release_input(KeyCode::F);
+    app.update();
+    app.update();
     std::thread::sleep(Duration::from_micros(10));
 
     app.update();
+    assert!(!app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
@@ -264,16 +281,30 @@ fn duration() {
         .world
         .resource::<ActionState<Action>>()
         .current_duration(Action::PayRespects);
-    assert!(duration_released > RESPECTFUL_DURATION);
+    assert!(
+        duration_released > RESPECTFUL_DURATION,
+        "duration_released ({:?}) > RESPECTFUL_DURATION ({:?})",
+        duration_released,
+        RESPECTFUL_DURATION
+    );
 
     // Press and hold
     app.send_input(KeyCode::F);
 
     app.update();
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
+
     std::thread::sleep(Duration::from_micros(10));
     app.update();
-    app.update();
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
 
+    app.update();
     assert!(app
         .world
         .resource::<ActionState<Action>>()
@@ -294,11 +325,11 @@ fn duration() {
         .world
         .resource::<ActionState<Action>>()
         .current_duration(Action::PayRespects);
-
     assert!(current_duration > Duration::from_micros(5));
 
     // Double-checking that the swap to previous_duration works
     app.release_input(KeyCode::F);
+    app.update();
     app.update();
 
     let previous_duration = app
