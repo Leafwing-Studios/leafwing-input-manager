@@ -288,6 +288,8 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[index].consumed = true;
         self.action_data[index].state.release();
         self.action_data[index].reasons_pressed = Vec::new();
+        // FIXME: the behavior of this should be distinct from the behavior of release;
+        // we effectively want to suspend the timing here
         self.action_data[index].timing.flip();
     }
 
@@ -520,6 +522,8 @@ impl Timing {
     /// Flips the metaphorical hourglass, storing `current_duration` in `previous_duration` and resetting `instant_started`
     ///
     /// This method is called whenever actions are pressed or released
+    ///
+    /// FIXME: Ensure that the timing starts on the same frame that the input is flipped.
     pub fn flip(&mut self) {
         self.previous_duration = self.current_duration;
         self.current_duration = Duration::ZERO;
