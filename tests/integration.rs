@@ -47,11 +47,6 @@ fn spawn_player(mut commands: Commands) {
         });
 }
 
-// Normally this is done by the winit_plugin
-fn reset_inputs(world: &mut World) {
-    world.reset_inputs();
-}
-
 #[test]
 fn action_state_change_detection() {
     use bevy_input::InputPlugin;
@@ -96,7 +91,6 @@ fn disable_input() {
     // releases correctly both
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
-        .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
@@ -348,7 +342,6 @@ fn do_nothing() {
 
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
-        .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
