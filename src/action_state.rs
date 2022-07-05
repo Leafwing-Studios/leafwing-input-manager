@@ -138,9 +138,12 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.iter_mut().for_each(|ad| ad.state.tick());
 
         // Advance the Timings
-        self.action_data
-            .iter_mut()
-            .for_each(|ad| ad.timing.tick(current_time));
+        self.action_data.iter_mut().for_each(|ad| {
+            // Durations should not advance while actions are consumed
+            if !ad.consumed {
+                ad.timing.tick(current_time)
+            }
+        });
     }
 
     /// Gets a copy of the [`ActionData`] of the corresponding `action`
@@ -284,12 +287,10 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     pub fn consume(&mut self, action: A) {
         let index = action.index();
-        // This is the only difference from release(action)
+        // This is the only difference from action_state.release(action)
         self.action_data[index].consumed = true;
         self.action_data[index].state.release();
         self.action_data[index].reasons_pressed = Vec::new();
-        // FIXME: the behavior of this should be distinct from the behavior of release;
-        // we effectively want to suspend the timing here
         self.action_data[index].timing.flip();
     }
 
