@@ -286,7 +286,6 @@ fn duration() {
 
     std::thread::sleep(Duration::from_micros(1));
 
-    app.update();
     assert!(app
         .world
         .resource::<ActionState<Action>>()
@@ -303,7 +302,6 @@ fn duration() {
 
     // Waiting while released doesn't work
     app.release_input(KeyCode::F);
-    app.update();
     app.update();
     std::thread::sleep(Duration::from_micros(10));
 
@@ -342,7 +340,6 @@ fn duration() {
         .resource::<ActionState<Action>>()
         .pressed(Action::PayRespects));
 
-    app.update();
     assert!(app
         .world
         .resource::<ActionState<Action>>()
@@ -367,7 +364,6 @@ fn duration() {
 
     // Double-checking that the swap to previous_duration works
     app.release_input(KeyCode::F);
-    app.update();
     app.update();
 
     let previous_duration = app
