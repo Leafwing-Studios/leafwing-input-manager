@@ -269,6 +269,7 @@ fn duration() {
 
     // Initializing
     app.update();
+
     assert!(!app
         .world
         .resource::<ActionState<Action>>()
