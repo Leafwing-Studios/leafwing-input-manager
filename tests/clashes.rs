@@ -22,14 +22,14 @@ fn spawn_input_map(mut commands: Commands) {
 
     let mut input_map = InputMap::default();
 
-    input_map.insert(One, Key1);
-    input_map.insert(Two, Key2);
-    input_map.insert_chord(OneAndTwo, [Key1, Key2]);
-    input_map.insert_chord(TwoAndThree, [Key2, Key3]);
-    input_map.insert_chord(OneAndTwoAndThree, [Key1, Key2, Key3]);
-    input_map.insert_chord(CtrlOne, [LControl, Key1]);
-    input_map.insert_chord(AltOne, [LAlt, Key1]);
-    input_map.insert_chord(CtrlAltOne, [LControl, LAlt, Key1]);
+    input_map.insert(Key1, One);
+    input_map.insert(Key2, Two);
+    input_map.insert_chord([Key1, Key2], OneAndTwo);
+    input_map.insert_chord([Key2, Key3], TwoAndThree);
+    input_map.insert_chord([Key1, Key2, Key3], OneAndTwoAndThree);
+    input_map.insert_chord([LControl, Key1], CtrlOne);
+    input_map.insert_chord([LAlt, Key1], AltOne);
+    input_map.insert_chord([LControl, LAlt, Key1], CtrlAltOne);
 
     commands.spawn().insert(input_map);
 }

@@ -7,7 +7,6 @@
 
 use bevy::prelude::*;
 use bevy_utils::HashMap;
-use derive_more::{Deref, DerefMut};
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::*;
 
@@ -87,13 +86,13 @@ fn spawn_player(mut commands: Commands) {
     commands.spawn_bundle(PlayerBundle {
         player: Player,
         slot_input_map: InputMap::new([
-            (Slot::Ability1, Q),
-            (Slot::Ability2, W),
-            (Slot::Ability3, E),
-            (Slot::Ability4, R),
+            (Q, Slot::Ability1),
+            (W, Slot::Ability2),
+            (E, Slot::Ability3),
+            (R, Slot::Ability4),
         ])
-        .insert(Slot::Primary, MouseButton::Left)
-        .insert(Slot::Secondary, MouseButton::Right)
+        .insert(MouseButton::Left, Slot::Primary)
+        .insert(MouseButton::Right, Slot::Secondary)
         .build(),
         slot_action_state: ActionState::default(),
         ability_action_state: ActionState::default(),
