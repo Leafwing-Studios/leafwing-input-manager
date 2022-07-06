@@ -14,6 +14,7 @@ use crate::{
 use bevy_core::Time;
 use bevy_ecs::{prelude::*, schedule::ShouldRun};
 use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
+use bevy_utils::Instant;
 
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
@@ -26,19 +27,26 @@ pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     action_state: Option<ResMut<ActionState<A>>>,
     time: Res<Time>,
+    mut stored_previous_instant: Local<Option<Instant>>,
 ) {
-    // Time must be initialized and have ticked at least once
-    let current_time = time.last_update().unwrap();
+    // If this is the very first tick, measure from the start of the app
+    let current_instant = time.last_update().unwrap_or_else(|| time.startup());
+    let previous_instant = stored_previous_instant.unwrap_or_else(|| time.startup());
 
+    // Only tick the ActionState resource if it exists
     if let Some(mut action_state) = action_state {
-        action_state.tick(current_time);
+        action_state.tick(current_instant, previous_instant);
     }
 
+    // Only tick the ActionState components if they exist
     for mut action_state in query.iter_mut() {
         // If `Time` has not ever been advanced, something has gone horribly wrong
         // and the user probably forgot to add the `core_plugin`.
-        action_state.tick(current_time);
+        action_state.tick(current_instant, previous_instant);
     }
+
+    // Store the previous time in the system
+    *stored_previous_instant = time.last_update();
 }
 
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]

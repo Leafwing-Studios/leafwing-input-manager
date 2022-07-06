@@ -47,9 +47,48 @@ fn spawn_player(mut commands: Commands) {
         });
 }
 
-// Normally this is done by the winit_plugin
-fn reset_inputs(world: &mut World) {
-    world.reset_inputs();
+#[test]
+fn do_nothing() {
+    use bevy_input::InputPlugin;
+    use bevy_utils::Duration;
+
+    let mut app = App::new();
+
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(spawn_player)
+        .init_resource::<ActionState<Action>>()
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]));
+
+    app.update();
+    let action_state = app.world.resource::<ActionState<Action>>();
+    let t0 = action_state.instant_started(Action::PayRespects);
+    assert!(t0.is_some());
+    let mut duration_last_update = Duration::ZERO;
+
+    for _ in 0..3 {
+        app.update();
+        let action_state = app.world.resource::<ActionState<Action>>();
+
+        // Sanity checking state to catch wonkiness
+        assert!(!action_state.pressed(Action::PayRespects));
+        assert!(!action_state.just_pressed(Action::PayRespects));
+        assert!(action_state.released(Action::PayRespects));
+        assert!(!action_state.just_released(Action::PayRespects));
+
+        assert_eq!(action_state.reasons_pressed(Action::PayRespects).len(), 0);
+
+        assert_eq!(action_state.instant_started(Action::PayRespects), t0);
+        assert_eq!(
+            action_state.previous_duration(Action::PayRespects),
+            Duration::ZERO
+        );
+        assert!(action_state.current_duration(Action::PayRespects) > duration_last_update);
+
+        duration_last_update = action_state.current_duration(Action::PayRespects);
+        dbg!(duration_last_update);
+    }
 }
 
 #[test]
@@ -96,7 +135,6 @@ fn disable_input() {
     // releases correctly both
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
-        .add_system_to_stage(CoreStage::Last, reset_inputs.exclusive_system())
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
@@ -197,4 +235,51 @@ fn action_state_driver() {
 
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
+}
+
+#[test]
+fn duration() {
+    use bevy_input::InputPlugin;
+    use bevy_utils::Duration;
+
+    const RESPECTFUL_DURATION: Duration = Duration::from_millis(5);
+
+    fn hold_f_to_pay_respects(
+        action_state: Res<ActionState<Action>>,
+        mut respect: ResMut<Respect>,
+    ) {
+        if action_state.pressed(Action::PayRespects)
+            // Unrealistically disrespectful, but makes the tests faster
+            && action_state.current_duration(Action::PayRespects) > RESPECTFUL_DURATION
+        {
+            respect.0 = true;
+        }
+    }
+
+    let mut app = App::new();
+
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(spawn_player)
+        .init_resource::<ActionState<Action>>()
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
+        .init_resource::<Respect>()
+        .add_system(hold_f_to_pay_respects);
+
+    // Initializing
+    app.update();
+
+    // Press
+    app.send_input(KeyCode::F);
+
+    // Hold
+    std::thread::sleep(2 * RESPECTFUL_DURATION);
+
+    // Check
+    app.update();
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .pressed(Action::PayRespects));
 }

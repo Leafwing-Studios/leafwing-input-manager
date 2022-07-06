@@ -54,7 +54,10 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Left));
 ///
 /// // Resets just_pressed and just_released
-/// action_state.tick(Instant::now());
+/// let t0 = Instant::now();
+/// let t1 = Instant::now();
+///
+///  action_state.tick(t1, t0);
 /// assert!(action_state.pressed(Action::Jump));
 /// assert!(!action_state.just_pressed(Action::Jump));
 ///
@@ -63,7 +66,8 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(action_state.just_released(Action::Jump));
 ///
-/// action_state.tick(Instant::now());
+/// let t2 = Instant::now();
+/// action_state.tick(t2, t1);
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
@@ -102,6 +106,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - if no [`Instant`] is set, the `current_instant` will be set as the initial time at which the button was pressed / released
     /// - the [`Duration`] will advance to reflect elapsed time
     ///
+    ///
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
@@ -121,7 +126,10 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(!action_state.just_released(Action::Run));
     ///
     /// // Ticking time moves causes buttons that were just released to no longer be just released
-    /// action_state.tick(Instant::now());
+    /// let t0 = Instant::now();
+    /// let t1 = Instant::now();
+    ///
+    /// action_state.tick(t1, t0);
     /// assert!(action_state.released(Action::Jump));
     /// assert!(!action_state.just_released(Action::Jump));
     ///
@@ -129,18 +137,23 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(action_state.just_pressed(Action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just pressed to no longer be just pressed
-    /// action_state.tick(Instant::now());
+    /// let t2 = Instant::now();
+    ///
+    /// action_state.tick(t2, t1);
     /// assert!(action_state.pressed(Action::Jump));
     /// assert!(!action_state.just_pressed(Action::Jump));
     /// ```
-    pub fn tick(&mut self, current_time: Instant) {
+    pub fn tick(&mut self, current_instant: Instant, previous_instant: Instant) {
         // Advanced the ButtonState
         self.action_data.iter_mut().for_each(|ad| ad.state.tick());
 
         // Advance the Timings
-        self.action_data
-            .iter_mut()
-            .for_each(|ad| ad.timing.tick(current_time));
+        self.action_data.iter_mut().for_each(|ad| {
+            // Durations should not advance while actions are consumed
+            if !ad.consumed {
+                ad.timing.tick(current_instant, previous_instant)
+            }
+        });
     }
 
     /// Gets a copy of the [`ActionData`] of the corresponding `action`
@@ -218,8 +231,11 @@ impl<A: Actionlike> ActionState<A> {
             return;
         }
 
+        if self.released(action) {
+            self.action_data[index].timing.flip();
+        }
+
         self.action_data[index].state.press();
-        self.action_data[index].timing.flip();
     }
 
     /// Release the `action`
@@ -231,9 +247,13 @@ impl<A: Actionlike> ActionState<A> {
         let index = action.index();
         // Once released, consumed actions can be pressed again
         self.action_data[index].consumed = false;
+
+        if self.pressed(action) {
+            self.action_data[index].timing.flip();
+            self.action_data[index].reasons_pressed = Vec::new();
+        }
+
         self.action_data[index].state.release();
-        self.action_data[index].reasons_pressed = Vec::new();
-        self.action_data[index].timing.flip();
     }
 
     /// Consumes the `action`
@@ -277,7 +297,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     pub fn consume(&mut self, action: A) {
         let index = action.index();
-        // This is the only difference from release(action)
+        // This is the only difference from action_state.release(action)
         self.action_data[index].consumed = true;
         self.action_data[index].state.release();
         self.action_data[index].reasons_pressed = Vec::new();
@@ -502,17 +522,20 @@ impl Timing {
     ///
     /// If the `instant_started` is None, it will be set to the current time.
     /// This design allows us to ensure that the timing is always synchronized with the start of each frame.
-    pub fn tick(&mut self, current_time: Instant) {
+    pub fn tick(&mut self, current_instant: Instant, previous_instant: Instant) {
         if let Some(instant_started) = self.instant_started {
-            self.current_duration = current_time - instant_started;
+            self.current_duration = current_instant - instant_started;
         } else {
-            self.instant_started = Some(current_time);
+            self.current_duration = current_instant - previous_instant;
+            self.instant_started = Some(previous_instant);
         }
     }
 
     /// Flips the metaphorical hourglass, storing `current_duration` in `previous_duration` and resetting `instant_started`
     ///
     /// This method is called whenever actions are pressed or released
+    ///
+    /// FIXME: Ensure that the timing starts on the same frame that the input is flipped.
     pub fn flip(&mut self) {
         self.previous_duration = self.current_duration;
         self.current_duration = Duration::ZERO;
@@ -563,7 +586,7 @@ mod tests {
         use crate::input_map::InputMap;
         use crate::user_input::InputStreams;
         use bevy::prelude::*;
-        use bevy_utils::Instant;
+        use bevy_utils::{Duration, Instant};
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
@@ -596,7 +619,7 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Waiting
-        action_state.tick(Instant::now());
+        action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(Action::Run));
@@ -616,7 +639,7 @@ mod tests {
         assert!(action_state.just_released(Action::Run));
 
         // Waiting
-        action_state.tick(Instant::now());
+        action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(Action::Run));
@@ -628,36 +651,32 @@ mod tests {
     #[test]
     fn time_tick_ticks_away() {
         use crate::action_state::ActionState;
-        use bevy_utils::Instant;
+        use bevy_utils::{Duration, Instant};
 
         let mut action_state = ActionState::<Action>::default();
-
-        // Action states start fully released
-        dbg!(action_state.get_released());
-        dbg!(action_state.clone());
 
         // Actions start released (but not just released)
         assert!(action_state.released(Action::Run));
         assert!(!action_state.just_released(Action::Jump));
 
         // Ticking causes buttons that were just released to no longer be just released
-        action_state.tick(Instant::now());
+        action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         assert!(action_state.released(Action::Jump));
         assert!(!action_state.just_released(Action::Jump));
         action_state.press(Action::Jump);
         assert!(action_state.just_pressed(Action::Jump));
 
         // Ticking causes buttons that were just pressed to no longer be just pressed
-        action_state.tick(Instant::now());
+        action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         assert!(action_state.pressed(Action::Jump));
         assert!(!action_state.just_pressed(Action::Jump));
     }
 
+    // FIXME: these tests are flaky because floats
     #[test]
     fn durations() {
         use crate::action_state::ActionState;
         use bevy_utils::{Duration, Instant};
-        use std::thread::sleep;
 
         let mut action_state = ActionState::<Action>::default();
 
@@ -676,25 +695,26 @@ mod tests {
 
         // Ticking time sets the instant for the new state
         let t0 = Instant::now();
-        action_state.tick(t0);
+        let t1 = t0 + Duration::new(1, 0);
+
+        action_state.tick(t1, t0);
         assert_eq!(action_state.instant_started(Action::Jump), Some(t0));
-        assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
+        assert_eq!(action_state.current_duration(Action::Jump), t1 - t0);
         assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
 
         // Time passes
-        sleep(Duration::from_micros(1));
-        let t1 = Instant::now();
+        let t2 = t1 + Duration::new(5, 0);
 
         // The duration is updated
-        action_state.tick(t1);
+        action_state.tick(t2, t1);
         assert_eq!(action_state.instant_started(Action::Jump), Some(t0));
-        assert_eq!(action_state.current_duration(Action::Jump), t1 - t0);
+        assert_eq!(action_state.current_duration(Action::Jump), t2 - t0);
         assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
 
         // Releasing again, swapping the current duration to the previous one
         action_state.release(Action::Jump);
         assert_eq!(action_state.instant_started(Action::Jump), None);
         assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
-        assert_eq!(action_state.previous_duration(Action::Jump), t1 - t0,);
+        assert_eq!(action_state.previous_duration(Action::Jump), t2 - t0);
     }
 }
