@@ -12,9 +12,9 @@ fn main() {
         .add_plugin(InputManagerPlugin::<MenuAction>::default())
         .init_resource::<ActionState<MenuAction>>()
         .insert_resource(InputMap::<MenuAction>::new([
-            (MenuAction::CloseWindow, KeyCode::Escape),
-            (MenuAction::OpenMainMenu, KeyCode::M),
-            (MenuAction::OpenSubMenu, KeyCode::S),
+            (KeyCode::Escape, MenuAction::CloseWindow),
+            (KeyCode::M, MenuAction::OpenMainMenu),
+            (KeyCode::S, MenuAction::OpenSubMenu),
         ]))
         .init_resource::<MainMenu>()
         .init_resource::<SubMenu>()
