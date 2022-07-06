@@ -54,7 +54,10 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Left));
 ///
 /// // Resets just_pressed and just_released
-/// action_state.tick(Instant::now());
+/// let t0 = Instant::now();
+/// let t1 = Instant::now();
+///
+///  action_state.tick(t1, t0);
 /// assert!(action_state.pressed(Action::Jump));
 /// assert!(!action_state.just_pressed(Action::Jump));
 ///
@@ -63,7 +66,8 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(action_state.just_released(Action::Jump));
 ///
-/// action_state.tick(Instant::now());
+/// let t2 = Instant::now();
+/// action_state.tick(t2, t1);
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
@@ -122,7 +126,10 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(!action_state.just_released(Action::Run));
     ///
     /// // Ticking time moves causes buttons that were just released to no longer be just released
-    /// action_state.tick(Instant::now());
+    /// let t0 = Instant::now();
+    /// let t1 = Instant::now();
+    ///
+    /// action_state.tick(t1, t0);
     /// assert!(action_state.released(Action::Jump));
     /// assert!(!action_state.just_released(Action::Jump));
     ///
@@ -130,7 +137,9 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(action_state.just_pressed(Action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just pressed to no longer be just pressed
-    /// action_state.tick(Instant::now());
+    /// let t2 = Instant::now();
+    ///
+    /// action_state.tick(t2, t1);
     /// assert!(action_state.pressed(Action::Jump));
     /// assert!(!action_state.just_pressed(Action::Jump));
     /// ```
