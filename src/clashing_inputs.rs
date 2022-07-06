@@ -2,7 +2,7 @@
 
 use crate::action_state::ActionData;
 use crate::input_map::InputMap;
-use crate::user_input::{InputButton, InputStreams, UserInput};
+use crate::user_input::{InputKind, InputStreams, UserInput};
 use crate::Actionlike;
 
 use itertools::Itertools;
@@ -189,7 +189,7 @@ impl<A: Actionlike> Clash<A> {
 
 /// Does the `button` clash with the `chord`?
 #[must_use]
-fn button_chord_clash(button: &InputButton, chord: &PetitSet<InputButton, 8>) -> bool {
+fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -199,10 +199,7 @@ fn button_chord_clash(button: &InputButton, chord: &PetitSet<InputButton, 8>) ->
 
 /// Does the `chord_a` clash with `chord_b`?
 #[must_use]
-fn chord_chord_clash(
-    chord_a: &PetitSet<InputButton, 8>,
-    chord_b: &PetitSet<InputButton, 8>,
-) -> bool {
+fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputKind, 8>) -> bool {
     if chord_a.len() <= 1 || chord_b.len() <= 1 {
         return false;
     }

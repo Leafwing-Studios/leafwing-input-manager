@@ -8,7 +8,7 @@ use bevy_egui::{
     EguiContext, EguiPlugin,
 };
 use derive_more::Display;
-use leafwing_input_manager::{prelude::*, user_input::InputButton};
+use leafwing_input_manager::{prelude::*, user_input::InputKind};
 
 const UI_MARGIN: f32 = 10.0;
 
@@ -63,13 +63,15 @@ fn controls_window_system(
                         let inputs = control_settings.input.get(action);
                         for index in 0..INPUT_VARIANTS {
                             let button_text = match inputs.get_at(index) {
-                                Some(UserInput::Single(InputButton::Gamepad(gamepad_button))) => {
+                                Some(UserInput::Single(InputKind::GamepadButton(
+                                    gamepad_button,
+                                ))) => {
                                     format!("🎮 {:?}", gamepad_button)
                                 }
-                                Some(UserInput::Single(InputButton::Keyboard(keycode))) => {
+                                Some(UserInput::Single(InputKind::Keyboard(keycode))) => {
                                     format!("🖮 {:?}", keycode)
                                 }
-                                Some(UserInput::Single(InputButton::Mouse(mouse_button))) => {
+                                Some(UserInput::Single(InputKind::Mouse(mouse_button))) => {
                                     format!("🖱 {:?}", mouse_button)
                                 }
                                 _ => "Empty".to_string(),
@@ -238,7 +240,7 @@ impl ActiveBinding {
 
 struct BindingConflict {
     action: ControlAction,
-    input_button: InputButton,
+    input_button: InputKind,
 }
 
 /// Helper for collecting input
@@ -250,7 +252,7 @@ struct InputEvents<'w, 's> {
 }
 
 impl InputEvents<'_, '_> {
-    fn input_button(&mut self) -> Option<InputButton> {
+    fn input_button(&mut self) -> Option<InputKind> {
         if let Some(keyboard_input) = self.keys.iter().next() {
             if keyboard_input.state == ElementState::Released {
                 if let Some(key_code) = keyboard_input.key_code {

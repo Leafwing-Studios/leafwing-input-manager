@@ -16,6 +16,11 @@ use std::marker::PhantomData;
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
+    /// The analog value of this button/axis, if applicable
+    ///
+    /// For binary inputs such as buttons, this will always be either 0.0 or 1.0. For analog axes
+    /// this will be in the range of `-1.0..=1.0`.
+    pub value: f32,
     /// What inputs were responsible for causing this action to be pressed?
     pub reasons_pressed: Vec<UserInput>,
     /// When was the button pressed / released, and how long has it been held for?
@@ -96,6 +101,7 @@ impl<A: Actionlike> ActionState<A> {
                 ButtonState::Released => self.release(action),
             }
 
+            self.action_data[i].value = action_data[i].value;
             self.action_data[i].reasons_pressed = action_data[i].reasons_pressed.clone();
         }
     }

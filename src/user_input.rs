@@ -1,10 +1,10 @@
 //! Helpful abstractions over user inputs of all sorts
 
 use bevy_input::{
-    gamepad::{Gamepad, GamepadButton, GamepadButtonType},
+    gamepad::{Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType},
     keyboard::KeyCode,
     mouse::MouseButton,
-    Input,
+    Axis, Input,
 };
 
 use bevy_utils::HashSet;
@@ -17,23 +17,23 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum UserInput {
     /// A single button
-    Single(InputButton),
+    Single(InputKind),
     /// A combination of buttons, pressed simultaneously
     ///
     /// Up to 8 (!!) buttons can be chorded together at once.
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
-    Chord(PetitSet<InputButton, 8>),
+    Chord(PetitSet<InputKind, 8>),
 }
 
 impl UserInput {
     /// Creates a [`UserInput::Chord`] from an iterator of [`Button`]s
     ///
     /// If `buttons` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
-    pub fn chord(buttons: impl IntoIterator<Item = impl Into<InputButton>>) -> Self {
+    pub fn chord(buttons: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: PetitSet<InputButton, 8> = PetitSet::default();
+        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
         for button in buttons {
             length += 1;
             set.insert(button.into());
@@ -114,7 +114,7 @@ impl UserInput {
     /// assert_eq!(ctrl_a.n_matching(&buttons), 1);
     /// assert_eq!(ctrl_alt_a.n_matching(&buttons), 2);
     /// ```
-    pub fn n_matching(&self, buttons: &HashSet<InputButton>) -> usize {
+    pub fn n_matching(&self, buttons: &HashSet<InputKind>) -> usize {
         match self {
             UserInput::Single(button) => {
                 if buttons.contains(button) {
@@ -138,22 +138,25 @@ impl UserInput {
 
     /// Returns the raw inputs that make up this [`UserInput`]
     pub fn raw_inputs(&self) -> (Vec<GamepadButtonType>, Vec<KeyCode>, Vec<MouseButton>) {
+        let mut gamepad_axes: Vec<GamepadAxisType> = Vec::default();
         let mut gamepad_buttons: Vec<GamepadButtonType> = Vec::default();
         let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
         let mut mouse_buttons: Vec<MouseButton> = Vec::default();
 
         match self {
             UserInput::Single(button) => match *button {
-                InputButton::Gamepad(variant) => gamepad_buttons.push(variant),
-                InputButton::Keyboard(variant) => keyboard_buttons.push(variant),
-                InputButton::Mouse(variant) => mouse_buttons.push(variant),
+                InputKind::GamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
+                InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
+                InputKind::Mouse(variant) => mouse_buttons.push(variant),
             },
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
                     match button {
-                        InputButton::Gamepad(variant) => gamepad_buttons.push(*variant),
-                        InputButton::Keyboard(variant) => keyboard_buttons.push(*variant),
-                        InputButton::Mouse(variant) => mouse_buttons.push(*variant),
+                        InputKind::GamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                        InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
+                        InputKind::Keyboard(variant) => keyboard_buttons.push(*variant),
+                        InputKind::Mouse(variant) => mouse_buttons.push(*variant),
                     }
                 }
             }
@@ -163,27 +166,33 @@ impl UserInput {
     }
 }
 
-impl From<InputButton> for UserInput {
-    fn from(input: InputButton) -> Self {
+impl From<InputKind> for UserInput {
+    fn from(input: InputKind) -> Self {
         UserInput::Single(input)
+    }
+}
+
+impl From<GamepadAxisThreshold> for UserInput {
+    fn from(input: GamepadAxisThreshold) -> Self {
+        UserInput::Single(InputKind::GamepadAxis(input))
     }
 }
 
 impl From<GamepadButtonType> for UserInput {
     fn from(input: GamepadButtonType) -> Self {
-        UserInput::Single(InputButton::Gamepad(input))
+        UserInput::Single(InputKind::GamepadButton(input))
     }
 }
 
 impl From<KeyCode> for UserInput {
     fn from(input: KeyCode) -> Self {
-        UserInput::Single(InputButton::Keyboard(input))
+        UserInput::Single(InputKind::Keyboard(input))
     }
 }
 
 impl From<MouseButton> for UserInput {
     fn from(input: MouseButton) -> Self {
-        UserInput::Single(InputButton::Mouse(input))
+        UserInput::Single(InputKind::Mouse(input))
     }
 }
 
@@ -240,12 +249,12 @@ impl Iterator for InputModeIter {
     }
 }
 
-impl From<InputButton> for InputMode {
-    fn from(button: InputButton) -> Self {
+impl From<InputKind> for InputMode {
+    fn from(button: InputKind) -> Self {
         match button {
-            InputButton::Gamepad(_) => InputMode::Gamepad,
-            InputButton::Keyboard(_) => InputMode::Keyboard,
-            InputButton::Mouse(_) => InputMode::Mouse,
+            InputKind::GamepadButton(_) | InputKind::GamepadAxis(_) => InputMode::Gamepad,
+            InputKind::Keyboard(_) => InputMode::Keyboard,
+            InputKind::Mouse(_) => InputMode::Mouse,
         }
     }
 }
@@ -260,30 +269,81 @@ impl From<InputButton> for InputMode {
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum InputButton {
+pub enum InputKind {
     /// A button on a gamepad
-    Gamepad(GamepadButtonType),
+    GamepadButton(GamepadButtonType),
+    /// An axis on a gamepad
+    GamepadAxis(GamepadAxisThreshold),
     /// A button on a keyboard
     Keyboard(KeyCode),
     /// A button on a mouse
     Mouse(MouseButton),
 }
 
-impl From<GamepadButtonType> for InputButton {
+/// Used to indicate at which point a gamepad axis event should trigger an action.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct GamepadAxisThreshold {
+    /// The axis that is being checked.
+    pub axis: GamepadAxisType,
+    /// Indicates whether the action should trigger when the axis value is greater, lesser, or equal
+    /// to the `threshold`.
+    pub comparison: GamepadAxisComparison,
+    /// The threshold to compare the current axis value with.
+    pub threshold: f32,
+}
+
+impl PartialEq for GamepadAxisThreshold {
+    fn eq(&self, other: &Self) -> bool {
+        use bevy_core::FloatOrd;
+        self.axis == other.axis
+            && self.comparison == other.comparison
+            && FloatOrd(self.threshold) == FloatOrd(other.threshold)
+    }
+}
+impl Eq for GamepadAxisThreshold {}
+impl std::hash::Hash for GamepadAxisThreshold {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        use bevy_core::FloatOrd;
+        self.axis.hash(state);
+        self.comparison.hash(state);
+        FloatOrd(self.threshold).hash(state);
+    }
+}
+
+/// Different possible ways to compare an axis threshold to the axis value.
+///
+/// See [`GamepadAxisThreshold`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum GamepadAxisComparison {
+    /// Value must be less than threshold
+    Less,
+    /// Value must be greater than threshold
+    Greater,
+    /// Value must be equal to threshold
+    Equal,
+}
+
+impl From<GamepadAxisThreshold> for InputKind {
+    fn from(input: GamepadAxisThreshold) -> Self {
+        InputKind::GamepadAxis(input)
+    }
+}
+
+impl From<GamepadButtonType> for InputKind {
     fn from(input: GamepadButtonType) -> Self {
-        InputButton::Gamepad(input)
+        InputKind::GamepadButton(input)
     }
 }
 
-impl From<KeyCode> for InputButton {
+impl From<KeyCode> for InputKind {
     fn from(input: KeyCode) -> Self {
-        InputButton::Keyboard(input)
+        InputKind::Keyboard(input)
     }
 }
 
-impl From<MouseButton> for InputButton {
+impl From<MouseButton> for InputKind {
     fn from(input: MouseButton) -> Self {
-        InputButton::Mouse(input)
+        InputKind::Mouse(input)
     }
 }
 
@@ -295,7 +355,11 @@ impl From<MouseButton> for InputButton {
 #[derive(Debug, Clone)]
 pub struct InputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
-    pub gamepad: Option<&'a Input<GamepadButton>>,
+    pub gamepad_buttons: Option<&'a Input<GamepadButton>>,
+    /// An optional [`GamepadButton`] [`Axis`] stream
+    pub gamepad_button_axes: Option<&'a Axis<GamepadButton>>,
+    /// An optional [`GamepadAxis`] [`Axis`] stream
+    pub gamepad_axes: Option<&'a Axis<GamepadAxis>>,
     /// An optional [`KeyCode`] [`Input`] stream
     pub keyboard: Option<&'a Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
@@ -308,11 +372,15 @@ pub struct InputStreams<'a> {
 impl<'a> InputStreams<'a> {
     /// Construct [`InputStreams`] with only a [`GamepadButton`] input stream
     pub fn from_gamepad(
-        gamepad_input_stream: &'a Input<GamepadButton>,
+        gamepad_button_stream: &'a Input<GamepadButton>,
+        gamepad_button_axis_stream: &'a Axis<GamepadButton>,
+        gamepad_axis_stream: &'a Axis<GamepadAxis>,
         associated_gamepad: Gamepad,
     ) -> Self {
         Self {
-            gamepad: Some(gamepad_input_stream),
+            gamepad_buttons: Some(gamepad_button_stream),
+            gamepad_button_axes: Some(gamepad_button_axis_stream),
+            gamepad_axes: Some(gamepad_axis_stream),
             keyboard: None,
             mouse: None,
             associated_gamepad: Some(associated_gamepad),
@@ -322,7 +390,9 @@ impl<'a> InputStreams<'a> {
     /// Construct [`InputStreams`] with only a [`KeyCode`] input stream
     pub fn from_keyboard(keyboard_input_stream: &'a Input<KeyCode>) -> Self {
         Self {
-            gamepad: None,
+            gamepad_buttons: None,
+            gamepad_button_axes: None,
+            gamepad_axes: None,
             keyboard: Some(keyboard_input_stream),
             mouse: None,
             associated_gamepad: None,
@@ -332,7 +402,9 @@ impl<'a> InputStreams<'a> {
     /// Construct [`InputStreams`] with only a [`GamepadButton`] input stream
     pub fn from_mouse(mouse_input_stream: &'a Input<MouseButton>) -> Self {
         Self {
-            gamepad: None,
+            gamepad_buttons: None,
+            gamepad_button_axes: None,
+            gamepad_axes: None,
             keyboard: None,
             mouse: Some(mouse_input_stream),
             associated_gamepad: None,
@@ -364,13 +436,24 @@ impl<'a> InputStreams<'a> {
 
     /// Is the `button` pressed?
     #[must_use]
-    pub fn button_pressed(&self, button: InputButton) -> bool {
+    pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputButton::Gamepad(gamepad_button) => {
+            InputKind::GamepadAxis(axis) => {
+                let value = self.get_input_value(&UserInput::Single(button));
+
+                match axis.comparison {
+                    GamepadAxisComparison::Less => value < axis.threshold,
+                    GamepadAxisComparison::Greater => value > axis.threshold,
+                    GamepadAxisComparison::Equal => {
+                        (axis.threshold.abs() - value.abs()) > f32::EPSILON
+                    }
+                }
+            }
+            InputKind::GamepadButton(gamepad_button) => {
                 // If no gamepad is registered, we know for sure that no match was found
                 if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(gamepad_stream) = self.gamepad {
-                        gamepad_stream.pressed(GamepadButton(gamepad, gamepad_button))
+                    if let Some(gamepad_buttons) = self.gamepad_buttons {
+                        gamepad_buttons.pressed(GamepadButton(gamepad, gamepad_button))
                     } else {
                         false
                     }
@@ -378,14 +461,14 @@ impl<'a> InputStreams<'a> {
                     false
                 }
             }
-            InputButton::Keyboard(keycode) => {
+            InputKind::Keyboard(keycode) => {
                 if let Some(keyboard_stream) = self.keyboard {
                     keyboard_stream.pressed(keycode)
                 } else {
                     false
                 }
             }
-            InputButton::Mouse(mouse_button) => {
+            InputKind::Mouse(mouse_button) => {
                 if let Some(mouse_stream) = self.mouse {
                     mouse_stream.pressed(mouse_button)
                 } else {
@@ -397,7 +480,7 @@ impl<'a> InputStreams<'a> {
 
     /// Are all of the `buttons` pressed?
     #[must_use]
-    pub fn all_buttons_pressed(&self, buttons: &PetitSet<InputButton, 8>) -> bool {
+    pub fn all_buttons_pressed(&self, buttons: &PetitSet<InputKind, 8>) -> bool {
         for &button in buttons.iter() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(button) {
@@ -406,6 +489,53 @@ impl<'a> InputStreams<'a> {
         }
         // If none of the inputs failed to match, return true
         true
+    }
+
+    /// Get the "value" of the input.
+    ///
+    /// For binary inputs such as buttons, this will always be either `0.0` or `1.0`. For analog
+    /// inputs such as axes, this will be the axis value.
+    ///
+    /// [`UserInput::Chord`] inputs are also considered binary and will return `0.0` or `1.0` based
+    /// on whether the chord has been pressed.
+    pub fn get_input_value(&self, input: &UserInput) -> f32 {
+        let use_button_value = || {
+            if self.input_pressed(input) {
+                1.0
+            } else {
+                0.0
+            }
+        };
+
+        if let Some(gamepad) = self.associated_gamepad {
+            match input {
+                UserInput::Single(InputKind::GamepadAxis(threshold)) => {
+                    if let Some(axes) = self.gamepad_axes {
+                        axes.get(GamepadAxis(gamepad, threshold.axis))
+                            .unwrap_or_default()
+                    } else {
+                        0.0
+                    }
+                }
+                UserInput::Single(InputKind::GamepadButton(button_type)) => {
+                    if let Some(button_axes) = self.gamepad_button_axes {
+                        button_axes
+                            .get(GamepadButton(gamepad, *button_type))
+                            .unwrap_or_default()
+                    } else {
+                        0.0
+                    }
+                }
+                _ => use_button_value(),
+            }
+
+        // If there is no gamepad
+        } else {
+            match input {
+                UserInput::Single(InputKind::GamepadAxis(_) | InputKind::GamepadButton(_)) => 0.0,
+                _ => use_button_value(),
+            }
+        }
     }
 }
 
@@ -417,7 +547,11 @@ impl<'a> InputStreams<'a> {
 #[derive(Debug)]
 pub struct MutableInputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
-    pub gamepad: Option<&'a mut Input<GamepadButton>>,
+    pub gamepad_buttons: Option<&'a mut Input<GamepadButton>>,
+    /// An optional [`GamepadButton`] [`Axis`] stream
+    pub gamepad_button_axes: Option<&'a mut Axis<GamepadButton>>,
+    /// An optional [`GamepadAxis`] [`Axis`] stream
+    pub gamepad_axes: Option<&'a mut Axis<GamepadAxis>>,
     /// An optional [`KeyCode`] [`Input`] stream
     pub keyboard: Option<&'a mut Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
@@ -428,14 +562,24 @@ pub struct MutableInputStreams<'a> {
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
-        let gamepad = mutable_streams.gamepad.map(|mutable_ref| &*mutable_ref);
+        let gamepad_buttons = mutable_streams
+            .gamepad_buttons
+            .map(|mutable_ref| &*mutable_ref);
+        let gamepad_button_axes = mutable_streams
+            .gamepad_button_axes
+            .map(|mutable_ref| &*mutable_ref);
+        let gamepad_axes = mutable_streams
+            .gamepad_axes
+            .map(|mutable_ref| &*mutable_ref);
 
         let keyboard = mutable_streams.keyboard.map(|mutable_ref| &*mutable_ref);
 
         let mouse = mutable_streams.mouse.map(|mutable_ref| &*mutable_ref);
 
         InputStreams {
-            gamepad,
+            gamepad_buttons,
+            gamepad_button_axes,
+            gamepad_axes,
             keyboard,
             mouse,
             associated_gamepad: mutable_streams.associated_gamepad,
