@@ -6,6 +6,9 @@
 
 - reduced required `derive_more` features
 - removed `thiserror` dependency
+- the order of all methods on `InputMap` is now `(input, action)`, rather than `(action, input`) to better match user mental models
+  - this is a map-like struct: one presses `KeyCode::F` to `Actions::PayRespects`, not the other way around!
+  - this includes the order of all paired tuples, including the returned values
 
 ### Bug fixes
 
