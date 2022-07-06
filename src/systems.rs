@@ -30,7 +30,7 @@ pub fn tick_action_state<A: Actionlike>(
     mut stored_previous_instant: Local<Option<Instant>>,
 ) {
     // If this is the very first tick, measure from the start of the app
-    let current_instant = time.last_update().unwrap_or(time.startup());
+    let current_instant = time.last_update().unwrap_or_else(|| time.startup());
     let previous_instant = stored_previous_instant.unwrap_or_else(|| time.startup());
 
     // Only tick the ActionState resource if it exists
