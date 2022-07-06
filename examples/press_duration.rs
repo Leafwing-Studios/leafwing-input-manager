@@ -49,10 +49,10 @@ impl PlayerBundle {
         use Action::*;
 
         InputMap::new([
-            (Left, KeyCode::A),
-            (Left, KeyCode::Left),
-            (Right, KeyCode::D),
-            (Right, KeyCode::Right),
+            (KeyCode::A, Left),
+            (KeyCode::Left, Left),
+            (KeyCode::D, Right),
+            (KeyCode::Right, Right),
         ])
     }
 }

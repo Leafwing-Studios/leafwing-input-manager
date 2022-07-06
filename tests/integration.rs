@@ -42,7 +42,7 @@ fn spawn_player(mut commands: Commands) {
         .spawn()
         .insert(Player)
         .insert_bundle(InputManagerBundle::<Action> {
-            input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
+            input_map: InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]),
             ..Default::default()
         });
 }
@@ -59,7 +59,7 @@ fn do_nothing() {
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]));
+        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]));
 
     app.update();
     let action_state = app.world.resource::<ActionState<Action>>();
@@ -138,7 +138,7 @@ fn disable_input() {
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
+        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<Respect>()
         .add_system(pay_respects)
         .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
@@ -181,7 +181,7 @@ fn action_state_driver() {
             .spawn()
             .insert(Player)
             .insert_bundle(InputManagerBundle::<Action> {
-                input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
+                input_map: InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]),
                 ..Default::default()
             })
             .id();
@@ -263,7 +263,7 @@ fn duration() {
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
+        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<Respect>()
         .add_system(hold_f_to_pay_respects);
 

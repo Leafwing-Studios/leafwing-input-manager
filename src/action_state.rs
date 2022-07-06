@@ -593,7 +593,7 @@ mod tests {
 
         // Input map
         let mut input_map = InputMap::default();
-        input_map.insert(Action::Run, KeyCode::R);
+        input_map.insert(KeyCode::R, Action::Run);
 
         // Input streams
         let mut keyboard_input_stream = Input::<KeyCode>::default();

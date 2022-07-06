@@ -32,7 +32,7 @@ fn spawn_player(mut commands: Commands) {
             // Stores "which actions are currently pressed"
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
-            input_map: InputMap::new([(Action::Jump, KeyCode::Space)]),
+            input_map: InputMap::new([(KeyCode::Space, Action::Jump)]),
         });
 }
 

@@ -34,9 +34,9 @@ impl PlayerBundle {
     fn input_map(player: Player) -> InputMap<Action> {
         let mut input_map = match player {
             Player::One => InputMap::new([
-                (Action::Left, KeyCode::A),
-                (Action::Right, KeyCode::D),
-                (Action::Jump, KeyCode::W),
+                (KeyCode::A, Action::Left),
+                (KeyCode::D, Action::Right),
+                (KeyCode::W, Action::Jump),
             ])
             // This is a quick and hacky solution:
             // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
@@ -44,9 +44,9 @@ impl PlayerBundle {
             .set_gamepad(Gamepad(0))
             .build(),
             Player::Two => InputMap::new([
-                (Action::Left, KeyCode::A),
-                (Action::Right, KeyCode::D),
-                (Action::Jump, KeyCode::W),
+                (KeyCode::Left, Action::Left),
+                (KeyCode::Right, Action::Right),
+                (KeyCode::Up, Action::Jump),
             ])
             .set_gamepad(Gamepad(1))
             .build(),
@@ -54,10 +54,10 @@ impl PlayerBundle {
 
         // Each player will use the same gamepad controls, but on seperate gamepads
         input_map.insert_multiple([
-            (Action::Left, GamepadButtonType::DPadLeft),
-            (Action::Right, GamepadButtonType::DPadRight),
-            (Action::Jump, GamepadButtonType::DPadUp),
-            (Action::Jump, GamepadButtonType::South),
+            (GamepadButtonType::DPadLeft, Action::Left),
+            (GamepadButtonType::DPadRight, Action::Right),
+            (GamepadButtonType::DPadUp, Action::Jump),
+            (GamepadButtonType::South, Action::Jump),
         ]);
 
         input_map
