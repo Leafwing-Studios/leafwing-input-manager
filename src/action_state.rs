@@ -690,7 +690,7 @@ mod tests {
 
         action_state.tick(t1, t0);
         assert_eq!(action_state.instant_started(Action::Jump), Some(t0));
-        assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
+        assert_eq!(action_state.current_duration(Action::Jump), t1 - t0);
         assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
 
         // Time passes
