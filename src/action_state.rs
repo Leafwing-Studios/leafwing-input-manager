@@ -694,7 +694,7 @@ mod tests {
         assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
 
         // Time passes
-        let t2 = t1 + Duration::new(1, 0);
+        let t2 = t1 + Duration::new(5, 0);
 
         // The duration is updated
         action_state.tick(t2, t1);
