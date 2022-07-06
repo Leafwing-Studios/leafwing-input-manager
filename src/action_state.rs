@@ -518,7 +518,7 @@ impl Timing {
             self.current_duration = current_instant - instant_started;
         } else {
             self.current_duration = current_instant - previous_instant;
-            self.instant_started = Some(current_instant);
+            self.instant_started = Some(previous_instant);
         }
     }
 
