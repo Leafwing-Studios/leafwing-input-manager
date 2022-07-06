@@ -668,7 +668,6 @@ mod tests {
     fn durations() {
         use crate::action_state::ActionState;
         use bevy_utils::{Duration, Instant};
-        use std::thread::sleep;
 
         let mut action_state = ActionState::<Action>::default();
 
@@ -687,15 +686,15 @@ mod tests {
 
         // Ticking time sets the instant for the new state
         let t0 = Instant::now();
-        let t1 = Instant::now();
+        let t1 = t0 + Duration::new(1, 0);
+
         action_state.tick(t1, t0);
         assert_eq!(action_state.instant_started(Action::Jump), Some(t0));
         assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
         assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
 
         // Time passes
-        sleep(Duration::from_micros(1));
-        let t2 = Instant::now();
+        let t2 = t1 + Duration::new(1, 0);
 
         // The duration is updated
         action_state.tick(t2, t1);
