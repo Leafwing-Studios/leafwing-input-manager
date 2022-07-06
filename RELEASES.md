@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.3.1
+## Version 0.4
 
 ### Usability
 
@@ -10,6 +10,7 @@
 ### Bug fixes
 
 - fixed serious bug that broke all functionality relating to durations that buttons were pressed or released for
+  - `ActionState::tick` now takes the `Instant` of both the current and previous frame, rather than just the current
 - `InputManagerPlugin` no longer panics when time does not have a previous update
   - this is useful as it ensures `bevy_inspector_egui` compatibility!
 
