@@ -715,6 +715,13 @@ impl<'a> InputStreams<'a> {
                 UserInput::Single(
                     InputKind::SingleGamepadAxis(_) | InputKind::GamepadButton(_),
                 ) => 0.0,
+                UserInput::Chord(chord) => {
+                    if let Some(input) = chord.get_at(0) {
+                        self.get_input_value(&UserInput::Single(*input))
+                    } else {
+                        0.0
+                    }
+                }
                 _ => use_button_value(),
             }
         }
@@ -729,9 +736,9 @@ impl<'a> InputStreams<'a> {
             AxisPair::new(Vec2::splat(value))
         };
 
-        if let Some(gamepad) = self.associated_gamepad {
-            match input {
-                UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
+        match input {
+            UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
+                if let Some(gamepad) = self.associated_gamepad {
                     if let Some(axes) = self.gamepad_axes {
                         let x = axes
                             .get(GamepadAxis(gamepad, threshold.x_axis))
@@ -743,25 +750,30 @@ impl<'a> InputStreams<'a> {
                     } else {
                         AxisPair::new(Vec2::ZERO)
                     }
+                } else {
+                    use_single_value()
                 }
-                _ => use_single_value(),
             }
-        } else {
-            match input {
-                UserInput::VirtualDPad {
-                    up,
-                    down,
-                    left,
-                    right,
-                } => {
-                    let x = self.get_input_value(&UserInput::Single(*right))
-                        - self.get_input_value(&UserInput::Single(*left)).abs();
-                    let y = self.get_input_value(&UserInput::Single(*up))
-                        - self.get_input_value(&UserInput::Single(*down)).abs();
-                    AxisPair::new(Vec2::new(x, y))
+            UserInput::VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            } => {
+                let x = self.get_input_value(&UserInput::Single(*right))
+                    - self.get_input_value(&UserInput::Single(*left)).abs();
+                let y = self.get_input_value(&UserInput::Single(*up))
+                    - self.get_input_value(&UserInput::Single(*down)).abs();
+                AxisPair::new(Vec2::new(x, y))
+            }
+            UserInput::Chord(chord) => {
+                if let Some(input) = chord.get_at(0) {
+                    self.get_input_axis_pair(&UserInput::Single(*input))
+                } else {
+                    use_single_value()
                 }
-                _ => use_single_value(),
             }
+            _ => use_single_value(),
         }
     }
 }
