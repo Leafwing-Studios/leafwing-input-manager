@@ -2,6 +2,16 @@
 
 ## Version 0.4
 
+### Changes
+
+- Renamed `InputButton` to `InputKind` to reflect it's ability to represent non-button inputs such as axes.
+
+### Enhancements
+
+- Added `InputKind::SingleGamepadAxis` and `InputKind::DualGamepadAxis` variants that can be used to trigger on axis inputs.
+- Added `ActionState::action_value()` and `ActionState::action_axis_pair()` that can be used to read axis and button values.
+- Added `UserInput::VirtualDPad` variant that can be used to bind directional button inputs and read them as an `AxisPair`.
+
 ### Usability
 
 - reduced required `derive_more` features
