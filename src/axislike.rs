@@ -31,7 +31,7 @@ impl AxisPair {
     }
 
     /// Merge the state of this [`AxisPair`] with another.
-    /// 
+    ///
     /// This is useful if you have multiple sticks bound to the same game action,
     /// and you want to get their combined position.
     pub fn merged_with(&self, other: AxisPair) -> AxisPair {

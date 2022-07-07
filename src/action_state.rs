@@ -204,7 +204,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - Dual axis inputs will return the magnitude of it's [`AxisPair`] and will be in the range
     /// `0.0..=1.0`.
     /// - Chord inputs will return the value of it's first input.
-    /// 
+    ///
     /// If multiple inputs trigger the same game action at the same time,
     /// the value of each triggering input will be added together and clamped to the range
     /// `-1.0..=1.0`
@@ -217,9 +217,9 @@ impl<A: Actionlike> ActionState<A> {
     /// Only certain events such as [`UserInput::VirtualDPad`] and
     /// [`InputKind::DualGamepadAxis`][crate::user_input::InputKind::DualGamepadAxis] provide an
     /// [`AxisPair`], and this will return [`None`] for other events.
-    /// 
+    ///
     /// Chord inputs will return the [`AxisPair`] of it's first input.
-    /// 
+    ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time,
     /// the value of each axis pair will be added together and be clamped to a maximum magnitude of
     /// `1.0`.

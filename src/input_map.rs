@@ -1,7 +1,6 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
 use crate::action_state::ActionData;
-use crate::axislike::AxisPair;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::user_input::{InputKind, InputStreams, UserInput};

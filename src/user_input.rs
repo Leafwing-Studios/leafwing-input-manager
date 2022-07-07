@@ -381,7 +381,7 @@ pub struct SingleGamepadAxis {
     /// The axis that is being checked.
     pub axis: GamepadAxisType,
     /// How high the axis movement must go in the positive direction before the action is triggered.
-    /// 
+    ///
     /// For example if this is set to `0.2`,
     /// an axis movement value of `0.3` will trigger the action,
     /// but an axis movement of `0.1` will not trigger the action.
@@ -411,7 +411,7 @@ impl std::hash::Hash for SingleGamepadAxis {
 }
 
 /// Two gamepad axes combined as one input.
-/// 
+///
 /// This input will generate [`AxisPair`] can be read with
 /// [`ActionState::action_axis_pair()`][crate::ActionState::action_axis_pair()].
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
