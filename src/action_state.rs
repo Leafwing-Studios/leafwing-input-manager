@@ -187,6 +187,23 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()].clone()
     }
 
+    /// Get the value associated with the corresponding `action`
+    /// 
+    /// For actions triggered by a variable axis, such as an analog stick,
+    /// this will be in the range of `-1.0..=1.0`.
+    /// 
+    /// For buttons this will be `0.0` when the button is not pressed,
+    /// and `1.0` when the button is pressed.
+    /// 
+    /// Some axes such as trigger buttons will return a value in the range of `-1.0..=1.0`.
+    /// 
+    /// Note that some buttons, such as [`GamepadButtonType::RightTrigger2`] are variable.
+    /// Variable buttons will return how "pressed" they are in this case as a value in the range
+    /// `0.0..=1.0`.
+    pub fn action_value(&self, action: A) -> f32 {
+        self.action_data(action).value
+    }
+
     /// Manually sets the [`ActionData`] of the corresponding `action`
     ///
     /// You should almost always use more direct methods, as they are simpler and less error-prone.
