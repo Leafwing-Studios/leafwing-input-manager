@@ -7,7 +7,7 @@ fn main() {
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
         .add_plugin(InputManagerPlugin::<Action>::default())
-        // The InputMap and ActionState components will be added to any entity with the Player component
+        // Spawn an entity with Player, InputMap, and ActionState components
         .add_startup_system(spawn_player)
         // Read the ActionState in your systems using queries!
         .add_system(move_player)
