@@ -321,7 +321,15 @@ impl<A: Actionlike> InputMap<A> {
                     action.reasons_pressed.push(input.clone());
                     action.value += value;
                     action.value = action.value.clamp(-1.0, 1.0);
-                    action.axis_pair = AxisPair::new(action.axis_pair.xy() + axis_pair.xy());
+
+                    // Merge axis pair into action data
+                    if let Some(axis_pair) = axis_pair {
+                        if let Some(current_axis_pair) = &mut action.axis_pair {
+                            *current_axis_pair = current_axis_pair.merged_with(axis_pair);
+                        } else {
+                            action.axis_pair = Some(axis_pair);
+                        }
+                    }
                 }
             }
 

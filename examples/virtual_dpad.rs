@@ -14,7 +14,6 @@ fn main() {
         .run();
 }
 
-// This is the list of "things in the game I want to be able to do based on input"
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum Action {
     Move,
@@ -49,7 +48,7 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
     // Each action has a button-like state of its own that you can check
     if action_state.pressed(Action::Move) {
-        let axis_pair = action_state.action_axis_pair(Action::Move);
+        let axis_pair = action_state.action_axis_pair(Action::Move).unwrap();
         println!("Move:");
         println!("   distance: {}", axis_pair.magnitude());
         println!("          x: {}", axis_pair.x());
