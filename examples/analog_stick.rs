@@ -21,6 +21,7 @@ enum Action {
     Down,
     Left,
     Right,
+    Throttle,
 }
 
 #[derive(Component)]
@@ -69,6 +70,8 @@ fn spawn_player(mut commands: Commands) {
                     Action::Right,
                 ),
             ])
+            // Let's also add a gamepad button binding to the right trigger
+            .insert(GamepadButtonType::RightTrigger2, Action::Throttle)
             // Listen for events on the first gamepad
             .set_gamepad(Gamepad(0))
             .build(),
@@ -80,15 +83,32 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
     // Each action has a button-like state of its own that you can check
     if action_state.pressed(Action::Up) {
-        println!("Up");
+        // You can also get the action value which will tell you how tilted the axis is for axis
+        // inputs.
+        // For analog sticks, this will be between -1.0 and 1.0.
+        let value = action_state.action_data(Action::Up).value;
+        println!("Up: {}", value);
     }
     if action_state.pressed(Action::Down) {
-        println!("Down");
+        let value = action_state.action_data(Action::Down).value;
+        println!("Down: {}", value);
     }
     if action_state.pressed(Action::Left) {
-        println!("Left");
+        let value = action_state.action_data(Action::Left).value;
+        println!("Left: {}", value);
     }
     if action_state.pressed(Action::Right) {
-        println!("Right");
+        let value = action_state.action_data(Action::Right).value;
+        println!("Right: {}", value);
+    }
+    if action_state.pressed(Action::Throttle) {
+        // Note that some gamepad buttons are also tied to axes, so even though we used a
+        // GamepadbuttonType::RightTrigger2 binding to trigger the throttle action, we can get a
+        // variable value here if you have a variable right trigger on your gamepad.
+        //
+        // If you don't have a variable trigger, this will just return 0.0 when not pressed and 1.0
+        // when pressed.
+        let value = action_state.action_data(Action::Throttle).value;
+        println!("Throttle: {}", value);
     }
 }
