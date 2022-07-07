@@ -27,6 +27,17 @@ pub enum UserInput {
     /// Up to 8 (!!) buttons can be chorded together at once.
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
     Chord(PetitSet<InputKind, 8>),
+    /// A virtual DPad that you can get an [`AxisPair`] from
+    VirtualDPad {
+        /// The input that represents the up direction in this virtual DPad
+        up: InputKind,
+        /// The input that represents the down direction in this virtual DPad
+        down: InputKind,
+        /// The input that represents the left direction in this virtual DPad
+        left: InputKind,
+        /// The input that represents the right direction in this virtual DPad
+        right: InputKind,
+    },
 }
 
 impl UserInput {
@@ -61,6 +72,17 @@ impl UserInput {
                     set.insert(button.into());
                 }
             }
+            UserInput::VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            } => {
+                set.insert((*up).into());
+                set.insert((*down).into());
+                set.insert((*left).into());
+                set.insert((*right).into());
+            }
         }
         set
     }
@@ -85,6 +107,20 @@ impl UserInput {
                 }
                 false
             }
+            UserInput::VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            } => {
+                for button in [up, down, left, right] {
+                    let button_mode: InputMode = (*button).into();
+                    if button_mode == input_mode {
+                        return true;
+                    }
+                }
+                false
+            }
         }
     }
 
@@ -93,6 +129,7 @@ impl UserInput {
         match self {
             UserInput::Single(_) => 1,
             UserInput::Chord(button_set) => button_set.len(),
+            UserInput::VirtualDPad { .. } => 4,
         }
     }
 
@@ -137,6 +174,23 @@ impl UserInput {
 
                 n_matching
             }
+            UserInput::VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            } => {
+                let mut n_matching = 0;
+                for button in buttons.iter() {
+                    for dpad_button in [up, down, left, right] {
+                        if button == dpad_button {
+                            n_matching += 1;
+                        }
+                    }
+                }
+
+                n_matching
+            }
         }
     }
 
@@ -169,6 +223,25 @@ impl UserInput {
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(*variant),
                         InputKind::Mouse(variant) => mouse_buttons.push(*variant),
+                    }
+                }
+            }
+            UserInput::VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            } => {
+                for button in [up, down, left, right] {
+                    match *button {
+                        InputKind::DualGamepadAxis(variant) => {
+                            gamepad_axes.push(variant.x_axis);
+                            gamepad_axes.push(variant.y_axis);
+                        }
+                        InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                        InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
+                        InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
+                        InputKind::Mouse(variant) => mouse_buttons.push(variant),
                     }
                 }
             }
@@ -364,6 +437,15 @@ impl std::hash::Hash for DualGamepadAxisThreshold {
     }
 }
 
+/// A virtual dpad that you will be able to read as an [`AxisPair`]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct VirtualDPad {
+    up: InputKind,
+    down: InputKind,
+    left: InputKind,
+    right: InputKind,
+}
+
 /// Different possible ways to compare an axis threshold to the axis value.
 ///
 /// See [`GamepadAxisThreshold`].
@@ -483,6 +565,19 @@ impl<'a> InputStreams<'a> {
         match input {
             UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
+            UserInput::VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            } => {
+                for button in [up, down, left, right] {
+                    if self.button_pressed(*button) {
+                        return true;
+                    }
+                }
+                false
+            }
         }
     }
 
@@ -601,6 +696,7 @@ impl<'a> InputStreams<'a> {
                         0.0
                     }
                 }
+                UserInput::VirtualDPad { .. } => self.get_input_axis_pair(input).magnitude(),
                 UserInput::Single(InputKind::GamepadButton(button_type)) => {
                     if let Some(button_axes) = self.gamepad_button_axes {
                         button_axes
@@ -651,7 +747,21 @@ impl<'a> InputStreams<'a> {
                 _ => use_single_value(),
             }
         } else {
-            use_single_value()
+            match input {
+                UserInput::VirtualDPad {
+                    up,
+                    down,
+                    left,
+                    right,
+                } => {
+                    let x = self.get_input_value(&UserInput::Single(*right))
+                        - self.get_input_value(&UserInput::Single(*left)).abs();
+                    let y = self.get_input_value(&UserInput::Single(*up))
+                        - self.get_input_value(&UserInput::Single(*down)).abs();
+                    AxisPair::new(Vec2::new(x, y))
+                }
+                _ => use_single_value(),
+            }
         }
     }
 }

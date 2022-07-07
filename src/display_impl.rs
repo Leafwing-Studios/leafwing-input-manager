@@ -17,6 +17,18 @@ impl Display for UserInput {
                 }
                 write!(f, "{string}")
             }
+            UserInput::VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            } => {
+                write!(
+                    f,
+                    "VirtualDPad(up: {}, down: {}, left: {}, right: {})",
+                    up, down, left, right
+                )
+            }
         }
     }
 }
