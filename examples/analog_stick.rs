@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::{prelude::*, user_input::DualGamepadAxisThreshold};
 
 fn main() {
     App::new()
@@ -17,10 +17,7 @@ fn main() {
 // This is the list of "things in the game I want to be able to do based on input"
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum Action {
-    Up,
-    Down,
-    Left,
-    Right,
+    Move,
     Throttle,
 }
 
@@ -35,41 +32,17 @@ fn spawn_player(mut commands: Commands) {
             // Stores "which actions are currently activated"
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
-            input_map: InputMap::new([
-                (
-                    // This describes which gamepad axis must be moved how much to trigger the action
-                    GamepadAxisThreshold {
-                        axis: GamepadAxisType::LeftStickY,
-                        comparison: GamepadAxisComparison::Greater,
-                        threshold: 0.1,
-                    },
-                    Action::Up,
-                ),
-                (
-                    GamepadAxisThreshold {
-                        axis: GamepadAxisType::LeftStickY,
-                        comparison: GamepadAxisComparison::Less,
-                        threshold: -0.1,
-                    },
-                    Action::Down,
-                ),
-                (
-                    GamepadAxisThreshold {
-                        axis: GamepadAxisType::LeftStickX,
-                        comparison: GamepadAxisComparison::Less,
-                        threshold: -0.1,
-                    },
-                    Action::Left,
-                ),
-                (
-                    GamepadAxisThreshold {
-                        axis: GamepadAxisType::LeftStickX,
-                        comparison: GamepadAxisComparison::Greater,
-                        threshold: 0.1,
-                    },
-                    Action::Right,
-                ),
-            ])
+            input_map: InputMap::new([(
+                // We want to trigger our move action when the left stick is moved more than 10% in
+                // any direction.
+                DualGamepadAxisThreshold {
+                    x_axis: GamepadAxisType::LeftStickX,
+                    y_axis: GamepadAxisType::LeftStickY,
+                    comparison: GamepadAxisComparison::Greater,
+                    threshold: 0.1,
+                },
+                Action::Move,
+            )])
             // Let's also add a gamepad button binding to the right trigger
             .insert(GamepadButtonType::RightTrigger2, Action::Throttle)
             // Listen for events on the first gamepad
@@ -82,25 +55,14 @@ fn spawn_player(mut commands: Commands) {
 fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
     // Each action has a button-like state of its own that you can check
-    if action_state.pressed(Action::Up) {
-        // You can also get the action value which will tell you how tilted the axis is for axis
-        // inputs.
-        // For analog sticks, this will be between -1.0 and 1.0.
-        let value = action_state.action_value(Action::Up);
-        println!("Up: {}", value);
+    if action_state.pressed(Action::Move) {
+        let axis_pair = action_state.action_axis_pair(Action::Move);
+        println!("Move:");
+        println!("   distance: {}", axis_pair.magnitude());
+        println!("          x: {}", axis_pair.x());
+        println!("          y: {}", axis_pair.y());
     }
-    if action_state.pressed(Action::Down) {
-        let value = action_state.action_value(Action::Down);
-        println!("Down: {}", value);
-    }
-    if action_state.pressed(Action::Left) {
-        let value = action_state.action_value(Action::Left);
-        println!("Left: {}", value);
-    }
-    if action_state.pressed(Action::Right) {
-        let value = action_state.action_value(Action::Right);
-        println!("Right: {}", value);
-    }
+
     if action_state.pressed(Action::Throttle) {
         // Note that some gamepad buttons are also tied to axes,
         // so even though we used a GamepadbuttonType::RightTrigger2 binding to trigger the

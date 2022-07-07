@@ -1,5 +1,6 @@
 //! Helpful abstractions over user inputs of all sorts
 
+use bevy_core::FloatOrd;
 use bevy_input::{
     gamepad::{Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType},
     keyboard::KeyCode,
@@ -7,9 +8,12 @@ use bevy_input::{
     Axis, Input,
 };
 
+use bevy_math::Vec2;
 use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
+
+use crate::axislike::AxisPair;
 
 /// Some combination of user input, which may cross [`Input`] boundaries
 ///
@@ -145,7 +149,11 @@ impl UserInput {
 
         match self {
             UserInput::Single(button) => match *button {
-                InputKind::GamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                InputKind::DualGamepadAxis(variant) => {
+                    gamepad_axes.push(variant.x_axis);
+                    gamepad_axes.push(variant.y_axis);
+                }
+                InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
                 InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
                 InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
                 InputKind::Mouse(variant) => mouse_buttons.push(variant),
@@ -153,7 +161,11 @@ impl UserInput {
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
                     match button {
-                        InputKind::GamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                        InputKind::DualGamepadAxis(variant) => {
+                            gamepad_axes.push(variant.x_axis);
+                            gamepad_axes.push(variant.y_axis);
+                        }
+                        InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(*variant),
                         InputKind::Mouse(variant) => mouse_buttons.push(*variant),
@@ -172,9 +184,15 @@ impl From<InputKind> for UserInput {
     }
 }
 
-impl From<GamepadAxisThreshold> for UserInput {
-    fn from(input: GamepadAxisThreshold) -> Self {
-        UserInput::Single(InputKind::GamepadAxis(input))
+impl From<DualGamepadAxisThreshold> for UserInput {
+    fn from(input: DualGamepadAxisThreshold) -> Self {
+        UserInput::Single(InputKind::DualGamepadAxis(input))
+    }
+}
+
+impl From<SingleGamepadAxisThreshold> for UserInput {
+    fn from(input: SingleGamepadAxisThreshold) -> Self {
+        UserInput::Single(InputKind::SingleGamepadAxis(input))
     }
 }
 
@@ -252,7 +270,9 @@ impl Iterator for InputModeIter {
 impl From<InputKind> for InputMode {
     fn from(button: InputKind) -> Self {
         match button {
-            InputKind::GamepadButton(_) | InputKind::GamepadAxis(_) => InputMode::Gamepad,
+            InputKind::GamepadButton(_)
+            | InputKind::SingleGamepadAxis(_)
+            | InputKind::DualGamepadAxis(_) => InputMode::Gamepad,
             InputKind::Keyboard(_) => InputMode::Keyboard,
             InputKind::Mouse(_) => InputMode::Mouse,
         }
@@ -272,8 +292,10 @@ impl From<InputKind> for InputMode {
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
-    /// An axis on a gamepad
-    GamepadAxis(GamepadAxisThreshold),
+    /// A single axis on a gamepad
+    SingleGamepadAxis(SingleGamepadAxisThreshold),
+    /// A axis on a gamepad
+    DualGamepadAxis(DualGamepadAxisThreshold),
     /// A button on a keyboard
     Keyboard(KeyCode),
     /// A button on a mouse
@@ -282,7 +304,7 @@ pub enum InputKind {
 
 /// Used to indicate at which point a gamepad axis event should trigger an action.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct GamepadAxisThreshold {
+pub struct SingleGamepadAxisThreshold {
     /// The axis that is being checked.
     pub axis: GamepadAxisType,
     /// Indicates whether the action should trigger when the axis value is greater, lesser, or equal
@@ -292,19 +314,51 @@ pub struct GamepadAxisThreshold {
     pub threshold: f32,
 }
 
-impl PartialEq for GamepadAxisThreshold {
+impl PartialEq for SingleGamepadAxisThreshold {
     fn eq(&self, other: &Self) -> bool {
-        use bevy_core::FloatOrd;
         self.axis == other.axis
             && self.comparison == other.comparison
             && FloatOrd(self.threshold) == FloatOrd(other.threshold)
     }
 }
-impl Eq for GamepadAxisThreshold {}
-impl std::hash::Hash for GamepadAxisThreshold {
+impl Eq for SingleGamepadAxisThreshold {}
+impl std::hash::Hash for SingleGamepadAxisThreshold {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        use bevy_core::FloatOrd;
         self.axis.hash(state);
+        self.comparison.hash(state);
+        FloatOrd(self.threshold).hash(state);
+    }
+}
+
+/// Used to indicate at which point a dual gamepad axis event should trigger an action.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct DualGamepadAxisThreshold {
+    /// The gamepad axis to use as the x axis
+    pub x_axis: GamepadAxisType,
+    /// The gamepad axis to use as the y axis
+    pub y_axis: GamepadAxisType,
+    /// Indicates whether the action should trigger when the axis movement is greater, lesser, or
+    /// equal to the `threshold`.
+    pub comparison: GamepadAxisComparison,
+    /// The threshold to compare the dual axis value with.
+    ///
+    /// The value of a dual axis is
+    pub threshold: f32,
+}
+
+impl PartialEq for DualGamepadAxisThreshold {
+    fn eq(&self, other: &Self) -> bool {
+        self.x_axis == other.x_axis
+            && self.y_axis == other.y_axis
+            && self.comparison == other.comparison
+            && FloatOrd(self.threshold) == FloatOrd(other.threshold)
+    }
+}
+impl Eq for DualGamepadAxisThreshold {}
+impl std::hash::Hash for DualGamepadAxisThreshold {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x_axis.hash(state);
+        self.y_axis.hash(state);
         self.comparison.hash(state);
         FloatOrd(self.threshold).hash(state);
     }
@@ -315,17 +369,27 @@ impl std::hash::Hash for GamepadAxisThreshold {
 /// See [`GamepadAxisThreshold`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum GamepadAxisComparison {
-    /// Value must be less than threshold
+    /// Value must be less than threshold.
     Less,
-    /// Value must be greater than threshold
+    /// Value must be greater than threshold.
     Greater,
-    /// Value must be equal to threshold
+    /// Value must be equal to threshold.
     Equal,
+    /// Value can be anything.
+    ///
+    /// The action will be triggered every frame regardless of it's value or the `threshold`.
+    Always,
 }
 
-impl From<GamepadAxisThreshold> for InputKind {
-    fn from(input: GamepadAxisThreshold) -> Self {
-        InputKind::GamepadAxis(input)
+impl From<DualGamepadAxisThreshold> for InputKind {
+    fn from(input: DualGamepadAxisThreshold) -> Self {
+        InputKind::DualGamepadAxis(input)
+    }
+}
+
+impl From<SingleGamepadAxisThreshold> for InputKind {
+    fn from(input: SingleGamepadAxisThreshold) -> Self {
+        InputKind::SingleGamepadAxis(input)
     }
 }
 
@@ -438,7 +502,7 @@ impl<'a> InputStreams<'a> {
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputKind::GamepadAxis(axis) => {
+            InputKind::DualGamepadAxis(axis) => {
                 let value = self.get_input_value(&UserInput::Single(button));
 
                 match axis.comparison {
@@ -447,6 +511,19 @@ impl<'a> InputStreams<'a> {
                     GamepadAxisComparison::Equal => {
                         (axis.threshold.abs() - value.abs()) > f32::EPSILON
                     }
+                    GamepadAxisComparison::Always => true,
+                }
+            }
+            InputKind::SingleGamepadAxis(axis) => {
+                let value = self.get_input_value(&UserInput::Single(button));
+
+                match axis.comparison {
+                    GamepadAxisComparison::Less => value < axis.threshold,
+                    GamepadAxisComparison::Greater => value > axis.threshold,
+                    GamepadAxisComparison::Equal => {
+                        (axis.threshold.abs() - value.abs()) > f32::EPSILON
+                    }
+                    GamepadAxisComparison::Always => true,
                 }
             }
             InputKind::GamepadButton(gamepad_button) => {
@@ -509,10 +586,17 @@ impl<'a> InputStreams<'a> {
 
         if let Some(gamepad) = self.associated_gamepad {
             match input {
-                UserInput::Single(InputKind::GamepadAxis(threshold)) => {
+                UserInput::Single(InputKind::SingleGamepadAxis(threshold)) => {
                     if let Some(axes) = self.gamepad_axes {
                         axes.get(GamepadAxis(gamepad, threshold.axis))
                             .unwrap_or_default()
+                    } else {
+                        0.0
+                    }
+                }
+                UserInput::Single(InputKind::DualGamepadAxis(_)) => {
+                    if self.gamepad_axes.is_some() {
+                        self.get_input_axis_pair(input).magnitude()
                     } else {
                         0.0
                     }
@@ -532,9 +616,42 @@ impl<'a> InputStreams<'a> {
         // If there is no gamepad
         } else {
             match input {
-                UserInput::Single(InputKind::GamepadAxis(_) | InputKind::GamepadButton(_)) => 0.0,
+                UserInput::Single(
+                    InputKind::SingleGamepadAxis(_) | InputKind::GamepadButton(_),
+                ) => 0.0,
                 _ => use_button_value(),
             }
+        }
+    }
+
+    /// Get the axis pair associated to the user input.
+    ///
+    /// See [`ActionState::action_axis_pair()`].
+    pub fn get_input_axis_pair(&self, input: &UserInput) -> AxisPair {
+        let use_single_value = || {
+            let value = self.get_input_value(input);
+            AxisPair::new(Vec2::splat(value))
+        };
+
+        if let Some(gamepad) = self.associated_gamepad {
+            match input {
+                UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
+                    if let Some(axes) = self.gamepad_axes {
+                        let x = axes
+                            .get(GamepadAxis(gamepad, threshold.x_axis))
+                            .unwrap_or_default();
+                        let y = axes
+                            .get(GamepadAxis(gamepad, threshold.y_axis))
+                            .unwrap_or_default();
+                        AxisPair::new(Vec2::new(x, y))
+                    } else {
+                        AxisPair::new(Vec2::ZERO)
+                    }
+                }
+                _ => use_single_value(),
+            }
+        } else {
+            use_single_value()
         }
     }
 }

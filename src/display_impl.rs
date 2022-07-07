@@ -24,7 +24,8 @@ impl Display for UserInput {
 impl Display for InputKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InputKind::GamepadAxis(axis) => write!(f, "{axis:?}"),
+            InputKind::SingleGamepadAxis(axis) => write!(f, "{axis:?}"),
+            InputKind::DualGamepadAxis(axis) => write!(f, "{axis:?}"),
             InputKind::GamepadButton(button) => write!(f, "{button:?}"),
             InputKind::Mouse(button) => write!(f, "{button:?}"),
             InputKind::Keyboard(button) => write!(f, "{button:?}"),

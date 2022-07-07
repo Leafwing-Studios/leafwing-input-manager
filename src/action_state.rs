@@ -1,8 +1,8 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::buttonlike::ButtonState;
 use crate::user_input::UserInput;
 use crate::Actionlike;
+use crate::{axislike::AxisPair, buttonlike::ButtonState};
 
 use bevy_ecs::{component::Component, entity::Entity};
 use bevy_utils::{Duration, Instant};
@@ -16,11 +16,14 @@ use std::marker::PhantomData;
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
-    /// The analog value of this button/axis, if applicable
+    /// The "value" of the binding that triggered the action.
     ///
-    /// For binary inputs such as buttons, this will always be either 0.0 or 1.0. For analog axes
-    /// this will be in the range of `-1.0..=1.0`.
+    /// See [`ActionState::action_value()`] for more details.
     pub value: f32,
+    /// The [`AxisPair`] of the binding that triggered the action.
+    ///
+    /// See [`ActionState::action_axis_pair()`] for more details.
+    pub axis_pair: AxisPair,
     /// What inputs were responsible for causing this action to be pressed?
     pub reasons_pressed: Vec<UserInput>,
     /// When was the button pressed / released, and how long has it been held for?
@@ -101,6 +104,7 @@ impl<A: Actionlike> ActionState<A> {
                 ButtonState::Released => self.release(action),
             }
 
+            self.action_data[i].axis_pair = action_data[i].axis_pair;
             self.action_data[i].value = action_data[i].value;
             self.action_data[i].reasons_pressed = action_data[i].reasons_pressed.clone();
         }
@@ -188,20 +192,28 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Get the value associated with the corresponding `action`
-    /// 
-    /// For actions triggered by a variable axis, such as an analog stick,
-    /// this will be in the range of `-1.0..=1.0`.
-    /// 
-    /// For buttons this will be `0.0` when the button is not pressed,
-    /// and `1.0` when the button is pressed.
-    /// 
-    /// Some axes such as trigger buttons will return a value in the range of `-1.0..=1.0`.
-    /// 
-    /// Note that some buttons, such as [`GamepadButtonType::RightTrigger2`] are variable.
-    /// Variable buttons will return how "pressed" they are in this case as a value in the range
+    ///
+    /// Different kinds of bindings have different ways of calculating the value:
+    ///
+    /// - Binary buttons will have a value of `0.0` when the button is not pressed,
+    /// and a value of `1.0` when the button is pressed.
+    /// - Some axes, such as an analog stick, will have a value in the range `-1.0..=1.0`.
+    /// - Some axes, such as a variable trigger, will have a value in the range `0.0..=1.0`.
+    /// - Some buttons will also return a value in the range `0.0..=1.0`,
+    /// such as variable triggers, which may be tracked as buttons or axes.
+    /// - Dual axis inputs will return the magnitude of it's [`AxisPair`] and will be in the range
     /// `0.0..=1.0`.
     pub fn action_value(&self, action: A) -> f32 {
         self.action_data(action).value
+    }
+
+    /// Get the [`AxisPair`] associated to the binding that triggered the corresponding `action`.
+    ///
+    /// If it was not a [`DualGamepadAxisThreshold`] that triggered the action,
+    /// this will be equal to an [`AxisPair`] that has it's x and y values set to the same value as
+    /// returned by [`action_value()`].
+    pub fn action_axis_pair(&self, action: A) -> AxisPair {
+        self.action_data(action).axis_pair
     }
 
     /// Manually sets the [`ActionData`] of the corresponding `action`

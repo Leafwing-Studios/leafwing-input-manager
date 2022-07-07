@@ -1,6 +1,7 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
 use crate::action_state::ActionData;
+use crate::axislike::AxisPair;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::user_input::{InputKind, InputStreams, UserInput};
@@ -313,12 +314,14 @@ impl<A: Actionlike> InputMap<A> {
 
             for input in self.get(action.clone()).iter() {
                 let value = input_streams.get_input_value(input);
+                let axis_pair = input_streams.get_input_axis_pair(input);
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
                     let action = &mut action_data[action.index()];
                     action.reasons_pressed.push(input.clone());
                     action.value += value;
                     action.value = action.value.clamp(-1.0, 1.0);
+                    action.axis_pair = AxisPair::new(action.axis_pair.xy() + axis_pair.xy());
                 }
             }
 
