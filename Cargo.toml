@@ -22,17 +22,18 @@ default = ['ui']
 ui = ['bevy_ui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.3" }
+leafwing_input_manager_macros = { path = "macros", version = "0.4" }
 
-bevy_app = {version = "0.7", default-features = false}
-bevy_core = {version = "0.7", default-features = false}
-bevy_transform = {version = "0.7", default-features = false}
-bevy_ecs = {version = "0.7", default-features = false}
-bevy_input = {version = "0.7", default-features = false, features = ["serialize"]}
-bevy_math = {version = "0.7", default-features = false}
-bevy_utils = {version = "0.7", default-features = false}
-bevy_ui = {version = "0.7", default-features = false, optional = true}
-bevy_window = {version = "0.7", default-features = false}
+bevy_app = { git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy_core = { git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy_transform = { git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy_ecs = { git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy_input = { git = "https://github.com/bevyengine/bevy", default-features = false, features = ["serialize"]}
+bevy_math = { git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy_time = { git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy_utils = { git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy_ui = { git = "https://github.com/bevyengine/bevy", default-features = false, optional = true}
+bevy_window = { git = "https://github.com/bevyengine/bevy", default-features = false}
 
 petitset = {version = "0.2.1", features = ["serde_compat"]}
 derive_more = {version = "0.99", default-features = false, features = ["display", "error"]}
@@ -40,8 +41,8 @@ itertools = "0.10"
 serde = {version = "1.0", features = ["derive"]}
 
 [dev-dependencies]
-bevy = {version = "0.7", default-features = false, features = ["bevy_gilrs", "bevy_sprite", "bevy_text", "bevy_ui", "bevy_render", "bevy_core_pipeline", "x11"]}
-bevy_egui = {version="0.13", default-features = false}
+bevy = { git = "https://github.com/bevyengine/bevy", default-features = false, features = ["bevy_sprite", "bevy_text", "bevy_ui", "bevy_render", "bevy_core_pipeline", "x11"]}
+bevy_egui = { version="0.14", default-features = false }
 
 [lib]
 name = "leafwing_input_manager"
