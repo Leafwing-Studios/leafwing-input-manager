@@ -29,8 +29,8 @@ fn main() {
 fn spawn_player_system(mut commands: Commands, control_settings: Res<ControlSettings>) {
     commands.spawn().insert(control_settings.input.clone());
     commands.insert_resource(InputMap::<UiAction>::new([(
-        UiAction::Back,
         KeyCode::Escape,
+        UiAction::Back,
     )]));
     commands.insert_resource(ActionState::<UiAction>::default());
 }
@@ -133,8 +133,8 @@ fn binding_window_system(
                             .input
                             .remove(conflict.action, conflict.input_button);
                         control_settings.input.insert_at(
-                            active_binding.action,
                             conflict.input_button,
+                            active_binding.action,
                             active_binding.index,
                         );
                         commands.remove_resource::<ActiveBinding>();
@@ -149,7 +149,7 @@ fn binding_window_system(
                     commands.remove_resource::<ActiveBinding>();
                 } else if let Some(input_button) = input_events.input_button() {
                     let conflict_action =
-                        control_settings.input.iter().find_map(|(action, inputs)| {
+                        control_settings.input.iter().find_map(|(inputs, action)| {
                             if action != active_binding.action
                                 && inputs.contains(&input_button.into())
                             {
@@ -164,8 +164,8 @@ fn binding_window_system(
                         });
                     } else {
                         control_settings.input.insert_at(
-                            active_binding.action,
                             input_button,
+                            active_binding.action,
                             active_binding.index,
                         );
                         commands.remove_resource::<ActiveBinding>();
@@ -205,16 +205,16 @@ impl Default for ControlSettings {
     fn default() -> Self {
         let mut input = InputMap::default();
         input
-            .insert(ControlAction::Forward, KeyCode::W)
-            .insert(ControlAction::Backward, KeyCode::S)
-            .insert(ControlAction::Left, KeyCode::A)
-            .insert(ControlAction::Right, KeyCode::D)
-            .insert(ControlAction::Jump, KeyCode::Space)
-            .insert(ControlAction::BaseAttack, MouseButton::Left)
-            .insert(ControlAction::Ability1, KeyCode::Q)
-            .insert(ControlAction::Ability2, KeyCode::E)
-            .insert(ControlAction::Ability3, KeyCode::LShift)
-            .insert(ControlAction::Ultimate, KeyCode::R);
+            .insert(KeyCode::W, ControlAction::Forward)
+            .insert(KeyCode::S, ControlAction::Backward)
+            .insert(KeyCode::A, ControlAction::Left)
+            .insert(KeyCode::D, ControlAction::Right)
+            .insert(KeyCode::Space, ControlAction::Jump)
+            .insert(MouseButton::Left, ControlAction::BaseAttack)
+            .insert(KeyCode::Q, ControlAction::Ability1)
+            .insert(KeyCode::E, ControlAction::Ability2)
+            .insert(KeyCode::LShift, ControlAction::Ability3)
+            .insert(KeyCode::R, ControlAction::Ultimate);
 
         Self { input }
     }

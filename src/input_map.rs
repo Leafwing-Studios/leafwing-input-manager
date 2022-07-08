@@ -53,19 +53,20 @@ use std::marker::PhantomData;
 ///    // Note that the type of your iterators must be homogenous;
 ///    // you can use `InputButton` or `UserInput` if needed
 ///    // as unifiying types
-///   (Action::Run, GamepadButtonType::South),
-///   (Action::Hide, GamepadButtonType::LeftTrigger),
-///   (Action::Hide, GamepadButtonType::RightTrigger),
+///   (GamepadButtonType::South, Action::Run),
+///   (GamepadButtonType::LeftTrigger, Action::Hide),
+///   (GamepadButtonType::RightTrigger, Action::Hide),
 /// ]);
 ///
 /// // Insertion
-/// input_map.insert(Action::Run, MouseButton::Left)
-/// .insert(Action::Run, KeyCode::LShift)
+/// input_map.insert(MouseButton::Left, Action::Run)
+/// .insert(KeyCode::LShift, Action::Run)
 /// // Chords
-/// .insert_chord(Action::Run, [KeyCode::LControl, KeyCode::R])
-/// .insert_chord(Action::Hide, [InputButton::Keyboard(KeyCode::H),
-///                              InputButton::Gamepad(GamepadButtonType::South),
-///                              InputButton::Mouse(MouseButton::Middle)]);
+/// .insert_chord([KeyCode::LControl, KeyCode::R], Action::Run)
+/// .insert_chord([InputButton::Keyboard(KeyCode::H),
+///                InputButton::Gamepad(GamepadButtonType::South),
+///                InputButton::Mouse(MouseButton::Middle)],
+///            Action::Hide);
 ///
 /// // Removal
 /// input_map.clear_action(Action::Hide);
@@ -110,14 +111,14 @@ impl<A: Actionlike> InputMap<A> {
     /// }
     ///
     /// let input_map = InputMap::new([
-    ///     (Action::Run, KeyCode::LShift),
-    ///     (Action::Jump, KeyCode::Space),
+    ///     (KeyCode::LShift, Action::Run),
+    ///     (KeyCode::Space, Action::Jump),
     /// ]);
     ///
     /// assert_eq!(input_map.len(), 2);
     /// ```
     #[must_use]
-    pub fn new(bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>) -> Self {
+    pub fn new(bindings: impl IntoIterator<Item = (impl Into<UserInput>, A)>) -> Self {
         let mut input_map = InputMap::default();
         input_map.insert_multiple(bindings);
 
@@ -147,7 +148,7 @@ impl<A: Actionlike> InputMap<A> {
     /// }
     ///
     /// let input_map: InputMap<Action> = InputMap::default()
-    ///   .insert(Action::Jump, KeyCode::Space).build();
+    ///   .insert(KeyCode::Space, Action::Jump).build();
     /// ```
     #[inline]
     #[must_use]
@@ -163,7 +164,7 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert(&mut self, action: A, input: impl Into<UserInput>) -> &mut Self {
+    pub fn insert(&mut self, input: impl Into<UserInput>, action: A) -> &mut Self {
         let input = input.into();
 
         self.map[action.index()].insert(input);
@@ -178,7 +179,7 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert_at(&mut self, action: A, input: impl Into<UserInput>, index: usize) -> &mut Self {
+    pub fn insert_at(&mut self, input: impl Into<UserInput>, action: A, index: usize) -> &mut Self {
         let input = input.into();
 
         self.map[action.index()].insert_at(input, index);
@@ -197,7 +198,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
-        inputs: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
+        inputs: impl IntoIterator<Item = (impl Into<UserInput>, A)>,
     ) -> &mut Self {
         for (action, input) in inputs {
             self.insert(action, input);
@@ -216,10 +217,10 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and `buttons` is not a duplicate.
     pub fn insert_chord(
         &mut self,
-        action: A,
         buttons: impl IntoIterator<Item = impl Into<InputButton>>,
+        action: A,
     ) -> &mut Self {
-        self.insert(action, UserInput::chord(buttons));
+        self.insert(UserInput::chord(buttons), action);
         self
     }
 
@@ -243,11 +244,11 @@ impl<A: Actionlike> InputMap<A> {
 
         for action in A::variants() {
             for input in self.get(action.clone()).iter() {
-                new_map.insert(action.clone(), input.clone());
+                new_map.insert(input.clone(), action.clone());
             }
 
             for input in other.get(action.clone()).iter() {
-                new_map.insert(action.clone(), input.clone());
+                new_map.insert(input.clone(), action.clone());
             }
         }
 
@@ -334,11 +335,11 @@ impl<A: Actionlike> InputMap<A> {
 // Utilities
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over actions with their inputs
-    pub fn iter(&self) -> impl Iterator<Item = (A, &PetitSet<UserInput, 16>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
         self.map
             .iter()
             .enumerate()
-            .map(|(action_index, inputs)| (A::get_at(action_index).unwrap(), inputs))
+            .map(|(action_index, inputs)| (inputs, A::get_at(action_index).unwrap()))
     }
 
     /// Returns an iterator over all mapped inputs
@@ -409,7 +410,7 @@ mod tests {
         use petitset::PetitSet;
 
         let mut input_map = InputMap::<Action>::default();
-        input_map.insert(Action::Run, KeyCode::Space);
+        input_map.insert(KeyCode::Space, Action::Run);
 
         assert_eq!(
             *input_map.get(Action::Run),
@@ -417,7 +418,7 @@ mod tests {
         );
 
         // Duplicate insertions should not change anything
-        input_map.insert(Action::Run, KeyCode::Space);
+        input_map.insert(KeyCode::Space, Action::Run);
         assert_eq!(
             *input_map.get(Action::Run),
             PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
@@ -431,8 +432,8 @@ mod tests {
         use petitset::PetitSet;
 
         let mut input_map_1 = InputMap::<Action>::default();
-        input_map_1.insert(Action::Run, KeyCode::Space);
-        input_map_1.insert(Action::Run, KeyCode::Return);
+        input_map_1.insert(KeyCode::Space, Action::Run);
+        input_map_1.insert(KeyCode::Return, Action::Run);
 
         assert_eq!(
             *input_map_1.get(Action::Run),
@@ -440,8 +441,8 @@ mod tests {
         );
 
         let input_map_2 = InputMap::<Action>::new([
-            (Action::Run, KeyCode::Space),
-            (Action::Run, KeyCode::Return),
+            (KeyCode::Space, Action::Run),
+            (KeyCode::Return, Action::Run),
         ]);
 
         assert_eq!(input_map_1, input_map_2);
@@ -454,10 +455,10 @@ mod tests {
 
         // Single items in a chord should be coerced to a singleton
         let mut input_map_1 = InputMap::<Action>::default();
-        input_map_1.insert(Action::Run, KeyCode::Space);
+        input_map_1.insert(KeyCode::Space, Action::Run);
 
         let mut input_map_2 = InputMap::<Action>::default();
-        input_map_2.insert(Action::Run, UserInput::chord([KeyCode::Space]));
+        input_map_2.insert(UserInput::chord([KeyCode::Space]), Action::Run);
 
         assert_eq!(input_map_1, input_map_2);
     }
@@ -467,15 +468,15 @@ mod tests {
         use bevy_input::keyboard::KeyCode;
 
         let mut input_map = InputMap::<Action>::default();
-        input_map.insert(Action::Run, KeyCode::Space);
+        input_map.insert(KeyCode::Space, Action::Run);
 
         // Clearing action
         input_map.clear_action(Action::Run);
         assert_eq!(input_map, InputMap::default());
 
         // Remove input at existing index
-        input_map.insert(Action::Run, KeyCode::Space);
-        input_map.insert(Action::Run, KeyCode::LShift);
+        input_map.insert(KeyCode::Space, Action::Run);
+        input_map.insert(KeyCode::LShift, Action::Run);
         assert!(input_map.remove_at(Action::Run, 1));
         assert!(
             !input_map.remove_at(Action::Run, 1),
@@ -494,11 +495,11 @@ mod tests {
 
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
-        default_keyboard_map.insert(Action::Run, KeyCode::LShift);
-        default_keyboard_map.insert_chord(Action::Hide, [KeyCode::LControl, KeyCode::H]);
+        default_keyboard_map.insert(KeyCode::LShift, Action::Run);
+        default_keyboard_map.insert_chord([KeyCode::LControl, KeyCode::H], Action::Hide);
         let mut default_gamepad_map = InputMap::default();
-        default_gamepad_map.insert(Action::Run, GamepadButtonType::South);
-        default_gamepad_map.insert(Action::Hide, GamepadButtonType::East);
+        default_gamepad_map.insert(GamepadButtonType::South, Action::Run);
+        default_gamepad_map.insert(GamepadButtonType::East, Action::Hide);
 
         // Merging works
         input_map.merge(&default_keyboard_map);
@@ -534,27 +535,27 @@ mod tests {
         input_map.set_gamepad(Gamepad { id: 42 });
 
         // Gamepad
-        input_map.insert(Action::Run, GamepadButtonType::South);
+        input_map.insert(GamepadButtonType::South, Action::Run);
         input_map.insert_chord(
+            [GamepadButtonType::North, GamepadButtonType::South],
             Action::Jump,
-            [GamepadButtonType::South, GamepadButtonType::North],
         );
 
         // Keyboard
-        input_map.insert(Action::Run, KeyCode::LShift);
-        input_map.insert(Action::Hide, KeyCode::LShift);
+        input_map.insert(KeyCode::LShift, Action::Run);
+        input_map.insert(KeyCode::LShift, Action::Hide);
 
         // Mouse
-        input_map.insert(Action::Run, MouseButton::Left);
-        input_map.insert(Action::Jump, MouseButton::Other(42));
+        input_map.insert(MouseButton::Left, Action::Run);
+        input_map.insert(MouseButton::Other(42), Action::Jump);
 
         // Cross-device chords
         input_map.insert_chord(
-            Action::Hide,
             [
                 InputButton::Keyboard(KeyCode::LControl),
                 InputButton::Mouse(MouseButton::Left),
             ],
+            Action::Hide,
         );
 
         // Input streams
