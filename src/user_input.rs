@@ -380,17 +380,9 @@ pub enum InputKind {
 pub struct SingleGamepadAxis {
     /// The axis that is being checked.
     pub axis: GamepadAxisType,
-    /// How high the axis movement must go in the positive direction before the action is triggered.
-    ///
-    /// For example if this is set to `0.2`,
-    /// an axis movement value of `0.3` will trigger the action,
-    /// but an axis movement of `0.1` will not trigger the action.
+    /// Any axis value higher than this will trigger the input.
     pub positive_low: f32,
-    /// How low the axis movement must go in the negative direction before the action is triggered.
-    ///
-    /// For example if this is set to `-0.2`,
-    /// an axis movement value of `-0.3` will trigger the action,
-    /// but an axis movement of `-0.1` will not trigger the action.
+    /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
 }
 
@@ -443,9 +435,13 @@ impl std::hash::Hash for DualGamepadAxis {
 /// A virtual dpad that you will be able to read as an [`AxisPair`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct VirtualDPad {
+    // The up input
     up: InputKind,
+    // The down input
     down: InputKind,
+    // The left input
     left: InputKind,
+    // The right input
     right: InputKind,
 }
 
@@ -591,7 +587,7 @@ impl<'a> InputStreams<'a> {
             InputKind::SingleGamepadAxis(axis) => {
                 let value = self.get_input_value(&UserInput::Single(button));
 
-                value <= axis.negative_low || value >= axis.positive_low
+                value < axis.negative_low || value > axis.positive_low
             }
             InputKind::GamepadButton(gamepad_button) => {
                 // If no gamepad is registered, we know for sure that no match was found
