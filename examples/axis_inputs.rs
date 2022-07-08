@@ -44,7 +44,10 @@ fn spawn_player(mut commands: Commands) {
                         // Note: The Bevy `GamepadSettings` such as the axis deadzone with still apply.
                         // If bevy filters out a gamepad event,
                         // it will be filtered out of leafwing, too.
-                        deadzone: 0.1,
+                        x_positive_low: 0.1,
+                        x_negative_low: -0.1,
+                        y_positive_low: 0.1,
+                        y_negative_low: -0.1,
                     },
                     Action::Move,
                 ),

@@ -408,19 +408,28 @@ impl std::hash::Hash for SingleGamepadAxis {
 /// [`ActionState::action_axis_pair()`][crate::ActionState::action_axis_pair()].
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DualGamepadAxis {
-    /// The gamepad axis to use as the x axis
+    /// The gamepad axis to use as the x axis.
     pub x_axis: GamepadAxisType,
-    /// The gamepad axis to use as the y axis
+    /// The gamepad axis to use as the y axis.
     pub y_axis: GamepadAxisType,
-    /// The distance the stick must be moved in any direction before the action is triggered.
-    pub deadzone: f32,
+    /// If the stick is moved right more than this amount the input will be triggered.
+    pub x_positive_low: f32,
+    /// If the stick is moved left more than this amount the input will be triggered.
+    pub x_negative_low: f32,
+    /// If the stick is moved up more than this amount the input will be triggered.
+    pub y_positive_low: f32,
+    /// If the stick is moved down more than this amount the input will be triggered.
+    pub y_negative_low: f32,
 }
 
 impl PartialEq for DualGamepadAxis {
     fn eq(&self, other: &Self) -> bool {
         self.x_axis == other.x_axis
             && self.y_axis == other.y_axis
-            && FloatOrd(self.deadzone) == FloatOrd(other.deadzone)
+            && FloatOrd(self.x_positive_low) == FloatOrd(other.x_positive_low)
+            && FloatOrd(self.x_negative_low) == FloatOrd(other.x_negative_low)
+            && FloatOrd(self.y_positive_low) == FloatOrd(other.y_positive_low)
+            && FloatOrd(self.y_negative_low) == FloatOrd(other.y_negative_low)
     }
 }
 impl Eq for DualGamepadAxis {}
@@ -428,7 +437,10 @@ impl std::hash::Hash for DualGamepadAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.x_axis.hash(state);
         self.y_axis.hash(state);
-        FloatOrd(self.deadzone).hash(state);
+        FloatOrd(self.x_positive_low).hash(state);
+        FloatOrd(self.x_negative_low).hash(state);
+        FloatOrd(self.y_positive_low).hash(state);
+        FloatOrd(self.y_negative_low).hash(state);
     }
 }
 
@@ -580,9 +592,16 @@ impl<'a> InputStreams<'a> {
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
             InputKind::DualGamepadAxis(axis) => {
-                let value = self.get_input_value(&UserInput::Single(button));
+                let axis_pair = self
+                    .get_input_axis_pair(&UserInput::Single(button))
+                    .unwrap();
+                let x = axis_pair.x();
+                let y = axis_pair.y();
 
-                value >= axis.deadzone
+                x > axis.x_positive_low
+                    || x < axis.x_negative_low
+                    || y > axis.y_positive_low
+                    || y < axis.y_negative_low
             }
             InputKind::SingleGamepadAxis(axis) => {
                 let value = self.get_input_value(&UserInput::Single(button));
