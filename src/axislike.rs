@@ -90,7 +90,7 @@ impl AxisPair {
     /// If you only need to compare relative magnitudes, use `magnitude_squared` instead for faster computation.
     #[must_use]
     #[inline]
-    pub fn magnitude(&self) -> f32 {
+    pub fn length(&self) -> f32 {
         self.xy.length()
     }
 
@@ -101,7 +101,7 @@ impl AxisPair {
     /// This is faster than `magnitude`, as it avoids a square root, but will generally have less natural behavior.
     #[must_use]
     #[inline]
-    pub fn magnitude_squared(&self) -> f32 {
+    pub fn length_squared(&self) -> f32 {
         self.xy.length_squared()
     }
 }
