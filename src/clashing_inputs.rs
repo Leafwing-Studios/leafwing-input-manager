@@ -117,7 +117,6 @@ impl<A: Actionlike> InputMap<A> {
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
-
         // We can limit our search to the cached set of possibly clashing actions
         for clash in self.possible_clashes() {
             // Clashes can only occur if both actions were triggered
