@@ -2,6 +2,7 @@
 
 use crate::orientation::{Direction, Rotation};
 use bevy_math::Vec2;
+use serde::{Deserialize, Serialize};
 
 /// A high-level abstract user input that varies from -1 to 1, inclusive, along two axes
 ///
@@ -10,7 +11,7 @@ use bevy_math::Vec2;
 ///
 /// This struct should store the processed form of your raw inputs in a device-agnostic fashion.
 /// Any deadzone correction, rescaling or drift-correction should be done at an earlier level.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Default, Deserialize, Serialize)]
 pub struct AxisPair {
     xy: Vec2,
 }
@@ -21,12 +22,17 @@ impl AxisPair {
     ///
     /// The direction is preserved, by the magnitude will be clamped to at most 1.
     pub fn new(xy: Vec2) -> AxisPair {
-        let magnitude = xy.length();
-        if magnitude <= 1. {
-            AxisPair { xy }
-        } else {
-            AxisPair { xy: xy / magnitude }
+        AxisPair {
+            xy: xy.clamp_length_max(1.0),
         }
+    }
+
+    /// Merge the state of this [`AxisPair`] with another.
+    ///
+    /// This is useful if you have multiple sticks bound to the same game action,
+    /// and you want to get their combined position.
+    pub fn merged_with(&self, other: AxisPair) -> AxisPair {
+        AxisPair::new((self.xy() + other.xy()).clamp_length_max(1.0))
     }
 }
 
@@ -55,11 +61,15 @@ impl AxisPair {
 
     /// The [`Direction`] that this axis is pointing towards, if any
     ///
-    /// If the axis is neutral (x,y) = (0,0), a (0, 0) `Direction` will be returned
+    /// If the axis is neutral (x,y) = (0,0), a (0, 0) `None` will be returned
     #[must_use]
     #[inline]
-    pub fn direction(&self) -> Direction {
-        Direction::new(self.xy)
+    pub fn direction(&self) -> Option<Direction> {
+        // TODO: replace this quick-n-dirty hack once Direction::new no longer panics
+        if self.xy.length() > 0.00001 {
+            return Some(Direction::new(self.xy));
+        }
+        None
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
@@ -81,7 +91,7 @@ impl AxisPair {
     /// If you only need to compare relative magnitudes, use `magnitude_squared` instead for faster computation.
     #[must_use]
     #[inline]
-    pub fn magnitude(&self) -> f32 {
+    pub fn length(&self) -> f32 {
         self.xy.length()
     }
 
@@ -92,7 +102,7 @@ impl AxisPair {
     /// This is faster than `magnitude`, as it avoids a square root, but will generally have less natural behavior.
     #[must_use]
     #[inline]
-    pub fn magnitude_squared(&self) -> f32 {
+    pub fn length_squared(&self) -> f32 {
         self.xy.length_squared()
     }
 }

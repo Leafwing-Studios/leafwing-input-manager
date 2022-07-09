@@ -11,7 +11,9 @@ and a single input can result in multiple actions being triggered, which can be 
 
 ## Features
 
-- Full keyboard, mouse and joystick support for button-like inputs.
+- Full keyboard, mouse and joystick support for button-like and axis inputs.
+- Dual axis support for analog inputs from gamepads and joysticks
+- Bind arbitrary button inputs into virtual DPads
 - Effortlessly wire UI buttons to game state with one simple component!
   - When clicked, your button will press the appropriate action on the corresponding entity.
 - Store all your input mappings in a single `InputMap` component
@@ -33,11 +35,6 @@ and a single input can result in multiple actions being triggered, which can be 
 
 ## Limitations
 
-- The `Button` enum only includes `KeyCode`, `MouseButton` and `GamepadButtonType`.
-  - This is due to object-safety limitations on the types stored in `bevy::input::Input`
-  - Please file an issue if you would like something more exotic!
-- No built-in support for non-button input types (e.g. gestures or analog sticks).
-  - All methods on `ActionState` are `pub`: it's designed to be hooked into and extended.
 - Gamepads must be manually assigned to each input map: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
 
 ## Instructions

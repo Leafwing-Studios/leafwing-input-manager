@@ -3,7 +3,7 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::user_input::{InputButton, InputStreams, UserInput};
+use crate::user_input::{InputKind, InputStreams, UserInput};
 use crate::Actionlike;
 
 use bevy_ecs::component::Component;
@@ -38,7 +38,7 @@ use std::marker::PhantomData;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputButton;
+/// use leafwing_input_manager::user_input::InputKind;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -51,7 +51,7 @@ use std::marker::PhantomData;
 /// // Construction
 /// let mut input_map = InputMap::new([
 ///    // Note that the type of your iterators must be homogenous;
-///    // you can use `InputButton` or `UserInput` if needed
+///    // you can use `InputKind` or `UserInput` if needed
 ///    // as unifiying types
 ///   (GamepadButtonType::South, Action::Run),
 ///   (GamepadButtonType::LeftTrigger, Action::Hide),
@@ -63,9 +63,9 @@ use std::marker::PhantomData;
 /// .insert(KeyCode::LShift, Action::Run)
 /// // Chords
 /// .insert_chord([KeyCode::LControl, KeyCode::R], Action::Run)
-/// .insert_chord([InputButton::Keyboard(KeyCode::H),
-///                InputButton::Gamepad(GamepadButtonType::South),
-///                InputButton::Mouse(MouseButton::Middle)],
+/// .insert_chord([InputKind::Keyboard(KeyCode::H),
+///                InputKind::GamepadButton(GamepadButtonType::South),
+///                InputKind::Mouse(MouseButton::Middle)],
 ///            Action::Hide);
 ///
 /// // Removal
@@ -217,7 +217,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and `buttons` is not a duplicate.
     pub fn insert_chord(
         &mut self,
-        buttons: impl IntoIterator<Item = impl Into<InputButton>>,
+        buttons: impl IntoIterator<Item = impl Into<InputKind>>,
         action: A,
     ) -> &mut Self {
         self.insert(UserInput::chord(buttons), action);
@@ -312,11 +312,23 @@ impl<A: Actionlike> InputMap<A> {
             let mut inputs = Vec::new();
 
             for input in self.get(action.clone()).iter() {
+                let value = input_streams.get_input_value(input);
+                let axis_pair = input_streams.get_input_axis_pair(input);
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
-                    action_data[action.index()]
-                        .reasons_pressed
-                        .push(input.clone());
+                    let action = &mut action_data[action.index()];
+                    action.reasons_pressed.push(input.clone());
+                    action.value += value;
+                    action.value = action.value.clamp(-1.0, 1.0);
+
+                    // Merge axis pair into action data
+                    if let Some(axis_pair) = axis_pair {
+                        if let Some(current_axis_pair) = &mut action.axis_pair {
+                            *current_axis_pair = current_axis_pair.merged_with(axis_pair);
+                        } else {
+                            action.axis_pair = Some(axis_pair);
+                        }
+                    }
                 }
             }
 
@@ -526,7 +538,7 @@ mod tests {
 
     #[test]
     fn mock_inputs() {
-        use crate::input_map::InputButton;
+        use crate::input_map::InputKind;
         use crate::user_input::InputStreams;
         use bevy::prelude::*;
 
@@ -552,19 +564,23 @@ mod tests {
         // Cross-device chords
         input_map.insert_chord(
             [
-                InputButton::Keyboard(KeyCode::LControl),
-                InputButton::Mouse(MouseButton::Left),
+                InputKind::Keyboard(KeyCode::LControl),
+                InputKind::Mouse(MouseButton::Left),
             ],
             Action::Hide,
         );
 
         // Input streams
-        let mut gamepad_input_stream = Input::<GamepadButton>::default();
+        let mut gamepad_button_input_stream = Input::<GamepadButton>::default();
+        let gamepad_button_axis_input_stream = Axis::<GamepadButton>::default();
+        let gamepad_axis_input_stream = Axis::<GamepadAxis>::default();
         let mut keyboard_input_stream = Input::<KeyCode>::default();
         let mut mouse_input_stream = Input::<MouseButton>::default();
 
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
@@ -576,10 +592,12 @@ mod tests {
         }
 
         // Pressing the wrong gamepad
-        gamepad_input_stream.press(GamepadButton(Gamepad(0), GamepadButtonType::South));
+        gamepad_button_input_stream.press(GamepadButton(Gamepad(0), GamepadButtonType::South));
 
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
@@ -589,10 +607,12 @@ mod tests {
         }
 
         // Pressing the correct gamepad
-        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
+        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
 
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
@@ -602,11 +622,13 @@ mod tests {
         assert!(!input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
 
         // Chord
-        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
-        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
+        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
+        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
 
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
@@ -616,9 +638,11 @@ mod tests {
         assert!(input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
 
         // Clearing inputs
-        gamepad_input_stream = Input::<GamepadButton>::default();
+        gamepad_button_input_stream = Input::<GamepadButton>::default();
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
@@ -632,7 +656,9 @@ mod tests {
         keyboard_input_stream.press(KeyCode::LShift);
 
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
@@ -648,7 +674,9 @@ mod tests {
         mouse_input_stream.press(MouseButton::Other(42));
 
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),
@@ -664,7 +692,9 @@ mod tests {
         mouse_input_stream.press(MouseButton::Left);
 
         let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
+            gamepad_buttons: Some(&gamepad_button_input_stream),
+            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
+            gamepad_axes: Some(&gamepad_axis_input_stream),
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
             associated_gamepad: Some(Gamepad(42)),

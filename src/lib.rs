@@ -31,7 +31,7 @@ pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
-    pub use crate::user_input::UserInput;
+    pub use crate::user_input::{DualGamepadAxis, SingleGamepadAxis, UserInput, VirtualDPad};
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;

@@ -8,11 +8,11 @@ use bevy_ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy_ecs::{component::Component, query::With, system::Query};
 use bevy_input::{
-    gamepad::{Gamepad, GamepadButton, GamepadEvent, Gamepads},
+    gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseWheel},
     touch::{TouchInput, Touches},
-    Input,
+    Axis, Input,
 };
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
@@ -121,13 +121,24 @@ impl<'a> MutableInputStreams<'a> {
     /// Called by the methods of [`MockInput`].
     pub fn send_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_send: UserInput = input.into();
-        let (gamepad_buttons, keyboard_buttons, mouse_buttons) = input_to_send.raw_inputs();
+        let (gamepad_buttons, gamepad_axes, keyboard_buttons, mouse_buttons) =
+            input_to_send.raw_inputs();
 
-        if let Some(ref mut gamepad_input) = self.gamepad {
+        if let Some(ref mut gamepad_input) = self.gamepad_buttons {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
                     let gamepad_button = GamepadButton(associated_gamepad, button);
                     gamepad_input.press(gamepad_button);
+                }
+            }
+        }
+
+        if let Some(ref mut gamepad_input) = self.gamepad_axes {
+            for axis in gamepad_axes {
+                if let Some(associated_gamepad) = self.associated_gamepad {
+                    let gamepad_axis = GamepadAxis(associated_gamepad, axis);
+                    // FIXME: Allow setting axis input value
+                    gamepad_input.set(gamepad_axis, 1.0);
                 }
             }
         }
@@ -150,13 +161,23 @@ impl<'a> MutableInputStreams<'a> {
     /// Called by the methods of [`MockInput`].
     pub fn release_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_release: UserInput = input.into();
-        let (gamepad_buttons, keyboard_buttons, mouse_buttons) = input_to_release.raw_inputs();
+        let (gamepad_buttons, gamepad_axes, keyboard_buttons, mouse_buttons) =
+            input_to_release.raw_inputs();
 
-        if let Some(ref mut gamepad_input) = self.gamepad {
+        if let Some(ref mut gamepad_input) = self.gamepad_buttons {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
                     let gamepad_button = GamepadButton(associated_gamepad, button);
                     gamepad_input.release(gamepad_button);
+                }
+            }
+        }
+
+        if let Some(ref mut gamepad_input) = self.gamepad_axes {
+            for axis in gamepad_axes {
+                if let Some(associated_gamepad) = self.associated_gamepad {
+                    let gamepad_axis = GamepadAxis(associated_gamepad, axis);
+                    gamepad_input.remove(gamepad_axis);
                 }
             }
         }
@@ -191,15 +212,24 @@ impl MockInput for World {
         // in a non-exclusive system
         let mut input_system_state: SystemState<(
             Option<ResMut<Input<GamepadButton>>>,
+            Option<ResMut<Axis<GamepadButton>>>,
+            Option<ResMut<Axis<GamepadAxis>>>,
             Option<ResMut<Input<KeyCode>>>,
             Option<ResMut<Input<MouseButton>>>,
         )> = SystemState::new(self);
 
-        let (mut maybe_gamepad, mut maybe_keyboard, mut maybe_mouse) =
-            input_system_state.get_mut(self);
+        let (
+            mut maybe_gamepad_buttons,
+            mut maybe_gamepad_button_axes,
+            mut maybe_gamepad_axes,
+            mut maybe_keyboard,
+            mut maybe_mouse,
+        ) = input_system_state.get_mut(self);
 
         let mut mutable_input_streams = MutableInputStreams {
-            gamepad: maybe_gamepad.as_deref_mut(),
+            gamepad_buttons: maybe_gamepad_buttons.as_deref_mut(),
+            gamepad_button_axes: maybe_gamepad_button_axes.as_deref_mut(),
+            gamepad_axes: maybe_gamepad_axes.as_deref_mut(),
             keyboard: maybe_keyboard.as_deref_mut(),
             mouse: maybe_mouse.as_deref_mut(),
             associated_gamepad: gamepad,
@@ -221,15 +251,24 @@ impl MockInput for World {
     fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
         let mut input_system_state: SystemState<(
             Option<ResMut<Input<GamepadButton>>>,
+            Option<ResMut<Axis<GamepadButton>>>,
+            Option<ResMut<Axis<GamepadAxis>>>,
             Option<ResMut<Input<KeyCode>>>,
             Option<ResMut<Input<MouseButton>>>,
         )> = SystemState::new(self);
 
-        let (mut maybe_gamepad, mut maybe_keyboard, mut maybe_mouse) =
-            input_system_state.get_mut(self);
+        let (
+            mut maybe_gamepad_buttons,
+            mut maybe_gamepad_button_axes,
+            mut maybe_gamepad_axes,
+            mut maybe_keyboard,
+            mut maybe_mouse,
+        ) = input_system_state.get_mut(self);
 
         let mut mutable_input_streams = MutableInputStreams {
-            gamepad: maybe_gamepad.as_deref_mut(),
+            gamepad_buttons: maybe_gamepad_buttons.as_deref_mut(),
+            gamepad_button_axes: maybe_gamepad_button_axes.as_deref_mut(),
+            gamepad_axes: maybe_gamepad_axes.as_deref_mut(),
             keyboard: maybe_keyboard.as_deref_mut(),
             mouse: maybe_mouse.as_deref_mut(),
             associated_gamepad: gamepad,
@@ -255,14 +294,24 @@ impl MockInput for World {
     ) -> bool {
         let mut input_system_state: SystemState<(
             Option<Res<Input<GamepadButton>>>,
+            Option<Res<Axis<GamepadButton>>>,
+            Option<Res<Axis<GamepadAxis>>>,
             Option<Res<Input<KeyCode>>>,
             Option<Res<Input<MouseButton>>>,
         )> = SystemState::new(self);
 
-        let (maybe_gamepad, maybe_keyboard, maybe_mouse) = input_system_state.get(self);
+        let (
+            maybe_gamepad_buttons,
+            maybe_gamepad_button_axes,
+            maybe_gamepad_axes,
+            maybe_keyboard,
+            maybe_mouse,
+        ) = input_system_state.get(self);
 
         let input_streams = InputStreams {
-            gamepad: maybe_gamepad.as_deref(),
+            gamepad_buttons: maybe_gamepad_buttons.as_deref(),
+            gamepad_button_axes: maybe_gamepad_button_axes.as_deref(),
+            gamepad_axes: maybe_gamepad_axes.as_deref(),
             keyboard: maybe_keyboard.as_deref(),
             mouse: maybe_mouse.as_deref(),
             associated_gamepad: gamepad,

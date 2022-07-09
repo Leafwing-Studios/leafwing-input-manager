@@ -13,7 +13,12 @@ use crate::{
 
 use bevy_core::Time;
 use bevy_ecs::{prelude::*, schedule::ShouldRun};
-use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
+use bevy_input::{
+    gamepad::{GamepadAxis, GamepadButton},
+    keyboard::KeyCode,
+    mouse::MouseButton,
+    Axis, Input,
+};
 use bevy_utils::Instant;
 
 #[cfg(feature = "ui")]
@@ -54,7 +59,9 @@ pub fn tick_action_state<A: Actionlike>(
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
 #[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
-    maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
+    maybe_gamepad_button_input_stream: Option<Res<Input<GamepadButton>>>,
+    maybe_gamepad_button_axes_input_stream: Option<Res<Axis<GamepadButton>>>,
+    maybe_gamepad_axes_input_stream: Option<Res<Axis<GamepadAxis>>>,
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     clash_strategy: Res<ClashStrategy>,
@@ -62,7 +69,9 @@ pub fn update_action_state<A: Actionlike>(
     mut input_map: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
-    let gamepad = maybe_gamepad_input_stream.as_deref();
+    let gamepad_buttons = maybe_gamepad_button_input_stream.as_deref();
+    let gamepad_button_axes = maybe_gamepad_button_axes_input_stream.as_deref();
+    let gamepad_axes = maybe_gamepad_axes_input_stream.as_deref();
 
     let keyboard = maybe_keyboard_input_stream.as_deref();
 
@@ -70,7 +79,9 @@ pub fn update_action_state<A: Actionlike>(
 
     if let (Some(input_map), Some(action_state)) = (&mut input_map, &mut action_state) {
         let input_streams = InputStreams {
-            gamepad,
+            gamepad_buttons,
+            gamepad_button_axes,
+            gamepad_axes,
             keyboard,
             mouse,
             associated_gamepad: input_map.gamepad(),
@@ -81,7 +92,9 @@ pub fn update_action_state<A: Actionlike>(
 
     for (mut action_state, input_map) in query.iter_mut() {
         let input_streams = InputStreams {
-            gamepad,
+            gamepad_buttons,
+            gamepad_button_axes,
+            gamepad_axes,
             keyboard,
             mouse,
             associated_gamepad: input_map.gamepad(),
