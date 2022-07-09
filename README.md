@@ -12,7 +12,8 @@ and a single input can result in multiple actions being triggered, which can be 
 ## Features
 
 - Full keyboard, mouse and joystick support for button-like and axis inputs.
-- Dual gamepad axes and virtual DPad bindings that can have values intuitively read from an `AxisPair`.
+- Dual axis support for analog inputs from gamepads and joysticks
+- Bind arbitrary button inputs into virtual DPads
 - Effortlessly wire UI buttons to game state with one simple component!
   - When clicked, your button will press the appropriate action on the corresponding entity.
 - Store all your input mappings in a single `InputMap` component

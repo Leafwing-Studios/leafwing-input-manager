@@ -22,11 +22,8 @@ impl AxisPair {
     ///
     /// The direction is preserved, by the magnitude will be clamped to at most 1.
     pub fn new(xy: Vec2) -> AxisPair {
-        let magnitude = xy.length();
-        if magnitude <= 1. {
-            AxisPair { xy }
-        } else {
-            AxisPair { xy: xy / magnitude }
+        AxisPair {
+            xy: xy.clamp_length_max(1.0),
         }
     }
 
@@ -35,7 +32,7 @@ impl AxisPair {
     /// This is useful if you have multiple sticks bound to the same game action,
     /// and you want to get their combined position.
     pub fn merged_with(&self, other: AxisPair) -> AxisPair {
-        AxisPair::new(self.xy() + other.xy())
+        AxisPair::new((self.xy() + other.xy()).clamp_length_max(1.0))
     }
 }
 
@@ -64,11 +61,15 @@ impl AxisPair {
 
     /// The [`Direction`] that this axis is pointing towards, if any
     ///
-    /// If the axis is neutral (x,y) = (0,0), a (0, 0) `Direction` will be returned
+    /// If the axis is neutral (x,y) = (0,0), a (0, 0) `None` will be returned
     #[must_use]
     #[inline]
-    pub fn direction(&self) -> Direction {
-        Direction::new(self.xy)
+    pub fn direction(&self) -> Option<Direction> {
+        // TODO: replace this quick-n-dirty hack once Direction::new no longer panics
+        if self.xy.length() > 0.00001 {
+            return Some(Direction::new(self.xy))
+        }
+        None
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any

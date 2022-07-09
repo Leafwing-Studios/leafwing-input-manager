@@ -200,7 +200,14 @@ impl UserInput {
     }
 
     /// Returns the raw inputs that make up this [`UserInput`]
-    pub fn raw_inputs(&self) -> (Vec<GamepadButtonType>, Vec<KeyCode>, Vec<MouseButton>) {
+    pub fn raw_inputs(
+        &self,
+    ) -> (
+        Vec<GamepadButtonType>,
+        Vec<GamepadAxisType>,
+        Vec<KeyCode>,
+        Vec<MouseButton>,
+    ) {
         let mut gamepad_axes: Vec<GamepadAxisType> = Vec::default();
         let mut gamepad_buttons: Vec<GamepadButtonType> = Vec::default();
         let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
@@ -252,7 +259,7 @@ impl UserInput {
             }
         };
 
-        (gamepad_buttons, keyboard_buttons, mouse_buttons)
+        (gamepad_buttons, gamepad_axes, keyboard_buttons, mouse_buttons)
     }
 }
 
@@ -298,10 +305,9 @@ impl From<MouseButton> for UserInput {
     }
 }
 
-/// A button-like input type
+/// What mode (sort of device) an [`InputKind`] originated from.
 ///
-/// See [`Button`] for the value-ful equivalent.
-/// Use the [`From`] or [`Into`] traits to convert from a [`InputButton`] to a [`InputMode`].
+/// Use the [`From`] or [`Into`] traits to convert from a [`InputKind`] to a [`InputMode`].
 ///
 /// Unfortunately we cannot use a trait object here, as the types used by `Input`
 /// require traits that are not object-safe.
@@ -727,10 +733,10 @@ impl<'a> InputStreams<'a> {
                             .unwrap_or_default();
                         Some(AxisPair::new(Vec2::new(x, y)))
                     } else {
-                        Some(AxisPair::new(Vec2::ZERO))
+                        None
                     }
                 } else {
-                    Some(AxisPair::new(Vec2::ZERO))
+                    None
                 }
             }
             UserInput::VirtualDPad(VirtualDPad {

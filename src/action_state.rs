@@ -195,19 +195,20 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// Different kinds of bindings have different ways of calculating the value:
     ///
-    /// - Binary buttons will have a value of `0.0` when the button is not pressed,
-    /// and a value of `1.0` when the button is pressed.
+    /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of
+    /// `1.0` when the button is pressed.
     /// - Some axes, such as an analog stick, will have a value in the range `-1.0..=1.0`.
     /// - Some axes, such as a variable trigger, will have a value in the range `0.0..=1.0`.
-    /// - Some buttons will also return a value in the range `0.0..=1.0`,
-    /// such as variable triggers, which may be tracked as buttons or axes.
-    /// - Dual axis inputs will return the magnitude of it's [`AxisPair`] and will be in the range
+    /// - Some buttons will also return a value in the range `0.0..=1.0`, such as analog gamepad
+    /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
+    /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
+    /// repository.
+    /// - Dual axis inputs will return the magnitude of its [`AxisPair`] and will be in the range
     /// `0.0..=1.0`.
-    /// - Chord inputs will return the value of it's first input.
+    /// - Chord inputs will return the value of its first input.
     ///
-    /// If multiple inputs trigger the same game action at the same time,
-    /// the value of each triggering input will be added together and clamped to the range
-    /// `-1.0..=1.0`
+    /// If multiple inputs trigger the same game action at the same time, the value of each
+    /// triggering input will be added together and clamped to the range `-1.0..=1.0`
     pub fn action_value(&self, action: A) -> f32 {
         self.action_data(action).value
     }

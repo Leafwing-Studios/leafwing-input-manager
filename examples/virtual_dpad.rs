@@ -29,7 +29,7 @@ fn spawn_player(mut commands: Commands) {
         .insert_bundle(InputManagerBundle::<Action> {
             // Stores "which actions are currently activated"
             action_state: ActionState::default(),
-            // Describes how to convert from player inputs into those actions
+            // Map some arbitrary keys into a virtual direction pad that triggers our move action
             input_map: InputMap::new([(
                 VirtualDPad {
                     up: KeyCode::W.into(),
@@ -46,8 +46,10 @@ fn spawn_player(mut commands: Commands) {
 // Query for the `ActionState` component in your game logic systems!
 fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
-    // Each action has a button-like state of its own that you can check
+    // If any button in a virtual direction pad is pressed, then the action state is "pressed"
     if action_state.pressed(Action::Move) {
+        // Virtual direction pads are one of the types which return an AxisPair. The values will be
+        // represented as `-1.0`, `0.0`, or `1.0` depending on the combination of buttons pressed.
         let axis_pair = action_state.action_axis_pair(Action::Move).unwrap();
         println!("Move:");
         println!("   distance: {}", axis_pair.length());
