@@ -666,30 +666,34 @@ impl<'a> InputStreams<'a> {
             }
         };
 
-        if let Some(gamepad) = self.associated_gamepad {
-            match input {
-                UserInput::Single(InputKind::SingleGamepadAxis(threshold)) => {
+        match input {
+            UserInput::Single(InputKind::SingleGamepadAxis(threshold)) => {
+                if let Some(gamepad) = self.associated_gamepad {
                     if let Some(axes) = self.gamepad_axes {
                         axes.get(GamepadAxis(gamepad, threshold.axis))
                             .unwrap_or_default()
                     } else {
                         0.0
                     }
+                } else {
+                    use_button_value()
                 }
-                UserInput::Single(InputKind::DualGamepadAxis(_)) => {
-                    if self.gamepad_axes.is_some() {
-                        self.get_input_axis_pair(input)
-                            .unwrap_or_default()
-                            .magnitude()
-                    } else {
-                        0.0
-                    }
+            }
+            UserInput::Single(InputKind::DualGamepadAxis(_)) => {
+                if self.gamepad_axes.is_some() {
+                    self.get_input_axis_pair(input)
+                        .unwrap_or_default()
+                        .magnitude()
+                } else {
+                    0.0
                 }
-                UserInput::VirtualDPad { .. } => self
-                    .get_input_axis_pair(input)
-                    .unwrap_or_default()
-                    .magnitude(),
-                UserInput::Single(InputKind::GamepadButton(button_type)) => {
+            }
+            UserInput::VirtualDPad { .. } => self
+                .get_input_axis_pair(input)
+                .unwrap_or_default()
+                .magnitude(),
+            UserInput::Single(InputKind::GamepadButton(button_type)) => {
+                if let Some(gamepad) = self.associated_gamepad {
                     if let Some(button_axes) = self.gamepad_button_axes {
                         button_axes
                             .get(GamepadButton(gamepad, *button_type))
@@ -697,25 +701,18 @@ impl<'a> InputStreams<'a> {
                     } else {
                         0.0
                     }
+                } else {
+                    use_button_value()
                 }
-                _ => use_button_value(),
             }
-
-        // If there is no gamepad
-        } else {
-            match input {
-                UserInput::Single(
-                    InputKind::SingleGamepadAxis(_) | InputKind::GamepadButton(_),
-                ) => 0.0,
-                UserInput::Chord(chord) => {
-                    if let Some(input) = chord.get_at(0) {
-                        self.get_input_value(&UserInput::Single(*input))
-                    } else {
-                        0.0
-                    }
+            UserInput::Chord(chord) => {
+                if let Some(input) = chord.get_at(0) {
+                    self.get_input_value(&UserInput::Single(*input))
+                } else {
+                    0.0
                 }
-                _ => use_button_value(),
             }
+            _ => use_button_value(),
         }
     }
 
