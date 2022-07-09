@@ -67,7 +67,7 @@ impl AxisPair {
     pub fn direction(&self) -> Option<Direction> {
         // TODO: replace this quick-n-dirty hack once Direction::new no longer panics
         if self.xy.length() > 0.00001 {
-            return Some(Direction::new(self.xy))
+            return Some(Direction::new(self.xy));
         }
         None
     }

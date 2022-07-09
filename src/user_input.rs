@@ -259,7 +259,12 @@ impl UserInput {
             }
         };
 
-        (gamepad_buttons, gamepad_axes, keyboard_buttons, mouse_buttons)
+        (
+            gamepad_buttons,
+            gamepad_axes,
+            keyboard_buttons,
+            mouse_buttons,
+        )
     }
 }
 
