@@ -129,12 +129,16 @@ impl UserInput {
         }
     }
 
-    /// The number of buttons in the [`UserInput`]
+    /// The number of logical inputs that make up the [`UserInput`].
+    /// 
+    /// - A [`Single`][UserInput::Single] input returns 1
+    /// - A [`Chord`][UserInput::Chord] returns the number of buttons in the chord
+    /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
     pub fn len(&self) -> usize {
         match self {
             UserInput::Single(_) => 1,
             UserInput::Chord(button_set) => button_set.len(),
-            UserInput::VirtualDPad { .. } => 4,
+            UserInput::VirtualDPad { .. } => 1,
         }
     }
 

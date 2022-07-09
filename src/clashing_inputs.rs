@@ -2,7 +2,7 @@
 
 use crate::action_state::ActionData;
 use crate::input_map::InputMap;
-use crate::user_input::{InputKind, InputStreams, UserInput};
+use crate::user_input::{InputKind, InputStreams, UserInput, VirtualDPad};
 use crate::Actionlike;
 
 use itertools::Itertools;
@@ -56,15 +56,19 @@ impl UserInput {
         match self {
             Single(self_button) => match other {
                 Single(_) => false,
-                Chord(other_set) => button_chord_clash(self_button, other_set),
-                VirtualDPad { .. } => false,
+                Chord(other_chord) => button_chord_clash(self_button, other_chord),
+                VirtualDPad(other_dpad) => dpad_button_clash(other_dpad, self_button),
             },
-            Chord(self_set) => match other {
-                Single(other_button) => button_chord_clash(other_button, self_set),
-                Chord(other_set) => chord_chord_clash(self_set, other_set),
-                VirtualDPad { .. } => false,
+            Chord(self_chord) => match other {
+                Single(other_button) => button_chord_clash(other_button, self_chord),
+                Chord(other_chord) => chord_chord_clash(self_chord, other_chord),
+                VirtualDPad(other_dpad) => dpad_chord_clash(other_dpad, self_chord),
             },
-            VirtualDPad { .. } => false,
+            VirtualDPad(self_dpad) => match other {
+                Single(other_button) => dpad_button_clash(self_dpad, other_button),
+                Chord(other_chord) => dpad_chord_clash(self_dpad, other_chord),
+                VirtualDPad(other_dpad) => dpad_dpad_clash(self_dpad, other_dpad),
+            },
         }
     }
 }
@@ -112,6 +116,7 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
+
 
         // We can limit our search to the cached set of possibly clashing actions
         for clash in self.possible_clashes() {
@@ -191,7 +196,7 @@ impl<A: Actionlike> Clash<A> {
     }
 }
 
-/// Does the `button` clash with the `chord`?
+// Does the `button` clash with the `chord`?
 #[must_use]
 fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> bool {
     if chord.len() <= 1 {
@@ -199,6 +204,44 @@ fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> boo
     }
 
     chord.contains(button)
+}
+
+// Does the `dpad` clash with the `chord`?
+#[must_use]
+fn dpad_chord_clash(dpad: &VirtualDPad, chord: &PetitSet<InputKind, 8>) -> bool {
+    if chord.len() <= 1 {
+        return false;
+    }
+
+    for button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
+        if chord.contains(button) {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
+    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
+        if button == dpad_button {
+            return true;
+        }
+    }
+
+    false
+}
+
+fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
+    for button1 in &[dpad1.up, dpad1.down, dpad1.left, dpad1.right] {
+        for button2 in &[dpad2.up, dpad2.down, dpad2.left, dpad2.right] {
+            if button1 == button2 {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 /// Does the `chord_a` clash with `chord_b`?
@@ -280,6 +323,8 @@ fn resolve_clash<A: Actionlike>(
         }
     }
 
+    println!("real clash");
+
     // There's a real clash; resolve it according to the `clash_strategy`
     match clash_strategy {
         // Do nothing
@@ -329,6 +374,8 @@ mod tests {
         CtrlOne,
         AltOne,
         CtrlAltOne,
+        MoveDPad,
+        CtrlUp,
     }
 
     fn test_input_map() -> InputMap<Action> {
@@ -344,11 +391,23 @@ mod tests {
         input_map.insert_chord([LControl, Key1], CtrlOne);
         input_map.insert_chord([LAlt, Key1], AltOne);
         input_map.insert_chord([LControl, LAlt, Key1], CtrlAltOne);
+        input_map.insert(
+            VirtualDPad {
+                up: Up.into(),
+                down: Down.into(),
+                left: Left.into(),
+                right: Right.into(),
+            },
+            MoveDPad,
+        );
+        input_map.insert_chord([LControl, Up], CtrlUp);
 
         input_map
     }
 
     mod basic_functionality {
+        use crate::user_input::VirtualDPad;
+
         use super::*;
 
         #[test]
@@ -359,12 +418,40 @@ mod tests {
             let ab = UserInput::chord([A, B]);
             let bc = UserInput::chord([B, C]);
             let abc = UserInput::chord([A, B, C]);
+            let axyz_dpad: UserInput = VirtualDPad {
+                up: A.into(),
+                down: X.into(),
+                left: Y.into(),
+                right: Z.into(),
+            }
+            .into();
+            let abcd_dpad: UserInput = VirtualDPad {
+                up: A.into(),
+                down: B.into(),
+                left: C.into(),
+                right: D.into(),
+            }
+            .into();
+
+            let ctrl_up: UserInput = UserInput::chord([Up, LControl]);
+            let directions_dpad: UserInput = VirtualDPad {
+                up: Up.into(),
+                down: Down.into(),
+                left: Left.into(),
+                right: Right.into(),
+            }
+            .into();
 
             assert!(!a.clashes(&b));
             assert!(a.clashes(&ab));
             assert!(!c.clashes(&ab));
             assert!(!ab.clashes(&bc));
-            assert!(ab.clashes(&abc))
+            assert!(ab.clashes(&abc));
+            assert!(axyz_dpad.clashes(&a));
+            assert!(axyz_dpad.clashes(&ab));
+            assert!(!axyz_dpad.clashes(&bc));
+            assert!(axyz_dpad.clashes(&abcd_dpad));
+            assert!(ctrl_up.clashes(&directions_dpad));
         }
 
         #[test]
@@ -424,15 +511,15 @@ mod tests {
         fn clash_caching() {
             let mut input_map = test_input_map();
             // Possible clashes are cached upon initialization
-            assert_eq!(input_map.possible_clashes().len(), 12);
+            assert_eq!(input_map.possible_clashes().len(), 13);
 
             // Possible clashes are cached upon binding insertion
             input_map.insert(UserInput::chord([LControl, LAlt, Key1]), Action::Two);
-            assert_eq!(input_map.possible_clashes().len(), 15);
+            assert_eq!(input_map.possible_clashes().len(), 16);
 
             // Possible clashes are cached upon binding removal
             input_map.clear_action(Action::One);
-            assert_eq!(input_map.possible_clashes().len(), 9);
+            assert_eq!(input_map.possible_clashes().len(), 10);
         }
 
         #[test]
@@ -514,7 +601,7 @@ mod tests {
         }
 
         #[test]
-        fn handle_clashes() {
+        fn handle_clashes1() {
             use crate::buttonlike::ButtonState;
             use bevy::prelude::*;
             use Action::*;
@@ -538,6 +625,35 @@ mod tests {
 
             let mut expected = vec![ActionData::default(); Action::N_VARIANTS];
             expected[OneAndTwo.index()].state = ButtonState::JustPressed;
+
+            assert_eq!(action_data, expected);
+        }
+
+        // Checks that a clash between a VirtualDPad and a chord choses the chord
+        #[test]
+        fn handle_clashes2() {
+            use crate::buttonlike::ButtonState;
+            use bevy::prelude::*;
+            use Action::*;
+
+            let input_map = test_input_map();
+
+            let mut keyboard: Input<KeyCode> = Default::default();
+            keyboard.press(LControl);
+            keyboard.press(Up);
+
+            let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
+            action_data[MoveDPad.index()].state = ButtonState::JustPressed;
+            action_data[CtrlUp.index()].state = ButtonState::JustPressed;
+
+            input_map.handle_clashes(
+                &mut action_data,
+                &InputStreams::from_keyboard(&keyboard),
+                ClashStrategy::PrioritizeLongest,
+            );
+
+            let mut expected = vec![ActionData::default(); Action::N_VARIANTS];
+            expected[CtrlUp.index()].state = ButtonState::JustPressed;
 
             assert_eq!(action_data, expected);
         }
