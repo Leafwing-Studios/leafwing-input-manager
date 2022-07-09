@@ -214,14 +214,14 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Get the [`AxisPair`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only certain events such as [`UserInput::VirtualDPad`] and
-    /// [`InputKind::DualGamepadAxis`][crate::user_input::InputKind::DualGamepadAxis] provide an
-    /// [`AxisPair`], and this will return [`None`] for other events.
+    /// Only certain events such as [`VirtualDPad`][crate::user_input::VirtualDPad] and
+    /// [`DualGamepadAxis`][crate::user_input::DualGamepadAxis] provide an [`AxisPair`], and this
+    /// will return [`None`] for other events.
     ///
     /// Chord inputs will return the [`AxisPair`] of it's first input.
     ///
-    /// If multiple inputs with an axis pair trigger the same game action at the same time,
-    /// the value of each axis pair will be added together and be clamped to a maximum magnitude of
+    /// If multiple inputs with an axis pair trigger the same game action at the same time, the
+    /// value of each axis pair will be added together and be clamped to a maximum magnitude of
     /// `1.0`.
     pub fn action_axis_pair(&self, action: A) -> Option<AxisPair> {
         self.action_data(action).axis_pair

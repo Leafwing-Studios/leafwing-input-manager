@@ -28,16 +28,21 @@ pub enum UserInput {
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
     Chord(PetitSet<InputKind, 8>),
     /// A virtual DPad that you can get an [`AxisPair`] from
-    VirtualDPad {
-        /// The input that represents the up direction in this virtual DPad
-        up: InputKind,
-        /// The input that represents the down direction in this virtual DPad
-        down: InputKind,
-        /// The input that represents the left direction in this virtual DPad
-        left: InputKind,
-        /// The input that represents the right direction in this virtual DPad
-        right: InputKind,
-    },
+    VirtualDPad(VirtualDPad),
+}
+
+#[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
+/// A virtual DPad that you can get an [`AxisPair`] from
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct VirtualDPad {
+    /// The input that represents the up direction in this virtual DPad
+    pub up: InputKind,
+    /// The input that represents the down direction in this virtual DPad
+    pub down: InputKind,
+    /// The input that represents the left direction in this virtual DPad
+    pub left: InputKind,
+    /// The input that represents the right direction in this virtual DPad
+    pub right: InputKind,
 }
 
 impl UserInput {
@@ -72,12 +77,12 @@ impl UserInput {
                     set.insert(button.into());
                 }
             }
-            UserInput::VirtualDPad {
+            UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,
                 left,
                 right,
-            } => {
+            }) => {
                 set.insert((*up).into());
                 set.insert((*down).into());
                 set.insert((*left).into());
@@ -107,12 +112,12 @@ impl UserInput {
                 }
                 false
             }
-            UserInput::VirtualDPad {
+            UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,
                 left,
                 right,
-            } => {
+            }) => {
                 for button in [up, down, left, right] {
                     let button_mode: InputMode = (*button).into();
                     if button_mode == input_mode {
@@ -174,12 +179,12 @@ impl UserInput {
 
                 n_matching
             }
-            UserInput::VirtualDPad {
+            UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,
                 left,
                 right,
-            } => {
+            }) => {
                 let mut n_matching = 0;
                 for button in buttons.iter() {
                     for dpad_button in [up, down, left, right] {
@@ -226,12 +231,12 @@ impl UserInput {
                     }
                 }
             }
-            UserInput::VirtualDPad {
+            UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,
                 left,
                 right,
-            } => {
+            }) => {
                 for button in [up, down, left, right] {
                     match *button {
                         InputKind::DualGamepadAxis(variant) => {
@@ -266,6 +271,12 @@ impl From<DualGamepadAxis> for UserInput {
 impl From<SingleGamepadAxis> for UserInput {
     fn from(input: SingleGamepadAxis) -> Self {
         UserInput::Single(InputKind::SingleGamepadAxis(input))
+    }
+}
+
+impl From<VirtualDPad> for UserInput {
+    fn from(input: VirtualDPad) -> Self {
+        UserInput::VirtualDPad(input)
     }
 }
 
@@ -444,19 +455,6 @@ impl std::hash::Hash for DualGamepadAxis {
     }
 }
 
-/// A virtual dpad that you will be able to read as an [`AxisPair`]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct VirtualDPad {
-    // The up input
-    up: InputKind,
-    // The down input
-    down: InputKind,
-    // The left input
-    left: InputKind,
-    // The right input
-    right: InputKind,
-}
-
 impl From<DualGamepadAxis> for InputKind {
     fn from(input: DualGamepadAxis) -> Self {
         InputKind::DualGamepadAxis(input)
@@ -559,12 +557,12 @@ impl<'a> InputStreams<'a> {
         match input {
             UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            UserInput::VirtualDPad {
+            UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,
                 left,
                 right,
-            } => {
+            }) => {
                 for button in [up, down, left, right] {
                     if self.button_pressed(*button) {
                         return true;
@@ -735,12 +733,12 @@ impl<'a> InputStreams<'a> {
                     Some(AxisPair::new(Vec2::ZERO))
                 }
             }
-            UserInput::VirtualDPad {
+            UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,
                 left,
                 right,
-            } => {
+            }) => {
                 let x = self.get_input_value(&UserInput::Single(*right))
                     - self.get_input_value(&UserInput::Single(*left)).abs();
                 let y = self.get_input_value(&UserInput::Single(*up))

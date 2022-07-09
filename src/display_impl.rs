@@ -1,6 +1,6 @@
 //! Containment module for boring implmentations of the [`Display`] trait
 
-use crate::user_input::{InputKind, UserInput};
+use crate::user_input::{InputKind, UserInput, VirtualDPad};
 use std::fmt::Display;
 
 impl Display for UserInput {
@@ -17,12 +17,12 @@ impl Display for UserInput {
                 }
                 write!(f, "{string}")
             }
-            UserInput::VirtualDPad {
+            UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,
                 left,
                 right,
-            } => {
+            }) => {
                 write!(
                     f,
                     "VirtualDPad(up: {}, down: {}, left: {}, right: {})",

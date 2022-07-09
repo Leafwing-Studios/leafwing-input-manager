@@ -77,7 +77,7 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     if action_state.pressed(Action::Move) {
         let axis_pair = action_state.action_axis_pair(Action::Move).unwrap();
         println!("Move:");
-        println!("   distance: {}", axis_pair.magnitude());
+        println!("   distance: {}", axis_pair.length());
         println!("          x: {}", axis_pair.x());
         println!("          y: {}", axis_pair.y());
     }

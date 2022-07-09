@@ -31,7 +31,7 @@ fn spawn_player(mut commands: Commands) {
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
             input_map: InputMap::new([(
-                UserInput::VirtualDPad {
+                VirtualDPad {
                     up: KeyCode::W.into(),
                     down: KeyCode::S.into(),
                     left: KeyCode::A.into(),
@@ -50,7 +50,7 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     if action_state.pressed(Action::Move) {
         let axis_pair = action_state.action_axis_pair(Action::Move).unwrap();
         println!("Move:");
-        println!("   distance: {}", axis_pair.magnitude());
+        println!("   distance: {}", axis_pair.length());
         println!("          x: {}", axis_pair.x());
         println!("          y: {}", axis_pair.y());
     }
