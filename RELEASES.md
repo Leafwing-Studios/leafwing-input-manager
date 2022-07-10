@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.4.1
+
+### Bug fixes
+
+- fixed a compilation error caused by mistakenly renaming the macros crate
+
 ## Version 0.4
 
 ### Usability
