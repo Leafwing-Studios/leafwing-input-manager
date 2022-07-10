@@ -1,5 +1,5 @@
 [package]
-name = "leafwing-input-manager-macros"
+name = "leafwing_input_manager_macros"
 description = "Macros for the `leafwing-input-manager` crate"
 version = "0.3.0"
 license = "MIT OR Apache-2.0"
