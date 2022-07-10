@@ -35,6 +35,36 @@
 - document the need to add system ordering when you have other functionality running during `CoreStage::PreUpdate`
 - hint to users that they may want to use multiple `Actionlike` enums
 
+## Version 0.4.1
+
+### Bug fixes
+
+- fixed a compilation error caused by mistakenly renaming the macros crate
+
+## Version 0.4
+
+### Usability
+
+- reduced required `derive_more` features
+- removed `thiserror` dependency
+- the order of all methods on `InputMap` is now `(input, action)`, rather than `(action, input`) to better match user mental models
+  - this is a map-like struct: one presses `KeyCode::F` to `Actions::PayRespects`, not the other way around!
+  - this includes the order of all paired tuples, including the returned values
+
+### Bug fixes
+
+- fixed serious bug that broke all functionality relating to durations that buttons were pressed or released for
+  - `ActionState::tick` now takes the `Instant` of both the current and previous frame, rather than just the current
+- `InputManagerPlugin` no longer panics when time does not have a previous update
+  - this is useful as it ensures `bevy_inspector_egui` compatibility!
+
+### Docs
+
+- properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
+- added doc examples to `ActionStateDriver`, which allows you to trigger actions based on entity properties
+- document the need to add system ordering when you have other functionality running during `CoreStage::PreUpdate`
+- hint to users that they may want to use multiple `Actionlike` enums
+
 ## Version 0.3
 
 ### Enhancements
