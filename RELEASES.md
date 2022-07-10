@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.4
+## Version 0.5
 
 ### Changes
 
@@ -12,28 +12,6 @@
 - Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
 - Added `ActionState::action_axis_pair()` which can return an `AxisPair` to containing the analog values of a `SingleGamepadAxis`, `DualGamepadAxis`, or `VirtualDPad`.
 - Added `ActionState::action_value()` which represents the floating point value of any action: `1.0` or `0.0` for pressed or unpressed buttons, a value in the range `-1.0..=1.0` for a single axis representing its analog input, or a value in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
-
-### Usability
-
-- reduced required `derive_more` features
-- removed `thiserror` dependency
-- the order of all methods on `InputMap` is now `(input, action)`, rather than `(action, input`) to better match user mental models
-  - this is a map-like struct: one presses `KeyCode::F` to `Actions::PayRespects`, not the other way around!
-  - this includes the order of all paired tuples, including the returned values
-
-### Bug fixes
-
-- fixed serious bug that broke all functionality relating to durations that buttons were pressed or released for
-  - `ActionState::tick` now takes the `Instant` of both the current and previous frame, rather than just the current
-- `InputManagerPlugin` no longer panics when time does not have a previous update
-  - this is useful as it ensures `bevy_inspector_egui` compatibility!
-
-### Docs
-
-- properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
-- added doc examples to `ActionStateDriver`, which allows you to trigger actions based on entity properties
-- document the need to add system ordering when you have other functionality running during `CoreStage::PreUpdate`
-- hint to users that they may want to use multiple `Actionlike` enums
 
 ## Version 0.4.1
 
