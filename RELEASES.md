@@ -1,11 +1,5 @@
 # Release Notes
 
-## Version 0.4.1
-
-### Bug fixes
-
-- fixed out of date / broken reference to the input manager macros dependency
-
 ## Version 0.4
 
 ### Usability
