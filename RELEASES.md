@@ -4,7 +4,7 @@
 
 ### Bug fixes
 
-- fixed out of date / broken reference to the input manager macros dependency
+- fixed a compilation error caused by mistakenly renaming the macros crate
 
 ## Version 0.4
 
