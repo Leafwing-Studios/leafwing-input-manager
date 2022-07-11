@@ -222,7 +222,7 @@ impl DualGamepadAxis {
     pub const fn right_stick() -> DualGamepadAxis {
         DualGamepadAxis::symmetric(
             GamepadAxisType::RightStickX,
-            GamepadAxisType::RightStickY,
+            GamepadAxisType::LeftStickY,
             Self::DEFAULT_DEADZONE,
         )
     }
@@ -252,6 +252,11 @@ impl std::hash::Hash for DualGamepadAxis {
 
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
 /// A virtual DPad that you can get an [`AxisPair`] from
+///
+/// Typically, you don't want to store a [`DualGamepadAxis`] in this type,
+/// even though it can be stored as an [`InputKind`].
+///
+/// Instead, use it directly as [`InputKind::DualGamepadAxis`]!
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct VirtualDPad {
     /// The input that represents the up direction in this virtual DPad
@@ -304,44 +309,6 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
-        }
-    }
-
-    /// Constructs a [`VirtualDpad`] corresponding to the left analogue stick of a gamepad
-    ///
-    /// A small, symettric deadzone is added for convenience.
-    /// If you wish to control the dead zone yourself, construct this struct manually.
-    pub const fn left_stick() -> VirtualDPad {
-        let dual_gamepad_axis = DualGamepadAxis::left_stick();
-        VirtualDPad {
-            up: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            down: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            left: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            right: InputKind::DualGamepadAxis(dual_gamepad_axis),
-        }
-    }
-
-    /// Constructs a [`VirtualDpad`] corresponding to the right analogue stick of a gamepad
-    ///
-    /// A small, symettric deadzone is added for convenience.
-    /// If you wish to control the dead zone yourself, construct this struct manually.
-    pub const fn right_stick() -> VirtualDPad {
-        let dual_gamepad_axis = DualGamepadAxis::right_stick();
-        VirtualDPad {
-            up: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            down: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            left: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            right: InputKind::DualGamepadAxis(dual_gamepad_axis),
-        }
-    }
-
-    /// Constructs a [`VirtualDpad`] from a [`DualGamepadAxis`].
-    pub const fn from_dual_gamepad_axis(dual_gamepad_axis: DualGamepadAxis) -> VirtualDPad {
-        VirtualDPad {
-            up: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            down: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            left: InputKind::DualGamepadAxis(dual_gamepad_axis),
-            right: InputKind::DualGamepadAxis(dual_gamepad_axis),
         }
     }
 }
