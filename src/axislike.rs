@@ -185,7 +185,12 @@ pub struct DualGamepadAxis {
 }
 
 impl DualGamepadAxis {
-    /// Creates a [`SingleGamepadAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
+    /// The default size of the deadzone used by constructor methods.
+    ///
+    /// This cannot be changed, but the struct can be easily manually constructed.
+    pub const DEFAULT_DEADZONE: f32 = 0.1;
+
+    /// Creates a [`DualGamepadAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
     #[must_use]
     pub const fn symmetric(
         x_axis: GamepadAxisType,
@@ -200,6 +205,26 @@ impl DualGamepadAxis {
             y_positive_low: threshold,
             y_negative_low: threshold,
         }
+    }
+
+    /// Creates a [`DualGamepadAxis`] for the left analogue stick of the gamepad.
+    #[must_use]
+    pub const fn left_stick() -> DualGamepadAxis {
+        DualGamepadAxis::symmetric(
+            GamepadAxisType::LeftStickX,
+            GamepadAxisType::LeftStickY,
+            Self::DEFAULT_DEADZONE,
+        )
+    }
+
+    /// Creates a [`DualGamepadAxis`] for the right analogue stick of the gamepad.
+    #[must_use]
+    pub const fn right_stick() -> DualGamepadAxis {
+        DualGamepadAxis::symmetric(
+            GamepadAxisType::RightStickX,
+            GamepadAxisType::RightStickY,
+            Self::DEFAULT_DEADZONE,
+        )
     }
 }
 
@@ -279,6 +304,44 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
+        }
+    }
+
+    /// Constructs a [`VirtualDpad`] corresponding to the left analogue stick of a gamepad
+    ///
+    /// A small, symettric deadzone is added for convenience.
+    /// If you wish to control the dead zone yourself, construct this struct manually.
+    pub const fn left_stick() -> VirtualDPad {
+        let dual_gamepad_axis = DualGamepadAxis::left_stick();
+        VirtualDPad {
+            up: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            down: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            left: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            right: InputKind::DualGamepadAxis(dual_gamepad_axis),
+        }
+    }
+
+    /// Constructs a [`VirtualDpad`] corresponding to the right analogue stick of a gamepad
+    ///
+    /// A small, symettric deadzone is added for convenience.
+    /// If you wish to control the dead zone yourself, construct this struct manually.
+    pub const fn right_stick() -> VirtualDPad {
+        let dual_gamepad_axis = DualGamepadAxis::right_stick();
+        VirtualDPad {
+            up: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            down: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            left: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            right: InputKind::DualGamepadAxis(dual_gamepad_axis),
+        }
+    }
+
+    /// Constructs a [`VirtualDpad`] from a [`DualGamepadAxis`].
+    pub const fn from_dual_gamepad_axis(dual_gamepad_axis: DualGamepadAxis) -> VirtualDPad {
+        VirtualDPad {
+            up: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            down: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            left: InputKind::DualGamepadAxis(dual_gamepad_axis),
+            right: InputKind::DualGamepadAxis(dual_gamepad_axis),
         }
     }
 }
