@@ -2,7 +2,11 @@
 
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
-use bevy_input::{gamepad::GamepadButtonType, keyboard::KeyCode};
+use bevy_core::FloatOrd;
+use bevy_input::{
+    gamepad::{GamepadAxisType, GamepadButtonType},
+    keyboard::KeyCode,
+};
 use bevy_math::Vec2;
 use serde::{Deserialize, Serialize};
 
@@ -106,6 +110,75 @@ impl AxisPair {
     #[inline]
     pub fn length_squared(&self) -> f32 {
         self.xy.length_squared()
+    }
+}
+
+/// A single gamepad axis with a configurable trigger zone.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct SingleGamepadAxis {
+    /// The axis that is being checked.
+    pub axis: GamepadAxisType,
+    /// Any axis value higher than this will trigger the input.
+    pub positive_low: f32,
+    /// Any axis value lower than this will trigger the input.
+    pub negative_low: f32,
+}
+
+impl PartialEq for SingleGamepadAxis {
+    fn eq(&self, other: &Self) -> bool {
+        self.axis == other.axis
+            && FloatOrd(self.positive_low) == FloatOrd(other.positive_low)
+            && FloatOrd(self.negative_low) == FloatOrd(other.negative_low)
+    }
+}
+impl Eq for SingleGamepadAxis {}
+impl std::hash::Hash for SingleGamepadAxis {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.axis.hash(state);
+        FloatOrd(self.positive_low).hash(state);
+        FloatOrd(self.negative_low).hash(state);
+    }
+}
+
+/// Two gamepad axes combined as one input.
+///
+/// This input will generate [`AxisPair`] can be read with
+/// [`ActionState::action_axis_pair()`][crate::ActionState::action_axis_pair()].
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct DualGamepadAxis {
+    /// The gamepad axis to use as the x axis.
+    pub x_axis: GamepadAxisType,
+    /// The gamepad axis to use as the y axis.
+    pub y_axis: GamepadAxisType,
+    /// If the stick is moved right more than this amount the input will be triggered.
+    pub x_positive_low: f32,
+    /// If the stick is moved left more than this amount the input will be triggered.
+    pub x_negative_low: f32,
+    /// If the stick is moved up more than this amount the input will be triggered.
+    pub y_positive_low: f32,
+    /// If the stick is moved down more than this amount the input will be triggered.
+    pub y_negative_low: f32,
+}
+
+impl PartialEq for DualGamepadAxis {
+    fn eq(&self, other: &Self) -> bool {
+        self.x_axis == other.x_axis
+            && self.y_axis == other.y_axis
+            && FloatOrd(self.x_positive_low) == FloatOrd(other.x_positive_low)
+            && FloatOrd(self.x_negative_low) == FloatOrd(other.x_negative_low)
+            && FloatOrd(self.y_positive_low) == FloatOrd(other.y_positive_low)
+            && FloatOrd(self.y_negative_low) == FloatOrd(other.y_negative_low)
+    }
+}
+impl Eq for DualGamepadAxis {}
+impl std::hash::Hash for DualGamepadAxis {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x_axis.hash(state);
+        self.y_axis.hash(state);
+        FloatOrd(self.x_positive_low).hash(state);
+        FloatOrd(self.x_negative_low).hash(state);
+        FloatOrd(self.y_positive_low).hash(state);
+        FloatOrd(self.y_negative_low).hash(state);
     }
 }
 
