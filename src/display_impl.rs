@@ -1,6 +1,7 @@
 //! Containment module for boring implmentations of the [`Display`] trait
 
-use crate::user_input::{InputKind, UserInput, VirtualDPad};
+use crate::axislike::VirtualDPad;
+use crate::user_input::{InputKind, UserInput};
 use std::fmt::Display;
 
 impl Display for UserInput {

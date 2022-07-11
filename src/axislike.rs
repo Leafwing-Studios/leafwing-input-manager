@@ -1,6 +1,7 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equvalents)
 
 use crate::orientation::{Direction, Rotation};
+use crate::user_input::InputKind;
 use bevy_math::Vec2;
 use serde::{Deserialize, Serialize};
 
@@ -105,4 +106,18 @@ impl AxisPair {
     pub fn length_squared(&self) -> f32 {
         self.xy.length_squared()
     }
+}
+
+#[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
+/// A virtual DPad that you can get an [`AxisPair`] from
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct VirtualDPad {
+    /// The input that represents the up direction in this virtual DPad
+    pub up: InputKind,
+    /// The input that represents the down direction in this virtual DPad
+    pub down: InputKind,
+    /// The input that represents the left direction in this virtual DPad
+    pub left: InputKind,
+    /// The input that represents the right direction in this virtual DPad
+    pub right: InputKind,
 }

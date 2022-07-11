@@ -1,8 +1,9 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
 use crate::action_state::ActionData;
+use crate::axislike::VirtualDPad;
 use crate::input_map::InputMap;
-use crate::user_input::{InputKind, InputStreams, UserInput, VirtualDPad};
+use crate::user_input::{InputKind, InputStreams, UserInput};
 use crate::Actionlike;
 
 use itertools::Itertools;
@@ -405,7 +406,7 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::user_input::VirtualDPad;
+        use crate::axislike::VirtualDPad;
 
         use super::*;
 

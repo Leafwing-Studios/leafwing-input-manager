@@ -13,7 +13,7 @@ use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
-use crate::axislike::AxisPair;
+use crate::axislike::{AxisPair, VirtualDPad};
 
 /// Some combination of user input, which may cross [`Input`]-mode boundaries
 ///
@@ -29,20 +29,6 @@ pub enum UserInput {
     Chord(PetitSet<InputKind, 8>),
     /// A virtual DPad that you can get an [`AxisPair`] from
     VirtualDPad(VirtualDPad),
-}
-
-#[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
-/// A virtual DPad that you can get an [`AxisPair`] from
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct VirtualDPad {
-    /// The input that represents the up direction in this virtual DPad
-    pub up: InputKind,
-    /// The input that represents the down direction in this virtual DPad
-    pub down: InputKind,
-    /// The input that represents the left direction in this virtual DPad
-    pub left: InputKind,
-    /// The input that represents the right direction in this virtual DPad
-    pub right: InputKind,
 }
 
 impl UserInput {
