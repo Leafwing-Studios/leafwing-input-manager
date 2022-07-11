@@ -114,6 +114,12 @@ impl AxisPair {
 }
 
 /// A single gamepad axis with a configurable trigger zone.
+///
+/// These can be stored in a [`InputKind`] to create a virtual button.
+///
+/// # Warning
+///
+/// `positive_low` must be greater than or equal to `negative_low` for this type to be validly constructed.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SingleGamepadAxis {
     /// The axis that is being checked.
@@ -122,6 +128,18 @@ pub struct SingleGamepadAxis {
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
+}
+
+impl SingleGamepadAxis {
+    /// Creates a [`SingleGamepadAxis`] with both `positive_low` and `negative_low` set to `threshold`.
+    #[must_use]
+    pub const fn symmetric(axis: GamepadAxisType, threshold: f32) -> SingleGamepadAxis {
+        SingleGamepadAxis {
+            axis,
+            positive_low: threshold,
+            negative_low: threshold,
+        }
+    }
 }
 
 impl PartialEq for SingleGamepadAxis {
@@ -142,8 +160,14 @@ impl std::hash::Hash for SingleGamepadAxis {
 
 /// Two gamepad axes combined as one input.
 ///
+/// These can be stored in a [`VirtualDPad`], which is itself stored in an [`InputKind`] for consumption.
+///
 /// This input will generate [`AxisPair`] can be read with
 /// [`ActionState::action_axis_pair()`][crate::ActionState::action_axis_pair()].
+///
+/// # Warning
+///
+/// `positive_low` must be greater than or equal to `negative_low` for both `x` and `y` for this type to be validly constructed.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DualGamepadAxis {
     /// The gamepad axis to use as the x axis.
@@ -158,6 +182,25 @@ pub struct DualGamepadAxis {
     pub y_positive_low: f32,
     /// If the stick is moved down more than this amount the input will be triggered.
     pub y_negative_low: f32,
+}
+
+impl DualGamepadAxis {
+    /// Creates a [`SingleGamepadAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
+    #[must_use]
+    pub const fn symmetric(
+        x_axis: GamepadAxisType,
+        y_axis: GamepadAxisType,
+        threshold: f32,
+    ) -> DualGamepadAxis {
+        DualGamepadAxis {
+            x_axis,
+            y_axis,
+            x_positive_low: threshold,
+            x_negative_low: threshold,
+            y_positive_low: threshold,
+            y_negative_low: threshold,
+        }
+    }
 }
 
 impl PartialEq for DualGamepadAxis {
