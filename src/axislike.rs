@@ -290,6 +290,7 @@ impl VirtualDPad {
         }
     }
 
+    #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
     /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
     pub const fn dpad() -> VirtualDPad {
         VirtualDPad {
