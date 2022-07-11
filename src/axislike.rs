@@ -2,6 +2,7 @@
 
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
+use bevy_input::{gamepad::GamepadButtonType, keyboard::KeyCode};
 use bevy_math::Vec2;
 use serde::{Deserialize, Serialize};
 
@@ -120,4 +121,48 @@ pub struct VirtualDPad {
     pub left: InputKind,
     /// The input that represents the right direction in this virtual DPad
     pub right: InputKind,
+}
+
+impl VirtualDPad {
+    /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
+    pub const fn arrow_keys() -> VirtualDPad {
+        VirtualDPad {
+            up: InputKind::Keyboard(KeyCode::Up),
+            down: InputKind::Keyboard(KeyCode::Down),
+            left: InputKind::Keyboard(KeyCode::Left),
+            right: InputKind::Keyboard(KeyCode::Right),
+        }
+    }
+
+    /// Generates a [`VirtualDPad`] corresponding to the `WASD` keyboard keycodes
+    pub const fn wasd() -> VirtualDPad {
+        VirtualDPad {
+            up: InputKind::Keyboard(KeyCode::W),
+            down: InputKind::Keyboard(KeyCode::S),
+            left: InputKind::Keyboard(KeyCode::A),
+            right: InputKind::Keyboard(KeyCode::D),
+        }
+    }
+
+    /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
+    pub const fn dpad() -> VirtualDPad {
+        VirtualDPad {
+            up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
+            down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
+            left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
+            right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
+        }
+    }
+
+    /// Generates a [`VirtualDPad`] corresponding to the face buttons on a gamepad
+    ///
+    /// North corresponds to up, west corresponds to left, east corresponds to right, south corresponds to down
+    pub const fn gamepad_face_buttons() -> VirtualDPad {
+        VirtualDPad {
+            up: InputKind::GamepadButton(GamepadButtonType::North),
+            down: InputKind::GamepadButton(GamepadButtonType::South),
+            left: InputKind::GamepadButton(GamepadButtonType::West),
+            right: InputKind::GamepadButton(GamepadButtonType::East),
+        }
+    }
 }
