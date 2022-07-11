@@ -617,7 +617,7 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
 
 mod tests {
     use crate as leafwing_input_manager;
-    use crate::Actionlike;
+    use leafwing_input_manager_macros::Actionlike;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     enum Action {

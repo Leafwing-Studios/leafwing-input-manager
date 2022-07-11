@@ -34,33 +34,14 @@ fn spawn_player(mut commands: Commands) {
             // Describes how to convert from player inputs into those actions
             input_map: InputMap::new([
                 // Configure the left stick as a dual-axis
-                (
-                    DualGamepadAxis {
-                        x_axis: GamepadAxisType::LeftStickX,
-                        y_axis: GamepadAxisType::LeftStickY,
-                        // We want to trigger our move action when the left stick is moved more than 10%
-                        // in any direction.
-                        //
-                        // Note: The Bevy `GamepadSettings` may cause input to be filtered out before
-                        // reaching leafwing.
-                        x_positive_low: 0.1,
-                        x_negative_low: -0.1,
-                        y_positive_low: 0.1,
-                        y_negative_low: -0.1,
-                    },
-                    Action::Move,
-                ),
+                (DualGamepadAxis::left_stick(), Action::Move),
             ])
             // Let's bind the right gamepad trigger to the throttle action
             .insert(GamepadButtonType::RightTrigger2, Action::Throttle)
             // And we'll use the right stick's x axis as a rudder control
             .insert(
-                SingleGamepadAxis {
-                    axis: GamepadAxisType::RightStickX,
-                    // This will trigger if the axis is moved 10% or more in either direction.
-                    negative_low: -0.1,
-                    positive_low: 0.1,
-                },
+                // This will trigger if the axis is moved 10% or more in either direction.
+                SingleGamepadAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
                 Action::Rudder,
             )
             // Listen for events on the first gamepad
