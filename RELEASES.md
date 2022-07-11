@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.4
+## Version 0.5
 
 ### Changes
 
@@ -12,6 +12,14 @@
 - Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
 - Added `ActionState::action_axis_pair()` which can return an `AxisPair` to containing the analog values of a `SingleGamepadAxis`, `DualGamepadAxis`, or `VirtualDPad`.
 - Added `ActionState::action_value()` which represents the floating point value of any action: `1.0` or `0.0` for pressed or unpressed buttons, a value in the range `-1.0..=1.0` for a single axis representing its analog input, or a value in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
+
+## Version 0.4.1
+
+### Bug fixes
+
+- fixed a compilation error caused by mistakenly renaming the macros crate
+
+## Version 0.4
 
 ### Usability
 
