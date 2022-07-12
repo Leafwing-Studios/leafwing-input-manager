@@ -128,7 +128,7 @@ pub struct SingleGamepadAxis {
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
-    /// The current or target value for this input
+    /// The target value for this input, used for input mocking
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
     pub value: Option<f32>,
@@ -187,7 +187,7 @@ pub struct DualGamepadAxis {
     pub y_positive_low: f32,
     /// If the stick is moved down more than this amount the input will be triggered.
     pub y_negative_low: f32,
-    /// The current or target value for this input
+    /// The target value for this input, used for input mocking
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
     pub value: Option<Vec2>,
