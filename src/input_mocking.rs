@@ -55,6 +55,8 @@ pub trait MockInput {
     ///
     /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
+    /// To send specific values for axislike inputs, set their `value` field.
+    ///
     /// Gamepad input will be sent by the first registed controller found.
     /// If none are found, gamepad input will be silently skipped.
     fn send_input(&mut self, input: impl Into<UserInput>);
@@ -118,10 +120,16 @@ pub trait MockInput {
 impl<'a> MutableInputStreams<'a> {
     /// Send the specified `user_input` directly, using the specified gamepad
     ///
+    /// To send specific values for axislike inputs, set their `value` field.
     /// Called by the methods of [`MockInput`].
+    ///
+    /// # Warning
+    ///
+    /// Gamepad inputs are *only* sent if a gamepad is registered.
     pub fn send_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_send: UserInput = input.into();
-        let (gamepad_buttons, gamepad_axes, keyboard_buttons, mouse_buttons) =
+        // Extract the raw inputs
+        let (gamepad_buttons, gamepad_axis_data, keyboard_buttons, mouse_buttons) =
             input_to_send.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
@@ -137,11 +145,11 @@ impl<'a> MutableInputStreams<'a> {
         }
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for axis_type in gamepad_axes {
-                if let Some(gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis { gamepad, axis_type };
-                    // FIXME: Allow setting axis input value
-                    gamepad_input.set(gamepad_axis, 1.0);
+            if let Some(gamepad) = self.associated_gamepad {
+                for (axis_type, maybe_position_data) in gamepad_axis_data {
+                    if let Some(position_data) = maybe_position_data {
+                        gamepad_input.set(GamepadAxis { gamepad, axis_type }, position_data);
+                    }
                 }
             }
         }
@@ -180,7 +188,7 @@ impl<'a> MutableInputStreams<'a> {
         }
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for axis_type in gamepad_axes {
+            for (axis_type, _) in gamepad_axes {
                 if let Some(gamepad) = self.associated_gamepad {
                     let gamepad_axis = GamepadAxis { gamepad, axis_type };
                     gamepad_input.remove(gamepad_axis);
