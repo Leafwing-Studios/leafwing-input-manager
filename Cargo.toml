@@ -1,10 +1,10 @@
 [package]
 name = "leafwing_input_manager"
 description = "A powerfully direct stateful input manager for the Bevy game engine."
-version = "0.4.0"
+version = "0.5.0"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
-repository = "https://github.com/leafwing-studios/leafwing_input_manager"
+repository = "https://github.com/leafwing-studios/leafwing-input-manager"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 categories = ["games", "game-development"]
@@ -22,7 +22,7 @@ default = ['ui']
 ui = ['bevy_ui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.3" }
+leafwing_input_manager_macros = { path = "macros", version = "0.5" }
 
 bevy_app = {version = "0.7", default-features = false}
 bevy_core = {version = "0.7", default-features = false}
