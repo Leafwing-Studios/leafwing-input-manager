@@ -1,6 +1,5 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::user_input::UserInput;
 use crate::Actionlike;
 use crate::{axislike::AxisPair, buttonlike::ButtonState};
 
@@ -24,8 +23,6 @@ pub struct ActionData {
     ///
     /// See [`ActionState::action_axis_pair()`] for more details.
     pub axis_pair: Option<AxisPair>,
-    /// What inputs were responsible for causing this action to be pressed?
-    pub reasons_pressed: Vec<UserInput>,
     /// When was the button pressed / released, and how long has it been held for?
     pub timing: Timing,
     /// Was this action consumed by [`ActionState::consume`]?
@@ -106,7 +103,6 @@ impl<A: Actionlike> ActionState<A> {
 
             self.action_data[i].axis_pair = action_data[i].axis_pair;
             self.action_data[i].value = action_data[i].value;
-            self.action_data[i].reasons_pressed = action_data[i].reasons_pressed.clone();
         }
     }
 
@@ -297,7 +293,6 @@ impl<A: Actionlike> ActionState<A> {
 
         if self.pressed(action) {
             self.action_data[index].timing.flip();
-            self.action_data[index].reasons_pressed = Vec::new();
         }
 
         self.action_data[index].state.release();
@@ -347,7 +342,6 @@ impl<A: Actionlike> ActionState<A> {
         // This is the only difference from action_state.release(action)
         self.action_data[index].consumed = true;
         self.action_data[index].state.release();
-        self.action_data[index].reasons_pressed = Vec::new();
         self.action_data[index].timing.flip();
     }
 
@@ -414,46 +408,6 @@ impl<A: Actionlike> ActionState<A> {
         A::variants()
             .filter(|a| self.just_released(a.clone()))
             .collect()
-    }
-
-    /// The reasons (in terms of [`UserInput`]) that the button was pressed
-    ///
-    /// If the button is currently released, the `Vec<UserInput`> returned will be empty
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use leafwing_input_manager::action_state::ActionData;
-    /// use bevy_input::keyboard::KeyCode;
-    ///
-    /// #[derive(Actionlike, Clone)]
-    /// enum PlatformerAction{
-    ///     Move,
-    ///     Jump,
-    /// }
-    ///
-    /// let mut action_state = ActionState::<PlatformerAction>::default();
-    ///
-    /// // Usually this will be done automatically for you, via [`ActionState::update`]
-    /// action_state.set_action_data(PlatformerAction::Jump,
-    ///   ActionData {
-    ///         state: ButtonState::JustPressed,
-    ///         // Manually setting the reason why this action was pressed
-    ///         reasons_pressed: vec![KeyCode::Space.into()],
-    ///         // For the sake of this example, we don't care about any other fields
-    ///         ..Default::default()
-    ///     }
-    /// );
-    ///
-    /// let reasons_jumped = action_state.reasons_pressed(PlatformerAction::Jump);
-    /// assert_eq!(reasons_jumped[0], KeyCode::Space.into());
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {
-        self.action_data[action.index()].reasons_pressed.clone()
     }
 
     /// The [`Instant`] that the action was last pressed or released

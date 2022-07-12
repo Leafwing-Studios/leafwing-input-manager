@@ -77,8 +77,6 @@ fn do_nothing() {
         assert!(action_state.released(Action::PayRespects));
         assert!(!action_state.just_released(Action::PayRespects));
 
-        assert_eq!(action_state.reasons_pressed(Action::PayRespects).len(), 0);
-
         assert_eq!(action_state.instant_started(Action::PayRespects), t0);
         assert_eq!(
             action_state.previous_duration(Action::PayRespects),
