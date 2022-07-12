@@ -127,7 +127,10 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    let gamepad_button = GamepadButton {
+                        gamepad: associated_gamepad,
+                        button_type: button,
+                    };
                     gamepad_input.press(gamepad_button);
                 }
             }
@@ -136,7 +139,10 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
             for axis in gamepad_axes {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis(associated_gamepad, axis);
+                    let gamepad_axis = GamepadAxis {
+                        gamepad: associated_gamepad,
+                        axis_type: axis,
+                    };
                     // FIXME: Allow setting axis input value
                     gamepad_input.set(gamepad_axis, 1.0);
                 }
@@ -167,7 +173,10 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
             for button in gamepad_buttons {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton(associated_gamepad, button);
+                    let gamepad_button = GamepadButton {
+                        gamepad: associated_gamepad,
+                        button_type: button,
+                    };
                     gamepad_input.release(gamepad_button);
                 }
             }
@@ -176,7 +185,10 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
             for axis in gamepad_axes {
                 if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis(associated_gamepad, axis);
+                    let gamepad_axis = GamepadAxis {
+                        gamepad: associated_gamepad,
+                        axis_type: axis,
+                    };
                     gamepad_input.remove(gamepad_axis);
                 }
             }
@@ -445,7 +457,7 @@ mod test {
 
         // BLOCKED: cannot use the less artifical APIs due to
         // https://github.com/bevyengine/bevy/issues/3808
-        let gamepad = Some(Gamepad(0));
+        let gamepad = Some(Gamepad { id: 0 });
 
         // Test that buttons are unpressed by default
         assert!(!world.pressed(KeyCode::Space));

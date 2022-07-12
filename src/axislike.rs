@@ -2,12 +2,12 @@
 
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
-use bevy_core::FloatOrd;
 use bevy_input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
 };
 use bevy_math::Vec2;
+use bevy_utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
 /// A high-level abstract user input that varies from -1 to 1, inclusive, along two axes
