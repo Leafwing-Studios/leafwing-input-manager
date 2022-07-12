@@ -284,13 +284,7 @@ impl MockInput for World {
     }
 
     fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
-        let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
-            gamepads.iter().next().copied()
-        } else {
-            None
-        };
-
-        self.pressed_for_gamepad(input, gamepad)
+        self.pressed_for_gamepad(input, None)
     }
 
     fn pressed_for_gamepad(
