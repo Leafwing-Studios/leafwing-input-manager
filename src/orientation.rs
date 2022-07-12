@@ -455,7 +455,7 @@ mod rotation {
 
 mod direction {
     use bevy_ecs::prelude::Component;
-    use bevy_math::{const_vec2, Vec2, Vec3};
+    use bevy_math::{Vec2, Vec3};
     use core::ops::{Add, Div, Mul, Neg, Sub};
     use derive_more::Display;
     use std::f32::consts::SQRT_2;
@@ -521,36 +521,36 @@ mod direction {
     impl Direction {
         /// The direction that points straight up
         pub const NORTH: Direction = Direction {
-            unit_vector: const_vec2!([0.0, 1.0]),
+            unit_vector: Vec2::new(0.0, 1.0),
         };
         /// The direction that points straight right
         pub const EAST: Direction = Direction {
-            unit_vector: const_vec2!([1.0, 0.0]),
+            unit_vector: Vec2::new(1.0, 0.0),
         };
         /// The direction that points straight down
         pub const SOUTH: Direction = Direction {
-            unit_vector: const_vec2!([0.0, -1.0]),
+            unit_vector: Vec2::new(0.0, -1.0),
         };
         /// The direction that points straight left
         pub const WEST: Direction = Direction {
-            unit_vector: const_vec2!([-1.0, 0.0]),
+            unit_vector: Vec2::new(-1.0, 0.0),
         };
 
         /// The direction that points halfway between up and right
         pub const NORTHEAST: Direction = Direction {
-            unit_vector: const_vec2!([SQRT_2 / 2.0, SQRT_2 / 2.0]),
+            unit_vector: Vec2::new(SQRT_2 / 2.0, SQRT_2 / 2.0),
         };
         /// The direction that points halfway between down and right
         pub const SOUTHEAST: Direction = Direction {
-            unit_vector: const_vec2!([SQRT_2 / 2.0, -SQRT_2 / 2.0]),
+            unit_vector: Vec2::new(SQRT_2 / 2.0, -SQRT_2 / 2.0),
         };
         /// The direction that points halfway between down and left
         pub const SOUTHWEST: Direction = Direction {
-            unit_vector: const_vec2!([-SQRT_2 / 2.0, -SQRT_2 / 2.0]),
+            unit_vector: Vec2::new(-SQRT_2 / 2.0, -SQRT_2 / 2.0),
         };
         /// The direction that points halfway between left and up
         pub const NORTHWEST: Direction = Direction {
-            unit_vector: const_vec2!([-SQRT_2 / 2.0, SQRT_2 / 2.0]),
+            unit_vector: Vec2::new(-SQRT_2 / 2.0, SQRT_2 / 2.0),
         };
     }
 
