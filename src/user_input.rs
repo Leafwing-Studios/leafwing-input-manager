@@ -1,7 +1,7 @@
 //! Helpful abstractions over user inputs of all sorts
 
 use bevy_input::{
-    gamepad::{Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType},
+    gamepad::{Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads},
     keyboard::KeyCode,
     mouse::MouseButton,
     Axis, Input,
@@ -421,7 +421,7 @@ impl From<MouseButton> for InputKind {
 /// Each of these streams is optional; if a stream does not exist, it is treated as if it were entirely unpressed.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct InputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a Input<GamepadButton>>,
@@ -429,6 +429,8 @@ pub struct InputStreams<'a> {
     pub gamepad_button_axes: Option<&'a Axis<GamepadButton>>,
     /// An optional [`GamepadAxis`] [`Axis`] stream
     pub gamepad_axes: Option<&'a Axis<GamepadAxis>>,
+    /// An optional list of registered gamepads
+    pub gamepads: Option<&'a Gamepads>,
     /// An optional [`KeyCode`] [`Input`] stream
     pub keyboard: Option<&'a Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
@@ -450,6 +452,7 @@ impl<'a> InputStreams<'a> {
             gamepad_buttons: Some(gamepad_button_stream),
             gamepad_button_axes: Some(gamepad_button_axis_stream),
             gamepad_axes: Some(gamepad_axis_stream),
+            gamepads: None,
             keyboard: None,
             mouse: None,
             associated_gamepad: Some(associated_gamepad),
@@ -462,6 +465,7 @@ impl<'a> InputStreams<'a> {
             gamepad_buttons: None,
             gamepad_button_axes: None,
             gamepad_axes: None,
+            gamepads: None,
             keyboard: Some(keyboard_input_stream),
             mouse: None,
             associated_gamepad: None,
@@ -474,6 +478,7 @@ impl<'a> InputStreams<'a> {
             gamepad_buttons: None,
             gamepad_button_axes: None,
             gamepad_axes: None,
+            gamepads: None,
             keyboard: None,
             mouse: Some(mouse_input_stream),
             associated_gamepad: None,
@@ -538,15 +543,32 @@ impl<'a> InputStreams<'a> {
                 value < axis.negative_low || value > axis.positive_low
             }
             InputKind::GamepadButton(gamepad_button) => {
-                // If no gamepad is registered, we know for sure that no match was found
+                // If a gamepad was registered, just check that one
                 if let Some(gamepad) = self.associated_gamepad {
                     if let Some(gamepad_buttons) = self.gamepad_buttons {
                         gamepad_buttons.pressed(GamepadButton(gamepad, gamepad_button))
                     } else {
                         false
                     }
+                // If no gamepad is registered, scan the list of available gamepads
                 } else {
-                    false
+                    // Verify that both gamepads and gamepad_buttons exists
+                    if let (Some(gamepads), Some(gamepad_buttons)) =
+                        (self.gamepads, self.gamepad_buttons)
+                    {
+                        for &gamepad in gamepads.iter() {
+                            if gamepad_buttons.pressed(GamepadButton(gamepad, gamepad_button)) {
+                                // Return early if *any* gamepad is pressing this button
+                                return true;
+                            }
+                        }
+                        // If none of the available gamepads pressed this button, return false
+                        false
+
+                    // If we don't have the required data, fall back to false
+                    } else {
+                        false
+                    }
                 }
             }
             InputKind::Keyboard(keycode) => {
@@ -693,7 +715,6 @@ impl<'a> InputStreams<'a> {
 /// Each of these streams is optional; if a stream does not exist, inputs sent to them will be ignored.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
-#[derive(Debug)]
 pub struct MutableInputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a mut Input<GamepadButton>>,
@@ -701,6 +722,8 @@ pub struct MutableInputStreams<'a> {
     pub gamepad_button_axes: Option<&'a mut Axis<GamepadButton>>,
     /// An optional [`GamepadAxis`] [`Axis`] stream
     pub gamepad_axes: Option<&'a mut Axis<GamepadAxis>>,
+    /// An optional list of registered [`Gamepads`]
+    pub gamepads: Option<&'a mut Gamepads>,
     /// An optional [`KeyCode`] [`Input`] stream
     pub keyboard: Option<&'a mut Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
@@ -720,6 +743,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
         let gamepad_axes = mutable_streams
             .gamepad_axes
             .map(|mutable_ref| &*mutable_ref);
+        let gamepads = mutable_streams.gamepads.map(|mutable_ref| &*mutable_ref);
 
         let keyboard = mutable_streams.keyboard.map(|mutable_ref| &*mutable_ref);
 
@@ -729,6 +753,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_buttons,
             gamepad_button_axes,
             gamepad_axes,
+            gamepads,
             keyboard,
             mouse,
             associated_gamepad: mutable_streams.associated_gamepad,
