@@ -645,12 +645,12 @@ impl<'a> InputStreams<'a> {
         };
 
         match input {
-            UserInput::Single(InputKind::SingleGamepadAxis(threshold)) => {
+            UserInput::Single(InputKind::SingleGamepadAxis(single_axis)) => {
                 if let Some(axes) = self.gamepad_axes {
                     if let Some(gamepad) = self.associated_gamepad {
                         axes.get(GamepadAxis {
                             gamepad,
-                            axis_type: threshold.axis_type,
+                            axis_type: single_axis.axis_type,
                         })
                         .unwrap_or_default()
                     // If no gamepad is registered, return the first non-zero input found
@@ -659,7 +659,7 @@ impl<'a> InputStreams<'a> {
                             let value = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: threshold.axis_type,
+                                    axis_type: single_axis.axis_type,
                                 })
                                 .unwrap_or_default();
 
