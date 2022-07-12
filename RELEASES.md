@@ -2,16 +2,18 @@
 
 ## Version 0.5
 
-### Changes
-
-- Renamed `InputButton` to `InputKind` to reflect it's ability to represent non-button inputs such as axes.
-
 ### Enhancements
 
 - Added `SingleGamepadAxis` and `DualGamepadAxis` structs that can be supplied to an `InputMap` to trigger on axis inputs.
 - Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
 - Added `ActionState::action_axis_pair()` which can return an `AxisPair` to containing the analog values of a `SingleGamepadAxis`, `DualGamepadAxis`, or `VirtualDPad`.
 - Added `ActionState::action_value()` which represents the floating point value of any action: `1.0` or `0.0` for pressed or unpressed buttons, a value in the range `-1.0..=1.0` for a single axis representing its analog input, or a value in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
+
+### Usability
+
+- Removed the `ActionState::reasons_pressed` API.
+  - This API was quite complex and not terribly useful.
+  - This was not needed for axislike inputs in the end.
 
 ## Version 0.4.1
 

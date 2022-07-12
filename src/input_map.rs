@@ -317,7 +317,6 @@ impl<A: Actionlike> InputMap<A> {
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
                     let action = &mut action_data[action.index()];
-                    action.reasons_pressed.push(input.clone());
                     action.value += value;
                     action.value = action.value.clamp(-1.0, 1.0);
 
