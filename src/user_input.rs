@@ -659,6 +659,7 @@ impl<'a> InputStreams<'a> {
             UserInput::VirtualDPad { .. } => {
                 self.get_input_axis_pair(input).unwrap_or_default().length()
             }
+            // This is required because upstream bevy_input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
                 if let Some(button_axes) = self.gamepad_button_axes {
                     if let Some(gamepad) = self.associated_gamepad {
