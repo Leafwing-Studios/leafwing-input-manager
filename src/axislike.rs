@@ -25,20 +25,21 @@ pub struct AxisPair {
 // Constructors
 impl AxisPair {
     /// Creates a new [`AxisPair`] from the provided (x,y) coordinates
-    ///
-    /// The direction is preserved, by the magnitude will be clamped to at most 1.
     pub fn new(xy: Vec2) -> AxisPair {
-        AxisPair {
-            xy: xy.clamp_length_max(1.0),
-        }
+        AxisPair { xy }
     }
 
     /// Merge the state of this [`AxisPair`] with another.
     ///
     /// This is useful if you have multiple sticks bound to the same game action,
     /// and you want to get their combined position.
+    ///
+    /// # Warning
+    ///
+    /// This method can result in values with a greater maximum magnitude than expected!
+    /// Use [`AxisPair::clamp_length`] to limit the resulting direction.
     pub fn merged_with(&self, other: AxisPair) -> AxisPair {
-        AxisPair::new((self.xy() + other.xy()).clamp_length_max(1.0))
+        AxisPair::new(self.xy() + other.xy())
     }
 }
 
@@ -110,6 +111,11 @@ impl AxisPair {
     #[inline]
     pub fn length_squared(&self) -> f32 {
         self.xy.length_squared()
+    }
+
+    /// Clamps the magnitude of the axis
+    pub fn clamp_length(&mut self, max: f32) {
+        self.xy = self.xy.clamp_length_max(max);
     }
 }
 

@@ -204,7 +204,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - Chord inputs will return the value of its first input.
     ///
     /// If multiple inputs trigger the same game action at the same time, the value of each
-    /// triggering input will be added together and clamped to the range `-1.0..=1.0`
+    /// triggering input will be added together.
     pub fn action_value(&self, action: A) -> f32 {
         self.action_data(action).value
     }
@@ -218,8 +218,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Chord inputs will return the [`AxisPair`] of it's first input.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
-    /// value of each axis pair will be added together and be clamped to a maximum magnitude of
-    /// `1.0`.
+    /// value of each axis pair will be added together.
     pub fn action_axis_pair(&self, action: A) -> Option<AxisPair> {
         self.action_data(action).axis_pair
     }

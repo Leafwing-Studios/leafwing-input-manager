@@ -328,7 +328,6 @@ impl<A: Actionlike> InputMap<A> {
                     inputs.push(input.clone());
                     let action = &mut action_data[action.index()];
                     action.value += value;
-                    action.value = action.value.clamp(-1.0, 1.0);
 
                     // Merge axis pair into action data
                     if let Some(axis_pair) = axis_pair {
