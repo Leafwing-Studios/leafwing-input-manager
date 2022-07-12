@@ -9,6 +9,9 @@ use bevy_input::{
 use bevy_math::Vec2;
 use petitset::PetitSet;
 
+use bevy_ecs::prelude::{Res, ResMut, World};
+use bevy_ecs::system::SystemState;
+
 use crate::axislike::{AxisPair, VirtualDPad};
 use crate::user_input::{InputKind, UserInput};
 
@@ -37,6 +40,37 @@ pub struct InputStreams<'a> {
 
 // Constructors
 impl<'a> InputStreams<'a> {
+    /// Construct an [`InputStreams`] from a [`World`]
+    pub fn from_world(world: &'a mut World, gamepad: Option<Gamepad>) -> Self {
+        let mut input_system_state: SystemState<(
+            Option<Res<Input<GamepadButton>>>,
+            Option<Res<Axis<GamepadButton>>>,
+            Option<Res<Axis<GamepadAxis>>>,
+            Option<Res<Gamepads>>,
+            Option<Res<Input<KeyCode>>>,
+            Option<Res<Input<MouseButton>>>,
+        )> = SystemState::new(world);
+
+        let (
+            maybe_gamepad_buttons,
+            maybe_gamepad_button_axes,
+            maybe_gamepad_axes,
+            maybe_gamepads,
+            maybe_keyboard,
+            maybe_mouse,
+        ) = input_system_state.get(world);
+
+        InputStreams {
+            gamepad_buttons: maybe_gamepad_buttons.map(|r| r.into_inner()),
+            gamepad_button_axes: maybe_gamepad_button_axes.map(|r| r.into_inner()),
+            gamepad_axes: maybe_gamepad_axes.map(|r| r.into_inner()),
+            gamepads: maybe_gamepads.map(|r| r.into_inner()),
+            keyboard: maybe_keyboard.map(|r| r.into_inner()),
+            mouse: maybe_mouse.map(|r| r.into_inner()),
+            associated_gamepad: gamepad,
+        }
+    }
+
     /// Construct [`InputStreams`] with only a [`GamepadButton`] input stream
     pub fn from_gamepad(
         gamepad_button_stream: &'a Input<GamepadButton>,
@@ -399,6 +433,39 @@ pub struct MutableInputStreams<'a> {
     pub mouse: Option<&'a mut Input<MouseButton>>,
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
+}
+
+impl<'a> MutableInputStreams<'a> {
+    /// Construct a [`MutableInputStreams`] from the [`World`]
+    pub fn from_world(world: &'a mut World, gamepad: Option<Gamepad>) -> Self {
+        let mut input_system_state: SystemState<(
+            Option<ResMut<Input<GamepadButton>>>,
+            Option<ResMut<Axis<GamepadButton>>>,
+            Option<ResMut<Axis<GamepadAxis>>>,
+            Option<ResMut<Gamepads>>,
+            Option<ResMut<Input<KeyCode>>>,
+            Option<ResMut<Input<MouseButton>>>,
+        )> = SystemState::new(world);
+
+        let (
+            maybe_gamepad_buttons,
+            maybe_gamepad_button_axes,
+            maybe_gamepad_axes,
+            maybe_gamepads,
+            maybe_keyboard,
+            maybe_mouse,
+        ) = input_system_state.get_mut(world);
+
+        MutableInputStreams {
+            gamepad_buttons: maybe_gamepad_buttons.map(|r| r.into_inner()),
+            gamepad_button_axes: maybe_gamepad_button_axes.map(|r| r.into_inner()),
+            gamepad_axes: maybe_gamepad_axes.map(|r| r.into_inner()),
+            gamepads: maybe_gamepads.map(|r| r.into_inner()),
+            keyboard: maybe_keyboard.map(|r| r.into_inner()),
+            mouse: maybe_mouse.map(|r| r.into_inner()),
+            associated_gamepad: gamepad,
+        }
+    }
 }
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {

@@ -4,7 +4,7 @@ use crate::input_streams::{InputStreams, MutableInputStreams};
 use crate::user_input::UserInput;
 use bevy_app::App;
 use bevy_ecs::event::Events;
-use bevy_ecs::system::{Res, ResMut, SystemState};
+use bevy_ecs::system::{ResMut, SystemState};
 use bevy_ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy_ecs::{component::Component, query::With, system::Query};
@@ -13,7 +13,7 @@ use bevy_input::{
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseWheel},
     touch::{TouchInput, Touches},
-    Axis, Input,
+    Input,
 };
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
@@ -223,35 +223,7 @@ impl MockInput for World {
     }
 
     fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        // You can make a system with this type signature if you'd like to mock user input
-        // in a non-exclusive system
-        let mut input_system_state: SystemState<(
-            Option<ResMut<Input<GamepadButton>>>,
-            Option<ResMut<Axis<GamepadButton>>>,
-            Option<ResMut<Axis<GamepadAxis>>>,
-            Option<ResMut<Gamepads>>,
-            Option<ResMut<Input<KeyCode>>>,
-            Option<ResMut<Input<MouseButton>>>,
-        )> = SystemState::new(self);
-
-        let (
-            mut maybe_gamepad_buttons,
-            mut maybe_gamepad_button_axes,
-            mut maybe_gamepad_axes,
-            mut maybe_gamepads,
-            mut maybe_keyboard,
-            mut maybe_mouse,
-        ) = input_system_state.get_mut(self);
-
-        let mut mutable_input_streams = MutableInputStreams {
-            gamepad_buttons: maybe_gamepad_buttons.as_deref_mut(),
-            gamepad_button_axes: maybe_gamepad_button_axes.as_deref_mut(),
-            gamepad_axes: maybe_gamepad_axes.as_deref_mut(),
-            gamepads: maybe_gamepads.as_deref_mut(),
-            keyboard: maybe_keyboard.as_deref_mut(),
-            mouse: maybe_mouse.as_deref_mut(),
-            associated_gamepad: gamepad,
-        };
+        let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.send_user_input(input);
     }
@@ -267,33 +239,7 @@ impl MockInput for World {
     }
 
     fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        let mut input_system_state: SystemState<(
-            Option<ResMut<Input<GamepadButton>>>,
-            Option<ResMut<Axis<GamepadButton>>>,
-            Option<ResMut<Axis<GamepadAxis>>>,
-            Option<ResMut<Gamepads>>,
-            Option<ResMut<Input<KeyCode>>>,
-            Option<ResMut<Input<MouseButton>>>,
-        )> = SystemState::new(self);
-
-        let (
-            mut maybe_gamepad_buttons,
-            mut maybe_gamepad_button_axes,
-            mut maybe_gamepad_axes,
-            mut maybe_gamepads,
-            mut maybe_keyboard,
-            mut maybe_mouse,
-        ) = input_system_state.get_mut(self);
-
-        let mut mutable_input_streams = MutableInputStreams {
-            gamepad_buttons: maybe_gamepad_buttons.as_deref_mut(),
-            gamepad_button_axes: maybe_gamepad_button_axes.as_deref_mut(),
-            gamepad_axes: maybe_gamepad_axes.as_deref_mut(),
-            gamepads: maybe_gamepads.as_deref_mut(),
-            keyboard: maybe_keyboard.as_deref_mut(),
-            mouse: maybe_mouse.as_deref_mut(),
-            associated_gamepad: gamepad,
-        };
+        let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.release_user_input(input);
     }
@@ -307,33 +253,7 @@ impl MockInput for World {
         input: impl Into<UserInput>,
         gamepad: Option<Gamepad>,
     ) -> bool {
-        let mut input_system_state: SystemState<(
-            Option<Res<Input<GamepadButton>>>,
-            Option<Res<Axis<GamepadButton>>>,
-            Option<Res<Axis<GamepadAxis>>>,
-            Option<Res<Gamepads>>,
-            Option<Res<Input<KeyCode>>>,
-            Option<Res<Input<MouseButton>>>,
-        )> = SystemState::new(self);
-
-        let (
-            maybe_gamepad_buttons,
-            maybe_gamepad_button_axes,
-            maybe_gamepad_axes,
-            maybe_gamepads,
-            maybe_keyboard,
-            maybe_mouse,
-        ) = input_system_state.get(self);
-
-        let input_streams = InputStreams {
-            gamepad_buttons: maybe_gamepad_buttons.as_deref(),
-            gamepad_button_axes: maybe_gamepad_button_axes.as_deref(),
-            gamepad_axes: maybe_gamepad_axes.as_deref(),
-            gamepads: maybe_gamepads.as_deref(),
-            keyboard: maybe_keyboard.as_deref(),
-            mouse: maybe_mouse.as_deref(),
-            associated_gamepad: gamepad,
-        };
+        let input_streams = InputStreams::from_world(self, gamepad);
 
         input_streams.input_pressed(&input.into())
     }
