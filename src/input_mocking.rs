@@ -1,6 +1,7 @@
 //! Helpful utilities for testing input management by sending mock input events
 
-use crate::user_input::{InputStreams, MutableInputStreams, UserInput};
+use crate::input_streams::{InputStreams, MutableInputStreams};
+use crate::user_input::UserInput;
 use bevy_app::App;
 use bevy_ecs::event::Events;
 use bevy_ecs::system::{Res, ResMut, SystemState};

@@ -3,7 +3,8 @@
 use crate::action_state::ActionData;
 use crate::axislike::VirtualDPad;
 use crate::input_map::InputMap;
-use crate::user_input::{InputKind, InputStreams, UserInput};
+use crate::input_streams::InputStreams;
+use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
 use itertools::Itertools;

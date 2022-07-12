@@ -6,8 +6,8 @@ use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
+    input_streams::InputStreams,
     plugin::ToggleActions,
-    user_input::InputStreams,
     Actionlike,
 };
 

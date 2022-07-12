@@ -3,7 +3,8 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::user_input::{InputKind, InputStreams, UserInput};
+use crate::input_streams::InputStreams;
+use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
 use bevy_ecs::component::Component;
@@ -547,7 +548,7 @@ mod tests {
     #[test]
     fn mock_inputs() {
         use crate::input_map::InputKind;
-        use crate::user_input::InputStreams;
+        use crate::input_streams::InputStreams;
         use bevy::prelude::*;
 
         // Setting up the input map

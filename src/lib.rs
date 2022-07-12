@@ -18,6 +18,7 @@ mod input_mocking;
 pub use input_mocking::MockInput;
 pub mod axislike;
 pub mod buttonlike;
+pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
 pub mod systems;
