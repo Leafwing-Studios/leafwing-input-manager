@@ -11,7 +11,6 @@ use crate::{
     Actionlike,
 };
 
-use bevy_core::Time;
 use bevy_ecs::{prelude::*, schedule::ShouldRun};
 use bevy_input::{
     gamepad::{GamepadAxis, GamepadButton, Gamepads},
@@ -19,6 +18,7 @@ use bevy_input::{
     mouse::MouseButton,
     Axis, Input,
 };
+use bevy_time::Time;
 use bevy_utils::Instant;
 
 #[cfg(feature = "ui")]

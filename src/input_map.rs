@@ -534,8 +534,8 @@ mod tests {
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
 
-        input_map.set_gamepad(Gamepad(0));
-        assert_eq!(input_map.gamepad(), Some(Gamepad(0)));
+        input_map.set_gamepad(Gamepad { id: 0 });
+        assert_eq!(input_map.gamepad(), Some(Gamepad { id: 0 }));
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
@@ -549,7 +549,7 @@ mod tests {
 
         // Setting up the input map
         let mut input_map = InputMap::<Action>::default();
-        input_map.set_gamepad(Gamepad(42));
+        input_map.set_gamepad(Gamepad { id: 42 });
 
         // Gamepad
         input_map.insert(GamepadButtonType::South, Action::Run);
@@ -589,7 +589,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         // With no inputs, nothing should be detected
@@ -598,7 +598,10 @@ mod tests {
         }
 
         // Pressing the wrong gamepad
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(0), GamepadButtonType::South));
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 0 },
+            button_type: GamepadButtonType::South,
+        });
 
         let input_streams = InputStreams {
             gamepad_buttons: Some(&gamepad_button_input_stream),
@@ -607,14 +610,17 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
         for action in Action::variants() {
             assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
         }
 
         // Pressing the correct gamepad
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 42 },
+            button_type: GamepadButtonType::South,
+        });
 
         let input_streams = InputStreams {
             gamepad_buttons: Some(&gamepad_button_input_stream),
@@ -623,15 +629,21 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
         assert!(!input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
 
         // Chord
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 42 },
+            button_type: GamepadButtonType::South,
+        });
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 42 },
+            button_type: GamepadButtonType::North,
+        });
 
         let input_streams = InputStreams {
             gamepad_buttons: Some(&gamepad_button_input_stream),
@@ -640,7 +652,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -655,7 +667,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         for action in Action::variants() {
@@ -672,7 +684,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -691,7 +703,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -710,7 +722,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));

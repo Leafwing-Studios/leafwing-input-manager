@@ -80,7 +80,7 @@ fn spawn_player(mut commands: Commands) {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(Camera2dBundle::default());
 }
 
 /// The longer you hold, the faster you dash when released!

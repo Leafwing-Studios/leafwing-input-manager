@@ -1,11 +1,11 @@
 use bevy::{
     ecs::system::SystemParam,
-    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
+    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
 use bevy_egui::{
     egui::{Align2, Area, Grid, Window},
-    EguiContext, EguiPlugin,
+    EguiContext,
 };
 use derive_more::Display;
 use leafwing_input_manager::{prelude::*, user_input::InputKind};
@@ -16,7 +16,8 @@ fn main() {
     App::new()
         .insert_resource(ControlSettings::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(EguiPlugin)
+        // FIXME: this should be re-enabled once Bevy 0.8 is out and bevy_egui is updated
+        //.add_plugin(EguiPlugin)
         .add_plugin(InputManagerPlugin::<ControlAction>::default())
         .add_plugin(InputManagerPlugin::<UiAction>::default())
         .add_startup_system(spawn_player_system)
@@ -254,7 +255,7 @@ struct InputEvents<'w, 's> {
 impl InputEvents<'_, '_> {
     fn input_button(&mut self) -> Option<InputKind> {
         if let Some(keyboard_input) = self.keys.iter().next() {
-            if keyboard_input.state == ElementState::Released {
+            if keyboard_input.state == ButtonState::Released {
                 if let Some(key_code) = keyboard_input.key_code {
                     return Some(key_code.into());
                 }
@@ -262,12 +263,16 @@ impl InputEvents<'_, '_> {
         }
 
         if let Some(mouse_input) = self.mouse_buttons.iter().next() {
-            if mouse_input.state == ElementState::Released {
+            if mouse_input.state == ButtonState::Released {
                 return Some(mouse_input.button.into());
             }
         }
 
-        if let Some(GamepadEvent(_, event_type)) = self.gamepad_events.iter().next() {
+        if let Some(GamepadEvent {
+            gamepad: _,
+            event_type,
+        }) = self.gamepad_events.iter().next()
+        {
             if let GamepadEventType::ButtonChanged(button, strength) = event_type.to_owned() {
                 if strength <= 0.5 {
                     return Some(button.into());
