@@ -12,7 +12,7 @@ use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
-use crate::axislike::{AxisPair, DualGamepadAxis, SingleGamepadAxis, VirtualDPad};
+use crate::axislike::{AxisPair, DualAxis, SingleAxis, VirtualDPad};
 
 /// Some combination of user input, which may cross [`Input`]-mode boundaries
 ///
@@ -204,7 +204,7 @@ impl UserInput {
 
         match self {
             UserInput::Single(button) => match *button {
-                InputKind::DualGamepadAxis(variant) => {
+                InputKind::DualAxis(variant) => {
                     let (x_value, y_value) = match variant.value {
                         Some(vec) => (Some(vec.x), Some(vec.y)),
                         None => (None, None),
@@ -213,7 +213,7 @@ impl UserInput {
                     gamepad_axes.push((variant.x_axis_type, x_value));
                     gamepad_axes.push((variant.y_axis_type, y_value));
                 }
-                InputKind::SingleGamepadAxis(variant) => {
+                InputKind::SingleAxis(variant) => {
                     gamepad_axes.push((variant.axis_type, variant.value))
                 }
                 InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
@@ -223,7 +223,7 @@ impl UserInput {
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
                     match button {
-                        InputKind::DualGamepadAxis(variant) => {
+                        InputKind::DualAxis(variant) => {
                             let (x_value, y_value) = match variant.value {
                                 Some(vec) => (Some(vec.x), Some(vec.y)),
                                 None => (None, None),
@@ -232,7 +232,7 @@ impl UserInput {
                             gamepad_axes.push((variant.x_axis_type, x_value));
                             gamepad_axes.push((variant.y_axis_type, y_value));
                         }
-                        InputKind::SingleGamepadAxis(variant) => {
+                        InputKind::SingleAxis(variant) => {
                             gamepad_axes.push((variant.axis_type, variant.value))
                         }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
@@ -249,7 +249,7 @@ impl UserInput {
             }) => {
                 for button in [up, down, left, right] {
                     match *button {
-                        InputKind::DualGamepadAxis(variant) => {
+                        InputKind::DualAxis(variant) => {
                             let (x_value, y_value) = match variant.value {
                                 Some(vec) => (Some(vec.x), Some(vec.y)),
                                 None => (None, None),
@@ -258,7 +258,7 @@ impl UserInput {
                             gamepad_axes.push((variant.x_axis_type, x_value));
                             gamepad_axes.push((variant.y_axis_type, y_value));
                         }
-                        InputKind::SingleGamepadAxis(variant) => {
+                        InputKind::SingleAxis(variant) => {
                             gamepad_axes.push((variant.axis_type, variant.value))
                         }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
@@ -284,15 +284,15 @@ impl From<InputKind> for UserInput {
     }
 }
 
-impl From<DualGamepadAxis> for UserInput {
-    fn from(input: DualGamepadAxis) -> Self {
-        UserInput::Single(InputKind::DualGamepadAxis(input))
+impl From<DualAxis> for UserInput {
+    fn from(input: DualAxis) -> Self {
+        UserInput::Single(InputKind::DualAxis(input))
     }
 }
 
-impl From<SingleGamepadAxis> for UserInput {
-    fn from(input: SingleGamepadAxis) -> Self {
-        UserInput::Single(InputKind::SingleGamepadAxis(input))
+impl From<SingleAxis> for UserInput {
+    fn from(input: SingleAxis) -> Self {
+        UserInput::Single(InputKind::SingleAxis(input))
     }
 }
 
@@ -375,9 +375,9 @@ impl Iterator for InputModeIter {
 impl From<InputKind> for InputMode {
     fn from(button: InputKind) -> Self {
         match button {
-            InputKind::GamepadButton(_)
-            | InputKind::SingleGamepadAxis(_)
-            | InputKind::DualGamepadAxis(_) => InputMode::Gamepad,
+            InputKind::GamepadButton(_) | InputKind::SingleAxis(_) | InputKind::DualAxis(_) => {
+                InputMode::Gamepad
+            }
             InputKind::Keyboard(_) => InputMode::Keyboard,
             InputKind::Mouse(_) => InputMode::Mouse,
         }
@@ -397,25 +397,25 @@ impl From<InputKind> for InputMode {
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
-    /// A single axis on a gamepad
-    SingleGamepadAxis(SingleGamepadAxis),
-    /// A axis on a gamepad
-    DualGamepadAxis(DualGamepadAxis),
+    /// A single axis of continous motion
+    SingleAxis(SingleAxis),
+    /// Two paired axes of continous motion
+    DualAxis(DualAxis),
     /// A button on a keyboard
     Keyboard(KeyCode),
     /// A button on a mouse
     Mouse(MouseButton),
 }
 
-impl From<DualGamepadAxis> for InputKind {
-    fn from(input: DualGamepadAxis) -> Self {
-        InputKind::DualGamepadAxis(input)
+impl From<DualAxis> for InputKind {
+    fn from(input: DualAxis) -> Self {
+        InputKind::DualAxis(input)
     }
 }
 
-impl From<SingleGamepadAxis> for InputKind {
-    fn from(input: SingleGamepadAxis) -> Self {
-        InputKind::SingleGamepadAxis(input)
+impl From<SingleAxis> for InputKind {
+    fn from(input: SingleAxis) -> Self {
+        InputKind::SingleAxis(input)
     }
 }
 
@@ -546,7 +546,7 @@ impl<'a> InputStreams<'a> {
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputKind::DualGamepadAxis(axis) => {
+            InputKind::DualAxis(axis) => {
                 let axis_pair = self
                     .get_input_axis_pair(&UserInput::Single(button))
                     .unwrap();
@@ -558,7 +558,7 @@ impl<'a> InputStreams<'a> {
                     || y > axis.y_positive_low
                     || y < axis.y_negative_low
             }
-            InputKind::SingleGamepadAxis(axis) => {
+            InputKind::SingleAxis(axis) => {
                 let value = self.get_input_value(&UserInput::Single(button));
 
                 value < axis.negative_low || value > axis.positive_low
@@ -645,7 +645,7 @@ impl<'a> InputStreams<'a> {
         };
 
         match input {
-            UserInput::Single(InputKind::SingleGamepadAxis(single_axis)) => {
+            UserInput::Single(InputKind::SingleAxis(single_axis)) => {
                 if let Some(axes) = self.gamepad_axes {
                     if let Some(gamepad) = self.associated_gamepad {
                         axes.get(GamepadAxis {
@@ -680,7 +680,7 @@ impl<'a> InputStreams<'a> {
                     use_button_value()
                 }
             }
-            UserInput::Single(InputKind::DualGamepadAxis(_)) => {
+            UserInput::Single(InputKind::DualAxis(_)) => {
                 if self.gamepad_axes.is_some() {
                     self.get_input_axis_pair(input).unwrap_or_default().length()
                 } else {
@@ -733,12 +733,12 @@ impl<'a> InputStreams<'a> {
 
     /// Get the axis pair associated to the user input.
     ///
-    /// If `input` is not a [`DualGamepadAxis`] or [`VirtualDPad`], returns [`None`].
+    /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
     ///
     /// See [`ActionState::action_axis_pair()`] for usage.
     pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<AxisPair> {
         match input {
-            UserInput::Single(InputKind::DualGamepadAxis(dual_axis)) => {
+            UserInput::Single(InputKind::DualAxis(dual_axis)) => {
                 if let Some(axes) = self.gamepad_axes {
                     if let Some(gamepad) = self.associated_gamepad {
                         let x = axes

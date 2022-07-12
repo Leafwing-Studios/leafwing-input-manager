@@ -34,14 +34,14 @@ fn spawn_player(mut commands: Commands) {
             // Describes how to convert from player inputs into those actions
             input_map: InputMap::new([
                 // Configure the left stick as a dual-axis
-                (DualGamepadAxis::left_stick(), Action::Move),
+                (DualAxis::left_stick(), Action::Move),
             ])
             // Let's bind the right gamepad trigger to the throttle action
             .insert(GamepadButtonType::RightTrigger2, Action::Throttle)
             // And we'll use the right stick's x axis as a rudder control
             .insert(
                 // This will trigger if the axis is moved 10% or more in either direction.
-                SingleGamepadAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
+                SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
                 Action::Rudder,
             )
             .build(),

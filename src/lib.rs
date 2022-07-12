@@ -29,7 +29,7 @@ pub use leafwing_input_manager_macros::Actionlike;
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
-    pub use crate::axislike::{DualGamepadAxis, SingleGamepadAxis, VirtualDPad};
+    pub use crate::axislike::{DualAxis, SingleAxis, VirtualDPad};
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     pub use crate::user_input::UserInput;

@@ -113,7 +113,7 @@ impl AxisPair {
     }
 }
 
-/// A single gamepad axis with a configurable trigger zone.
+/// A single directional axis with a configurable trigger zone.
 ///
 /// These can be stored in a [`InputKind`] to create a virtual button.
 ///
@@ -121,7 +121,7 @@ impl AxisPair {
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for this type to be validly constructed.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct SingleGamepadAxis {
+pub struct SingleAxis {
     /// The axis that is being checked.
     pub axis_type: GamepadAxisType,
     /// Any axis value higher than this will trigger the input.
@@ -134,11 +134,11 @@ pub struct SingleGamepadAxis {
     pub value: Option<f32>,
 }
 
-impl SingleGamepadAxis {
-    /// Creates a [`SingleGamepadAxis`] with both `positive_low` and `negative_low` set to `threshold`.
+impl SingleAxis {
+    /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
     #[must_use]
-    pub const fn symmetric(axis_type: GamepadAxisType, threshold: f32) -> SingleGamepadAxis {
-        SingleGamepadAxis {
+    pub const fn symmetric(axis_type: GamepadAxisType, threshold: f32) -> SingleAxis {
+        SingleAxis {
             axis_type,
             positive_low: threshold,
             negative_low: threshold,
@@ -147,15 +147,15 @@ impl SingleGamepadAxis {
     }
 }
 
-impl PartialEq for SingleGamepadAxis {
+impl PartialEq for SingleAxis {
     fn eq(&self, other: &Self) -> bool {
         self.axis_type == other.axis_type
             && FloatOrd(self.positive_low) == FloatOrd(other.positive_low)
             && FloatOrd(self.negative_low) == FloatOrd(other.negative_low)
     }
 }
-impl Eq for SingleGamepadAxis {}
-impl std::hash::Hash for SingleGamepadAxis {
+impl Eq for SingleAxis {}
+impl std::hash::Hash for SingleAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.axis_type.hash(state);
         FloatOrd(self.positive_low).hash(state);
@@ -163,7 +163,7 @@ impl std::hash::Hash for SingleGamepadAxis {
     }
 }
 
-/// Two gamepad axes combined as one input.
+/// Two directional axes combined as one input.
 ///
 /// These can be stored in a [`VirtualDPad`], which is itself stored in an [`InputKind`] for consumption.
 ///
@@ -174,10 +174,10 @@ impl std::hash::Hash for SingleGamepadAxis {
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for both `x` and `y` for this type to be validly constructed.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub struct DualGamepadAxis {
-    /// The gamepad axis to use as the x axis.
+pub struct DualAxis {
+    /// The axis representing horizontal movement.
     pub x_axis_type: GamepadAxisType,
-    /// The gamepad axis to use as the y axis.
+    /// The axis representing vertical movement.
     pub y_axis_type: GamepadAxisType,
     /// If the stick is moved right more than this amount the input will be triggered.
     pub x_positive_low: f32,
@@ -193,20 +193,20 @@ pub struct DualGamepadAxis {
     pub value: Option<Vec2>,
 }
 
-impl DualGamepadAxis {
+impl DualAxis {
     /// The default size of the deadzone used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
     pub const DEFAULT_DEADZONE: f32 = 0.1;
 
-    /// Creates a [`DualGamepadAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
+    /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
     #[must_use]
     pub const fn symmetric(
         x_axis_type: GamepadAxisType,
         y_axis_type: GamepadAxisType,
         threshold: f32,
-    ) -> DualGamepadAxis {
-        DualGamepadAxis {
+    ) -> DualAxis {
+        DualAxis {
             x_axis_type,
             y_axis_type,
             x_positive_low: threshold,
@@ -217,20 +217,20 @@ impl DualGamepadAxis {
         }
     }
 
-    /// Creates a [`DualGamepadAxis`] for the left analogue stick of the gamepad.
+    /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
     #[must_use]
-    pub const fn left_stick() -> DualGamepadAxis {
-        DualGamepadAxis::symmetric(
+    pub const fn left_stick() -> DualAxis {
+        DualAxis::symmetric(
             GamepadAxisType::LeftStickX,
             GamepadAxisType::LeftStickY,
             Self::DEFAULT_DEADZONE,
         )
     }
 
-    /// Creates a [`DualGamepadAxis`] for the right analogue stick of the gamepad.
+    /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
     #[must_use]
-    pub const fn right_stick() -> DualGamepadAxis {
-        DualGamepadAxis::symmetric(
+    pub const fn right_stick() -> DualAxis {
+        DualAxis::symmetric(
             GamepadAxisType::RightStickX,
             GamepadAxisType::LeftStickY,
             Self::DEFAULT_DEADZONE,
@@ -238,7 +238,7 @@ impl DualGamepadAxis {
     }
 }
 
-impl PartialEq for DualGamepadAxis {
+impl PartialEq for DualAxis {
     fn eq(&self, other: &Self) -> bool {
         self.x_axis_type == other.x_axis_type
             && self.y_axis_type == other.y_axis_type
@@ -248,8 +248,8 @@ impl PartialEq for DualGamepadAxis {
             && FloatOrd(self.y_negative_low) == FloatOrd(other.y_negative_low)
     }
 }
-impl Eq for DualGamepadAxis {}
-impl std::hash::Hash for DualGamepadAxis {
+impl Eq for DualAxis {}
+impl std::hash::Hash for DualAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.x_axis_type.hash(state);
         self.y_axis_type.hash(state);
@@ -263,10 +263,10 @@ impl std::hash::Hash for DualGamepadAxis {
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
 /// A virtual DPad that you can get an [`AxisPair`] from
 ///
-/// Typically, you don't want to store a [`DualGamepadAxis`] in this type,
+/// Typically, you don't want to store a [`DualAxis`] in this type,
 /// even though it can be stored as an [`InputKind`].
 ///
-/// Instead, use it directly as [`InputKind::DualGamepadAxis`]!
+/// Instead, use it directly as [`InputKind::DualAxis`]!
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct VirtualDPad {
     /// The input that represents the up direction in this virtual DPad

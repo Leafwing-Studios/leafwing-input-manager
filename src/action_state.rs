@@ -212,7 +212,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Get the [`AxisPair`] from the binding that triggered the corresponding `action`.
     ///
     /// Only certain events such as [`VirtualDPad`][crate::user_input::VirtualDPad] and
-    /// [`DualGamepadAxis`][crate::user_input::DualGamepadAxis] provide an [`AxisPair`], and this
+    /// [`DualAxis`][crate::user_input::DualAxis] provide an [`AxisPair`], and this
     /// will return [`None`] for other events.
     ///
     /// Chord inputs will return the [`AxisPair`] of it's first input.
