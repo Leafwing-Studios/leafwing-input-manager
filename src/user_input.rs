@@ -693,21 +693,15 @@ impl<'a> InputStreams<'a> {
                     use_button_value()
                 }
             }
-            UserInput::Chord(chord) => {
-                // FIXME: this logic seems incorrect
-                if let Some(input) = chord.get_at(0) {
-                    self.get_input_value(&UserInput::Single(*input))
-                } else {
-                    0.0
-                }
-            }
             _ => use_button_value(),
         }
     }
 
     /// Get the axis pair associated to the user input.
     ///
-    /// See [`ActionState::action_axis_pair()`].
+    /// If `input` is not a [`DualGamepadAxis`] or [`VirtualDPad`], returns [`None`].
+    ///
+    /// See [`ActionState::action_axis_pair()`] for usage.
     pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<AxisPair> {
         match input {
             UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
@@ -760,14 +754,6 @@ impl<'a> InputStreams<'a> {
                 let y = self.get_input_value(&UserInput::Single(*up))
                     - self.get_input_value(&UserInput::Single(*down)).abs();
                 Some(AxisPair::new(Vec2::new(x, y)))
-            }
-            UserInput::Chord(chord) => {
-                // FIXME: this logic seems wrong
-                if let Some(input) = chord.get_at(0) {
-                    self.get_input_axis_pair(&UserInput::Single(*input))
-                } else {
-                    None
-                }
             }
             _ => None,
         }
