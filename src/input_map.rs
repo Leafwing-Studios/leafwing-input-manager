@@ -19,13 +19,10 @@ use std::marker::PhantomData;
 /// Multiple inputs can be mapped to the same action,
 /// and each input can be mapped to multiple actions.
 ///
-/// The provided input types must be one of [`GamepadButtonType`], [`KeyCode`] or [`MouseButton`].
+/// The provided input types must be able to be converted into a [`UserInput`].
 ///
 /// The maximum number of bindings (total) that can be stored for each action is 16.
 /// Insertions will silently fail if you have reached this cap.
-///
-/// In addition, you can configure the per-mode cap for each [`InputMode`] using [`InputMap::new`] or [`InputMap::set_per_mode_cap`].
-/// This can be useful if your UI can only display one or two possible keybindings for each input mode.
 ///
 /// By default, if two actions would be triggered by a combination of buttons,
 /// and one combination is a strict subset of the other, only the larger input is registered.
@@ -260,12 +257,21 @@ impl<A: Actionlike> InputMap<A> {
 // Configuration
 impl<A: Actionlike> InputMap<A> {
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
+    ///
+    /// If this is [`None`], input from any connected gamepad will be used.
     #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
         self.associated_gamepad
     }
 
     /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
+    ///
+    /// If this is not called, input from any connected gamepad will be used.
+    /// The first matching non-zero input will be accepted,
+    /// as determined by gamepad registration order.
+    ///
+    /// Because of this robust fallback behavior,
+    /// this method can typically be ignored when writing single-player games.
     pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
         self.associated_gamepad = Some(gamepad);
         self
