@@ -619,15 +619,33 @@ impl<'a> InputStreams<'a> {
 
         match input {
             UserInput::Single(InputKind::SingleGamepadAxis(threshold)) => {
-                // FIXME: scan all gamepads if associated gamepads is none.
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(axes) = self.gamepad_axes {
+                if let Some(axes) = self.gamepad_axes {
+                    if let Some(gamepad) = self.associated_gamepad {
                         axes.get(GamepadAxis(gamepad, threshold.axis))
                             .unwrap_or_default()
+                    // If no gamepad is registered, return the first non-zero input found
                     } else {
-                        0.0
+                        if let Some(gamepads) = self.gamepads {
+                            for &gamepad in gamepads.iter() {
+                                let value = axes
+                                    .get(GamepadAxis(gamepad, threshold.axis))
+                                    .unwrap_or_default();
+
+                                if value != 0.0 {
+                                    // A matching input was pressed on a gamepad
+                                    return value;
+                                }
+                            }
+
+                            // No input was pressed on any gamepad
+                            0.0
+                        } else {
+                            // No Gamepads resource found and no gamepad was registered
+                            0.0
+                        }
                     }
                 } else {
+                    // No Axis<GamepadButton> was found
                     use_button_value()
                 }
             }
@@ -642,20 +660,41 @@ impl<'a> InputStreams<'a> {
                 self.get_input_axis_pair(input).unwrap_or_default().length()
             }
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
-                // FIXME: scan all gamepads if associated gamepads is none.
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(button_axes) = self.gamepad_button_axes {
+                if let Some(button_axes) = self.gamepad_button_axes {
+                    if let Some(gamepad) = self.associated_gamepad {
+                        // Get the value from the registered gamepad
                         button_axes
                             .get(GamepadButton(gamepad, *button_type))
+                            // FIXME: this should check if button is pressed as a fallback instead
                             .unwrap_or_default()
                     } else {
-                        0.0
+                        if let Some(gamepads) = self.gamepads {
+                            for &gamepad in gamepads.iter() {
+                                let value = button_axes
+                                    .get(GamepadButton(gamepad, *button_type))
+                                    // FIXME: this should check if button is pressed as a fallback instead
+                                    .unwrap_or_default();
+
+                                if value != 0.0 {
+                                    // A matching input was pressed on a gamepad
+                                    return value;
+                                }
+                            }
+
+                            // No input was pressed on any gamepad
+                            0.0
+                        } else {
+                            // No Gamepads resource found and no gamepad was registered
+                            0.0
+                        }
                     }
                 } else {
+                    // No Axis<GamepadButton> was found
                     use_button_value()
                 }
             }
             UserInput::Chord(chord) => {
+                // FIXME: this logic seems incorrect
                 if let Some(input) = chord.get_at(0) {
                     self.get_input_value(&UserInput::Single(*input))
                 } else {
@@ -672,20 +711,41 @@ impl<'a> InputStreams<'a> {
     pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<AxisPair> {
         match input {
             UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
-                // FIXME: scan all gamepads if associated gamepads is none.
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(axes) = self.gamepad_axes {
+                if let Some(axes) = self.gamepad_axes {
+                    if let Some(gamepad) = self.associated_gamepad {
                         let x = axes
                             .get(GamepadAxis(gamepad, threshold.x_axis))
                             .unwrap_or_default();
                         let y = axes
                             .get(GamepadAxis(gamepad, threshold.y_axis))
                             .unwrap_or_default();
+                        // The registered gampead had inputs
                         Some(AxisPair::new(Vec2::new(x, y)))
                     } else {
-                        None
+                        if let Some(gamepads) = self.gamepads {
+                            for &gamepad in gamepads.iter() {
+                                let x = axes
+                                    .get(GamepadAxis(gamepad, threshold.x_axis))
+                                    .unwrap_or_default();
+                                let y = axes
+                                    .get(GamepadAxis(gamepad, threshold.y_axis))
+                                    .unwrap_or_default();
+
+                                if (x != 0.0) | (y != 0.0) {
+                                    // At least one gamepad had inputs
+                                    return Some(AxisPair::new(Vec2::new(x, y)));
+                                }
+                            }
+
+                            // No input from any gamepad
+                            Some(AxisPair::new(Vec2::ZERO))
+                        } else {
+                            // No Gamepads resource
+                            None
+                        }
                     }
                 } else {
+                    // No Axis<GamepadAxis> resource
                     None
                 }
             }
@@ -702,6 +762,7 @@ impl<'a> InputStreams<'a> {
                 Some(AxisPair::new(Vec2::new(x, y)))
             }
             UserInput::Chord(chord) => {
+                // FIXME: this logic seems wrong
                 if let Some(input) = chord.get_at(0) {
                     self.get_input_axis_pair(&UserInput::Single(*input))
                 } else {
