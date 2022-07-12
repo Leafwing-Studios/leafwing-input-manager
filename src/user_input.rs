@@ -619,6 +619,7 @@ impl<'a> InputStreams<'a> {
 
         match input {
             UserInput::Single(InputKind::SingleGamepadAxis(threshold)) => {
+                // FIXME: scan all gamepads if associated gamepads is none.
                 if let Some(gamepad) = self.associated_gamepad {
                     if let Some(axes) = self.gamepad_axes {
                         axes.get(GamepadAxis(gamepad, threshold.axis))
@@ -641,6 +642,7 @@ impl<'a> InputStreams<'a> {
                 self.get_input_axis_pair(input).unwrap_or_default().length()
             }
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
+                // FIXME: scan all gamepads if associated gamepads is none.
                 if let Some(gamepad) = self.associated_gamepad {
                     if let Some(button_axes) = self.gamepad_button_axes {
                         button_axes
@@ -670,6 +672,7 @@ impl<'a> InputStreams<'a> {
     pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<AxisPair> {
         match input {
             UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
+                // FIXME: scan all gamepads if associated gamepads is none.
                 if let Some(gamepad) = self.associated_gamepad {
                     if let Some(axes) = self.gamepad_axes {
                         let x = axes
