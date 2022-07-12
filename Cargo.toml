@@ -35,11 +35,6 @@ bevy_utils = {git = "https://github.com/bevyengine/bevy", default-features = fal
 bevy_ui = {git = "https://github.com/bevyengine/bevy", default-features = false, optional = true}
 bevy_window = {git = "https://github.com/bevyengine/bevy", default-features = false}
 
-petitset = {version = "0.2.1", features = ["serde_compat"]}
-derive_more = {version = "0.99", default-features = false, features = ["display", "error"]}
-itertools = "0.10"
-serde = {version = "1.0", features = ["derive"]}
-
 [dev-dependencies]
 bevy = {git = "https://github.com/bevyengine/bevy", default-features = false, features = ["bevy_gilrs", "bevy_sprite", "bevy_text", "bevy_ui", "bevy_render", "bevy_core_pipeline", "x11"]}
 bevy_egui = { version="0.14", default-features = false }
