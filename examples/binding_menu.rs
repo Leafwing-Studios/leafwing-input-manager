@@ -5,7 +5,7 @@ use bevy::{
 };
 use bevy_egui::{
     egui::{Align2, Area, Grid, Window},
-    EguiContext, EguiPlugin,
+    EguiContext,
 };
 use derive_more::Display;
 use leafwing_input_manager::{prelude::*, user_input::InputKind};
@@ -16,7 +16,8 @@ fn main() {
     App::new()
         .insert_resource(ControlSettings::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(EguiPlugin)
+        // FIXME: this should be re-enabled once Bevy 0.8 is out and bevy_egui is updated
+        //.add_plugin(EguiPlugin)
         .add_plugin(InputManagerPlugin::<ControlAction>::default())
         .add_plugin(InputManagerPlugin::<UiAction>::default())
         .add_startup_system(spawn_player_system)
@@ -268,7 +269,7 @@ impl InputEvents<'_, '_> {
         }
 
         if let Some(GamepadEvent {
-            gamepad,
+            gamepad: _,
             event_type,
         }) = self.gamepad_events.iter().next()
         {
