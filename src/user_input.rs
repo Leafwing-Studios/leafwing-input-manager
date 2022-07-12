@@ -665,15 +665,13 @@ impl<'a> InputStreams<'a> {
                         // Get the value from the registered gamepad
                         button_axes
                             .get(GamepadButton(gamepad, *button_type))
-                            // FIXME: this should check if button is pressed as a fallback instead
-                            .unwrap_or_default()
+                            .unwrap_or_else(|| use_button_value())
                     } else {
                         if let Some(gamepads) = self.gamepads {
                             for &gamepad in gamepads.iter() {
                                 let value = button_axes
                                     .get(GamepadButton(gamepad, *button_type))
-                                    // FIXME: this should check if button is pressed as a fallback instead
-                                    .unwrap_or_default();
+                                    .unwrap_or_else(|| use_button_value());
 
                                 if value != 0.0 {
                                     // A matching input was pressed on a gamepad
