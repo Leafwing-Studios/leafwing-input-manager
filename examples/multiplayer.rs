@@ -41,6 +41,8 @@ impl PlayerBundle {
             // This is a quick and hacky solution:
             // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
             // and gracefully handle disconnects
+            // Note that this step is not required:
+            // if it is skipped all input maps will read from all connected gamepads
             .set_gamepad(Gamepad(0))
             .build(),
             Player::Two => InputMap::new([
