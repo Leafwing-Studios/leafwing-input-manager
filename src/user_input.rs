@@ -205,10 +205,10 @@ impl UserInput {
         match self {
             UserInput::Single(button) => match *button {
                 InputKind::DualGamepadAxis(variant) => {
-                    gamepad_axes.push(variant.x_axis);
-                    gamepad_axes.push(variant.y_axis);
+                    gamepad_axes.push(variant.x_axis_type);
+                    gamepad_axes.push(variant.y_axis_type);
                 }
-                InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis_type),
                 InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
                 InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
                 InputKind::Mouse(variant) => mouse_buttons.push(variant),
@@ -217,10 +217,12 @@ impl UserInput {
                 for button in button_set.iter() {
                     match button {
                         InputKind::DualGamepadAxis(variant) => {
-                            gamepad_axes.push(variant.x_axis);
-                            gamepad_axes.push(variant.y_axis);
+                            gamepad_axes.push(variant.x_axis_type);
+                            gamepad_axes.push(variant.y_axis_type);
                         }
-                        InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                        InputKind::SingleGamepadAxis(variant) => {
+                            gamepad_axes.push(variant.axis_type)
+                        }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(*variant),
                         InputKind::Mouse(variant) => mouse_buttons.push(*variant),
@@ -236,10 +238,12 @@ impl UserInput {
                 for button in [up, down, left, right] {
                     match *button {
                         InputKind::DualGamepadAxis(variant) => {
-                            gamepad_axes.push(variant.x_axis);
-                            gamepad_axes.push(variant.y_axis);
+                            gamepad_axes.push(variant.x_axis_type);
+                            gamepad_axes.push(variant.y_axis_type);
                         }
-                        InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                        InputKind::SingleGamepadAxis(variant) => {
+                            gamepad_axes.push(variant.axis_type)
+                        }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
                         InputKind::Mouse(variant) => mouse_buttons.push(variant),
@@ -629,7 +633,7 @@ impl<'a> InputStreams<'a> {
                     if let Some(gamepad) = self.associated_gamepad {
                         axes.get(GamepadAxis {
                             gamepad,
-                            axis_type: threshold.axis,
+                            axis_type: threshold.axis_type,
                         })
                         .unwrap_or_default()
                     // If no gamepad is registered, return the first non-zero input found
@@ -638,7 +642,7 @@ impl<'a> InputStreams<'a> {
                             let value = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: threshold.axis,
+                                    axis_type: threshold.axis_type,
                                 })
                                 .unwrap_or_default();
 
@@ -717,19 +721,19 @@ impl<'a> InputStreams<'a> {
     /// See [`ActionState::action_axis_pair()`] for usage.
     pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<AxisPair> {
         match input {
-            UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
+            UserInput::Single(InputKind::DualGamepadAxis(dual_axis)) => {
                 if let Some(axes) = self.gamepad_axes {
                     if let Some(gamepad) = self.associated_gamepad {
                         let x = axes
                             .get(GamepadAxis {
                                 gamepad,
-                                axis_type: threshold.x_axis,
+                                axis_type: dual_axis.x_axis_type,
                             })
                             .unwrap_or_default();
                         let y = axes
                             .get(GamepadAxis {
                                 gamepad,
-                                axis_type: threshold.y_axis,
+                                axis_type: dual_axis.y_axis_type,
                             })
                             .unwrap_or_default();
                         // The registered gampead had inputs
@@ -739,13 +743,13 @@ impl<'a> InputStreams<'a> {
                             let x = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: threshold.x_axis,
+                                    axis_type: dual_axis.x_axis_type,
                                 })
                                 .unwrap_or_default();
                             let y = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: threshold.y_axis,
+                                    axis_type: dual_axis.y_axis_type,
                                 })
                                 .unwrap_or_default();
 

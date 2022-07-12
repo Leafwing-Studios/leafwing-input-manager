@@ -125,11 +125,11 @@ impl<'a> MutableInputStreams<'a> {
             input_to_send.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button in gamepad_buttons {
-                if let Some(associated_gamepad) = self.associated_gamepad {
+            for button_type in gamepad_buttons {
+                if let Some(gamepad) = self.associated_gamepad {
                     let gamepad_button = GamepadButton {
-                        gamepad: associated_gamepad,
-                        button_type: button,
+                        gamepad,
+                        button_type,
                     };
                     gamepad_input.press(gamepad_button);
                 }
@@ -137,12 +137,9 @@ impl<'a> MutableInputStreams<'a> {
         }
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for axis in gamepad_axes {
-                if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis {
-                        gamepad: associated_gamepad,
-                        axis_type: axis,
-                    };
+            for axis_type in gamepad_axes {
+                if let Some(gamepad) = self.associated_gamepad {
+                    let gamepad_axis = GamepadAxis { gamepad, axis_type };
                     // FIXME: Allow setting axis input value
                     gamepad_input.set(gamepad_axis, 1.0);
                 }
@@ -171,11 +168,11 @@ impl<'a> MutableInputStreams<'a> {
             input_to_release.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button in gamepad_buttons {
-                if let Some(associated_gamepad) = self.associated_gamepad {
+            for button_type in gamepad_buttons {
+                if let Some(gamepad) = self.associated_gamepad {
                     let gamepad_button = GamepadButton {
-                        gamepad: associated_gamepad,
-                        button_type: button,
+                        gamepad,
+                        button_type,
                     };
                     gamepad_input.release(gamepad_button);
                 }
@@ -183,12 +180,9 @@ impl<'a> MutableInputStreams<'a> {
         }
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for axis in gamepad_axes {
-                if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis {
-                        gamepad: associated_gamepad,
-                        axis_type: axis,
-                    };
+            for axis_type in gamepad_axes {
+                if let Some(gamepad) = self.associated_gamepad {
+                    let gamepad_axis = GamepadAxis { gamepad, axis_type };
                     gamepad_input.remove(gamepad_axis);
                 }
             }
