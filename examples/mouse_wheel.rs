@@ -66,4 +66,8 @@ fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), W
     if action_state.pressed(CameraMovement::PanLeft) {
         camera_transform.translation.x -= CAMERA_PAN_RATE;
     }
+
+    if action_state.pressed(CameraMovement::PanRight) {
+        camera_transform.translation.x += CAMERA_PAN_RATE;
+    }
 }
