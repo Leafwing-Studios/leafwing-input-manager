@@ -225,7 +225,6 @@ impl<'a> MutableInputStreams<'a> {
                 AxisType::MouseWheel(_) => {
                     // Releasing event-like input should have no effect;
                     // they are automatically cleared as time elapses
-                    ()
                 }
             }
         }
