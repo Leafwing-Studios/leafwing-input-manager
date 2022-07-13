@@ -495,10 +495,24 @@ mod direction {
         ///
         /// The [`Vec2`] stored internally will be normalized to have a magnitude of `1.0`.
         ///
-        /// `None` is returned if the [`Vec2`]'s direction cannot be determined.
+        /// # Panics
+        ///
+        /// Panics if the length of the supplied vector has length zero or cannot be determined.
+        /// Use `try_new` to get a [`Result`] instead.
         #[must_use]
         #[inline]
-        pub fn new(vec2: Vec2) -> Option<Self> {
+        pub fn new(vec2: Vec2) -> Self {
+            Self::try_new(vec2).unwrap()
+        }
+
+        /// Creates a new [`Direction`] from a [`Vec2`] if possible
+        ///
+        /// The [`Vec2`] will be normalized to have a magnitude of 1.
+        ///
+        /// # Panics
+        /// Panics if the supplied vector has length zero.
+        #[inline]
+        pub fn try_new(vec2: Vec2) -> Option<Self> {
             Some(Self {
                 unit_vector: vec2.try_normalize()?,
             })

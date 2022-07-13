@@ -71,7 +71,7 @@ impl AxisPair {
     #[must_use]
     #[inline]
     pub fn direction(&self) -> Option<Direction> {
-        return Direction::new(self.xy);
+        Direction::try_new(self.xy)
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
@@ -124,6 +124,10 @@ pub struct SingleGamepadAxis {
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
+    /// The target value for this input, used for input mocking.
+    ///
+    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
+    pub value: Option<f32>,
 }
 
 impl SingleGamepadAxis {
@@ -134,6 +138,7 @@ impl SingleGamepadAxis {
             axis_type,
             positive_low: threshold,
             negative_low: threshold,
+            value: None,
         }
     }
 }
@@ -178,6 +183,10 @@ pub struct DualGamepadAxis {
     pub y_positive_low: f32,
     /// If the stick is moved down more than this amount the input will be triggered.
     pub y_negative_low: f32,
+    /// The target value for this input, used for input mocking.
+    ///
+    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
+    pub value: Option<Vec2>,
 }
 
 impl DualGamepadAxis {
@@ -200,6 +209,7 @@ impl DualGamepadAxis {
             x_negative_low: threshold,
             y_positive_low: threshold,
             y_negative_low: threshold,
+            value: None,
         }
     }
 

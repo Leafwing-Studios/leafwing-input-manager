@@ -15,6 +15,7 @@
 - Removed the `ActionState::reasons_pressed` API.
   - This API was quite complex and not terribly useful.
   - This was not needed for axislike inputs in the end.
+- Added `Direction::try_new()` to fallibly create a new `Direction` struct (which cannot be created from the zero vector).
 
 ## Version 0.4.1
 
