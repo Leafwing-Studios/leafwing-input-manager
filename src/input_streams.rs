@@ -20,7 +20,7 @@ use crate::user_input::{InputKind, UserInput};
 /// Each of these streams is optional; if a stream does not exist, it is treated as if it were entirely unpressed.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct InputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a Input<GamepadButton>>,
@@ -430,6 +430,7 @@ impl<'a> InputStreams<'a> {
 /// Each of these streams is optional; if a stream does not exist, inputs sent to them will be ignored.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
+#[derive(Debug)]
 pub struct MutableInputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a mut Input<GamepadButton>>,
