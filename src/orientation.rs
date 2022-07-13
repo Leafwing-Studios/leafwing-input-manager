@@ -511,7 +511,6 @@ mod direction {
         ///
         /// # Panics
         /// Panics if the supplied vector has length zero.
-        #[must_use]
         #[inline]
         pub fn try_new(vec2: Vec2) -> Result<Self, NearlySingularConversion> {
             if vec2.length_squared() == 0.0 {
