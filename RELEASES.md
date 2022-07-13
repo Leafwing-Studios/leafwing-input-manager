@@ -20,6 +20,7 @@
 - Removed the `ActionState::reasons_pressed` API.
   - This API was quite complex, not terribly useful and had nontrivial performance overhead.
   - This was not needed for axislike inputs in the end.
+- Added `Direction::try_new()` to fallibly create a new `Direction` struct (which cannot be created from the zero vector).
 - Removed the `InputMode` enum.
   - This was poorly motivated and had no internal usages.
   - This could not accurately represent more complex compound input types.

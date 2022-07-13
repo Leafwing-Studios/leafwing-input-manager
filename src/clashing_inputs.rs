@@ -54,7 +54,6 @@ impl UserInput {
     fn clashes(&self, other: &UserInput) -> bool {
         use UserInput::*;
 
-        // TODO: Clash with dpads ( if that even makes sense )
         match self {
             Single(self_button) => match other {
                 Single(_) => false,
