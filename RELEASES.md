@@ -5,7 +5,10 @@
 ### Enhancements
 
 - Added gamepad axis support.
+  - Use the new `SingleAxis` and `DualAxis` types / variants.
 - Added mousewheel support.
+  - Use the new `SingleAxis` and `DualAxis` types / variants when you care about the continous values.
+  - Use the new `MouseWheelDirection` enum as an `InputKind`.
 - Added `SingleAxis` and `DualAxis` structs that can be supplied to an `InputMap` to trigger on axis inputs.
 - Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
 - Added `ActionState::action_axis_pair()` which can return an `AxisPair` containing the analog values of a `SingleAxis`, `DualAxis`, or `VirtualDPad`.

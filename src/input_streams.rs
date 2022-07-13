@@ -12,6 +12,7 @@ use bevy_ecs::prelude::{Events, Res, ResMut, World};
 use bevy_ecs::system::SystemState;
 
 use crate::axislike::{AxisType, DualAxisData, MouseWheelAxisType, VirtualDPad};
+use crate::buttonlike::MouseWheelDirection;
 use crate::user_input::{InputKind, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
@@ -227,6 +228,32 @@ impl<'a> InputStreams<'a> {
             InputKind::Mouse(mouse_button) => {
                 if let Some(mouse_stream) = self.mouse {
                     mouse_stream.pressed(mouse_button)
+                } else {
+                    false
+                }
+            }
+            InputKind::MouseWheel(mouse_wheel_direction) => {
+                if let Some(mouse_wheel_events) = self.mouse_wheel {
+                    let mut total_mouse_wheel_movement = 0.0;
+
+                    // FIXME: verify that this works and doesn't double count events
+                    let mut event_reader = mouse_wheel_events.get_reader();
+
+                    // PERF: this summing is computed for every individual input
+                    // This should probably be computed once, and then cached / read
+                    // Fix upstream!
+                    for mouse_wheel_event in event_reader.iter(mouse_wheel_events) {
+                        // Sum all movement along the correct axis.
+                        // If we want the total to be negative, flip the sign
+                        total_mouse_wheel_movement += match mouse_wheel_direction {
+                            MouseWheelDirection::Up => mouse_wheel_event.y,
+                            MouseWheelDirection::Down => -mouse_wheel_event.y,
+                            MouseWheelDirection::Right => mouse_wheel_event.x,
+                            MouseWheelDirection::Left => -mouse_wheel_event.x,
+                        }
+                    }
+
+                    total_mouse_wheel_movement > 0.0
                 } else {
                     false
                 }

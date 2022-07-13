@@ -6,7 +6,10 @@ use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
-use crate::axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad};
+use crate::{
+    axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
+    buttonlike::MouseWheelDirection,
+};
 
 /// Some combination of user input, which may cross [`Input`]-mode boundaries
 ///
@@ -131,6 +134,7 @@ impl UserInput {
         let mut gamepad_buttons: Vec<GamepadButtonType> = Vec::default();
         let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
         let mut mouse_buttons: Vec<MouseButton> = Vec::default();
+        let mut mouse_wheel: Vec<MouseWheelDirection> = Vec::default();
 
         match self {
             UserInput::Single(button) => match *button {
@@ -144,10 +148,11 @@ impl UserInput {
                 InputKind::GamepadButton(button) => gamepad_buttons.push(button),
                 InputKind::Keyboard(button) => keyboard_buttons.push(button),
                 InputKind::Mouse(button) => mouse_buttons.push(button),
+                InputKind::MouseWheel(button) => mouse_wheel.push(button),
             },
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
-                    match button {
+                    match *button {
                         InputKind::DualAxis(dual_axis) => {
                             axis_data.push((dual_axis.x.axis_type, dual_axis.x.value));
                             axis_data.push((dual_axis.y.axis_type, dual_axis.y.value));
@@ -155,9 +160,10 @@ impl UserInput {
                         InputKind::SingleAxis(single_axis) => {
                             axis_data.push((single_axis.axis_type, single_axis.value))
                         }
-                        InputKind::GamepadButton(button) => gamepad_buttons.push(*button),
-                        InputKind::Keyboard(button) => keyboard_buttons.push(*button),
-                        InputKind::Mouse(button) => mouse_buttons.push(*button),
+                        InputKind::GamepadButton(button) => gamepad_buttons.push(button),
+                        InputKind::Keyboard(button) => keyboard_buttons.push(button),
+                        InputKind::Mouse(button) => mouse_buttons.push(button),
+                        InputKind::MouseWheel(button) => mouse_wheel.push(button),
                     }
                 }
             }
@@ -179,6 +185,7 @@ impl UserInput {
                         InputKind::GamepadButton(button) => gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => keyboard_buttons.push(button),
                         InputKind::Mouse(button) => mouse_buttons.push(button),
+                        InputKind::MouseWheel(button) => mouse_wheel.push(button),
                     }
                 }
             }
@@ -251,6 +258,8 @@ pub enum InputKind {
     Keyboard(KeyCode),
     /// A button on a mouse
     Mouse(MouseButton),
+    /// A discretized mousewheel movement
+    MouseWheel(MouseWheelDirection),
 }
 
 impl From<DualAxis> for InputKind {
