@@ -593,6 +593,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -614,6 +615,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
         for action in Action::variants() {
@@ -633,6 +635,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -656,6 +659,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -671,6 +675,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -688,6 +693,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -707,6 +713,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -726,6 +733,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
