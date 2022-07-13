@@ -198,30 +198,30 @@ impl UserInput {
 
         match self {
             UserInput::Single(button) => match *button {
-                InputKind::DualAxis(variant) => {
-                    axis_data.push((variant.x.axis_type, variant.x.value));
-                    axis_data.push((variant.y.axis_type, variant.y.value));
+                InputKind::DualAxis(dual_axis) => {
+                    axis_data.push((dual_axis.x.axis_type, dual_axis.x.value));
+                    axis_data.push((dual_axis.y.axis_type, dual_axis.y.value));
                 }
-                InputKind::SingleAxis(variant) => {
-                    axis_data.push((variant.axis_type, variant.value))
+                InputKind::SingleAxis(single_axis) => {
+                    axis_data.push((single_axis.axis_type, single_axis.value))
                 }
-                InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
-                InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
-                InputKind::Mouse(variant) => mouse_buttons.push(variant),
+                InputKind::GamepadButton(button) => gamepad_buttons.push(button),
+                InputKind::Keyboard(button) => keyboard_buttons.push(button),
+                InputKind::Mouse(button) => mouse_buttons.push(button),
             },
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
                     match button {
-                        InputKind::DualAxis(variant) => {
-                            axis_data.push((variant.x.axis_type, variant.x.value));
-                            axis_data.push((variant.y.axis_type, variant.y.value));
+                        InputKind::DualAxis(dual_axis) => {
+                            axis_data.push((dual_axis.x.axis_type, dual_axis.x.value));
+                            axis_data.push((dual_axis.y.axis_type, dual_axis.y.value));
                         }
-                        InputKind::SingleAxis(variant) => {
-                            axis_data.push((variant.axis_type, variant.value))
+                        InputKind::SingleAxis(single_axis) => {
+                            axis_data.push((single_axis.axis_type, single_axis.value))
                         }
-                        InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
-                        InputKind::Keyboard(variant) => keyboard_buttons.push(*variant),
-                        InputKind::Mouse(variant) => mouse_buttons.push(*variant),
+                        InputKind::GamepadButton(button) => gamepad_buttons.push(*button),
+                        InputKind::Keyboard(button) => keyboard_buttons.push(*button),
+                        InputKind::Mouse(button) => mouse_buttons.push(*button),
                     }
                 }
             }
@@ -233,16 +233,16 @@ impl UserInput {
             }) => {
                 for button in [up, down, left, right] {
                     match *button {
-                        InputKind::DualAxis(variant) => {
-                            axis_data.push((variant.x.axis_type, variant.x.value));
-                            axis_data.push((variant.y.axis_type, variant.y.value));
+                        InputKind::DualAxis(dual_axis) => {
+                            axis_data.push((dual_axis.x.axis_type, dual_axis.x.value));
+                            axis_data.push((dual_axis.y.axis_type, dual_axis.y.value));
                         }
-                        InputKind::SingleAxis(variant) => {
-                            axis_data.push((variant.axis_type, variant.value))
+                        InputKind::SingleAxis(single_axis) => {
+                            axis_data.push((single_axis.axis_type, single_axis.value))
                         }
-                        InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
-                        InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
-                        InputKind::Mouse(variant) => mouse_buttons.push(variant),
+                        InputKind::GamepadButton(button) => gamepad_buttons.push(button),
+                        InputKind::Keyboard(button) => keyboard_buttons.push(button),
+                        InputKind::Mouse(button) => mouse_buttons.push(button),
                     }
                 }
             }
