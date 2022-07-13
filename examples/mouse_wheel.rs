@@ -54,6 +54,10 @@ fn zoom_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), 
 
     // We want to zoom in when we use mouse wheel up
     // so we increase the scale proportionally
+    // WARNING: zooming in too far results in disappearance of your sprites
+    // as the camera clips into them.
+    // This is a known problem with Bevy's 2D-as-3D design that should be fixed (eventually).
+    // To work around it in real games, set your camera Z very high and set a max zoom level.
     camera_transform.scale += zoom_delta * CAMERA_ZOOM_RATE;
 }
 
