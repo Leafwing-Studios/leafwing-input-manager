@@ -18,6 +18,7 @@
   - This API was quite complex, not terribly useful and had nontrivial performance overhead.
   - This was not needed for axislike inputs in the end.
 - `ButtonKind` was renamed to `InputKind` to reflect the new non-button input types.
+- Renamed `AxisPair` to `DualAxisData`.
 
 ## Version 0.4.1
 

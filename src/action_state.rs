@@ -1,7 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::Actionlike;
-use crate::{axislike::AxisPair, buttonlike::ButtonState};
+use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy_ecs::{component::Component, entity::Entity};
 use bevy_utils::{Duration, Instant};
@@ -22,7 +22,7 @@ pub struct ActionData {
     /// The [`AxisPair`] of the binding that triggered the action.
     ///
     /// See [`ActionState::action_axis_pair()`] for more details.
-    pub axis_pair: Option<AxisPair>,
+    pub axis_pair: Option<DualAxisData>,
     /// When was the button pressed / released, and how long has it been held for?
     pub timing: Timing,
     /// Was this action consumed by [`ActionState::consume`]?
@@ -219,7 +219,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
     /// value of each axis pair will be added together.
-    pub fn action_axis_pair(&self, action: A) -> Option<AxisPair> {
+    pub fn action_axis_pair(&self, action: A) -> Option<DualAxisData> {
         self.action_data(action).axis_pair
     }
 

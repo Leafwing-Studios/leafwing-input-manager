@@ -12,7 +12,7 @@ use petitset::PetitSet;
 use bevy_ecs::prelude::{Events, Res, ResMut, World};
 use bevy_ecs::system::SystemState;
 
-use crate::axislike::{AxisPair, VirtualDPad};
+use crate::axislike::{DualAxisData, VirtualDPad};
 use crate::user_input::{InputKind, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
@@ -357,7 +357,7 @@ impl<'a> InputStreams<'a> {
     /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
     ///
     /// See [`ActionState::action_axis_pair()`] for usage.
-    pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<AxisPair> {
+    pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
         match input {
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
                 if let Some(axes) = self.gamepad_axes {
@@ -376,7 +376,7 @@ impl<'a> InputStreams<'a> {
                             })
                             .unwrap_or_default();
                         // The registered gampead had inputs
-                        Some(AxisPair::new(Vec2::new(x, y)))
+                        Some(DualAxisData::new(Vec2::new(x, y)))
                     } else if let Some(gamepads) = self.gamepads {
                         for &gamepad in gamepads.iter() {
                             // FIXME: verify correctness
@@ -395,12 +395,12 @@ impl<'a> InputStreams<'a> {
 
                             if (x != 0.0) | (y != 0.0) {
                                 // At least one gamepad had inputs
-                                return Some(AxisPair::new(Vec2::new(x, y)));
+                                return Some(DualAxisData::new(Vec2::new(x, y)));
                             }
                         }
 
                         // No input from any gamepad
-                        Some(AxisPair::new(Vec2::ZERO))
+                        Some(DualAxisData::new(Vec2::ZERO))
                     } else {
                         // No Gamepads resource
                         None
@@ -420,7 +420,7 @@ impl<'a> InputStreams<'a> {
                     - self.get_input_value(&UserInput::Single(*left)).abs();
                 let y = self.get_input_value(&UserInput::Single(*up))
                     - self.get_input_value(&UserInput::Single(*down)).abs();
-                Some(AxisPair::new(Vec2::new(x, y)))
+                Some(DualAxisData::new(Vec2::new(x, y)))
             }
             _ => None,
         }
