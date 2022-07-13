@@ -535,8 +535,6 @@ impl Timing {
     /// Flips the metaphorical hourglass, storing `current_duration` in `previous_duration` and resetting `instant_started`
     ///
     /// This method is called whenever actions are pressed or released
-    ///
-    /// FIXME: Ensure that the timing starts on the same frame that the input is flipped.
     pub fn flip(&mut self) {
         self.previous_duration = self.current_duration;
         self.current_duration = Duration::ZERO;
@@ -673,7 +671,6 @@ mod tests {
         assert!(!action_state.just_pressed(Action::Jump));
     }
 
-    // FIXME: these tests are flaky because floats
     #[test]
     fn durations() {
         use crate::action_state::ActionState;

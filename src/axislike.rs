@@ -71,11 +71,7 @@ impl AxisPair {
     #[must_use]
     #[inline]
     pub fn direction(&self) -> Option<Direction> {
-        // TODO: replace this quick-n-dirty hack once Direction::new no longer panics
-        if self.xy.length() > 0.00001 {
-            return Some(Direction::new(self.xy));
-        }
-        None
+        Direction::try_new(self.xy).ok()
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
