@@ -268,9 +268,10 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::SingleAxis(single_axis)) => {
                 if let Some(axes) = self.gamepad_axes {
                     if let Some(gamepad) = self.associated_gamepad {
+                        // FIXME: verify correctness
                         axes.get(GamepadAxis {
                             gamepad,
-                            axis_type: single_axis.axis_type,
+                            axis_type: single_axis.axis_type.try_into().unwrap(),
                         })
                         .unwrap_or_default()
                     // If no gamepad is registered, return the first non-zero input found
@@ -279,7 +280,7 @@ impl<'a> InputStreams<'a> {
                             let value = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: single_axis.axis_type,
+                                    axis_type: single_axis.axis_type.try_into().unwrap(),
                                 })
                                 .unwrap_or_default();
 
@@ -361,32 +362,34 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
                 if let Some(axes) = self.gamepad_axes {
                     if let Some(gamepad) = self.associated_gamepad {
+                        // FIXME: verify correctness
                         let x = axes
                             .get(GamepadAxis {
                                 gamepad,
-                                axis_type: dual_axis.x_axis_type,
+                                axis_type: dual_axis.x_axis_type.try_into().unwrap(),
                             })
                             .unwrap_or_default();
                         let y = axes
                             .get(GamepadAxis {
                                 gamepad,
-                                axis_type: dual_axis.y_axis_type,
+                                axis_type: dual_axis.y_axis_type.try_into().unwrap(),
                             })
                             .unwrap_or_default();
                         // The registered gampead had inputs
                         Some(AxisPair::new(Vec2::new(x, y)))
                     } else if let Some(gamepads) = self.gamepads {
                         for &gamepad in gamepads.iter() {
+                            // FIXME: verify correctness
                             let x = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: dual_axis.x_axis_type,
+                                    axis_type: dual_axis.x_axis_type.try_into().unwrap(),
                                 })
                                 .unwrap_or_default();
                             let y = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: dual_axis.y_axis_type,
+                                    axis_type: dual_axis.y_axis_type.try_into().unwrap(),
                                 })
                                 .unwrap_or_default();
 

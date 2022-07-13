@@ -149,7 +149,14 @@ impl<'a> MutableInputStreams<'a> {
             if let Some(gamepad) = self.associated_gamepad {
                 for (axis_type, maybe_position_data) in gamepad_axis_data {
                     if let Some(position_data) = maybe_position_data {
-                        gamepad_input.set(GamepadAxis { gamepad, axis_type }, position_data);
+                        // FIXME: verify correctness
+                        gamepad_input.set(
+                            GamepadAxis {
+                                gamepad,
+                                axis_type: axis_type.try_into().unwrap(),
+                            },
+                            position_data,
+                        );
                     }
                 }
             }
@@ -191,7 +198,11 @@ impl<'a> MutableInputStreams<'a> {
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
             for (axis_type, _) in gamepad_axes {
                 if let Some(gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis { gamepad, axis_type };
+                    // FIXME: verify correctness
+                    let gamepad_axis = GamepadAxis {
+                        gamepad,
+                        axis_type: axis_type.try_into().unwrap(),
+                    };
                     gamepad_input.remove(gamepad_axis);
                 }
             }

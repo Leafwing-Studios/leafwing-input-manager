@@ -129,7 +129,7 @@ impl AxisPair {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SingleAxis {
     /// The axis that is being checked.
-    pub axis_type: GamepadAxisType,
+    pub axis_type: AxisType,
     /// Any axis value higher than this will trigger the input.
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
@@ -143,9 +143,9 @@ pub struct SingleAxis {
 impl SingleAxis {
     /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
     #[must_use]
-    pub const fn symmetric(axis_type: GamepadAxisType, threshold: f32) -> SingleAxis {
+    pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
         SingleAxis {
-            axis_type,
+            axis_type: axis_type.into(),
             positive_low: threshold,
             negative_low: threshold,
             value: None,
@@ -182,9 +182,9 @@ impl std::hash::Hash for SingleAxis {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DualAxis {
     /// The axis representing horizontal movement.
-    pub x_axis_type: GamepadAxisType,
+    pub x_axis_type: AxisType,
     /// The axis representing vertical movement.
-    pub y_axis_type: GamepadAxisType,
+    pub y_axis_type: AxisType,
     /// If the stick is moved right more than this amount the input will be triggered.
     pub x_positive_low: f32,
     /// If the stick is moved left more than this amount the input will be triggered.
@@ -207,14 +207,14 @@ impl DualAxis {
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
     #[must_use]
-    pub const fn symmetric(
-        x_axis_type: GamepadAxisType,
-        y_axis_type: GamepadAxisType,
+    pub fn symmetric(
+        x_axis_type: impl Into<AxisType>,
+        y_axis_type: impl Into<AxisType>,
         threshold: f32,
     ) -> DualAxis {
         DualAxis {
-            x_axis_type,
-            y_axis_type,
+            x_axis_type: x_axis_type.into(),
+            y_axis_type: y_axis_type.into(),
             x_positive_low: threshold,
             x_negative_low: threshold,
             y_positive_low: threshold,
@@ -225,7 +225,7 @@ impl DualAxis {
 
     /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
     #[must_use]
-    pub const fn left_stick() -> DualAxis {
+    pub fn left_stick() -> DualAxis {
         DualAxis::symmetric(
             GamepadAxisType::LeftStickX,
             GamepadAxisType::LeftStickY,
@@ -235,7 +235,7 @@ impl DualAxis {
 
     /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
     #[must_use]
-    pub const fn right_stick() -> DualAxis {
+    pub fn right_stick() -> DualAxis {
         DualAxis::symmetric(
             GamepadAxisType::RightStickX,
             GamepadAxisType::LeftStickY,
@@ -287,7 +287,7 @@ pub struct VirtualDPad {
 
 impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
-    pub const fn arrow_keys() -> VirtualDPad {
+    pub fn arrow_keys() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::Keyboard(KeyCode::Up),
             down: InputKind::Keyboard(KeyCode::Down),
@@ -297,7 +297,7 @@ impl VirtualDPad {
     }
 
     /// Generates a [`VirtualDPad`] corresponding to the `WASD` keyboard keycodes
-    pub const fn wasd() -> VirtualDPad {
+    pub fn wasd() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::Keyboard(KeyCode::W),
             down: InputKind::Keyboard(KeyCode::S),
@@ -308,7 +308,7 @@ impl VirtualDPad {
 
     #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
     /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
-    pub const fn dpad() -> VirtualDPad {
+    pub fn dpad() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
@@ -320,7 +320,7 @@ impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the face buttons on a gamepad
     ///
     /// North corresponds to up, west corresponds to left, east corresponds to right, south corresponds to down
-    pub const fn gamepad_face_buttons() -> VirtualDPad {
+    pub fn gamepad_face_buttons() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::North),
             down: InputKind::GamepadButton(GamepadButtonType::South),
@@ -329,3 +329,67 @@ impl VirtualDPad {
         }
     }
 }
+
+/// The type of axis used by a [`UserInput`](crate::user_input::UserInput).
+///
+/// This is stored in either a [`SingleAxis`] or [`DualAxis`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum AxisType {
+    /// Input associated with a gamepad, such as the triggers or one axis of an analog stick.
+    Gamepad(GamepadAxisType),
+    /// Input associated with a mouse wheel.
+    MouseWheel(MouseWheelAxisType),
+}
+
+/// The direction of motion of the mouse wheel.
+///
+/// Stored in the [`AxisType`] enum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MouseWheelAxisType {
+    /// Horizontal movement.
+    ///
+    /// This is much less common than the `Y` variant, and is only supported on some devices.
+    X,
+    /// Vertical movement.
+    ///
+    /// This is the standard behavior for a mouse wheel, used to scroll up and down pages.
+    Y,
+}
+
+impl From<GamepadAxisType> for AxisType {
+    fn from(axis_type: GamepadAxisType) -> Self {
+        AxisType::Gamepad(axis_type)
+    }
+}
+
+impl From<MouseWheelAxisType> for AxisType {
+    fn from(axis_type: MouseWheelAxisType) -> Self {
+        AxisType::MouseWheel(axis_type)
+    }
+}
+
+impl TryFrom<AxisType> for GamepadAxisType {
+    type Error = AxisConversionError;
+
+    fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
+        match axis_type {
+            AxisType::Gamepad(inner) => Ok(inner),
+            _ => Err(AxisConversionError),
+        }
+    }
+}
+
+impl TryFrom<AxisType> for MouseWheelAxisType {
+    type Error = AxisConversionError;
+
+    fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
+        match axis_type {
+            AxisType::MouseWheel(inner) => Ok(inner),
+            _ => Err(AxisConversionError),
+        }
+    }
+}
+
+/// An [`AxisType`] could not be converted into a more specialized variant
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct AxisConversionError;

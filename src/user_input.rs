@@ -1,16 +1,12 @@
 //! Helpful abstractions over user inputs of all sorts
 
-use bevy_input::{
-    gamepad::{GamepadAxisType, GamepadButtonType},
-    keyboard::KeyCode,
-    mouse::MouseButton,
-};
+use bevy_input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 
 use bevy_utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
-use crate::axislike::{DualAxis, SingleAxis, VirtualDPad};
+use crate::axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad};
 
 /// Some combination of user input, which may cross [`Input`]-mode boundaries
 ///
@@ -191,11 +187,11 @@ impl UserInput {
         &self,
     ) -> (
         Vec<GamepadButtonType>,
-        Vec<(GamepadAxisType, Option<f32>)>,
+        Vec<(AxisType, Option<f32>)>,
         Vec<KeyCode>,
         Vec<MouseButton>,
     ) {
-        let mut gamepad_axes: Vec<(GamepadAxisType, Option<f32>)> = Vec::default();
+        let mut gamepad_axes: Vec<(AxisType, Option<f32>)> = Vec::default();
         let mut gamepad_buttons: Vec<GamepadButtonType> = Vec::default();
         let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
         let mut mouse_buttons: Vec<MouseButton> = Vec::default();
