@@ -628,7 +628,7 @@ mod direction {
 }
 
 mod conversions {
-    use super::{direction, Direction, Rotation};
+    use super::{Direction, Rotation};
     use crate::errors::NearlySingularConversion;
     use bevy_math::{Quat, Vec2, Vec3};
     use bevy_transform::components::{GlobalTransform, Transform};
