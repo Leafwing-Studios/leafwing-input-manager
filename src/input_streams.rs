@@ -173,10 +173,10 @@ impl<'a> InputStreams<'a> {
                 let x = axis_pair.x();
                 let y = axis_pair.y();
 
-                x > axis.x_positive_low
-                    || x < axis.x_negative_low
-                    || y > axis.y_positive_low
-                    || y < axis.y_negative_low
+                x > axis.x.positive_low
+                    || x < axis.x.negative_low
+                    || y > axis.y.positive_low
+                    || y < axis.y.negative_low
             }
             InputKind::SingleAxis(axis) => {
                 let value = self.get_input_value(&UserInput::Single(button));
@@ -366,13 +366,13 @@ impl<'a> InputStreams<'a> {
                         let x = axes
                             .get(GamepadAxis {
                                 gamepad,
-                                axis_type: dual_axis.x_axis_type.try_into().unwrap(),
+                                axis_type: dual_axis.x.axis_type.try_into().unwrap(),
                             })
                             .unwrap_or_default();
                         let y = axes
                             .get(GamepadAxis {
                                 gamepad,
-                                axis_type: dual_axis.y_axis_type.try_into().unwrap(),
+                                axis_type: dual_axis.y.axis_type.try_into().unwrap(),
                             })
                             .unwrap_or_default();
                         // The registered gampead had inputs
@@ -383,13 +383,13 @@ impl<'a> InputStreams<'a> {
                             let x = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: dual_axis.x_axis_type.try_into().unwrap(),
+                                    axis_type: dual_axis.x.axis_type.try_into().unwrap(),
                                 })
                                 .unwrap_or_default();
                             let y = axes
                                 .get(GamepadAxis {
                                     gamepad,
-                                    axis_type: dual_axis.y_axis_type.try_into().unwrap(),
+                                    axis_type: dual_axis.y.axis_type.try_into().unwrap(),
                                 })
                                 .unwrap_or_default();
 

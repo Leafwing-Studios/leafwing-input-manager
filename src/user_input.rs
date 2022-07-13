@@ -199,13 +199,8 @@ impl UserInput {
         match self {
             UserInput::Single(button) => match *button {
                 InputKind::DualAxis(variant) => {
-                    let (x_value, y_value) = match variant.value {
-                        Some(vec) => (Some(vec.x), Some(vec.y)),
-                        None => (None, None),
-                    };
-
-                    axis_data.push((variant.x_axis_type, x_value));
-                    axis_data.push((variant.y_axis_type, y_value));
+                    axis_data.push((variant.x.axis_type, variant.x.value));
+                    axis_data.push((variant.y.axis_type, variant.y.value));
                 }
                 InputKind::SingleAxis(variant) => {
                     axis_data.push((variant.axis_type, variant.value))
@@ -218,13 +213,8 @@ impl UserInput {
                 for button in button_set.iter() {
                     match button {
                         InputKind::DualAxis(variant) => {
-                            let (x_value, y_value) = match variant.value {
-                                Some(vec) => (Some(vec.x), Some(vec.y)),
-                                None => (None, None),
-                            };
-
-                            axis_data.push((variant.x_axis_type, x_value));
-                            axis_data.push((variant.y_axis_type, y_value));
+                            axis_data.push((variant.x.axis_type, variant.x.value));
+                            axis_data.push((variant.y.axis_type, variant.y.value));
                         }
                         InputKind::SingleAxis(variant) => {
                             axis_data.push((variant.axis_type, variant.value))
@@ -244,13 +234,8 @@ impl UserInput {
                 for button in [up, down, left, right] {
                     match *button {
                         InputKind::DualAxis(variant) => {
-                            let (x_value, y_value) = match variant.value {
-                                Some(vec) => (Some(vec.x), Some(vec.y)),
-                                None => (None, None),
-                            };
-
-                            axis_data.push((variant.x_axis_type, x_value));
-                            axis_data.push((variant.y_axis_type, y_value));
+                            axis_data.push((variant.x.axis_type, variant.x.value));
+                            axis_data.push((variant.y.axis_type, variant.y.value));
                         }
                         InputKind::SingleAxis(variant) => {
                             axis_data.push((variant.axis_type, variant.value))

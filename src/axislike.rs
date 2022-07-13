@@ -70,24 +70,12 @@ impl std::hash::Hash for SingleAxis {
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for both `x` and `y` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct DualAxis {
     /// The axis representing horizontal movement.
-    pub x_axis_type: AxisType,
+    pub x: SingleAxis,
     /// The axis representing vertical movement.
-    pub y_axis_type: AxisType,
-    /// If the stick is moved right more than this amount the input will be triggered.
-    pub x_positive_low: f32,
-    /// If the stick is moved left more than this amount the input will be triggered.
-    pub x_negative_low: f32,
-    /// If the stick is moved up more than this amount the input will be triggered.
-    pub y_positive_low: f32,
-    /// If the stick is moved down more than this amount the input will be triggered.
-    pub y_negative_low: f32,
-    /// The target value for this input, used for input mocking.
-    ///
-    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
-    pub value: Option<Vec2>,
+    pub y: SingleAxis,
 }
 
 impl DualAxis {
@@ -104,13 +92,8 @@ impl DualAxis {
         threshold: f32,
     ) -> DualAxis {
         DualAxis {
-            x_axis_type: x_axis_type.into(),
-            y_axis_type: y_axis_type.into(),
-            x_positive_low: threshold,
-            x_negative_low: threshold,
-            y_positive_low: threshold,
-            y_negative_low: threshold,
-            value: None,
+            x: SingleAxis::symmetric(x_axis_type, threshold),
+            y: SingleAxis::symmetric(y_axis_type, threshold),
         }
     }
 
@@ -132,28 +115,6 @@ impl DualAxis {
             GamepadAxisType::LeftStickY,
             Self::DEFAULT_DEADZONE,
         )
-    }
-}
-
-impl PartialEq for DualAxis {
-    fn eq(&self, other: &Self) -> bool {
-        self.x_axis_type == other.x_axis_type
-            && self.y_axis_type == other.y_axis_type
-            && FloatOrd(self.x_positive_low) == FloatOrd(other.x_positive_low)
-            && FloatOrd(self.x_negative_low) == FloatOrd(other.x_negative_low)
-            && FloatOrd(self.y_positive_low) == FloatOrd(other.y_positive_low)
-            && FloatOrd(self.y_negative_low) == FloatOrd(other.y_negative_low)
-    }
-}
-impl Eq for DualAxis {}
-impl std::hash::Hash for DualAxis {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.x_axis_type.hash(state);
-        self.y_axis_type.hash(state);
-        FloatOrd(self.x_positive_low).hash(state);
-        FloatOrd(self.x_negative_low).hash(state);
-        FloatOrd(self.y_positive_low).hash(state);
-        FloatOrd(self.y_negative_low).hash(state);
     }
 }
 
