@@ -11,7 +11,7 @@ use petitset::PetitSet;
 use bevy_ecs::prelude::{Events, Res, ResMut, World};
 use bevy_ecs::system::SystemState;
 
-use crate::axislike::{AxisType, DualAxisData, VirtualDPad};
+use crate::axislike::{AxisType, DualAxisData, MouseWheelAxisType, VirtualDPad};
 use crate::user_input::{InputKind, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
@@ -299,7 +299,20 @@ impl<'a> InputStreams<'a> {
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
-                        todo!()
+                        // Mouse wheel events are summed to get the total movement this frame
+                        let mut total_mouse_wheel_movement = 0.0;
+                        if let Some(mouse_wheel_events) = self.mouse_wheel {
+                            // FIXME: verify that this works and doesn't double count events
+                            let mut event_reader = mouse_wheel_events.get_reader();
+
+                            for mouse_wheel_event in event_reader.iter(mouse_wheel_events) {
+                                total_mouse_wheel_movement += match axis_type {
+                                    MouseWheelAxisType::X => mouse_wheel_event.x,
+                                    MouseWheelAxisType::Y => mouse_wheel_event.y,
+                                }
+                            }
+                        }
+                        total_mouse_wheel_movement
                     }
                 }
             }
