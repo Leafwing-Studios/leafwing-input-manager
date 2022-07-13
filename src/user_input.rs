@@ -237,6 +237,12 @@ impl From<MouseButton> for UserInput {
     }
 }
 
+impl From<MouseWheelDirection> for UserInput {
+    fn from(input: MouseWheelDirection) -> Self {
+        UserInput::Single(InputKind::MouseWheel(input))
+    }
+}
+
 /// The different kinds of supported input bindings.
 ///
 /// See [`InputMode`] for the value-less equivalent. Commonly stored in the [`UserInput`] enum.
@@ -289,5 +295,11 @@ impl From<KeyCode> for InputKind {
 impl From<MouseButton> for InputKind {
     fn from(input: MouseButton) -> Self {
         InputKind::Mouse(input)
+    }
+}
+
+impl From<MouseWheelDirection> for InputKind {
+    fn from(input: MouseWheelDirection) -> Self {
+        InputKind::MouseWheel(input)
     }
 }
