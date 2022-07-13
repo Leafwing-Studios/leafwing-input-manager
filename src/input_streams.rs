@@ -243,17 +243,24 @@ impl<'a> InputStreams<'a> {
                     // This should probably be computed once, and then cached / read
                     // Fix upstream!
                     for mouse_wheel_event in event_reader.iter(mouse_wheel_events) {
-                        // Sum all movement along the correct axis.
-                        // If we want the total to be negative, flip the sign
                         total_mouse_wheel_movement += match mouse_wheel_direction {
-                            MouseWheelDirection::Up => mouse_wheel_event.y,
-                            MouseWheelDirection::Down => -mouse_wheel_event.y,
-                            MouseWheelDirection::Right => mouse_wheel_event.x,
-                            MouseWheelDirection::Left => -mouse_wheel_event.x,
+                            MouseWheelDirection::Up | MouseWheelDirection::Down => {
+                                mouse_wheel_event.y
+                            }
+                            MouseWheelDirection::Left | MouseWheelDirection::Right => {
+                                mouse_wheel_event.x
+                            }
                         }
                     }
 
-                    total_mouse_wheel_movement > 0.0
+                    match mouse_wheel_direction {
+                        MouseWheelDirection::Up | MouseWheelDirection::Right => {
+                            total_mouse_wheel_movement > 0.0
+                        }
+                        MouseWheelDirection::Down | MouseWheelDirection::Left => {
+                            total_mouse_wheel_movement < 0.0
+                        }
+                    }
                 } else {
                     false
                 }
