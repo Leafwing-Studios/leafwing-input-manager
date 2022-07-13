@@ -349,11 +349,18 @@ impl Iterator for InputModeIter {
 impl From<InputKind> for InputMode {
     fn from(button: InputKind) -> Self {
         match button {
-            InputKind::GamepadButton(_) | InputKind::SingleAxis(_) | InputKind::DualAxis(_) => {
-                InputMode::Gamepad
-            }
+            InputKind::GamepadButton(_) => InputMode::Gamepad,
             InputKind::Keyboard(_) => InputMode::Keyboard,
             InputKind::Mouse(_) => InputMode::Mouse,
+            InputKind::SingleAxis(axis_data) => match axis_data.axis_type {
+                AxisType::Gamepad(_) => InputMode::Gamepad,
+                AxisType::MouseWheel(_) => InputMode::Mouse,
+            },
+            // FIXME: does not account for rare case of mixed DualAxis inputs
+            InputKind::DualAxis(axis_data) => match axis_data.x.axis_type {
+                AxisType::Gamepad(_) => InputMode::Gamepad,
+                AxisType::MouseWheel(_) => InputMode::Mouse,
+            },
         }
     }
 }
