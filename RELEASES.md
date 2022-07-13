@@ -1,5 +1,16 @@
 # Release Notes
 
+## Version 0.?
+
+### Enhancements
+
+- Added `Direction::try_new` which never panics.
+- Converting from a `Direction` (which uses a `Vec2` of `f32`'s internally) to a `Rotation` (which uses exact decidegrees) now has special cases to ensure all eight cardinal directions result in exact degrees. For example, a unit vector pointing to the Northeast now always converts to a `Direction` with exactly 1350 decidegrees. Rounding errors may still occur when converting from arbitrary directions to the other 3592 discrete decidegrees.
+
+### Changes
+
+- Rotation is now measured from the positive x axis in a counterclockwise direction. This applies to both `Rotation` and `Direction`.
+
 ## Version 0.5
 
 ### Enhancements
