@@ -460,6 +460,8 @@ mod direction {
     use derive_more::Display;
     use std::f32::consts::SQRT_2;
 
+    use crate::errors::NearlySingularConversion;
+
     /// A 2D unit vector that represents a direction
     ///
     /// Its magnitude is always `1.0`.
@@ -510,9 +512,9 @@ mod direction {
         /// # Panics
         /// Panics if the supplied vector has length zero.
         #[inline]
-        pub fn try_new(vec2: Vec2) -> Option<Self> {
-            Some(Self {
-                unit_vector: vec2.try_normalize()?,
+        pub fn try_new(vec2: Vec2) -> Result<Self, NearlySingularConversion> {
+            Ok(Self {
+                unit_vector: vec2.try_normalize().ok_or(NearlySingularConversion)?,
             })
         }
 
@@ -681,7 +683,7 @@ mod conversions {
         type Error = NearlySingularConversion;
 
         fn try_from(vec2: Vec2) -> Result<Direction, NearlySingularConversion> {
-            Direction::try_new(vec2).ok_or(NearlySingularConversion)
+            Direction::try_new(vec2)
         }
     }
 

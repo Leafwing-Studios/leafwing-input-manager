@@ -1,5 +1,6 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equvalents)
 
+use crate::errors::NearlySingularConversion;
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
 use bevy_input::{
@@ -70,7 +71,7 @@ impl AxisPair {
     /// See [`Direction::new`] for more details.
     #[must_use]
     #[inline]
-    pub fn direction(&self) -> Option<Direction> {
+    pub fn direction(&self) -> Result<Direction, NearlySingularConversion> {
         Direction::try_new(self.xy)
     }
 
