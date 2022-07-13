@@ -1,13 +1,16 @@
 //! Helpful utilities for testing input management by sending mock input events
 
+use crate::axislike::{AxisType, MouseWheelAxisType};
 use crate::input_streams::{InputStreams, MutableInputStreams};
 use crate::user_input::UserInput;
+
 use bevy_app::App;
 use bevy_ecs::event::Events;
 use bevy_ecs::system::{ResMut, SystemState};
 use bevy_ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy_ecs::{component::Component, query::With, system::Query};
+use bevy_input::mouse::MouseScrollUnit;
 use bevy_input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
@@ -145,18 +148,33 @@ impl<'a> MutableInputStreams<'a> {
             }
         }
 
-        if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            if let Some(gamepad) = self.associated_gamepad {
-                for (axis_type, maybe_position_data) in axis_data {
-                    if let Some(position_data) = maybe_position_data {
-                        // FIXME: verify correctness
-                        gamepad_input.set(
-                            GamepadAxis {
-                                gamepad,
-                                axis_type: axis_type.try_into().unwrap(),
-                            },
-                            position_data,
-                        );
+        for (outer_axis_type, maybe_position_data) in axis_data {
+            if let Some(position_data) = maybe_position_data {
+                match outer_axis_type {
+                    AxisType::Gamepad(axis_type) => {
+                        if let Some(ref mut gamepad_input) = self.gamepad_axes {
+                            if let Some(gamepad) = self.associated_gamepad {
+                                gamepad_input
+                                    .set(GamepadAxis { gamepad, axis_type }, position_data);
+                            }
+                        }
+                    }
+                    AxisType::MouseWheel(axis_type) => {
+                        if let Some(ref mut mouse_wheel_events) = self.mouse_wheel {
+                            match axis_type {
+                                // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
+                                MouseWheelAxisType::X => mouse_wheel_events.send(MouseWheel {
+                                    unit: MouseScrollUnit::Pixel,
+                                    x: position_data,
+                                    y: 0.0,
+                                }),
+                                MouseWheelAxisType::Y => mouse_wheel_events.send(MouseWheel {
+                                    unit: MouseScrollUnit::Pixel,
+                                    x: 0.0,
+                                    y: position_data,
+                                }),
+                            }
+                        }
                     }
                 }
             }
@@ -195,15 +213,19 @@ impl<'a> MutableInputStreams<'a> {
             }
         }
 
-        if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for (axis_type, _) in axis_data {
-                if let Some(gamepad) = self.associated_gamepad {
-                    // FIXME: verify correctness
-                    let gamepad_axis = GamepadAxis {
-                        gamepad,
-                        axis_type: axis_type.try_into().unwrap(),
-                    };
-                    gamepad_input.remove(gamepad_axis);
+        for (outer_axis_type, _maybe_position_data) in axis_data {
+            match outer_axis_type {
+                AxisType::Gamepad(axis_type) => {
+                    if let Some(ref mut gamepad_input) = self.gamepad_axes {
+                        if let Some(gamepad) = self.associated_gamepad {
+                            gamepad_input.remove(GamepadAxis { gamepad, axis_type });
+                        }
+                    }
+                }
+                AxisType::MouseWheel(_) => {
+                    // Releasing event-like input should have no effect;
+                    // they are automatically cleared as time elapses
+                    ()
                 }
             }
         }
