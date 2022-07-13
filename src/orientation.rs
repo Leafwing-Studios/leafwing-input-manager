@@ -67,12 +67,10 @@ mod orientation_trait {
 
             let rotation_to = target_rotation - self_rotation;
 
-            if rotation_to.deci_degrees == 0 {
+            if rotation_to.deci_degrees == 0 || rotation_to.deci_degrees >= 1800 {
                 RotationDirection::Clockwise
-            } else if rotation_to.deci_degrees < 1800 {
-                RotationDirection::CounterClockwise
             } else {
-                RotationDirection::Clockwise
+                RotationDirection::CounterClockwise
             }
         }
 
