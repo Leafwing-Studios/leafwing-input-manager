@@ -630,7 +630,7 @@ mod direction {
 }
 
 mod conversions {
-    use super::{Direction, Rotation};
+    use super::{direction, Direction, Rotation};
     use crate::errors::NearlySingularConversion;
     use bevy_math::{Quat, Vec2, Vec3};
     use bevy_transform::components::{GlobalTransform, Transform};
@@ -683,13 +683,7 @@ mod conversions {
         type Error = NearlySingularConversion;
 
         fn try_from(vec2: Vec2) -> Result<Direction, NearlySingularConversion> {
-            if vec2.length_squared() == 0.0 {
-                Err(NearlySingularConversion)
-            } else {
-                Ok(Direction {
-                    unit_vector: vec2.normalize(),
-                })
-            }
+            Direction::try_new(vec2).ok_or(NearlySingularConversion)
         }
     }
 
@@ -714,14 +708,9 @@ mod conversions {
 
     impl From<Quat> for Direction {
         fn from(quaternion: Quat) -> Self {
-            let vec2 = quaternion.mul_vec3(Vec3::X).truncate();
-
-            if vec2 == Vec2::ZERO {
-                Direction::default()
-            } else {
-                Direction {
-                    unit_vector: vec2.normalize(),
-                }
+            match quaternion.mul_vec3(Vec3::X).truncate().try_normalize() {
+                Some(unit_vector) => Direction { unit_vector },
+                None => Default::default(),
             }
         }
     }
