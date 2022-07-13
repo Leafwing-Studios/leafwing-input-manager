@@ -10,6 +10,7 @@
 ### Changes
 
 - Rotation is now measured from the positive x axis in a counterclockwise direction. This applies to both `Rotation` and `Direction`.
+  - This increases consistency with `glam` and makes trigonometry easier.
 
 ## Version 0.5
 
