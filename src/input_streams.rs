@@ -6,7 +6,6 @@ use bevy_input::{
     mouse::{MouseButton, MouseWheel},
     Axis, Input,
 };
-use bevy_math::Vec2;
 use petitset::PetitSet;
 
 use bevy_ecs::prelude::{Events, Res, ResMut, World};
@@ -367,7 +366,7 @@ impl<'a> InputStreams<'a> {
                     self.get_input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
                 let y =
                     self.get_input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
-                Some(DualAxisData::new(Vec2::new(x, y)))
+                Some(DualAxisData::new(x, y))
             }
             UserInput::VirtualDPad(VirtualDPad {
                 up,
@@ -379,7 +378,7 @@ impl<'a> InputStreams<'a> {
                     - self.get_input_value(&UserInput::Single(*left)).abs();
                 let y = self.get_input_value(&UserInput::Single(*up))
                     - self.get_input_value(&UserInput::Single(*down)).abs();
-                Some(DualAxisData::new(Vec2::new(x, y)))
+                Some(DualAxisData::new(x, y))
             }
             _ => None,
         }

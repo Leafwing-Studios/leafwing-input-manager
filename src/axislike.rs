@@ -262,7 +262,14 @@ pub struct DualAxisData {
 // Constructors
 impl DualAxisData {
     /// Creates a new [`AxisPair`] from the provided (x,y) coordinates
-    pub fn new(xy: Vec2) -> DualAxisData {
+    pub fn new(x: f32, y: f32) -> DualAxisData {
+        DualAxisData {
+            xy: Vec2::new(x, y),
+        }
+    }
+
+    /// Creates a new [`AxisPair`] directly from a [`Vec2`]
+    pub fn from_xy(xy: Vec2) -> DualAxisData {
         DualAxisData { xy }
     }
 
@@ -276,7 +283,7 @@ impl DualAxisData {
     /// This method can result in values with a greater maximum magnitude than expected!
     /// Use [`AxisPair::clamp_length`] to limit the resulting direction.
     pub fn merged_with(&self, other: DualAxisData) -> DualAxisData {
-        DualAxisData::new(self.xy() + other.xy())
+        DualAxisData::from_xy(self.xy() + other.xy())
     }
 }
 

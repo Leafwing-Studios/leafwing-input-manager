@@ -22,6 +22,8 @@
   - This could not accurately represent more complex compound input types.
 - `ButtonKind` was renamed to `InputKind` to reflect the new non-button input types.
 - Renamed `AxisPair` to `DualAxisData`.
+  - `DualAxisData::new` now takes two `f32` values for ergonomic reasons.
+  - Use `DualAxisData::from_xy` to construct this directly from a `Vec2` as before.
 
 ## Version 0.4.1
 
