@@ -44,21 +44,20 @@ fn setup(mut commands: Commands) {
     });
 }
 
-fn zoom_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {
-    const CAMERA_ZOOM_RATE: f32 = 0.1;
+fn zoom_camera(
+    mut query: Query<(&mut OrthographicProjection, &ActionState<CameraMovement>), With<Camera2d>>,
+) {
+    const CAMERA_ZOOM_RATE: f32 = 0.05;
 
-    let (mut camera_transform, action_state) = query.single_mut();
+    let (mut camera_projection, action_state) = query.single_mut();
     // Here, we use the `action_value` method to extract the total net amount that the mouse wheel has travelled
     // Up and right axis movements are always positive by default
     let zoom_delta = action_state.action_value(CameraMovement::Zoom);
 
     // We want to zoom in when we use mouse wheel up
     // so we increase the scale proportionally
-    // WARNING: zooming in too far results in disappearance of your sprites
-    // as the camera clips into them.
-    // This is a known problem with Bevy's 2D-as-3D design that should be fixed (eventually).
-    // To work around it in real games, set your camera Z very high and set a max zoom level.
-    camera_transform.scale += zoom_delta * CAMERA_ZOOM_RATE;
+    // Note that the projections scale should always be positive (or our images will flip)
+    camera_projection.scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE;
 }
 
 fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {
