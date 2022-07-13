@@ -1,5 +1,6 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equvalents)
 
+use crate::buttonlike::MouseWheelDirection;
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
 use bevy_input::{
@@ -39,6 +40,26 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             positive_low: threshold,
             negative_low: threshold,
+            value: None,
+        }
+    }
+
+    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    pub const fn mouse_wheel_x() -> SingleAxis {
+        SingleAxis {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+            positive_low: 0.,
+            negative_low: 0.,
+            value: None,
+        }
+    }
+
+    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    pub const fn mouse_wheel_y() -> SingleAxis {
+        SingleAxis {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+            positive_low: 0.,
+            negative_low: 0.,
             value: None,
         }
     }
@@ -116,6 +137,14 @@ impl DualAxis {
             Self::DEFAULT_DEADZONE,
         )
     }
+
+    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    pub const fn mouse_wheel() -> DualAxis {
+        DualAxis {
+            x: SingleAxis::mouse_wheel_x(),
+            y: SingleAxis::mouse_wheel_y(),
+        }
+    }
 }
 
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
@@ -178,6 +207,16 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
+        }
+    }
+
+    /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
+    pub fn mouse_wheel() -> VirtualDPad {
+        VirtualDPad {
+            up: InputKind::MouseWheel(MouseWheelDirection::Up),
+            down: InputKind::MouseWheel(MouseWheelDirection::Down),
+            left: InputKind::MouseWheel(MouseWheelDirection::Left),
+            right: InputKind::MouseWheel(MouseWheelDirection::Right),
         }
     }
 }
