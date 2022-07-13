@@ -63,9 +63,10 @@ use std::marker::PhantomData;
 /// .insert_chord([InputKind::Keyboard(KeyCode::H),
 ///                InputKind::GamepadButton(GamepadButtonType::South),
 ///                InputKind::Mouse(MouseButton::Middle)],
-/// .insert_chord([InputButton::Keyboard(KeyCode::H),
-///                InputButton::Gamepad(GamepadButtonType::South),
-///                InputButton::Mouse(MouseButton::Middle)],
+///            Action::Run)
+/// .insert_chord([InputKind::Keyboard(KeyCode::H),
+///                InputKind::GamepadButton(GamepadButtonType::South),
+///                InputKind::Mouse(MouseButton::Middle)],
 ///            Action::Hide);
 ///
 /// // Removal
