@@ -11,14 +11,14 @@ use crate::{
     Actionlike,
 };
 
-use bevy_core::Time;
 use bevy_ecs::{prelude::*, schedule::ShouldRun};
 use bevy_input::{
-    gamepad::{GamepadAxis, GamepadButton},
+    gamepad::{GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
     mouse::MouseButton,
     Axis, Input,
 };
+use bevy_time::Time;
 use bevy_utils::Instant;
 
 #[cfg(feature = "ui")]
@@ -62,6 +62,7 @@ pub fn update_action_state<A: Actionlike>(
     maybe_gamepad_button_input_stream: Option<Res<Input<GamepadButton>>>,
     maybe_gamepad_button_axes_input_stream: Option<Res<Axis<GamepadButton>>>,
     maybe_gamepad_axes_input_stream: Option<Res<Axis<GamepadAxis>>>,
+    maybe_gamepads: Option<Res<Gamepads>>,
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
     clash_strategy: Res<ClashStrategy>,
@@ -72,6 +73,7 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_buttons = maybe_gamepad_button_input_stream.as_deref();
     let gamepad_button_axes = maybe_gamepad_button_axes_input_stream.as_deref();
     let gamepad_axes = maybe_gamepad_axes_input_stream.as_deref();
+    let gamepads = maybe_gamepads.as_deref();
 
     let keyboard = maybe_keyboard_input_stream.as_deref();
 
@@ -82,6 +84,7 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_buttons,
             gamepad_button_axes,
             gamepad_axes,
+            gamepads,
             keyboard,
             mouse,
             associated_gamepad: input_map.gamepad(),
@@ -95,6 +98,7 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_buttons,
             gamepad_button_axes,
             gamepad_axes,
+            gamepads,
             keyboard,
             mouse,
             associated_gamepad: input_map.gamepad(),

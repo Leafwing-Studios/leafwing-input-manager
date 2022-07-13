@@ -19,13 +19,10 @@ use std::marker::PhantomData;
 /// Multiple inputs can be mapped to the same action,
 /// and each input can be mapped to multiple actions.
 ///
-/// The provided input types must be one of [`GamepadButtonType`], [`KeyCode`] or [`MouseButton`].
+/// The provided input types must be able to be converted into a [`UserInput`].
 ///
 /// The maximum number of bindings (total) that can be stored for each action is 16.
 /// Insertions will silently fail if you have reached this cap.
-///
-/// In addition, you can configure the per-mode cap for each [`InputMode`] using [`InputMap::new`] or [`InputMap::set_per_mode_cap`].
-/// This can be useful if your UI can only display one or two possible keybindings for each input mode.
 ///
 /// By default, if two actions would be triggered by a combination of buttons,
 /// and one combination is a strict subset of the other, only the larger input is registered.
@@ -260,12 +257,21 @@ impl<A: Actionlike> InputMap<A> {
 // Configuration
 impl<A: Actionlike> InputMap<A> {
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
+    ///
+    /// If this is [`None`], input from any connected gamepad will be used.
     #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
         self.associated_gamepad
     }
 
     /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
+    ///
+    /// If this is not called, input from any connected gamepad will be used.
+    /// The first matching non-zero input will be accepted,
+    /// as determined by gamepad registration order.
+    ///
+    /// Because of this robust fallback behavior,
+    /// this method can typically be ignored when writing single-player games.
     pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
         self.associated_gamepad = Some(gamepad);
         self
@@ -528,8 +534,8 @@ mod tests {
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
 
-        input_map.set_gamepad(Gamepad(0));
-        assert_eq!(input_map.gamepad(), Some(Gamepad(0)));
+        input_map.set_gamepad(Gamepad { id: 0 });
+        assert_eq!(input_map.gamepad(), Some(Gamepad { id: 0 }));
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
@@ -543,7 +549,7 @@ mod tests {
 
         // Setting up the input map
         let mut input_map = InputMap::<Action>::default();
-        input_map.set_gamepad(Gamepad(42));
+        input_map.set_gamepad(Gamepad { id: 42 });
 
         // Gamepad
         input_map.insert(GamepadButtonType::South, Action::Run);
@@ -580,9 +586,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         // With no inputs, nothing should be detected
@@ -591,46 +598,61 @@ mod tests {
         }
 
         // Pressing the wrong gamepad
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(0), GamepadButtonType::South));
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 0 },
+            button_type: GamepadButtonType::South,
+        });
 
         let input_streams = InputStreams {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
         for action in Action::variants() {
             assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
         }
 
         // Pressing the correct gamepad
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 42 },
+            button_type: GamepadButtonType::South,
+        });
 
         let input_streams = InputStreams {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
         assert!(!input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
 
         // Chord
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
-        gamepad_button_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 42 },
+            button_type: GamepadButtonType::South,
+        });
+        gamepad_button_input_stream.press(GamepadButton {
+            gamepad: Gamepad { id: 42 },
+            button_type: GamepadButtonType::North,
+        });
 
         let input_streams = InputStreams {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -642,9 +664,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         for action in Action::variants() {
@@ -658,9 +681,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -676,9 +700,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -694,9 +719,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
+            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
+            associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));

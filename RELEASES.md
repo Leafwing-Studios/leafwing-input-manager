@@ -11,6 +11,7 @@
 
 ### Usability
 
+- If no gamepad is registered to a specific `InputMap`, inputs from any gamepad in the `Gamepads` resource will be used.
 - Removed the `ActionState::reasons_pressed` API.
   - This API was quite complex and not terribly useful.
   - This was not needed for axislike inputs in the end.

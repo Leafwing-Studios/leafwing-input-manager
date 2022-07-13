@@ -44,8 +44,6 @@ fn spawn_player(mut commands: Commands) {
                 SingleGamepadAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
                 Action::Rudder,
             )
-            // Listen for events on the first gamepad
-            .set_gamepad(Gamepad(0))
             .build(),
         });
 }

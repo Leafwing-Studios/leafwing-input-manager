@@ -125,18 +125,21 @@ impl<'a> MutableInputStreams<'a> {
             input_to_send.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button in gamepad_buttons {
-                if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton(associated_gamepad, button);
+            for button_type in gamepad_buttons {
+                if let Some(gamepad) = self.associated_gamepad {
+                    let gamepad_button = GamepadButton {
+                        gamepad,
+                        button_type,
+                    };
                     gamepad_input.press(gamepad_button);
                 }
             }
         }
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for axis in gamepad_axes {
-                if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis(associated_gamepad, axis);
+            for axis_type in gamepad_axes {
+                if let Some(gamepad) = self.associated_gamepad {
+                    let gamepad_axis = GamepadAxis { gamepad, axis_type };
                     // FIXME: Allow setting axis input value
                     gamepad_input.set(gamepad_axis, 1.0);
                 }
@@ -165,18 +168,21 @@ impl<'a> MutableInputStreams<'a> {
             input_to_release.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button in gamepad_buttons {
-                if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton(associated_gamepad, button);
+            for button_type in gamepad_buttons {
+                if let Some(gamepad) = self.associated_gamepad {
+                    let gamepad_button = GamepadButton {
+                        gamepad,
+                        button_type,
+                    };
                     gamepad_input.release(gamepad_button);
                 }
             }
         }
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for axis in gamepad_axes {
-                if let Some(associated_gamepad) = self.associated_gamepad {
-                    let gamepad_axis = GamepadAxis(associated_gamepad, axis);
+            for axis_type in gamepad_axes {
+                if let Some(gamepad) = self.associated_gamepad {
+                    let gamepad_axis = GamepadAxis { gamepad, axis_type };
                     gamepad_input.remove(gamepad_axis);
                 }
             }
@@ -214,6 +220,7 @@ impl MockInput for World {
             Option<ResMut<Input<GamepadButton>>>,
             Option<ResMut<Axis<GamepadButton>>>,
             Option<ResMut<Axis<GamepadAxis>>>,
+            Option<ResMut<Gamepads>>,
             Option<ResMut<Input<KeyCode>>>,
             Option<ResMut<Input<MouseButton>>>,
         )> = SystemState::new(self);
@@ -222,6 +229,7 @@ impl MockInput for World {
             mut maybe_gamepad_buttons,
             mut maybe_gamepad_button_axes,
             mut maybe_gamepad_axes,
+            mut maybe_gamepads,
             mut maybe_keyboard,
             mut maybe_mouse,
         ) = input_system_state.get_mut(self);
@@ -230,6 +238,7 @@ impl MockInput for World {
             gamepad_buttons: maybe_gamepad_buttons.as_deref_mut(),
             gamepad_button_axes: maybe_gamepad_button_axes.as_deref_mut(),
             gamepad_axes: maybe_gamepad_axes.as_deref_mut(),
+            gamepads: maybe_gamepads.as_deref_mut(),
             keyboard: maybe_keyboard.as_deref_mut(),
             mouse: maybe_mouse.as_deref_mut(),
             associated_gamepad: gamepad,
@@ -253,6 +262,7 @@ impl MockInput for World {
             Option<ResMut<Input<GamepadButton>>>,
             Option<ResMut<Axis<GamepadButton>>>,
             Option<ResMut<Axis<GamepadAxis>>>,
+            Option<ResMut<Gamepads>>,
             Option<ResMut<Input<KeyCode>>>,
             Option<ResMut<Input<MouseButton>>>,
         )> = SystemState::new(self);
@@ -261,6 +271,7 @@ impl MockInput for World {
             mut maybe_gamepad_buttons,
             mut maybe_gamepad_button_axes,
             mut maybe_gamepad_axes,
+            mut maybe_gamepads,
             mut maybe_keyboard,
             mut maybe_mouse,
         ) = input_system_state.get_mut(self);
@@ -269,6 +280,7 @@ impl MockInput for World {
             gamepad_buttons: maybe_gamepad_buttons.as_deref_mut(),
             gamepad_button_axes: maybe_gamepad_button_axes.as_deref_mut(),
             gamepad_axes: maybe_gamepad_axes.as_deref_mut(),
+            gamepads: maybe_gamepads.as_deref_mut(),
             keyboard: maybe_keyboard.as_deref_mut(),
             mouse: maybe_mouse.as_deref_mut(),
             associated_gamepad: gamepad,
@@ -278,13 +290,7 @@ impl MockInput for World {
     }
 
     fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
-        let gamepad = if let Some(gamepads) = self.get_resource::<Gamepads>() {
-            gamepads.iter().next().copied()
-        } else {
-            None
-        };
-
-        self.pressed_for_gamepad(input, gamepad)
+        self.pressed_for_gamepad(input, None)
     }
 
     fn pressed_for_gamepad(
@@ -296,6 +302,7 @@ impl MockInput for World {
             Option<Res<Input<GamepadButton>>>,
             Option<Res<Axis<GamepadButton>>>,
             Option<Res<Axis<GamepadAxis>>>,
+            Option<Res<Gamepads>>,
             Option<Res<Input<KeyCode>>>,
             Option<Res<Input<MouseButton>>>,
         )> = SystemState::new(self);
@@ -304,6 +311,7 @@ impl MockInput for World {
             maybe_gamepad_buttons,
             maybe_gamepad_button_axes,
             maybe_gamepad_axes,
+            maybe_gamepads,
             maybe_keyboard,
             maybe_mouse,
         ) = input_system_state.get(self);
@@ -312,6 +320,7 @@ impl MockInput for World {
             gamepad_buttons: maybe_gamepad_buttons.as_deref(),
             gamepad_button_axes: maybe_gamepad_button_axes.as_deref(),
             gamepad_axes: maybe_gamepad_axes.as_deref(),
+            gamepads: maybe_gamepads.as_deref(),
             keyboard: maybe_keyboard.as_deref(),
             mouse: maybe_mouse.as_deref(),
             associated_gamepad: gamepad,
@@ -442,7 +451,7 @@ mod test {
 
         // BLOCKED: cannot use the less artifical APIs due to
         // https://github.com/bevyengine/bevy/issues/3808
-        let gamepad = Some(Gamepad(0));
+        let gamepad = Some(Gamepad { id: 0 });
 
         // Test that buttons are unpressed by default
         assert!(!world.pressed(KeyCode::Space));

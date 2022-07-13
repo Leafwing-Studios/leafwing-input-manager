@@ -1,7 +1,7 @@
 //! Helpful abstractions over user inputs of all sorts
 
 use bevy_input::{
-    gamepad::{Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType},
+    gamepad::{Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads},
     keyboard::KeyCode,
     mouse::MouseButton,
     Axis, Input,
@@ -205,10 +205,10 @@ impl UserInput {
         match self {
             UserInput::Single(button) => match *button {
                 InputKind::DualGamepadAxis(variant) => {
-                    gamepad_axes.push(variant.x_axis);
-                    gamepad_axes.push(variant.y_axis);
+                    gamepad_axes.push(variant.x_axis_type);
+                    gamepad_axes.push(variant.y_axis_type);
                 }
-                InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis_type),
                 InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
                 InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
                 InputKind::Mouse(variant) => mouse_buttons.push(variant),
@@ -217,10 +217,12 @@ impl UserInput {
                 for button in button_set.iter() {
                     match button {
                         InputKind::DualGamepadAxis(variant) => {
-                            gamepad_axes.push(variant.x_axis);
-                            gamepad_axes.push(variant.y_axis);
+                            gamepad_axes.push(variant.x_axis_type);
+                            gamepad_axes.push(variant.y_axis_type);
                         }
-                        InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                        InputKind::SingleGamepadAxis(variant) => {
+                            gamepad_axes.push(variant.axis_type)
+                        }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(*variant),
                         InputKind::Mouse(variant) => mouse_buttons.push(*variant),
@@ -236,10 +238,12 @@ impl UserInput {
                 for button in [up, down, left, right] {
                     match *button {
                         InputKind::DualGamepadAxis(variant) => {
-                            gamepad_axes.push(variant.x_axis);
-                            gamepad_axes.push(variant.y_axis);
+                            gamepad_axes.push(variant.x_axis_type);
+                            gamepad_axes.push(variant.y_axis_type);
                         }
-                        InputKind::SingleGamepadAxis(variant) => gamepad_axes.push(variant.axis),
+                        InputKind::SingleGamepadAxis(variant) => {
+                            gamepad_axes.push(variant.axis_type)
+                        }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
                         InputKind::Mouse(variant) => mouse_buttons.push(variant),
@@ -421,7 +425,7 @@ impl From<MouseButton> for InputKind {
 /// Each of these streams is optional; if a stream does not exist, it is treated as if it were entirely unpressed.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct InputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a Input<GamepadButton>>,
@@ -429,6 +433,8 @@ pub struct InputStreams<'a> {
     pub gamepad_button_axes: Option<&'a Axis<GamepadButton>>,
     /// An optional [`GamepadAxis`] [`Axis`] stream
     pub gamepad_axes: Option<&'a Axis<GamepadAxis>>,
+    /// An optional list of registered gamepads
+    pub gamepads: Option<&'a Gamepads>,
     /// An optional [`KeyCode`] [`Input`] stream
     pub keyboard: Option<&'a Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
@@ -450,6 +456,7 @@ impl<'a> InputStreams<'a> {
             gamepad_buttons: Some(gamepad_button_stream),
             gamepad_button_axes: Some(gamepad_button_axis_stream),
             gamepad_axes: Some(gamepad_axis_stream),
+            gamepads: None,
             keyboard: None,
             mouse: None,
             associated_gamepad: Some(associated_gamepad),
@@ -462,6 +469,7 @@ impl<'a> InputStreams<'a> {
             gamepad_buttons: None,
             gamepad_button_axes: None,
             gamepad_axes: None,
+            gamepads: None,
             keyboard: Some(keyboard_input_stream),
             mouse: None,
             associated_gamepad: None,
@@ -474,6 +482,7 @@ impl<'a> InputStreams<'a> {
             gamepad_buttons: None,
             gamepad_button_axes: None,
             gamepad_axes: None,
+            gamepads: None,
             keyboard: None,
             mouse: Some(mouse_input_stream),
             associated_gamepad: None,
@@ -538,15 +547,38 @@ impl<'a> InputStreams<'a> {
                 value < axis.negative_low || value > axis.positive_low
             }
             InputKind::GamepadButton(gamepad_button) => {
-                // If no gamepad is registered, we know for sure that no match was found
+                // If a gamepad was registered, just check that one
                 if let Some(gamepad) = self.associated_gamepad {
                     if let Some(gamepad_buttons) = self.gamepad_buttons {
-                        gamepad_buttons.pressed(GamepadButton(gamepad, gamepad_button))
+                        gamepad_buttons.pressed(GamepadButton {
+                            gamepad,
+                            button_type: gamepad_button,
+                        })
                     } else {
                         false
                     }
+                // If no gamepad is registered, scan the list of available gamepads
                 } else {
-                    false
+                    // Verify that both gamepads and gamepad_buttons exists
+                    if let (Some(gamepads), Some(gamepad_buttons)) =
+                        (self.gamepads, self.gamepad_buttons)
+                    {
+                        for &gamepad in gamepads.iter() {
+                            if gamepad_buttons.pressed(GamepadButton {
+                                gamepad,
+                                button_type: gamepad_button,
+                            }) {
+                                // Return early if *any* gamepad is pressing this button
+                                return true;
+                            }
+                        }
+                        // If none of the available gamepads pressed this button, return false
+                        false
+
+                    // If we don't have the required data, fall back to false
+                    } else {
+                        false
+                    }
                 }
             }
             InputKind::Keyboard(keycode) => {
@@ -587,7 +619,7 @@ impl<'a> InputStreams<'a> {
     /// [`UserInput::Chord`] inputs are also considered binary and will return `0.0` or `1.0` based
     /// on whether the chord has been pressed.
     pub fn get_input_value(&self, input: &UserInput) -> f32 {
-        let use_button_value = || {
+        let use_button_value = || -> f32 {
             if self.input_pressed(input) {
                 1.0
             } else {
@@ -597,14 +629,37 @@ impl<'a> InputStreams<'a> {
 
         match input {
             UserInput::Single(InputKind::SingleGamepadAxis(threshold)) => {
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(axes) = self.gamepad_axes {
-                        axes.get(GamepadAxis(gamepad, threshold.axis))
-                            .unwrap_or_default()
+                if let Some(axes) = self.gamepad_axes {
+                    if let Some(gamepad) = self.associated_gamepad {
+                        axes.get(GamepadAxis {
+                            gamepad,
+                            axis_type: threshold.axis_type,
+                        })
+                        .unwrap_or_default()
+                    // If no gamepad is registered, return the first non-zero input found
+                    } else if let Some(gamepads) = self.gamepads {
+                        for &gamepad in gamepads.iter() {
+                            let value = axes
+                                .get(GamepadAxis {
+                                    gamepad,
+                                    axis_type: threshold.axis_type,
+                                })
+                                .unwrap_or_default();
+
+                            if value != 0.0 {
+                                // A matching input was pressed on a gamepad
+                                return value;
+                            }
+                        }
+
+                        // No input was pressed on any gamepad
+                        0.0
                     } else {
+                        // No Gamepads resource found and no gamepad was registered
                         0.0
                     }
                 } else {
+                    // No Axis<GamepadButton> was found
                     use_button_value()
                 }
             }
@@ -618,24 +673,41 @@ impl<'a> InputStreams<'a> {
             UserInput::VirtualDPad { .. } => {
                 self.get_input_axis_pair(input).unwrap_or_default().length()
             }
+            // This is required because upstream bevy_input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(button_axes) = self.gamepad_button_axes {
+                if let Some(button_axes) = self.gamepad_button_axes {
+                    if let Some(gamepad) = self.associated_gamepad {
+                        // Get the value from the registered gamepad
                         button_axes
-                            .get(GamepadButton(gamepad, *button_type))
-                            .unwrap_or_default()
+                            .get(GamepadButton {
+                                gamepad,
+                                button_type: *button_type,
+                            })
+                            .unwrap_or_else(use_button_value)
+                    } else if let Some(gamepads) = self.gamepads {
+                        for &gamepad in gamepads.iter() {
+                            let value = button_axes
+                                .get(GamepadButton {
+                                    gamepad,
+                                    button_type: *button_type,
+                                })
+                                .unwrap_or_else(use_button_value);
+
+                            if value != 0.0 {
+                                // A matching input was pressed on a gamepad
+                                return value;
+                            }
+                        }
+
+                        // No input was pressed on any gamepad
+                        0.0
                     } else {
+                        // No Gamepads resource found and no gamepad was registered
                         0.0
                     }
                 } else {
+                    // No Axis<GamepadButton> was found
                     use_button_value()
-                }
-            }
-            UserInput::Chord(chord) => {
-                if let Some(input) = chord.get_at(0) {
-                    self.get_input_value(&UserInput::Single(*input))
-                } else {
-                    0.0
                 }
             }
             _ => use_button_value(),
@@ -644,23 +716,57 @@ impl<'a> InputStreams<'a> {
 
     /// Get the axis pair associated to the user input.
     ///
-    /// See [`ActionState::action_axis_pair()`].
+    /// If `input` is not a [`DualGamepadAxis`] or [`VirtualDPad`], returns [`None`].
+    ///
+    /// See [`ActionState::action_axis_pair()`] for usage.
     pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<AxisPair> {
         match input {
-            UserInput::Single(InputKind::DualGamepadAxis(threshold)) => {
-                if let Some(gamepad) = self.associated_gamepad {
-                    if let Some(axes) = self.gamepad_axes {
+            UserInput::Single(InputKind::DualGamepadAxis(dual_axis)) => {
+                if let Some(axes) = self.gamepad_axes {
+                    if let Some(gamepad) = self.associated_gamepad {
                         let x = axes
-                            .get(GamepadAxis(gamepad, threshold.x_axis))
+                            .get(GamepadAxis {
+                                gamepad,
+                                axis_type: dual_axis.x_axis_type,
+                            })
                             .unwrap_or_default();
                         let y = axes
-                            .get(GamepadAxis(gamepad, threshold.y_axis))
+                            .get(GamepadAxis {
+                                gamepad,
+                                axis_type: dual_axis.y_axis_type,
+                            })
                             .unwrap_or_default();
+                        // The registered gampead had inputs
                         Some(AxisPair::new(Vec2::new(x, y)))
+                    } else if let Some(gamepads) = self.gamepads {
+                        for &gamepad in gamepads.iter() {
+                            let x = axes
+                                .get(GamepadAxis {
+                                    gamepad,
+                                    axis_type: dual_axis.x_axis_type,
+                                })
+                                .unwrap_or_default();
+                            let y = axes
+                                .get(GamepadAxis {
+                                    gamepad,
+                                    axis_type: dual_axis.y_axis_type,
+                                })
+                                .unwrap_or_default();
+
+                            if (x != 0.0) | (y != 0.0) {
+                                // At least one gamepad had inputs
+                                return Some(AxisPair::new(Vec2::new(x, y)));
+                            }
+                        }
+
+                        // No input from any gamepad
+                        Some(AxisPair::new(Vec2::ZERO))
                     } else {
+                        // No Gamepads resource
                         None
                     }
                 } else {
+                    // No Axis<GamepadAxis> resource
                     None
                 }
             }
@@ -676,13 +782,6 @@ impl<'a> InputStreams<'a> {
                     - self.get_input_value(&UserInput::Single(*down)).abs();
                 Some(AxisPair::new(Vec2::new(x, y)))
             }
-            UserInput::Chord(chord) => {
-                if let Some(input) = chord.get_at(0) {
-                    self.get_input_axis_pair(&UserInput::Single(*input))
-                } else {
-                    None
-                }
-            }
             _ => None,
         }
     }
@@ -693,7 +792,6 @@ impl<'a> InputStreams<'a> {
 /// Each of these streams is optional; if a stream does not exist, inputs sent to them will be ignored.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
-#[derive(Debug)]
 pub struct MutableInputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a mut Input<GamepadButton>>,
@@ -701,6 +799,8 @@ pub struct MutableInputStreams<'a> {
     pub gamepad_button_axes: Option<&'a mut Axis<GamepadButton>>,
     /// An optional [`GamepadAxis`] [`Axis`] stream
     pub gamepad_axes: Option<&'a mut Axis<GamepadAxis>>,
+    /// An optional list of registered [`Gamepads`]
+    pub gamepads: Option<&'a mut Gamepads>,
     /// An optional [`KeyCode`] [`Input`] stream
     pub keyboard: Option<&'a mut Input<KeyCode>>,
     /// An optional [`MouseButton`] [`Input`] stream
@@ -720,6 +820,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
         let gamepad_axes = mutable_streams
             .gamepad_axes
             .map(|mutable_ref| &*mutable_ref);
+        let gamepads = mutable_streams.gamepads.map(|mutable_ref| &*mutable_ref);
 
         let keyboard = mutable_streams.keyboard.map(|mutable_ref| &*mutable_ref);
 
@@ -729,6 +830,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_buttons,
             gamepad_button_axes,
             gamepad_axes,
+            gamepads,
             keyboard,
             mouse,
             associated_gamepad: mutable_streams.associated_gamepad,

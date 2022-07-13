@@ -2,12 +2,12 @@
 
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
-use bevy_core::FloatOrd;
 use bevy_input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
 };
 use bevy_math::Vec2;
+use bevy_utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
 /// A high-level abstract user input that varies from -1 to 1, inclusive, along two axes
@@ -123,7 +123,7 @@ impl AxisPair {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct SingleGamepadAxis {
     /// The axis that is being checked.
-    pub axis: GamepadAxisType,
+    pub axis_type: GamepadAxisType,
     /// Any axis value higher than this will trigger the input.
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
@@ -133,9 +133,9 @@ pub struct SingleGamepadAxis {
 impl SingleGamepadAxis {
     /// Creates a [`SingleGamepadAxis`] with both `positive_low` and `negative_low` set to `threshold`.
     #[must_use]
-    pub const fn symmetric(axis: GamepadAxisType, threshold: f32) -> SingleGamepadAxis {
+    pub const fn symmetric(axis_type: GamepadAxisType, threshold: f32) -> SingleGamepadAxis {
         SingleGamepadAxis {
-            axis,
+            axis_type,
             positive_low: threshold,
             negative_low: threshold,
         }
@@ -144,7 +144,7 @@ impl SingleGamepadAxis {
 
 impl PartialEq for SingleGamepadAxis {
     fn eq(&self, other: &Self) -> bool {
-        self.axis == other.axis
+        self.axis_type == other.axis_type
             && FloatOrd(self.positive_low) == FloatOrd(other.positive_low)
             && FloatOrd(self.negative_low) == FloatOrd(other.negative_low)
     }
@@ -152,7 +152,7 @@ impl PartialEq for SingleGamepadAxis {
 impl Eq for SingleGamepadAxis {}
 impl std::hash::Hash for SingleGamepadAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.axis.hash(state);
+        self.axis_type.hash(state);
         FloatOrd(self.positive_low).hash(state);
         FloatOrd(self.negative_low).hash(state);
     }
@@ -171,9 +171,9 @@ impl std::hash::Hash for SingleGamepadAxis {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct DualGamepadAxis {
     /// The gamepad axis to use as the x axis.
-    pub x_axis: GamepadAxisType,
+    pub x_axis_type: GamepadAxisType,
     /// The gamepad axis to use as the y axis.
-    pub y_axis: GamepadAxisType,
+    pub y_axis_type: GamepadAxisType,
     /// If the stick is moved right more than this amount the input will be triggered.
     pub x_positive_low: f32,
     /// If the stick is moved left more than this amount the input will be triggered.
@@ -193,13 +193,13 @@ impl DualGamepadAxis {
     /// Creates a [`DualGamepadAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
     #[must_use]
     pub const fn symmetric(
-        x_axis: GamepadAxisType,
-        y_axis: GamepadAxisType,
+        x_axis_type: GamepadAxisType,
+        y_axis_type: GamepadAxisType,
         threshold: f32,
     ) -> DualGamepadAxis {
         DualGamepadAxis {
-            x_axis,
-            y_axis,
+            x_axis_type,
+            y_axis_type,
             x_positive_low: threshold,
             x_negative_low: threshold,
             y_positive_low: threshold,
@@ -230,8 +230,8 @@ impl DualGamepadAxis {
 
 impl PartialEq for DualGamepadAxis {
     fn eq(&self, other: &Self) -> bool {
-        self.x_axis == other.x_axis
-            && self.y_axis == other.y_axis
+        self.x_axis_type == other.x_axis_type
+            && self.y_axis_type == other.y_axis_type
             && FloatOrd(self.x_positive_low) == FloatOrd(other.x_positive_low)
             && FloatOrd(self.x_negative_low) == FloatOrd(other.x_negative_low)
             && FloatOrd(self.y_positive_low) == FloatOrd(other.y_positive_low)
@@ -241,8 +241,8 @@ impl PartialEq for DualGamepadAxis {
 impl Eq for DualGamepadAxis {}
 impl std::hash::Hash for DualGamepadAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.x_axis.hash(state);
-        self.y_axis.hash(state);
+        self.x_axis_type.hash(state);
+        self.y_axis_type.hash(state);
         FloatOrd(self.x_positive_low).hash(state);
         FloatOrd(self.x_negative_low).hash(state);
         FloatOrd(self.y_positive_low).hash(state);

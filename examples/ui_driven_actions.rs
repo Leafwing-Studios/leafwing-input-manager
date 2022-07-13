@@ -49,8 +49,7 @@ fn spawn_player(mut commands: Commands) {
 }
 
 fn spawn_cameras(mut commands: Commands) {
-    commands.spawn_bundle(UiCameraBundle::default());
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(Camera2dBundle::default());
 }
 
 fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
