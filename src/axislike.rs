@@ -67,15 +67,11 @@ impl AxisPair {
 
     /// The [`Direction`] that this axis is pointing towards, if any
     ///
-    /// If the axis is neutral (x,y) = (0,0), a (0, 0) `None` will be returned
+    /// See [`Direction::new`] for more details.
     #[must_use]
     #[inline]
     pub fn direction(&self) -> Option<Direction> {
-        // TODO: replace this quick-n-dirty hack once Direction::new no longer panics
-        if self.xy.length() > 0.00001 {
-            return Some(Direction::new(self.xy));
-        }
-        None
+        return Direction::new(self.xy);
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
