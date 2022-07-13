@@ -228,7 +228,7 @@ mod rotation {
 
     /// A discretized 2-dimensional rotation
     ///
-    /// Internally, these are stored in normalized tenths of a degree, and so can be cleanly added
+    /// Internally, these are stored in tenths of a degree, and so can be cleanly added
     /// and reversed without accumulating error.
     ///
     /// # Example
