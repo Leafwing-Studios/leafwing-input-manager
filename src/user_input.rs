@@ -191,7 +191,7 @@ impl UserInput {
         Vec<KeyCode>,
         Vec<MouseButton>,
     ) {
-        let mut gamepad_axes: Vec<(AxisType, Option<f32>)> = Vec::default();
+        let mut axis_data: Vec<(AxisType, Option<f32>)> = Vec::default();
         let mut gamepad_buttons: Vec<GamepadButtonType> = Vec::default();
         let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
         let mut mouse_buttons: Vec<MouseButton> = Vec::default();
@@ -204,11 +204,11 @@ impl UserInput {
                         None => (None, None),
                     };
 
-                    gamepad_axes.push((variant.x_axis_type, x_value));
-                    gamepad_axes.push((variant.y_axis_type, y_value));
+                    axis_data.push((variant.x_axis_type, x_value));
+                    axis_data.push((variant.y_axis_type, y_value));
                 }
                 InputKind::SingleAxis(variant) => {
-                    gamepad_axes.push((variant.axis_type, variant.value))
+                    axis_data.push((variant.axis_type, variant.value))
                 }
                 InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
                 InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
@@ -223,11 +223,11 @@ impl UserInput {
                                 None => (None, None),
                             };
 
-                            gamepad_axes.push((variant.x_axis_type, x_value));
-                            gamepad_axes.push((variant.y_axis_type, y_value));
+                            axis_data.push((variant.x_axis_type, x_value));
+                            axis_data.push((variant.y_axis_type, y_value));
                         }
                         InputKind::SingleAxis(variant) => {
-                            gamepad_axes.push((variant.axis_type, variant.value))
+                            axis_data.push((variant.axis_type, variant.value))
                         }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(*variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(*variant),
@@ -249,11 +249,11 @@ impl UserInput {
                                 None => (None, None),
                             };
 
-                            gamepad_axes.push((variant.x_axis_type, x_value));
-                            gamepad_axes.push((variant.y_axis_type, y_value));
+                            axis_data.push((variant.x_axis_type, x_value));
+                            axis_data.push((variant.y_axis_type, y_value));
                         }
                         InputKind::SingleAxis(variant) => {
-                            gamepad_axes.push((variant.axis_type, variant.value))
+                            axis_data.push((variant.axis_type, variant.value))
                         }
                         InputKind::GamepadButton(variant) => gamepad_buttons.push(variant),
                         InputKind::Keyboard(variant) => keyboard_buttons.push(variant),
@@ -263,12 +263,7 @@ impl UserInput {
             }
         };
 
-        (
-            gamepad_buttons,
-            gamepad_axes,
-            keyboard_buttons,
-            mouse_buttons,
-        )
+        (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons)
     }
 }
 
