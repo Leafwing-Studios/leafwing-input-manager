@@ -130,7 +130,7 @@ impl<'a> MutableInputStreams<'a> {
     pub fn send_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_send: UserInput = input.into();
         // Extract the raw inputs
-        let (gamepad_buttons, gamepad_axis_data, keyboard_buttons, mouse_buttons) =
+        let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
             input_to_send.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
@@ -147,7 +147,7 @@ impl<'a> MutableInputStreams<'a> {
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
             if let Some(gamepad) = self.associated_gamepad {
-                for (axis_type, maybe_position_data) in gamepad_axis_data {
+                for (axis_type, maybe_position_data) in axis_data {
                     if let Some(position_data) = maybe_position_data {
                         // FIXME: verify correctness
                         gamepad_input.set(
@@ -180,7 +180,7 @@ impl<'a> MutableInputStreams<'a> {
     /// Called by the methods of [`MockInput`].
     pub fn release_user_input(&mut self, input: impl Into<UserInput>) {
         let input_to_release: UserInput = input.into();
-        let (gamepad_buttons, gamepad_axes, keyboard_buttons, mouse_buttons) =
+        let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
             input_to_release.raw_inputs();
 
         if let Some(ref mut gamepad_input) = self.gamepad_buttons {
@@ -196,7 +196,7 @@ impl<'a> MutableInputStreams<'a> {
         }
 
         if let Some(ref mut gamepad_input) = self.gamepad_axes {
-            for (axis_type, _) in gamepad_axes {
+            for (axis_type, _) in axis_data {
                 if let Some(gamepad) = self.associated_gamepad {
                     // FIXME: verify correctness
                     let gamepad_axis = GamepadAxis {
