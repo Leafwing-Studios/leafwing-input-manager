@@ -28,6 +28,12 @@
 - Renamed `AxisPair` to `DualAxisData`.
   - `DualAxisData::new` now takes two `f32` values for ergonomic reasons.
   - Use `DualAxisData::from_xy` to construct this directly from a `Vec2` as before.
+- Rotation is now measured from the positive x axis in a counterclockwise direction. This applies to both `Rotation` and `Direction`.
+  - This increases consistency with `glam` and makes trigonometry easier.
+- Added `Direction::try_from` which never panics; consider using this in place of `Direction::new`.
+- Converting from a `Direction` (which uses a `Vec2` of `f32`'s internally) to a `Rotation` (which uses exact decidegrees) now has special cases to ensure all eight cardinal directions result in exact degrees.
+  - For example, a unit vector pointing to the Northeast now always converts to a `Direction` with exactly 1350 decidegrees.
+  - Rounding errors may still occur when converting from arbitrary directions to the other 3592 discrete decidegrees.
 
 ## Version 0.4.1
 
