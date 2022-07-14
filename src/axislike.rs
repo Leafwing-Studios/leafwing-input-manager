@@ -44,7 +44,22 @@ impl SingleAxis {
         }
     }
 
+    /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
+    ///
+    /// All thresholds are set to 0.0.
+    /// Primarily useful for [input mocking](crate::MockInput).
+    #[must_use]
+    pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
+        SingleAxis {
+            axis_type: axis_type.into(),
+            positive_low: 0.0,
+            negative_low: 0.0,
+            value: Some(value),
+        }
+    }
+
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    #[must_use]
     pub const fn mouse_wheel_x() -> SingleAxis {
         SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
@@ -55,6 +70,7 @@ impl SingleAxis {
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    #[must_use]
     pub const fn mouse_wheel_y() -> SingleAxis {
         SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
@@ -115,6 +131,23 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::symmetric(x_axis_type, threshold),
             y: SingleAxis::symmetric(y_axis_type, threshold),
+        }
+    }
+
+    /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
+    ///
+    /// All thresholds are set to 0.0.
+    /// Primarily useful for [input mocking](crate::MockInput).
+    #[must_use]
+    pub fn from_value(
+        x_axis_type: impl Into<AxisType>,
+        y_axis_type: impl Into<AxisType>,
+        x_value: f32,
+        y_value: f32,
+    ) -> DualAxis {
+        DualAxis {
+            x: SingleAxis::from_value(x_axis_type, x_value),
+            y: SingleAxis::from_value(y_axis_type, y_value),
         }
     }
 

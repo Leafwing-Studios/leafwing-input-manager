@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_input::InputPlugin;
-use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseWheelAxisType};
+use leafwing_input_manager::axislike::{DualAxisData, MouseWheelAxisType};
 use leafwing_input_manager::{prelude::*, MockInput};
 
 #[derive(Actionlike, Clone, Copy, Debug)]
@@ -110,20 +110,13 @@ fn mouse_wheel_dual_axis() {
         AxislikeTestAction::XY,
     )]));
 
-    app.send_input(DualAxis {
-        x: SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            value: Some(5.0),
-        },
-        y: SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            value: Some(0.0),
-        },
-    });
+    app.send_input(DualAxis::from_value(
+        MouseWheelAxisType::X,
+        MouseWheelAxisType::Y,
+        5.0,
+        0.0,
+    ));
+
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -147,20 +140,12 @@ fn mouse_wheel_virtualdpad() {
         AxislikeTestAction::XY,
     )]));
 
-    app.send_input(DualAxis {
-        x: SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            value: Some(0.0),
-        },
-        y: SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            value: Some(-2.0),
-        },
-    });
+    app.send_input(DualAxis::from_value(
+        MouseWheelAxisType::X,
+        MouseWheelAxisType::Y,
+        0.0,
+        -2.0,
+    ));
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
