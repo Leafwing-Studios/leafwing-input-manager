@@ -52,7 +52,7 @@ fn zoom_camera(
     let (mut camera_projection, action_state) = query.single_mut();
     // Here, we use the `action_value` method to extract the total net amount that the mouse wheel has travelled
     // Up and right axis movements are always positive by default
-    let zoom_delta = action_state.action_value(CameraMovement::Zoom);
+    let zoom_delta = action_state.value(CameraMovement::Zoom);
 
     // We want to zoom in when we use mouse wheel up
     // so we increase the scale proportionally

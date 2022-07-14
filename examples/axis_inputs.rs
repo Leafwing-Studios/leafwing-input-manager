@@ -54,7 +54,7 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     // Each action has a button-like state of its own that you can check
     if action_state.pressed(Action::Move) {
         // We're working with gamepads, so we want to defensively ensure that we're using the clamped values
-        let axis_pair = action_state.clamped_action_axis_pair(Action::Move).unwrap();
+        let axis_pair = action_state.clamped_axis_pair(Action::Move).unwrap();
         println!("Move:");
         println!("   distance: {}", axis_pair.length());
         println!("          x: {}", axis_pair.x());
@@ -68,12 +68,12 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
         //
         // If you don't have a variable trigger, this will just return 0.0 when not pressed and 1.0
         // when pressed.
-        let value = action_state.clamped_action_value(Action::Throttle);
+        let value = action_state.clamped_value(Action::Throttle);
         println!("Throttle: {}", value);
     }
 
     if action_state.pressed(Action::Rudder) {
-        let value = action_state.clamped_action_value(Action::Rudder);
+        let value = action_state.clamped_value(Action::Rudder);
         println!("Rudder: {}", value);
     }
 }

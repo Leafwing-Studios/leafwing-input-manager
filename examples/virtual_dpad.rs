@@ -50,7 +50,7 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     if action_state.pressed(Action::Move) {
         // Virtual direction pads are one of the types which return an AxisPair. The values will be
         // represented as `-1.0`, `0.0`, or `1.0` depending on the combination of buttons pressed.
-        let axis_pair = action_state.action_axis_pair(Action::Move).unwrap();
+        let axis_pair = action_state.axis_pair(Action::Move).unwrap();
         println!("Move:");
         println!("   distance: {}", axis_pair.length());
         println!("          x: {}", axis_pair.x());

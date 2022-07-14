@@ -213,14 +213,14 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This value may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
-    /// typically using the [`clamped_input_value`](Self::clamped_input_value) method instead.
-    pub fn action_value(&self, action: A) -> f32 {
+    /// typically using the [`clamped_value`](Self::clamped_value) method instead.
+    pub fn value(&self, action: A) -> f32 {
         self.action_data(action).value
     }
 
     /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
-    pub fn clamped_action_value(&self, action: A) -> f32 {
-        self.action_value(action).clamp(-1., 1.)
+    pub fn clamped_value(&self, action: A) -> f32 {
+        self.value(action).clamp(-1., 1.)
     }
 
     /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
@@ -238,14 +238,14 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
-    /// typically using the [`clamped_action_axis_pair`](Self::clamped_action_axis_pair) method instead.
-    pub fn action_axis_pair(&self, action: A) -> Option<DualAxisData> {
+    /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
+    pub fn axis_pair(&self, action: A) -> Option<DualAxisData> {
         self.action_data(action).axis_pair
     }
 
     /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
-    pub fn clamped_action_axis_pair(&self, action: A) -> Option<DualAxisData> {
-        match self.action_axis_pair(action) {
+    pub fn clamped_axis_pair(&self, action: A) -> Option<DualAxisData> {
+        match self.axis_pair(action) {
             Some(pair) => Some(DualAxisData::new(
                 pair.x().clamp(-1.0, 1.0),
                 pair.y().clamp(-1.0, 1.0),
