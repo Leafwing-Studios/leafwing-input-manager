@@ -67,12 +67,9 @@ impl AxisPair {
     }
 
     /// The [`Direction`] that this axis is pointing towards, if any
-    ///
-    /// See [`Direction::new`] for more details.
-    #[must_use]
     #[inline]
     pub fn direction(&self) -> Result<Direction, NearlySingularConversion> {
-        Direction::try_new(self.xy)
+        Direction::try_from(self.xy)
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
