@@ -167,9 +167,7 @@ impl<'a> InputStreams<'a> {
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
             InputKind::DualAxis(axis) => {
-                let axis_pair = self
-                    .get_input_axis_pair(&UserInput::Single(button))
-                    .unwrap();
+                let axis_pair = self.input_axis_pair(&UserInput::Single(button)).unwrap();
                 let x = axis_pair.x();
                 let y = axis_pair.y();
 
@@ -179,7 +177,7 @@ impl<'a> InputStreams<'a> {
                     || y < axis.y.negative_low
             }
             InputKind::SingleAxis(axis) => {
-                let value = self.get_input_value(&UserInput::Single(button));
+                let value = self.input_value(&UserInput::Single(button));
 
                 value < axis.negative_low || value > axis.positive_low
             }
@@ -288,7 +286,7 @@ impl<'a> InputStreams<'a> {
     ///
     /// [`UserInput::Chord`] inputs are also considered binary and will return `0.0` or `1.0` based
     /// on whether the chord has been pressed.
-    pub fn get_input_value(&self, input: &UserInput) -> f32 {
+    pub fn input_value(&self, input: &UserInput) -> f32 {
         let use_button_value = || -> f32 {
             if self.input_pressed(input) {
                 1.0
@@ -352,13 +350,13 @@ impl<'a> InputStreams<'a> {
             }
             UserInput::Single(InputKind::DualAxis(_)) => {
                 if self.gamepad_axes.is_some() {
-                    self.get_input_axis_pair(input).unwrap_or_default().length()
+                    self.input_axis_pair(input).unwrap_or_default().length()
                 } else {
                     0.0
                 }
             }
             UserInput::VirtualDPad { .. } => {
-                self.get_input_axis_pair(input).unwrap_or_default().length()
+                self.input_axis_pair(input).unwrap_or_default().length()
             }
             // This is required because upstream bevy_input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
@@ -406,13 +404,11 @@ impl<'a> InputStreams<'a> {
     /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
     ///
     /// See [`ActionState::action_axis_pair()`] for usage.
-    pub fn get_input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
+    pub fn input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
         match input {
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
-                let x =
-                    self.get_input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
-                let y =
-                    self.get_input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
+                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
+                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
                 Some(DualAxisData::new(x, y))
             }
             UserInput::VirtualDPad(VirtualDPad {
@@ -421,10 +417,10 @@ impl<'a> InputStreams<'a> {
                 left,
                 right,
             }) => {
-                let x = self.get_input_value(&UserInput::Single(*right))
-                    - self.get_input_value(&UserInput::Single(*left)).abs();
-                let y = self.get_input_value(&UserInput::Single(*up))
-                    - self.get_input_value(&UserInput::Single(*down)).abs();
+                let x = self.input_value(&UserInput::Single(*right))
+                    - self.input_value(&UserInput::Single(*left)).abs();
+                let y = self.input_value(&UserInput::Single(*up))
+                    - self.input_value(&UserInput::Single(*down)).abs();
                 Some(DualAxisData::new(x, y))
             }
             _ => None,

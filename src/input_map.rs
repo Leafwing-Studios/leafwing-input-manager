@@ -323,8 +323,8 @@ impl<A: Actionlike> InputMap<A> {
             let mut inputs = Vec::new();
 
             for input in self.get(action.clone()).iter() {
-                let value = input_streams.get_input_value(input);
-                let axis_pair = input_streams.get_input_axis_pair(input);
+                let value = input_streams.input_value(input);
+                let axis_pair = input_streams.input_axis_pair(input);
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
                     let action = &mut action_data[action.index()];
