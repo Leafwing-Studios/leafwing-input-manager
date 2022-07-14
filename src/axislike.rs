@@ -1,5 +1,6 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equvalents)
 
+use crate::errors::NearlySingularConversion;
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
 use bevy_input::{
@@ -66,12 +67,9 @@ impl AxisPair {
     }
 
     /// The [`Direction`] that this axis is pointing towards, if any
-    ///
-    /// If the axis is neutral (x,y) = (0,0), a (0, 0) `None` will be returned
-    #[must_use]
     #[inline]
-    pub fn direction(&self) -> Option<Direction> {
-        Direction::try_new(self.xy).ok()
+    pub fn direction(&self) -> Result<Direction, NearlySingularConversion> {
+        Direction::try_from(self.xy)
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any

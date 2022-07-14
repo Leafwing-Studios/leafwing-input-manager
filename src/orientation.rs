@@ -67,7 +67,7 @@ mod orientation_trait {
 
             let rotation_to = target_rotation - self_rotation;
 
-            if rotation_to <= Rotation::new(1800) {
+            if rotation_to.deci_degrees == 0 || rotation_to.deci_degrees >= 1800 {
                 RotationDirection::Clockwise
             } else {
                 RotationDirection::CounterClockwise
@@ -97,8 +97,8 @@ mod orientation_trait {
                     *self = target_orientation;
                 } else {
                     let delta_rotation = match self.rotation_direction(target_orientation) {
-                        RotationDirection::Clockwise => max_rotation,
-                        RotationDirection::CounterClockwise => -max_rotation,
+                        RotationDirection::CounterClockwise => max_rotation,
+                        RotationDirection::Clockwise => -max_rotation,
                     };
                     let current_rotation: Rotation = (*self).into();
                     let new_rotation: Rotation = current_rotation + delta_rotation;
@@ -194,8 +194,8 @@ mod rotation_direction {
         #[must_use]
         pub fn sign(self) -> isize {
             match self {
-                RotationDirection::Clockwise => 1,
-                RotationDirection::CounterClockwise => -1,
+                RotationDirection::Clockwise => -1,
+                RotationDirection::CounterClockwise => 1,
             }
         }
 
@@ -224,39 +224,40 @@ mod rotation {
     use bevy_math::Vec2;
     use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
     use derive_more::Display;
+    use std::f32::consts::TAU;
 
     /// A discretized 2-dimensional rotation
     ///
-    /// Internally, these are stored in normalized tenths of a degree, and so can be cleanly added and reversed
-    /// without accumulating error.
+    /// Internally, these are stored in tenths of a degree, and so can be cleanly added
+    /// and reversed without accumulating error.
     ///
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::orientation::{Rotation, Direction, Orientation};
-    /// use core::f32::consts::{PI, TAU};
+    /// use core::f32::consts::{FRAC_PI_2, PI, TAU};
     ///
-    /// let three_o_clock = Rotation::from_degrees(90.0);
-    /// let six_o_clock = Rotation::from_radians(PI);
-    /// let nine_o_clock = Rotation::from_degrees(-90.0);
+    /// let east = Rotation::from_radians(0.0);
+    /// let north = Rotation::from_radians(FRAC_PI_2);
+    /// let west = Rotation::from_radians(PI);
     ///
     /// Rotation::default().assert_approx_eq(Rotation::from_radians(0.0));
     /// Rotation::default().assert_approx_eq(Rotation::from_radians(TAU));
     /// Rotation::default().assert_approx_eq(500.0 * Rotation::from_radians(TAU));
     ///
-    /// (three_o_clock + six_o_clock).assert_approx_eq(nine_o_clock);
-    /// (nine_o_clock - three_o_clock).assert_approx_eq(six_o_clock);
-    /// (2.0 * nine_o_clock).assert_approx_eq(six_o_clock);
-    /// (six_o_clock / 2.0).assert_approx_eq(three_o_clock);
+    /// (north + north).assert_approx_eq(west);
+    /// (west - east).assert_approx_eq(west);
+    /// (2.0 * north).assert_approx_eq(west);
+    /// (west / 2.0).assert_approx_eq(north);
     ///
-    /// six_o_clock.assert_approx_eq(Rotation::SOUTH);
+    /// north.assert_approx_eq(Rotation::NORTH);
     ///
-    /// Direction::from(nine_o_clock).assert_approx_eq(Direction::WEST);
+    /// Direction::from(west).assert_approx_eq(Direction::WEST);
     /// ```
     #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Default, Display)]
     pub struct Rotation {
         /// Tenths of a degree, measured clockwise from midnight (x=0, y=1)
         ///
-        /// 3600 make up a full circle.
+        /// 3600 make up a full circle
         pub(crate) deci_degrees: u16,
     }
 
@@ -290,23 +291,23 @@ mod rotation {
         pub const FULL_CIRCLE: u16 = 3600;
 
         /// The direction that points straight up
-        pub const NORTH: Rotation = Rotation { deci_degrees: 0 };
+        pub const NORTH: Rotation = Rotation { deci_degrees: 900 };
 
         /// The direction that points straight right
-        pub const EAST: Rotation = Rotation { deci_degrees: 900 };
+        pub const EAST: Rotation = Rotation { deci_degrees: 0 };
         /// The direction that points straight down
-        pub const SOUTH: Rotation = Rotation { deci_degrees: 1800 };
+        pub const SOUTH: Rotation = Rotation { deci_degrees: 2700 };
         /// The direction that points straight left
-        pub const WEST: Rotation = Rotation { deci_degrees: 2700 };
+        pub const WEST: Rotation = Rotation { deci_degrees: 1800 };
 
         /// The direction that points halfway between up and right
         pub const NORTHEAST: Rotation = Rotation { deci_degrees: 450 };
         /// The direction that points halfway between down and right
-        pub const SOUTHEAST: Rotation = Rotation { deci_degrees: 1350 };
+        pub const SOUTHEAST: Rotation = Rotation { deci_degrees: 3150 };
         /// The direction that points halfway between down and left
         pub const SOUTHWEST: Rotation = Rotation { deci_degrees: 2250 };
         /// The direction that points halfway between left and up
-        pub const NORTHWEST: Rotation = Rotation { deci_degrees: 3150 };
+        pub const NORTHWEST: Rotation = Rotation { deci_degrees: 1350 };
     }
 
     // Conversion methods
@@ -328,7 +329,7 @@ mod rotation {
             if xy.length_squared() < f32::EPSILON * f32::EPSILON {
                 Err(NearlySingularConversion)
             } else {
-                let radians = f32::atan2(xy.x, xy.y);
+                let radians = f32::atan2(xy.y, xy.x);
                 Ok(Rotation::from_radians(radians))
             }
         }
@@ -338,30 +339,29 @@ mod rotation {
         #[must_use]
         pub fn into_xy(self) -> Vec2 {
             let radians = self.into_radians();
-            Vec2::new(radians.sin(), radians.cos())
+            Vec2::new(radians.cos(), radians.sin())
         }
 
-        /// Construct a [`Direction`](crate::orientation::Direction) from radians, measured clockwise from midnight
+        /// Construct a [`Direction`](crate::orientation::Direction) from radians,
+        /// measured counterclockwise from the positive x axis
         #[must_use]
         #[inline]
         pub fn from_radians(radians: impl Into<f32>) -> Rotation {
-            use std::f32::consts::TAU;
-
-            let normalized_radians: f32 = radians.into().rem_euclid(TAU);
+            let normalized_radians = radians.into().rem_euclid(TAU);
 
             Rotation {
-                deci_degrees: (normalized_radians * 3600. / TAU) as u16,
+                deci_degrees: (normalized_radians * (3600. / TAU)) as u16,
             }
         }
 
-        /// Converts this direction into radians, measured clockwise from midnight
+        /// Converts this direction into radians, measured counterclockwise from the positive x axis
         #[inline]
         #[must_use]
         pub fn into_radians(self) -> f32 {
-            self.deci_degrees as f32 * std::f32::consts::TAU / 3600.
+            self.deci_degrees as f32 * TAU / 3600.
         }
 
-        /// Construct a [`Direction`](crate::orientation::Direction) from degrees, measured clockwise from midnight
+        /// Construct a [`Direction`](crate::orientation::Direction) from degrees, measured counterclockwise from the positive x axis
         #[must_use]
         #[inline]
         pub fn from_degrees(degrees: impl Into<f32>) -> Rotation {
@@ -372,7 +372,7 @@ mod rotation {
             }
         }
 
-        /// Converts this direction into degrees, measured clockwise from midnight
+        /// Converts this direction into degrees, measured counterclockwise from the positive x axis
         #[inline]
         #[must_use]
         pub fn into_degrees(self) -> f32 {
@@ -407,7 +407,7 @@ mod rotation {
     impl SubAssign for Rotation {
         fn sub_assign(&mut self, rhs: Self) {
             // Be sure to avoid overflow when subtracting
-            if self.deci_degrees > rhs.deci_degrees {
+            if self.deci_degrees >= rhs.deci_degrees {
                 self.deci_degrees = self.deci_degrees - rhs.deci_degrees;
             } else {
                 self.deci_degrees = Rotation::FULL_CIRCLE - (rhs.deci_degrees - self.deci_degrees);
@@ -460,11 +460,9 @@ mod direction {
     use derive_more::Display;
     use std::f32::consts::SQRT_2;
 
-    use crate::errors::NearlySingularConversion;
-
     /// A 2D unit vector that represents a direction
     ///
-    /// Its magnitude is always one.
+    /// Its magnitude is always `1.0`.
     ///
     /// # Example
     /// ```rust
@@ -483,48 +481,31 @@ mod direction {
     }
 
     impl Default for Direction {
-        /// [`Direction::NORTH`] is the default direction,
+        /// [`Direction::EAST`] is the default direction,
         /// as it is consistent with the default [`Rotation`]
         fn default() -> Direction {
-            Direction::NORTH
+            Direction::EAST
         }
     }
 
     impl Direction {
         /// Creates a new [`Direction`] from a [`Vec2`]
         ///
-        /// The [`Vec2`] will be normalized to have a magnitude of 1.
+        /// The [`Vec2`] stored internally will be normalized to have a magnitude of `1.0`.
         ///
         /// # Panics
         ///
-        /// Panics if the supplied vector has length zero.
-        /// Use `try_new` to get a [`Result`] instead.
+        /// Panics if the length of the supplied vector has length zero or cannot be determined.
+        /// Use [`try_from`](TryFrom) to get a [`Result`] instead.
         #[must_use]
         #[inline]
         pub fn new(vec2: Vec2) -> Self {
-            Self::try_new(vec2).unwrap()
-        }
-
-        /// Creates a new [`Direction`] from a [`Vec2`] if possible
-        ///
-        /// The [`Vec2`] will be normalized to have a magnitude of 1.
-        ///
-        /// # Panics
-        /// Panics if the supplied vector has length zero.
-        #[inline]
-        pub fn try_new(vec2: Vec2) -> Result<Self, NearlySingularConversion> {
-            if vec2.length_squared() == 0.0 {
-                return Err(NearlySingularConversion);
-            };
-
-            Ok(Self {
-                unit_vector: vec2.normalize(),
-            })
+            Self::try_from(vec2).unwrap()
         }
 
         /// Returns the raw underlying [`Vec2`] unit vector of this direction
         ///
-        /// This will always have a magnitude of 1, unless it is [`Direction::NEUTRAL`]
+        /// This will always have a length of `1.0`
         #[must_use]
         #[inline]
         pub const fn unit_vector(&self) -> Vec2 {
@@ -587,38 +568,38 @@ mod direction {
     impl Mul<f32> for Direction {
         type Output = Vec2;
 
-        fn mul(self, rhs: f32) -> Self::Output {
-            Vec2::new(self.unit_vector.x * rhs, self.unit_vector.y * rhs)
+        fn mul(self, rhs: f32) -> Vec2 {
+            self.unit_vector * rhs
         }
     }
 
     impl Mul<Direction> for f32 {
         type Output = Vec2;
 
-        fn mul(self, rhs: Direction) -> Self::Output {
-            Vec2::new(self * rhs.unit_vector.x, self * rhs.unit_vector.y)
+        fn mul(self, rhs: Direction) -> Vec2 {
+            self * rhs.unit_vector
         }
     }
 
     impl Div<f32> for Direction {
         type Output = Vec2;
 
-        fn div(self, rhs: f32) -> Self::Output {
-            Vec2::new(self.unit_vector.x / rhs, self.unit_vector.y / rhs)
+        fn div(self, rhs: f32) -> Vec2 {
+            self.unit_vector / rhs
         }
     }
 
     impl Div<Direction> for f32 {
         type Output = Vec2;
 
-        fn div(self, rhs: Direction) -> Self::Output {
-            Vec2::new(self / rhs.unit_vector.x, self / rhs.unit_vector.y)
+        fn div(self, rhs: Direction) -> Vec2 {
+            self / rhs.unit_vector
         }
     }
 
     impl From<Direction> for Vec3 {
         fn from(direction: Direction) -> Vec3 {
-            Vec3::new(direction.unit_vector.x, direction.unit_vector.y, 0.0)
+            direction.unit_vector.extend(0.0)
         }
     }
 
@@ -649,8 +630,23 @@ mod conversions {
 
     impl From<Direction> for Rotation {
         fn from(direction: Direction) -> Rotation {
-            let radians = f32::atan2(direction.unit_vector().x, direction.unit_vector().y);
-            Rotation::from_radians(radians)
+            let radians = direction.unit_vector.y.atan2(direction.unit_vector.x);
+            // This dirty little trick helps us nudge the two (of eight) cardinal directions onto
+            // the correct decidegree. 32-bit floating point math rounds to the wrong decidegree,
+            // which usually isn't a big deal, but can result in unexpected surprises when people
+            // are dealing only with cardinal directions. The underlying problem is that f32 values
+            // for 1.0 and -1.0 can't be represented exactly, so our unit vectors start with an
+            // approximate value and both `atan2` above and `from_radians` below magnify the
+            // imprecision. So, we cheat.
+            const APPROX_SOUTH: f32 = -1.5707964;
+            const APPROX_NORTHWEST: f32 = 2.3561945;
+            if radians == APPROX_NORTHWEST {
+                Rotation::new(1350)
+            } else if radians == APPROX_SOUTH {
+                Rotation::new(2700)
+            } else {
+                Rotation::from_radians(radians)
+            }
         }
     }
 
@@ -672,12 +668,9 @@ mod conversions {
         type Error = NearlySingularConversion;
 
         fn try_from(vec2: Vec2) -> Result<Direction, NearlySingularConversion> {
-            if vec2.length_squared() == 0.0 {
-                Err(NearlySingularConversion)
-            } else {
-                Ok(Direction {
-                    unit_vector: vec2.normalize(),
-                })
+            match vec2.try_normalize() {
+                Some(unit_vector) => Ok(Direction { unit_vector }),
+                None => Err(NearlySingularConversion),
             }
         }
     }
@@ -697,21 +690,15 @@ mod conversions {
 
     impl From<Rotation> for Quat {
         fn from(rotation: Rotation) -> Self {
-            // This is needed to ensure the rotation direction is correct
-            Quat::from_rotation_z(-rotation.into_radians())
+            Quat::from_rotation_z(rotation.into_radians())
         }
     }
 
     impl From<Quat> for Direction {
         fn from(quaternion: Quat) -> Self {
-            let vec2 = quaternion.mul_vec3(Vec3::Y).truncate();
-
-            if vec2 == Vec2::ZERO {
-                Direction::default()
-            } else {
-                Direction {
-                    unit_vector: vec2.normalize(),
-                }
+            match quaternion.mul_vec3(Vec3::X).truncate().try_normalize() {
+                Some(unit_vector) => Direction { unit_vector },
+                None => Default::default(),
             }
         }
     }
@@ -769,5 +756,62 @@ mod conversions {
         fn from(rotation: Rotation) -> Self {
             GlobalTransform::from_rotation(rotation.into())
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn directions_end_up_even() {
+        let north_rot: Rotation = Direction::NORTH.into();
+        assert_eq!(
+            north_rot,
+            Rotation::new(900),
+            "we want north to end up exact in decidegrees"
+        );
+        let northeast_rot: Rotation = Direction::NORTHEAST.into();
+        assert_eq!(
+            northeast_rot,
+            Rotation::new(450),
+            "we want northeast to end up exact in decidegrees"
+        );
+        let northwest_rot: Rotation = Direction::NORTHWEST.into();
+        assert_eq!(
+            northwest_rot,
+            Rotation::new(1350),
+            "we want northwest to end up exact in decidegrees"
+        );
+        let south_rot: Rotation = Direction::SOUTH.into();
+        assert_eq!(
+            south_rot,
+            Rotation::new(2700),
+            "we want south to end up exact in decidegrees"
+        );
+        let southeast_rot: Rotation = Direction::SOUTHEAST.into();
+        assert_eq!(
+            southeast_rot,
+            Rotation::new(3150),
+            "we want southeast to end up exact in decidegrees"
+        );
+        let southwest_rot: Rotation = Direction::SOUTHWEST.into();
+        assert_eq!(
+            southwest_rot,
+            Rotation::new(2250),
+            "we want southwest to end up exact in decidegrees"
+        );
+        let east_rot: Rotation = Direction::EAST.into();
+        assert_eq!(
+            east_rot,
+            Rotation::new(0),
+            "we want east to end up exact in decidegrees"
+        );
+        let west_rot: Rotation = Direction::WEST.into();
+        assert_eq!(
+            west_rot,
+            Rotation::new(1800),
+            "we want west to end up exact in decidegrees"
+        );
     }
 }
