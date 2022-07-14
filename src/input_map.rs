@@ -3,7 +3,8 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::user_input::{InputKind, InputStreams, UserInput};
+use crate::input_streams::InputStreams;
+use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
 use bevy_ecs::component::Component;
@@ -95,7 +96,7 @@ impl<A: Actionlike> Default for InputMap<A> {
 
 // Constructors
 impl<A: Actionlike> InputMap<A> {
-    /// Creates a new [`InputMap`] from an iterator of `(action, user_input)` pairs
+    /// Creates a new [`InputMap`] from an iterator of `(user_input, action)` pairs
     ///
     /// To create an empty input map, use the [`Default::default`] method instead.
     ///
@@ -160,7 +161,7 @@ impl<A: Actionlike> InputMap<A> {
 
 // Insertion
 impl<A: Actionlike> InputMap<A> {
-    /// Insert a mapping between `action` and `input`
+    /// Insert a mapping between `input` and `action`
     ///
     /// # Panics
     ///
@@ -173,7 +174,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Insert a mapping between `action` and `input` at the provided index
+    /// Insert a mapping between `input` and `action` at the provided index
     ///
     /// If a matching input already existed in the set, it will be moved to the supplied index. Any input that was previously there will be moved to the matching input’s original index.
     ///
@@ -188,7 +189,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Insert a mapping between `action` and the provided `inputs`
+    /// Insert a mapping between the provided `input_action_pairs`
     ///
     /// This method creates multiple distinct bindings.
     /// If you want to require multiple buttons to be pressed at once, use [`insert_chord`](Self::insert_chord).
@@ -199,16 +200,16 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
-        inputs: impl IntoIterator<Item = (impl Into<UserInput>, A)>,
+        input_action_pairs: impl IntoIterator<Item = (impl Into<UserInput>, A)>,
     ) -> &mut Self {
-        for (action, input) in inputs {
+        for (action, input) in input_action_pairs {
             self.insert(action, input);
         }
 
         self
     }
 
-    /// Insert a mapping between `action` and the simultaneous combination of `buttons` provided
+    /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
     ///
     /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
@@ -322,13 +323,12 @@ impl<A: Actionlike> InputMap<A> {
             let mut inputs = Vec::new();
 
             for input in self.get(action.clone()).iter() {
-                let value = input_streams.get_input_value(input);
-                let axis_pair = input_streams.get_input_axis_pair(input);
+                let value = input_streams.input_value(input);
+                let axis_pair = input_streams.input_axis_pair(input);
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
                     let action = &mut action_data[action.index()];
                     action.value += value;
-                    action.value = action.value.clamp(-1.0, 1.0);
 
                     // Merge axis pair into action data
                     if let Some(axis_pair) = axis_pair {
@@ -548,7 +548,7 @@ mod tests {
     #[test]
     fn mock_inputs() {
         use crate::input_map::InputKind;
-        use crate::user_input::InputStreams;
+        use crate::input_streams::InputStreams;
         use bevy::prelude::*;
 
         // Setting up the input map
@@ -593,6 +593,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -614,6 +615,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
         for action in Action::variants() {
@@ -633,6 +635,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -656,6 +659,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -671,6 +675,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -688,6 +693,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -707,6 +713,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 
@@ -726,6 +733,7 @@ mod tests {
             gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
+            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
         };
 

@@ -4,18 +4,30 @@
 
 ### Enhancements
 
-- Added `SingleGamepadAxis` and `DualGamepadAxis` structs that can be supplied to an `InputMap` to trigger on axis inputs.
+- Added gamepad axis support.
+  - Use the new `SingleAxis` and `DualAxis` types / variants.
+- Added mousewheel support.
+  - Use the new `SingleAxis` and `DualAxis` types / variants when you care about the continous values.
+  - Use the new `MouseWheelDirection` enum as an `InputKind`.
+- Added `SingleAxis` and `DualAxis` structs that can be supplied to an `InputMap` to trigger on axis inputs.
 - Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
-- Added `ActionState::action_axis_pair()` which can return an `AxisPair` to containing the analog values of a `SingleGamepadAxis`, `DualGamepadAxis`, or `VirtualDPad`.
-- Added `ActionState::action_value()` which represents the floating point value of any action: `1.0` or `0.0` for pressed or unpressed buttons, a value in the range `-1.0..=1.0` for a single axis representing its analog input, or a value in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
+- Added `ActionState::action_axis_pair()` which can return an `AxisPair` containing the analog values of a `SingleAxis`, `DualAxis`, or `VirtualDPad`.
+- Added `ActionState::action_value()` which represents the floating point value of any action: `1.0` or `0.0` for pressed or unpressed buttons, a value (typically) in the range `-1.0..=1.0` for a single axis representing its analog input, or a value (typically) in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
 
 ### Usability
 
 - If no gamepad is registered to a specific `InputMap`, inputs from any gamepad in the `Gamepads` resource will be used.
 - Removed the `ActionState::reasons_pressed` API.
-  - This API was quite complex and not terribly useful.
+  - This API was quite complex, not terribly useful and had nontrivial performance overhead.
   - This was not needed for axislike inputs in the end.
 - Added `Direction::try_new()` to fallibly create a new `Direction` struct (which cannot be created from the zero vector).
+- Removed the `InputMode` enum.
+  - This was poorly motivated and had no internal usages.
+  - This could not accurately represent more complex compound input types.
+- `ButtonKind` was renamed to `InputKind` to reflect the new non-button input types.
+- Renamed `AxisPair` to `DualAxisData`.
+  - `DualAxisData::new` now takes two `f32` values for ergonomic reasons.
+  - Use `DualAxisData::from_xy` to construct this directly from a `Vec2` as before.
 - Rotation is now measured from the positive x axis in a counterclockwise direction. This applies to both `Rotation` and `Direction`.
   - This increases consistency with `glam` and makes trigonometry easier.
 - Added `Direction::try_from` which never panics; consider using this in place of `Direction::new`.

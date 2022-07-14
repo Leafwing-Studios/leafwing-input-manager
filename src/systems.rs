@@ -6,8 +6,8 @@ use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
+    input_streams::InputStreams,
     plugin::ToggleActions,
-    user_input::InputStreams,
     Actionlike,
 };
 
@@ -15,7 +15,7 @@ use bevy_ecs::{prelude::*, schedule::ShouldRun};
 use bevy_input::{
     gamepad::{GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
-    mouse::MouseButton,
+    mouse::{MouseButton, MouseWheel},
     Axis, Input,
 };
 use bevy_time::Time;
@@ -65,6 +65,7 @@ pub fn update_action_state<A: Actionlike>(
     maybe_gamepads: Option<Res<Gamepads>>,
     maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
     maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
+    maybe_mouse_wheel_events: Option<Res<Events<MouseWheel>>>,
     clash_strategy: Res<ClashStrategy>,
     mut action_state: Option<ResMut<ActionState<A>>>,
     mut input_map: Option<ResMut<InputMap<A>>>,
@@ -78,6 +79,7 @@ pub fn update_action_state<A: Actionlike>(
     let keyboard = maybe_keyboard_input_stream.as_deref();
 
     let mouse = maybe_mouse_input_stream.as_deref();
+    let mouse_wheel = maybe_mouse_wheel_events.as_deref();
 
     if let (Some(input_map), Some(action_state)) = (&mut input_map, &mut action_state) {
         let input_streams = InputStreams {
@@ -87,6 +89,7 @@ pub fn update_action_state<A: Actionlike>(
             gamepads,
             keyboard,
             mouse,
+            mouse_wheel,
             associated_gamepad: input_map.gamepad(),
         };
 
@@ -101,6 +104,7 @@ pub fn update_action_state<A: Actionlike>(
             gamepads,
             keyboard,
             mouse,
+            mouse_wheel,
             associated_gamepad: input_map.gamepad(),
         };
 

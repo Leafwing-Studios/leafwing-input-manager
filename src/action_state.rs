@@ -1,7 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::Actionlike;
-use crate::{axislike::AxisPair, buttonlike::ButtonState};
+use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy_ecs::{component::Component, entity::Entity};
 use bevy_utils::{Duration, Instant};
@@ -18,11 +18,14 @@ pub struct ActionData {
     /// The "value" of the binding that triggered the action.
     ///
     /// See [`ActionState::action_value()`] for more details.
+    ///
+    /// **Warning:** this value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs.
     pub value: f32,
     /// The [`AxisPair`] of the binding that triggered the action.
     ///
     /// See [`ActionState::action_axis_pair()`] for more details.
-    pub axis_pair: Option<AxisPair>,
+    pub axis_pair: Option<DualAxisData>,
     /// When was the button pressed / released, and how long has it been held for?
     pub timing: Timing,
     /// Was this action consumed by [`ActionState::consume`]?
@@ -204,24 +207,48 @@ impl<A: Actionlike> ActionState<A> {
     /// - Chord inputs will return the value of its first input.
     ///
     /// If multiple inputs trigger the same game action at the same time, the value of each
-    /// triggering input will be added together and clamped to the range `-1.0..=1.0`
-    pub fn action_value(&self, action: A) -> f32 {
+    /// triggering input will be added together.
+    ///
+    /// # Warning
+    ///
+    /// This value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_value`](Self::clamped_value) method instead.
+    pub fn value(&self, action: A) -> f32 {
         self.action_data(action).value
     }
 
-    /// Get the [`AxisPair`] from the binding that triggered the corresponding `action`.
+    /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_value(&self, action: A) -> f32 {
+        self.value(action).clamp(-1., 1.)
+    }
+
+    /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
     ///
     /// Only certain events such as [`VirtualDPad`][crate::user_input::VirtualDPad] and
-    /// [`DualGamepadAxis`][crate::user_input::DualGamepadAxis] provide an [`AxisPair`], and this
+    /// [`DualAxis`][crate::user_input::DualAxis] provide an [`DualAxisData`], and this
     /// will return [`None`] for other events.
     ///
-    /// Chord inputs will return the [`AxisPair`] of it's first input.
+    /// Chord inputs will return the [`DualAxisData`] of it's first input.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
-    /// value of each axis pair will be added together and be clamped to a maximum magnitude of
-    /// `1.0`.
-    pub fn action_axis_pair(&self, action: A) -> Option<AxisPair> {
+    /// value of each axis pair will be added together.
+    ///
+    /// # Warning
+    ///
+    /// These values may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
+    pub fn axis_pair(&self, action: A) -> Option<DualAxisData> {
         self.action_data(action).axis_pair
+    }
+
+    /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_axis_pair(&self, action: A) -> Option<DualAxisData> {
+        self.axis_pair(action).map(|pair| DualAxisData::new(
+                pair.x().clamp(-1.0, 1.0),
+                pair.y().clamp(-1.0, 1.0),
+            ))
     }
 
     /// Manually sets the [`ActionData`] of the corresponding `action`
@@ -583,7 +610,7 @@ mod tests {
         use crate::action_state::ActionState;
         use crate::clashing_inputs::ClashStrategy;
         use crate::input_map::InputMap;
-        use crate::user_input::InputStreams;
+        use crate::input_streams::InputStreams;
         use bevy::prelude::*;
         use bevy_utils::{Duration, Instant};
 
