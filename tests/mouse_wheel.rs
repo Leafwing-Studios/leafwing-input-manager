@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy_input::InputPlugin;
 use leafwing_input_manager::axislike::{DualAxisData, MouseWheelAxisType};
 use leafwing_input_manager::{prelude::*, MockInput};
@@ -28,6 +29,27 @@ fn test_app() -> App {
 }
 
 #[test]
+fn raw_events() {
+    let mut app = test_app();
+    app.init_resource::<ActionState<ButtonlikeTestAction>>();
+    app.insert_resource(InputMap::new([(
+        MouseWheelDirection::Up,
+        ButtonlikeTestAction::Up,
+    )]));
+
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    events.send(MouseWheel {
+        unit: MouseScrollUnit::Pixel,
+        x: 0.0,
+        y: 10.0,
+    });
+
+    app.update();
+    let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
+    assert!(action_state.pressed(ButtonlikeTestAction::Up));
+}
+
+#[test]
 fn mouse_wheel_buttonlike() {
     let mut app = test_app();
     app.init_resource::<ActionState<ButtonlikeTestAction>>();
@@ -45,10 +67,8 @@ fn mouse_wheel_buttonlike() {
         app.send_input(input.clone());
         app.update();
 
-        assert!(app
-            .world
-            .resource::<ActionState<ButtonlikeTestAction>>()
-            .pressed(action));
+        let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
+        assert!(action_state.pressed(action));
     }
 }
 
@@ -69,14 +89,10 @@ fn mouse_wheel_buttonlike_cancels() {
 
     app.update();
 
-    assert!(!app
-        .world
-        .resource::<ActionState<ButtonlikeTestAction>>()
-        .pressed(ButtonlikeTestAction::Up));
-    assert!(!app
-        .world
-        .resource::<ActionState<ButtonlikeTestAction>>()
-        .pressed(ButtonlikeTestAction::Down));
+    let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
+
+    assert!(!action_state.pressed(ButtonlikeTestAction::Up));
+    assert!(!action_state.pressed(ButtonlikeTestAction::Down));
 }
 
 #[test]
