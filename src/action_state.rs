@@ -245,13 +245,10 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
     pub fn clamped_axis_pair(&self, action: A) -> Option<DualAxisData> {
-        match self.axis_pair(action) {
-            Some(pair) => Some(DualAxisData::new(
+        self.axis_pair(action).map(|pair| DualAxisData::new(
                 pair.x().clamp(-1.0, 1.0),
                 pair.y().clamp(-1.0, 1.0),
-            )),
-            None => None,
-        }
+            ))
     }
 
     /// Manually sets the [`ActionData`] of the corresponding `action`
