@@ -286,6 +286,11 @@ impl<'a> InputStreams<'a> {
     ///
     /// [`UserInput::Chord`] inputs are also considered binary and will return `0.0` or `1.0` based
     /// on whether the chord has been pressed.
+    ///
+    /// # Warning
+    ///
+    /// If you need to ensure that this value is always in the range `[-1., 1.]`,
+    /// be sure to clamp the reutrned data.
     pub fn input_value(&self, input: &UserInput) -> f32 {
         let use_button_value = || -> f32 {
             if self.input_pressed(input) {
@@ -404,6 +409,11 @@ impl<'a> InputStreams<'a> {
     /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
     ///
     /// See [`ActionState::action_axis_pair()`] for usage.
+    ///
+    /// # Warning
+    ///
+    /// If you need to ensure that this value is always in the range `[-1., 1.]`,
+    /// be sure to clamp the returned data.
     pub fn input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
         match input {
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
