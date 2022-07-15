@@ -166,15 +166,10 @@ impl<'a> InputStreams<'a> {
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputKind::DualAxis(axis) => {
+            InputKind::DualAxis(_) => {
                 let axis_pair = self.input_axis_pair(&UserInput::Single(button)).unwrap();
-                let x = axis_pair.x();
-                let y = axis_pair.y();
 
-                x > axis.x.positive_low
-                    || x < axis.x.negative_low
-                    || y > axis.y.positive_low
-                    || y < axis.y.negative_low
+                axis_pair.length() != 0.0
             }
             InputKind::SingleAxis(axis) => {
                 let value = self.input_value(&UserInput::Single(button));
@@ -419,7 +414,16 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
                 let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
                 let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
-                Some(DualAxisData::new(x, y))
+
+                if x > dual_axis.x.positive_low
+                    || x < dual_axis.x.negative_low
+                    || y > dual_axis.y.positive_low
+                    || y < dual_axis.y.negative_low
+                {
+                    Some(DualAxisData::new(x, y))
+                } else {
+                    Some(DualAxisData::new(0.0, 0.0))
+                }
             }
             UserInput::VirtualDPad(VirtualDPad {
                 up,
