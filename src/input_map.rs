@@ -323,21 +323,22 @@ impl<A: Actionlike> InputMap<A> {
             let mut inputs = Vec::new();
 
             for input in self.get(action.clone()).iter() {
-                let value = input_streams.input_value(input);
+                let action = &mut action_data[action.index()];
+
+                // Merge axis pair into action data
                 let axis_pair = input_streams.input_axis_pair(input);
+                if let Some(axis_pair) = axis_pair {
+                    if let Some(current_axis_pair) = &mut action.axis_pair {
+                        *current_axis_pair = current_axis_pair.merged_with(axis_pair);
+                    } else {
+                        action.axis_pair = Some(axis_pair);
+                    }
+                }
+
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
-                    let action = &mut action_data[action.index()];
-                    action.value += value;
 
-                    // Merge axis pair into action data
-                    if let Some(axis_pair) = axis_pair {
-                        if let Some(current_axis_pair) = &mut action.axis_pair {
-                            *current_axis_pair = current_axis_pair.merged_with(axis_pair);
-                        } else {
-                            action.axis_pair = Some(axis_pair);
-                        }
-                    }
+                    action.value += input_streams.input_value(input);
                 }
             }
 

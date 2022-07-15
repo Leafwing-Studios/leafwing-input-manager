@@ -39,7 +39,7 @@ impl SingleAxis {
         SingleAxis {
             axis_type: axis_type.into(),
             positive_low: threshold,
-            negative_low: threshold,
+            negative_low: -threshold,
             value: None,
         }
     }

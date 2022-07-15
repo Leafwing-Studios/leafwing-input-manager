@@ -11,7 +11,7 @@ use petitset::PetitSet;
 use bevy_ecs::prelude::{Events, Res, ResMut, World};
 use bevy_ecs::system::SystemState;
 
-use crate::axislike::{AxisType, DualAxisData, MouseWheelAxisType, VirtualDPad};
+use crate::axislike::{AxisType, DualAxisData, MouseWheelAxisType, SingleAxis, VirtualDPad};
 use crate::buttonlike::MouseWheelDirection;
 use crate::user_input::{InputKind, UserInput};
 
@@ -166,20 +166,15 @@ impl<'a> InputStreams<'a> {
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputKind::DualAxis(axis) => {
+            InputKind::DualAxis(_) => {
                 let axis_pair = self.input_axis_pair(&UserInput::Single(button)).unwrap();
-                let x = axis_pair.x();
-                let y = axis_pair.y();
 
-                x > axis.x.positive_low
-                    || x < axis.x.negative_low
-                    || y > axis.y.positive_low
-                    || y < axis.y.negative_low
+                axis_pair.length() != 0.0
             }
-            InputKind::SingleAxis(axis) => {
+            InputKind::SingleAxis(_) => {
                 let value = self.input_value(&UserInput::Single(button));
 
-                value < axis.negative_low || value > axis.positive_low
+                value != 0.0
             }
             InputKind::GamepadButton(gamepad_button) => {
                 // If a gamepad was registered, just check that one
@@ -300,14 +295,28 @@ impl<'a> InputStreams<'a> {
             }
         };
 
+        // Helper that takes the value returned by an axis and returns 0.0 if it is not within the
+        // triggering range.
+        let value_in_axis_range = |axis: &SingleAxis, value: f32| -> f32 {
+            if value >= axis.negative_low && value <= axis.positive_low {
+                0.0
+            } else {
+                value
+            }
+        };
+
         match input {
             UserInput::Single(InputKind::SingleAxis(single_axis)) => {
                 match single_axis.axis_type {
                     AxisType::Gamepad(axis_type) => {
                         if let Some(axes) = self.gamepad_axes {
                             if let Some(gamepad) = self.associated_gamepad {
-                                axes.get(GamepadAxis { gamepad, axis_type })
-                                    .unwrap_or_default()
+                                let value = axes
+                                    .get(GamepadAxis { gamepad, axis_type })
+                                    .unwrap_or_default();
+
+                                value_in_axis_range(single_axis, value)
+
                             // If no gamepad is registered, return the first non-zero input found
                             } else if let Some(gamepads) = self.gamepads {
                                 for &gamepad in gamepads.iter() {
@@ -317,6 +326,7 @@ impl<'a> InputStreams<'a> {
                                             axis_type: single_axis.axis_type.try_into().unwrap(),
                                         })
                                         .unwrap_or_default();
+                                    let value = value_in_axis_range(single_axis, value);
 
                                     if value != 0.0 {
                                         // A matching input was pressed on a gamepad
@@ -349,7 +359,7 @@ impl<'a> InputStreams<'a> {
                                 }
                             }
                         }
-                        total_mouse_wheel_movement
+                        value_in_axis_range(single_axis, total_mouse_wheel_movement)
                     }
                 }
             }
@@ -419,7 +429,16 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
                 let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
                 let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
-                Some(DualAxisData::new(x, y))
+
+                if x > dual_axis.x.positive_low
+                    || x < dual_axis.x.negative_low
+                    || y > dual_axis.y.positive_low
+                    || y < dual_axis.y.negative_low
+                {
+                    Some(DualAxisData::new(x, y))
+                } else {
+                    Some(DualAxisData::new(0.0, 0.0))
+                }
             }
             UserInput::VirtualDPad(VirtualDPad {
                 up,
@@ -427,9 +446,9 @@ impl<'a> InputStreams<'a> {
                 left,
                 right,
             }) => {
-                let x = self.input_value(&UserInput::Single(*right))
+                let x = self.input_value(&UserInput::Single(*right)).abs()
                     - self.input_value(&UserInput::Single(*left)).abs();
-                let y = self.input_value(&UserInput::Single(*up))
+                let y = self.input_value(&UserInput::Single(*up)).abs()
                     - self.input_value(&UserInput::Single(*down)).abs();
                 Some(DualAxisData::new(x, y))
             }
