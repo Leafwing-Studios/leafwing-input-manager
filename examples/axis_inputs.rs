@@ -32,25 +32,25 @@ fn spawn_player(mut commands: Commands) {
             // Stores "which actions are currently activated"
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
-            input_map: InputMap::new([
+            input_map: InputMap::default()
                 // Configure the left stick as a dual-axis
-                (DualAxis::left_stick(), Action::Move),
-            ])
-            // Let's bind the right gamepad trigger to the throttle action
-            .insert(GamepadButtonType::RightTrigger2, Action::Throttle)
-            // And we'll use the right stick's x axis as a rudder control
-            .insert(
-                // This will trigger if the axis is moved 10% or more in either direction.
-                SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
-                Action::Rudder,
-            )
-            .build(),
+                .insert(DualAxis::left_stick(), Action::Move)
+                // Let's bind the right gamepad trigger to the throttle action
+                .insert(GamepadButtonType::RightTrigger2, Action::Throttle)
+                // And we'll use the right stick's x axis as a rudder control
+                .insert(
+                    // This will trigger if the axis is moved 10% or more in either direction.
+                    SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
+                    Action::Rudder,
+                )
+                .build(),
         });
 }
 
 // Query for the `ActionState` component in your game logic systems!
 fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
+
     // Each action has a button-like state of its own that you can check
     if action_state.pressed(Action::Move) {
         // We're working with gamepads, so we want to defensively ensure that we're using the clamped values
