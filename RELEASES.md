@@ -34,6 +34,9 @@
 - Converting from a `Direction` (which uses a `Vec2` of `f32`'s internally) to a `Rotation` (which uses exact decidegrees) now has special cases to ensure all eight cardinal directions result in exact degrees.
   - For example, a unit vector pointing to the Northeast now always converts to a `Direction` with exactly 1350 decidegrees.
   - Rounding errors may still occur when converting from arbitrary directions to the other 3592 discrete decidegrees.
+- `InputStreams` and `MutableInputStreams` no longer store e.g. `Option<Res<Input<MouseButton>>>`, and instead simply store `Res<Input<MouseButton>>`
+  - This makes them much easier to work with.
+  - If you are on a platform or project where you don't care about certain input streams, disable the newly added `gamepad` / `keyboard` /  `mouse` / `touch` features to meet your needs.
 
 ## Version 0.4.1
 

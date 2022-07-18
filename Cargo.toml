@@ -18,7 +18,16 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ['ui']
+default = ['ui', 'gamepad', 'keyboard', 'mouse', 'touch']
+# Enables gamepad inputs
+gamepad = []
+# Enable keyboard inputs
+keyboard = []
+# Enable mouse inputs
+mouse = []
+# Enable touch inputs (not yet implemented)
+touch = []
+# Add support for [`bevy_ui`] integration
 ui = ['bevy_ui']
 
 [dependencies]
