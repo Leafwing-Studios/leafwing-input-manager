@@ -718,7 +718,7 @@ mod conversions {
 
     impl From<GlobalTransform> for Direction {
         fn from(transform: GlobalTransform) -> Self {
-            transform.rotation.into()
+            transform.to_scale_rotation_translation().1.into()
         }
     }
 
@@ -742,7 +742,7 @@ mod conversions {
 
     impl From<GlobalTransform> for Rotation {
         fn from(transform: GlobalTransform) -> Self {
-            transform.rotation.into()
+            transform.to_scale_rotation_translation().1.into()
         }
     }
 

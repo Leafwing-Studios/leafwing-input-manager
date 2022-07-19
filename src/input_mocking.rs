@@ -1,6 +1,6 @@
 //! Helpful utilities for testing input management by sending mock input events
 
-use crate::axislike::{AxisType, MouseWheelAxisType};
+use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType};
 use crate::input_streams::{InputStreams, MutableInputStreams};
 use crate::user_input::UserInput;
 
@@ -14,10 +14,11 @@ use bevy_input::mouse::MouseScrollUnit;
 use bevy_input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
-    mouse::{MouseButton, MouseButtonInput, MouseWheel},
+    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
     Input,
 };
+use bevy_math::Vec2;
 #[cfg(feature = "ui")]
 use bevy_ui::Interaction;
 use bevy_window::CursorMoved;
@@ -176,6 +177,24 @@ impl<'a> MutableInputStreams<'a> {
                             }
                         }
                     }
+                    AxisType::MouseMotion(axis_type) => {
+                        if let Some(ref mut mouse_wheel_events) = self.mouse_motion {
+                            match axis_type {
+                                MouseMotionAxisType::X => mouse_wheel_events.send(MouseMotion {
+                                    delta: Vec2 {
+                                        x: position_data,
+                                        y: 0.0,
+                                    },
+                                }),
+                                MouseMotionAxisType::Y => mouse_wheel_events.send(MouseMotion {
+                                    delta: Vec2 {
+                                        x: 0.0,
+                                        y: position_data,
+                                    },
+                                }),
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -222,10 +241,10 @@ impl<'a> MutableInputStreams<'a> {
                         }
                     }
                 }
-                AxisType::MouseWheel(_) => {
-                    // Releasing event-like input should have no effect;
-                    // they are automatically cleared as time elapses
-                }
+                // Releasing event-like input should have no effect;
+                // they are automatically cleared as time elapses
+                AxisType::MouseWheel(_) => {}
+                AxisType::MouseMotion(_) => {}
             }
         }
 

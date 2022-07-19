@@ -591,11 +591,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
 
         // With no inputs, nothing should be detected
@@ -613,11 +612,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
         for action in Action::variants() {
             assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
@@ -633,11 +631,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -657,11 +654,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -673,11 +669,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
 
         for action in Action::variants() {
@@ -691,11 +686,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -711,11 +705,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
 
         assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
@@ -731,11 +724,10 @@ mod tests {
             gamepad_buttons: Some(&gamepad_button_input_stream),
             gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
             gamepad_axes: Some(&gamepad_axis_input_stream),
-            gamepads: None,
             keyboard: Some(&keyboard_input_stream),
             mouse: Some(&mouse_input_stream),
-            mouse_wheel: None,
             associated_gamepad: Some(Gamepad { id: 42 }),
+            ..Default::default()
         };
 
         assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));

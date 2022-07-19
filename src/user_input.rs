@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
-    buttonlike::MouseWheelDirection,
+    buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
 /// Some combination of user input, which may cross [`Input`]-mode boundaries
@@ -135,6 +135,7 @@ impl UserInput {
         let mut keyboard_buttons: Vec<KeyCode> = Vec::default();
         let mut mouse_buttons: Vec<MouseButton> = Vec::default();
         let mut mouse_wheel: Vec<MouseWheelDirection> = Vec::default();
+        let mut mouse_motion: Vec<MouseMotionDirection> = Vec::default();
 
         match self {
             UserInput::Single(button) => match *button {
@@ -149,6 +150,7 @@ impl UserInput {
                 InputKind::Keyboard(button) => keyboard_buttons.push(button),
                 InputKind::Mouse(button) => mouse_buttons.push(button),
                 InputKind::MouseWheel(button) => mouse_wheel.push(button),
+                InputKind::MouseMotion(button) => mouse_motion.push(button),
             },
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
@@ -164,6 +166,7 @@ impl UserInput {
                         InputKind::Keyboard(button) => keyboard_buttons.push(button),
                         InputKind::Mouse(button) => mouse_buttons.push(button),
                         InputKind::MouseWheel(button) => mouse_wheel.push(button),
+                        InputKind::MouseMotion(button) => mouse_motion.push(button),
                     }
                 }
             }
@@ -186,6 +189,7 @@ impl UserInput {
                         InputKind::Keyboard(button) => keyboard_buttons.push(button),
                         InputKind::Mouse(button) => mouse_buttons.push(button),
                         InputKind::MouseWheel(button) => mouse_wheel.push(button),
+                        InputKind::MouseMotion(button) => mouse_motion.push(button),
                     }
                 }
             }
@@ -243,6 +247,12 @@ impl From<MouseWheelDirection> for UserInput {
     }
 }
 
+impl From<MouseMotionDirection> for UserInput {
+    fn from(input: MouseMotionDirection) -> Self {
+        UserInput::Single(InputKind::MouseMotion(input))
+    }
+}
+
 /// The different kinds of supported input bindings.
 ///
 /// See [`InputMode`] for the value-less equivalent. Commonly stored in the [`UserInput`] enum.
@@ -266,6 +276,8 @@ pub enum InputKind {
     Mouse(MouseButton),
     /// A discretized mousewheel movement
     MouseWheel(MouseWheelDirection),
+    /// A discretized mouse movement
+    MouseMotion(MouseMotionDirection),
 }
 
 impl From<DualAxis> for InputKind {
@@ -301,5 +313,11 @@ impl From<MouseButton> for InputKind {
 impl From<MouseWheelDirection> for InputKind {
     fn from(input: MouseWheelDirection) -> Self {
         InputKind::MouseWheel(input)
+    }
+}
+
+impl From<MouseMotionDirection> for InputKind {
+    fn from(input: MouseMotionDirection) -> Self {
+        InputKind::MouseMotion(input)
     }
 }

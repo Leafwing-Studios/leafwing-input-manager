@@ -79,6 +79,28 @@ impl SingleAxis {
             value: None,
         }
     }
+
+    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    #[must_use]
+    pub const fn mouse_motion_x() -> SingleAxis {
+        SingleAxis {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+            positive_low: 0.,
+            negative_low: 0.,
+            value: None,
+        }
+    }
+
+    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    #[must_use]
+    pub const fn mouse_motion_y() -> SingleAxis {
+        SingleAxis {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+            positive_low: 0.,
+            negative_low: 0.,
+            value: None,
+        }
+    }
 }
 
 impl PartialEq for SingleAxis {
@@ -178,6 +200,14 @@ impl DualAxis {
             y: SingleAxis::mouse_wheel_y(),
         }
     }
+
+    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    pub const fn mouse_motion() -> DualAxis {
+        DualAxis {
+            x: SingleAxis::mouse_motion_x(),
+            y: SingleAxis::mouse_motion_y(),
+        }
+    }
 }
 
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
@@ -263,6 +293,8 @@ pub enum AxisType {
     Gamepad(GamepadAxisType),
     /// Input associated with a mouse wheel.
     MouseWheel(MouseWheelAxisType),
+    /// Input associated with movement of the mouse
+    MouseMotion(MouseMotionAxisType),
 }
 
 /// The direction of motion of the mouse wheel.
@@ -280,6 +312,17 @@ pub enum MouseWheelAxisType {
     Y,
 }
 
+/// The direction of motion of the mouse.
+///
+/// Stored in the [`AxisType`] enum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MouseMotionAxisType {
+    /// Horizontal movement.
+    X,
+    /// Vertical movement.
+    Y,
+}
+
 impl From<GamepadAxisType> for AxisType {
     fn from(axis_type: GamepadAxisType) -> Self {
         AxisType::Gamepad(axis_type)
@@ -289,6 +332,12 @@ impl From<GamepadAxisType> for AxisType {
 impl From<MouseWheelAxisType> for AxisType {
     fn from(axis_type: MouseWheelAxisType) -> Self {
         AxisType::MouseWheel(axis_type)
+    }
+}
+
+impl From<MouseMotionAxisType> for AxisType {
+    fn from(axis_type: MouseMotionAxisType) -> Self {
+        AxisType::MouseMotion(axis_type)
     }
 }
 
@@ -309,6 +358,17 @@ impl TryFrom<AxisType> for MouseWheelAxisType {
     fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
         match axis_type {
             AxisType::MouseWheel(inner) => Ok(inner),
+            _ => Err(AxisConversionError),
+        }
+    }
+}
+
+impl TryFrom<AxisType> for MouseMotionAxisType {
+    type Error = AxisConversionError;
+
+    fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
+        match axis_type {
+            AxisType::MouseMotion(inner) => Ok(inner),
             _ => Err(AxisConversionError),
         }
     }
@@ -361,21 +421,21 @@ impl DualAxisData {
 
 // Methods
 impl DualAxisData {
-    /// The value along the x-axis, ranging from -1 to 1
+    /// The value along the x-axis, typically ranging from -1 to 1
     #[must_use]
     #[inline]
     pub fn x(&self) -> f32 {
         self.xy.x
     }
 
-    /// The value along the y-axis, ranging from -1 to 1
+    /// The value along the y-axis, typically ranging from -1 to 1
     #[must_use]
     #[inline]
     pub fn y(&self) -> f32 {
         self.xy.y
     }
 
-    /// The (x, y) values, each ranging from -1 to 1
+    /// The (x, y) values, each typically ranging from -1 to 1
     #[must_use]
     #[inline]
     pub fn xy(&self) -> Vec2 {
@@ -409,7 +469,7 @@ impl DualAxisData {
 
     /// How far from the origin is this axis's position?
     ///
-    /// Always bounded between 0 and 1.
+    /// Typically bounded by 0 and 1.
     ///
     /// If you only need to compare relative magnitudes, use `magnitude_squared` instead for faster computation.
     #[must_use]
@@ -420,7 +480,7 @@ impl DualAxisData {
 
     /// The square of the axis' magnitude
     ///
-    /// Always bounded between 0 and 1.
+    /// Typically bounded by 0 and 1.
     ///
     /// This is faster than `magnitude`, as it avoids a square root, but will generally have less natural behavior.
     #[must_use]
@@ -432,5 +492,11 @@ impl DualAxisData {
     /// Clamps the magnitude of the axis
     pub fn clamp_length(&mut self, max: f32) {
         self.xy = self.xy.clamp_length_max(max);
+    }
+}
+
+impl From<DualAxisData> for Vec2 {
+    fn from(data: DualAxisData) -> Vec2 {
+        data.xy
     }
 }
