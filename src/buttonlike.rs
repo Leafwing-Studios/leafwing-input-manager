@@ -102,3 +102,18 @@ pub enum MouseWheelDirection {
     /// Corresponds to `-x`
     Left,
 }
+
+/// A buttonlike-input triggered by [`MouseMotion`](bevy_input::mouse::MouseMotion) events
+///
+/// These will be considered pressed if non-zero net movement in the correct direction is detected.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MouseMotionDirection {
+    /// Corresponds to `+y`
+    Up,
+    /// Corresponds to `-y`
+    Down,
+    /// Corresponds to `+x`
+    Right,
+    /// Corresponds to `-x`
+    Left,
+}

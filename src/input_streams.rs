@@ -12,7 +12,7 @@ use bevy_ecs::prelude::{Events, Res, ResMut, World};
 use bevy_ecs::system::SystemState;
 
 use crate::axislike::{AxisType, DualAxisData, MouseWheelAxisType, SingleAxis, VirtualDPad};
-use crate::buttonlike::MouseWheelDirection;
+use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::user_input::{InputKind, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
@@ -245,6 +245,37 @@ impl<'a> InputStreams<'a> {
                         }
                         MouseWheelDirection::Down | MouseWheelDirection::Left => {
                             total_mouse_wheel_movement < 0.0
+                        }
+                    }
+                } else {
+                    false
+                }
+            }
+            // CLEANUP: refactor to share code with MouseMotion
+            InputKind::MouseMotion(mouse_motion_direction) => {
+                if let Some(mouse_motion_events) = self.mouse_motion {
+                    let mut total_mouse_movement = 0.0;
+
+                    // FIXME: verify that this works and doesn't double count events
+                    let mut event_reader = mouse_motion_events.get_reader();
+
+                    for mouse_motion_event in event_reader.iter(mouse_motion_events) {
+                        total_mouse_movement += match mouse_motion_direction {
+                            MouseMotionDirection::Up | MouseMotionDirection::Down => {
+                                mouse_motion_event.delta.y
+                            }
+                            MouseMotionDirection::Left | MouseMotionDirection::Right => {
+                                mouse_motion_event.delta.x
+                            }
+                        }
+                    }
+
+                    match mouse_motion_direction {
+                        MouseMotionDirection::Up | MouseMotionDirection::Right => {
+                            total_mouse_movement > 0.0
+                        }
+                        MouseMotionDirection::Down | MouseMotionDirection::Left => {
+                            total_mouse_movement < 0.0
                         }
                     }
                 } else {
