@@ -11,7 +11,9 @@ use petitset::PetitSet;
 use bevy_ecs::prelude::{Events, Res, ResMut, World};
 use bevy_ecs::system::SystemState;
 
-use crate::axislike::{AxisType, DualAxisData, MouseWheelAxisType, SingleAxis, VirtualDPad};
+use crate::axislike::{
+    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualDPad,
+};
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::user_input::{InputKind, UserInput};
 
@@ -370,7 +372,6 @@ impl<'a> InputStreams<'a> {
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
-                        // Mouse wheel events are summed to get the total movement this frame
                         let mut total_mouse_wheel_movement = 0.0;
                         if let Some(mouse_wheel_events) = self.mouse_wheel {
                             // FIXME: verify that this works and doesn't double count events
@@ -384,6 +385,22 @@ impl<'a> InputStreams<'a> {
                             }
                         }
                         value_in_axis_range(single_axis, total_mouse_wheel_movement)
+                    }
+                    // CLEANUP: deduplicate code with MouseWheel
+                    AxisType::MouseMotion(axis_type) => {
+                        let mut total_mouse_motion_movement = 0.0;
+                        if let Some(mouse_motion_events) = self.mouse_motion {
+                            // FIXME: verify that this works and doesn't double count events
+                            let mut event_reader = mouse_motion_events.get_reader();
+
+                            for mouse_wheel_event in event_reader.iter(mouse_motion_events) {
+                                total_mouse_motion_movement += match axis_type {
+                                    MouseMotionAxisType::X => mouse_wheel_event.delta.x,
+                                    MouseMotionAxisType::Y => mouse_wheel_event.delta.y,
+                                }
+                            }
+                        }
+                        value_in_axis_range(single_axis, total_mouse_motion_movement)
                     }
                 }
             }

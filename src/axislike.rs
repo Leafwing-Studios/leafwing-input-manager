@@ -263,6 +263,8 @@ pub enum AxisType {
     Gamepad(GamepadAxisType),
     /// Input associated with a mouse wheel.
     MouseWheel(MouseWheelAxisType),
+    /// Input associated with movement of the mouse
+    MouseMotion(MouseMotionAxisType),
 }
 
 /// The direction of motion of the mouse wheel.
@@ -280,6 +282,17 @@ pub enum MouseWheelAxisType {
     Y,
 }
 
+/// The direction of motion of the mouse.
+///
+/// Stored in the [`AxisType`] enum.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum MouseMotionAxisType {
+    /// Horizontal movement.
+    X,
+    /// Vertical movement.
+    Y,
+}
+
 impl From<GamepadAxisType> for AxisType {
     fn from(axis_type: GamepadAxisType) -> Self {
         AxisType::Gamepad(axis_type)
@@ -289,6 +302,12 @@ impl From<GamepadAxisType> for AxisType {
 impl From<MouseWheelAxisType> for AxisType {
     fn from(axis_type: MouseWheelAxisType) -> Self {
         AxisType::MouseWheel(axis_type)
+    }
+}
+
+impl From<MouseMotionAxisType> for AxisType {
+    fn from(axis_type: MouseMotionAxisType) -> Self {
+        AxisType::MouseMotion(axis_type)
     }
 }
 
@@ -309,6 +328,17 @@ impl TryFrom<AxisType> for MouseWheelAxisType {
     fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
         match axis_type {
             AxisType::MouseWheel(inner) => Ok(inner),
+            _ => Err(AxisConversionError),
+        }
+    }
+}
+
+impl TryFrom<AxisType> for MouseMotionAxisType {
+    type Error = AxisConversionError;
+
+    fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
+        match axis_type {
+            AxisType::MouseMotion(inner) => Ok(inner),
             _ => Err(AxisConversionError),
         }
     }
