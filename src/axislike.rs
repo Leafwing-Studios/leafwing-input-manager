@@ -79,6 +79,28 @@ impl SingleAxis {
             value: None,
         }
     }
+
+    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    #[must_use]
+    pub const fn mouse_motion_x() -> SingleAxis {
+        SingleAxis {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+            positive_low: 0.,
+            negative_low: 0.,
+            value: None,
+        }
+    }
+
+    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    #[must_use]
+    pub const fn mouse_motion_y() -> SingleAxis {
+        SingleAxis {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+            positive_low: 0.,
+            negative_low: 0.,
+            value: None,
+        }
+    }
 }
 
 impl PartialEq for SingleAxis {
@@ -176,6 +198,14 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_wheel_x(),
             y: SingleAxis::mouse_wheel_y(),
+        }
+    }
+
+    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    pub const fn mouse_motion() -> DualAxis {
+        DualAxis {
+            x: SingleAxis::mouse_motion_x(),
+            y: SingleAxis::mouse_motion_y(),
         }
     }
 }
@@ -439,7 +469,7 @@ impl DualAxisData {
 
     /// How far from the origin is this axis's position?
     ///
-    /// Always bounded between 0 and 1.
+    /// Typically bounded by 0 and 1.
     ///
     /// If you only need to compare relative magnitudes, use `magnitude_squared` instead for faster computation.
     #[must_use]
@@ -450,7 +480,7 @@ impl DualAxisData {
 
     /// The square of the axis' magnitude
     ///
-    /// Always bounded between 0 and 1.
+    /// Typically bounded by 0 and 1.
     ///
     /// This is faster than `magnitude`, as it avoids a square root, but will generally have less natural behavior.
     #[must_use]
