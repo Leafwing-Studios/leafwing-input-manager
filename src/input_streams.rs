@@ -3,7 +3,7 @@
 use bevy_input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
-    mouse::{MouseButton, MouseWheel},
+    mouse::{MouseButton, MouseMotion, MouseWheel},
     Axis, Input,
 };
 use petitset::PetitSet;
@@ -20,7 +20,7 @@ use crate::user_input::{InputKind, UserInput};
 /// Each of these streams is optional; if a stream does not exist, it is treated as if it were entirely unpressed.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct InputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a Input<GamepadButton>>,
@@ -36,6 +36,8 @@ pub struct InputStreams<'a> {
     pub mouse: Option<&'a Input<MouseButton>>,
     /// An optional [`MouseWheel`] event stream
     pub mouse_wheel: Option<&'a Events<MouseWheel>>,
+    /// An optional [`MouseMotion`] event stream
+    pub mouse_motion: Option<&'a Events<MouseMotion>>,
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
 }
@@ -52,6 +54,7 @@ impl<'a> InputStreams<'a> {
             Option<Res<Input<KeyCode>>>,
             Option<Res<Input<MouseButton>>>,
             Option<Res<Events<MouseWheel>>>,
+            Option<Res<Events<MouseMotion>>>,
         )> = SystemState::new(world);
 
         let (
@@ -62,6 +65,7 @@ impl<'a> InputStreams<'a> {
             maybe_keyboard,
             maybe_mouse,
             maybe_mouse_wheel,
+            maybe_mouse_motion,
         ) = input_system_state.get(world);
 
         InputStreams {
@@ -72,6 +76,7 @@ impl<'a> InputStreams<'a> {
             keyboard: maybe_keyboard.map(|r| r.into_inner()),
             mouse: maybe_mouse.map(|r| r.into_inner()),
             mouse_wheel: maybe_mouse_wheel.map(|r| r.into_inner()),
+            mouse_motion: maybe_mouse_motion.map(|r| r.into_inner()),
             associated_gamepad: gamepad,
         }
     }
@@ -87,25 +92,16 @@ impl<'a> InputStreams<'a> {
             gamepad_buttons: Some(gamepad_button_stream),
             gamepad_button_axes: Some(gamepad_button_axis_stream),
             gamepad_axes: Some(gamepad_axis_stream),
-            gamepads: None,
-            keyboard: None,
-            mouse: None,
-            mouse_wheel: None,
             associated_gamepad: Some(associated_gamepad),
+            ..Default::default()
         }
     }
 
     /// Construct [`InputStreams`] with only a [`KeyCode`] input stream
     pub fn from_keyboard(keyboard_input_stream: &'a Input<KeyCode>) -> Self {
         Self {
-            gamepad_buttons: None,
-            gamepad_button_axes: None,
-            gamepad_axes: None,
-            gamepads: None,
             keyboard: Some(keyboard_input_stream),
-            mouse: None,
-            mouse_wheel: None,
-            associated_gamepad: None,
+            ..Default::default()
         }
     }
 
@@ -113,16 +109,13 @@ impl<'a> InputStreams<'a> {
     pub fn from_mouse(
         mouse_input_stream: &'a Input<MouseButton>,
         mouse_wheel_events: &'a Events<MouseWheel>,
+        mouse_motion_events: &'a Events<MouseMotion>,
     ) -> Self {
         Self {
-            gamepad_buttons: None,
-            gamepad_button_axes: None,
-            gamepad_axes: None,
-            gamepads: None,
-            keyboard: None,
             mouse: Some(mouse_input_stream),
             mouse_wheel: Some(mouse_wheel_events),
-            associated_gamepad: None,
+            mouse_motion: Some(mouse_motion_events),
+            ..Default::default()
         }
     }
 }
@@ -462,7 +455,7 @@ impl<'a> InputStreams<'a> {
 /// Each of these streams is optional; if a stream does not exist, inputs sent to them will be ignored.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct MutableInputStreams<'a> {
     /// An optional [`GamepadButton`] [`Input`] stream
     pub gamepad_buttons: Option<&'a mut Input<GamepadButton>>,
@@ -478,6 +471,8 @@ pub struct MutableInputStreams<'a> {
     pub mouse: Option<&'a mut Input<MouseButton>>,
     /// An optional [`MouseWheel`] event stream
     pub mouse_wheel: Option<&'a mut Events<MouseWheel>>,
+    /// An optional [`MouseMotion`] event stream
+    pub mouse_motion: Option<&'a mut Events<MouseMotion>>,
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
 }
@@ -493,6 +488,7 @@ impl<'a> MutableInputStreams<'a> {
             Option<ResMut<Input<KeyCode>>>,
             Option<ResMut<Input<MouseButton>>>,
             Option<ResMut<Events<MouseWheel>>>,
+            Option<ResMut<Events<MouseMotion>>>,
         )> = SystemState::new(world);
 
         let (
@@ -503,6 +499,7 @@ impl<'a> MutableInputStreams<'a> {
             maybe_keyboard,
             maybe_mouse,
             maybe_mouse_wheel,
+            maybe_mouse_motion,
         ) = input_system_state.get_mut(world);
 
         MutableInputStreams {
@@ -513,6 +510,7 @@ impl<'a> MutableInputStreams<'a> {
             keyboard: maybe_keyboard.map(|r| r.into_inner()),
             mouse: maybe_mouse.map(|r| r.into_inner()),
             mouse_wheel: maybe_mouse_wheel.map(|r| r.into_inner()),
+            mouse_motion: maybe_mouse_motion.map(|r| r.into_inner()),
             associated_gamepad: gamepad,
         }
     }
@@ -535,6 +533,9 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
 
         let mouse = mutable_streams.mouse.map(|mutable_ref| &*mutable_ref);
         let mouse_wheel = mutable_streams.mouse_wheel.map(|mutable_ref| &*mutable_ref);
+        let mouse_motion = mutable_streams
+            .mouse_motion
+            .map(|mutable_ref| &*mutable_ref);
 
         InputStreams {
             gamepad_buttons,
@@ -544,6 +545,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             keyboard,
             mouse,
             mouse_wheel,
+            mouse_motion,
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }

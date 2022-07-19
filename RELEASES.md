@@ -6,13 +6,16 @@
 
 - Added gamepad axis support.
   - Use the new `SingleAxis` and `DualAxis` types / variants.
-- Added mousewheel support.
+- Added mousewheel and mouse motion support.
   - Use the new `SingleAxis` and `DualAxis` types / variants when you care about the continous values.
   - Use the new `MouseWheelDirection` enum as an `InputKind`.
 - Added `SingleAxis` and `DualAxis` structs that can be supplied to an `InputMap` to trigger on axis inputs.
 - Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
 - Added `ActionState::action_axis_pair()` which can return an `AxisPair` containing the analog values of a `SingleAxis`, `DualAxis`, or `VirtualDPad`.
-- Added `ActionState::action_value()` which represents the floating point value of any action: `1.0` or `0.0` for pressed or unpressed buttons, a value (typically) in the range `-1.0..=1.0` for a single axis representing its analog input, or a value (typically) in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
+- Added `ActionState::action_value()` which represents the floating point value of any action:
+  - `1.0` or `0.0` for pressed or unpressed button-like inputs
+  - a value (typically) in the range `-1.0..=1.0` for a single axis representing its analog input
+  - or a value (typically) in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
 
 ### Usability
 
@@ -34,6 +37,10 @@
 - Converting from a `Direction` (which uses a `Vec2` of `f32`'s internally) to a `Rotation` (which uses exact decidegrees) now has special cases to ensure all eight cardinal directions result in exact degrees.
   - For example, a unit vector pointing to the Northeast now always converts to a `Direction` with exactly 1350 decidegrees.
   - Rounding errors may still occur when converting from arbitrary directions to the other 3592 discrete decidegrees.
+- `InputStreams` and `MutableInputStreams` no longer store e.g. `Option<Res<Input<MouseButton>>>`, and instead simply store `Res<Input<MouseButton>>`
+  - This makes them much easier to work with.
+  - If you are on a platform or project where you don't care about certain input streams, disable the newly added `gamepad` / `keyboard` /  `mouse` / `touch` features to meet your needs.
+- Added `Default` trait to `InputStreams` and `MutableInputStreams`, which can be helpful in combination with struct update syntax when you only want to set some fields
 
 ## Version 0.4.1
 
