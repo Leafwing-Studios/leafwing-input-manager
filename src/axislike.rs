@@ -495,8 +495,8 @@ impl DualAxisData {
     }
 }
 
-impl Into<Vec2> for DualAxisData {
-    fn into(self) -> Vec2 {
-        self.xy
+impl From<DualAxisData> for Vec2 {
+    fn from(data: DualAxisData) -> Vec2 {
+        data.xy
     }
 }
