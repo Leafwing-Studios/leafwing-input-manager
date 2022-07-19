@@ -391,21 +391,21 @@ impl DualAxisData {
 
 // Methods
 impl DualAxisData {
-    /// The value along the x-axis, ranging from -1 to 1
+    /// The value along the x-axis, typically ranging from -1 to 1
     #[must_use]
     #[inline]
     pub fn x(&self) -> f32 {
         self.xy.x
     }
 
-    /// The value along the y-axis, ranging from -1 to 1
+    /// The value along the y-axis, typically ranging from -1 to 1
     #[must_use]
     #[inline]
     pub fn y(&self) -> f32 {
         self.xy.y
     }
 
-    /// The (x, y) values, each ranging from -1 to 1
+    /// The (x, y) values, each typically ranging from -1 to 1
     #[must_use]
     #[inline]
     pub fn xy(&self) -> Vec2 {
@@ -462,5 +462,11 @@ impl DualAxisData {
     /// Clamps the magnitude of the axis
     pub fn clamp_length(&mut self, max: f32) {
         self.xy = self.xy.clamp_length_max(max);
+    }
+}
+
+impl Into<Vec2> for DualAxisData {
+    fn into(self) -> Vec2 {
+        self.xy
     }
 }
