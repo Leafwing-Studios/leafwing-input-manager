@@ -1,6 +1,6 @@
+use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use bevy_input::mouse::{MouseScrollUnit, MouseWheel};
-use bevy_input::InputPlugin;
 use leafwing_input_manager::axislike::{DualAxisData, MouseWheelAxisType};
 use leafwing_input_manager::{prelude::*, MockInput};
 

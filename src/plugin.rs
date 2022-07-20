@@ -6,11 +6,11 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use bevy_app::{App, CoreStage, Plugin};
-use bevy_ecs::prelude::*;
-use bevy_input::InputSystem;
+use bevy::app::{App, CoreStage, Plugin};
+use bevy::ecs::prelude::*;
+use bevy::input::InputSystem;
 #[cfg(feature = "ui")]
-use bevy_ui::UiSystem;
+use bevy::ui::UiSystem;
 
 /// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`](crate::action_state::ActionState) that can be conveniently checked
 ///

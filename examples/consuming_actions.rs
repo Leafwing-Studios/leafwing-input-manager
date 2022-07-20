@@ -1,7 +1,7 @@
 //! Demonstrates how to "consume" actions, so they can only be responded to by a single system
 
+use bevy::ecs::system::Resource;
 use bevy::prelude::*;
-use bevy_ecs::system::Resource;
 use leafwing_input_manager::prelude::*;
 
 use menu_mocking::*;

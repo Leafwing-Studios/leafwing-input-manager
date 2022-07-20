@@ -1,4 +1,4 @@
-//! Demonstrates how to connect `bevy_ui` buttons to [`ActionState`] components using the [`ActionStateDriver`] component on your button
+//! Demonstrates how to connect `bevy::ui` buttons to [`ActionState`] components using the [`ActionStateDriver`] component on your button
 
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;

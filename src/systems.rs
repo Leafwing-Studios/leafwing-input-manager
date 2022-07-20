@@ -11,18 +11,18 @@ use crate::{
     Actionlike,
 };
 
-use bevy_ecs::{prelude::*, schedule::ShouldRun};
-use bevy_input::{
+use bevy::ecs::{prelude::*, schedule::ShouldRun};
+use bevy::input::{
     gamepad::{GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
     mouse::{MouseButton, MouseMotion, MouseWheel},
     Axis, Input,
 };
-use bevy_time::Time;
-use bevy_utils::Instant;
+use bevy::time::Time;
+use bevy::utils::Instant;
 
 #[cfg(feature = "ui")]
-use bevy_ui::Interaction;
+use bevy::ui::Interaction;
 
 /// Advances actions timer.
 ///
@@ -134,7 +134,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
     }
 }
 
-/// Generates an [`Events`](bevy_ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifer,
 /// suitable to be sent across a network.
@@ -161,7 +161,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
     }
 }
 
-/// Generates an [`Events`](bevy_ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifer,
 /// suitable to be sent across a network.

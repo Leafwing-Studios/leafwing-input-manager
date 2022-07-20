@@ -7,8 +7,8 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
-use bevy_ecs::component::Component;
-use bevy_input::gamepad::Gamepad;
+use bevy::ecs::component::Component;
+use bevy::input::gamepad::Gamepad;
 
 use core::fmt::Debug;
 use petitset::PetitSet;
@@ -104,7 +104,7 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
     /// use leafwing_input_manager::Actionlike;
-    /// use bevy_input::keyboard::KeyCode;
+    /// use bevy::input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
@@ -141,7 +141,7 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
 
-    /// use bevy_input::keyboard::KeyCode;
+    /// use bevy::input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
@@ -428,7 +428,7 @@ mod tests {
 
     #[test]
     fn insertion_idempotency() {
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
         let mut input_map = InputMap::<Action>::default();
@@ -450,7 +450,7 @@ mod tests {
     #[test]
     fn multiple_insertion() {
         use crate::user_input::UserInput;
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
         let mut input_map_1 = InputMap::<Action>::default();
@@ -473,7 +473,7 @@ mod tests {
     #[test]
     fn chord_singleton_coercion() {
         use crate::input_map::UserInput;
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
 
         // Single items in a chord should be coerced to a singleton
         let mut input_map_1 = InputMap::<Action>::default();
@@ -487,7 +487,7 @@ mod tests {
 
     #[test]
     fn input_clearing() {
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
 
         let mut input_map = InputMap::<Action>::default();
         input_map.insert(KeyCode::Space, Action::Run);
@@ -513,7 +513,7 @@ mod tests {
 
     #[test]
     fn merging() {
-        use bevy_input::{gamepad::GamepadButtonType, keyboard::KeyCode};
+        use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
 
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
@@ -534,7 +534,7 @@ mod tests {
 
     #[test]
     fn gamepad_swapping() {
-        use bevy_input::gamepad::Gamepad;
+        use bevy::input::gamepad::Gamepad;
 
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
