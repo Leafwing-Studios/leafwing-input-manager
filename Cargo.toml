@@ -19,21 +19,12 @@ members = ["./", "tools/ci", "macros"]
 
 [features]
 default = ['ui']
-ui = ['bevy_ui']
+ui = ['bevy/bevy_ui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.5" }
 
-bevy_app = {git = "https://github.com/bevyengine/bevy", default-features = false}
-bevy_core = {git = "https://github.com/bevyengine/bevy", default-features = false}
-bevy_transform = {git = "https://github.com/bevyengine/bevy", default-features = false}
-bevy_ecs = {git = "https://github.com/bevyengine/bevy", default-features = false}
-bevy_input = {git = "https://github.com/bevyengine/bevy", default-features = false, features = ["serialize"]}
-bevy_math = {git = "https://github.com/bevyengine/bevy", default-features = false}
-bevy_time = {git = "https://github.com/bevyengine/bevy", default-features = false}
-bevy_utils = {git = "https://github.com/bevyengine/bevy", default-features = false}
-bevy_ui = {git = "https://github.com/bevyengine/bevy", default-features = false, optional = true}
-bevy_window = {git = "https://github.com/bevyengine/bevy", default-features = false}
+bevy = {git = "https://github.com/bevyengine/bevy", default-features = false, features = ["serialize"]}
 
 petitset = {version = "0.2.1", features = ["serde_compat"]}
 derive_more = {version = "0.99", default-features = false, features = ["display", "error"]}

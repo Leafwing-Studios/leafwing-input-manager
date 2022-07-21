@@ -5,7 +5,7 @@
 
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use std::marker::PhantomData;
 
 pub mod action_state;

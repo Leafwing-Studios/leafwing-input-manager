@@ -3,12 +3,12 @@
 use crate::buttonlike::MouseWheelDirection;
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
-use bevy_input::{
+use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
 };
-use bevy_math::Vec2;
-use bevy_utils::FloatOrd;
+use bevy::math::Vec2;
+use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
 /// A single directional axis with a configurable trigger zone.
@@ -58,7 +58,7 @@ impl SingleAxis {
         }
     }
 
-    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
     pub const fn mouse_wheel_x() -> SingleAxis {
         SingleAxis {
@@ -69,7 +69,7 @@ impl SingleAxis {
         }
     }
 
-    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
     pub const fn mouse_wheel_y() -> SingleAxis {
         SingleAxis {
@@ -80,7 +80,7 @@ impl SingleAxis {
         }
     }
 
-    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
     pub const fn mouse_motion_x() -> SingleAxis {
         SingleAxis {
@@ -91,7 +91,7 @@ impl SingleAxis {
         }
     }
 
-    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
     pub const fn mouse_motion_y() -> SingleAxis {
         SingleAxis {
@@ -193,7 +193,7 @@ impl DualAxis {
         )
     }
 
-    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy_input::mouse::MouseWheel) movement
+    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     pub const fn mouse_wheel() -> DualAxis {
         DualAxis {
             x: SingleAxis::mouse_wheel_x(),
@@ -201,7 +201,7 @@ impl DualAxis {
         }
     }
 
-    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy_input::mouse::MouseMotion) movement
+    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     pub const fn mouse_motion() -> DualAxis {
         DualAxis {
             x: SingleAxis::mouse_motion_x(),

@@ -3,8 +3,8 @@
 use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
-use bevy_ecs::{component::Component, entity::Entity};
-use bevy_utils::{Duration, Instant};
+use bevy::ecs::{component::Component, entity::Entity};
+use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -42,7 +42,7 @@ pub struct ActionData {
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
-/// use bevy_utils::Instant;
+/// use bevy::utils::Instant;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
 /// enum Action {
@@ -120,7 +120,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use bevy_utils::Instant;
+    /// use bevy::utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
@@ -473,7 +473,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// # Examples
 ///
 /// By default, [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction) uses this component
-/// in order to connect `bevy_ui` buttons to the corresponding `ActionState`.
+/// in order to connect `bevy::ui` buttons to the corresponding `ActionState`.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -610,7 +610,7 @@ mod tests {
         use crate::input_map::InputMap;
         use crate::input_streams::InputStreams;
         use bevy::prelude::*;
-        use bevy_utils::{Duration, Instant};
+        use bevy::utils::{Duration, Instant};
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
@@ -675,7 +675,7 @@ mod tests {
     #[test]
     fn time_tick_ticks_away() {
         use crate::action_state::ActionState;
-        use bevy_utils::{Duration, Instant};
+        use bevy::utils::{Duration, Instant};
 
         let mut action_state = ActionState::<Action>::default();
 
@@ -699,7 +699,7 @@ mod tests {
     #[test]
     fn durations() {
         use crate::action_state::ActionState;
-        use bevy_utils::{Duration, Instant};
+        use bevy::utils::{Duration, Instant};
 
         let mut action_state = ActionState::<Action>::default();
 

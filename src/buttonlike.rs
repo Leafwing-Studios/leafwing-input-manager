@@ -88,7 +88,7 @@ impl Default for ButtonState {
     }
 }
 
-/// A buttonlike-input triggered by [`MouseWheel`](bevy_input::mouse::MouseWheel) events
+/// A buttonlike-input triggered by [`MouseWheel`](bevy::input::mouse::MouseWheel) events
 ///
 /// These will be considered pressed if non-zero net movement in the correct direction is detected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -103,7 +103,7 @@ pub enum MouseWheelDirection {
     Left,
 }
 
-/// A buttonlike-input triggered by [`MouseMotion`](bevy_input::mouse::MouseMotion) events
+/// A buttonlike-input triggered by [`MouseMotion`](bevy::input::mouse::MouseMotion) events
 ///
 /// These will be considered pressed if non-zero net movement in the correct direction is detected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

@@ -1,6 +1,6 @@
-//! Unified input streams for working with [`bevy_input`] data.
+//! Unified input streams for working with [`bevy::input`] data.
 
-use bevy_input::{
+use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
     mouse::{MouseButton, MouseMotion, MouseWheel},
@@ -8,8 +8,8 @@ use bevy_input::{
 };
 use petitset::PetitSet;
 
-use bevy_ecs::prelude::{Events, Res, ResMut, World};
-use bevy_ecs::system::SystemState;
+use bevy::ecs::prelude::{Events, Res, ResMut, World};
+use bevy::ecs::system::SystemState;
 
 use crate::axislike::{
     AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualDPad,
@@ -414,7 +414,7 @@ impl<'a> InputStreams<'a> {
             UserInput::VirtualDPad { .. } => {
                 self.input_axis_pair(input).unwrap_or_default().length()
             }
-            // This is required because upstream bevy_input still waffles about whether triggers are buttons or axes
+            // This is required because upstream bevy::input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
                 if let Some(button_axes) = self.gamepad_button_axes {
                     if let Some(gamepad) = self.associated_gamepad {
