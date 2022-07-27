@@ -27,6 +27,7 @@ pub struct ActionData {
     /// See [`ActionState::action_axis_pair()`] for more details.
     pub axis_pair: Option<DualAxisData>,
     /// When was the button pressed / released, and how long has it been held for?
+    #[cfg(timing)]
     pub timing: Timing,
     /// Was this action consumed by [`ActionState::consume`]?
     ///
@@ -157,6 +158,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.iter_mut().for_each(|ad| ad.state.tick());
 
         // Advance the Timings
+        #[cfg(timing)]
         self.action_data.iter_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
@@ -299,6 +301,7 @@ impl<A: Actionlike> ActionState<A> {
             return;
         }
 
+        #[cfg(timing)]
         if self.released(action) {
             self.action_data[index].timing.flip();
         }
@@ -316,6 +319,7 @@ impl<A: Actionlike> ActionState<A> {
         // Once released, consumed actions can be pressed again
         self.action_data[index].consumed = false;
 
+        #[cfg(timing)]
         if self.pressed(action) {
             self.action_data[index].timing.flip();
         }
@@ -367,6 +371,7 @@ impl<A: Actionlike> ActionState<A> {
         // This is the only difference from action_state.release(action)
         self.action_data[index].consumed = true;
         self.action_data[index].state.release();
+        #[cfg(timing)]
         self.action_data[index].timing.flip();
     }
 
@@ -441,11 +446,13 @@ impl<A: Actionlike> ActionState<A> {
     /// the value will be [`None`].
     /// This ensures that all of our actions are assigned a timing and duration
     /// that corresponds exactly to the start of a frame, rather than relying on idiosyncratic timing.
+    #[cfg(timing)]
     pub fn instant_started(&self, action: A) -> Option<Instant> {
         self.action_data[action.index()].timing.instant_started
     }
 
     /// The [`Duration`] for which the action has been held or released
+    #[cfg(timing)]
     pub fn current_duration(&self, action: A) -> Duration {
         self.action_data[action.index()].timing.current_duration
     }
@@ -454,6 +461,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This is a snapshot of the [`ActionState::current_duration`] state at the time
     /// the action was last pressed or released.
+    #[cfg(timing)]
     pub fn previous_duration(&self, action: A) -> Duration {
         self.action_data[action.index()].timing.previous_duration
     }
@@ -523,6 +531,7 @@ pub struct ActionStateDriver<A: Actionlike> {
 /// This struct is principally used as a field on [`ActionData`],
 /// which itself lives inside an [`ActionState`].
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[cfg(timing)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
     /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
@@ -537,12 +546,14 @@ pub struct Timing {
     pub previous_duration: Duration,
 }
 
+#[cfg(timing)]
 impl PartialOrd for Timing {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.current_duration.partial_cmp(&other.current_duration)
     }
 }
 
+#[cfg(timing)]
 impl Timing {
     /// Advances the `current_duration` of this timer
     ///
@@ -697,6 +708,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(timing)]
     fn durations() {
         use crate::action_state::ActionState;
         use bevy::utils::{Duration, Instant};

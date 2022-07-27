@@ -18,8 +18,12 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ['ui']
+default = ['ui', 'timing']
+# bevy_ui integration
 ui = ['bevy/bevy_ui']
+# Automatic timing information,
+# allowing you to access how long an action has been pressed / release for
+timing = []
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.5" }
