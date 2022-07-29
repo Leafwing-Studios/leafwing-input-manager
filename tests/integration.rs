@@ -48,6 +48,7 @@ fn spawn_player(mut commands: Commands) {
 }
 
 #[test]
+#[cfg(timing)]
 fn do_nothing() {
     use bevy::input::InputPlugin;
     use bevy::utils::Duration;
