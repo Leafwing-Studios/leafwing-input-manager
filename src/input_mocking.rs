@@ -1,7 +1,7 @@
 //! Helpful utilities for testing input management by sending mock input events
 //!
 //! The [`MockInput`] trait contains methods with the same API that operate at three levels:
-//! [`App`], [`World`] and [`MutableInputStreams`], each passing down the supplied arguments to the next.
+//! [`App`], [`World`] and [`InputStreams`] / [`MutableInputStreams`], each passing down the supplied arguments to the next.
 //!
 //! Inputs are provided in the convenient, high-level [`UserInput`] form.
 //! These are then parsed down to their [`UserInput::raw_inputs()`],
@@ -40,6 +40,7 @@ use bevy::window::CursorMoved;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::input_mocking::{MockInput, mockable_world};
 ///
+/// // A `World` that contains all of the appropriate input resources
 /// let mut world = mockable_world();
 ///
 /// // Pay respects!
@@ -48,10 +49,11 @@ use bevy::window::CursorMoved;
 ///
 /// ```rust
 /// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::{input_mocking::MockInput, user_input::UserInput};
 ///
 /// let mut app = App::new();
-/// app.add_plugin(bevy::input::InputPlugin);
+/// app.add_plugin(InputPlugin);
 ///
 /// // Send inputs one at a time
 /// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
@@ -78,8 +80,8 @@ pub trait MockInput {
     ///
     /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
-    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating inputs from
-    fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating.
+    fn send_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
     /// Releases the specified `user_input` directly
     ///
@@ -89,8 +91,8 @@ pub trait MockInput {
 
     /// Releases the specified `user_input` directly, using the specified gamepad
     ///
-    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating inputs from
-    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+    /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating.
+    fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
     /// Is the provided `user_input` pressed?
     ///
@@ -256,10 +258,10 @@ impl MockInput for World {
             None
         };
 
-        self.send_input_to_gamepad(input, gamepad);
+        self.send_input_as_gamepad(input, gamepad);
     }
 
-    fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+    fn send_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.send_user_input(input);
@@ -272,10 +274,10 @@ impl MockInput for World {
             None
         };
 
-        self.release_input_for_gamepad(input, gamepad);
+        self.release_input_as_gamepad(input, gamepad);
     }
 
-    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+    fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.release_user_input(input);
@@ -363,16 +365,16 @@ impl MockInput for App {
         self.world.send_input(input);
     }
 
-    fn send_input_to_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        self.world.send_input_to_gamepad(input, gamepad);
+    fn send_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        self.world.send_input_as_gamepad(input, gamepad);
     }
 
     fn release_input(&mut self, input: impl Into<UserInput>) {
         self.world.release_input(input);
     }
 
-    fn release_input_for_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        self.world.release_input_for_gamepad(input, gamepad);
+    fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        self.world.release_input_as_gamepad(input, gamepad);
     }
 
     fn pressed(&mut self, input: impl Into<UserInput>) -> bool {
@@ -426,7 +428,7 @@ mod test {
         // Send inputs
         world.send_input(KeyCode::Space);
         world.send_input(MouseButton::Right);
-        world.send_input_to_gamepad(GamepadButtonType::North, gamepad);
+        world.send_input_as_gamepad(GamepadButtonType::North, gamepad);
 
         // Verify that checking the resource value directly works
         let keyboard_input: &Input<KeyCode> = world.resource();
