@@ -136,10 +136,9 @@ impl MockInput for MutableInputStreams<'_> {
     fn send_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
         let input_to_send: UserInput = input.into();
         // Extract the raw inputs
-        let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
-            input_to_send.raw_inputs();
+        let raw_inputs = input_to_send.raw_inputs();
 
-        for button_type in gamepad_buttons {
+        for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
                 let gamepad_button = GamepadButton {
                     gamepad,
@@ -149,7 +148,7 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
-        for (outer_axis_type, maybe_position_data) in axis_data {
+        for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
@@ -191,11 +190,11 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
-        for button in keyboard_buttons {
+        for button in raw_inputs.keycodes {
             self.keyboard.press(button);
         }
 
-        for button in mouse_buttons {
+        for button in raw_inputs.mouse_buttons {
             self.mouse.press(button);
         }
     }
@@ -206,10 +205,9 @@ impl MockInput for MutableInputStreams<'_> {
 
     fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
         let input_to_release: UserInput = input.into();
-        let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
-            input_to_release.raw_inputs();
+        let raw_inputs = input_to_release.raw_inputs();
 
-        for button_type in gamepad_buttons {
+        for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
                 let gamepad_button = GamepadButton {
                     gamepad,
@@ -219,7 +217,7 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
-        for (outer_axis_type, _maybe_position_data) in axis_data {
+        for (outer_axis_type, _maybe_position_data) in raw_inputs.axis_data {
             match outer_axis_type {
                 AxisType::Gamepad(axis_type) => {
                     if let Some(gamepad) = gamepad {
@@ -233,11 +231,11 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
-        for button in keyboard_buttons {
+        for button in raw_inputs.keycodes {
             self.keyboard.release(button);
         }
 
-        for button in mouse_buttons {
+        for button in raw_inputs.mouse_buttons {
             self.mouse.release(button);
         }
     }
