@@ -553,8 +553,7 @@ mod tests {
         use crate::input_streams::InputStreams;
         use bevy::prelude::*;
 
-        let mut world = World::new();
-        let input_streams = InputStreams::from_world(&mut world, Some(Gamepad { id: 42 }));
+        let world = World::new();
 
         // Setting up the input map
         let mut input_map = InputMap::<Action>::default();
@@ -594,6 +593,7 @@ mod tests {
         }
 
         // Pressing the wrong gamepad
+        let mut world = World::new();
         world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 0 }));
 
         for action in Action::variants() {
@@ -609,12 +609,12 @@ mod tests {
 
         assert!(input_map.pressed(
             Action::Run,
-            &input_streams.clone().into(),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
         assert!(!input_map.pressed(
             Action::Jump,
-            &input_streams.clone().into(),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
 
@@ -629,7 +629,7 @@ mod tests {
         ));
         assert!(input_map.pressed(
             Action::Jump,
-            &input_streams.clone().into(),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
 

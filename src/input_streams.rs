@@ -8,7 +8,7 @@ use bevy::input::{
 };
 use petitset::PetitSet;
 
-use bevy::ecs::prelude::{Events, Res, ResMut, World};
+use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
 
 use crate::axislike::{
