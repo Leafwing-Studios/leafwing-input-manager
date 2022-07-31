@@ -1,3 +1,7 @@
 # LWIM Release Checklist
 
-1. Ensure that `reset_inputs` for `MutableInputStreams` is resetting all relevant fields
+## Adding a new input kind
+
+1. Ensure that `reset_inputs` for `MutableInputStreams` is resetting all relevant fields.
+2. Ensure that `RawInputs` struct has fields that cover all necessary input types.
+3. Ensure that `send_input` and `release_input` check all possible fields on `RawInputs`.

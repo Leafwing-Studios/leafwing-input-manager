@@ -44,6 +44,7 @@
 - Renamed `InputMocking::send_input_to_gamepad` and `InputMocking::release_input_for_gamepad` to `InputMocking::send_input_as_gamepad` and `InputMocking::send_input_as_gamepad`.
 - Added the `guess_gamepad` method to `InputStreams` and `MutableInputStreams`, which attempts to find an appropriate gamepad to use.
 - `InputMocking::pressed` and `pressed_for_gamepad` no longer require `&mut self`.
+- `UserInput::raw_inputs` now returns a `RawInputs` struct, rather than a tuple struct.
 
 ## Version 0.4.1
 
