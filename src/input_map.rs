@@ -594,7 +594,7 @@ mod tests {
 
         // Pressing the wrong gamepad
         let mut world = mockable_world();
-        world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 0 }));
+        world.send_input_as_gamepad(GamepadButtonType::South, Some(Gamepad { id: 0 }));
 
         for action in Action::variants() {
             assert!(!input_map.pressed(
@@ -605,7 +605,7 @@ mod tests {
         }
 
         // Pressing the correct gamepad
-        world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 42 }));
+        world.send_input_as_gamepad(GamepadButtonType::South, Some(Gamepad { id: 42 }));
 
         assert!(input_map.pressed(
             Action::Run,
@@ -619,8 +619,8 @@ mod tests {
         ));
 
         // Chord
-        world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 42 }));
-        world.send_input_to_gamepad(GamepadButtonType::North, Some(Gamepad { id: 42 }));
+        world.send_input_as_gamepad(GamepadButtonType::South, Some(Gamepad { id: 42 }));
+        world.send_input_as_gamepad(GamepadButtonType::North, Some(Gamepad { id: 42 }));
 
         assert!(input_map.pressed(
             Action::Run,

@@ -71,6 +71,17 @@ impl<'a> InputStreams<'a> {
 
 // Input checking
 impl<'a> InputStreams<'a> {
+    /// Guess which registered [`Gamepad`] should be used.
+    ///
+    /// If an associated gamepad is set, use that.
+    /// Otherwise use the first registered gamepad, if any.
+    pub fn guess_gamepad(&self) -> Option<Gamepad> {
+        match self.associated_gamepad {
+            Some(gamepad) => Some(gamepad),
+            None => self.gamepads.iter().next().copied(),
+        }
+    }
+
     /// Is the `input` matched by the [`InputStreams`]?
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
@@ -119,24 +130,12 @@ impl<'a> InputStreams<'a> {
                 value != 0.0
             }
             InputKind::GamepadButton(gamepad_button) => {
-                // If a gamepad was registered, just check that one
-                if let Some(gamepad) = self.associated_gamepad {
+                if let Some(gamepad) = self.guess_gamepad() {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
                         button_type: gamepad_button,
                     })
-                // If no gamepad is registered, scan the list of available gamepads
                 } else {
-                    for &gamepad in self.gamepads.iter() {
-                        if self.gamepad_buttons.pressed(GamepadButton {
-                            gamepad,
-                            button_type: gamepad_button,
-                        }) {
-                            // Return early if *any* gamepad is pressing this button
-                            return true;
-                        }
-                    }
-                    // If none of the available gamepads pressed this button, return false
                     false
                 }
             }
@@ -247,32 +246,11 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::SingleAxis(single_axis)) => {
                 match single_axis.axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(gamepad) = self.associated_gamepad {
-                            let value = self
-                                .gamepad_axes
+                        if let Some(gamepad) = self.guess_gamepad() {
+                            self.gamepad_axes
                                 .get(GamepadAxis { gamepad, axis_type })
-                                .unwrap_or_default();
-
-                            value_in_axis_range(single_axis, value)
-                        // If no gamepad is registered, return the first non-zero input found
+                                .unwrap_or_default()
                         } else {
-                            for &gamepad in self.gamepads.iter() {
-                                let value = self
-                                    .gamepad_axes
-                                    .get(GamepadAxis {
-                                        gamepad,
-                                        axis_type: single_axis.axis_type.try_into().unwrap(),
-                                    })
-                                    .unwrap_or_default();
-                                let value = value_in_axis_range(single_axis, value);
-
-                                if value != 0.0 {
-                                    // A matching input was pressed on a gamepad
-                                    return value;
-                                }
-                            }
-
-                            // No input was pressed on any gamepad
                             0.0
                         }
                     }
@@ -313,7 +291,7 @@ impl<'a> InputStreams<'a> {
             }
             // This is required because upstream bevy::input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
-                if let Some(gamepad) = self.associated_gamepad {
+                if let Some(gamepad) = self.guess_gamepad() {
                     // Get the value from the registered gamepad
                     self.gamepad_button_axes
                         .get(GamepadButton {
@@ -322,22 +300,6 @@ impl<'a> InputStreams<'a> {
                         })
                         .unwrap_or_else(use_button_value)
                 } else {
-                    for &gamepad in self.gamepads.iter() {
-                        let value = self
-                            .gamepad_button_axes
-                            .get(GamepadButton {
-                                gamepad,
-                                button_type: *button_type,
-                            })
-                            .unwrap_or_else(use_button_value);
-
-                        if value != 0.0 {
-                            // A matching input was pressed on a gamepad
-                            return value;
-                        }
-                    }
-
-                    // No input was pressed on any gamepad
                     0.0
                 }
             }
@@ -391,6 +353,7 @@ impl<'a> InputStreams<'a> {
 /// A mutable collection of [`Input`] structs, which can be used for mocking user inputs.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
+// WARNING: If you update the fields of this type, you must also remember to update `InputMocking::reset_inputs`.
 #[derive(Debug)]
 pub struct MutableInputStreams<'a> {
     /// A [`GamepadButton`] [`Input`] stream
@@ -450,12 +413,41 @@ impl<'a> MutableInputStreams<'a> {
             associated_gamepad: gamepad,
         }
     }
+
+    /// Guess which registered [`Gamepad`] should be used.
+    ///
+    /// If an associated gamepad is set, use that.
+    /// Otherwise use the first registered gamepad, if any.
+    pub fn guess_gamepad(&self) -> Option<Gamepad> {
+        match self.associated_gamepad {
+            Some(gamepad) => Some(gamepad),
+            None => self.gamepads.iter().next().copied(),
+        }
+    }
 }
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
         InputStreams {
-            // This absurd-lookgin &*(foo) pattern convinces the compiler
+            // This absurd-looking &*(foo) pattern convinces the compiler
+            // that we want a reference to the underlying data with the correct lifetime
+            gamepad_buttons: &*(mutable_streams.gamepad_buttons),
+            gamepad_button_axes: &*(mutable_streams.gamepad_button_axes),
+            gamepad_axes: &*(mutable_streams.gamepad_axes),
+            gamepads: &*(mutable_streams.gamepads),
+            keyboard: &*(mutable_streams.keyboard),
+            mouse: &*(mutable_streams.mouse),
+            mouse_wheel: &*(mutable_streams.mouse_wheel),
+            mouse_motion: &*(mutable_streams.mouse_motion),
+            associated_gamepad: mutable_streams.associated_gamepad,
+        }
+    }
+}
+
+impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
+    fn from(mutable_streams: &'a MutableInputStreams<'a>) -> Self {
+        InputStreams {
+            // This absurd-looking &*(foo) pattern convinces the compiler
             // that we want a reference to the underlying data with the correct lifetime
             gamepad_buttons: &*(mutable_streams.gamepad_buttons),
             gamepad_button_axes: &*(mutable_streams.gamepad_button_axes),
