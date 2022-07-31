@@ -291,7 +291,7 @@ impl MockInput for World {
     fn release_input(&mut self, input: impl Into<UserInput>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, None);
 
-        mutable_input_streams.send_input(input);
+        mutable_input_streams.release_input(input);
     }
 
     fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
