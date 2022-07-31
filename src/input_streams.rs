@@ -45,19 +45,17 @@ pub struct InputStreams<'a> {
 // Constructors
 impl<'a> InputStreams<'a> {
     /// Construct an [`InputStreams`] from a [`World`]
-    pub fn from_world(world: &'a mut World, gamepad: Option<Gamepad>) -> Self {
-        let mut input_system_state: SystemState<(
-            Res<Input<GamepadButton>>,
-            Res<Axis<GamepadButton>>,
-            Res<Axis<GamepadAxis>>,
-            Res<Gamepads>,
-            Res<Input<KeyCode>>,
-            Res<Input<MouseButton>>,
-            Res<Events<MouseWheel>>,
-            Res<Events<MouseMotion>>,
-        )> = SystemState::new(world);
+    pub fn from_world(world: &'a World, gamepad: Option<Gamepad>) -> Self {
+        let gamepad_buttons = world.resource::<Input<GamepadButton>>();
+        let gamepad_button_axes = world.resource::<Axis<GamepadButton>>();
+        let gamepad_axes = world.resource::<Axis<GamepadAxis>>();
+        let gamepads = world.resource::<Gamepads>();
+        let keyboard = world.resource::<Input<KeyCode>>();
+        let mouse = world.resource::<Input<MouseButton>>();
+        let mouse_wheel = world.resource::<Events<MouseWheel>>();
+        let mouse_motion = world.resource::<Events<MouseMotion>>();
 
-        let (
+        InputStreams {
             gamepad_buttons,
             gamepad_button_axes,
             gamepad_axes,
@@ -66,17 +64,6 @@ impl<'a> InputStreams<'a> {
             mouse,
             mouse_wheel,
             mouse_motion,
-        ) = input_system_state.get(world);
-
-        InputStreams {
-            gamepad_buttons: gamepad_buttons.into_inner(),
-            gamepad_button_axes: gamepad_button_axes.into_inner(),
-            gamepad_axes: gamepad_axes.into_inner(),
-            gamepads: gamepads.into_inner(),
-            keyboard: keyboard.into_inner(),
-            mouse: mouse.into_inner(),
-            mouse_wheel: mouse_wheel.into_inner(),
-            mouse_motion: mouse_motion.into_inner(),
             associated_gamepad: gamepad,
         }
     }

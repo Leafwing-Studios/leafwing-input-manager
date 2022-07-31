@@ -41,6 +41,7 @@
   - This makes them much easier to work with.
   - If you are on a platform or project where you don't care about certain input streams, disable the newly added `gamepad` / `keyboard` /  `mouse` / `touch` features to meet your needs.
 - Added `Default` trait to `InputStreams` and `MutableInputStreams`, which can be helpful in combination with struct update syntax when you only want to set some fields
+- `InputStreams::from_world` no longer requires `&mut World`, as it does not require mutable access to any resources.
 
 ## Version 0.4.1
 

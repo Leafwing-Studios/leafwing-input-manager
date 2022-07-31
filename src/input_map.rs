@@ -588,7 +588,7 @@ mod tests {
         for action in Action::variants() {
             assert!(!input_map.pressed(
                 action,
-                &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+                &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
                 ClashStrategy::PressAll
             ));
         }
@@ -599,7 +599,7 @@ mod tests {
         for action in Action::variants() {
             assert!(!input_map.pressed(
                 action,
-                &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+                &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
                 ClashStrategy::PressAll
             ));
         }
@@ -624,7 +624,7 @@ mod tests {
 
         assert!(input_map.pressed(
             Action::Run,
-            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
         assert!(input_map.pressed(
@@ -639,7 +639,7 @@ mod tests {
         for action in Action::variants() {
             assert!(!input_map.pressed(
                 action,
-                &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+                &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
                 ClashStrategy::PressAll
             ));
         }
@@ -649,12 +649,12 @@ mod tests {
 
         assert!(input_map.pressed(
             Action::Run,
-            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
         assert!(input_map.pressed(
             Action::Hide,
-            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
 
@@ -666,12 +666,12 @@ mod tests {
 
         assert!(input_map.pressed(
             Action::Run,
-            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
         assert!(input_map.pressed(
             Action::Jump,
-            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
 
@@ -683,7 +683,7 @@ mod tests {
 
         assert!(input_map.pressed(
             Action::Hide,
-            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            &InputStreams::from_world(&world, Some(Gamepad { id: 42 })),
             ClashStrategy::PressAll
         ));
     }
