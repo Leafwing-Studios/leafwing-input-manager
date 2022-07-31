@@ -28,15 +28,15 @@ pub enum UserInput {
 }
 
 impl UserInput {
-    /// Creates a [`UserInput::Chord`] from an iterator of [`Button`]s
+    /// Creates a [`UserInput::Chord`] from an iterator of [`InputKind`]s
     ///
-    /// If `buttons` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
-    pub fn chord(buttons: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
+    /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
+    pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
         let mut set: PetitSet<InputKind, 8> = PetitSet::default();
-        for button in buttons {
+        for button in inputs {
             length += 1;
             set.insert(button.into());
         }
