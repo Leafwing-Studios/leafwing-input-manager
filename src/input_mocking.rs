@@ -1,4 +1,11 @@
 //! Helpful utilities for testing input management by sending mock input events
+//!
+//! The [`MockInput`] trait contains methods with the same API that operate at three levels:
+//! [`App`], [`World`] and [`MutableInputStreams`], each passing down the supplied arguments to the next.
+//!
+//! Inputs are provided in the convenient, high-level [`UserInput`] form.
+//! These are then parsed down to their [`UserInput::raw_inputs()`],
+//! which are then sent as [`bevy::input`] events of the appropriate types.
 
 use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType};
 use crate::input_streams::{InputStreams, MutableInputStreams};
