@@ -71,6 +71,17 @@ impl<'a> InputStreams<'a> {
 
 // Input checking
 impl<'a> InputStreams<'a> {
+    /// Guess which registered [`Gamepad`] should be used.
+    ///
+    /// If an associated gamepad is set, use that.
+    /// Otherwise use the first registered gamepad, if any.
+    pub fn guess_gamepad(&self) -> Option<Gamepad> {
+        match self.associated_gamepad {
+            Some(gamepad) => Some(gamepad),
+            None => self.gamepads.iter().next().copied(),
+        }
+    }
+
     /// Is the `input` matched by the [`InputStreams`]?
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
@@ -391,6 +402,7 @@ impl<'a> InputStreams<'a> {
 /// A mutable collection of [`Input`] structs, which can be used for mocking user inputs.
 ///
 /// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
+// WARNING: If you update the fields of this type, you must also remember to update `InputMocking::reset_inputs`.
 #[derive(Debug)]
 pub struct MutableInputStreams<'a> {
     /// A [`GamepadButton`] [`Input`] stream
@@ -450,12 +462,23 @@ impl<'a> MutableInputStreams<'a> {
             associated_gamepad: gamepad,
         }
     }
+
+    /// Guess which registered [`Gamepad`] should be used.
+    ///
+    /// If an associated gamepad is set, use that.
+    /// Otherwise use the first registered gamepad, if any.
+    pub fn guess_gamepad(&self) -> Option<Gamepad> {
+        match self.associated_gamepad {
+            Some(gamepad) => Some(gamepad),
+            None => self.gamepads.iter().next().copied(),
+        }
+    }
 }
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
         InputStreams {
-            // This absurd-lookgin &*(foo) pattern convinces the compiler
+            // This absurd-looking &*(foo) pattern convinces the compiler
             // that we want a reference to the underlying data with the correct lifetime
             gamepad_buttons: &*(mutable_streams.gamepad_buttons),
             gamepad_button_axes: &*(mutable_streams.gamepad_button_axes),
