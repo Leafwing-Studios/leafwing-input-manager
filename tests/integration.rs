@@ -2,7 +2,6 @@
 use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::MockInput;
 
 #[derive(Actionlike, Clone, Copy, Debug)]
 enum Action {

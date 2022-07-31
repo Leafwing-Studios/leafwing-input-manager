@@ -592,8 +592,10 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
     },
 }
 
+#[cfg(test)]
 mod tests {
     use crate as leafwing_input_manager;
+    use crate::input_mocking::{mockable_world, MockInput};
     use leafwing_input_manager_macros::Actionlike;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
@@ -612,6 +614,8 @@ mod tests {
         use bevy::prelude::*;
         use bevy::utils::{Duration, Instant};
 
+        let mut world = mockable_world();
+
         // Action state
         let mut action_state = ActionState::<Action>::default();
 
@@ -619,11 +623,8 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert(KeyCode::R, Action::Run);
 
-        // Input streams
-        let mut keyboard_input_stream = Input::<KeyCode>::default();
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
-
         // Starting state
+        let input_streams = InputStreams::from_world(&mut world, None);
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(Action::Run));
@@ -632,8 +633,8 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Pressing
-        keyboard_input_stream.press(KeyCode::R);
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
+        world.send_input(KeyCode::R);
+        let input_streams = InputStreams::from_world(&mut world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
@@ -652,8 +653,8 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Releasing
-        keyboard_input_stream.release(KeyCode::R);
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
+        world.release_input(KeyCode::R);
+        let input_streams = InputStreams::from_world(&mut world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 

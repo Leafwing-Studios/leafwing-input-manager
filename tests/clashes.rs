@@ -53,26 +53,23 @@ impl ClashTestExt for App {
     ) {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions.into_iter());
         // SystemState is love, SystemState is life
-        let mut input_system_state: SystemState<(Query<&InputMap<Action>>, Res<Input<KeyCode>>)> =
+        let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
             SystemState::new(&mut self.world);
 
-        let (input_map_query, keyboard) = input_system_state.get(&self.world);
-
-        let input_streams = InputStreams::from_keyboard(&*keyboard);
+        let input_map_query = input_system_state.get(&self.world);
 
         let input_map = input_map_query.single();
-
-        let keyboard_input = input_streams.keyboard.unwrap();
+        let keyboard_input = self.world.resource::<Input<KeyCode>>();
 
         for action in Action::variants() {
             if pressed_actions.contains(&action) {
                 assert!(
-                    input_map.pressed(action, &input_streams, clash_strategy),
+                    input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(action, &input_streams, clash_strategy),
+                    !input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }
@@ -83,7 +80,6 @@ impl ClashTestExt for App {
 #[test]
 fn input_clash_handling() {
     use bevy::input::InputPlugin;
-    use leafwing_input_manager::MockInput;
     use Action::*;
     use KeyCode::*;
 

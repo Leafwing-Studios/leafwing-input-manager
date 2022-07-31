@@ -2,7 +2,7 @@ use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::axislike::{DualAxisData, MouseWheelAxisType};
-use leafwing_input_manager::{prelude::*, MockInput};
+use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug)]
 enum ButtonlikeTestAction {

@@ -1,4 +1,11 @@
 //! Helpful utilities for testing input management by sending mock input events
+//!
+//! The [`MockInput`] trait contains methods with the same API that operate at three levels:
+//! [`App`], [`World`] and [`MutableInputStreams`], each passing down the supplied arguments to the next.
+//!
+//! Inputs are provided in the convenient, high-level [`UserInput`] form.
+//! These are then parsed down to their [`UserInput::raw_inputs()`],
+//! which are then sent as [`bevy::input`] events of the appropriate types.
 
 use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType};
 use crate::input_streams::{InputStreams, MutableInputStreams};
@@ -16,7 +23,7 @@ use bevy::input::{
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
-    Input,
+    {Axis, Input},
 };
 use bevy::math::Vec2;
 #[cfg(feature = "ui")]
@@ -31,9 +38,9 @@ use bevy::window::CursorMoved;
 /// # Examples
 /// ```rust
 /// use bevy::prelude::*;
-/// use leafwing_input_manager::MockInput;
+/// use leafwing_input_manager::input_mocking::{MockInput, mockable_world};
 ///
-/// let mut world = World::new();
+/// let mut world = mockable_world();
 ///
 /// // Pay respects!
 /// world.send_input(KeyCode::F);
@@ -41,9 +48,10 @@ use bevy::window::CursorMoved;
 ///
 /// ```rust
 /// use bevy::prelude::*;
-/// use leafwing_input_manager::{MockInput, user_input::UserInput};
+/// use leafwing_input_manager::{input_mocking::MockInput, user_input::UserInput};
 ///
 /// let mut app = App::new();
+/// app.add_plugin(bevy::input::InputPlugin);
 ///
 /// // Send inputs one at a time
 /// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
@@ -137,15 +145,13 @@ impl<'a> MutableInputStreams<'a> {
         let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
             input_to_send.raw_inputs();
 
-        if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button_type in gamepad_buttons {
-                if let Some(gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton {
-                        gamepad,
-                        button_type,
-                    };
-                    gamepad_input.press(gamepad_button);
-                }
+        for button_type in gamepad_buttons {
+            if let Some(gamepad) = self.associated_gamepad {
+                let gamepad_button = GamepadButton {
+                    gamepad,
+                    button_type,
+                };
+                self.gamepad_buttons.press(gamepad_button);
             }
         }
 
@@ -153,62 +159,50 @@ impl<'a> MutableInputStreams<'a> {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(ref mut gamepad_input) = self.gamepad_axes {
-                            if let Some(gamepad) = self.associated_gamepad {
-                                gamepad_input
-                                    .set(GamepadAxis { gamepad, axis_type }, position_data);
-                            }
+                        if let Some(gamepad) = self.associated_gamepad {
+                            self.gamepad_axes
+                                .set(GamepadAxis { gamepad, axis_type }, position_data);
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
-                        if let Some(ref mut mouse_wheel_events) = self.mouse_wheel {
-                            match axis_type {
-                                // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-                                MouseWheelAxisType::X => mouse_wheel_events.send(MouseWheel {
-                                    unit: MouseScrollUnit::Pixel,
-                                    x: position_data,
-                                    y: 0.0,
-                                }),
-                                MouseWheelAxisType::Y => mouse_wheel_events.send(MouseWheel {
-                                    unit: MouseScrollUnit::Pixel,
-                                    x: 0.0,
-                                    y: position_data,
-                                }),
-                            }
+                        match axis_type {
+                            // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
+                            MouseWheelAxisType::X => self.mouse_wheel.send(MouseWheel {
+                                unit: MouseScrollUnit::Pixel,
+                                x: position_data,
+                                y: 0.0,
+                            }),
+                            MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
+                                unit: MouseScrollUnit::Pixel,
+                                x: 0.0,
+                                y: position_data,
+                            }),
                         }
                     }
-                    AxisType::MouseMotion(axis_type) => {
-                        if let Some(ref mut mouse_wheel_events) = self.mouse_motion {
-                            match axis_type {
-                                MouseMotionAxisType::X => mouse_wheel_events.send(MouseMotion {
-                                    delta: Vec2 {
-                                        x: position_data,
-                                        y: 0.0,
-                                    },
-                                }),
-                                MouseMotionAxisType::Y => mouse_wheel_events.send(MouseMotion {
-                                    delta: Vec2 {
-                                        x: 0.0,
-                                        y: position_data,
-                                    },
-                                }),
-                            }
-                        }
-                    }
+                    AxisType::MouseMotion(axis_type) => match axis_type {
+                        MouseMotionAxisType::X => self.mouse_motion.send(MouseMotion {
+                            delta: Vec2 {
+                                x: position_data,
+                                y: 0.0,
+                            },
+                        }),
+                        MouseMotionAxisType::Y => self.mouse_motion.send(MouseMotion {
+                            delta: Vec2 {
+                                x: 0.0,
+                                y: position_data,
+                            },
+                        }),
+                    },
                 }
             }
         }
 
-        if let Some(ref mut keyboard_input) = self.keyboard {
-            for button in keyboard_buttons {
-                keyboard_input.press(button);
-            }
+        for button in keyboard_buttons {
+            self.keyboard.press(button);
         }
 
-        if let Some(ref mut mouse_input) = self.mouse {
-            for button in mouse_buttons {
-                mouse_input.press(button);
-            }
+        for button in mouse_buttons {
+            self.mouse.press(button);
         }
     }
 
@@ -220,25 +214,21 @@ impl<'a> MutableInputStreams<'a> {
         let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
             input_to_release.raw_inputs();
 
-        if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button_type in gamepad_buttons {
-                if let Some(gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton {
-                        gamepad,
-                        button_type,
-                    };
-                    gamepad_input.release(gamepad_button);
-                }
+        for button_type in gamepad_buttons {
+            if let Some(gamepad) = self.associated_gamepad {
+                let gamepad_button = GamepadButton {
+                    gamepad,
+                    button_type,
+                };
+                self.gamepad_buttons.release(gamepad_button);
             }
         }
 
         for (outer_axis_type, _maybe_position_data) in axis_data {
             match outer_axis_type {
                 AxisType::Gamepad(axis_type) => {
-                    if let Some(ref mut gamepad_input) = self.gamepad_axes {
-                        if let Some(gamepad) = self.associated_gamepad {
-                            gamepad_input.remove(GamepadAxis { gamepad, axis_type });
-                        }
+                    if let Some(gamepad) = self.associated_gamepad {
+                        self.gamepad_axes.remove(GamepadAxis { gamepad, axis_type });
                     }
                 }
                 // Releasing event-like input should have no effect;
@@ -248,16 +238,12 @@ impl<'a> MutableInputStreams<'a> {
             }
         }
 
-        if let Some(ref mut keyboard_input) = self.keyboard {
-            for button in keyboard_buttons {
-                keyboard_input.release(button);
-            }
+        for button in keyboard_buttons {
+            self.keyboard.release(button);
         }
 
-        if let Some(ref mut mouse_input) = self.mouse {
-            for button in mouse_buttons {
-                mouse_input.release(button);
-            }
+        for button in mouse_buttons {
+            self.mouse.release(button);
         }
     }
 }
@@ -418,13 +404,12 @@ impl MockInput for App {
 
 #[cfg(test)]
 mod test {
+    use crate::input_mocking::{mockable_world, MockInput};
+    use bevy::prelude::*;
 
     #[test]
     fn button_inputs() {
-        use crate::input_mocking::MockInput;
-        use bevy::prelude::*;
-
-        let mut world = World::new();
+        let mut world = mockable_world();
         world.insert_resource(Input::<KeyCode>::default());
         world.insert_resource(Input::<MouseButton>::default());
         world.insert_resource(Input::<GamepadButton>::default());
@@ -470,7 +455,7 @@ mod test {
         #[derive(Component)]
         struct ButtonMarker;
 
-        let mut world = World::new();
+        let mut world = mockable_world();
         // Marked button
         world.spawn().insert(Interaction::None).insert(ButtonMarker);
         // Unmarked button
@@ -514,4 +499,21 @@ mod test {
             assert_eq!(*interaction, Interaction::None)
         }
     }
+}
+
+/// Generates a [`World`] with the resources required by [`InputStreams`]
+///
+/// This is exclusively useful for testing.
+/// When working with [`App`], add [`InputPlugin`](bevy::input::InputPlugin) instead.
+pub fn mockable_world() -> World {
+    let mut world = World::new();
+    world.init_resource::<Input<GamepadButton>>();
+    world.init_resource::<Axis<GamepadButton>>();
+    world.init_resource::<Axis<GamepadAxis>>();
+    world.init_resource::<Gamepads>();
+    world.init_resource::<Input<KeyCode>>();
+    world.init_resource::<Input<MouseButton>>();
+    world.init_resource::<Events<MouseWheel>>();
+    world.init_resource::<Events<MouseMotion>>();
+    world
 }

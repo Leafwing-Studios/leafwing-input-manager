@@ -38,9 +38,9 @@
   - For example, a unit vector pointing to the Northeast now always converts to a `Direction` with exactly 1350 decidegrees.
   - Rounding errors may still occur when converting from arbitrary directions to the other 3592 discrete decidegrees.
 - `InputStreams` and `MutableInputStreams` no longer store e.g. `Option<Res<Input<MouseButton>>>`, and instead simply store `Res<Input<MouseButton>>`
-  - This makes them much easier to work with.
-  - If you are on a platform or project where you don't care about certain input streams, disable the newly added `gamepad` / `keyboard` /  `mouse` / `touch` features to meet your needs.
-- Added `Default` trait to `InputStreams` and `MutableInputStreams`, which can be helpful in combination with struct update syntax when you only want to set some fields
+  - This makes them much easier to work with and dramatically simplifies internal logic.
+  - added the `mockable_world` builder method to generate a `World` with the required resources.
+- `InputStreams::from_world` no longer requires `&mut World`, as it does not require mutable access to any resources.
 
 ## Version 0.4.1
 
