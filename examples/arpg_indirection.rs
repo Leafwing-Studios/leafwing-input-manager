@@ -6,7 +6,7 @@
 //! between two distinct [`ActionState`] components.
 
 use bevy::prelude::*;
-use bevy_utils::HashMap;
+use bevy::utils::HashMap;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::*;
 

@@ -75,11 +75,6 @@ impl PlayerBundle {
         use ArpgAction::*;
         let mut input_map = InputMap::default();
 
-        // This is a quick and hacky solution:
-        // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
-        // and gracefully handle disconnects
-        input_map.set_gamepad(Gamepad(0));
-
         // Movement
         input_map.insert(KeyCode::Up, Up);
         input_map.insert(GamepadButtonType::DPadUp, Up);

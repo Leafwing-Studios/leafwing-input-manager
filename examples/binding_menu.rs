@@ -1,6 +1,6 @@
 use bevy::{
     ecs::system::SystemParam,
-    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
+    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
 use bevy_egui::{
@@ -8,10 +8,8 @@ use bevy_egui::{
     EguiContext, EguiPlugin,
 };
 use derive_more::Display;
-use leafwing_input_manager::{prelude::*, user_input::InputButton};
-
+use leafwing_input_manager::{prelude::*, user_input::InputKind};
 const UI_MARGIN: f32 = 10.0;
-
 fn main() {
     App::new()
         .insert_resource(ControlSettings::default())
@@ -25,7 +23,6 @@ fn main() {
         .add_system(binding_window_system)
         .run();
 }
-
 fn spawn_player_system(mut commands: Commands, control_settings: Res<ControlSettings>) {
     commands.spawn().insert(control_settings.input.clone());
     commands.insert_resource(InputMap::<UiAction>::new([(
@@ -34,7 +31,6 @@ fn spawn_player_system(mut commands: Commands, control_settings: Res<ControlSett
     )]));
     commands.insert_resource(ActionState::<UiAction>::default());
 }
-
 fn controls_window_system(
     mut commands: Commands,
     mut egui: ResMut<EguiContext>,
@@ -43,7 +39,6 @@ fn controls_window_system(
 ) {
     let main_window = windows.get_primary().unwrap();
     let window_width_margin = egui.ctx_mut().style().spacing.window_margin.left * 2.0;
-
     Window::new("Settings")
         .anchor(Align2::CENTER_CENTER, (0.0, 0.0))
         .collapsible(false)
@@ -52,7 +47,6 @@ fn controls_window_system(
         .show(egui.ctx_mut(), |ui| {
             const INPUT_VARIANTS: usize = 3;
             const COLUMNS_COUNT: usize = INPUT_VARIANTS + 1;
-
             Grid::new("Control grid")
                 .num_columns(COLUMNS_COUNT)
                 .striped(true)
@@ -63,13 +57,15 @@ fn controls_window_system(
                         let inputs = control_settings.input.get(action);
                         for index in 0..INPUT_VARIANTS {
                             let button_text = match inputs.get_at(index) {
-                                Some(UserInput::Single(InputButton::Gamepad(gamepad_button))) => {
+                                Some(UserInput::Single(InputKind::GamepadButton(
+                                    gamepad_button,
+                                ))) => {
                                     format!("🎮 {:?}", gamepad_button)
                                 }
-                                Some(UserInput::Single(InputButton::Keyboard(keycode))) => {
+                                Some(UserInput::Single(InputKind::Keyboard(keycode))) => {
                                     format!("🖮 {:?}", keycode)
                                 }
-                                Some(UserInput::Single(InputButton::Mouse(mouse_button))) => {
+                                Some(UserInput::Single(InputKind::Mouse(mouse_button))) => {
                                     format!("🖱 {:?}", mouse_button)
                                 }
                                 _ => "Empty".to_string(),
@@ -84,7 +80,6 @@ fn controls_window_system(
             ui.expand_to_include_rect(ui.available_rect_before_wrap());
         });
 }
-
 fn buttons_system(
     mut egui: ResMut<EguiContext>,
     mut control_settings: ResMut<ControlSettings>,
@@ -103,7 +98,6 @@ fn buttons_system(
             })
         });
 }
-
 fn binding_window_system(
     mut commands: Commands,
     mut egui: ResMut<EguiContext>,
@@ -116,7 +110,6 @@ fn binding_window_system(
         Some(active_binding) => active_binding,
         None => return,
     };
-
     Window::new(format!("Binding \"{}\"", active_binding.action))
         .anchor(Align2::CENTER_CENTER, (0.0, 0.0))
         .collapsible(false)
@@ -174,7 +167,6 @@ fn binding_window_system(
             }
         });
 }
-
 #[derive(Actionlike, PartialEq, Clone, Copy, Display)]
 pub(crate) enum ControlAction {
     // Movement
@@ -183,7 +175,6 @@ pub(crate) enum ControlAction {
     Left,
     Right,
     Jump,
-
     // Abilities activation
     BaseAttack,
     Ability1,
@@ -191,16 +182,13 @@ pub(crate) enum ControlAction {
     Ability3,
     Ultimate,
 }
-
 #[derive(Actionlike, PartialEq, Clone, Copy)]
 pub(crate) enum UiAction {
     Back,
 }
-
 struct ControlSettings {
     input: InputMap<ControlAction>,
 }
-
 impl Default for ControlSettings {
     fn default() -> Self {
         let mut input = InputMap::default();
@@ -215,17 +203,14 @@ impl Default for ControlSettings {
             .insert(KeyCode::E, ControlAction::Ability2)
             .insert(KeyCode::LShift, ControlAction::Ability3)
             .insert(KeyCode::R, ControlAction::Ultimate);
-
         Self { input }
     }
 }
-
 struct ActiveBinding {
     action: ControlAction,
     index: usize,
     conflict: Option<BindingConflict>,
 }
-
 impl ActiveBinding {
     fn new(action: ControlAction, index: usize) -> Self {
         Self {
@@ -235,12 +220,10 @@ impl ActiveBinding {
         }
     }
 }
-
 struct BindingConflict {
     action: ControlAction,
-    input_button: InputButton,
+    input_button: InputKind,
 }
-
 /// Helper for collecting input
 #[derive(SystemParam)]
 struct InputEvents<'w, 's> {
@@ -248,31 +231,31 @@ struct InputEvents<'w, 's> {
     mouse_buttons: EventReader<'w, 's, MouseButtonInput>,
     gamepad_events: EventReader<'w, 's, GamepadEvent>,
 }
-
 impl InputEvents<'_, '_> {
-    fn input_button(&mut self) -> Option<InputButton> {
+    fn input_button(&mut self) -> Option<InputKind> {
         if let Some(keyboard_input) = self.keys.iter().next() {
-            if keyboard_input.state == ElementState::Released {
+            if keyboard_input.state == ButtonState::Released {
                 if let Some(key_code) = keyboard_input.key_code {
                     return Some(key_code.into());
                 }
             }
         }
-
         if let Some(mouse_input) = self.mouse_buttons.iter().next() {
-            if mouse_input.state == ElementState::Released {
+            if mouse_input.state == ButtonState::Released {
                 return Some(mouse_input.button.into());
             }
         }
-
-        if let Some(GamepadEvent(_, event_type)) = self.gamepad_events.iter().next() {
+        if let Some(GamepadEvent {
+            gamepad: _,
+            event_type,
+        }) = self.gamepad_events.iter().next()
+        {
             if let GamepadEventType::ButtonChanged(button, strength) = event_type.to_owned() {
                 if strength <= 0.5 {
                     return Some(button.into());
                 }
             }
         }
-
         None
     }
 }

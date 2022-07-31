@@ -6,13 +6,12 @@
 //! Note that [`ActionState`] can also be serialized and sent directly.
 //! This approach will be less bandwidth efficient, but involve less complexity and CPU work.
 
+use bevy::ecs::event::{Events, ManualEventReader};
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use bevy_ecs::event::{Events, ManualEventReader};
-use bevy_input::InputPlugin;
 use leafwing_input_manager::action_state::ActionDiff;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::systems::{generate_action_diffs, process_action_diffs};
-use leafwing_input_manager::MockInput;
 
 use std::fmt::Debug;
 

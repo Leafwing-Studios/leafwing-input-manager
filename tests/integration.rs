@@ -1,8 +1,7 @@
 #![cfg(test)]
+use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
-use bevy_ecs::query::ChangeTrackers;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::MockInput;
 
 #[derive(Actionlike, Clone, Copy, Debug)]
 enum Action {
@@ -49,8 +48,8 @@ fn spawn_player(mut commands: Commands) {
 
 #[test]
 fn do_nothing() {
-    use bevy_input::InputPlugin;
-    use bevy_utils::Duration;
+    use bevy::input::InputPlugin;
+    use bevy::utils::Duration;
 
     let mut app = App::new();
 
@@ -77,8 +76,6 @@ fn do_nothing() {
         assert!(action_state.released(Action::PayRespects));
         assert!(!action_state.just_released(Action::PayRespects));
 
-        assert_eq!(action_state.reasons_pressed(Action::PayRespects).len(), 0);
-
         assert_eq!(action_state.instant_started(Action::PayRespects), t0);
         assert_eq!(
             action_state.previous_duration(Action::PayRespects),
@@ -93,7 +90,7 @@ fn do_nothing() {
 
 #[test]
 fn action_state_change_detection() {
-    use bevy_input::InputPlugin;
+    use bevy::input::InputPlugin;
 
     let mut app = App::new();
 
@@ -127,7 +124,7 @@ fn action_state_change_detection() {
 
 #[test]
 fn disable_input() {
-    use bevy_input::InputPlugin;
+    use bevy::input::InputPlugin;
 
     let mut app = App::new();
 
@@ -168,8 +165,8 @@ fn disable_input() {
 #[test]
 #[cfg(feature = "ui")]
 fn action_state_driver() {
-    use bevy_input::InputPlugin;
-    use bevy_ui::Interaction;
+    use bevy::input::InputPlugin;
+    use bevy::ui::Interaction;
 
     let mut app = App::new();
 
@@ -239,8 +236,8 @@ fn action_state_driver() {
 
 #[test]
 fn duration() {
-    use bevy_input::InputPlugin;
-    use bevy_utils::Duration;
+    use bevy::input::InputPlugin;
+    use bevy::utils::Duration;
 
     const RESPECTFUL_DURATION: Duration = Duration::from_millis(5);
 

@@ -5,19 +5,18 @@
 
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use std::marker::PhantomData;
 
 pub mod action_state;
+pub mod axislike;
+pub mod buttonlike;
 pub mod clashing_inputs;
 mod display_impl;
 pub mod errors;
 pub mod input_map;
-mod input_mocking;
-// Re-export this at the root level for convenience
-pub use input_mocking::MockInput;
-pub mod axislike;
-pub mod buttonlike;
+pub mod input_mocking;
+pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
 pub mod systems;
@@ -29,8 +28,11 @@ pub use leafwing_input_manager_macros::Actionlike;
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
+    pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad};
+    pub use crate::buttonlike::MouseWheelDirection;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
+    pub use crate::input_mocking::MockInput;
     pub use crate::user_input::UserInput;
 
     pub use crate::plugin::InputManagerPlugin;
