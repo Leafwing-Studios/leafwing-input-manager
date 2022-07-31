@@ -59,29 +59,27 @@ pub fn tick_action_state<A: Actionlike>(
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
 #[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
-    maybe_gamepad_button_input_stream: Option<Res<Input<GamepadButton>>>,
-    maybe_gamepad_button_axes_input_stream: Option<Res<Axis<GamepadButton>>>,
-    maybe_gamepad_axes_input_stream: Option<Res<Axis<GamepadAxis>>>,
-    maybe_gamepads: Option<Res<Gamepads>>,
-    maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
-    maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
-    maybe_mouse_wheel_events: Option<Res<Events<MouseWheel>>>,
-    maybe_mouse_motion_events: Option<Res<Events<MouseMotion>>>,
+    gamepad_buttons: Res<Input<GamepadButton>>,
+    gamepad_button_axes: Res<Axis<GamepadButton>>,
+    gamepad_axes: Res<Axis<GamepadAxis>>,
+    gamepads: Res<Gamepads>,
+    keyboard: Res<Input<KeyCode>>,
+    mouse: Res<Input<MouseButton>>,
+    mouse_wheel: Res<Events<MouseWheel>>,
+    mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
     mut action_state: Option<ResMut<ActionState<A>>>,
     mut input_map: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
-    let gamepad_buttons = maybe_gamepad_button_input_stream.as_deref();
-    let gamepad_button_axes = maybe_gamepad_button_axes_input_stream.as_deref();
-    let gamepad_axes = maybe_gamepad_axes_input_stream.as_deref();
-    let gamepads = maybe_gamepads.as_deref();
-
-    let keyboard = maybe_keyboard_input_stream.as_deref();
-
-    let mouse = maybe_mouse_input_stream.as_deref();
-    let mouse_wheel = maybe_mouse_wheel_events.as_deref();
-    let mouse_motion = maybe_mouse_motion_events.as_deref();
+    let gamepad_buttons = gamepad_buttons.into_inner();
+    let gamepad_button_axes = gamepad_button_axes.into_inner();
+    let gamepad_axes = gamepad_axes.into_inner();
+    let gamepads = gamepads.into_inner();
+    let keyboard = keyboard.into_inner();
+    let mouse = mouse.into_inner();
+    let mouse_wheel = mouse_wheel.into_inner();
+    let mouse_motion = mouse_motion.into_inner();
 
     if let (Some(input_map), Some(action_state)) = (&mut input_map, &mut action_state) {
         let input_streams = InputStreams {

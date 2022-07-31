@@ -612,6 +612,8 @@ mod tests {
         use bevy::prelude::*;
         use bevy::utils::{Duration, Instant};
 
+        let mut world = World::new();
+
         // Action state
         let mut action_state = ActionState::<Action>::default();
 
@@ -621,7 +623,7 @@ mod tests {
 
         // Input streams
         let mut keyboard_input_stream = Input::<KeyCode>::default();
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
+        let input_streams = InputStreams::from_world(&mut world, None);
 
         // Starting state
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
@@ -633,7 +635,7 @@ mod tests {
 
         // Pressing
         keyboard_input_stream.press(KeyCode::R);
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
+        let input_streams = InputStreams::from_world(&mut world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
@@ -653,7 +655,7 @@ mod tests {
 
         // Releasing
         keyboard_input_stream.release(KeyCode::R);
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
+        let input_streams = InputStreams::from_world(&mut world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 

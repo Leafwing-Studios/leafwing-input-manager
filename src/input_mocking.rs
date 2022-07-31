@@ -144,15 +144,13 @@ impl<'a> MutableInputStreams<'a> {
         let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
             input_to_send.raw_inputs();
 
-        if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button_type in gamepad_buttons {
-                if let Some(gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton {
-                        gamepad,
-                        button_type,
-                    };
-                    gamepad_input.press(gamepad_button);
-                }
+        for button_type in gamepad_buttons {
+            if let Some(gamepad) = self.associated_gamepad {
+                let gamepad_button = GamepadButton {
+                    gamepad,
+                    button_type,
+                };
+                self.gamepad_buttons.press(gamepad_button);
             }
         }
 
@@ -160,62 +158,50 @@ impl<'a> MutableInputStreams<'a> {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(ref mut gamepad_input) = self.gamepad_axes {
-                            if let Some(gamepad) = self.associated_gamepad {
-                                gamepad_input
-                                    .set(GamepadAxis { gamepad, axis_type }, position_data);
-                            }
+                        if let Some(gamepad) = self.associated_gamepad {
+                            self.gamepad_axes
+                                .set(GamepadAxis { gamepad, axis_type }, position_data);
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
-                        if let Some(ref mut mouse_wheel_events) = self.mouse_wheel {
-                            match axis_type {
-                                // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-                                MouseWheelAxisType::X => mouse_wheel_events.send(MouseWheel {
-                                    unit: MouseScrollUnit::Pixel,
-                                    x: position_data,
-                                    y: 0.0,
-                                }),
-                                MouseWheelAxisType::Y => mouse_wheel_events.send(MouseWheel {
-                                    unit: MouseScrollUnit::Pixel,
-                                    x: 0.0,
-                                    y: position_data,
-                                }),
-                            }
+                        match axis_type {
+                            // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
+                            MouseWheelAxisType::X => self.mouse_wheel.send(MouseWheel {
+                                unit: MouseScrollUnit::Pixel,
+                                x: position_data,
+                                y: 0.0,
+                            }),
+                            MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
+                                unit: MouseScrollUnit::Pixel,
+                                x: 0.0,
+                                y: position_data,
+                            }),
                         }
                     }
-                    AxisType::MouseMotion(axis_type) => {
-                        if let Some(ref mut mouse_wheel_events) = self.mouse_motion {
-                            match axis_type {
-                                MouseMotionAxisType::X => mouse_wheel_events.send(MouseMotion {
-                                    delta: Vec2 {
-                                        x: position_data,
-                                        y: 0.0,
-                                    },
-                                }),
-                                MouseMotionAxisType::Y => mouse_wheel_events.send(MouseMotion {
-                                    delta: Vec2 {
-                                        x: 0.0,
-                                        y: position_data,
-                                    },
-                                }),
-                            }
-                        }
-                    }
+                    AxisType::MouseMotion(axis_type) => match axis_type {
+                        MouseMotionAxisType::X => self.mouse_motion.send(MouseMotion {
+                            delta: Vec2 {
+                                x: position_data,
+                                y: 0.0,
+                            },
+                        }),
+                        MouseMotionAxisType::Y => self.mouse_motion.send(MouseMotion {
+                            delta: Vec2 {
+                                x: 0.0,
+                                y: position_data,
+                            },
+                        }),
+                    },
                 }
             }
         }
 
-        if let Some(ref mut keyboard_input) = self.keyboard {
-            for button in keyboard_buttons {
-                keyboard_input.press(button);
-            }
+        for button in keyboard_buttons {
+            self.keyboard.press(button);
         }
 
-        if let Some(ref mut mouse_input) = self.mouse {
-            for button in mouse_buttons {
-                mouse_input.press(button);
-            }
+        for button in mouse_buttons {
+            self.mouse.press(button);
         }
     }
 
@@ -227,25 +213,21 @@ impl<'a> MutableInputStreams<'a> {
         let (gamepad_buttons, axis_data, keyboard_buttons, mouse_buttons) =
             input_to_release.raw_inputs();
 
-        if let Some(ref mut gamepad_input) = self.gamepad_buttons {
-            for button_type in gamepad_buttons {
-                if let Some(gamepad) = self.associated_gamepad {
-                    let gamepad_button = GamepadButton {
-                        gamepad,
-                        button_type,
-                    };
-                    gamepad_input.release(gamepad_button);
-                }
+        for button_type in gamepad_buttons {
+            if let Some(gamepad) = self.associated_gamepad {
+                let gamepad_button = GamepadButton {
+                    gamepad,
+                    button_type,
+                };
+                self.gamepad_buttons.release(gamepad_button);
             }
         }
 
         for (outer_axis_type, _maybe_position_data) in axis_data {
             match outer_axis_type {
                 AxisType::Gamepad(axis_type) => {
-                    if let Some(ref mut gamepad_input) = self.gamepad_axes {
-                        if let Some(gamepad) = self.associated_gamepad {
-                            gamepad_input.remove(GamepadAxis { gamepad, axis_type });
-                        }
+                    if let Some(gamepad) = self.associated_gamepad {
+                        self.gamepad_axes.remove(GamepadAxis { gamepad, axis_type });
                     }
                 }
                 // Releasing event-like input should have no effect;
@@ -255,16 +237,12 @@ impl<'a> MutableInputStreams<'a> {
             }
         }
 
-        if let Some(ref mut keyboard_input) = self.keyboard {
-            for button in keyboard_buttons {
-                keyboard_input.release(button);
-            }
+        for button in keyboard_buttons {
+            self.keyboard.release(button);
         }
 
-        if let Some(ref mut mouse_input) = self.mouse {
-            for button in mouse_buttons {
-                mouse_input.release(button);
-            }
+        for button in mouse_buttons {
+            self.mouse.release(button);
         }
     }
 }

@@ -549,8 +549,12 @@ mod tests {
     #[test]
     fn mock_inputs() {
         use crate::input_map::InputKind;
+        use crate::input_mocking::MockInput;
         use crate::input_streams::InputStreams;
         use bevy::prelude::*;
+
+        let mut world = World::new();
+        let input_streams = InputStreams::from_world(&mut world, Some(Gamepad { id: 42 }));
 
         // Setting up the input map
         let mut input_map = InputMap::<Action>::default();
@@ -580,156 +584,107 @@ mod tests {
             Action::Hide,
         );
 
-        // Input streams
-        let mut gamepad_button_input_stream = Input::<GamepadButton>::default();
-        let gamepad_button_axis_input_stream = Axis::<GamepadButton>::default();
-        let gamepad_axis_input_stream = Axis::<GamepadAxis>::default();
-        let mut keyboard_input_stream = Input::<KeyCode>::default();
-        let mut mouse_input_stream = Input::<MouseButton>::default();
-
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
-
         // With no inputs, nothing should be detected
         for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
+            assert!(!input_map.pressed(
+                action,
+                &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+                ClashStrategy::PressAll
+            ));
         }
 
         // Pressing the wrong gamepad
-        gamepad_button_input_stream.press(GamepadButton {
-            gamepad: Gamepad { id: 0 },
-            button_type: GamepadButtonType::South,
-        });
+        world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 0 }));
 
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
         for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
+            assert!(!input_map.pressed(
+                action,
+                &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+                ClashStrategy::PressAll
+            ));
         }
 
         // Pressing the correct gamepad
-        gamepad_button_input_stream.press(GamepadButton {
-            gamepad: Gamepad { id: 42 },
-            button_type: GamepadButtonType::South,
-        });
+        world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 42 }));
 
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
-
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(!input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
+        assert!(input_map.pressed(
+            Action::Run,
+            &input_streams.clone().into(),
+            ClashStrategy::PressAll
+        ));
+        assert!(!input_map.pressed(
+            Action::Jump,
+            &input_streams.clone().into(),
+            ClashStrategy::PressAll
+        ));
 
         // Chord
-        gamepad_button_input_stream.press(GamepadButton {
-            gamepad: Gamepad { id: 42 },
-            button_type: GamepadButtonType::South,
-        });
-        gamepad_button_input_stream.press(GamepadButton {
-            gamepad: Gamepad { id: 42 },
-            button_type: GamepadButtonType::North,
-        });
+        world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 42 }));
+        world.send_input_to_gamepad(GamepadButtonType::North, Some(Gamepad { id: 42 }));
 
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
-
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
+        assert!(input_map.pressed(
+            Action::Run,
+            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            ClashStrategy::PressAll
+        ));
+        assert!(input_map.pressed(
+            Action::Jump,
+            &input_streams.clone().into(),
+            ClashStrategy::PressAll
+        ));
 
         // Clearing inputs
-        gamepad_button_input_stream = Input::<GamepadButton>::default();
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
+        world.reset_inputs();
 
         for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
+            assert!(!input_map.pressed(
+                action,
+                &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+                ClashStrategy::PressAll
+            ));
         }
 
         // Keyboard
-        keyboard_input_stream.press(KeyCode::LShift);
+        world.send_input(KeyCode::LShift);
 
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
+        assert!(input_map.pressed(
+            Action::Run,
+            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            ClashStrategy::PressAll
+        ));
+        assert!(input_map.pressed(
+            Action::Hide,
+            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            ClashStrategy::PressAll
+        ));
 
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));
-
-        keyboard_input_stream = Input::<KeyCode>::default();
+        world.reset_inputs();
 
         // Mouse
-        mouse_input_stream.press(MouseButton::Left);
-        mouse_input_stream.press(MouseButton::Other(42));
+        world.send_input(MouseButton::Left);
+        world.send_input(MouseButton::Other(42));
 
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
+        assert!(input_map.pressed(
+            Action::Run,
+            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            ClashStrategy::PressAll
+        ));
+        assert!(input_map.pressed(
+            Action::Jump,
+            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            ClashStrategy::PressAll
+        ));
 
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
-
-        mouse_input_stream = Input::<MouseButton>::default();
+        world.reset_inputs();
 
         // Cross-device chording
-        keyboard_input_stream.press(KeyCode::LControl);
-        mouse_input_stream.press(MouseButton::Left);
+        world.send_input(KeyCode::LControl);
+        world.send_input(MouseButton::Left);
 
-        let input_streams = InputStreams {
-            gamepad_buttons: Some(&gamepad_button_input_stream),
-            gamepad_button_axes: Some(&gamepad_button_axis_input_stream),
-            gamepad_axes: Some(&gamepad_axis_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad { id: 42 }),
-            ..Default::default()
-        };
-
-        assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));
+        assert!(input_map.pressed(
+            Action::Hide,
+            &InputStreams::from_world(&mut world, Some(Gamepad { id: 42 })),
+            ClashStrategy::PressAll
+        ));
     }
 }

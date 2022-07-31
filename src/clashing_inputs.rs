@@ -524,16 +524,18 @@ mod tests {
 
         #[test]
         fn resolve_prioritize_longest() {
+            use crate::input_mocking::MockInput;
             use bevy::prelude::*;
             use Action::*;
 
+            let mut world = World::new();
+
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
-            let mut keyboard: Input<KeyCode> = Default::default();
-            keyboard.press(Key1);
-            keyboard.press(Key2);
+            world.send_input(Key1);
+            world.send_input(Key2);
 
-            let input_streams = InputStreams::from_keyboard(&keyboard);
+            let input_streams = InputStreams::from_world(&mut world, None);
 
             assert_eq!(
                 resolve_clash(
@@ -557,9 +559,9 @@ mod tests {
             let chord_clash = input_map
                 .possible_clash(OneAndTwo, OneAndTwoAndThree)
                 .unwrap();
-            keyboard.press(Key3);
+            world.send_input(Key3);
 
-            let input_streams = InputStreams::from_keyboard(&keyboard);
+            let input_streams = InputStreams::from_world(&mut world, None);
 
             assert_eq!(
                 resolve_clash(
@@ -573,17 +575,19 @@ mod tests {
 
         #[test]
         fn resolve_use_action_order() {
+            use crate::input_mocking::MockInput;
             use bevy::prelude::*;
             use Action::*;
+
+            let mut world = World::new();
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, CtrlOne).unwrap();
             let reversed_clash = input_map.possible_clash(CtrlOne, One).unwrap();
-            let mut keyboard: Input<KeyCode> = Default::default();
-            keyboard.press(Key1);
-            keyboard.press(LControl);
+            world.send_input(Key1);
+            world.send_input(LControl);
 
-            let input_streams = InputStreams::from_keyboard(&keyboard);
+            let input_streams = InputStreams::from_world(&mut world, None);
 
             assert_eq!(
                 resolve_clash(&simple_clash, ClashStrategy::UseActionOrder, &input_streams,),
@@ -601,16 +605,17 @@ mod tests {
         }
 
         #[test]
-        fn handle_clashes1() {
+        fn handle_clashes() {
             use crate::buttonlike::ButtonState;
+            use crate::input_mocking::MockInput;
             use bevy::prelude::*;
             use Action::*;
 
+            let mut world = World::new();
             let input_map = test_input_map();
 
-            let mut keyboard: Input<KeyCode> = Default::default();
-            keyboard.press(Key1);
-            keyboard.press(Key2);
+            world.send_input(Key1);
+            world.send_input(Key2);
 
             let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
             action_data[One.index()].state = ButtonState::JustPressed;
@@ -619,7 +624,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_keyboard(&keyboard),
+                &InputStreams::from_world(&mut world, None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -631,16 +636,17 @@ mod tests {
 
         // Checks that a clash between a VirtualDPad and a chord choses the chord
         #[test]
-        fn handle_clashes2() {
+        fn handle_clashes_dpad_chord() {
             use crate::buttonlike::ButtonState;
+            use crate::input_mocking::MockInput;
             use bevy::prelude::*;
             use Action::*;
 
+            let mut world = World::new();
             let input_map = test_input_map();
 
-            let mut keyboard: Input<KeyCode> = Default::default();
-            keyboard.press(LControl);
-            keyboard.press(Up);
+            world.send_input(LControl);
+            world.send_input(Up);
 
             let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
             action_data[MoveDPad.index()].state = ButtonState::JustPressed;
@@ -648,7 +654,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_keyboard(&keyboard),
+                &InputStreams::from_world(&mut world, None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -660,18 +666,19 @@ mod tests {
 
         #[test]
         fn which_pressed() {
+            use crate::input_mocking::MockInput;
             use bevy::prelude::*;
             use Action::*;
 
+            let mut world = World::new();
             let input_map = test_input_map();
 
-            let mut keyboard: Input<KeyCode> = Default::default();
-            keyboard.press(Key1);
-            keyboard.press(Key2);
-            keyboard.press(LControl);
+            world.send_input(Key1);
+            world.send_input(Key2);
+            world.send_input(LControl);
 
             let action_data = input_map.which_pressed(
-                &InputStreams::from_keyboard(&keyboard),
+                &InputStreams::from_world(&mut world, None),
                 ClashStrategy::PrioritizeLongest,
             );
 
