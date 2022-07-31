@@ -12,7 +12,6 @@ use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionDiff;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::systems::{generate_action_diffs, process_action_diffs};
-use leafwing_input_manager::MockInput;
 
 use std::fmt::Debug;
 

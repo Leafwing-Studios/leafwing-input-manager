@@ -549,11 +549,11 @@ mod tests {
     #[test]
     fn mock_inputs() {
         use crate::input_map::InputKind;
-        use crate::input_mocking::MockInput;
+        use crate::input_mocking::{mockable_world, MockInput};
         use crate::input_streams::InputStreams;
         use bevy::prelude::*;
 
-        let world = World::new();
+        let world = mockable_world();
 
         // Setting up the input map
         let mut input_map = InputMap::<Action>::default();
@@ -593,7 +593,7 @@ mod tests {
         }
 
         // Pressing the wrong gamepad
-        let mut world = World::new();
+        let mut world = mockable_world();
         world.send_input_to_gamepad(GamepadButtonType::South, Some(Gamepad { id: 0 }));
 
         for action in Action::variants() {

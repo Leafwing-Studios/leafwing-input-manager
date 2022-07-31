@@ -407,6 +407,9 @@ mod tests {
 
     mod basic_functionality {
         use crate::axislike::VirtualDPad;
+        use crate::buttonlike::ButtonState;
+        use crate::input_mocking::{mockable_world, MockInput};
+        use Action::*;
 
         use super::*;
 
@@ -456,8 +459,6 @@ mod tests {
 
         #[test]
         fn button_chord_clash_construction() {
-            use Action::*;
-
             let input_map = test_input_map();
 
             let observed_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
@@ -474,8 +475,6 @@ mod tests {
 
         #[test]
         fn chord_chord_clash_construction() {
-            use Action::*;
-
             let input_map = test_input_map();
 
             let observed_clash = input_map
@@ -494,8 +493,6 @@ mod tests {
 
         #[test]
         fn can_clash() {
-            use Action::*;
-
             let input_map = test_input_map();
 
             assert!(input_map.possible_clash(One, Two).is_none());
@@ -524,11 +521,7 @@ mod tests {
 
         #[test]
         fn resolve_prioritize_longest() {
-            use crate::input_mocking::MockInput;
-            use bevy::prelude::*;
-            use Action::*;
-
-            let mut world = World::new();
+            let mut world = mockable_world();
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
@@ -575,11 +568,7 @@ mod tests {
 
         #[test]
         fn resolve_use_action_order() {
-            use crate::input_mocking::MockInput;
-            use bevy::prelude::*;
-            use Action::*;
-
-            let mut world = World::new();
+            let mut world = mockable_world();
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, CtrlOne).unwrap();
@@ -606,12 +595,7 @@ mod tests {
 
         #[test]
         fn handle_clashes() {
-            use crate::buttonlike::ButtonState;
-            use crate::input_mocking::MockInput;
-            use bevy::prelude::*;
-            use Action::*;
-
-            let mut world = World::new();
+            let mut world = mockable_world();
             let input_map = test_input_map();
 
             world.send_input(Key1);
@@ -637,12 +621,7 @@ mod tests {
         // Checks that a clash between a VirtualDPad and a chord choses the chord
         #[test]
         fn handle_clashes_dpad_chord() {
-            use crate::buttonlike::ButtonState;
-            use crate::input_mocking::MockInput;
-            use bevy::prelude::*;
-            use Action::*;
-
-            let mut world = World::new();
+            let mut world = mockable_world();
             let input_map = test_input_map();
 
             world.send_input(LControl);
@@ -666,11 +645,7 @@ mod tests {
 
         #[test]
         fn which_pressed() {
-            use crate::input_mocking::MockInput;
-            use bevy::prelude::*;
-            use Action::*;
-
-            let mut world = World::new();
+            let mut world = mockable_world();
             let input_map = test_input_map();
 
             world.send_input(Key1);

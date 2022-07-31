@@ -80,7 +80,6 @@ impl ClashTestExt for App {
 #[test]
 fn input_clash_handling() {
     use bevy::input::InputPlugin;
-    use leafwing_input_manager::MockInput;
     use Action::*;
     use KeyCode::*;
 

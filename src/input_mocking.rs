@@ -23,7 +23,7 @@ use bevy::input::{
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
-    Input,
+    {Axis, Input},
 };
 use bevy::math::Vec2;
 #[cfg(feature = "ui")]
@@ -38,9 +38,9 @@ use bevy::window::CursorMoved;
 /// # Examples
 /// ```rust
 /// use bevy::prelude::*;
-/// use leafwing_input_manager::MockInput;
+/// use leafwing_input_manager::input_mocking::{MockInput, mockable_world};
 ///
-/// let mut world = World::new();
+/// let mut world = mockable_world();
 ///
 /// // Pay respects!
 /// world.send_input(KeyCode::F);
@@ -48,9 +48,10 @@ use bevy::window::CursorMoved;
 ///
 /// ```rust
 /// use bevy::prelude::*;
-/// use leafwing_input_manager::{MockInput, user_input::UserInput};
+/// use leafwing_input_manager::{input_mocking::MockInput, user_input::UserInput};
 ///
 /// let mut app = App::new();
+/// app.add_plugin(bevy::input::InputPlugin);
 ///
 /// // Send inputs one at a time
 /// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
@@ -403,13 +404,12 @@ impl MockInput for App {
 
 #[cfg(test)]
 mod test {
+    use crate::input_mocking::{mockable_world, MockInput};
+    use bevy::prelude::*;
 
     #[test]
     fn button_inputs() {
-        use crate::input_mocking::MockInput;
-        use bevy::prelude::*;
-
-        let mut world = World::new();
+        let mut world = mockable_world();
         world.insert_resource(Input::<KeyCode>::default());
         world.insert_resource(Input::<MouseButton>::default());
         world.insert_resource(Input::<GamepadButton>::default());
@@ -455,7 +455,7 @@ mod test {
         #[derive(Component)]
         struct ButtonMarker;
 
-        let mut world = World::new();
+        let mut world = mockable_world();
         // Marked button
         world.spawn().insert(Interaction::None).insert(ButtonMarker);
         // Unmarked button
@@ -499,4 +499,21 @@ mod test {
             assert_eq!(*interaction, Interaction::None)
         }
     }
+}
+
+/// Generates a [`World`] with the resources required by [`InputStreams`]
+///
+/// This is exclusively useful for testing.
+/// When working with [`App`], add [`InputPlugin`](bevy::input::InputPlugin) instead.
+pub fn mockable_world() -> World {
+    let mut world = World::new();
+    world.init_resource::<Input<GamepadButton>>();
+    world.init_resource::<Axis<GamepadButton>>();
+    world.init_resource::<Axis<GamepadAxis>>();
+    world.init_resource::<Gamepads>();
+    world.init_resource::<Input<KeyCode>>();
+    world.init_resource::<Input<MouseButton>>();
+    world.init_resource::<Events<MouseWheel>>();
+    world.init_resource::<Events<MouseMotion>>();
+    world
 }
