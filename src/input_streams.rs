@@ -443,3 +443,21 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
         }
     }
 }
+
+impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
+    fn from(mutable_streams: &'a MutableInputStreams<'a>) -> Self {
+        InputStreams {
+            // This absurd-looking &*(foo) pattern convinces the compiler
+            // that we want a reference to the underlying data with the correct lifetime
+            gamepad_buttons: &*(mutable_streams.gamepad_buttons),
+            gamepad_button_axes: &*(mutable_streams.gamepad_button_axes),
+            gamepad_axes: &*(mutable_streams.gamepad_axes),
+            gamepads: &*(mutable_streams.gamepads),
+            keyboard: &*(mutable_streams.keyboard),
+            mouse: &*(mutable_streams.mouse),
+            mouse_wheel: &*(mutable_streams.mouse_wheel),
+            mouse_motion: &*(mutable_streams.mouse_motion),
+            associated_gamepad: mutable_streams.associated_gamepad,
+        }
+    }
+}

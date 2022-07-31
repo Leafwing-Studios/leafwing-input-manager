@@ -243,11 +243,15 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn pressed(&self, input: impl Into<UserInput>) -> bool {
-        todo!()
+        let input_streams: InputStreams = self.into();
+        input_streams.input_pressed(&input.into())
     }
 
     fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
-        todo!()
+        let mut input_streams: InputStreams = self.into();
+        input_streams.associated_gamepad = gamepad;
+
+        input_streams.input_pressed(&input.into())
     }
 
     fn reset_inputs(&mut self) {
