@@ -142,13 +142,13 @@ impl MockInput for MutableInputStreams<'_> {
         // Keyboard buttons
         for button in raw_inputs.keycodes {
             // FIXME: send events instead
-            self.keyboard.press(button);
+            self.keycode.press(button);
         }
 
         // Mouse buttons
         for button in raw_inputs.mouse_buttons {
             // FIXME: send events instead
-            self.mouse.press(button);
+            self.mouse_button.press(button);
         }
 
         // Discrete mouse wheel events
@@ -285,11 +285,11 @@ impl MockInput for MutableInputStreams<'_> {
         }
 
         for button in raw_inputs.keycodes {
-            self.keyboard.release(button);
+            self.keycode.release(button);
         }
 
         for button in raw_inputs.mouse_buttons {
-            self.mouse.release(button);
+            self.mouse_button.release(button);
         }
     }
 
@@ -311,8 +311,8 @@ impl MockInput for MutableInputStreams<'_> {
         // as they are not actually input data
         *self.gamepad_buttons = Default::default();
         *self.gamepad_axes = Default::default();
-        *self.keyboard = Default::default();
-        *self.mouse = Default::default();
+        *self.keycode = Default::default();
+        *self.mouse_button = Default::default();
         *self.mouse_wheel = Default::default();
         *self.mouse_motion = Default::default();
     }

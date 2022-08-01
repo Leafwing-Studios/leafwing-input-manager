@@ -45,6 +45,7 @@
 - Added the `guess_gamepad` method to `InputStreams` and `MutableInputStreams`, which attempts to find an appropriate gamepad to use.
 - `InputMocking::pressed` and `pressed_for_gamepad` no longer require `&mut self`.
 - `UserInput::raw_inputs` now returns a `RawInputs` struct, rather than a tuple struct.
+- The `mouse` and `keyboard` fields on the two `InputStreams` types are now named `mouse_button` and `keycode` respectively.
 
 ## Bug fixes
 
