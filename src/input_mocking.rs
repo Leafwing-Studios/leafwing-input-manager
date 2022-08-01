@@ -8,6 +8,7 @@
 //! which are then sent as [`bevy::input`] events of the appropriate types.
 
 use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType};
+use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::input_streams::{InputStreams, MutableInputStreams};
 use crate::user_input::UserInput;
 
@@ -146,6 +147,50 @@ impl MockInput for MutableInputStreams<'_> {
         // Mouse buttons
         for button in raw_inputs.mouse_buttons {
             self.mouse.press(button);
+        }
+
+        // Discrete mouse wheel events
+        for mouse_wheel_direction in raw_inputs.mouse_wheel {
+            match mouse_wheel_direction {
+                MouseWheelDirection::Left => self.mouse_wheel.send(MouseWheel {
+                    unit: MouseScrollUnit::Pixel,
+                    x: -1.0,
+                    y: 0.0,
+                }),
+                MouseWheelDirection::Right => self.mouse_wheel.send(MouseWheel {
+                    unit: MouseScrollUnit::Pixel,
+                    x: 1.0,
+                    y: 0.0,
+                }),
+                MouseWheelDirection::Up => self.mouse_wheel.send(MouseWheel {
+                    unit: MouseScrollUnit::Pixel,
+                    x: 0.0,
+                    y: 1.0,
+                }),
+                MouseWheelDirection::Down => self.mouse_wheel.send(MouseWheel {
+                    unit: MouseScrollUnit::Pixel,
+                    x: 0.0,
+                    y: -1.0,
+                }),
+            }
+        }
+
+        // Discrete mouse motion event
+        for mouse_motion_direction in raw_inputs.mouse_motion {
+            match mouse_motion_direction {
+                MouseMotionDirection::Up => self.mouse_motion.send(MouseMotion {
+                    delta: Vec2 { x: 0.0, y: 1.0 },
+                }),
+                MouseMotionDirection::Down => self.mouse_motion.send(MouseMotion {
+                    delta: Vec2 { x: 0.0, y: -1.0 },
+                }),
+                MouseMotionDirection::Right => self.mouse_motion.send(MouseMotion {
+                    delta: Vec2 { x: 1.0, y: 0.0 },
+                }),
+                MouseMotionDirection::Left => self.mouse_motion.send(MouseMotion {
+                    delta: Vec2 { x: -1.0, y: 0.0 },
+                }),
+            }
         }
 
         // Gamepad buttons
