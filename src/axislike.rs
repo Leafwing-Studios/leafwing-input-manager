@@ -1,6 +1,6 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equvalents)
 
-use crate::buttonlike::MouseWheelDirection;
+use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::orientation::{Direction, Rotation};
 use crate::user_input::InputKind;
 use bevy::input::{
@@ -280,6 +280,16 @@ impl VirtualDPad {
             down: InputKind::MouseWheel(MouseWheelDirection::Down),
             left: InputKind::MouseWheel(MouseWheelDirection::Left),
             right: InputKind::MouseWheel(MouseWheelDirection::Right),
+        }
+    }
+
+    /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
+    pub fn mouse_motion() -> VirtualDPad {
+        VirtualDPad {
+            up: InputKind::MouseMotion(MouseMotionDirection::Up),
+            down: InputKind::MouseMotion(MouseMotionDirection::Down),
+            left: InputKind::MouseMotion(MouseMotionDirection::Left),
+            right: InputKind::MouseMotion(MouseMotionDirection::Right),
         }
     }
 }
