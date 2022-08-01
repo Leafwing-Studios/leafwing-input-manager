@@ -27,11 +27,21 @@ fn test_app() -> App {
         .init_resource::<ActionState<ButtonlikeTestAction>>()
         .init_resource::<ActionState<AxislikeTestAction>>();
 
+    // WARNING: you MUST register your gamepad during tests, or all gamepad input mocking will fail
+    let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+    gamepad_events.send(GamepadEvent {
+        // This MUST be consistent with any other mocked events
+        gamepad: Gamepad { id: 1 },
+        event_type: GamepadEventType::Connected,
+    });
+
+    // Ensure that the gamepad is picked up by the appropriate system
+    app.update();
+
     app
 }
 
 #[test]
-#[ignore = "gamepad axislike inputs appear to be broken"]
 fn raw_gamepad_axis_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
@@ -51,7 +61,6 @@ fn raw_gamepad_axis_events() {
 }
 
 #[test]
-#[ignore = "gamepad axislike inputs appear to broken"]
 fn game_pad_single_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -70,7 +79,6 @@ fn game_pad_single_axis_mocking() {
 }
 
 #[test]
-#[ignore = "gamepad axislike inputs appear to be broken"]
 fn game_pad_dual_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -97,7 +105,6 @@ fn game_pad_dual_axis_mocking() {
 }
 
 #[test]
-#[ignore = "gamepad axislike inputs appear to be broken"]
 fn game_pad_single_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
@@ -186,7 +193,6 @@ fn game_pad_single_axis() {
 }
 
 #[test]
-#[ignore = "gamepad axislike inputs appear to be broken"]
 fn game_pad_dual_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
@@ -214,7 +220,6 @@ fn game_pad_dual_axis() {
 }
 
 #[test]
-#[ignore = "gamepad axislike inputs appear to be broken"]
 fn game_pad_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
