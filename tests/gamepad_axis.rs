@@ -45,7 +45,6 @@ fn test_app() -> App {
 }
 
 #[test]
-#[ignore = "mysteriously failing"]
 fn raw_gamepad_axis_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
@@ -197,7 +196,6 @@ fn game_pad_single_axis() {
 }
 
 #[test]
-#[ignore = "mysteriously failing"]
 fn game_pad_dual_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
@@ -208,7 +206,7 @@ fn game_pad_dual_axis() {
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
-        5.0,
+        0.8,
         0.0,
     ));
 
@@ -217,15 +215,14 @@ fn game_pad_dual_axis() {
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
 
     assert!(action_state.pressed(AxislikeTestAction::XY));
-    assert_eq!(action_state.value(AxislikeTestAction::XY), 5.0);
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.8);
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(5.0, 0.0)
+        DualAxisData::new(0.8, 0.0)
     );
 }
 
 #[test]
-#[ignore = "mysteriously failing"]
 fn game_pad_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
@@ -233,12 +230,7 @@ fn game_pad_virtualdpad() {
         AxislikeTestAction::XY,
     )]));
 
-    app.send_input(DualAxis::from_value(
-        GamepadAxisType::LeftStickX,
-        GamepadAxisType::LeftStickY,
-        0.0,
-        -2.0,
-    ));
+    app.send_input(GamepadButtonType::DPadLeft);
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -249,6 +241,6 @@ fn game_pad_virtualdpad() {
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
         // This should be unit length, because we're working with a VirtualDpad
-        DualAxisData::new(0.0, -1.0)
+        DualAxisData::new(-1.0, 0.0)
     );
 }
