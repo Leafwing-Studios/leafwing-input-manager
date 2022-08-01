@@ -216,7 +216,7 @@ impl MockInput for MutableInputStreams<'_> {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(gamepad) = self.guess_gamepad() {
+                        if let Some(gamepad) = gamepad {
                             self.gamepad_events.send(GamepadEvent {
                                 gamepad,
                                 event_type: GamepadEventType::AxisChanged(axis_type, position_data),
