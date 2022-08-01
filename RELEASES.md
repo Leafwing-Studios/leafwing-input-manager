@@ -46,6 +46,11 @@
 - `InputMocking::pressed` and `pressed_for_gamepad` no longer require `&mut self`.
 - `UserInput::raw_inputs` now returns a `RawInputs` struct, rather than a tuple struct.
 
+## Bug fixes
+
+- mocked inputs are now sent at the low-level `Events` form, rather than in their `Input` format.
+  - this ensures that user code that is reading these events directly can be tested accurately.
+
 ## Version 0.4.1
 
 ### Bug fixes

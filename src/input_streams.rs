@@ -1,10 +1,13 @@
 //! Unified input streams for working with [`bevy::input`] data.
 
-use bevy::input::{
-    gamepad::{Gamepad, GamepadAxis, GamepadButton, Gamepads},
-    keyboard::KeyCode,
-    mouse::{MouseButton, MouseMotion, MouseWheel},
-    Axis, Input,
+use bevy::{
+    input::{
+        gamepad::{Gamepad, GamepadAxis, GamepadButton, Gamepads},
+        keyboard::{KeyCode, KeyboardInput},
+        mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
+        Axis, Input,
+    },
+    prelude::GamepadEvent,
 };
 use petitset::PetitSet;
 
@@ -364,14 +367,23 @@ pub struct MutableInputStreams<'a> {
     pub gamepad_axes: &'a mut Axis<GamepadAxis>,
     /// A list of registered [`Gamepads`]
     pub gamepads: &'a mut Gamepads,
+    /// Events used for mocking gamepad-related inputs
+    pub gamepad_events: &'a mut Events<GamepadEvent>,
+
     /// A [`KeyCode`] [`Input`] stream
     pub keyboard: &'a mut Input<KeyCode>,
+    /// Events used for mocking keyboard-related inputs
+    pub keyboard_events: &'a mut Events<KeyboardInput>,
+
     /// A [`MouseButton`] [`Input`] stream
     pub mouse: &'a mut Input<MouseButton>,
+    /// Events used for mocking [`MouseButton`] inputs
+    pub mouse_button_events: &'a mut Events<MouseButtonInput>,
     /// A [`MouseWheel`] event stream
     pub mouse_wheel: &'a mut Events<MouseWheel>,
     /// A [`MouseMotion`] event stream
     pub mouse_motion: &'a mut Events<MouseMotion>,
+
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
 }
@@ -384,8 +396,11 @@ impl<'a> MutableInputStreams<'a> {
             ResMut<Axis<GamepadButton>>,
             ResMut<Axis<GamepadAxis>>,
             ResMut<Gamepads>,
+            ResMut<Events<GamepadEvent>>,
             ResMut<Input<KeyCode>>,
+            ResMut<Events<KeyboardInput>>,
             ResMut<Input<MouseButton>>,
+            ResMut<Events<MouseButtonInput>>,
             ResMut<Events<MouseWheel>>,
             ResMut<Events<MouseMotion>>,
         )> = SystemState::new(world);
@@ -395,8 +410,11 @@ impl<'a> MutableInputStreams<'a> {
             gamepad_button_axes,
             gamepad_axes,
             gamepads,
+            gamepad_events,
             keyboard,
+            keyboard_events,
             mouse,
+            mouse_button_events,
             mouse_wheel,
             mouse_motion,
         ) = input_system_state.get_mut(world);
@@ -406,8 +424,11 @@ impl<'a> MutableInputStreams<'a> {
             gamepad_button_axes: gamepad_button_axes.into_inner(),
             gamepad_axes: gamepad_axes.into_inner(),
             gamepads: gamepads.into_inner(),
+            gamepad_events: gamepad_events.into_inner(),
             keyboard: keyboard.into_inner(),
+            keyboard_events: keyboard_events.into_inner(),
             mouse: mouse.into_inner(),
+            mouse_button_events: mouse_button_events.into_inner(),
             mouse_wheel: mouse_wheel.into_inner(),
             mouse_motion: mouse_motion.into_inner(),
             associated_gamepad: gamepad,
