@@ -23,7 +23,8 @@ fn test_app() -> App {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<ButtonlikeTestAction>::default());
+        .add_plugin(InputManagerPlugin::<ButtonlikeTestAction>::default())
+        .add_plugin(InputManagerPlugin::<AxislikeTestAction>::default());
 
     app
 }
