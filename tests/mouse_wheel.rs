@@ -1,7 +1,7 @@
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::{DualAxisData, MouseWheelAxisType};
+use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseWheelAxisType};
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug)]
@@ -52,6 +52,62 @@ fn raw_events() {
 }
 
 #[test]
+fn mouse_wheel_discrete_mocking() {
+    let mut app = test_app();
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    assert_eq!(events.drain().count(), 0);
+
+    app.send_input(MouseWheelDirection::Up);
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+
+    assert_eq!(events.drain().count(), 1);
+}
+
+#[test]
+fn mouse_wheel_single_axis_mocking() {
+    let mut app = test_app();
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    assert_eq!(events.drain().count(), 0);
+
+    let input = SingleAxis {
+        axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+        value: Some(-1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+    };
+
+    app.send_input(input);
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    assert_eq!(events.drain().count(), 1);
+}
+
+#[test]
+fn mouse_wheel_dual_axis_mocking() {
+    let mut app = test_app();
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    assert_eq!(events.drain().count(), 0);
+
+    let input = DualAxis {
+        x: SingleAxis {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+            value: Some(1.),
+            positive_low: 0.0,
+            negative_low: 0.0,
+        },
+        y: SingleAxis {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+            value: Some(0.),
+            positive_low: 0.0,
+            negative_low: 0.0,
+        },
+    };
+    app.send_input(input);
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    // Dual axis events are split out
+    assert_eq!(events.drain().count(), 2);
+}
+
+#[test]
 fn mouse_wheel_buttonlike() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
@@ -63,13 +119,14 @@ fn mouse_wheel_buttonlike() {
 
     for action in ButtonlikeTestAction::variants() {
         let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
-        let input = input_map.get(action).get_at(0).unwrap();
+        // Get the first associated input
+        let input = input_map.get(action).get_at(0).unwrap().clone();
 
         app.send_input(input.clone());
         app.update();
 
         let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
-        assert!(action_state.pressed(action));
+        assert!(action_state.pressed(action), "failed for {input:?}");
     }
 }
 
@@ -83,10 +140,10 @@ fn mouse_wheel_buttonlike_cancels() {
         (MouseWheelDirection::Right, ButtonlikeTestAction::Right),
     ]));
 
-    // FIXME: fails because sending this as input doesn't naively work
     app.send_input(MouseWheelDirection::Up);
     app.send_input(MouseWheelDirection::Down);
 
+    // Correctly flushes the world
     app.update();
 
     let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
@@ -103,17 +160,78 @@ fn mouse_wheel_single_axis() {
         (SingleAxis::mouse_wheel_y(), AxislikeTestAction::Y),
     ]));
 
-    for action in [AxislikeTestAction::X, AxislikeTestAction::Y] {
-        let input_map = app.world.resource::<InputMap<AxislikeTestAction>>();
-        let input = input_map.get(action).get_at(0).unwrap();
+    // +X
+    let input = SingleAxis {
+        axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+        value: Some(1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::X));
 
-        // FIXME: fails because sending this as input doesn't naively work
-        app.send_input(input.clone());
-        app.update();
+    // -X
+    let input = SingleAxis {
+        axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+        value: Some(-1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::X));
 
-        let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-        assert!(action_state.pressed(action));
-    }
+    // +Y
+    let input = SingleAxis {
+        axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+        value: Some(1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::Y));
+
+    // -Y
+    let input = SingleAxis {
+        axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+        value: Some(-1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::Y));
+
+    // 0
+    let input = SingleAxis {
+        axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+        value: Some(0.0),
+        // Usually a small deadzone threshold will be set
+        positive_low: 0.1,
+        negative_low: 0.1,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(!action_state.pressed(AxislikeTestAction::Y));
+
+    // None
+    let input = SingleAxis {
+        axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+        value: None,
+        positive_low: 0.0,
+        negative_low: 0.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(!action_state.pressed(AxislikeTestAction::Y));
 }
 
 #[test]
