@@ -1,3 +1,4 @@
+use bevy::input::gamepad::GamepadEventRaw;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DualAxisData};
@@ -28,8 +29,8 @@ fn test_app() -> App {
         .init_resource::<ActionState<AxislikeTestAction>>();
 
     // WARNING: you MUST register your gamepad during tests, or all gamepad input mocking will fail
-    let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
-    gamepad_events.send(GamepadEvent {
+    let mut gamepad_events = app.world.resource_mut::<Events<GamepadEventRaw>>();
+    gamepad_events.send(GamepadEventRaw {
         // This MUST be consistent with any other mocked events
         gamepad: Gamepad { id: 1 },
         event_type: GamepadEventType::Connected,
@@ -52,8 +53,8 @@ fn raw_gamepad_axis_events() {
         ButtonlikeTestAction::Up,
     )]));
 
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
-    events.send(GamepadEvent {
+    let mut events = app.world.resource_mut::<Events<GamepadEventRaw>>();
+    events.send(GamepadEventRaw {
         gamepad: Gamepad { id: 1 },
         event_type: GamepadEventType::AxisChanged(GamepadAxisType::RightStickX, 1.0),
     });
@@ -66,7 +67,7 @@ fn raw_gamepad_axis_events() {
 #[test]
 fn game_pad_single_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world.resource_mut::<Events<GamepadEventRaw>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = SingleAxis {
@@ -77,14 +78,14 @@ fn game_pad_single_axis_mocking() {
     };
 
     app.send_input(input);
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world.resource_mut::<Events<GamepadEventRaw>>();
     assert_eq!(events.drain().count(), 1);
 }
 
 #[test]
 fn game_pad_dual_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world.resource_mut::<Events<GamepadEventRaw>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = DualAxis {
@@ -102,7 +103,7 @@ fn game_pad_dual_axis_mocking() {
         },
     };
     app.send_input(input);
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world.resource_mut::<Events<GamepadEventRaw>>();
     // Dual axis events are split out
     assert_eq!(events.drain().count(), 2);
 }

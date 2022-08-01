@@ -39,7 +39,6 @@
   - Rounding errors may still occur when converting from arbitrary directions to the other 3592 discrete decidegrees.
 - `InputStreams` and `MutableInputStreams` no longer store e.g. `Option<Res<Input<MouseButton>>>`, and instead simply store `Res<Input<MouseButton>>`
   - This makes them much easier to work with and dramatically simplifies internal logic.
-  - added the `mockable_world` builder method to generate a `World` with the required resources.
 - `InputStreams::from_world` no longer requires `&mut World`, as it does not require mutable access to any resources.
 - Renamed `InputMocking::send_input_to_gamepad` and `InputMocking::release_input_for_gamepad` to `InputMocking::send_input_as_gamepad` and `InputMocking::send_input_as_gamepad`.
 - Added the `guess_gamepad` method to `InputStreams` and `MutableInputStreams`, which attempts to find an appropriate gamepad to use.
