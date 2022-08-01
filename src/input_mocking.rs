@@ -19,8 +19,9 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::mouse::MouseScrollUnit;
+use bevy::input::ButtonState;
 use bevy::input::{
-    gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
+    gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, GamepadEventType, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
@@ -141,14 +142,19 @@ impl MockInput for MutableInputStreams<'_> {
 
         // Keyboard buttons
         for button in raw_inputs.keycodes {
-            // FIXME: send events instead
-            self.keycode.press(button);
+            self.keyboard_events.send(KeyboardInput {
+                scan_code: u32::MAX,
+                key_code: Some(button),
+                state: ButtonState::Pressed,
+            });
         }
 
         // Mouse buttons
         for button in raw_inputs.mouse_buttons {
-            // FIXME: send events instead
-            self.mouse_button.press(button);
+            self.mouse_button_events.send(MouseButtonInput {
+                button,
+                state: ButtonState::Pressed,
+            });
         }
 
         // Discrete mouse wheel events
@@ -198,12 +204,10 @@ impl MockInput for MutableInputStreams<'_> {
         // Gamepad buttons
         for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
-                let gamepad_button = GamepadButton {
+                self.gamepad_events.send(GamepadEvent {
                     gamepad,
-                    button_type,
-                };
-                // FIXME: send events instead
-                self.gamepad_buttons.press(gamepad_button);
+                    event_type: GamepadEventType::ButtonChanged(button_type, 1.0),
+                });
             }
         }
 
@@ -213,9 +217,10 @@ impl MockInput for MutableInputStreams<'_> {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
                         if let Some(gamepad) = self.guess_gamepad() {
-                            // FIXME: send events instead
-                            self.gamepad_axes
-                                .set(GamepadAxis { gamepad, axis_type }, position_data);
+                            self.gamepad_events.send(GamepadEvent {
+                                gamepad,
+                                event_type: GamepadEventType::AxisChanged(axis_type, position_data),
+                            });
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
@@ -257,39 +262,33 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        // Releasing axis-like inputs deliberately has no effect; it's unclear what this would do
+
         let input_to_release: UserInput = input.into();
         let raw_inputs = input_to_release.raw_inputs();
 
         for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
-                let gamepad_button = GamepadButton {
+                self.gamepad_events.send(GamepadEvent {
                     gamepad,
-                    button_type,
-                };
-                self.gamepad_buttons.release(gamepad_button);
-            }
-        }
-
-        for (outer_axis_type, _maybe_position_data) in raw_inputs.axis_data {
-            match outer_axis_type {
-                AxisType::Gamepad(axis_type) => {
-                    if let Some(gamepad) = gamepad {
-                        self.gamepad_axes.remove(GamepadAxis { gamepad, axis_type });
-                    }
-                }
-                // Releasing event-like input should have no effect;
-                // they are automatically cleared as time elapses
-                AxisType::MouseWheel(_) => {}
-                AxisType::MouseMotion(_) => {}
+                    event_type: GamepadEventType::ButtonChanged(button_type, 1.0),
+                });
             }
         }
 
         for button in raw_inputs.keycodes {
-            self.keycode.release(button);
+            self.keyboard_events.send(KeyboardInput {
+                scan_code: u32::MAX,
+                key_code: Some(button),
+                state: ButtonState::Released,
+            });
         }
 
         for button in raw_inputs.mouse_buttons {
-            self.mouse_button.release(button);
+            self.mouse_button_events.send(MouseButtonInput {
+                button,
+                state: ButtonState::Released,
+            });
         }
     }
 
