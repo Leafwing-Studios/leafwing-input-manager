@@ -138,6 +138,17 @@ impl MockInput for MutableInputStreams<'_> {
         // Extract the raw inputs
         let raw_inputs = input_to_send.raw_inputs();
 
+        // Keyboard buttons
+        for button in raw_inputs.keycodes {
+            self.keyboard.press(button);
+        }
+
+        // Mouse buttons
+        for button in raw_inputs.mouse_buttons {
+            self.mouse.press(button);
+        }
+
+        // Gamepad buttons
         for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
                 let gamepad_button = GamepadButton {
@@ -148,6 +159,7 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
+        // Axis data
         for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
@@ -188,14 +200,6 @@ impl MockInput for MutableInputStreams<'_> {
                     },
                 }
             }
-        }
-
-        for button in raw_inputs.keycodes {
-            self.keyboard.press(button);
-        }
-
-        for button in raw_inputs.mouse_buttons {
-            self.mouse.press(button);
         }
     }
 
