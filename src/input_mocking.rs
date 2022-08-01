@@ -264,10 +264,12 @@ impl MockInput for MutableInputStreams<'_> {
         *self.mouse_motion = Default::default();
     }
 
+    #[cfg(feature = "ui")]
     fn click_button<Marker: Component>(&mut self) {
         panic!("Cannot use bevy_ui input mocking from `MutableInputStreams`, use an `App` or `World` instead.")
     }
 
+    #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self) {
         panic!("Cannot use bevy_ui input mocking from `MutableInputStreams`, use an `App` or `World` instead.")
     }
