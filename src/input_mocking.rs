@@ -141,11 +141,13 @@ impl MockInput for MutableInputStreams<'_> {
 
         // Keyboard buttons
         for button in raw_inputs.keycodes {
+            // FIXME: send events instead
             self.keyboard.press(button);
         }
 
         // Mouse buttons
         for button in raw_inputs.mouse_buttons {
+            // FIXME: send events instead
             self.mouse.press(button);
         }
 
@@ -200,6 +202,7 @@ impl MockInput for MutableInputStreams<'_> {
                     gamepad,
                     button_type,
                 };
+                // FIXME: send events instead
                 self.gamepad_buttons.press(gamepad_button);
             }
         }
@@ -209,7 +212,8 @@ impl MockInput for MutableInputStreams<'_> {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(gamepad) = gamepad {
+                        if let Some(gamepad) = self.guess_gamepad() {
+                            // FIXME: send events instead
                             self.gamepad_axes
                                 .set(GamepadAxis { gamepad, axis_type }, position_data);
                         }
