@@ -37,6 +37,8 @@ fn test_app() -> App {
 
     // Ensure that the gamepad is picked up by the appropriate system
     app.update();
+    // Ensure that the connection event is flushed through
+    app.update();
 
     app
 }
@@ -62,7 +64,6 @@ fn raw_gamepad_axis_events() {
 }
 
 #[test]
-#[ignore = "not actually sending events"]
 fn game_pad_single_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -81,7 +82,6 @@ fn game_pad_single_axis_mocking() {
 }
 
 #[test]
-#[ignore = "not actually sending events"]
 fn game_pad_dual_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
