@@ -40,7 +40,7 @@
 - `InputStreams` and `MutableInputStreams` no longer store e.g. `Option<Res<Input<MouseButton>>>`, and instead simply store `Res<Input<MouseButton>>`
   - This makes them much easier to work with and dramatically simplifies internal logic.
 - `InputStreams::from_world` no longer requires `&mut World`, as it does not require mutable access to any resources.
-- Renamed `InputMocking::send_input_to_gamepad` and `InputMocking::release_input_for_gamepad` to `InputMocking::send_input_as_gamepad` and `InputMocking::send_input_as_gamepad`.
+- Renamed `InputMocking::send_input_to_gamepad` and `InputMocking::release_input_for_gamepad` to `InputMocking::send_input_as_gamepad` and `InputMocking::release_input_as_gamepad`.
 - Added the `guess_gamepad` method to `InputStreams` and `MutableInputStreams`, which attempts to find an appropriate gamepad to use.
 - `InputMocking::pressed` and `pressed_for_gamepad` no longer require `&mut self`.
 - `UserInput::raw_inputs` now returns a `RawInputs` struct, rather than a tuple struct.
