@@ -1,8 +1,19 @@
+use bevy::ecs::system::SystemState;
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use bevy_ecs::system::SystemState;
-use bevy_utils::HashSet;
+use bevy::utils::HashSet;
+use leafwing_input_manager::input_streams::InputStreams;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputStreams;
+
+fn test_app() -> App {
+    let mut app = App::new();
+
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(spawn_input_map);
+    app
+}
 
 #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 enum Action {
@@ -53,26 +64,23 @@ impl ClashTestExt for App {
     ) {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions.into_iter());
         // SystemState is love, SystemState is life
-        let mut input_system_state: SystemState<(Query<&InputMap<Action>>, Res<Input<KeyCode>>)> =
+        let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
             SystemState::new(&mut self.world);
 
-        let (input_map_query, keyboard) = input_system_state.get(&self.world);
-
-        let input_streams = InputStreams::from_keyboard(&*keyboard);
+        let input_map_query = input_system_state.get(&self.world);
 
         let input_map = input_map_query.single();
-
-        let keyboard_input = input_streams.keyboard.unwrap();
+        let keyboard_input = self.world.resource::<Input<KeyCode>>();
 
         for action in Action::variants() {
             if pressed_actions.contains(&action) {
                 assert!(
-                    input_map.pressed(action, &input_streams, clash_strategy),
+                    input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(action, &input_streams, clash_strategy),
+                    !input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }
@@ -81,18 +89,11 @@ impl ClashTestExt for App {
 }
 
 #[test]
-fn input_clash_handling() {
-    use bevy_input::InputPlugin;
-    use leafwing_input_manager::MockInput;
+fn two_inputs_clash_handling() {
     use Action::*;
     use KeyCode::*;
 
-    let mut app = App::new();
-
-    app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_input_map);
+    let mut app = test_app();
 
     // Two inputs
     app.send_input(Key1);
@@ -102,6 +103,14 @@ fn input_clash_handling() {
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
+}
+
+#[test]
+fn three_inputs_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Three inputs
     app.reset_inputs();
@@ -116,6 +125,14 @@ fn input_clash_handling() {
     );
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwoAndThree]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
+}
+
+#[test]
+fn modifier_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Modifier
     app.reset_inputs();
@@ -134,6 +151,14 @@ fn input_clash_handling() {
         [CtrlOne, OneAndTwoAndThree],
     );
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
+}
+
+#[test]
+fn multiple_modifiers_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Multiple modifiers
     app.reset_inputs();
@@ -145,6 +170,14 @@ fn input_clash_handling() {
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, CtrlOne, AltOne, CtrlAltOne]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [CtrlAltOne]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One]);
+}
+
+#[test]
+fn action_order_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Action order
     app.reset_inputs();

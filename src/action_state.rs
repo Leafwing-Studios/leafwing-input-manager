@@ -1,11 +1,10 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::buttonlike::ButtonState;
-use crate::user_input::UserInput;
 use crate::Actionlike;
+use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
-use bevy_ecs::{component::Component, entity::Entity};
-use bevy_utils::{Duration, Instant};
+use bevy::ecs::{component::Component, entity::Entity};
+use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
@@ -16,8 +15,17 @@ use std::marker::PhantomData;
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
-    /// What inputs were responsible for causing this action to be pressed?
-    pub reasons_pressed: Vec<UserInput>,
+    /// The "value" of the binding that triggered the action.
+    ///
+    /// See [`ActionState::action_value()`] for more details.
+    ///
+    /// **Warning:** this value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs.
+    pub value: f32,
+    /// The [`AxisPair`] of the binding that triggered the action.
+    ///
+    /// See [`ActionState::action_axis_pair()`] for more details.
+    pub axis_pair: Option<DualAxisData>,
     /// When was the button pressed / released, and how long has it been held for?
     pub timing: Timing,
     /// Was this action consumed by [`ActionState::consume`]?
@@ -34,7 +42,7 @@ pub struct ActionData {
 /// # Example
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
-/// use bevy_utils::Instant;
+/// use bevy::utils::Instant;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
 /// enum Action {
@@ -96,7 +104,8 @@ impl<A: Actionlike> ActionState<A> {
                 ButtonState::Released => self.release(action),
             }
 
-            self.action_data[i].reasons_pressed = action_data[i].reasons_pressed.clone();
+            self.action_data[i].axis_pair = action_data[i].axis_pair;
+            self.action_data[i].value = action_data[i].value;
         }
     }
 
@@ -111,7 +120,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use bevy_utils::Instant;
+    /// use bevy::utils::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
@@ -179,6 +188,65 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn action_data(&self, action: A) -> ActionData {
         self.action_data[action.index()].clone()
+    }
+
+    /// Get the value associated with the corresponding `action`
+    ///
+    /// Different kinds of bindings have different ways of calculating the value:
+    ///
+    /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of
+    /// `1.0` when the button is pressed.
+    /// - Some axes, such as an analog stick, will have a value in the range `-1.0..=1.0`.
+    /// - Some axes, such as a variable trigger, will have a value in the range `0.0..=1.0`.
+    /// - Some buttons will also return a value in the range `0.0..=1.0`, such as analog gamepad
+    /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
+    /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
+    /// repository.
+    /// - Dual axis inputs will return the magnitude of its [`AxisPair`] and will be in the range
+    /// `0.0..=1.0`.
+    /// - Chord inputs will return the value of its first input.
+    ///
+    /// If multiple inputs trigger the same game action at the same time, the value of each
+    /// triggering input will be added together.
+    ///
+    /// # Warning
+    ///
+    /// This value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_value`](Self::clamped_value) method instead.
+    pub fn value(&self, action: A) -> f32 {
+        self.action_data(action).value
+    }
+
+    /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_value(&self, action: A) -> f32 {
+        self.value(action).clamp(-1., 1.)
+    }
+
+    /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
+    ///
+    /// Only certain events such as [`VirtualDPad`][crate::user_input::VirtualDPad] and
+    /// [`DualAxis`][crate::user_input::DualAxis] provide an [`DualAxisData`], and this
+    /// will return [`None`] for other events.
+    ///
+    /// Chord inputs will return the [`DualAxisData`] of it's first input.
+    ///
+    /// If multiple inputs with an axis pair trigger the same game action at the same time, the
+    /// value of each axis pair will be added together.
+    ///
+    /// # Warning
+    ///
+    /// These values may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
+    pub fn axis_pair(&self, action: A) -> Option<DualAxisData> {
+        self.action_data(action).axis_pair
+    }
+
+    /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_axis_pair(&self, action: A) -> Option<DualAxisData> {
+        self.axis_pair(action)
+            .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
     }
 
     /// Manually sets the [`ActionData`] of the corresponding `action`
@@ -250,7 +318,6 @@ impl<A: Actionlike> ActionState<A> {
 
         if self.pressed(action) {
             self.action_data[index].timing.flip();
-            self.action_data[index].reasons_pressed = Vec::new();
         }
 
         self.action_data[index].state.release();
@@ -300,7 +367,6 @@ impl<A: Actionlike> ActionState<A> {
         // This is the only difference from action_state.release(action)
         self.action_data[index].consumed = true;
         self.action_data[index].state.release();
-        self.action_data[index].reasons_pressed = Vec::new();
         self.action_data[index].timing.flip();
     }
 
@@ -334,7 +400,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()].state.released()
     }
 
-    /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    /// Was this `action` released since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
@@ -367,46 +433,6 @@ impl<A: Actionlike> ActionState<A> {
         A::variants()
             .filter(|a| self.just_released(a.clone()))
             .collect()
-    }
-
-    /// The reasons (in terms of [`UserInput`]) that the button was pressed
-    ///
-    /// If the button is currently released, the `Vec<UserInput`> returned will be empty
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use leafwing_input_manager::prelude::*;
-    /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use leafwing_input_manager::action_state::ActionData;
-    /// use bevy_input::keyboard::KeyCode;
-    ///
-    /// #[derive(Actionlike, Clone)]
-    /// enum PlatformerAction{
-    ///     Move,
-    ///     Jump,
-    /// }
-    ///
-    /// let mut action_state = ActionState::<PlatformerAction>::default();
-    ///
-    /// // Usually this will be done automatically for you, via [`ActionState::update`]
-    /// action_state.set_action_data(PlatformerAction::Jump,
-    ///   ActionData {
-    ///         state: ButtonState::JustPressed,
-    ///         // Manually setting the reason why this action was pressed
-    ///         reasons_pressed: vec![KeyCode::Space.into()],
-    ///         // For the sake of this example, we don't care about any other fields
-    ///         ..Default::default()
-    ///     }
-    /// );
-    ///
-    /// let reasons_jumped = action_state.reasons_pressed(PlatformerAction::Jump);
-    /// assert_eq!(reasons_jumped[0], KeyCode::Space.into());
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn reasons_pressed(&self, action: A) -> Vec<UserInput> {
-        self.action_data[action.index()].reasons_pressed.clone()
     }
 
     /// The [`Instant`] that the action was last pressed or released
@@ -447,7 +473,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// # Examples
 ///
 /// By default, [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction) uses this component
-/// in order to connect `bevy_ui` buttons to the corresponding `ActionState`.
+/// in order to connect `bevy::ui` buttons to the corresponding `ActionState`.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -534,8 +560,6 @@ impl Timing {
     /// Flips the metaphorical hourglass, storing `current_duration` in `previous_duration` and resetting `instant_started`
     ///
     /// This method is called whenever actions are pressed or released
-    ///
-    /// FIXME: Ensure that the timing starts on the same frame that the input is flipped.
     pub fn flip(&mut self) {
         self.previous_duration = self.current_duration;
         self.current_duration = Duration::ZERO;
@@ -568,9 +592,11 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
     },
 }
 
+#[cfg(test)]
 mod tests {
     use crate as leafwing_input_manager;
-    use crate::Actionlike;
+    use crate::input_mocking::MockInput;
+    use leafwing_input_manager_macros::Actionlike;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     enum Action {
@@ -584,9 +610,13 @@ mod tests {
         use crate::action_state::ActionState;
         use crate::clashing_inputs::ClashStrategy;
         use crate::input_map::InputMap;
-        use crate::user_input::InputStreams;
+        use crate::input_streams::InputStreams;
+        use bevy::input::InputPlugin;
         use bevy::prelude::*;
-        use bevy_utils::{Duration, Instant};
+        use bevy::utils::{Duration, Instant};
+
+        let mut app = App::new();
+        app.add_plugin(InputPlugin);
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
@@ -595,11 +625,8 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert(KeyCode::R, Action::Run);
 
-        // Input streams
-        let mut keyboard_input_stream = Input::<KeyCode>::default();
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
-
         // Starting state
+        let input_streams = InputStreams::from_world(&app.world, None);
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(Action::Run));
@@ -608,8 +635,10 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Pressing
-        keyboard_input_stream.press(KeyCode::R);
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
+        app.send_input(KeyCode::R);
+        // Process the input events into Input<KeyCode> data
+        app.update();
+        let input_streams = InputStreams::from_world(&app.world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
@@ -628,8 +657,9 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Releasing
-        keyboard_input_stream.release(KeyCode::R);
-        let input_streams = InputStreams::from_keyboard(&keyboard_input_stream);
+        app.release_input(KeyCode::R);
+        app.update();
+        let input_streams = InputStreams::from_world(&app.world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
@@ -651,7 +681,7 @@ mod tests {
     #[test]
     fn time_tick_ticks_away() {
         use crate::action_state::ActionState;
-        use bevy_utils::{Duration, Instant};
+        use bevy::utils::{Duration, Instant};
 
         let mut action_state = ActionState::<Action>::default();
 
@@ -672,11 +702,10 @@ mod tests {
         assert!(!action_state.just_pressed(Action::Jump));
     }
 
-    // FIXME: these tests are flaky because floats
     #[test]
     fn durations() {
         use crate::action_state::ActionState;
-        use bevy_utils::{Duration, Instant};
+        use bevy::utils::{Duration, Instant};
 
         let mut action_state = ActionState::<Action>::default();
 

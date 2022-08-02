@@ -1,6 +1,7 @@
 //! Containment module for boring implmentations of the [`Display`] trait
 
-use crate::user_input::{InputButton, UserInput};
+use crate::axislike::VirtualDPad;
+use crate::user_input::{InputKind, UserInput};
 use std::fmt::Display;
 
 impl Display for UserInput {
@@ -17,16 +18,32 @@ impl Display for UserInput {
                 }
                 write!(f, "{string}")
             }
+            UserInput::VirtualDPad(VirtualDPad {
+                up,
+                down,
+                left,
+                right,
+            }) => {
+                write!(
+                    f,
+                    "VirtualDPad(up: {}, down: {}, left: {}, right: {})",
+                    up, down, left, right
+                )
+            }
         }
     }
 }
 
-impl Display for InputButton {
+impl Display for InputKind {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InputButton::Gamepad(button) => write!(f, "{button:?}"),
-            InputButton::Mouse(button) => write!(f, "{button:?}"),
-            InputButton::Keyboard(button) => write!(f, "{button:?}"),
+            InputKind::SingleAxis(axis) => write!(f, "{axis:?}"),
+            InputKind::DualAxis(axis) => write!(f, "{axis:?}"),
+            InputKind::GamepadButton(button) => write!(f, "{button:?}"),
+            InputKind::Mouse(button) => write!(f, "{button:?}"),
+            InputKind::MouseWheel(button) => write!(f, "{button:?}"),
+            InputKind::MouseMotion(button) => write!(f, "{button:?}"),
+            InputKind::Keyboard(button) => write!(f, "{button:?}"),
         }
     }
 }

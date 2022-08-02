@@ -3,11 +3,12 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::user_input::{InputButton, InputStreams, UserInput};
+use crate::input_streams::InputStreams;
+use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
-use bevy_ecs::component::Component;
-use bevy_input::gamepad::Gamepad;
+use bevy::ecs::component::Component;
+use bevy::input::gamepad::Gamepad;
 
 use core::fmt::Debug;
 use petitset::PetitSet;
@@ -19,13 +20,10 @@ use std::marker::PhantomData;
 /// Multiple inputs can be mapped to the same action,
 /// and each input can be mapped to multiple actions.
 ///
-/// The provided input types must be one of [`GamepadButtonType`], [`KeyCode`] or [`MouseButton`].
+/// The provided input types must be able to be converted into a [`UserInput`].
 ///
 /// The maximum number of bindings (total) that can be stored for each action is 16.
 /// Insertions will silently fail if you have reached this cap.
-///
-/// In addition, you can configure the per-mode cap for each [`InputMode`] using [`InputMap::new`] or [`InputMap::set_per_mode_cap`].
-/// This can be useful if your UI can only display one or two possible keybindings for each input mode.
 ///
 /// By default, if two actions would be triggered by a combination of buttons,
 /// and one combination is a strict subset of the other, only the larger input is registered.
@@ -38,7 +36,7 @@ use std::marker::PhantomData;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputButton;
+/// use leafwing_input_manager::user_input::InputKind;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -51,7 +49,7 @@ use std::marker::PhantomData;
 /// // Construction
 /// let mut input_map = InputMap::new([
 ///    // Note that the type of your iterators must be homogenous;
-///    // you can use `InputButton` or `UserInput` if needed
+///    // you can use `InputKind` or `UserInput` if needed
 ///    // as unifiying types
 ///   (GamepadButtonType::South, Action::Run),
 ///   (GamepadButtonType::LeftTrigger, Action::Hide),
@@ -63,9 +61,13 @@ use std::marker::PhantomData;
 /// .insert(KeyCode::LShift, Action::Run)
 /// // Chords
 /// .insert_chord([KeyCode::LControl, KeyCode::R], Action::Run)
-/// .insert_chord([InputButton::Keyboard(KeyCode::H),
-///                InputButton::Gamepad(GamepadButtonType::South),
-///                InputButton::Mouse(MouseButton::Middle)],
+/// .insert_chord([InputKind::Keyboard(KeyCode::H),
+///                InputKind::GamepadButton(GamepadButtonType::South),
+///                InputKind::Mouse(MouseButton::Middle)],
+///            Action::Run)
+/// .insert_chord([InputKind::Keyboard(KeyCode::H),
+///                InputKind::GamepadButton(GamepadButtonType::South),
+///                InputKind::Mouse(MouseButton::Middle)],
 ///            Action::Hide);
 ///
 /// // Removal
@@ -94,7 +96,7 @@ impl<A: Actionlike> Default for InputMap<A> {
 
 // Constructors
 impl<A: Actionlike> InputMap<A> {
-    /// Creates a new [`InputMap`] from an iterator of `(action, user_input)` pairs
+    /// Creates a new [`InputMap`] from an iterator of `(user_input, action)` pairs
     ///
     /// To create an empty input map, use the [`Default::default`] method instead.
     ///
@@ -102,7 +104,7 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
     /// use leafwing_input_manager::Actionlike;
-    /// use bevy_input::keyboard::KeyCode;
+    /// use bevy::input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
@@ -139,7 +141,7 @@ impl<A: Actionlike> InputMap<A> {
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
 
-    /// use bevy_input::keyboard::KeyCode;
+    /// use bevy::input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
@@ -159,7 +161,7 @@ impl<A: Actionlike> InputMap<A> {
 
 // Insertion
 impl<A: Actionlike> InputMap<A> {
-    /// Insert a mapping between `action` and `input`
+    /// Insert a mapping between `input` and `action`
     ///
     /// # Panics
     ///
@@ -172,7 +174,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Insert a mapping between `action` and `input` at the provided index
+    /// Insert a mapping between `input` and `action` at the provided index
     ///
     /// If a matching input already existed in the set, it will be moved to the supplied index. Any input that was previously there will be moved to the matching input’s original index.
     ///
@@ -187,7 +189,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Insert a mapping between `action` and the provided `inputs`
+    /// Insert a mapping between the provided `input_action_pairs`
     ///
     /// This method creates multiple distinct bindings.
     /// If you want to require multiple buttons to be pressed at once, use [`insert_chord`](Self::insert_chord).
@@ -198,16 +200,16 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
-        inputs: impl IntoIterator<Item = (impl Into<UserInput>, A)>,
+        input_action_pairs: impl IntoIterator<Item = (impl Into<UserInput>, A)>,
     ) -> &mut Self {
-        for (action, input) in inputs {
+        for (action, input) in input_action_pairs {
             self.insert(action, input);
         }
 
         self
     }
 
-    /// Insert a mapping between `action` and the simultaneous combination of `buttons` provided
+    /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
     ///
     /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
@@ -217,7 +219,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and `buttons` is not a duplicate.
     pub fn insert_chord(
         &mut self,
-        buttons: impl IntoIterator<Item = impl Into<InputButton>>,
+        buttons: impl IntoIterator<Item = impl Into<InputKind>>,
         action: A,
     ) -> &mut Self {
         self.insert(UserInput::chord(buttons), action);
@@ -260,12 +262,21 @@ impl<A: Actionlike> InputMap<A> {
 // Configuration
 impl<A: Actionlike> InputMap<A> {
     /// Fetches the [Gamepad] associated with the entity controlled by this entity map
+    ///
+    /// If this is [`None`], input from any connected gamepad will be used.
     #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
         self.associated_gamepad
     }
 
     /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
+    ///
+    /// If this is not called, input from any connected gamepad will be used.
+    /// The first matching non-zero input will be accepted,
+    /// as determined by gamepad registration order.
+    ///
+    /// Because of this robust fallback behavior,
+    /// this method can typically be ignored when writing single-player games.
     pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
         self.associated_gamepad = Some(gamepad);
         self
@@ -312,11 +323,22 @@ impl<A: Actionlike> InputMap<A> {
             let mut inputs = Vec::new();
 
             for input in self.get(action.clone()).iter() {
+                let action = &mut action_data[action.index()];
+
+                // Merge axis pair into action data
+                let axis_pair = input_streams.input_axis_pair(input);
+                if let Some(axis_pair) = axis_pair {
+                    if let Some(current_axis_pair) = &mut action.axis_pair {
+                        *current_axis_pair = current_axis_pair.merged_with(axis_pair);
+                    } else {
+                        action.axis_pair = Some(axis_pair);
+                    }
+                }
+
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
-                    action_data[action.index()]
-                        .reasons_pressed
-                        .push(input.clone());
+
+                    action.value += input_streams.input_value(input);
                 }
             }
 
@@ -406,7 +428,7 @@ mod tests {
 
     #[test]
     fn insertion_idempotency() {
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
         let mut input_map = InputMap::<Action>::default();
@@ -428,7 +450,7 @@ mod tests {
     #[test]
     fn multiple_insertion() {
         use crate::user_input::UserInput;
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
         let mut input_map_1 = InputMap::<Action>::default();
@@ -451,7 +473,7 @@ mod tests {
     #[test]
     fn chord_singleton_coercion() {
         use crate::input_map::UserInput;
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
 
         // Single items in a chord should be coerced to a singleton
         let mut input_map_1 = InputMap::<Action>::default();
@@ -465,7 +487,7 @@ mod tests {
 
     #[test]
     fn input_clearing() {
-        use bevy_input::keyboard::KeyCode;
+        use bevy::input::keyboard::KeyCode;
 
         let mut input_map = InputMap::<Action>::default();
         input_map.insert(KeyCode::Space, Action::Run);
@@ -491,7 +513,7 @@ mod tests {
 
     #[test]
     fn merging() {
-        use bevy_input::{gamepad::GamepadButtonType, keyboard::KeyCode};
+        use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
 
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
@@ -512,164 +534,15 @@ mod tests {
 
     #[test]
     fn gamepad_swapping() {
-        use bevy_input::gamepad::Gamepad;
+        use bevy::input::gamepad::Gamepad;
 
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
 
-        input_map.set_gamepad(Gamepad(0));
-        assert_eq!(input_map.gamepad(), Some(Gamepad(0)));
+        input_map.set_gamepad(Gamepad { id: 0 });
+        assert_eq!(input_map.gamepad(), Some(Gamepad { id: 0 }));
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
-    }
-
-    #[test]
-    fn mock_inputs() {
-        use crate::input_map::InputButton;
-        use crate::user_input::InputStreams;
-        use bevy::prelude::*;
-
-        // Setting up the input map
-        let mut input_map = InputMap::<Action>::default();
-        input_map.set_gamepad(Gamepad(42));
-
-        // Gamepad
-        input_map.insert(GamepadButtonType::South, Action::Run);
-        input_map.insert_chord(
-            [GamepadButtonType::North, GamepadButtonType::South],
-            Action::Jump,
-        );
-
-        // Keyboard
-        input_map.insert(KeyCode::LShift, Action::Run);
-        input_map.insert(KeyCode::LShift, Action::Hide);
-
-        // Mouse
-        input_map.insert(MouseButton::Left, Action::Run);
-        input_map.insert(MouseButton::Other(42), Action::Jump);
-
-        // Cross-device chords
-        input_map.insert_chord(
-            [
-                InputButton::Keyboard(KeyCode::LControl),
-                InputButton::Mouse(MouseButton::Left),
-            ],
-            Action::Hide,
-        );
-
-        // Input streams
-        let mut gamepad_input_stream = Input::<GamepadButton>::default();
-        let mut keyboard_input_stream = Input::<KeyCode>::default();
-        let mut mouse_input_stream = Input::<MouseButton>::default();
-
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-
-        // With no inputs, nothing should be detected
-        for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
-        }
-
-        // Pressing the wrong gamepad
-        gamepad_input_stream.press(GamepadButton(Gamepad(0), GamepadButtonType::South));
-
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-        for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
-        }
-
-        // Pressing the correct gamepad
-        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
-
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(!input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
-
-        // Chord
-        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::South));
-        gamepad_input_stream.press(GamepadButton(Gamepad(42), GamepadButtonType::North));
-
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
-
-        // Clearing inputs
-        gamepad_input_stream = Input::<GamepadButton>::default();
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-
-        for action in Action::variants() {
-            assert!(!input_map.pressed(action, &input_streams, ClashStrategy::PressAll));
-        }
-
-        // Keyboard
-        keyboard_input_stream.press(KeyCode::LShift);
-
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));
-
-        keyboard_input_stream = Input::<KeyCode>::default();
-
-        // Mouse
-        mouse_input_stream.press(MouseButton::Left);
-        mouse_input_stream.press(MouseButton::Other(42));
-
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-
-        assert!(input_map.pressed(Action::Run, &input_streams, ClashStrategy::PressAll));
-        assert!(input_map.pressed(Action::Jump, &input_streams, ClashStrategy::PressAll));
-
-        mouse_input_stream = Input::<MouseButton>::default();
-
-        // Cross-device chording
-        keyboard_input_stream.press(KeyCode::LControl);
-        mouse_input_stream.press(MouseButton::Left);
-
-        let input_streams = InputStreams {
-            gamepad: Some(&gamepad_input_stream),
-            keyboard: Some(&keyboard_input_stream),
-            mouse: Some(&mouse_input_stream),
-            associated_gamepad: Some(Gamepad(42)),
-        };
-
-        assert!(input_map.pressed(Action::Hide, &input_streams, ClashStrategy::PressAll));
     }
 }

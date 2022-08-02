@@ -6,18 +6,23 @@ use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
+    input_streams::InputStreams,
     plugin::ToggleActions,
-    user_input::InputStreams,
     Actionlike,
 };
 
-use bevy_core::Time;
-use bevy_ecs::{prelude::*, schedule::ShouldRun};
-use bevy_input::{gamepad::GamepadButton, keyboard::KeyCode, mouse::MouseButton, Input};
-use bevy_utils::Instant;
+use bevy::ecs::{prelude::*, schedule::ShouldRun};
+use bevy::input::{
+    gamepad::{GamepadAxis, GamepadButton, Gamepads},
+    keyboard::KeyCode,
+    mouse::{MouseButton, MouseMotion, MouseWheel},
+    Axis, Input,
+};
+use bevy::time::Time;
+use bevy::utils::Instant;
 
 #[cfg(feature = "ui")]
-use bevy_ui::Interaction;
+use bevy::ui::Interaction;
 
 /// Advances actions timer.
 ///
@@ -54,25 +59,38 @@ pub fn tick_action_state<A: Actionlike>(
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
 #[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
-    maybe_gamepad_input_stream: Option<Res<Input<GamepadButton>>>,
-    maybe_keyboard_input_stream: Option<Res<Input<KeyCode>>>,
-    maybe_mouse_input_stream: Option<Res<Input<MouseButton>>>,
+    gamepad_buttons: Res<Input<GamepadButton>>,
+    gamepad_button_axes: Res<Axis<GamepadButton>>,
+    gamepad_axes: Res<Axis<GamepadAxis>>,
+    gamepads: Res<Gamepads>,
+    keycode: Res<Input<KeyCode>>,
+    mouse_button: Res<Input<MouseButton>>,
+    mouse_wheel: Res<Events<MouseWheel>>,
+    mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
     mut action_state: Option<ResMut<ActionState<A>>>,
     mut input_map: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
-    let gamepad = maybe_gamepad_input_stream.as_deref();
-
-    let keyboard = maybe_keyboard_input_stream.as_deref();
-
-    let mouse = maybe_mouse_input_stream.as_deref();
+    let gamepad_buttons = gamepad_buttons.into_inner();
+    let gamepad_button_axes = gamepad_button_axes.into_inner();
+    let gamepad_axes = gamepad_axes.into_inner();
+    let gamepads = gamepads.into_inner();
+    let keycode = keycode.into_inner();
+    let mouse_button = mouse_button.into_inner();
+    let mouse_wheel = mouse_wheel.into_inner();
+    let mouse_motion = mouse_motion.into_inner();
 
     if let (Some(input_map), Some(action_state)) = (&mut input_map, &mut action_state) {
         let input_streams = InputStreams {
-            gamepad,
-            keyboard,
-            mouse,
+            gamepad_buttons,
+            gamepad_button_axes,
+            gamepad_axes,
+            gamepads,
+            keycode,
+            mouse_button,
+            mouse_wheel,
+            mouse_motion,
             associated_gamepad: input_map.gamepad(),
         };
 
@@ -81,9 +99,14 @@ pub fn update_action_state<A: Actionlike>(
 
     for (mut action_state, input_map) in query.iter_mut() {
         let input_streams = InputStreams {
-            gamepad,
-            keyboard,
-            mouse,
+            gamepad_buttons,
+            gamepad_button_axes,
+            gamepad_axes,
+            gamepads,
+            keycode,
+            mouse_button,
+            mouse_wheel,
+            mouse_motion,
             associated_gamepad: input_map.gamepad(),
         };
 
@@ -109,7 +132,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
     }
 }
 
-/// Generates an [`Events`](bevy_ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifer,
 /// suitable to be sent across a network.
@@ -136,7 +159,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
     }
 }
 
-/// Generates an [`Events`](bevy_ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifer,
 /// suitable to be sent across a network.

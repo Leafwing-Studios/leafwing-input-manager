@@ -1,5 +1,56 @@
 # Release Notes
 
+## Version 0.5
+
+### Enhancements
+
+- Added gamepad axis support.
+  - Use the new `SingleAxis` and `DualAxis` types / variants.
+- Added mousewheel and mouse motion support.
+  - Use the new `SingleAxis` and `DualAxis` types / variants when you care about the continous values.
+  - Use the new `MouseWheelDirection` enum as an `InputKind`.
+- Added `SingleAxis` and `DualAxis` structs that can be supplied to an `InputMap` to trigger on axis inputs.
+- Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
+- Added `ActionState::action_axis_pair()` which can return an `AxisPair` containing the analog values of a `SingleAxis`, `DualAxis`, or `VirtualDPad`.
+- Added `ActionState::action_value()` which represents the floating point value of any action:
+  - `1.0` or `0.0` for pressed or unpressed button-like inputs
+  - a value (typically) in the range `-1.0..=1.0` for a single axis representing its analog input
+  - or a value (typically) in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
+
+### Usability
+
+- If no gamepad is registered to a specific `InputMap`, inputs from any gamepad in the `Gamepads` resource will be used.
+- Removed the `ActionState::reasons_pressed` API.
+  - This API was quite complex, not terribly useful and had nontrivial performance overhead.
+  - This was not needed for axislike inputs in the end.
+- Added `Direction::try_new()` to fallibly create a new `Direction` struct (which cannot be created from the zero vector).
+- Removed the `InputMode` enum.
+  - This was poorly motivated and had no internal usages.
+  - This could not accurately represent more complex compound input types.
+- `ButtonKind` was renamed to `InputKind` to reflect the new non-button input types.
+- Renamed `AxisPair` to `DualAxisData`.
+  - `DualAxisData::new` now takes two `f32` values for ergonomic reasons.
+  - Use `DualAxisData::from_xy` to construct this directly from a `Vec2` as before.
+- Rotation is now measured from the positive x axis in a counterclockwise direction. This applies to both `Rotation` and `Direction`.
+  - This increases consistency with `glam` and makes trigonometry easier.
+- Added `Direction::try_from` which never panics; consider using this in place of `Direction::new`.
+- Converting from a `Direction` (which uses a `Vec2` of `f32`'s internally) to a `Rotation` (which uses exact decidegrees) now has special cases to ensure all eight cardinal directions result in exact degrees.
+  - For example, a unit vector pointing to the Northeast now always converts to a `Direction` with exactly 1350 decidegrees.
+  - Rounding errors may still occur when converting from arbitrary directions to the other 3592 discrete decidegrees.
+- `InputStreams` and `MutableInputStreams` no longer store e.g. `Option<Res<Input<MouseButton>>>`, and instead simply store `Res<Input<MouseButton>>`
+  - This makes them much easier to work with and dramatically simplifies internal logic.
+- `InputStreams::from_world` no longer requires `&mut World`, as it does not require mutable access to any resources.
+- Renamed `InputMocking::send_input_to_gamepad` and `InputMocking::release_input_for_gamepad` to `InputMocking::send_input_as_gamepad` and `InputMocking::send_input_as_gamepad`.
+- Added the `guess_gamepad` method to `InputStreams` and `MutableInputStreams`, which attempts to find an appropriate gamepad to use.
+- `InputMocking::pressed` and `pressed_for_gamepad` no longer require `&mut self`.
+- `UserInput::raw_inputs` now returns a `RawInputs` struct, rather than a tuple struct.
+- The `mouse` and `keyboard` fields on the two `InputStreams` types are now named `mouse_button` and `keycode` respectively.
+
+## Bug fixes
+
+- mocked inputs are now sent at the low-level `Events` form, rather than in their `Input` format.
+  - this ensures that user code that is reading these events directly can be tested accurately.
+
 ## Version 0.4.1
 
 ### Bug fixes
