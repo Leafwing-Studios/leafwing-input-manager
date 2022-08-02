@@ -400,7 +400,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()].state.released()
     }
 
-    /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    /// Was this `action` released since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: A) -> bool {
