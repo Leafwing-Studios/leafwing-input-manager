@@ -361,6 +361,7 @@ fn resolve_clash<A: Actionlike>(
 mod tests {
     use super::*;
     use crate as leafwing_input_manager;
+    use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use leafwing_input_manager_macros::Actionlike;
 
@@ -408,7 +409,8 @@ mod tests {
     mod basic_functionality {
         use crate::axislike::VirtualDPad;
         use crate::buttonlike::ButtonState;
-        use crate::input_mocking::{mockable_world, MockInput};
+        use crate::input_mocking::MockInput;
+        use bevy::input::InputPlugin;
         use Action::*;
 
         use super::*;
@@ -521,14 +523,16 @@ mod tests {
 
         #[test]
         fn resolve_prioritize_longest() {
-            let mut world = mockable_world();
+            let mut app = App::new();
+            app.add_plugin(InputPlugin);
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
-            world.send_input(Key1);
-            world.send_input(Key2);
+            app.send_input(Key1);
+            app.send_input(Key2);
+            app.update();
 
-            let input_streams = InputStreams::from_world(&mut world, None);
+            let input_streams = InputStreams::from_world(&app.world, None);
 
             assert_eq!(
                 resolve_clash(
@@ -552,9 +556,10 @@ mod tests {
             let chord_clash = input_map
                 .possible_clash(OneAndTwo, OneAndTwoAndThree)
                 .unwrap();
-            world.send_input(Key3);
+            app.send_input(Key3);
+            app.update();
 
-            let input_streams = InputStreams::from_world(&mut world, None);
+            let input_streams = InputStreams::from_world(&app.world, None);
 
             assert_eq!(
                 resolve_clash(
@@ -568,15 +573,17 @@ mod tests {
 
         #[test]
         fn resolve_use_action_order() {
-            let mut world = mockable_world();
+            let mut app = App::new();
+            app.add_plugin(InputPlugin);
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, CtrlOne).unwrap();
             let reversed_clash = input_map.possible_clash(CtrlOne, One).unwrap();
-            world.send_input(Key1);
-            world.send_input(LControl);
+            app.send_input(Key1);
+            app.send_input(LControl);
+            app.update();
 
-            let input_streams = InputStreams::from_world(&mut world, None);
+            let input_streams = InputStreams::from_world(&app.world, None);
 
             assert_eq!(
                 resolve_clash(&simple_clash, ClashStrategy::UseActionOrder, &input_streams,),
@@ -595,11 +602,13 @@ mod tests {
 
         #[test]
         fn handle_clashes() {
-            let mut world = mockable_world();
+            let mut app = App::new();
+            app.add_plugin(InputPlugin);
             let input_map = test_input_map();
 
-            world.send_input(Key1);
-            world.send_input(Key2);
+            app.send_input(Key1);
+            app.send_input(Key2);
+            app.update();
 
             let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
             action_data[One.index()].state = ButtonState::JustPressed;
@@ -608,7 +617,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&mut world, None),
+                &InputStreams::from_world(&app.world, None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -621,11 +630,13 @@ mod tests {
         // Checks that a clash between a VirtualDPad and a chord choses the chord
         #[test]
         fn handle_clashes_dpad_chord() {
-            let mut world = mockable_world();
+            let mut app = App::new();
+            app.add_plugin(InputPlugin);
             let input_map = test_input_map();
 
-            world.send_input(LControl);
-            world.send_input(Up);
+            app.send_input(LControl);
+            app.send_input(Up);
+            app.update();
 
             let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
             action_data[MoveDPad.index()].state = ButtonState::JustPressed;
@@ -633,7 +644,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&mut world, None),
+                &InputStreams::from_world(&app.world, None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -645,15 +656,17 @@ mod tests {
 
         #[test]
         fn which_pressed() {
-            let mut world = mockable_world();
+            let mut app = App::new();
+            app.add_plugin(InputPlugin);
             let input_map = test_input_map();
 
-            world.send_input(Key1);
-            world.send_input(Key2);
-            world.send_input(LControl);
+            app.send_input(Key1);
+            app.send_input(Key2);
+            app.send_input(LControl);
+            app.update();
 
             let action_data = input_map.which_pressed(
-                &InputStreams::from_world(&mut world, None),
+                &InputStreams::from_world(&app.world, None),
                 ClashStrategy::PrioritizeLongest,
             );
 

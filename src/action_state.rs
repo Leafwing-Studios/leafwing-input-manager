@@ -595,7 +595,7 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
 #[cfg(test)]
 mod tests {
     use crate as leafwing_input_manager;
-    use crate::input_mocking::{mockable_world, MockInput};
+    use crate::input_mocking::MockInput;
     use leafwing_input_manager_macros::Actionlike;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
@@ -611,10 +611,12 @@ mod tests {
         use crate::clashing_inputs::ClashStrategy;
         use crate::input_map::InputMap;
         use crate::input_streams::InputStreams;
+        use bevy::input::InputPlugin;
         use bevy::prelude::*;
         use bevy::utils::{Duration, Instant};
 
-        let mut world = mockable_world();
+        let mut app = App::new();
+        app.add_plugin(InputPlugin);
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
@@ -624,7 +626,7 @@ mod tests {
         input_map.insert(KeyCode::R, Action::Run);
 
         // Starting state
-        let input_streams = InputStreams::from_world(&mut world, None);
+        let input_streams = InputStreams::from_world(&app.world, None);
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(Action::Run));
@@ -633,8 +635,10 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Pressing
-        world.send_input(KeyCode::R);
-        let input_streams = InputStreams::from_world(&mut world, None);
+        app.send_input(KeyCode::R);
+        // Process the input events into Input<KeyCode> data
+        app.update();
+        let input_streams = InputStreams::from_world(&app.world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
@@ -653,8 +657,9 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Releasing
-        world.release_input(KeyCode::R);
-        let input_streams = InputStreams::from_world(&mut world, None);
+        app.release_input(KeyCode::R);
+        app.update();
+        let input_streams = InputStreams::from_world(&app.world, None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 

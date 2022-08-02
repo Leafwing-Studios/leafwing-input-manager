@@ -18,13 +18,15 @@ use bevy::ecs::system::{ResMut, SystemState};
 use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
+use bevy::input::gamepad::GamepadEventRaw;
 use bevy::input::mouse::MouseScrollUnit;
+use bevy::input::ButtonState;
 use bevy::input::{
-    gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
+    gamepad::{Gamepad, GamepadButton, GamepadEvent, GamepadEventType},
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
-    {Axis, Input},
+    Input,
 };
 use bevy::math::Vec2;
 #[cfg(feature = "ui")]
@@ -39,13 +41,16 @@ use bevy::window::CursorMoved;
 /// # Examples
 /// ```rust
 /// use bevy::prelude::*;
-/// use leafwing_input_manager::input_mocking::{MockInput, mockable_world};
+/// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::input_mocking::MockInput;
 ///
-/// // A `World` that contains all of the appropriate input resources
-/// let mut world = mockable_world();
+/// // Remember to add InputPlugin so the resources will be there!
+/// let mut app = App::new();
+/// app.add_plugin(InputPlugin);
 ///
 /// // Pay respects!
-/// world.send_input(KeyCode::F);
+/// app.send_input(KeyCode::F);
+/// app.update();
 /// ```
 ///
 /// ```rust
@@ -65,16 +70,24 @@ use bevy::window::CursorMoved;
 ///
 /// // Or use chords!
 /// app.send_input(UserInput::chord(B_E_V_Y));
+/// app.update();
 /// ```
 pub trait MockInput {
     /// Send the specified `user_input` directly
     ///
+    /// These are sent as the raw input events, and do not set the value of [`Input`] or [`Axis`] directly.
     /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
     /// To send specific values for axislike inputs, set their `value` field.
     ///
     /// Gamepad input will be sent by the first registed controller found.
     /// If none are found, gamepad input will be silently skipped.
+    ///
+    /// # Warning
+    ///
+    /// You *must* call `app.update()` at least once after sending input
+    /// with `InputPlugin` included in your plugin set
+    /// for the raw input events to be processed into [`Input`] and [`Axis`] data.
     fn send_input(&mut self, input: impl Into<UserInput>);
 
     /// Send the specified `user_input` directly, using the specified gamepad
@@ -141,14 +154,19 @@ impl MockInput for MutableInputStreams<'_> {
 
         // Keyboard buttons
         for button in raw_inputs.keycodes {
-            // FIXME: send events instead
-            self.keyboard.press(button);
+            self.keyboard_events.send(KeyboardInput {
+                scan_code: u32::MAX,
+                key_code: Some(button),
+                state: ButtonState::Pressed,
+            });
         }
 
         // Mouse buttons
         for button in raw_inputs.mouse_buttons {
-            // FIXME: send events instead
-            self.mouse.press(button);
+            self.mouse_button_events.send(MouseButtonInput {
+                button,
+                state: ButtonState::Pressed,
+            });
         }
 
         // Discrete mouse wheel events
@@ -198,12 +216,10 @@ impl MockInput for MutableInputStreams<'_> {
         // Gamepad buttons
         for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
-                let gamepad_button = GamepadButton {
+                self.gamepad_events.send(GamepadEventRaw {
                     gamepad,
-                    button_type,
-                };
-                // FIXME: send events instead
-                self.gamepad_buttons.press(gamepad_button);
+                    event_type: GamepadEventType::ButtonChanged(button_type, 1.0),
+                });
             }
         }
 
@@ -212,10 +228,11 @@ impl MockInput for MutableInputStreams<'_> {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(gamepad) = self.guess_gamepad() {
-                            // FIXME: send events instead
-                            self.gamepad_axes
-                                .set(GamepadAxis { gamepad, axis_type }, position_data);
+                        if let Some(gamepad) = gamepad {
+                            self.gamepad_events.send(GamepadEventRaw {
+                                gamepad,
+                                event_type: GamepadEventType::AxisChanged(axis_type, position_data),
+                            });
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
@@ -257,39 +274,33 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+        // Releasing axis-like inputs deliberately has no effect; it's unclear what this would do
+
         let input_to_release: UserInput = input.into();
         let raw_inputs = input_to_release.raw_inputs();
 
         for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
-                let gamepad_button = GamepadButton {
+                self.gamepad_events.send(GamepadEventRaw {
                     gamepad,
-                    button_type,
-                };
-                self.gamepad_buttons.release(gamepad_button);
-            }
-        }
-
-        for (outer_axis_type, _maybe_position_data) in raw_inputs.axis_data {
-            match outer_axis_type {
-                AxisType::Gamepad(axis_type) => {
-                    if let Some(gamepad) = gamepad {
-                        self.gamepad_axes.remove(GamepadAxis { gamepad, axis_type });
-                    }
-                }
-                // Releasing event-like input should have no effect;
-                // they are automatically cleared as time elapses
-                AxisType::MouseWheel(_) => {}
-                AxisType::MouseMotion(_) => {}
+                    event_type: GamepadEventType::ButtonChanged(button_type, 1.0),
+                });
             }
         }
 
         for button in raw_inputs.keycodes {
-            self.keyboard.release(button);
+            self.keyboard_events.send(KeyboardInput {
+                scan_code: u32::MAX,
+                key_code: Some(button),
+                state: ButtonState::Released,
+            });
         }
 
         for button in raw_inputs.mouse_buttons {
-            self.mouse.release(button);
+            self.mouse_button_events.send(MouseButtonInput {
+                button,
+                state: ButtonState::Released,
+            });
         }
     }
 
@@ -311,8 +322,8 @@ impl MockInput for MutableInputStreams<'_> {
         // as they are not actually input data
         *self.gamepad_buttons = Default::default();
         *self.gamepad_axes = Default::default();
-        *self.keyboard = Default::default();
-        *self.mouse = Default::default();
+        *self.keycode = Default::default();
+        *self.mouse_button = Default::default();
         *self.mouse_wheel = Default::default();
         *self.mouse_motion = Default::default();
     }
@@ -468,68 +479,133 @@ impl MockInput for App {
 
 #[cfg(test)]
 mod test {
-    use crate::input_mocking::{mockable_world, MockInput};
-    use bevy::prelude::*;
+    use crate::input_mocking::MockInput;
+    use bevy::{input::InputPlugin, prelude::*};
 
     #[test]
-    fn button_inputs() {
-        let mut world = mockable_world();
-        world.insert_resource(Input::<KeyCode>::default());
-        world.insert_resource(Input::<MouseButton>::default());
-        world.insert_resource(Input::<GamepadButton>::default());
-
-        // BLOCKED: cannot use the less artifical APIs due to
-        // https://github.com/bevyengine/bevy/issues/3808
-        let gamepad = Some(Gamepad { id: 0 });
+    fn ordinary_button_inputs() {
+        let mut app = App::new();
+        app.add_plugin(InputPlugin);
 
         // Test that buttons are unpressed by default
-        assert!(!world.pressed(KeyCode::Space));
-        assert!(!world.pressed(MouseButton::Right));
-        assert!(!world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
+        assert!(!app.pressed(KeyCode::Space));
+        assert!(!app.pressed(MouseButton::Right));
 
         // Send inputs
-        world.send_input(KeyCode::Space);
-        world.send_input(MouseButton::Right);
-        world.send_input_as_gamepad(GamepadButtonType::North, gamepad);
+        app.send_input(KeyCode::Space);
+        app.send_input(MouseButton::Right);
+        app.update();
 
         // Verify that checking the resource value directly works
-        let keyboard_input: &Input<KeyCode> = world.resource();
+        let keyboard_input: &Input<KeyCode> = app.world.resource();
         assert!(keyboard_input.pressed(KeyCode::Space));
 
         // Test the convenient .pressed API
-        assert!(world.pressed(KeyCode::Space));
-        assert!(world.pressed(MouseButton::Right));
-        assert!(world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
+        assert!(app.pressed(KeyCode::Space));
+        assert!(app.pressed(MouseButton::Right));
 
         // Test that resetting inputs works
-        world.reset_inputs();
+        app.reset_inputs();
+        app.update();
 
-        assert!(!world.pressed(KeyCode::Space));
-        assert!(!world.pressed(MouseButton::Right));
-        assert!(!world.pressed_for_gamepad(GamepadButtonType::North, gamepad));
+        assert!(!app.pressed(KeyCode::Space));
+        assert!(!app.pressed(MouseButton::Right));
+    }
+
+    #[test]
+    fn explicit_gamepad_button_inputs() {
+        let mut app = App::new();
+        app.add_plugin(InputPlugin);
+
+        let gamepad = Gamepad { id: 0 };
+        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+        gamepad_events.send(GamepadEvent {
+            gamepad,
+            event_type: GamepadEventType::Connected,
+        });
+        app.update();
+
+        // Test that buttons are unpressed by default
+        assert!(!app.pressed_for_gamepad(GamepadButtonType::North, Some(gamepad)));
+
+        // Send inputs
+        app.send_input_as_gamepad(GamepadButtonType::North, Some(gamepad));
+        app.update();
+
+        // Checking the old-fashioned way
+        // FIXME: put this in a gamepad_button.rs integration test.
+        let gamepad_input = app.world.resource::<Input<GamepadButton>>();
+        assert!(gamepad_input.pressed(GamepadButton {
+            gamepad,
+            button_type: GamepadButtonType::North,
+        }));
+
+        // Test the convenient .pressed API
+        assert!(app.pressed_for_gamepad(GamepadButtonType::North, Some(gamepad)));
+
+        // Test that resetting inputs works
+        app.reset_inputs();
+        app.update();
+
+        assert!(!app.pressed_for_gamepad(GamepadButtonType::North, Some(gamepad)));
+    }
+
+    #[test]
+    fn implicit_gamepad_button_inputs() {
+        let mut app = App::new();
+        app.add_plugin(InputPlugin);
+
+        let gamepad = Gamepad { id: 0 };
+        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+        gamepad_events.send(GamepadEvent {
+            gamepad,
+            event_type: GamepadEventType::Connected,
+        });
+        app.update();
+
+        // Test that buttons are unpressed by default
+        assert!(!app.pressed(GamepadButtonType::North));
+
+        // Send inputs
+        app.send_input(GamepadButtonType::North);
+        app.update();
+
+        // Test the convenient .pressed API
+        assert!(app.pressed(GamepadButtonType::North));
+
+        // Test that resetting inputs works
+        app.reset_inputs();
+        app.update();
+
+        assert!(!app.pressed(GamepadButtonType::North));
     }
 
     #[test]
     #[cfg(feature = "ui")]
     fn ui_inputs() {
-        use crate::input_mocking::MockInput;
         use bevy::ecs::prelude::*;
         use bevy::ui::Interaction;
 
         #[derive(Component)]
         struct ButtonMarker;
 
-        let mut world = mockable_world();
+        let mut app = App::new();
+        app.add_plugin(InputPlugin);
+
         // Marked button
-        world.spawn().insert(Interaction::None).insert(ButtonMarker);
+        app.world
+            .spawn()
+            .insert(Interaction::None)
+            .insert(ButtonMarker);
         // Unmarked button
-        world.spawn().insert(Interaction::None);
+        app.world.spawn().insert(Interaction::None);
 
         // Click the button
-        world.click_button::<ButtonMarker>();
+        app.world.click_button::<ButtonMarker>();
+        app.update();
 
-        let mut interaction_query = world.query::<(&Interaction, Option<&ButtonMarker>)>();
-        for (interaction, maybe_marker) in interaction_query.iter(&world) {
+        let mut interaction_query = app.world.query::<(&Interaction, Option<&ButtonMarker>)>();
+        for (interaction, maybe_marker) in interaction_query.iter(&app.world) {
             match maybe_marker {
                 Some(_) => assert_eq!(*interaction, Interaction::Clicked),
                 None => assert_eq!(*interaction, Interaction::None),
@@ -537,18 +613,19 @@ mod test {
         }
 
         // Reset inputs
-        world.reset_inputs();
+        app.world.reset_inputs();
 
-        let mut interaction_query = world.query::<&Interaction>();
-        for interaction in interaction_query.iter(&world) {
+        let mut interaction_query = app.world.query::<&Interaction>();
+        for interaction in interaction_query.iter(&app.world) {
             assert_eq!(*interaction, Interaction::None)
         }
 
         // Hover over the button
-        world.hover_button::<ButtonMarker>();
+        app.hover_button::<ButtonMarker>();
+        app.update();
 
-        let mut interaction_query = world.query::<(&Interaction, Option<&ButtonMarker>)>();
-        for (interaction, maybe_marker) in interaction_query.iter(&world) {
+        let mut interaction_query = app.world.query::<(&Interaction, Option<&ButtonMarker>)>();
+        for (interaction, maybe_marker) in interaction_query.iter(&app.world) {
             match maybe_marker {
                 Some(_) => assert_eq!(*interaction, Interaction::Hovered),
                 None => assert_eq!(*interaction, Interaction::None),
@@ -556,28 +633,11 @@ mod test {
         }
 
         // Reset inputs
-        world.reset_inputs();
+        app.world.reset_inputs();
 
-        let mut interaction_query = world.query::<&Interaction>();
-        for interaction in interaction_query.iter(&world) {
+        let mut interaction_query = app.world.query::<&Interaction>();
+        for interaction in interaction_query.iter(&app.world) {
             assert_eq!(*interaction, Interaction::None)
         }
     }
-}
-
-/// Generates a [`World`] with the resources required by [`InputStreams`]
-///
-/// This is exclusively useful for testing.
-/// When working with [`App`], add [`InputPlugin`](bevy::input::InputPlugin) instead.
-pub fn mockable_world() -> World {
-    let mut world = World::new();
-    world.init_resource::<Input<GamepadButton>>();
-    world.init_resource::<Axis<GamepadButton>>();
-    world.init_resource::<Axis<GamepadAxis>>();
-    world.init_resource::<Gamepads>();
-    world.init_resource::<Input<KeyCode>>();
-    world.init_resource::<Input<MouseButton>>();
-    world.init_resource::<Events<MouseWheel>>();
-    world.init_resource::<Events<MouseMotion>>();
-    world
 }

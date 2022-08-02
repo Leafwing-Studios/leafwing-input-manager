@@ -63,8 +63,8 @@ pub fn update_action_state<A: Actionlike>(
     gamepad_button_axes: Res<Axis<GamepadButton>>,
     gamepad_axes: Res<Axis<GamepadAxis>>,
     gamepads: Res<Gamepads>,
-    keyboard: Res<Input<KeyCode>>,
-    mouse: Res<Input<MouseButton>>,
+    keycode: Res<Input<KeyCode>>,
+    mouse_button: Res<Input<MouseButton>>,
     mouse_wheel: Res<Events<MouseWheel>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
@@ -76,8 +76,8 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_button_axes = gamepad_button_axes.into_inner();
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
-    let keyboard = keyboard.into_inner();
-    let mouse = mouse.into_inner();
+    let keycode = keycode.into_inner();
+    let mouse_button = mouse_button.into_inner();
     let mouse_wheel = mouse_wheel.into_inner();
     let mouse_motion = mouse_motion.into_inner();
 
@@ -87,8 +87,8 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_button_axes,
             gamepad_axes,
             gamepads,
-            keyboard,
-            mouse,
+            keycode,
+            mouse_button,
             mouse_wheel,
             mouse_motion,
             associated_gamepad: input_map.gamepad(),
@@ -103,8 +103,8 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_button_axes,
             gamepad_axes,
             gamepads,
-            keyboard,
-            mouse,
+            keycode,
+            mouse_button,
             mouse_wheel,
             mouse_motion,
             associated_gamepad: input_map.gamepad(),
