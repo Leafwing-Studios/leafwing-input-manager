@@ -1,8 +1,19 @@
 use bevy::ecs::system::SystemState;
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
 use leafwing_input_manager::input_streams::InputStreams;
 use leafwing_input_manager::prelude::*;
+
+fn test_app() -> App {
+    let mut app = App::new();
+
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(spawn_input_map);
+    app
+}
 
 #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 enum Action {
@@ -78,17 +89,11 @@ impl ClashTestExt for App {
 }
 
 #[test]
-fn input_clash_handling() {
-    use bevy::input::InputPlugin;
+fn two_inputs_clash_handling() {
     use Action::*;
     use KeyCode::*;
 
-    let mut app = App::new();
-
-    app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_input_map);
+    let mut app = test_app();
 
     // Two inputs
     app.send_input(Key1);
@@ -98,6 +103,14 @@ fn input_clash_handling() {
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
+}
+
+#[test]
+fn three_inputs_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Three inputs
     app.reset_inputs();
@@ -112,6 +125,14 @@ fn input_clash_handling() {
     );
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwoAndThree]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
+}
+
+#[test]
+fn modifier_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Modifier
     app.reset_inputs();
@@ -130,6 +151,14 @@ fn input_clash_handling() {
         [CtrlOne, OneAndTwoAndThree],
     );
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
+}
+
+#[test]
+fn multiple_modifiers_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Multiple modifiers
     app.reset_inputs();
@@ -141,6 +170,14 @@ fn input_clash_handling() {
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, CtrlOne, AltOne, CtrlAltOne]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [CtrlAltOne]);
     app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One]);
+}
+
+#[test]
+fn action_order_clash_handling() {
+    use Action::*;
+    use KeyCode::*;
+
+    let mut app = test_app();
 
     // Action order
     app.reset_inputs();
