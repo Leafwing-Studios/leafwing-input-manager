@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.5.1
+
+### Bug fixes
+
+- removed a missed `println` statement spamming "real conflict" that had been missed
+
 ## Version 0.5
 
 ### Enhancements
