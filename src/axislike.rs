@@ -188,7 +188,7 @@ impl DualAxis {
     pub fn right_stick() -> DualAxis {
         DualAxis::symmetric(
             GamepadAxisType::RightStickX,
-            GamepadAxisType::LeftStickY,
+            GamepadAxisType::RightStickY,
             Self::DEFAULT_DEADZONE,
         )
     }
