@@ -147,7 +147,21 @@ pub struct ToggleActions<A: Actionlike> {
     ///
     /// When this is set to false, all corresponding [`ActionState`]s are released
     pub enabled: bool,
-    _phantom: PhantomData<A>,
+    /// Marker that stores the type of action to toggle
+    pub phantom: PhantomData<A>,
+}
+
+impl<A: Actionlike> ToggleActions<A> {
+    /// A [`ToggleActions`] in enabled state.
+    pub const ENABLED: ToggleActions<A> = ToggleActions::<A> {
+        enabled: true,
+        phantom: PhantomData::<A>,
+    };
+    /// A [`ToggleActions`] in disabled state.
+    pub const DISABLED: ToggleActions<A> = ToggleActions::<A> {
+        enabled: false,
+        phantom: PhantomData::<A>,
+    };
 }
 
 // Implement manually to not require [`Default`] for `A`
@@ -155,7 +169,7 @@ impl<A: Actionlike> Default for ToggleActions<A> {
     fn default() -> Self {
         Self {
             enabled: true,
-            _phantom: PhantomData::<A>,
+            phantom: PhantomData::<A>,
         }
     }
 }
