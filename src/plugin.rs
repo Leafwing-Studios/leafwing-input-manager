@@ -153,20 +153,24 @@ pub struct ToggleActions<A: Actionlike> {
 
 impl<A: Actionlike> ToggleActions<A> {
     /// A [`ToggleActions`] in enabled state.
-    pub const ENABLED: ToggleActions::<A> = ToggleActions::<A>::new(true);
+    pub const ENABLED: ToggleActions<A> = ToggleActions::<A> {
+        enabled: true,
+        phantom: PhantomData::<A>,
+    };
     /// A [`ToggleActions`] in disabled state.
-    pub const DISABLED: ToggleActions::<A> = ToggleActions::<A>::new(false);
-
-    /// Constructs a new [`ToggleActions`] with a specific state.
-    pub const fn new(enabled: bool) -> Self {
-        Self { enabled, phantom: PhantomData::<A>, }
-    }
+    pub const DISABLED: ToggleActions<A> = ToggleActions::<A> {
+        enabled: false,
+        phantom: PhantomData::<A>,
+    };
 }
 
 // Implement manually to not require [`Default`] for `A`
 impl<A: Actionlike> Default for ToggleActions<A> {
     fn default() -> Self {
-        Self::new(true)
+        Self {
+            enabled: true,
+            phantom: PhantomData::<A>,
+        }
     }
 }
 
