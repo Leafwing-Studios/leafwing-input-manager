@@ -1,5 +1,14 @@
 # Release Notes
 
+## Unreleased
+
+### Enhancements
+
+- Improve `ToggleActions`.
+  - Make `_phantom` field public and rename into `phantom`.
+  - Add `ToggleActions::new`.
+  - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
+
 ## Version 0.5
 
 ### Enhancements
