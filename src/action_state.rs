@@ -190,6 +190,32 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[action.index()].clone()
     }
 
+    /// Gets a mutable copy of the [`ActionData`] of the corresponding `action`
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    ///
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut action_state = ActionState::<Action>::default();
+    /// let mut run_data = action_state.action_data_mut(Action::Run);
+    /// run_data.axis_pair = None;
+    ///
+    /// dbg!(run_data);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn action_data_mut(&mut self, action: A) -> &mut ActionData {
+        &mut self.action_data[action.index()]
+    }
+
     /// Get the value associated with the corresponding `action`
     ///
     /// Different kinds of bindings have different ways of calculating the value:
