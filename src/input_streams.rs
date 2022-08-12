@@ -119,15 +119,22 @@ impl<'a> InputStreams<'a> {
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputKind::DualAxis(_) => {
+            InputKind::DualAxis(dual_axis) => {
                 let axis_pair = self.input_axis_pair(&UserInput::Single(button)).unwrap();
+                let x_axis = dual_axis.x;
+                let y_axis = dual_axis.y;
+                let x = axis_pair.x();
+                let y = axis_pair.y();
 
-                axis_pair.length() != 0.0
+                x < x_axis.negative_low
+                    || x > x_axis.positive_low
+                    || y < y_axis.negative_low
+                    || y > y_axis.positive_low
             }
-            InputKind::SingleAxis(_) => {
+            InputKind::SingleAxis(axis) => {
                 let value = self.input_value(&UserInput::Single(button));
 
-                value != 0.0
+                value < axis.negative_low || value > axis.positive_low
             }
             InputKind::GamepadButton(gamepad_button) => {
                 if let Some(gamepad) = self.guess_gamepad() {
