@@ -522,7 +522,7 @@ pub struct ActionStateDriver<A: Actionlike> {
 ///
 /// This struct is principally used as a field on [`ActionData`],
 /// which itself lives inside an [`ActionState`].
-#[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
     /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
