@@ -16,4 +16,9 @@ fn main() {
     cmd!("cargo clippy --workspace --all-features -- -D warnings -A clippy::type_complexity")
         .run()
         .expect("Please fix clippy errors in output above.");
+
+    // Check the examples with clippy
+    cmd!("cargo clippy --examples -D warnings -A clippy::type_complexity")
+        .run()
+        .expect("Please fix clippy errors in the examples.");
 }
