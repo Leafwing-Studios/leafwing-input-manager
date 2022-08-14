@@ -7,7 +7,10 @@
 - Improve `ToggleActions`.
   - Make `_phantom` field public and rename into `phantom`.
   - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
-- Implement `Eq` for `Timing` and `InputMap`.
+
+### Usability
+
+- Implemented `Eq` for `Timing` and `InputMap`.
 
 ## Version 0.5
 
