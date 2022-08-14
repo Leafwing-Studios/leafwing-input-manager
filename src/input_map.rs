@@ -73,7 +73,7 @@ use std::marker::PhantomData;
 /// // Removal
 /// input_map.clear_action(Action::Hide);
 ///```
-#[derive(Component, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
