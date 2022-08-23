@@ -55,6 +55,9 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
           override: true
+      - name: Install alsa and udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+        if: runner.os == 'linux'
       - name: CI job
         # See tools/ci/src/main.rs for the commands this runs
         run: cargo run -p ci
