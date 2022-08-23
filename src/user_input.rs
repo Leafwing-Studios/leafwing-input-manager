@@ -15,28 +15,32 @@ use crate::{
 ///
 /// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum UserInput {
+pub enum UserInput<const CHORD_MAX_SIZE: usize = 8> {
     /// A single button
     Single(InputKind),
     /// A combination of buttons, pressed simultaneously
     ///
-    /// Up to 8 (!!) buttons can be chorded together at once.
+    /// The number of buttons you can chord together is configurable via the `CHORD_MAX_SIZE` generic (8 by default).
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
-    Chord(PetitSet<InputKind, 8>),
+    Chord(PetitSet<InputKind, CHORD_MAX_SIZE>),
     /// A virtual DPad that you can get an [`AxisPair`] from
     VirtualDPad(VirtualDPad),
 }
 
-impl UserInput {
+impl<const CHORD_MAX_SIZE: usize> UserInput<CHORD_MAX_SIZE> {
     /// Creates a [`UserInput::Chord`] from an iterator of [`InputKind`]s
     ///
     /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
+    ///
+    /// If `inputs` contains more than `CHORD_MAX_SIZE` elements, the rest of the elements are ignored.
     pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
-        let mut length: u8 = 0;
+        let mut length: usize = 0;
 
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
-        for button in inputs {
+        let mut set: PetitSet<InputKind, CHORD_MAX_SIZE> = PetitSet::default();
+
+        // If the iterator contains more than the maximum number of elements, ignore the rest
+        for button in inputs.into_iter().take(CHORD_MAX_SIZE) {
             length += 1;
             set.insert(button.into());
         }
