@@ -11,6 +11,13 @@
 ### Usability
 
 - Implemented `Eq` for `Timing` and `InputMap`.
+- `UserInput` is now generic over the maximum size of inputs for a `Chord` (the default is still `8`).
+  - If an iterator with too many inputs is passed to `UserInput::chord`, the rest of the inputs are now ignored instead of panicing.
+  - If you want to react to this case, the new `UserInput::try_make_chord` function returns a `Result` instead.
+
+### Breaking changes
+
+- `UserInput::chord` does not panic anymore if you provide an iterator with more inputs than the maximum allowed number. Instead, the rest of the elements are silently ignored.
 
 ## Version 0.5
 
