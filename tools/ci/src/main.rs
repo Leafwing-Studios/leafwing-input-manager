@@ -26,4 +26,9 @@ fn main() {
     cmd!("cargo check --workspace")
         .run()
         .expect("Please fix `cargo check` errors with default features enabled.");
+
+    // Check the examples with clippy
+    cmd!("cargo clippy --examples -- -D warnings -A clippy::type_complexity")
+        .run()
+        .expect("Please fix `cargo clippy` errors for the examples.");
 }
