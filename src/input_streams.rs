@@ -247,9 +247,12 @@ impl<'a> InputStreams<'a> {
                 match single_axis.axis_type {
                     AxisType::Gamepad(axis_type) => {
                         if let Some(gamepad) = self.guess_gamepad() {
-                            self.gamepad_axes
+                            let value = self
+                                .gamepad_axes
                                 .get(GamepadAxis { gamepad, axis_type })
-                                .unwrap_or_default()
+                                .unwrap_or_default();
+
+                            value_in_axis_range(single_axis, value)
                         } else {
                             0.0
                         }
