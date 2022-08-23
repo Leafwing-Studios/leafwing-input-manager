@@ -11,6 +11,10 @@ use crate::{
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
+/// An [`UserInput::Chord`] could not be created because there were too many input elements
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ChordCreationError;
+
 /// Some combination of user input, which may cross [`Input`]-mode boundaries
 ///
 /// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
@@ -33,6 +37,7 @@ impl<const CHORD_MAX_SIZE: usize> UserInput<CHORD_MAX_SIZE> {
     /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
     ///
     /// If `inputs` contains more than `CHORD_MAX_SIZE` elements, the rest of the elements are ignored.
+    /// If you want to react to this case with a [`Result`], use [`UserInput::try_make_chord`] instead.
     pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: usize = 0;
@@ -49,6 +54,38 @@ impl<const CHORD_MAX_SIZE: usize> UserInput<CHORD_MAX_SIZE> {
             1 => UserInput::Single(set.into_iter().next().unwrap()),
             _ => UserInput::Chord(set),
         }
+    }
+
+    /// Creates a [`UserInput::Chord`] from an iterator of [`InputKind`]s
+    ///
+    /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
+    ///
+    /// If `inputs` contains more than `CHORD_MAX_SIZE` elements, a [`ChordCreationError`] is returned.
+    /// If you want to silently ignore the rest of the elements, use the [`UserInput::chord`] function instead.
+    pub fn try_make_chord(
+        inputs: impl IntoIterator<Item = impl Into<InputKind>>,
+    ) -> Result<Self, ChordCreationError> {
+        // We can't just check the length unless we add an ExactSizeIterator bound :(
+        let mut length: usize = 0;
+
+        let mut set: PetitSet<InputKind, CHORD_MAX_SIZE> = PetitSet::default();
+
+        // If the iterator contains more than the maximum number of elements, ignore the rest
+        for button in inputs.into_iter().take(CHORD_MAX_SIZE) {
+            length += 1;
+
+            if length >= CHORD_MAX_SIZE {
+                return Err(ChordCreationError);
+            }
+            set.insert(button.into());
+        }
+
+        let user_input = match length {
+            1 => UserInput::Single(set.into_iter().next().unwrap()),
+            _ => UserInput::Chord(set),
+        };
+
+        Ok(user_input)
     }
 
     /// The number of logical inputs that make up the [`UserInput`].
