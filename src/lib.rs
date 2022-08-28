@@ -33,7 +33,7 @@ pub mod prelude {
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     pub use crate::input_mocking::MockInput;
-    pub use crate::user_input::UserInput;
+    pub use crate::user_input::{InputKind, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
