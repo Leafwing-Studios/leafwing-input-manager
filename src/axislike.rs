@@ -104,7 +104,7 @@ impl SingleAxis {
 
     /// Returns this [`SingleAxis`] with the deadzone set to the specified value
     #[must_use]
-    pub const fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
+    pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
         self.positive_low = deadzone;
         self.negative_low = -deadzone;
         self
@@ -219,7 +219,7 @@ impl DualAxis {
 
     /// Returns this [`DualAxis`] with the deadzone set to the specified value
     #[must_use]
-    pub const fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
+    pub fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
         self.x = self.x.with_deadzone(deadzone);
         self.y = self.y.with_deadzone(deadzone);
         self
