@@ -11,6 +11,7 @@
 ### Usability
 
 - Implemented `Eq` for `Timing` and `InputMap`.
+- Held `ActionState` inputs will now be released when an `InputMap` is removed.
 
 ## Version 0.5
 
