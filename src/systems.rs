@@ -212,6 +212,39 @@ pub fn release_on_disable<A: Actionlike>(
     }
 }
 
+/// Release all inputs when an [`InputMap<A>`] is removed to prevent them from being held forever.
+///
+/// By default, [`InputManagerPlugin<A>`] will run this on [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate).
+/// For components you must remove the [`InputMap<A>`] before [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate)
+/// or this will not run.
+pub fn release_on_input_map_removed<A: Actionlike>(
+    removed_components: RemovedComponents<InputMap<A>>,
+    input_map_resource: Option<ResMut<InputMap<A>>>,
+    action_state_resource: Option<ResMut<ActionState<A>>>,
+    mut input_map_resource_existed: Local<bool>,
+    mut action_state_query: Query<&mut ActionState<A>>,
+) {
+    let mut iter = action_state_query.iter_many_mut(removed_components.iter());
+    while let Some(mut action_state) = iter.fetch_next() {
+        action_state.release_all();
+    }
+
+    // Detect when an InputMap resource is removed.
+    if input_map_resource.is_some() {
+        // Store if the resource existed so we know if it was removed later.
+        *input_map_resource_existed = true;
+    } else if *input_map_resource_existed {
+        // The input map does not exist and our local is true so we know the input map was removed.
+
+        if let Some(mut action_state) = action_state_resource {
+            action_state.release_all();
+        }
+
+        // Reset our local so our removal detection is only triggered once.
+        *input_map_resource_existed = false;
+    }
+}
+
 /// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
 pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
     if toggle_actions.enabled {

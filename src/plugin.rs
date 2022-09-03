@@ -105,7 +105,8 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                     release_on_disable::<A>
                         .label(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Update),
-                );
+                )
+                .add_system_to_stage(CoreStage::PostUpdate, release_on_input_map_removed::<A>);
 
                 #[cfg(feature = "ui")]
                 app.add_system_to_stage(
