@@ -7,6 +7,7 @@
 - Improve `ToggleActions`.
   - Make `_phantom` field public and rename into `phantom`.
   - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
+- Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
 
 ### Usability
 
