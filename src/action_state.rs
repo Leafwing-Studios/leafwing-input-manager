@@ -277,10 +277,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// If a cooldown already existed, it will be replaced by a new cooldown with the specified duration.
     #[inline]
-    pub fn set_cooldown(&mut self, action: A, max_time: Duration) {
-        self.action_data(action)
-            .cooldown
-            .replace(Cooldown::new(max_time));
+    pub fn set_cooldown(&mut self, action: A, cooldown: Cooldown) {
+        self.action_data(action).cooldown.replace(cooldown);
     }
 
     /// Remove any cooldown for the specified action.
