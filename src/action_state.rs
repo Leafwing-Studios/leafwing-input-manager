@@ -253,7 +253,6 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(!action_state.can_trigger(Action::Jump));
     /// ```
     #[inline]
-    #[must_use]
     pub fn begin_cooldown(&mut self, action: A) {
         if let Some(cooldown) = self.action_data_mut(action).cooldown.as_mut() {
             cooldown.trigger();
@@ -278,7 +277,6 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// If a cooldown already existed, it will be replaced by a new cooldown with the specified duration.
     #[inline]
-    #[must_use]
     pub fn set_cooldown(&mut self, action: A, max_time: Duration) {
         self.action_data(action)
             .cooldown
@@ -287,7 +285,6 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Remove any cooldown for the specified action.
     #[inline]
-    #[must_use]
     pub fn remove_cooldown(&mut self, action: A) {
         self.action_data(action).cooldown.take();
     }
