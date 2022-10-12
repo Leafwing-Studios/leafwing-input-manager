@@ -239,21 +239,21 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// let mut action_state = ActionState::<Action>::default();
     /// action_state.set_cooldown(Action::Jump, Cooldown::new(Duration::from_secs(1)));
-    /// action_state.press(Jump);
+    /// action_state.press(Action::Jump);
     ///
     /// // WARNING: use the shortcircuiting &&, not & here,
     /// // to avoid accidentally triggering the cooldown by side-effect when checking!
-    /// if action_state.just_pressed(Action::Jump) && action_state.can_use(Action::Jump) {
+    /// if action_state.just_pressed(Action::Jump) && action_state.ready(Action::Jump) {
     ///    // Actually do the jumping thing here
     ///    // Remember to actually begin the cooldown if you jumped!
-    ///    action_state.begin_cooldown(Action::Jump);
+    ///    action_state.trigger_cooldown(Action::Jump);
     /// }
     ///
     /// // We just jumped, so the cooldown isn't ready yet
-    /// assert!(!action_state.can_trigger(Action::Jump));
+    /// assert!(!action_state.ready(Action::Jump));
     /// ```
     #[inline]
-    pub fn begin_cooldown(&mut self, action: A) {
+    pub fn trigger_cooldown(&mut self, action: A) {
         if let Some(cooldown) = self.action_data_mut(action).cooldown.as_mut() {
             cooldown.trigger();
         }
@@ -265,7 +265,7 @@ impl<A: Actionlike> ActionState<A> {
     /// or if no cooldown is stored for this action.
     #[inline]
     #[must_use]
-    pub fn can_use(&self, action: A) -> bool {
+    pub fn ready(&self, action: A) -> bool {
         if let Some(cooldown) = self.action_data(action).cooldown {
             cooldown.ready()
         } else {

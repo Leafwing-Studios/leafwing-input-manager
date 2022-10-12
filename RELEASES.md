@@ -5,7 +5,8 @@
 ### Enhancements
 
 - You can now store `Cooldown`s in the `ActionState` on a per-action basis.
-  - Use `ActionState::can_use` with `ActionState::begin_cooldown` as part of your action loop!
+  - Set cooldowns for actions using `ActionState::set_cooldown(action, cooldown)`.
+  - Use `ActionState::ready` with `ActionState::trigger_cooldown` as part of your action loop!
   - Cooldowns are automatically elapsed whenever `ActionState::tick` is called (this will happen automatically if you add the plugin).
 
 ### Usability
