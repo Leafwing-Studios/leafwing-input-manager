@@ -273,15 +273,24 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Set a cooldown for the specified action.
+    /// The cooldown associated with the specified `action`, if any.
+    ///
+    /// This returns a clone; use `action_data_mut().cooldown` if you need to mutate the values.
+    #[inline]
+    #[must_use]
+    pub fn cooldown(&self, action: A) -> Option<Cooldown> {
+        self.action_data(action).cooldown
+    }
+
+    /// Set a cooldown for the specified `action`.
     ///
     /// If a cooldown already existed, it will be replaced by a new cooldown with the specified duration.
     #[inline]
     pub fn set_cooldown(&mut self, action: A, cooldown: Cooldown) {
-        self.action_data(action).cooldown.replace(cooldown);
+        self.action_data_mut(action).cooldown.replace(cooldown);
     }
 
-    /// Remove any cooldown for the specified action.
+    /// Remove any cooldown for the specified `action`.
     #[inline]
     pub fn remove_cooldown(&mut self, action: A) {
         self.action_data(action).cooldown.take();
