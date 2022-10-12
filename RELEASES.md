@@ -1,18 +1,22 @@
 # Release Notes
 
-## Unreleased
+## Version 0.6 (Unreleased)
 
 ### Enhancements
 
-- Improve `ToggleActions`.
-  - Make `_phantom` field public and rename into `phantom`.
-  - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
-- Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
+- You can now store `Cooldown`s in the `ActionState` on a per-action basis.
+  - Set cooldowns for actions using `ActionState::set_cooldown(action, cooldown)`.
+  - Use `ActionState::ready` with `ActionState::trigger_cooldown` as part of your action loop!
+  - Cooldowns are automatically elapsed whenever `ActionState::tick` is called (this will happen automatically if you add the plugin).
 
 ### Usability
 
 - Implemented `Eq` for `Timing` and `InputMap`.
 - Held `ActionState` inputs will now be released when an `InputMap` is removed.
+- Improve `ToggleActions`.
+  - Make `_phantom` field public and rename into `phantom`.
+  - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
+- Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
 
 ## Version 0.5
 

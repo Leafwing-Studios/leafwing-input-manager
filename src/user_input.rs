@@ -84,13 +84,7 @@ impl UserInput {
     /// ```
     pub fn n_matching(&self, buttons: &HashSet<InputKind>) -> usize {
         match self {
-            UserInput::Single(button) => {
-                if buttons.contains(button) {
-                    1
-                } else {
-                    0
-                }
-            }
+            UserInput::Single(button) => usize::from(buttons.contains(button)),
             UserInput::Chord(chord_buttons) => {
                 let mut n_matching = 0;
                 for button in buttons.iter() {

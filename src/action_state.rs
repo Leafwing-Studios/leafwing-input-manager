@@ -1,5 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
+use crate::cooldown::Cooldown;
 use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
@@ -33,6 +34,10 @@ pub struct ActionData {
     /// Actions that are consumed cannot be pressed again until they are explicitly released.
     /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
     pub consumed: bool,
+    /// The time until this action can be used again.
+    ///
+    /// If [`None`], this action can always be used.
+    pub cooldown: Option<Cooldown>,
 }
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
@@ -160,7 +165,10 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.iter_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
-                ad.timing.tick(current_instant, previous_instant)
+                ad.timing.tick(current_instant, previous_instant);
+                if let Some(cooldown) = ad.cooldown.as_mut() {
+                    cooldown.tick(current_instant - previous_instant);
+                }
             }
         });
     }
@@ -214,6 +222,81 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn action_data_mut(&mut self, action: A) -> &mut ActionData {
         &mut self.action_data[action.index()]
+    }
+
+    /// Triggers the cooldown of the `action` if it is available to be used.
+    ///
+    /// This should always be paired with [`ActionState::ready`], to check if the action can be used before triggering its cooldown.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    /// use bevy::utils::Duration;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut action_state = ActionState::<Action>::default();
+    /// action_state.set_cooldown(Action::Jump, Cooldown::new(Duration::from_secs(1)));
+    /// action_state.press(Action::Jump);
+    ///
+    /// // WARNING: use the shortcircuiting &&, not & here,
+    /// // to avoid accidentally triggering the cooldown by side-effect when checking!
+    /// if action_state.just_pressed(Action::Jump) && action_state.ready(Action::Jump) {
+    ///    // Actually do the jumping thing here
+    ///    // Remember to actually begin the cooldown if you jumped!
+    ///    action_state.trigger_cooldown(Action::Jump);
+    /// } else {
+    ///     // In this trival test, we just jumped!
+    ///     unreachable!()
+    /// }
+    ///
+    /// // We just jumped, so the cooldown isn't ready yet
+    /// assert!(!action_state.ready(Action::Jump));
+    /// ```
+    #[inline]
+    pub fn trigger_cooldown(&mut self, action: A) {
+        if let Some(cooldown) = self.action_data_mut(action).cooldown.as_mut() {
+            cooldown.trigger();
+        }
+    }
+
+    /// Can the corresponding `action` be used?
+    ///
+    /// This will be `true` if the underlying [`Cooldown::ready()`] call is true,
+    /// or if no cooldown is stored for this action.
+    #[inline]
+    #[must_use]
+    pub fn ready(&self, action: A) -> bool {
+        if let Some(cooldown) = self.action_data(action).cooldown {
+            cooldown.ready()
+        } else {
+            true
+        }
+    }
+
+    /// The cooldown associated with the specified `action`, if any.
+    ///
+    /// This returns a clone; use `action_data_mut().cooldown` if you need to mutate the values.
+    #[inline]
+    #[must_use]
+    pub fn cooldown(&self, action: A) -> Option<Cooldown> {
+        self.action_data(action).cooldown
+    }
+
+    /// Set a cooldown for the specified `action`.
+    ///
+    /// If a cooldown already existed, it will be replaced by a new cooldown with the specified duration.
+    #[inline]
+    pub fn set_cooldown(&mut self, action: A, cooldown: Cooldown) {
+        self.action_data_mut(action).cooldown.replace(cooldown);
+    }
+
+    /// Remove any cooldown for the specified `action`.
+    #[inline]
+    pub fn remove_cooldown(&mut self, action: A) {
+        self.action_data(action).cooldown.take();
     }
 
     /// Get the value associated with the corresponding `action`

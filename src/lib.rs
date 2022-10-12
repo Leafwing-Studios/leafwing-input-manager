@@ -12,6 +12,7 @@ pub mod action_state;
 pub mod axislike;
 pub mod buttonlike;
 pub mod clashing_inputs;
+pub mod cooldown;
 mod display_impl;
 pub mod errors;
 pub mod input_map;
@@ -31,6 +32,7 @@ pub mod prelude {
     pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad};
     pub use crate::buttonlike::MouseWheelDirection;
     pub use crate::clashing_inputs::ClashStrategy;
+    pub use crate::cooldown::Cooldown;
     pub use crate::input_map::InputMap;
     pub use crate::input_mocking::MockInput;
     pub use crate::user_input::UserInput;
