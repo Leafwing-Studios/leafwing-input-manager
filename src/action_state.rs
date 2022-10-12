@@ -224,6 +224,34 @@ impl<A: Actionlike> ActionState<A> {
         &mut self.action_data[action.index()]
     }
 
+    /// Tries to use the corresponding `action`, triggering its cooldown if successful.
+    ///
+    /// This has no in-game effect; you will want to branch on the returned [`bool`] to determine if
+    /// the action could be used.
+    #[inline]
+    #[must_use]
+    pub fn trigger(&mut self, action: A) -> bool {
+        if let Some(cooldown) = self.action_data_mut(action).cooldown.as_mut() {
+            cooldown.trigger()
+        } else {
+            true
+        }
+    }
+
+    /// Can the corresponding `action` be used?
+    ///
+    /// This will be `true` if the underlying [`Cooldown::ready()`] call is true,
+    /// or if no cooldown is stored for this action.
+    #[inline]
+    #[must_use]
+    pub fn can_trigger(&self, action: A) -> bool {
+        if let Some(cooldown) = self.action_data(action).cooldown {
+            cooldown.ready()
+        } else {
+            true
+        }
+    }
+
     /// Get the value associated with the corresponding `action`
     ///
     /// Different kinds of bindings have different ways of calculating the value:
