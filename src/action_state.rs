@@ -224,17 +224,39 @@ impl<A: Actionlike> ActionState<A> {
         &mut self.action_data[action.index()]
     }
 
-    /// Tries to use the corresponding `action`, triggering its cooldown if successful.
+    /// Triggers the cooldown of the `action` if it is available to be used.
     ///
-    /// This has no in-game effect; you will want to branch on the returned [`bool`] to determine if
-    /// the action could be used.
+    /// This should always be paired with [`ActionState::can_use`], to check if the action can be used before triggering its cooldown.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    /// use bevy::utils::Duration;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut action_state = ActionState::<Action>::default();
+    /// action_state.set_cooldown(Action::Jump, Cooldown::new(Duration::from_secs(1)));
+    /// action_state.press(Jump);
+    ///
+    /// // WARNING: use the shortcircuiting &&, not & here,
+    /// // to avoid accidentally triggering the cooldown by side-effect when checking!
+    /// if action_state.just_pressed(Action::Jump) && action_state.can_use(Action::Jump) {
+    ///    // Actually do the jumping thing here
+    ///    // Remember to actually begin the cooldown if you jumped!
+    ///    action_state.begin_cooldown(Action::Jump);
+    /// }
+    ///
+    /// // We just jumped, so the cooldown isn't ready yet
+    /// assert!(!action_state.can_trigger(Action::Jump));
+    /// ```
     #[inline]
     #[must_use]
-    pub fn trigger(&mut self, action: A) -> bool {
+    pub fn begin_cooldown(&mut self, action: A) {
         if let Some(cooldown) = self.action_data_mut(action).cooldown.as_mut() {
-            cooldown.trigger()
-        } else {
-            true
+            cooldown.trigger();
         }
     }
 
@@ -244,12 +266,30 @@ impl<A: Actionlike> ActionState<A> {
     /// or if no cooldown is stored for this action.
     #[inline]
     #[must_use]
-    pub fn can_trigger(&self, action: A) -> bool {
+    pub fn can_use(&self, action: A) -> bool {
         if let Some(cooldown) = self.action_data(action).cooldown {
             cooldown.ready()
         } else {
             true
         }
+    }
+
+    /// Set a cooldown for the specified action.
+    ///
+    /// If a cooldown already existed, it will be replaced by a new cooldown with the specified duration.
+    #[inline]
+    #[must_use]
+    pub fn set_cooldown(&mut self, action: A, max_time: Duration) {
+        self.action_data(action)
+            .cooldown
+            .replace(Cooldown::new(max_time));
+    }
+
+    /// Remove any cooldown for the specified action.
+    #[inline]
+    #[must_use]
+    pub fn remove_cooldown(&mut self, action: A) {
+        self.action_data(action).cooldown.take();
     }
 
     /// Get the value associated with the corresponding `action`
