@@ -1,5 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
+use crate::cooldown::Cooldown;
 use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
@@ -33,6 +34,10 @@ pub struct ActionData {
     /// Actions that are consumed cannot be pressed again until they are explicitly released.
     /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
     pub consumed: bool,
+    /// The time until this action can be used again.
+    ///
+    /// If [`None`], this action can always be used.
+    pub cooldown: Option<Cooldown>,
 }
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
@@ -160,7 +165,10 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.iter_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
-                ad.timing.tick(current_instant, previous_instant)
+                ad.timing.tick(current_instant, previous_instant);
+                if let Some(cooldown) = ad.cooldown.as_mut() {
+                    cooldown.tick(current_instant - previous_instant);
+                }
             }
         });
     }
