@@ -226,7 +226,7 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Triggers the cooldown of the `action` if it is available to be used.
     ///
-    /// This should always be paired with [`ActionState::can_use`], to check if the action can be used before triggering its cooldown.
+    /// This should always be paired with [`ActionState::ready`], to check if the action can be used before triggering its cooldown.
     ///
     /// ```rust
     /// use leafwing_input_manager::prelude::*;
@@ -247,6 +247,9 @@ impl<A: Actionlike> ActionState<A> {
     ///    // Actually do the jumping thing here
     ///    // Remember to actually begin the cooldown if you jumped!
     ///    action_state.trigger_cooldown(Action::Jump);
+    /// } else {
+    ///     // In this trival test, we just jumped!
+    ///     unreachable!()
     /// }
     ///
     /// // We just jumped, so the cooldown isn't ready yet

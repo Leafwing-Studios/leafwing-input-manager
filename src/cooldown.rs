@@ -11,7 +11,10 @@ use serde::{Deserialize, Serialize};
 /// When initialized, cooldowns are always fully available.
 ///
 /// ```rust
-/// let cooldown = Cooldown::new(Duration::from_secs(3));
+/// use bevy::utils::Duration;
+/// use leafwing_input_manager::cooldown::Cooldown;
+///
+/// let mut cooldown = Cooldown::new(Duration::from_secs(3));
 /// assert_eq!(cooldown.time_remaining(), Duration::ZERO);
 ///
 /// cooldown.trigger();
@@ -44,7 +47,7 @@ impl Cooldown {
 
     /// Advance the cooldown by `delta_time`.
     pub fn tick(&mut self, delta_time: Duration) {
-        self.time_remaining = (self.time_remaining - delta_time).max(Duration::ZERO);
+        self.time_remaining = self.time_remaining.saturating_sub(delta_time);
     }
 
     /// Is this action ready to be used?
