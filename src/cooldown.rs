@@ -77,8 +77,11 @@ impl Cooldown {
     }
 
     /// Sets the time that it will take for this action to be ready to use again after being triggered.
+    ///
+    /// If the current time remaining is greater than the new max time, it will be clamped to the `max_time`.
     pub fn set_max_time(&mut self, max_time: Duration) {
         self.max_time = max_time;
+        self.time_remaining = self.time_remaining.min(max_time);
     }
 
     /// Returns the time remaining until the action is ready to use again.
@@ -87,7 +90,9 @@ impl Cooldown {
     }
 
     /// Sets the time remaining until the action is ready to use again.
+    ///
+    /// This will always be clamped between [`Duration::ZERO`] and the `max_time` of this cooldown.
     pub fn set_time_remaining(&mut self, time_remaining: Duration) {
-        self.time_remaining = time_remaining.max(Duration::ZERO);
+        self.time_remaining = time_remaining.clamp(Duration::ZERO, self.max_time);
     }
 }
