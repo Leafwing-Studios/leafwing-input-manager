@@ -1,6 +1,7 @@
 // BLOCKED: these tests should set the time manually.
 // Requires https://github.com/bevyengine/bevy/issues/6146 to do so.
 
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::utils::Duration;
 use leafwing_input_manager::prelude::*;
@@ -45,15 +46,23 @@ fn spawn(mut commands: Commands) {
 
 #[test]
 fn cooldowns_on_entity() {
+    use Action::*;
+
     let mut app = App::new();
     app.add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
         .add_startup_system(spawn);
+
+    // Spawn entities
+    app.update();
 
     // Cooldown start ready
     let mut query_state = app.world.query::<&mut Cooldowns<Action>>();
     let mut cooldowns: Mut<Cooldowns<Action>> = query_state.single_mut(&mut app.world);
     for action in Action::variants() {
         assert!(cooldowns.ready(action));
+        // Trigger all the cooldowns once
         cooldowns.trigger(action);
     }
 
@@ -62,16 +71,10 @@ fn cooldowns_on_entity() {
     // No waiting
     let mut query_state = app.world.query::<&Cooldowns<Action>>();
     let cooldowns: &Cooldowns<Action> = query_state.single(&mut app.world);
-    for action in Action::variants() {
-        let ready = cooldowns.ready(action);
-
-        match &action {
-            Action::NoCooldown => assert!(ready),
-            Action::Zero => assert!(ready),
-            Action::Short => assert!(!ready),
-            Action::Long => assert!(!ready),
-        }
-    }
+    assert!(cooldowns.ready(NoCooldown));
+    assert!(cooldowns.ready(Zero));
+    assert!(!cooldowns.ready(Short));
+    assert!(!cooldowns.ready(Long));
 
     sleep(Duration::from_secs_f32(0.2));
     app.update();
@@ -79,22 +82,20 @@ fn cooldowns_on_entity() {
     // Short wait
     let mut query_state = app.world.query::<&Cooldowns<Action>>();
     let cooldowns: &Cooldowns<Action> = query_state.single(&mut app.world);
-    for action in Action::variants() {
-        let ready = cooldowns.ready(action);
-
-        match &action {
-            Action::NoCooldown => assert!(ready),
-            Action::Zero => assert!(ready),
-            Action::Short => assert!(ready),
-            Action::Long => assert!(!ready),
-        }
-    }
+    assert!(cooldowns.ready(NoCooldown));
+    assert!(cooldowns.ready(Zero));
+    assert!(cooldowns.ready(Short));
+    assert!(!cooldowns.ready(Long));
 }
 
 #[test]
 fn cooldowns_in_resource() {
+    use Action::*;
+
     let mut app = App::new();
     app.add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
         .insert_resource(Action::cooldowns());
 
     // Cooldown start ready
@@ -108,30 +109,18 @@ fn cooldowns_in_resource() {
 
     // No waiting
     let cooldowns: &Cooldowns<Action> = app.world.resource();
-    for action in Action::variants() {
-        let ready = cooldowns.ready(action);
-
-        match &action {
-            Action::NoCooldown => assert!(ready),
-            Action::Zero => assert!(ready),
-            Action::Short => assert!(!ready),
-            Action::Long => assert!(!ready),
-        }
-    }
+    assert!(cooldowns.ready(NoCooldown));
+    assert!(cooldowns.ready(Zero));
+    assert!(!cooldowns.ready(Short));
+    assert!(!cooldowns.ready(Long));
 
     sleep(Duration::from_secs_f32(0.2));
     app.update();
 
     // Short wait
     let cooldowns: &Cooldowns<Action> = app.world.resource();
-    for action in Action::variants() {
-        let ready = cooldowns.ready(action);
-
-        match &action {
-            Action::NoCooldown => assert!(ready),
-            Action::Zero => assert!(ready),
-            Action::Short => assert!(ready),
-            Action::Long => assert!(!ready),
-        }
-    }
+    assert!(cooldowns.ready(NoCooldown));
+    assert!(cooldowns.ready(Zero));
+    assert!(cooldowns.ready(Short));
+    assert!(!cooldowns.ready(Long));
 }
