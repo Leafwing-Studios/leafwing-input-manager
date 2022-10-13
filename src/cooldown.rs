@@ -214,10 +214,10 @@ impl<A: Actionlike> Cooldowns<A> {
 /// use leafwing_input_manager::cooldown::Cooldown;
 ///
 /// let mut cooldown = Cooldown::new(Duration::from_secs(3));
-/// assert_eq!(cooldown.time_remaining(), Duration::ZERO);
+/// assert_eq!(cooldown.remaining(), Duration::ZERO);
 ///
 /// cooldown.trigger();
-/// assert_eq!(cooldown.time_remaining(), Duration::from_secs(3));
+/// assert_eq!(cooldown.remaining(), Duration::from_secs(3));
 ///
 /// cooldown.tick(Duration::from_secs(1));
 /// assert!(!cooldown.ready());
@@ -241,7 +241,7 @@ impl<A: Actionlike> Cooldowns<A> {
 /// use leafwing_input_manager::cooldown::Cooldown;
 /// use bevy::utils::Duration;
 ///
-/// let mut cooldown = Cooldown::from_sec(1.).with_charges(3);
+/// let mut cooldown = Cooldown::from_secs(1.).with_charges(3);
 /// assert_eq!(cooldown.charges(), 3);
 /// assert_eq!(cooldown.max_charges(), 3);
 /// assert!(cooldown.ready());
@@ -264,7 +264,7 @@ impl<A: Actionlike> Cooldowns<A> {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Cooldown {
     max_time: Duration,
-    time_remaining: Duration,
+    elapsed_time: Duration,
     charges: u8,
     max_charges: u8,
 }
@@ -281,7 +281,7 @@ impl Cooldown {
 
         Cooldown {
             max_time,
-            time_remaining: Duration::ZERO,
+            elapsed_time: Duration::ZERO,
             charges: 1,
             max_charges: 1,
         }
@@ -295,42 +295,44 @@ impl Cooldown {
     /// Instead, use [`None`] in the [`Cooldowns`] struct for an action without a cooldown.
     pub fn from_secs(max_time: f32) -> Cooldown {
         assert!(max_time > 0.);
+        let max_time = Duration::from_secs_f32(max_time);
 
-        Cooldown {
-            max_time: Duration::from_secs_f32(max_time),
-            time_remaining: Duration::ZERO,
-            charges: 1,
-            max_charges: 1,
-        }
+        Cooldown::new(max_time)
     }
 
     /// Advance the cooldown by `delta_time`.
     ///
-    /// If the elapsed time is enough to reset the cooldown, the number of available charges
+    /// If the elapsed time is enough to reset the cooldown, the number of available charges.
     pub fn tick(&mut self, delta_time: Duration) {
         assert!(self.max_time != Duration::ZERO);
-        let total_time = (self.max_time - self.time_remaining) + delta_time;
+
+        // Ticking a cooldown at max charges has no effect
+        if self.charges == self.max_charges {
+            // Elapsed time is always zero when we're at max charges
+            self.elapsed_time = Duration::ZERO;
+            return;
+        }
+
+        let total_time = self.elapsed_time + delta_time;
 
         let total_nanos: u64 = total_time.as_nanos().try_into().unwrap_or(u64::MAX);
-        let max_nanos: u64 = total_time.as_nanos().try_into().unwrap_or(u64::MAX);
+        let max_nanos: u64 = self.max_time.as_nanos().try_into().unwrap_or(u64::MAX);
 
-        // Don't divide by zero
-        let times_completed = total_nanos / max_nanos;
-        let extra_time = total_nanos % max_nanos;
+        let n_completed = (total_nanos / max_nanos).try_into().unwrap_or(u8::MAX);
+        let extra_time = Duration::from_nanos(total_nanos % max_nanos);
 
-        let excess = self.add_charges(times_completed.try_into().unwrap_or(u8::MAX));
-        if excess == 0 {
-            self.time_remaining = self
-                .time_remaining
-                .saturating_sub(Duration::from_nanos(extra_time));
+        let excess_completions = self.add_charges(n_completed);
+        if excess_completions == 0 {
+            self.elapsed_time = (self.elapsed_time + extra_time).min(self.max_time);
         } else {
-            self.time_remaining = Duration::ZERO;
+            self.elapsed_time = self.max_time;
         }
     }
 
     /// Is this action ready to be used?
     ///
-    /// This will be true if and only if the `time_remaining` is [`Duration::Zero`].
+    /// This will be true if and only if at least one charge is available.
+    /// For cooldowns without charges, this will be true if `time_remaining` is [`Duration::Zero`].
     pub fn ready(&self) -> bool {
         self.charges > 0
     }
@@ -352,7 +354,6 @@ impl Cooldown {
     #[inline]
     pub fn trigger(&mut self) -> bool {
         if self.ready() {
-            self.time_remaining = self.max_time;
             self.charges = self.charges.saturating_sub(1);
             true
         } else {
@@ -379,21 +380,43 @@ impl Cooldown {
         assert!(max_time != Duration::ZERO);
 
         self.max_time = max_time;
-        self.time_remaining = self.time_remaining.min(max_time);
+        self.elapsed_time = self.elapsed_time.min(max_time);
     }
 
-    /// Returns the time remaining until the action is ready to use again.
+    /// Returns the time that has passed since the cooldown was triggered.
     #[inline]
-    pub fn time_remaining(&self) -> Duration {
-        self.time_remaining
+    pub fn elapsed(&self) -> Duration {
+        self.elapsed_time
     }
 
-    /// Sets the time remaining until the action is ready to use again.
+    /// Sets the time that has passed since the cooldown was triggered.
     ///
     /// This will always be clamped between [`Duration::ZERO`] and the `max_time` of this cooldown.
     #[inline]
-    pub fn set_time_remaining(&mut self, time_remaining: Duration) {
-        self.time_remaining = time_remaining.clamp(Duration::ZERO, self.max_time);
+    pub fn set_elapsed(&mut self, elapsed_time: Duration) {
+        self.elapsed_time = elapsed_time.clamp(Duration::ZERO, self.max_time);
+    }
+
+    /// Returns the time remaining until the next charge is ready.
+    ///
+    /// When a cooldown is fully charged, this will return [`Duration::ZERO`].
+    #[inline]
+    pub fn remaining(&self) -> Duration {
+        if self.elapsed_time == Duration::ZERO && self.charges == self.max_charges {
+            // Users expect cooldowns that are ready to have zero time remaining,
+            // so we wrap over the math to account for this
+            Duration::ZERO
+        } else {
+            self.max_time.saturating_sub(self.elapsed_time)
+        }
+    }
+
+    /// Sets the time remaining until the next charge is ready.
+    ///
+    /// This will always be clamped between [`Duration::ZERO`] and the `max_time` of this cooldown.
+    #[inline]
+    pub fn set_remaining(&mut self, time_remaining: Duration) {
+        self.elapsed_time = self.max_time - time_remaining.clamp(Duration::ZERO, self.max_time);
     }
 }
 
@@ -429,7 +452,7 @@ impl Cooldown {
     /// Returns the number of excess charges.
     #[inline]
     pub fn add_charges(&mut self, charges: u8) -> u8 {
-        let excess = self.max_charges.saturating_sub(self.charges + charges);
+        let excess = (self.charges + charges).saturating_sub(self.max_charges);
         self.charges = (self.charges + charges).min(self.max_charges);
         excess
     }
@@ -440,7 +463,7 @@ impl Cooldown {
     /// Returns the number of excess charges.
     #[inline]
     pub fn set_charges(&mut self, charges: u8) -> u8 {
-        let excess = self.max_charges.saturating_sub(charges);
+        let excess = charges.saturating_sub(self.max_charges);
         self.charges = charges.min(self.max_charges);
         excess
     }
@@ -452,5 +475,144 @@ impl Cooldown {
     pub fn set_max_charges(&mut self, max_charges: u8) {
         self.max_charges = max_charges;
         self.charges = self.charges.min(self.max_charges);
+    }
+}
+
+#[cfg(test)]
+mod tick_tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn zero_duration_cooldown_cannot_be_constructed() {
+        Cooldown::new(Duration::ZERO);
+    }
+
+    #[test]
+    fn tick_has_no_effect_on_fresh_cooldown() {
+        let cooldown = Cooldown::from_secs(1.);
+        let mut cloned_cooldown = cooldown.clone();
+        cloned_cooldown.tick(Duration::from_secs_f32(1.234));
+        assert_eq!(cooldown, cloned_cooldown);
+    }
+
+    #[test]
+    fn cooldowns_are_ready_when_refreshed() {
+        let mut cooldown = Cooldown::from_secs(1.);
+        assert!(cooldown.ready());
+        cooldown.trigger();
+        assert!(!cooldown.ready());
+        cooldown.refresh();
+        assert!(cooldown.ready());
+    }
+
+    #[test]
+    fn ticking_changes_cooldown() {
+        let cooldown = Cooldown::new(Duration::from_millis(1000));
+        let mut cloned_cooldown = cooldown.clone();
+        cloned_cooldown.trigger();
+        assert!(cooldown != cloned_cooldown);
+
+        cloned_cooldown.tick(Duration::from_millis(123));
+        assert!(cooldown != cloned_cooldown);
+    }
+
+    #[test]
+    fn cooldowns_reset_after_being_ticked() {
+        let mut cooldown = Cooldown::from_secs(1.);
+        cooldown.trigger();
+        assert!(!cooldown.ready());
+
+        cooldown.tick(Duration::from_secs(3));
+        assert!(cooldown.ready());
+    }
+
+    #[test]
+    fn time_remaining_on_fresh_cooldown_is_zero() {
+        let cooldown = Cooldown::from_secs(1.);
+        assert_eq!(cooldown.remaining(), Duration::ZERO);
+    }
+
+    #[test]
+    fn time_elapsed_on_fresh_cooldown_is_zero() {
+        let cooldown = Cooldown::from_secs(1.);
+        assert_eq!(cooldown.elapsed(), Duration::ZERO);
+    }
+}
+
+#[cfg(test)]
+mod charge_tests {
+    use super::*;
+
+    #[test]
+    fn cooldowns_start_with_one_charge() {
+        let cooldown = Cooldown::from_secs(1.);
+        assert_eq!(cooldown.charges(), 1);
+        assert_eq!(cooldown.max_charges(), 1);
+    }
+
+    #[test]
+    fn cooldowns_have_no_charges_after_being_triggered() {
+        let mut cooldown = Cooldown::from_secs(1.);
+        cooldown.trigger();
+        assert_eq!(cooldown.charges(), 0);
+        assert!(!cooldown.ready())
+    }
+
+    #[test]
+    fn cooldowns_gain_a_charge_when_refreshed() {
+        let mut cooldown = Cooldown::from_secs(1.);
+        cooldown.trigger();
+        cooldown.refresh();
+        assert_eq!(cooldown.charges(), 1);
+    }
+
+    #[test]
+    fn charges_are_depleted() {
+        let mut cooldown = Cooldown::from_secs(1.).with_charges(3);
+        assert_eq!(cooldown.charges(), 3);
+        cooldown.trigger();
+        assert_eq!(cooldown.charges(), 2);
+        cooldown.trigger();
+        assert_eq!(cooldown.charges(), 1);
+        cooldown.trigger();
+        assert_eq!(cooldown.charges(), 0);
+        cooldown.trigger();
+        assert_eq!(cooldown.charges(), 0);
+    }
+
+    #[test]
+    fn cooldown_time_is_preserved_when_charge_depleted() {
+        let mut cooldown = Cooldown::new(Duration::from_millis(1000)).with_charges(3);
+        cooldown.trigger();
+        cooldown.tick(Duration::from_millis(300));
+        assert_eq!(cooldown.remaining(), Duration::from_millis(700));
+        cooldown.trigger();
+        assert_eq!(cooldown.remaining(), Duration::from_millis(700));
+    }
+
+    #[test]
+    fn charges_regenerate_one_at_a_time() {
+        let mut cooldown = Cooldown::new(Duration::from_secs(1)).with_charges(3);
+        cooldown.set_charges(0);
+        assert_eq!(cooldown.charges(), 0);
+
+        cooldown.tick(Duration::from_secs(1));
+        assert_eq!(cooldown.charges(), 1);
+        cooldown.tick(Duration::from_secs(1));
+        assert_eq!(cooldown.charges(), 2);
+        cooldown.tick(Duration::from_secs(1));
+        assert_eq!(cooldown.charges(), 3);
+        cooldown.tick(Duration::from_secs(1));
+        assert_eq!(cooldown.charges(), 3);
+    }
+
+    #[test]
+    fn multiple_charges_regenerate_in_long_tick() {
+        let mut cooldown = Cooldown::from_secs(1.).with_charges(3);
+        cooldown.set_charges(0);
+
+        cooldown.tick(Duration::from_secs(2));
+        assert_eq!(cooldown.charges(), 2);
     }
 }
