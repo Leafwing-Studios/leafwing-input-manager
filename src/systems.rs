@@ -5,6 +5,7 @@ use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
+    cooldown::Cooldowns,
     input_map::InputMap,
     input_streams::InputStreams,
     plugin::ToggleActions,
@@ -52,6 +53,25 @@ pub fn tick_action_state<A: Actionlike>(
 
     // Store the previous time in the system
     *stored_previous_instant = time.last_update();
+}
+
+/// Advances all [`Cooldowns`].
+pub fn tick_cooldowns<A: Actionlike>(
+    mut query: Query<&mut Cooldowns<A>>,
+    cooldowns: Option<ResMut<Cooldowns<A>>>,
+    time: Res<Time>,
+) {
+    let delta_time = time.delta();
+
+    // Only tick the Cooldowns resource if it exists
+    if let Some(mut cooldowns) = cooldowns {
+        cooldowns.tick(delta_time);
+    }
+
+    // Only tick the Cooldowns components if they exist
+    for mut cooldowns in query.iter_mut() {
+        cooldowns.tick(delta_time);
+    }
 }
 
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]

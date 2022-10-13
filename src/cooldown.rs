@@ -28,7 +28,7 @@ use std::marker::PhantomData;
 ///     Run,
 ///     Jump,
 /// }
-/// 
+///
 /// let mut action_state = ActionState::<Action>::default();
 /// let mut cooldowns = Cooldowns::new([(Cooldown::from_secs(1.), Action::Jump)]);
 ///
@@ -121,6 +121,23 @@ impl<A: Actionlike> Cooldowns<A> {
         } else {
             true
         }
+    }
+
+    /// Advances each underlying [`Cooldown`] according to the elapsed `delta_time`.
+    pub fn tick(&mut self, delta_time: Duration) {
+        self.iter_mut().for_each(|cd| cd.tick(delta_time));
+    }
+
+    /// Returns an iterator of references to the underlying non-[`None`] [`Cooldown`]s
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = &Cooldown> {
+        self.cooldowns.iter().flatten()
+    }
+
+    /// Returns an iterator of mutable references to the underlying non-[`None`] [`Cooldown`]s
+    #[inline]
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Cooldown> {
+        self.cooldowns.iter_mut().flatten()
     }
 
     /// The cooldown associated with the specified `action`, if any.
