@@ -6,6 +6,7 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
+use cooldown::Cooldowns;
 use std::marker::PhantomData;
 
 pub mod action_state;
@@ -32,7 +33,7 @@ pub mod prelude {
     pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad};
     pub use crate::buttonlike::MouseWheelDirection;
     pub use crate::clashing_inputs::ClashStrategy;
-    pub use crate::cooldown::Cooldown;
+    pub use crate::cooldown::{Cooldown, Cooldowns};
     pub use crate::input_map::InputMap;
     pub use crate::input_mocking::MockInput;
     pub use crate::user_input::UserInput;
@@ -134,10 +135,12 @@ impl<A: Actionlike> Default for ActionIter<A> {
 /// Use with [`InputManagerPlugin`](crate::plugin::InputManagerPlugin), providing the same enum type to both.
 #[derive(Bundle)]
 pub struct InputManagerBundle<A: Actionlike> {
-    /// An [ActionState] component
+    /// An [`ActionState`] component
     pub action_state: ActionState<A>,
-    /// An [InputMap] component
+    /// An [`InputMap`] component
     pub input_map: InputMap<A>,
+    /// A [`Cooldowns`] component
+    pub cooldowns: Cooldowns<A>,
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
@@ -146,6 +149,7 @@ impl<A: Actionlike> Default for InputManagerBundle<A> {
         Self {
             action_state: ActionState::default(),
             input_map: InputMap::default(),
+            cooldowns: Cooldowns::default(),
         }
     }
 }
