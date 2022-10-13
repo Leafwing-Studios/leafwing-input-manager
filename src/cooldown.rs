@@ -313,7 +313,7 @@ impl Cooldown {
             return;
         }
 
-        let total_time = self.elapsed_time + delta_time;
+        let total_time = self.elapsed_time.saturating_add(delta_time);
 
         let total_nanos: u64 = total_time.as_nanos().try_into().unwrap_or(u64::MAX);
         let max_nanos: u64 = self.max_time.as_nanos().try_into().unwrap_or(u64::MAX);
@@ -323,7 +323,7 @@ impl Cooldown {
 
         let excess_completions = self.add_charges(n_completed);
         if excess_completions == 0 {
-            self.elapsed_time = (self.elapsed_time + extra_time).min(self.max_time);
+            self.elapsed_time = (self.elapsed_time.saturating_add(extra_time)).min(self.max_time);
         } else {
             self.elapsed_time = self.max_time;
         }
@@ -416,7 +416,9 @@ impl Cooldown {
     /// This will always be clamped between [`Duration::ZERO`] and the `max_time` of this cooldown.
     #[inline]
     pub fn set_remaining(&mut self, time_remaining: Duration) {
-        self.elapsed_time = self.max_time - time_remaining.clamp(Duration::ZERO, self.max_time);
+        self.elapsed_time = self
+            .max_time
+            .saturating_sub(time_remaining.clamp(Duration::ZERO, self.max_time));
     }
 }
 
@@ -452,8 +454,10 @@ impl Cooldown {
     /// Returns the number of excess charges.
     #[inline]
     pub fn add_charges(&mut self, charges: u8) -> u8 {
-        let excess = (self.charges + charges).saturating_sub(self.max_charges);
-        self.charges = (self.charges + charges).min(self.max_charges);
+        let new_total = self.charges.saturating_add(charges);
+
+        let excess = new_total.saturating_sub(self.max_charges);
+        self.charges = new_total.min(self.max_charges);
         excess
     }
 
