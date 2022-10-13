@@ -120,7 +120,7 @@ fn spawn_player(mut commands: Commands) {
             input_map: InputMap::new([(W, MoveLeft), (D, MoveRight), (Space, Jump)])
                 .insert(MouseButton::Left, Shoot)
                 .build(),
-            action_state: ActionState::default(),
+            ..default()
         })
         // This identifier must match on both the client and server
         // and be unique between players

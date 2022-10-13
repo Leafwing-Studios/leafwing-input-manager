@@ -115,7 +115,7 @@ fn spawn_player(mut commands: Commands) {
         player: Player,
         input_manager: InputManagerBundle {
             input_map: PlayerBundle::default_input_map(),
-            action_state: ActionState::default(),
+            ..default()
         },
     });
 }

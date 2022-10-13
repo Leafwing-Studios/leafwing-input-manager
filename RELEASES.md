@@ -17,6 +17,7 @@
   - Make `_phantom` field public and rename into `phantom`.
   - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
 - Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
+- `ActionData::action_data` now returns a reference, rather than a clone, for consistency and explicitness
 
 ## Version 0.5
 
