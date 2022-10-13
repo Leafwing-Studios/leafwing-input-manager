@@ -12,7 +12,7 @@ use std::marker::PhantomData;
 /// Each action may be associated with a [`Cooldown`]
 ///
 /// This is typically paired with an [`ActionState`](crate::action_state::ActionState):
-/// if the action state` is just-pressed (or another triggering condition is met),
+/// if the action state is just-pressed (or another triggering condition is met),
 /// and the cooldown is ready, then perform the action and trigger the cooldown.
 ///
 /// This type is included as part of the [`InputManagerBundle`](crate::InputManagerBundle),
@@ -43,7 +43,7 @@ use std::marker::PhantomData;
 /// // We just jumped, so the cooldown isn't ready yet
 /// assert!(!cooldowns.ready(Action::Jump));
 /// ```
-#[derive(Component, Debug, Clone, PartialEq)]
+#[derive(Component, Debug, Clone, PartialEq, Eq)]
 pub struct Cooldowns<A: Actionlike> {
     /// The [`Cooldown`] of each action
     ///
