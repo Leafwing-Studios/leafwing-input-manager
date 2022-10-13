@@ -9,7 +9,8 @@ use std::marker::PhantomData;
 
 /// The time until each action of type `A` can be used again.
 ///
-/// Each action may be associated with a [`Cooldown`]
+/// Each action may be associated with a [`Cooldown`].
+/// If it is not, it always be treated as being ready.
 ///
 /// This is typically paired with an [`ActionState`](crate::action_state::ActionState):
 /// if the action state is just-pressed (or another triggering condition is met),
