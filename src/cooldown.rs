@@ -51,6 +51,12 @@ pub struct Cooldowns<A: Actionlike> {
     /// The position in this vector corresponds to [`Actionlike::index`].
     /// If [`None`], the action can always be used
     cooldowns: Vec<Option<Cooldown>>,
+    /// A shared cooldown between all actions of type `A`.
+    ///
+    /// No action of type `A` will be ready unless this is ready.
+    /// Whenever any cooldown for an action of type `A` is triggered,
+    /// this global cooldown is triggered.
+    pub global_cooldown: Option<Cooldown>,
     _phantom: PhantomData<A>,
 }
 
@@ -59,6 +65,7 @@ impl<A: Actionlike> Default for Cooldowns<A> {
     fn default() -> Self {
         Cooldowns {
             cooldowns: A::variants().map(|_| None).collect(),
+            global_cooldown: None,
             _phantom: PhantomData::default(),
         }
     }
@@ -108,6 +115,10 @@ impl<A: Actionlike> Cooldowns<A> {
         if let Some(cooldown) = self.cooldown_mut(action) {
             cooldown.trigger();
         }
+
+        if let Some(global_cooldown) = self.global_cooldown.as_mut() {
+            global_cooldown.trigger();
+        }
     }
 
     /// Can the corresponding `action` be used?
@@ -117,6 +128,12 @@ impl<A: Actionlike> Cooldowns<A> {
     #[inline]
     #[must_use]
     pub fn ready(&self, action: A) -> bool {
+        if let Some(global_cooldown) = self.global_cooldown.as_ref() {
+            if !global_cooldown.ready() {
+                return false;
+            }
+        }
+
         if let Some(cooldown) = self.cooldown(action) {
             cooldown.ready()
         } else {
@@ -127,6 +144,10 @@ impl<A: Actionlike> Cooldowns<A> {
     /// Advances each underlying [`Cooldown`] according to the elapsed `delta_time`.
     pub fn tick(&mut self, delta_time: Duration) {
         self.iter_mut().for_each(|cd| cd.tick(delta_time));
+
+        if let Some(global_cooldown) = self.global_cooldown.as_mut() {
+            global_cooldown.tick(delta_time);
+        }
     }
 
     /// Returns an iterator of references to the underlying non-[`None`] [`Cooldown`]s
