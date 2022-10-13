@@ -124,3 +124,75 @@ fn cooldowns_in_resource() {
     assert!(cooldowns.ready(Short));
     assert!(!cooldowns.ready(Long));
 }
+
+#[test]
+fn global_cooldown_blocks_cooldownless_actions() {
+    let mut app = App::new();
+    app.add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .insert_resource(Action::cooldowns());
+
+    let mut cooldowns: Mut<Cooldowns<Action>> = app.world.resource_mut();
+    cooldowns.global_cooldown = Some(Cooldown::new(Duration::from_micros(15)));
+    cooldowns.trigger(Action::NoCooldown);
+    assert!(!cooldowns.ready(Action::NoCooldown));
+    assert!(!cooldowns.ready(Action::Zero));
+
+    sleep(Duration::from_micros(30));
+    app.update();
+
+    let cooldowns: &Cooldowns<Action> = app.world.resource();
+    assert!(cooldowns.ready(Action::NoCooldown));
+    assert!(cooldowns.ready(Action::Zero));
+}
+
+#[test]
+fn global_cooldown_affects_other_actions() {
+    let mut app = App::new();
+    app.add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .insert_resource(Action::cooldowns());
+
+    let mut cooldowns: Mut<Cooldowns<Action>> = app.world.resource_mut();
+    cooldowns.global_cooldown = Some(Cooldown::new(Duration::from_micros(15)));
+    cooldowns.trigger(Action::Long);
+    assert!(!cooldowns.ready(Action::Short));
+    assert!(!cooldowns.ready(Action::Long));
+
+    sleep(Duration::from_micros(30));
+    app.update();
+
+    let cooldowns: &Cooldowns<Action> = app.world.resource();
+    assert!(cooldowns.ready(Action::Short));
+    assert!(!cooldowns.ready(Action::Long));
+}
+
+#[test]
+fn global_cooldown_overrides_short_cooldowns() {
+    let mut app = App::new();
+    app.add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .insert_resource(Action::cooldowns());
+
+    let mut cooldowns: Mut<Cooldowns<Action>> = app.world.resource_mut();
+    cooldowns.global_cooldown = Some(Cooldown::from_secs(0.5));
+    cooldowns.trigger(Action::Short);
+    assert!(!cooldowns.ready(Action::Short));
+
+    // Let per-action cooldown elapse
+    sleep(Duration::from_millis(200));
+    app.update();
+
+    let cooldowns: &Cooldowns<Action> = app.world.resource();
+    assert!(!cooldowns.ready(Action::Short));
+
+    // Wait for full GCD to expire
+    sleep(Duration::from_millis(400));
+    app.update();
+
+    let cooldowns: &Cooldowns<Action> = app.world.resource();
+    assert!(cooldowns.ready(Action::Short));
+}
