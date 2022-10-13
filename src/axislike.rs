@@ -109,6 +109,30 @@ impl SingleAxis {
         self.negative_low = -deadzone;
         self
     }
+
+    /// Creates a [`SingleAxis`] with the `axis_type` and `negative_low` set to `threshold`.
+    ///
+    /// Positive values will not trigger the input.
+    pub fn negative_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        SingleAxis {
+            axis_type: axis_type.into(),
+            negative_low: threshold,
+            positive_low: f32::MAX,
+            value: None,
+        }
+    }
+
+    /// Creates a [`SingleAxis`] with the `axis_type` and `positive_low` set to `threshold`.
+    ///
+    /// Negative values will not trigger the input.
+    pub fn positive_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        SingleAxis {
+            axis_type: axis_type.into(),
+            negative_low: f32::MIN,
+            positive_low: threshold,
+            value: None,
+        }
+    }
 }
 
 impl PartialEq for SingleAxis {

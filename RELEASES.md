@@ -1,5 +1,25 @@
 # Release Notes
 
+## Version 0.6 (Unreleased)
+
+### Enhancements
+
+- You can now store `Cooldowns` on a per-action basis.
+  - This new component / resource is now included in the `InputManagerBundle`
+  - Set cooldowns for actions using `Cooldowns::set(action, cooldown)` or `Cooldowns::new`.
+  - Use `Cooldowns::ready` with `Cooldowns::trigger` as part of your action evaluation!
+  - Cooldowns advance whenever `Cooldowns::tick` is called (this will happen automatically if you add the plugin).
+
+### Usability
+
+- Implemented `Eq` for `Timing` and `InputMap`.
+- Held `ActionState` inputs will now be released when an `InputMap` is removed.
+- Improve `ToggleActions`.
+  - Make `_phantom` field public and rename into `phantom`.
+  - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
+- Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
+- `ActionData::action_data` now returns a reference, rather than a clone, for consistency and explicitness
+
 ## Version 0.5.2
 
 ### Bug fixes
@@ -12,6 +32,7 @@
 ### Bug fixes
 
 - removed a missed `println` statement spamming "real conflict" that had been missed
+
 
 ## Version 0.5
 

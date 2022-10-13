@@ -25,7 +25,7 @@ fn setup(mut commands: Commands) {
                 // Note that you can also use discrete gesture-like motion, via the `MouseMotionDirection` enum
                 .insert(DualAxis::mouse_motion(), CameraMovement::Pan)
                 .build(),
-            action_state: ActionState::default(),
+            ..default()
         });
 
     commands.spawn().insert_bundle(SpriteBundle {

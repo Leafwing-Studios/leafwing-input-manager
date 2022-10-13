@@ -40,6 +40,7 @@ fn spawn_player(mut commands: Commands) {
                 Action::Move,
             )])
             .build(),
+            ..default()
         });
 }
 

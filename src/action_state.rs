@@ -84,7 +84,7 @@ pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
     ///
     /// The position in this vector corresponds to [`Actionlike::index`].
-    pub action_data: Vec<ActionData>,
+    action_data: Vec<ActionData>,
     _phantom: PhantomData<A>,
 }
 
@@ -160,12 +160,12 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.iter_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
-                ad.timing.tick(current_instant, previous_instant)
+                ad.timing.tick(current_instant, previous_instant);
             }
         });
     }
 
-    /// Gets a copy of the [`ActionData`] of the corresponding `action`
+    /// A reference to the [`ActionData`] of the corresponding `action`
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
@@ -186,8 +186,93 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn action_data(&self, action: A) -> ActionData {
-        self.action_data[action.index()].clone()
+    pub fn action_data(&self, action: A) -> &ActionData {
+        &self.action_data[action.index()]
+    }
+
+    /// A mutable reference of the [`ActionData`] of the corresponding `action`
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    ///
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut action_state = ActionState::<Action>::default();
+    /// let mut run_data = action_state.action_data_mut(Action::Run);
+    /// run_data.axis_pair = None;
+    ///
+    /// dbg!(run_data);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn action_data_mut(&mut self, action: A) -> &mut ActionData {
+        &mut self.action_data[action.index()]
+    }
+
+    /// Get the value associated with the corresponding `action`
+    ///
+    /// Different kinds of bindings have different ways of calculating the value:
+    ///
+    /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of
+    /// `1.0` when the button is pressed.
+    /// - Some axes, such as an analog stick, will have a value in the range `-1.0..=1.0`.
+    /// - Some axes, such as a variable trigger, will have a value in the range `0.0..=1.0`.
+    /// - Some buttons will also return a value in the range `0.0..=1.0`, such as analog gamepad
+    /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
+    /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
+    /// repository.
+    /// - Dual axis inputs will return the magnitude of its [`AxisPair`] and will be in the range
+    /// `0.0..=1.0`.
+    /// - Chord inputs will return the value of its first input.
+    ///
+    /// If multiple inputs trigger the same game action at the same time, the value of each
+    /// triggering input will be added together.
+    ///
+    /// # Warning
+    ///
+    /// This value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_value`](Self::clamped_value) method instead.
+    pub fn value(&self, action: A) -> f32 {
+        self.action_data(action).value
+    }
+
+    /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_value(&self, action: A) -> f32 {
+        self.value(action).clamp(-1., 1.)
+    }
+
+    /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
+    ///
+    /// Only certain events such as [`VirtualDPad`][crate::user_input::VirtualDPad] and
+    /// [`DualAxis`][crate::user_input::DualAxis] provide an [`DualAxisData`], and this
+    /// will return [`None`] for other events.
+    ///
+    /// Chord inputs will return the [`DualAxisData`] of it's first input.
+    ///
+    /// If multiple inputs with an axis pair trigger the same game action at the same time, the
+    /// value of each axis pair will be added together.
+    ///
+    /// # Warning
+    ///
+    /// These values may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
+    pub fn axis_pair(&self, action: A) -> Option<DualAxisData> {
+        self.action_data(action).axis_pair
+    }
+
+    /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_axis_pair(&self, action: A) -> Option<DualAxisData> {
+        self.axis_pair(action)
+            .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
     }
 
     /// Get the value associated with the corresponding `action`
@@ -280,7 +365,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// // And transfer it to the actual ability that we care about
     /// // without losing timing information
-    /// action_state.set_action_data(Action::Run, slot_1_state);
+    /// action_state.set_action_data(Action::Run, slot_1_state.clone());
     /// ```
     #[inline]
     pub fn set_action_data(&mut self, action: A, data: ActionData) {

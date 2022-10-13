@@ -63,7 +63,7 @@ fn spawn_player(mut commands: Commands) {
         velocity: Velocity { x: 0.0 },
         input_manager: InputManagerBundle {
             input_map: PlayerBundle::default_input_map(),
-            action_state: ActionState::default(),
+            ..default()
         },
         sprite: SpriteBundle {
             transform: Transform {

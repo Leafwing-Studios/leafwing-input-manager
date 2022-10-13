@@ -253,6 +253,7 @@ impl<'a> InputStreams<'a> {
                                 .unwrap_or_default();
 
                             value_in_axis_range(single_axis, value)
+
                         } else {
                             0.0
                         }
