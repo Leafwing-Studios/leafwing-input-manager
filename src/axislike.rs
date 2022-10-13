@@ -125,6 +125,14 @@ impl SingleAxis {
             value: None,
         }
     }
+
+    /// Returns this [`SingleAxis`] with the deadzone set to the specified value
+    #[must_use]
+    pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
+        self.negative_low = deadzone;
+        self.positive_low = deadzone;
+        self
+    }
 }
 
 impl PartialEq for SingleAxis {
@@ -231,6 +239,14 @@ impl DualAxis {
             x: SingleAxis::mouse_motion_x(),
             y: SingleAxis::mouse_motion_y(),
         }
+    }
+
+    /// Returns this [`DualAxis`] with the deadzone set to the specified value
+    #[must_use]
+    pub fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
+        self.x = self.x.with_deadzone(deadzone);
+        self.y = self.y.with_deadzone(deadzone);
+        self
     }
 }
 

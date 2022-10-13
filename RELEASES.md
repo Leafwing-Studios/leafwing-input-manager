@@ -19,6 +19,7 @@
   - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
 - Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
 - `ActionData::action_data` now returns a reference, rather than a clone, for consistency and explicitness
+- added `with_deadzone` methods to configure the deadzones for both `SingleAxis` and `DualAxis` inputs
 
 ## Version 0.5.2
 
