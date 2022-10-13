@@ -9,7 +9,8 @@ use std::marker::PhantomData;
 
 /// The time until each action of type `A` can be used again.
 ///
-/// Each action may be associated with a [`Cooldown`]
+/// Each action may be associated with a [`Cooldown`].
+/// If it is not, it always be treated as being ready.
 ///
 /// This is typically paired with an [`ActionState`](crate::action_state::ActionState):
 /// if the action state is just-pressed (or another triggering condition is met),
@@ -50,6 +51,12 @@ pub struct Cooldowns<A: Actionlike> {
     /// The position in this vector corresponds to [`Actionlike::index`].
     /// If [`None`], the action can always be used
     cooldowns: Vec<Option<Cooldown>>,
+    /// A shared cooldown between all actions of type `A`.
+    ///
+    /// No action of type `A` will be ready unless this is ready.
+    /// Whenever any cooldown for an action of type `A` is triggered,
+    /// this global cooldown is triggered.
+    pub global_cooldown: Option<Cooldown>,
     _phantom: PhantomData<A>,
 }
 
@@ -58,6 +65,7 @@ impl<A: Actionlike> Default for Cooldowns<A> {
     fn default() -> Self {
         Cooldowns {
             cooldowns: A::variants().map(|_| None).collect(),
+            global_cooldown: None,
             _phantom: PhantomData::default(),
         }
     }
@@ -107,6 +115,10 @@ impl<A: Actionlike> Cooldowns<A> {
         if let Some(cooldown) = self.cooldown_mut(action) {
             cooldown.trigger();
         }
+
+        if let Some(global_cooldown) = self.global_cooldown.as_mut() {
+            global_cooldown.trigger();
+        }
     }
 
     /// Can the corresponding `action` be used?
@@ -116,8 +128,25 @@ impl<A: Actionlike> Cooldowns<A> {
     #[inline]
     #[must_use]
     pub fn ready(&self, action: A) -> bool {
+        if !self.gcd_ready() {
+            return false;
+        }
+
         if let Some(cooldown) = self.cooldown(action) {
             cooldown.ready()
+        } else {
+            true
+        }
+    }
+
+    /// Has the global cooldown for actions of type `A` expired?
+    ///
+    /// Returns `true` if no GCD is set.
+    #[inline]
+    #[must_use]
+    pub fn gcd_ready(&self) -> bool {
+        if let Some(global_cooldown) = self.global_cooldown.as_ref() {
+            global_cooldown.ready()
         } else {
             true
         }
@@ -126,6 +155,10 @@ impl<A: Actionlike> Cooldowns<A> {
     /// Advances each underlying [`Cooldown`] according to the elapsed `delta_time`.
     pub fn tick(&mut self, delta_time: Duration) {
         self.iter_mut().for_each(|cd| cd.tick(delta_time));
+
+        if let Some(global_cooldown) = self.global_cooldown.as_mut() {
+            global_cooldown.tick(delta_time);
+        }
     }
 
     /// Returns an iterator of references to the underlying non-[`None`] [`Cooldown`]s
