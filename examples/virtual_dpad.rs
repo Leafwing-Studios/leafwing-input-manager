@@ -27,6 +27,7 @@ fn spawn_player(mut commands: Commands) {
         .spawn()
         .insert(Player)
         .insert_bundle(InputManagerBundle::<Action> {
+            // Stores "which actions are currently activated"
             // Map some arbitrary keys into a virtual direction pad that triggers our move action
             input_map: InputMap::new([(
                 VirtualDPad {

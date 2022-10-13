@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.6 (Unreleased)
+## Version 0.6
 
 ### Enhancements
 
@@ -19,6 +19,19 @@
   - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
 - Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
 - `ActionData::action_data` now returns a reference, rather than a clone, for consistency and explicitness
+
+## Version 0.5.2
+
+### Bug fixes
+
+- Fixed gamepad axes not filtering out inputs outside of the axis deadzone.
+- Fixed `DualAxis::right_stick()` returning the y axis for the left stick.
+
+## Version 0.5.1
+
+### Bug fixes
+
+- removed a missed `println` statement spamming "real conflict" that had been missed
 
 ## Version 0.5
 

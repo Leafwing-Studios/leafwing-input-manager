@@ -275,6 +275,65 @@ impl<A: Actionlike> ActionState<A> {
             .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
     }
 
+    /// Get the value associated with the corresponding `action`
+    ///
+    /// Different kinds of bindings have different ways of calculating the value:
+    ///
+    /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of
+    /// `1.0` when the button is pressed.
+    /// - Some axes, such as an analog stick, will have a value in the range `-1.0..=1.0`.
+    /// - Some axes, such as a variable trigger, will have a value in the range `0.0..=1.0`.
+    /// - Some buttons will also return a value in the range `0.0..=1.0`, such as analog gamepad
+    /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
+    /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
+    /// repository.
+    /// - Dual axis inputs will return the magnitude of its [`AxisPair`] and will be in the range
+    /// `0.0..=1.0`.
+    /// - Chord inputs will return the value of its first input.
+    ///
+    /// If multiple inputs trigger the same game action at the same time, the value of each
+    /// triggering input will be added together.
+    ///
+    /// # Warning
+    ///
+    /// This value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_value`](Self::clamped_value) method instead.
+    pub fn value(&self, action: A) -> f32 {
+        self.action_data(action).value
+    }
+
+    /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_value(&self, action: A) -> f32 {
+        self.value(action).clamp(-1., 1.)
+    }
+
+    /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
+    ///
+    /// Only certain events such as [`VirtualDPad`][crate::user_input::VirtualDPad] and
+    /// [`DualAxis`][crate::user_input::DualAxis] provide an [`DualAxisData`], and this
+    /// will return [`None`] for other events.
+    ///
+    /// Chord inputs will return the [`DualAxisData`] of it's first input.
+    ///
+    /// If multiple inputs with an axis pair trigger the same game action at the same time, the
+    /// value of each axis pair will be added together.
+    ///
+    /// # Warning
+    ///
+    /// These values may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
+    pub fn axis_pair(&self, action: A) -> Option<DualAxisData> {
+        self.action_data(action).axis_pair
+    }
+
+    /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_axis_pair(&self, action: A) -> Option<DualAxisData> {
+        self.axis_pair(action)
+            .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
+    }
+
     /// Manually sets the [`ActionData`] of the corresponding `action`
     ///
     /// You should almost always use more direct methods, as they are simpler and less error-prone.
