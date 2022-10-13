@@ -128,14 +128,25 @@ impl<A: Actionlike> Cooldowns<A> {
     #[inline]
     #[must_use]
     pub fn ready(&self, action: A) -> bool {
-        if let Some(global_cooldown) = self.global_cooldown.as_ref() {
-            if !global_cooldown.ready() {
-                return false;
-            }
+        if !self.gcd_ready() {
+            return false;
         }
 
         if let Some(cooldown) = self.cooldown(action) {
             cooldown.ready()
+        } else {
+            true
+        }
+    }
+
+    /// Has the global cooldown for actions of type `A` expired?
+    ///
+    /// Returns `true` if no GCD is set.
+    #[inline]
+    #[must_use]
+    pub fn gcd_ready(&self) -> bool {
+        if let Some(global_cooldown) = self.global_cooldown.as_ref() {
+            global_cooldown.ready()
         } else {
             true
         }

@@ -126,6 +126,26 @@ fn cooldowns_in_resource() {
 }
 
 #[test]
+fn global_cooldowns_tick() {
+    let mut app = App::new();
+    app.add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .insert_resource(Action::cooldowns());
+
+    let mut cooldowns: Mut<Cooldowns<Action>> = app.world.resource_mut();
+    let initial_gcd = Some(Cooldown::new(Duration::from_micros(15)));
+    cooldowns.global_cooldown = initial_gcd.clone();
+    // Trigger the GCD
+    cooldowns.trigger(Action::Long);
+
+    app.update();
+
+    let cooldowns: &Cooldowns<Action> = app.world.resource();
+    assert!(initial_gcd != cooldowns.global_cooldown);
+}
+
+#[test]
 fn global_cooldown_blocks_cooldownless_actions() {
     let mut app = App::new();
     app.add_plugin(InputManagerPlugin::<Action>::default())
