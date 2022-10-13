@@ -10,7 +10,6 @@ use std::thread::sleep;
 #[derive(Actionlike, Clone, Copy)]
 enum Action {
     NoCooldown,
-    Zero,
     Short,
     Long,
 }
@@ -19,7 +18,6 @@ impl Action {
     fn cooldown(&self) -> Option<Cooldown> {
         match self {
             Action::NoCooldown => None,
-            Action::Zero => Some(Cooldown::new(Duration::ZERO)),
             Action::Short => Some(Cooldown::from_secs(0.1)),
             Action::Long => Some(Cooldown::from_secs(1.)),
         }
@@ -72,7 +70,6 @@ fn cooldowns_on_entity() {
     let mut query_state = app.world.query::<&Cooldowns<Action>>();
     let cooldowns: &Cooldowns<Action> = query_state.single(&mut app.world);
     assert!(cooldowns.ready(NoCooldown));
-    assert!(cooldowns.ready(Zero));
     assert!(!cooldowns.ready(Short));
     assert!(!cooldowns.ready(Long));
 
@@ -83,7 +80,6 @@ fn cooldowns_on_entity() {
     let mut query_state = app.world.query::<&Cooldowns<Action>>();
     let cooldowns: &Cooldowns<Action> = query_state.single(&mut app.world);
     assert!(cooldowns.ready(NoCooldown));
-    assert!(cooldowns.ready(Zero));
     assert!(cooldowns.ready(Short));
     assert!(!cooldowns.ready(Long));
 }
@@ -110,7 +106,6 @@ fn cooldowns_in_resource() {
     // No waiting
     let cooldowns: &Cooldowns<Action> = app.world.resource();
     assert!(cooldowns.ready(NoCooldown));
-    assert!(cooldowns.ready(Zero));
     assert!(!cooldowns.ready(Short));
     assert!(!cooldowns.ready(Long));
 
@@ -120,7 +115,6 @@ fn cooldowns_in_resource() {
     // Short wait
     let cooldowns: &Cooldowns<Action> = app.world.resource();
     assert!(cooldowns.ready(NoCooldown));
-    assert!(cooldowns.ready(Zero));
     assert!(cooldowns.ready(Short));
     assert!(!cooldowns.ready(Long));
 }
@@ -160,18 +154,15 @@ fn global_cooldown_blocks_cooldownless_actions() {
     cooldowns.global_cooldown = Some(Cooldown::new(Duration::from_micros(15)));
 
     assert!(cooldowns.ready(Action::NoCooldown));
-    assert!(cooldowns.ready(Action::Zero));
 
     cooldowns.trigger(Action::NoCooldown);
     assert!(!cooldowns.ready(Action::NoCooldown));
-    assert!(!cooldowns.ready(Action::Zero));
 
     sleep(Duration::from_micros(30));
     app.update();
 
     let cooldowns: &Cooldowns<Action> = app.world.resource();
     assert!(cooldowns.ready(Action::NoCooldown));
-    assert!(cooldowns.ready(Action::Zero));
 }
 
 #[test]
