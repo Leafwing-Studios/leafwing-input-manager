@@ -252,7 +252,7 @@ impl<A: Actionlike> Cooldowns<A> {
 /// cooldown.trigger();
 /// cooldown.trigger();
 /// assert_eq!(cooldown.charges(), 0);
-/// assert!(cooldown.ready());
+/// assert!(!cooldown.ready());
 ///
 /// cooldown.tick(Duration::from_secs(1));
 /// assert_eq!(cooldown.charges(), 1);
