@@ -4,8 +4,8 @@
 #![doc = include_str!("../README.md")]
 
 use crate::action_state::ActionState;
-use crate::input_map::InputMap;
 use crate::cooldown::Cooldowns;
+use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
 use std::marker::PhantomData;
 
