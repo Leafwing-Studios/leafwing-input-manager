@@ -26,6 +26,7 @@ fn setup(mut commands: Commands) {
                 .insert(DualAxis::mouse_motion(), CameraMovement::Pan)
                 .build(),
             ..default()
+            action_state: ActionState::default(),
         });
 
     commands.spawn().insert_bundle(SpriteBundle {

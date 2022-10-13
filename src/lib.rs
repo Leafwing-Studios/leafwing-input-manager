@@ -5,8 +5,8 @@
 
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
+use crate::cooldown::Cooldowns;
 use bevy::ecs::prelude::*;
-use cooldown::Cooldowns;
 use std::marker::PhantomData;
 
 pub mod action_state;
