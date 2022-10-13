@@ -4,10 +4,11 @@
 
 ### Enhancements
 
-- You can now store `Cooldown`s in the `ActionState` on a per-action basis.
-  - Set cooldowns for actions using `ActionState::set_cooldown(action, cooldown)`.
-  - Use `ActionState::ready` with `ActionState::trigger_cooldown` as part of your action loop!
-  - Cooldowns are automatically elapsed whenever `ActionState::tick` is called (this will happen automatically if you add the plugin).
+- You can now store `Cooldowns` on a per-action basis.
+  - This new component / resource is now included in the `InputManagerBundle`
+  - Set cooldowns for actions using `Cooldowns::set(action, cooldown)` or `Cooldowns::new`.
+  - Use `Cooldowns::ready` with `Cooldowns::trigger` as part of your action evaluation!
+  - Cooldowns advance whenever `Cooldowns::tick` is called (this will happen automatically if you add the plugin).
 
 ### Usability
 
