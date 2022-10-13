@@ -153,8 +153,15 @@ fn global_cooldown_blocks_cooldownless_actions() {
         .add_plugin(InputPlugin)
         .insert_resource(Action::cooldowns());
 
+    // First delta time provided of each app is wonky
+    app.update();
+
     let mut cooldowns: Mut<Cooldowns<Action>> = app.world.resource_mut();
     cooldowns.global_cooldown = Some(Cooldown::new(Duration::from_micros(15)));
+
+    assert!(cooldowns.ready(Action::NoCooldown));
+    assert!(cooldowns.ready(Action::Zero));
+
     cooldowns.trigger(Action::NoCooldown);
     assert!(!cooldowns.ready(Action::NoCooldown));
     assert!(!cooldowns.ready(Action::Zero));
@@ -174,6 +181,9 @@ fn global_cooldown_affects_other_actions() {
         .add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
         .insert_resource(Action::cooldowns());
+
+    // First delta time provided of each app is wonky
+    app.update();
 
     let mut cooldowns: Mut<Cooldowns<Action>> = app.world.resource_mut();
     cooldowns.global_cooldown = Some(Cooldown::new(Duration::from_micros(15)));
@@ -196,6 +206,9 @@ fn global_cooldown_overrides_short_cooldowns() {
         .add_plugins(MinimalPlugins)
         .add_plugin(InputPlugin)
         .insert_resource(Action::cooldowns());
+
+    // First delta time provided of each app is wonky
+    app.update();
 
     let mut cooldowns: Mut<Cooldowns<Action>> = app.world.resource_mut();
     cooldowns.global_cooldown = Some(Cooldown::from_secs(0.5));
