@@ -60,15 +60,11 @@ use std::marker::PhantomData;
 /// input_map.insert(MouseButton::Left, Action::Run)
 /// .insert(KeyCode::LShift, Action::Run)
 /// // Chords
-/// .insert_chord([KeyCode::LControl, KeyCode::R], Action::Run)
+/// .insert_modified(Modifier::Control, KeyCode::R, Action::Run)
 /// .insert_chord([InputKind::Keyboard(KeyCode::H),
 ///                InputKind::GamepadButton(GamepadButtonType::South),
 ///                InputKind::Mouse(MouseButton::Middle)],
-///            Action::Run)
-/// .insert_chord([InputKind::Keyboard(KeyCode::H),
-///                InputKind::GamepadButton(GamepadButtonType::South),
-///                InputKind::Mouse(MouseButton::Middle)],
-///            Action::Hide);
+///            Action::Run);
 ///
 /// // Removal
 /// input_map.clear_action(Action::Hide);
@@ -214,6 +210,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
+    /// When working with keyboard modifier keys, consider using the `insert_modified` method instead.
+    ///
     /// # Panics
     ///
     /// Panics if the map is full and `buttons` is not a duplicate.
@@ -223,6 +221,19 @@ impl<A: Actionlike> InputMap<A> {
         action: A,
     ) -> &mut Self {
         self.insert(UserInput::chord(buttons), action);
+        self
+    }
+
+    /// Inserts a mapping between the simultaneous combination of the [`Modifier`] plus the `input` and the `action` provided.
+    ///
+    /// When working with keyboard modifiers, should be preferred over `insert_chord`.
+    pub fn insert_modified(
+        &mut self,
+        modifier: Modifier,
+        input: impl Into<InputKind>,
+        action: A,
+    ) -> &mut Self {
+        self.insert(UserInput::modified(modifier, input), action);
         self
     }
 
