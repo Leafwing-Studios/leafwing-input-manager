@@ -505,12 +505,21 @@ mod tests {
         assert!(!input_streams.pressed(Modifier::Control));
 
         input_streams.send_input(KeyCode::LControl);
+        app.update();
+
+        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
         assert!(input_streams.pressed(Modifier::Control));
 
         input_streams.reset_inputs();
+        app.update();
+
+        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
         assert!(!input_streams.pressed(Modifier::Control));
 
         input_streams.send_input(KeyCode::RControl);
+        app.update();
+
+        let input_streams = MutableInputStreams::from_world(&mut app.world, None);
         assert!(input_streams.pressed(Modifier::Control));
     }
 }
