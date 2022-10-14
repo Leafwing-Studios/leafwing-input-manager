@@ -35,7 +35,7 @@ fn setup(mut commands: Commands) {
                 // Or even a continous `DualAxis`!
                 // .insert(DualAxis::mouse_wheel(), Pan)
                 .build(),
-            action_state: ActionState::default(),
+            ..default()
         });
 
     commands.spawn().insert_bundle(SpriteBundle {

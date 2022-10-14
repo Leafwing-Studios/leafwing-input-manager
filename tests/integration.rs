@@ -33,6 +33,12 @@ fn respect_fades(mut respect: ResMut<Respect>) {
     respect.0 = false;
 }
 
+fn remove_input_map(mut commands: Commands, query: Query<Entity, With<InputMap<Action>>>) {
+    for entity in query.iter() {
+        commands.entity(entity).remove::<InputMap<Action>>();
+    }
+}
+
 #[derive(Component)]
 struct Player;
 
@@ -149,6 +155,47 @@ fn disable_input() {
     // Disable the input
     let mut toggle_actions = app.world.resource_mut::<ToggleActions<Action>>();
     toggle_actions.enabled = false;
+
+    // Now, all respect has faded
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(false));
+
+    // And even pressing F cannot bring it back
+    app.send_input(KeyCode::F);
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(false));
+}
+
+#[test]
+fn release_when_input_map_removed() {
+    use bevy::input::InputPlugin;
+
+    let mut app = App::new();
+
+    // Spawn a player and create a global action state.
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_startup_system(spawn_player)
+        .init_resource::<ActionState<Action>>()
+        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
+        .init_resource::<Respect>()
+        .add_system(pay_respects)
+        .add_system(remove_input_map)
+        .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
+
+    // Press F to pay respects
+    app.send_input(KeyCode::F);
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(true));
+
+    // Remove the InputMap
+    app.world.remove_resource::<InputMap<Action>>();
+    // Needs an extra frame for the resource removed detection to release inputs
+    app.update();
 
     // Now, all respect has faded
     app.update();

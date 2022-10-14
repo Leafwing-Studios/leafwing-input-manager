@@ -323,6 +323,8 @@ fn resolve_clash<A: Actionlike>(
         }
     }
 
+    println!("real clash");
+
     // There's a real clash; resolve it according to the `clash_strategy`
     match clash_strategy {
         // Do nothing

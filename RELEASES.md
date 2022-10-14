@@ -1,5 +1,29 @@
 # Release Notes
 
+## Version 0.6
+
+### Enhancements
+
+- You can now store `Cooldowns` on a per-action basis.
+  - This new component / resource is now included in the `InputManagerBundle`
+  - Set cooldowns for actions using `Cooldowns::set(action, cooldown)` or `Cooldowns::new`.
+  - Use `Cooldowns::ready` with `Cooldowns::trigger` as part of your action evaluation!
+  - Cooldowns advance whenever `Cooldowns::tick` is called (this will happen automatically if you add the plugin).
+- Added the `Modifier` enum, to ergonomically capture the notion of "either control/alt/shift/windows key".
+  - The corresponding `InputKind::Modifier` variant was added to match.
+  - You can conveniently construct these using the `InputKind::modified` or `InputMap::insert_modified` methods.
+
+### Usability
+
+- Implemented `Eq` for `Timing` and `InputMap`.
+- Held `ActionState` inputs will now be released when an `InputMap` is removed.
+- Improve `ToggleActions`.
+  - Make `_phantom` field public and rename into `phantom`.
+  - Add `ToggleActions::ENABLED` and `ToggleActions::DISABLED`.
+- Added `SingleAxis::negative_only` and `SingleAxis::positive_only` for triggering separate actions for each direction of an axis.
+- `ActionData::action_data` now returns a reference, rather than a clone, for consistency and explicitness
+- added `with_deadzone` methods to configure the deadzones for both `SingleAxis` and `DualAxis` inputs
+
 ## Version 0.5.2
 
 ### Bug fixes
@@ -53,7 +77,7 @@
 - `InputStreams` and `MutableInputStreams` no longer store e.g. `Option<Res<Input<MouseButton>>>`, and instead simply store `Res<Input<MouseButton>>`
   - This makes them much easier to work with and dramatically simplifies internal logic.
 - `InputStreams::from_world` no longer requires `&mut World`, as it does not require mutable access to any resources.
-- Renamed `InputMocking::send_input_to_gamepad` and `InputMocking::release_input_for_gamepad` to `InputMocking::send_input_as_gamepad` and `InputMocking::release_input_as_gamepad`.
+- Renamed `InputMocking::send_input_to_gamepad` and `InputMocking::release_input_for_gamepad` to `InputMocking::send_input_as_gamepad` and `InputMocking::send_input_as_gamepad`.
 - Added the `guess_gamepad` method to `InputStreams` and `MutableInputStreams`, which attempts to find an appropriate gamepad to use.
 - `InputMocking::pressed` and `pressed_for_gamepad` no longer require `&mut self`.
 - `UserInput::raw_inputs` now returns a `RawInputs` struct, rather than a tuple struct.

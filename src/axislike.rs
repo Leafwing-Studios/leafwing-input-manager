@@ -101,6 +101,38 @@ impl SingleAxis {
             value: None,
         }
     }
+
+    /// Creates a [`SingleAxis`] with the `axis_type` and `negative_low` set to `threshold`.
+    ///
+    /// Positive values will not trigger the input.
+    pub fn negative_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        SingleAxis {
+            axis_type: axis_type.into(),
+            negative_low: threshold,
+            positive_low: f32::MAX,
+            value: None,
+        }
+    }
+
+    /// Creates a [`SingleAxis`] with the `axis_type` and `positive_low` set to `threshold`.
+    ///
+    /// Negative values will not trigger the input.
+    pub fn positive_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        SingleAxis {
+            axis_type: axis_type.into(),
+            negative_low: f32::MIN,
+            positive_low: threshold,
+            value: None,
+        }
+    }
+
+    /// Returns this [`SingleAxis`] with the deadzone set to the specified value
+    #[must_use]
+    pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
+        self.negative_low = deadzone;
+        self.positive_low = deadzone;
+        self
+    }
 }
 
 impl PartialEq for SingleAxis {
@@ -207,6 +239,14 @@ impl DualAxis {
             x: SingleAxis::mouse_motion_x(),
             y: SingleAxis::mouse_motion_y(),
         }
+    }
+
+    /// Returns this [`DualAxis`] with the deadzone set to the specified value
+    #[must_use]
+    pub fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
+        self.x = self.x.with_deadzone(deadzone);
+        self.y = self.y.with_deadzone(deadzone);
+        self
     }
 }
 

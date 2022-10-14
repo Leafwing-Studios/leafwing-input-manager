@@ -84,7 +84,7 @@ pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
     ///
     /// The position in this vector corresponds to [`Actionlike::index`].
-    pub action_data: Vec<ActionData>,
+    action_data: Vec<ActionData>,
     _phantom: PhantomData<A>,
 }
 
@@ -160,12 +160,12 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.iter_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
-                ad.timing.tick(current_instant, previous_instant)
+                ad.timing.tick(current_instant, previous_instant);
             }
         });
     }
 
-    /// Gets a copy of the [`ActionData`] of the corresponding `action`
+    /// A reference to the [`ActionData`] of the corresponding `action`
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
@@ -186,8 +186,34 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn action_data(&self, action: A) -> ActionData {
-        self.action_data[action.index()].clone()
+    pub fn action_data(&self, action: A) -> &ActionData {
+        &self.action_data[action.index()]
+    }
+
+    /// A mutable reference of the [`ActionData`] of the corresponding `action`
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    ///
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut action_state = ActionState::<Action>::default();
+    /// let mut run_data = action_state.action_data_mut(Action::Run);
+    /// run_data.axis_pair = None;
+    ///
+    /// dbg!(run_data);
+    /// ```
+    #[inline]
+    #[must_use]
+    pub fn action_data_mut(&mut self, action: A) -> &mut ActionData {
+        &mut self.action_data[action.index()]
     }
 
     /// Get the value associated with the corresponding `action`
@@ -280,7 +306,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// // And transfer it to the actual ability that we care about
     /// // without losing timing information
-    /// action_state.set_action_data(Action::Run, slot_1_state);
+    /// action_state.set_action_data(Action::Run, slot_1_state.clone());
     /// ```
     #[inline]
     pub fn set_action_data(&mut self, action: A, data: ActionData) {

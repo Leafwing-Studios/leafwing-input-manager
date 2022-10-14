@@ -95,6 +95,13 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_system_to_stage(
                     CoreStage::PreUpdate,
+                    tick_cooldowns::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
+                        .label(InputManagerSystem::Tick)
+                        .before(InputManagerSystem::Update),
+                )
+                .add_system_to_stage(
+                    CoreStage::PreUpdate,
                     update_action_state::<A>
                         .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Update)
@@ -105,7 +112,8 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                     release_on_disable::<A>
                         .label(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Update),
-                );
+                )
+                .add_system_to_stage(CoreStage::PostUpdate, release_on_input_map_removed::<A>);
 
                 #[cfg(feature = "ui")]
                 app.add_system_to_stage(
@@ -147,7 +155,21 @@ pub struct ToggleActions<A: Actionlike> {
     ///
     /// When this is set to false, all corresponding [`ActionState`]s are released
     pub enabled: bool,
-    _phantom: PhantomData<A>,
+    /// Marker that stores the type of action to toggle
+    pub phantom: PhantomData<A>,
+}
+
+impl<A: Actionlike> ToggleActions<A> {
+    /// A [`ToggleActions`] in enabled state.
+    pub const ENABLED: ToggleActions<A> = ToggleActions::<A> {
+        enabled: true,
+        phantom: PhantomData::<A>,
+    };
+    /// A [`ToggleActions`] in disabled state.
+    pub const DISABLED: ToggleActions<A> = ToggleActions::<A> {
+        enabled: false,
+        phantom: PhantomData::<A>,
+    };
 }
 
 // Implement manually to not require [`Default`] for `A`
@@ -155,7 +177,7 @@ impl<A: Actionlike> Default for ToggleActions<A> {
     fn default() -> Self {
         Self {
             enabled: true,
-            _phantom: PhantomData::<A>,
+            phantom: PhantomData::<A>,
         }
     }
 }
@@ -165,7 +187,9 @@ impl<A: Actionlike> Default for ToggleActions<A> {
 /// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
-    /// Advances actions timers to clean up the state of the input manager and clear `just_pressed` and just_released`
+    /// Advances action timers and cooldowns.
+    ///
+    /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
     Tick,
     /// Collects input data to update the [`ActionState`](crate::action_state::ActionState)
     Update,

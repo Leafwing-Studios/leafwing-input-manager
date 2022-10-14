@@ -5,6 +5,7 @@ use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
+    cooldown::Cooldowns,
     input_map::InputMap,
     input_streams::InputStreams,
     plugin::ToggleActions,
@@ -52,6 +53,25 @@ pub fn tick_action_state<A: Actionlike>(
 
     // Store the previous time in the system
     *stored_previous_instant = time.last_update();
+}
+
+/// Advances all [`Cooldowns`].
+pub fn tick_cooldowns<A: Actionlike>(
+    mut query: Query<&mut Cooldowns<A>>,
+    cooldowns: Option<ResMut<Cooldowns<A>>>,
+    time: Res<Time>,
+) {
+    let delta_time = time.delta();
+
+    // Only tick the Cooldowns resource if it exists
+    if let Some(mut cooldowns) = cooldowns {
+        cooldowns.tick(delta_time);
+    }
+
+    // Only tick the Cooldowns components if they exist
+    for mut cooldowns in query.iter_mut() {
+        cooldowns.tick(delta_time);
+    }
 }
 
 /// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
@@ -209,6 +229,39 @@ pub fn release_on_disable<A: Actionlike>(
         if let Some(mut action_state) = resource {
             action_state.release_all();
         }
+    }
+}
+
+/// Release all inputs when an [`InputMap<A>`] is removed to prevent them from being held forever.
+///
+/// By default, [`InputManagerPlugin<A>`] will run this on [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate).
+/// For components you must remove the [`InputMap<A>`] before [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate)
+/// or this will not run.
+pub fn release_on_input_map_removed<A: Actionlike>(
+    removed_components: RemovedComponents<InputMap<A>>,
+    input_map_resource: Option<ResMut<InputMap<A>>>,
+    action_state_resource: Option<ResMut<ActionState<A>>>,
+    mut input_map_resource_existed: Local<bool>,
+    mut action_state_query: Query<&mut ActionState<A>>,
+) {
+    let mut iter = action_state_query.iter_many_mut(removed_components.iter());
+    while let Some(mut action_state) = iter.fetch_next() {
+        action_state.release_all();
+    }
+
+    // Detect when an InputMap resource is removed.
+    if input_map_resource.is_some() {
+        // Store if the resource existed so we know if it was removed later.
+        *input_map_resource_existed = true;
+    } else if *input_map_resource_existed {
+        // The input map does not exist and our local is true so we know the input map was removed.
+
+        if let Some(mut action_state) = action_state_resource {
+            action_state.release_all();
+        }
+
+        // Reset our local so our removal detection is only triggered once.
+        *input_map_resource_existed = false;
     }
 }
 
