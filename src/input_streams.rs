@@ -140,6 +140,11 @@ impl<'a> InputStreams<'a> {
                 }
             }
             InputKind::Keyboard(keycode) => self.keycode.pressed(keycode),
+            InputKind::Modifier(modifier) => {
+                let key_codes = modifier.key_codes();
+                // Short circuiting is probably not worth the branch here
+                self.keycode.pressed(key_codes[0]) | self.keycode.pressed(key_codes[1])
+            }
             InputKind::Mouse(mouse_button) => self.mouse_button.pressed(mouse_button),
             InputKind::MouseWheel(mouse_wheel_direction) => {
                 let mut total_mouse_wheel_movement = 0.0;
@@ -312,9 +317,9 @@ impl<'a> InputStreams<'a> {
 
     /// Get the axis pair associated to the user input.
     ///
-    /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
+    /// If `input` is not a [`DualAxis`](crate::axislike::DualAxis) or [`VirtualDPad`], returns [`None`].
     ///
-    /// See [`ActionState::action_axis_pair()`] for usage.
+    /// See [`ActionState::action_axis_pair()`](crate::action_state::ActionState) for usage.
     ///
     /// # Warning
     ///
@@ -480,5 +485,41 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             mouse_motion: &*(mutable_streams.mouse_motion),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::MutableInputStreams;
+    use crate::prelude::MockInput;
+    use bevy::input::InputPlugin;
+    use bevy::prelude::*;
+
+    #[test]
+    fn modifier_key_triggered_by_either_input() {
+        use crate::user_input::Modifier;
+        let mut app = App::new();
+        app.add_plugin(InputPlugin);
+
+        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        assert!(!input_streams.pressed(Modifier::Control));
+
+        input_streams.send_input(KeyCode::LControl);
+        app.update();
+
+        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        assert!(input_streams.pressed(Modifier::Control));
+
+        input_streams.reset_inputs();
+        app.update();
+
+        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        assert!(!input_streams.pressed(Modifier::Control));
+
+        input_streams.send_input(KeyCode::RControl);
+        app.update();
+
+        let input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        assert!(input_streams.pressed(Modifier::Control));
     }
 }

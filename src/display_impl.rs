@@ -44,6 +44,7 @@ impl Display for InputKind {
             InputKind::MouseWheel(button) => write!(f, "{button:?}"),
             InputKind::MouseMotion(button) => write!(f, "{button:?}"),
             InputKind::Keyboard(button) => write!(f, "{button:?}"),
+            InputKind::Modifier(button) => write!(f, "{button:?}"),
         }
     }
 }

@@ -9,6 +9,9 @@
   - Set cooldowns for actions using `Cooldowns::set(action, cooldown)` or `Cooldowns::new`.
   - Use `Cooldowns::ready` with `Cooldowns::trigger` as part of your action evaluation!
   - Cooldowns advance whenever `Cooldowns::tick` is called (this will happen automatically if you add the plugin).
+- Added the `Modifier` enum, to ergonomically capture the notion of "either control/alt/shift/windows key".
+  - The corresponding `InputKind::Modifier` variant was added to match.
+  - You can conveniently construct these using the `InputKind::modified` or `InputMap::insert_modified` methods.
 
 ### Usability
 

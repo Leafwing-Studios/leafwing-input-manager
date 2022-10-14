@@ -28,7 +28,20 @@ pub enum UserInput {
 }
 
 impl UserInput {
-    /// Creates a [`UserInput::Chord`] from an iterator of [`InputKind`]s
+    /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` that can be converted into an [`InputKind`]
+    ///
+    /// When working with keyboard modifiers, should be preferred over manually specifying both the left and right variant.
+    pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
+        let modifier: InputKind = modifier.into();
+        let input: InputKind = input.into();
+        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
+        set.insert(modifier);
+        set.insert(input);
+
+        UserInput::Chord(set)
+    }
+
+    /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
     ///
     /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
     pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
@@ -134,6 +147,11 @@ impl UserInput {
                     .push((single_axis.axis_type, single_axis.value)),
                 InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                 InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                InputKind::Modifier(modifier) => {
+                    let key_codes = modifier.key_codes();
+                    raw_inputs.keycodes.push(key_codes[0]);
+                    raw_inputs.keycodes.push(key_codes[1]);
+                }
                 InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
                 InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
                 InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
@@ -154,6 +172,11 @@ impl UserInput {
                             .push((single_axis.axis_type, single_axis.value)),
                         InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::Modifier(modifier) => {
+                            let key_codes = modifier.key_codes();
+                            raw_inputs.keycodes.push(key_codes[0]);
+                            raw_inputs.keycodes.push(key_codes[1]);
+                        }
                         InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
                         InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
                         InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
@@ -181,6 +204,11 @@ impl UserInput {
                             .push((single_axis.axis_type, single_axis.value)),
                         InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::Modifier(modifier) => {
+                            let key_codes = modifier.key_codes();
+                            raw_inputs.keycodes.push(key_codes[0]);
+                            raw_inputs.keycodes.push(key_codes[1]);
+                        }
                         InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
                         InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
                         InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
@@ -247,6 +275,12 @@ impl From<MouseMotionDirection> for UserInput {
     }
 }
 
+impl From<Modifier> for UserInput {
+    fn from(input: Modifier) -> Self {
+        UserInput::Single(InputKind::Modifier(input))
+    }
+}
+
 /// The different kinds of supported input bindings.
 ///
 /// See [`InputMode`] for the value-less equivalent. Commonly stored in the [`UserInput`] enum.
@@ -266,6 +300,8 @@ pub enum InputKind {
     DualAxis(DualAxis),
     /// A button on a keyboard
     Keyboard(KeyCode),
+    /// A keyboard modifier, like `Ctrl` or `Alt`, which doesn't care about which side it's on.
+    Modifier(Modifier),
     /// A button on a mouse
     Mouse(MouseButton),
     /// A discretized mousewheel movement
@@ -313,6 +349,43 @@ impl From<MouseWheelDirection> for InputKind {
 impl From<MouseMotionDirection> for InputKind {
     fn from(input: MouseMotionDirection) -> Self {
         InputKind::MouseMotion(input)
+    }
+}
+
+impl From<Modifier> for InputKind {
+    fn from(input: Modifier) -> Self {
+        InputKind::Modifier(input)
+    }
+}
+
+/// A keyboard modifier that combines two [`KeyCode`] values into one representation.
+///
+/// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons are pressed.
+/// This will be decomposed into both values when converted into [`RawInputs`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Modifier {
+    /// Corresponds to [`KeyCode::LAlt`] and [`KeyCode::RAlt`].
+    Alt,
+    /// Corresponds to [`KeyCode::LControl`] and [`KeyCode::RControl`].
+    Control,
+    /// The key that makes letters capitalized, corresponding to [`KeyCode::LShift`] and [`KeyCode::RShift`]
+    Shift,
+    /// The OS or "Windows" key, corresponding to [`KeyCode::LWin`] and [`KeyCode::RWin`].
+    Win,
+}
+
+impl Modifier {
+    /// Returns the pair of [`KeyCode`] values associated with this modifier.
+    ///
+    /// The left variant will always be in the first position, and the right variant is always in the second position.
+    #[inline]
+    pub fn key_codes(self) -> [KeyCode; 2] {
+        match self {
+            Modifier::Alt => [KeyCode::LAlt, KeyCode::RAlt],
+            Modifier::Control => [KeyCode::LControl, KeyCode::RControl],
+            Modifier::Shift => [KeyCode::LShift, KeyCode::RShift],
+            Modifier::Win => [KeyCode::LWin, KeyCode::RWin],
+        }
     }
 }
 
@@ -485,6 +558,20 @@ mod raw_input_tests {
             let button = KeyCode::A;
             let expected = RawInputs::from_keycode(button);
             let raw = UserInput::from(button).raw_inputs();
+            assert_eq!(expected, raw);
+        }
+
+        #[test]
+        fn modifier_key_decomposes_into_both_inputs() {
+            use crate::user_input::Modifier;
+            use bevy::input::keyboard::KeyCode;
+
+            let input = UserInput::modified(Modifier::Control, KeyCode::S);
+            let expected = RawInputs {
+                keycodes: vec![KeyCode::LControl, KeyCode::RControl, KeyCode::S],
+                ..Default::default()
+            };
+            let raw = input.raw_inputs();
             assert_eq!(expected, raw);
         }
     }
