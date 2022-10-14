@@ -317,9 +317,9 @@ impl<'a> InputStreams<'a> {
 
     /// Get the axis pair associated to the user input.
     ///
-    /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
+    /// If `input` is not a [`DualAxis`](crate::axislike::DualAxis) or [`VirtualDPad`], returns [`None`].
     ///
-    /// See [`ActionState::action_axis_pair()`] for usage.
+    /// See [`ActionState::action_axis_pair()`](crate::action_state::ActionState) for usage.
     ///
     /// # Warning
     ///
