@@ -28,7 +28,20 @@ pub enum UserInput {
 }
 
 impl UserInput {
-    /// Creates a [`UserInput::Chord`] from an iterator of [`InputKind`]s
+    /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` that can be converted into an [`InputKind`]
+    ///
+    /// When working with keyboard modifiers, should be preferred over manually specifying both the left and right variant.
+    pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
+        let modifier: InputKind = modifier.into();
+        let input: InputKind = input.into();
+        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
+        set.push(modifier);
+        set.push(input);
+
+        UserInput::Chord(set)
+    }
+
+    /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
     ///
     /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
     pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
