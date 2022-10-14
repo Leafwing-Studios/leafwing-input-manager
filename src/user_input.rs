@@ -275,6 +275,12 @@ impl From<MouseMotionDirection> for UserInput {
     }
 }
 
+impl From<Modifier> for UserInput {
+    fn from(input: Modifier) -> Self {
+        UserInput::Single(InputKind::Modifier(input))
+    }
+}
+
 /// The different kinds of supported input bindings.
 ///
 /// See [`InputMode`] for the value-less equivalent. Commonly stored in the [`UserInput`] enum.
@@ -557,12 +563,16 @@ mod raw_input_tests {
 
         #[test]
         fn modifier_key_decomposes_into_both_inputs() {
-            todo!()
-        }
+            use crate::user_input::Modifier;
+            use bevy::input::keyboard::KeyCode;
 
-        #[test]
-        fn modifier_key_triggered_by_either_input() {
-            todo!()
+            let input = UserInput::modified(Modifier::Control, KeyCode::S);
+            let expected = RawInputs {
+                keycodes: vec![KeyCode::LControl, KeyCode::RControl, KeyCode::S],
+                ..Default::default()
+            };
+            let raw = input.raw_inputs();
+            assert_eq!(expected, raw);
         }
     }
 
