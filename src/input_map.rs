@@ -4,7 +4,7 @@ use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::{InputKind, UserInput};
+use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;

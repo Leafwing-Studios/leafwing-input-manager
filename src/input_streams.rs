@@ -140,6 +140,11 @@ impl<'a> InputStreams<'a> {
                 }
             }
             InputKind::Keyboard(keycode) => self.keycode.pressed(keycode),
+            InputKind::Modifier(modifier) => {
+                let key_codes = modifier.key_codes();
+                // Short circuiting is probably not worth the branch here
+                self.keycode.pressed(key_codes[0]) | self.keycode.pressed(key_codes[1])
+            }
             InputKind::Mouse(mouse_button) => self.mouse_button.pressed(mouse_button),
             InputKind::MouseWheel(mouse_wheel_direction) => {
                 let mut total_mouse_wheel_movement = 0.0;
