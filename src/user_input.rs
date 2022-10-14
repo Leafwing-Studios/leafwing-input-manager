@@ -134,6 +134,10 @@ impl UserInput {
                     .push((single_axis.axis_type, single_axis.value)),
                 InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                 InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                InputKind::Modifier(modifier) => {
+                    let key_codes = modifier.key_codes();
+                    raw_inputs.keycodes.push(key_codes[0]).push(key_codes[1]);
+                }
                 InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
                 InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
                 InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
@@ -154,6 +158,10 @@ impl UserInput {
                             .push((single_axis.axis_type, single_axis.value)),
                         InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::Modifier(modifier) => {
+                            let keycodes = modifier.key_codes();
+                            raw_inputs.keycodes.push(key_codes[0]).push(key_codes[1]);
+                        }
                         InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
                         InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
                         InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
@@ -181,6 +189,10 @@ impl UserInput {
                             .push((single_axis.axis_type, single_axis.value)),
                         InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::Modifier(modifier) => {
+                            let key_codes = modifier.key_codes();
+                            raw_input.key_codes.push(key_codes[0]).push(key_codes[1])
+                        }
                         InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
                         InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
                         InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
@@ -266,6 +278,8 @@ pub enum InputKind {
     DualAxis(DualAxis),
     /// A button on a keyboard
     Keyboard(KeyCode),
+    /// A keyboard modifier, like `Ctrl` or `Alt`, which doesn't care about which side it's on.
+    Modifier(KeyboardModifier),
     /// A button on a mouse
     Mouse(MouseButton),
     /// A discretized mousewheel movement
@@ -313,6 +327,43 @@ impl From<MouseWheelDirection> for InputKind {
 impl From<MouseMotionDirection> for InputKind {
     fn from(input: MouseMotionDirection) -> Self {
         InputKind::MouseMotion(input)
+    }
+}
+
+impl From<Modifier> for InputKind {
+    fn from(input: Modifier) -> Self {
+        InputKind::Modifier(input)
+    }
+}
+
+/// A keyboard modifier that combines two [`KeyCode`] values into one representation.
+///
+/// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons are pressed.
+/// This will be decomposed into both values when converted into [`RawInputs`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Modifier {
+    /// Corresponds to [`KeyCode::LAlt`] and [`KeyCode::RAlt`].
+    Alt,
+    /// Corresponds to [`KeyCode::LControl`] and [`KeyCode::RControl`].
+    Control,
+    /// The key that makes letters capitalized, corresponding to [`KeyCode::LShift`] and [`KeyCode::RShift`]
+    Shift,
+    /// The OS or "Windows" key, corresponding to [`KeyCode::LWin`] and [`KeyCode::RWin`].
+    Win,
+}
+
+impl Modifier {
+    /// Returns the pair of [`KeyCode`] values associated with this modifier.
+    ///
+    /// The left variant will always be in the first position, and the right variant is always in the second position.
+    #[inline]
+    pub fn key_codes(self) -> [KeyCode; 2] {
+        match self {
+            Modifier::Alt => [KeyCode::LAlt, KeyCode::RAlt],
+            Modifier::Control => [KeyCode::LControl, KeyCode::RControl],
+            Modifier::Shift => [KeyCode::LShift, KeyCode::RShift],
+            Modifier::Win => [KeyCode::LWin, KeyCode::RWin],
+        }
     }
 }
 
