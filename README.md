@@ -1,3 +1,5 @@
+[![Crates.io](https://img.shields.io/crates/v/leafwing-input-manager.svg)](https://crates.io/crates/leafwing-input-manager)
+
 # About
 
 A straightforward but robust input-action manager for Bevy.
