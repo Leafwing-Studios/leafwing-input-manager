@@ -259,6 +259,26 @@ impl Charges {
         }
     }
 
+    /// Creates a new [`Charges`] with [`ReplenishStrategy::OneAtATime`] and [`CooldownStrategy::Ignore`].
+    pub fn simple(max_charges: u8) -> Charges {
+        Charges {
+            current: max_charges,
+            max: max_charges,
+            replenish_strat: ReplenishStrategy::OneAtATime,
+            cooldown_strat: CooldownStrategy::Ignore,
+        }
+    }
+
+    /// Creates a new [`Charges`] with [`ReplenishStrategy::AllAtOnce`] and [`CooldownStrategy::Ignore`].
+    pub fn ammo(max_charges: u8) -> Charges {
+        Charges {
+            current: max_charges,
+            max: max_charges,
+            replenish_strat: ReplenishStrategy::AllAtOnce,
+            cooldown_strat: CooldownStrategy::Ignore,
+        }
+    }
+
     /// Creates a new [`Charges`] with [`ReplenishStrategy::OneAtATime`] and [`CooldownStrategy::ConstantlyRefresh`].
     pub fn replenish_one(max_charges: u8) -> Charges {
         Charges {
@@ -360,5 +380,62 @@ impl Charges {
 
         // We don't care about overflowing our charges here.
         let _ = self.add_charges(charges_to_add);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn charges_start_full() {
+        let charges = Charges::simple(3);
+        assert_eq!(charges.charges(), 3);
+        assert_eq!(charges.max_charges(), 3);
+    }
+
+    #[test]
+    fn charges_available() {
+        let mut charges = Charges::simple(3);
+        assert!(charges.available());
+        charges.set_charges(1);
+        assert!(charges.available());
+        charges.set_charges(0);
+        assert!(!charges.available());
+    }
+
+    #[test]
+    fn charges_deplete() {
+        let mut charges = Charges::simple(2);
+        charges.expend();
+        assert_eq!(charges.charges(), 1);
+        charges.expend();
+        assert_eq!(charges.charges(), 0);
+        charges.expend();
+        assert_eq!(charges.charges(), 0);
+    }
+
+    #[test]
+    fn charges_replenish_one_at_a_time() {
+        let mut charges = Charges::replenish_one(3);
+        charges.set_charges(0);
+        assert_eq!(charges.charges(), 0);
+        charges.replenish();
+        assert_eq!(charges.charges(), 1);
+        charges.replenish();
+        assert_eq!(charges.charges(), 2);
+        charges.replenish();
+        assert_eq!(charges.charges(), 3);
+        charges.replenish();
+        assert_eq!(charges.charges(), 3);
+    }
+
+    #[test]
+    fn charges_replenish_all_at_once() {
+        let mut charges = Charges::replenish_all(3);
+        charges.set_charges(0);
+        assert_eq!(charges.charges(), 0);
+        charges.replenish();
+        assert_eq!(charges.charges(), 3);
     }
 }
