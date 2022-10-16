@@ -62,15 +62,15 @@ pub fn tick_cooldowns<A: Actionlike>(
         (Option<&mut Cooldowns<A>>, Option<&mut ChargeState<A>>),
         Or<(With<Cooldowns<A>>, With<ChargeState<A>>)>,
     >,
-    cooldowns: Option<ResMut<Cooldowns<A>>>,
-    charges: Option<ResMut<ChargeState<A>>>,
+    cooldowns_res: Option<ResMut<Cooldowns<A>>>,
+    charges_res: Option<ResMut<ChargeState<A>>>,
     time: Res<Time>,
 ) {
     let delta_time = time.delta();
 
     // Only tick the Cooldowns resource if it exists
-    if let Some(mut cooldowns) = cooldowns {
-        let charges = charges.map(|res| res.into_inner());
+    if let Some(mut cooldowns) = cooldowns_res {
+        let charges = charges_res.map(|res| res.into_inner());
 
         cooldowns.tick(delta_time, charges);
     }
@@ -78,7 +78,7 @@ pub fn tick_cooldowns<A: Actionlike>(
     // Only tick the Cooldowns components if they exist
     for (cooldowns, charges) in query.iter_mut() {
         if let Some(mut cooldowns) = cooldowns {
-            let charges = charges.map(|res| res.into_inner());
+            let charges = charges.map(|data| data.into_inner());
 
             cooldowns.tick(delta_time, charges);
         }
