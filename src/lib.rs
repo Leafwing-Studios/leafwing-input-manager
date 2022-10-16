@@ -7,11 +7,14 @@ use crate::action_state::ActionState;
 use crate::cooldown::Cooldowns;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
+use charges::{ActionCharges, Charges};
+use cooldown::Cooldown;
 use std::marker::PhantomData;
 
 pub mod action_state;
 pub mod axislike;
 pub mod buttonlike;
+pub mod charges;
 pub mod clashing_inputs;
 pub mod cooldown;
 mod display_impl;
@@ -32,6 +35,7 @@ pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
     pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad};
     pub use crate::buttonlike::MouseWheelDirection;
+    pub use crate::charges::{ActionCharges, Charges};
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::cooldown::{Cooldown, Cooldowns};
     pub use crate::input_map::InputMap;
@@ -90,6 +94,69 @@ pub trait Actionlike: Send + Sync + Clone + 'static {
 
     /// Returns the position in the defining enum of the given action
     fn index(&self) -> usize;
+
+    /// Is this `action` ready?
+    ///
+    /// If this action has charges, at least one charge must be available.
+    /// If this action has a cooldown but no charges, the cooldown must be ready.
+    /// Otherwise, returns `true`.
+    ///
+    /// Calls [`action_ready`], which can be used manually if you already know the [`Charges`] and [`Cooldown`] of interest.
+    fn ready(&self, charges: &ActionCharges<Self>, cooldowns: &Cooldowns<Self>) -> bool {
+        action_ready(charges.get(self.clone()), cooldowns.get(self.clone()))
+    }
+
+    /// Triggers this action, depleting a charge if available.
+    ///
+    /// Returns `true` if the action could be used, and `false` if it could not be.
+    /// Actions can only be used if they are ready.
+    ///     
+    /// Calls [`trigger_action`], which can be used manually if you already know the [`Charges`] and [`Cooldown`] of interest.
+    fn trigger(
+        &mut self,
+        charges: &mut ActionCharges<Self>,
+        cooldowns: &mut Cooldowns<Self>,
+    ) -> bool {
+        trigger_action(
+            charges.get_mut(self.clone()),
+            cooldowns.get_mut(self.clone()),
+        )
+    }
+}
+
+/// Checks if a [`Charges`], [`Cooldown`] pair associated with an action is ready to use.
+///
+/// If this action has charges, at least one charge must be available.
+/// If this action has a cooldown but no charges, the cooldown must be ready.
+/// Otherwise, returns `true`.
+#[inline]
+#[must_use]
+pub fn action_ready(charges: &Option<Charges>, cooldown: &Option<Cooldown>) -> bool {
+    if let Some(charges) = charges {
+        charges.charges() > 0
+    } else if let Some(cooldown) = cooldown {
+        cooldown.ready()
+    } else {
+        true
+    }
+}
+
+/// Triggers an implicit action, depleting a charge if available.
+///
+/// If no `charges` is [`None`], this will be based off the [`Cooldown`] alone, triggering it if possible.
+#[inline]
+pub fn trigger_action(charges: &mut Option<Charges>, cooldown: &mut Option<Cooldown>) -> bool {
+    if !action_ready(charges, cooldown) {
+        return false;
+    }
+
+    if let Some(charges) = charges {
+        charges.expend();
+    } else if let Some(cooldown) = cooldown {
+        cooldown.trigger();
+    }
+
+    true
 }
 
 /// An iterator of [`Actionlike`] actions
@@ -141,6 +208,8 @@ pub struct InputManagerBundle<A: Actionlike> {
     pub input_map: InputMap<A>,
     /// A [`Cooldowns`] component
     pub cooldowns: Cooldowns<A>,
+    /// A [`ActionCharges`] component
+    pub charges: ActionCharges<A>,
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
@@ -150,6 +219,7 @@ impl<A: Actionlike> Default for InputManagerBundle<A> {
             action_state: ActionState::default(),
             input_map: InputMap::default(),
             cooldowns: Cooldowns::default(),
+            charges: ActionCharges::default(),
         }
     }
 }

@@ -4,6 +4,7 @@
 use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
+    charges::ActionCharges,
     clashing_inputs::ClashStrategy,
     cooldown::Cooldowns,
     input_map::InputMap,
@@ -57,20 +58,30 @@ pub fn tick_action_state<A: Actionlike>(
 
 /// Advances all [`Cooldowns`].
 pub fn tick_cooldowns<A: Actionlike>(
-    mut query: Query<&mut Cooldowns<A>>,
+    mut query: Query<
+        (Option<&mut Cooldowns<A>>, Option<&mut ActionCharges<A>>),
+        Or<(With<Cooldowns<A>>, With<ActionCharges<A>>)>,
+    >,
     cooldowns: Option<ResMut<Cooldowns<A>>>,
+    charges: Option<ResMut<ActionCharges<A>>>,
     time: Res<Time>,
 ) {
     let delta_time = time.delta();
 
     // Only tick the Cooldowns resource if it exists
     if let Some(mut cooldowns) = cooldowns {
-        cooldowns.tick(delta_time);
+        let charges = charges.map(|res| res.into_inner());
+
+        cooldowns.tick(delta_time, charges);
     }
 
     // Only tick the Cooldowns components if they exist
-    for mut cooldowns in query.iter_mut() {
-        cooldowns.tick(delta_time);
+    for (cooldowns, charges) in query.iter_mut() {
+        if let Some(mut cooldowns) = cooldowns {
+            let charges = charges.map(|res| res.into_inner());
+
+            cooldowns.tick(delta_time, charges);
+        }
     }
 }
 
