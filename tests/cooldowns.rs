@@ -7,7 +7,7 @@ use bevy::utils::Duration;
 use leafwing_input_manager::prelude::*;
 use std::thread::sleep;
 
-#[derive(Actionlike, Clone, Copy)]
+#[derive(Actionlike, Debug, Clone, Copy)]
 enum Action {
     NoCooldown,
     Short,
@@ -27,7 +27,7 @@ impl Action {
         let mut cd = Cooldowns::default();
         for action in Action::variants() {
             if let Some(cooldown) = action.cooldown() {
-                cd.set(cooldown, action);
+                cd.set(action, cooldown);
             }
         }
 

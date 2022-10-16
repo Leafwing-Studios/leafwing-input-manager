@@ -167,7 +167,7 @@ fn binding_window_system(
             }
         });
 }
-#[derive(Actionlike, PartialEq, Clone, Copy, Display)]
+#[derive(Actionlike, Debug, PartialEq, Clone, Copy, Display)]
 pub(crate) enum ControlAction {
     // Movement
     Forward,
@@ -182,7 +182,7 @@ pub(crate) enum ControlAction {
     Ability3,
     Ultimate,
 }
-#[derive(Actionlike, PartialEq, Clone, Copy)]
+#[derive(Actionlike, Debug, PartialEq, Clone, Copy)]
 pub(crate) enum UiAction {
     Back,
 }
