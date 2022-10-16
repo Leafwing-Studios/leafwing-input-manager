@@ -4,7 +4,7 @@
 use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
-    charges::ActionCharges,
+    charges::ChargeState,
     clashing_inputs::ClashStrategy,
     cooldown::Cooldowns,
     input_map::InputMap,
@@ -59,11 +59,11 @@ pub fn tick_action_state<A: Actionlike>(
 /// Advances all [`Cooldowns`].
 pub fn tick_cooldowns<A: Actionlike>(
     mut query: Query<
-        (Option<&mut Cooldowns<A>>, Option<&mut ActionCharges<A>>),
-        Or<(With<Cooldowns<A>>, With<ActionCharges<A>>)>,
+        (Option<&mut Cooldowns<A>>, Option<&mut ChargeState<A>>),
+        Or<(With<Cooldowns<A>>, With<ChargeState<A>>)>,
     >,
     cooldowns: Option<ResMut<Cooldowns<A>>>,
-    charges: Option<ResMut<ActionCharges<A>>>,
+    charges: Option<ResMut<ChargeState<A>>>,
     time: Res<Time>,
 ) {
     let delta_time = time.delta();

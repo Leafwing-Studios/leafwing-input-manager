@@ -1,23 +1,76 @@
 //! Charges are "uses of an action".
 //! Actions may only be used if at least one charge is available.
 
-use std::marker::PhantomData;
-
 use bevy::ecs::prelude::Component;
+use std::marker::PhantomData;
 
 use crate::Actionlike;
 
-/// Store the [`Charges`] for each [`Actionlike`] action of type `A`.
+/// A component / resource that stores the [`Charges`] for each [`Actionlike`] action of type `A`.
+///
+/// If [`Charges`] is set for an actions, it is only [`Actionlike::ready`] when at least one charge is availabe.
+///
+/// ```rust
+/// use crate as leafwing_input_manager;
+/// use crate::prelude::*;
+///
+/// #[derive(Actionlike, Clone)]
+/// enum Action {
+///     // Neither cooldowns nor charges
+///     Move,
+///     // Double jump: 2 charges, no cooldowns
+///     Jump,
+///     // Simple cooldown
+///     Dash,
+///     // Cooldowns and charges, replenishing one at a time
+///     Spell,
+/// }
+///
+/// impl Action {
+///     fn charges() -> ChargeState<Action> {
+///         // You can either use the builder pattern or the `new` init for both cooldowns and charges
+///         // The differences are largely aesthetic.
+///         ChargeState::default()
+///             // Double jump!
+///             .set(Action::Jump, Charges::replenish_all(2))
+///             // Store up to 3 spells at once
+///             .set(Action::Spell, Charges::replenish_one(3))
+///             .build()
+///     }
+///
+///     fn cooldowns() -> Cooldowns<Action> {
+///         // Ommitted cooldowns and charges will cause the action to be treated as if it always had available cooldowns / charges to use
+///         Cooldowns::new([
+///             (Cooldown::from_secs(2.), Action::Dash),
+///             (Cooldown::from_secs(4.5), Action::Spell),
+///         ])
+///     }
+/// }
+///
+/// // In a real game you'd spawn a bundle with the appropriate components
+/// let mut bundle = InputManagerBundle {
+///     cooldowns: Action::cooldowns(),
+///     charges: Action::charges(),
+///     ..Default::default()
+/// };
+///
+/// // Then, you can check if an action is ready to be used
+/// if Action::Spell.ready(&bundle.charges, &bundle.cooldowns) {
+///     // When you use an action, remember to trigger it!
+///     Action::Spell.trigger(&mut bundle.charges, &mut bundle.cooldowns);
+/// }
+///
+/// /// ```
 #[derive(Component, Clone, PartialEq, Eq, Debug)]
-pub struct ActionCharges<A: Actionlike> {
+pub struct ChargeState<A: Actionlike> {
     /// The underlying [`Charges`], stored in [`Actionlike::variants`] order.
     charges_vec: Vec<Option<Charges>>,
     _phantom: PhantomData<A>,
 }
 
-impl<A: Actionlike> Default for ActionCharges<A> {
+impl<A: Actionlike> Default for ChargeState<A> {
     fn default() -> Self {
-        ActionCharges {
+        ChargeState {
             charges_vec: Vec::default(),
             _phantom: PhantomData::default(),
         }
@@ -66,7 +119,7 @@ pub enum CooldownStrategy {
     RefreshWhenEmpty,
 }
 
-impl<A: Actionlike> ActionCharges<A> {
+impl<A: Actionlike> ChargeState<A> {
     /// Is at least one charge available for `action`?
     ///
     /// Returns `true` if the underlying [`Charges`] is [`None`].
@@ -122,12 +175,23 @@ impl<A: Actionlike> ActionCharges<A> {
 
     /// Sets the underlying [`Charges`] for `action` to the provided value.
     ///
-    /// Unless you're building a new [`ActionCharges`] struct, you likely want to use [`Self::get_mut`].
+    /// Unless you're building a new [`ChargeState`] struct, you likely want to use [`Self::get_mut`].
     #[inline]
     #[must_use]
-    pub fn set(&mut self, action: A, charges: Charges) {
+    pub fn set(&mut self, action: A, charges: Charges) -> &mut Self {
         let data = self.get_mut(action);
         *data = Some(charges);
+
+        self
+    }
+
+    /// Collects a `&mut Self` into a `Self`.
+    ///
+    /// Used to conclude the builder pattern. Actually just calls `self.clone()`.
+    #[inline]
+    #[must_use]
+    pub fn build(&mut self) -> Self {
+        self.clone()
     }
 
     /// Returns an iterator of references to the underlying non-[`None`] [`Charges`]
@@ -163,7 +227,7 @@ impl Charges {
     }
 
     /// Creates a new [`Charges`] with [`ReplenishStrategy::OneAtATime`] and [`CooldownStrategy::ConstantlyRefresh`].
-    pub fn new_replenish_one(max_charges: u8) -> Charges {
+    pub fn replenish_one(max_charges: u8) -> Charges {
         Charges {
             current: max_charges,
             max: max_charges,
@@ -173,7 +237,7 @@ impl Charges {
     }
 
     /// Creates a new [`Charges`] with [`ReplenishStrategy::AllAtOnce`] and [`CooldownStrategy::RefreshWhenEmpty`].
-    pub fn new_replenish_all(max_charges: u8) -> Charges {
+    pub fn replenish_all(max_charges: u8) -> Charges {
         Charges {
             current: max_charges,
             max: max_charges,

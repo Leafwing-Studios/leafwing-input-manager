@@ -7,7 +7,7 @@ use crate::action_state::ActionState;
 use crate::cooldown::Cooldowns;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use charges::{ActionCharges, Charges};
+use charges::{ChargeState, Charges};
 use cooldown::Cooldown;
 use std::marker::PhantomData;
 
@@ -35,7 +35,7 @@ pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
     pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad};
     pub use crate::buttonlike::MouseWheelDirection;
-    pub use crate::charges::{ActionCharges, Charges};
+    pub use crate::charges::{ChargeState, Charges};
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::cooldown::{Cooldown, Cooldowns};
     pub use crate::input_map::InputMap;
@@ -102,7 +102,7 @@ pub trait Actionlike: Send + Sync + Clone + 'static {
     /// Otherwise, returns `true`.
     ///
     /// Calls [`action_ready`], which can be used manually if you already know the [`Charges`] and [`Cooldown`] of interest.
-    fn ready(&self, charges: &ActionCharges<Self>, cooldowns: &Cooldowns<Self>) -> bool {
+    fn ready(&self, charges: &ChargeState<Self>, cooldowns: &Cooldowns<Self>) -> bool {
         action_ready(charges.get(self.clone()), cooldowns.get(self.clone()))
     }
 
@@ -114,7 +114,7 @@ pub trait Actionlike: Send + Sync + Clone + 'static {
     /// Calls [`trigger_action`], which can be used manually if you already know the [`Charges`] and [`Cooldown`] of interest.
     fn trigger(
         &mut self,
-        charges: &mut ActionCharges<Self>,
+        charges: &mut ChargeState<Self>,
         cooldowns: &mut Cooldowns<Self>,
     ) -> bool {
         trigger_action(
@@ -209,7 +209,7 @@ pub struct InputManagerBundle<A: Actionlike> {
     /// A [`Cooldowns`] component
     pub cooldowns: Cooldowns<A>,
     /// A [`ActionCharges`] component
-    pub charges: ActionCharges<A>,
+    pub charges: ChargeState<A>,
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
@@ -219,7 +219,7 @@ impl<A: Actionlike> Default for InputManagerBundle<A> {
             action_state: ActionState::default(),
             input_map: InputMap::default(),
             cooldowns: Cooldowns::default(),
-            charges: ActionCharges::default(),
+            charges: ChargeState::default(),
         }
     }
 }

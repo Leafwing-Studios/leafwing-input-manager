@@ -1,6 +1,6 @@
 //! Cooldowns tick down until actions are ready to be used.
 
-use crate::charges::{ActionCharges, Charges};
+use crate::charges::{ChargeState, Charges};
 use crate::Actionlike;
 
 use bevy::ecs::prelude::Component;
@@ -157,7 +157,7 @@ impl<A: Actionlike> Cooldowns<A> {
     ///
     /// When you have a [`Option<Mut<ActionCharges<A>>>`](bevy::ecs::change_detection::Mut),
     /// use `charges.map(|res| res.into_inner())` to convert it to the correct form.
-    pub fn tick(&mut self, delta_time: Duration, mut maybe_charges: Option<&mut ActionCharges<A>>) {
+    pub fn tick(&mut self, delta_time: Duration, mut maybe_charges: Option<&mut ChargeState<A>>) {
         for action in A::variants() {
             // Only tick cooldowns that exist
             if let Some(cooldown) = self.get_mut(action.clone()) {
@@ -196,8 +196,18 @@ impl<A: Actionlike> Cooldowns<A> {
     ///
     /// If a cooldown already existed, it will be replaced by a new cooldown with the specified duration.
     #[inline]
-    pub fn set(&mut self, cooldown: Cooldown, action: A) {
+    pub fn set(&mut self, cooldown: Cooldown, action: A) -> &mut Self {
         *self.get_mut(action) = Some(cooldown);
+        self
+    }
+
+    /// Collects a `&mut Self` into a `Self`.
+    ///
+    /// Used to conclude the builder pattern. Actually just calls `self.clone()`.
+    #[inline]
+    #[must_use]
+    pub fn build(&mut self) -> Self {
+        self.clone()
     }
 
     /// Returns an iterator of references to the underlying non-[`None`] [`Cooldown`]s

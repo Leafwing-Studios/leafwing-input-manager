@@ -37,7 +37,7 @@ fn spawn_player(mut commands: Commands) {
             // By default, there are none.
             cooldowns: Cooldowns::default(),
             // The number of charges available for an action to use
-            charges: ActionCharges::default(),
+            charges: ChargeState::default(),
         });
 }
 
