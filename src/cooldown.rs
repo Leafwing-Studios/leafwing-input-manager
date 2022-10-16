@@ -269,7 +269,7 @@ impl Cooldown {
 
         Cooldown {
             max_time,
-            elapsed_time: Duration::ZERO,
+            elapsed_time: max_time,
         }
     }
 
@@ -427,6 +427,12 @@ mod tick_tests {
     }
 
     #[test]
+    fn cooldowns_start_ready() {
+        let cooldown = Cooldown::from_secs(1.);
+        assert!(cooldown.ready());
+    }
+
+    #[test]
     fn cooldowns_are_ready_when_refreshed() {
         let mut cooldown = Cooldown::from_secs(1.);
         assert!(cooldown.ready());
@@ -461,11 +467,5 @@ mod tick_tests {
     fn time_remaining_on_fresh_cooldown_is_zero() {
         let cooldown = Cooldown::from_secs(1.);
         assert_eq!(cooldown.remaining(), Duration::ZERO);
-    }
-
-    #[test]
-    fn time_elapsed_on_fresh_cooldown_is_zero() {
-        let cooldown = Cooldown::from_secs(1.);
-        assert_eq!(cooldown.elapsed(), Duration::ZERO);
     }
 }

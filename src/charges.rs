@@ -71,7 +71,7 @@ pub struct ChargeState<A: Actionlike> {
 impl<A: Actionlike> Default for ChargeState<A> {
     fn default() -> Self {
         ChargeState {
-            charges_vec: Vec::default(),
+            charges_vec: A::variants().map(|_| None).collect(),
             _phantom: PhantomData::default(),
         }
     }
