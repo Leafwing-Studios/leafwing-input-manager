@@ -11,8 +11,7 @@ use crate::Actionlike;
 /// If [`Charges`] is set for an actions, it is only [`Actionlike::ready`] when at least one charge is availabe.
 ///
 /// ```rust
-/// use crate as leafwing_input_manager;
-/// use crate::prelude::*;
+/// use leafwing_input_manager::prelude::*;
 ///
 /// #[derive(Actionlike, Clone)]
 /// enum Action {
@@ -41,8 +40,8 @@ use crate::Actionlike;
 ///     fn cooldowns() -> Cooldowns<Action> {
 ///         // Ommitted cooldowns and charges will cause the action to be treated as if it always had available cooldowns / charges to use
 ///         Cooldowns::new([
-///             (Cooldown::from_secs(2.), Action::Dash),
-///             (Cooldown::from_secs(4.5), Action::Spell),
+///             (Action::Dash, Cooldown::from_secs(2.)),
+///             (Action::Spell, Cooldown::from_secs(4.5)),
 ///         ])
 ///     }
 /// }
@@ -60,7 +59,7 @@ use crate::Actionlike;
 ///     Action::Spell.trigger(&mut bundle.charges, &mut bundle.cooldowns);
 /// }
 ///
-/// /// ```
+/// ```
 #[derive(Component, Clone, PartialEq, Eq, Debug)]
 pub struct ChargeState<A: Actionlike> {
     /// The underlying [`Charges`], stored in [`Actionlike::variants`] order.
@@ -128,8 +127,7 @@ impl<A: Actionlike> ChargeState<A> {
     ///
     /// # Example
     /// ```rust
-    /// use leafwing_input_manager::cooldown::{Cooldown, Cooldowns};
-    /// use leafwing_input_manager::Actionlike;
+    /// use leafwing_input_manager::prelude::*;
     /// use bevy::input::keyboard::KeyCode;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
@@ -140,9 +138,9 @@ impl<A: Actionlike> ChargeState<A> {
     ///     Dash,
     /// }
     ///
-    /// let input_map = Cooldowns::new([
+    /// let input_map = ChargeState::new([
     ///     (Action::Shoot, Charges::replenish_all(6)),
-    ///     (Action::Dash, Charge::replenish_one(9)),
+    ///     (Action::Dash, Charges::replenish_one(2)),
     /// ]);
     /// ```
     #[must_use]

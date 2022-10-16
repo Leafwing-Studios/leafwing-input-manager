@@ -32,7 +32,7 @@ use std::marker::PhantomData;
 /// }
 ///
 /// let mut action_state = ActionState::<Action>::default();
-/// let mut cooldowns = Cooldowns::new([(Cooldown::from_secs(1.), Action::Jump)]);
+/// let mut cooldowns = Cooldowns::new([(Action::Jump, Cooldown::from_secs(1.))]);
 ///
 /// action_state.press(Action::Jump);
 ///
@@ -157,24 +157,24 @@ impl<A: Actionlike> Cooldowns<A> {
     ///
     /// When you have a [`Option<Mut<ActionCharges<A>>>`](bevy::ecs::change_detection::Mut),
     /// use `charges.map(|res| res.into_inner())` to convert it to the correct form.
-    pub fn tick(&mut self, delta_time: Duration, mut maybe_charges: Option<&mut ChargeState<A>>) {
-        for action in A::variants() {
-            // Only tick cooldowns that exist
-            if let Some(cooldown) = self.get_mut(action.clone()) {
-                // Only handle charges if a ActionCharges was passed in
-                if let Some(ref mut action_charges) = maybe_charges {
-                    // Only replenish charges of actions that have charges
-                    if let Some(per_action_charges) = action_charges.get_mut(action) {
-                        cooldown.tick(delta_time, Some(per_action_charges));
-                    }
-                } else {
-                    cooldown.tick(delta_time, None);
+    pub fn tick(&mut self, delta_time: Duration, maybe_charges: Option<&mut ChargeState<A>>) {
+        if let Some(charge_state) = maybe_charges {
+            for action in A::variants() {
+                if let Some(ref mut cooldown) = self.get_mut(action.clone()) {
+                    let charges = charge_state.get_mut(action.clone());
+                    cooldown.tick(delta_time, charges);
+                }
+            }
+        } else {
+            for action in A::variants() {
+                if let Some(ref mut cooldown) = self.get_mut(action.clone()) {
+                    cooldown.tick(delta_time, &mut None);
                 }
             }
         }
 
         if let Some(global_cooldown) = self.global_cooldown.as_mut() {
-            global_cooldown.tick(delta_time, None);
+            global_cooldown.tick(delta_time, &mut None);
         }
     }
 
@@ -240,10 +240,10 @@ impl<A: Actionlike> Cooldowns<A> {
 /// cooldown.trigger();
 /// assert_eq!(cooldown.remaining(), Duration::from_secs(3));
 ///
-/// cooldown.tick(Duration::from_secs(1));
+/// cooldown.tick(Duration::from_secs(1), &mut None);
 /// assert!(!cooldown.ready());
 ///
-/// cooldown.tick(Duration::from_secs(5));
+/// cooldown.tick(Duration::from_secs(5), &mut None);
 /// let triggered = cooldown.trigger();
 /// assert!(triggered);
 ///
@@ -289,7 +289,7 @@ impl Cooldown {
     /// Advance the cooldown by `delta_time`.
     ///
     /// If the elapsed time is enough to reset the cooldown, the number of available charges.
-    pub fn tick(&mut self, delta_time: Duration, charges: Option<&mut Charges>) {
+    pub fn tick(&mut self, delta_time: Duration, charges: &mut Option<Charges>) {
         // Don't tick cooldowns when they are fully elapsed
         if self.elapsed_time == self.max_time {
             return;
@@ -422,7 +422,7 @@ mod tick_tests {
     fn tick_has_no_effect_on_fresh_cooldown() {
         let cooldown = Cooldown::from_secs(1.);
         let mut cloned_cooldown = cooldown.clone();
-        cloned_cooldown.tick(Duration::from_secs_f32(1.234), None);
+        cloned_cooldown.tick(Duration::from_secs_f32(1.234), &mut None);
         assert_eq!(cooldown, cloned_cooldown);
     }
 
@@ -449,7 +449,7 @@ mod tick_tests {
         cloned_cooldown.trigger();
         assert!(cooldown != cloned_cooldown);
 
-        cloned_cooldown.tick(Duration::from_millis(123), None);
+        cloned_cooldown.tick(Duration::from_millis(123), &mut None);
         assert!(cooldown != cloned_cooldown);
     }
 
@@ -459,7 +459,7 @@ mod tick_tests {
         cooldown.trigger();
         assert!(!cooldown.ready());
 
-        cooldown.tick(Duration::from_secs(3), None);
+        cooldown.tick(Duration::from_secs(3), &mut None);
         assert!(cooldown.ready());
     }
 
