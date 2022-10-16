@@ -290,7 +290,7 @@ impl Cooldown {
     ///
     /// If the elapsed time is enough to reset the cooldown, the number of available charges.
     pub fn tick(&mut self, delta_time: Duration, charges: Option<&mut Charges>) {
-        //
+        // Don't tick cooldowns when they are fully elapsed
         if self.elapsed_time == self.max_time {
             return;
         }
