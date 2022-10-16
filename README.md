@@ -1,5 +1,7 @@
 # About
 
+[![Crates.io](https://img.shields.io/crates/v/leafwing-input-manager.svg)](https://crates.io/crates/leafwing-input-manager)
+
 A straightforward but robust input-action manager for Bevy.
 
 Inputs from various input sources (keyboard, mouse and gamepad) are collected into a common `ActionState` on your player entity,
