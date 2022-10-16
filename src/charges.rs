@@ -120,6 +120,40 @@ pub enum CooldownStrategy {
 }
 
 impl<A: Actionlike> ChargeState<A> {
+    /// Creates a new [`ChargeState`] from an iterator of `(charges, action)` pairs
+    ///
+    /// If a [`Charges`] is not provided for an action, that action will be treated as if a charge was always available.
+    ///
+    /// To create an empty [`ChargeState`] struct, use the [`Default::default`] method instead.
+    ///
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::cooldown::{Cooldown, Cooldowns};
+    /// use leafwing_input_manager::Actionlike;
+    /// use bevy::input::keyboard::KeyCode;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    ///     Shoot,
+    ///     Dash,
+    /// }
+    ///
+    /// let input_map = Cooldowns::new([
+    ///     (Action::Shoot, Charges::replenish_all(6)),
+    ///     (Action::Dash, Charge::replenish_one(9)),
+    /// ]);
+    /// ```
+    #[must_use]
+    pub fn new(action_cooldown_pairs: impl IntoIterator<Item = (A, Charges)>) -> Self {
+        let mut charge_state = ChargeState::default();
+        for (action, charges) in action_cooldown_pairs.into_iter() {
+            charge_state.set(action, charges);
+        }
+        charge_state
+    }
+
     /// Is at least one charge available for `action`?
     ///
     /// Returns `true` if the underlying [`Charges`] is [`None`].
@@ -177,7 +211,6 @@ impl<A: Actionlike> ChargeState<A> {
     ///
     /// Unless you're building a new [`ChargeState`] struct, you likely want to use [`Self::get_mut`].
     #[inline]
-    #[must_use]
     pub fn set(&mut self, action: A, charges: Charges) -> &mut Self {
         let data = self.get_mut(action);
         *data = Some(charges);

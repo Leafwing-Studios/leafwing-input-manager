@@ -27,7 +27,7 @@ impl Action {
         let mut cd = Cooldowns::default();
         for action in Action::variants() {
             if let Some(cooldown) = action.cooldown() {
-                cd.set(cooldown, action);
+                cd.set(action, cooldown);
             }
         }
 

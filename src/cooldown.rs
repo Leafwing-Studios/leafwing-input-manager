@@ -94,15 +94,15 @@ impl<A: Actionlike> Cooldowns<A> {
     /// }
     ///
     /// let input_map = Cooldowns::new([
-    ///     (Cooldown::from_secs(0.1), Action::Shoot),
-    ///     (Cooldown::from_secs(1.0), Action::Dash),
+    ///     (Action::Shoot, Cooldown::from_secs(0.1)),
+    ///     (Action::Dash, Cooldown::from_secs(1.0)),
     /// ]);
     /// ```
     #[must_use]
-    pub fn new(cooldown_action_pairs: impl IntoIterator<Item = (Cooldown, A)>) -> Self {
+    pub fn new(action_cooldown_pairs: impl IntoIterator<Item = (A, Cooldown)>) -> Self {
         let mut cooldowns = Cooldowns::default();
-        for (cooldown, action) in cooldown_action_pairs.into_iter() {
-            cooldowns.set(cooldown, action);
+        for (action, cooldown) in action_cooldown_pairs.into_iter() {
+            cooldowns.set(action, cooldown);
         }
         cooldowns
     }
@@ -196,7 +196,7 @@ impl<A: Actionlike> Cooldowns<A> {
     ///
     /// If a cooldown already existed, it will be replaced by a new cooldown with the specified duration.
     #[inline]
-    pub fn set(&mut self, cooldown: Cooldown, action: A) -> &mut Self {
+    pub fn set(&mut self, action: A, cooldown: Cooldown) -> &mut Self {
         *self.get_mut(action) = Some(cooldown);
         self
     }
