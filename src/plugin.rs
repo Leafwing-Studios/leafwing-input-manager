@@ -180,7 +180,7 @@ impl<A: Actionlike> Default for ToggleActions<A> {
 /// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
-    /// Advances action timers and cooldowns.
+    /// Advances action timers.
     ///
     /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
     Tick,
