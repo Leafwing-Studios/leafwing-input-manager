@@ -95,13 +95,6 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_system_to_stage(
                     CoreStage::PreUpdate,
-                    tick_cooldowns::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Tick)
-                        .before(InputManagerSystem::Update),
-                )
-                .add_system_to_stage(
-                    CoreStage::PreUpdate,
                     update_action_state::<A>
                         .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Update)
@@ -187,7 +180,7 @@ impl<A: Actionlike> Default for ToggleActions<A> {
 /// `Reset` must occur before `Update`
 #[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
-    /// Advances action timers and cooldowns.
+    /// Advances action timers.
     ///
     /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
     Tick,

@@ -44,7 +44,6 @@ fn spawn_player(mut commands: Commands) {
                     Action::Rudder,
                 )
                 .build(),
-            ..default()
         });
 }
 

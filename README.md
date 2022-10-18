@@ -33,7 +33,6 @@ and a single input can result in multiple actions being triggered, which can be 
 - Powerful and easy-to-use input mocking API for integration testing your Bevy applications
   - `app.send_input(KeyCode::B)` or `world.send_input(UserInput::chord([KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y])`
 - Control which state this plugin is active in: stop wandering around while in a menu!
-- Sophisticated cooldown management for `Actionlike` actions
 - Leafwing Studio's trademark `#![forbid(missing_docs)]`
 
 ## Limitations
