@@ -33,11 +33,6 @@ fn spawn_player(mut commands: Commands) {
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
             input_map: InputMap::new([(KeyCode::Space, Action::Jump)]),
-            // Any cooling-off period between repeated actions
-            // By default, there are none.
-            cooldowns: Cooldowns::default(),
-            // The number of charges available for an action to use
-            charges: ChargeState::default(),
         });
 }
 

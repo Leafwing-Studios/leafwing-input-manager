@@ -95,13 +95,6 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_system_to_stage(
                     CoreStage::PreUpdate,
-                    tick_cooldowns::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Tick)
-                        .before(InputManagerSystem::Update),
-                )
-                .add_system_to_stage(
-                    CoreStage::PreUpdate,
                     update_action_state::<A>
                         .with_run_criteria(run_if_enabled::<A>)
                         .label(InputManagerSystem::Update)
