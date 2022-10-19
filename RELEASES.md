@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.6.1
+
+### Bugs
+
+- no longer print "real clash" due to a missed debugging statement
+
 ## Version 0.6
 
 ### Enhancements
