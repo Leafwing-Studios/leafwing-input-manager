@@ -1,7 +1,7 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
 use crate::action_state::ActionData;
-use crate::axislike::VirtualDPad;
+use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, UserInput};
@@ -59,16 +59,25 @@ impl UserInput {
                 Single(_) => false,
                 Chord(other_chord) => button_chord_clash(self_button, other_chord),
                 VirtualDPad(other_dpad) => dpad_button_clash(other_dpad, self_button),
+                VirtualAxis(other_axis) => virtual_axis_button_clash(other_axis, self_button),
             },
             Chord(self_chord) => match other {
                 Single(other_button) => button_chord_clash(other_button, self_chord),
                 Chord(other_chord) => chord_chord_clash(self_chord, other_chord),
                 VirtualDPad(other_dpad) => dpad_chord_clash(other_dpad, self_chord),
+                VirtualAxis(other_axis) => virtual_axis_chord_clash(other_axis, self_chord),
             },
             VirtualDPad(self_dpad) => match other {
                 Single(other_button) => dpad_button_clash(self_dpad, other_button),
                 Chord(other_chord) => dpad_chord_clash(self_dpad, other_chord),
                 VirtualDPad(other_dpad) => dpad_dpad_clash(self_dpad, other_dpad),
+                VirtualAxis(other_axis) => virtual_axis_dpad_clash(other_axis, self_dpad),
+            },
+            VirtualAxis(self_axis) => match other {
+                Single(other_button) => virtual_axis_button_clash(self_axis, other_button),
+                Chord(other_chord) => virtual_axis_chord_clash(self_axis, other_chord),
+                VirtualDPad(other_dpad) => virtual_axis_dpad_clash(self_axis, other_dpad),
+                VirtualAxis(other_axis) => virtual_axis_virtual_axis_clash(self_axis, other_axis),
             },
         }
     }
@@ -242,6 +251,39 @@ fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
     }
 
     false
+}
+
+#[must_use]
+fn virtual_axis_button_clash(axis: &VirtualAxis, button: &InputKind) -> bool {
+    button == &axis.negative || button == &axis.positive
+}
+
+#[must_use]
+fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
+    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
+        if dpad_button == &axis.negative || dpad_button == &axis.positive {
+            return true;
+        }
+    }
+
+    false
+}
+
+#[must_use]
+fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &PetitSet<InputKind, 8>) -> bool {
+    if chord.len() <= 1 {
+        return false;
+    }
+
+    chord.contains(&axis.negative) || chord.contains(&axis.positive)
+}
+
+#[must_use]
+fn virtual_axis_virtual_axis_clash(axis1: &VirtualAxis, axis2: &VirtualAxis) -> bool {
+    axis1.negative == axis2.negative
+        || axis1.negative == axis2.positive
+        || axis1.positive == axis2.negative
+        || axis1.positive == axis2.positive
 }
 
 /// Does the `chord_a` clash with `chord_b`?

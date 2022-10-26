@@ -12,7 +12,8 @@ use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
 
 use crate::axislike::{
-    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualDPad,
+    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
+    VirtualDPad,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::user_input::{InputKind, UserInput};
@@ -99,6 +100,9 @@ impl<'a> InputStreams<'a> {
                     }
                 }
                 false
+            }
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
+                self.button_pressed(*negative) || self.button_pressed(*positive)
             }
         }
     }
@@ -227,7 +231,7 @@ impl<'a> InputStreams<'a> {
     /// # Warning
     ///
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
-    /// be sure to clamp the reutrned data.
+    /// be sure to clamp the returned data.
     pub fn input_value(&self, input: &UserInput) -> f32 {
         let use_button_value = || -> f32 {
             if self.input_pressed(input) {
@@ -290,6 +294,10 @@ impl<'a> InputStreams<'a> {
                         value_in_axis_range(single_axis, total_mouse_motion_movement)
                     }
                 }
+            }
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
+                self.input_value(&UserInput::Single(*positive)).abs()
+                    - self.input_value(&UserInput::Single(*negative)).abs()
             }
             UserInput::Single(InputKind::DualAxis(_)) => {
                 self.input_axis_pair(input).unwrap_or_default().length()

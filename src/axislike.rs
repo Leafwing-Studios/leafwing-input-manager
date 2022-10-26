@@ -334,6 +334,38 @@ impl VirtualDPad {
     }
 }
 
+/// A virtual Axis that you can get an [`Axis`] from
+///
+/// Typically, you don't want to store a [`Axis`] in this type,
+/// even though it can be stored as an [`InputKind`].
+///
+/// Instead, use it directly as [`InputKind::Axis`]!
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct VirtualAxis {
+    /// The input that represents the up direction in this virtual DPad
+    pub negative: InputKind,
+    /// The input that represents the down direction in this virtual DPad
+    pub positive: InputKind,
+}
+
+impl VirtualAxis {
+    /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
+    pub fn horizontal_arrow_keys() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::Keyboard(KeyCode::Left),
+            positive: InputKind::Keyboard(KeyCode::Right),
+        }
+    }
+
+    /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
+    pub fn vertical_arrow_keys() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::Keyboard(KeyCode::Down),
+            positive: InputKind::Keyboard(KeyCode::Up),
+        }
+    }
+}
+
 /// The type of axis used by a [`UserInput`](crate::user_input::UserInput).
 ///
 /// This is stored in either a [`SingleAxis`] or [`DualAxis`].
