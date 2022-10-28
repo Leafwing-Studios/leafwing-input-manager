@@ -1,6 +1,6 @@
 //! Containment module for boring implmentations of the [`Display`] trait
 
-use crate::axislike::VirtualDPad;
+use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::user_input::{InputKind, UserInput};
 use std::fmt::Display;
 
@@ -28,6 +28,13 @@ impl Display for UserInput {
                     f,
                     "VirtualDPad(up: {}, down: {}, left: {}, right: {})",
                     up, down, left, right
+                )
+            }
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
+                write!(
+                    f,
+                    "VirtualDPad(negative: {}, positive: {})",
+                    negative, positive,
                 )
             }
         }

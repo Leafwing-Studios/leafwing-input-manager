@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Enhancements
+
+- Added `VirtualAxis` struct that can be supplied to an `InputMap` to trigger on two direction-representing inputs. 1-dimensional equivalent to `VirtualDPad`.
+
 ## Version 0.6.1
 
 ### Bugs

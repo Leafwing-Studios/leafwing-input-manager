@@ -6,6 +6,7 @@ use bevy::utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
+use crate::axislike::VirtualAxis;
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
@@ -25,6 +26,8 @@ pub enum UserInput {
     Chord(PetitSet<InputKind, 8>),
     /// A virtual DPad that you can get an [`AxisPair`] from
     VirtualDPad(VirtualDPad),
+    /// A virtual axis that you can get a [`SingleAxis`] from
+    VirtualAxis(VirtualAxis),
 }
 
 impl UserInput {
@@ -70,6 +73,7 @@ impl UserInput {
             UserInput::Single(_) => 1,
             UserInput::Chord(button_set) => button_set.len(),
             UserInput::VirtualDPad { .. } => 1,
+            UserInput::VirtualAxis { .. } => 1,
         }
     }
 
@@ -117,6 +121,18 @@ impl UserInput {
                 let mut n_matching = 0;
                 for button in buttons.iter() {
                     for dpad_button in [up, down, left, right] {
+                        if button == dpad_button {
+                            n_matching += 1;
+                        }
+                    }
+                }
+
+                n_matching
+            }
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
+                let mut n_matching = 0;
+                for button in buttons.iter() {
+                    for dpad_button in [negative, positive] {
                         if button == dpad_button {
                             n_matching += 1;
                         }
@@ -215,6 +231,34 @@ impl UserInput {
                     }
                 }
             }
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
+                for button in [negative, positive] {
+                    // todo: dedup with VirtualDPad?
+                    match *button {
+                        InputKind::DualAxis(dual_axis) => {
+                            raw_inputs
+                                .axis_data
+                                .push((dual_axis.x.axis_type, dual_axis.x.value));
+                            raw_inputs
+                                .axis_data
+                                .push((dual_axis.y.axis_type, dual_axis.y.value));
+                        }
+                        InputKind::SingleAxis(single_axis) => raw_inputs
+                            .axis_data
+                            .push((single_axis.axis_type, single_axis.value)),
+                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
+                        InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::Modifier(modifier) => {
+                            let key_codes = modifier.key_codes();
+                            raw_inputs.keycodes.push(key_codes[0]);
+                            raw_inputs.keycodes.push(key_codes[1]);
+                        }
+                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
+                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
+                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
+                    }
+                }
+            }
         };
 
         raw_inputs
@@ -242,6 +286,12 @@ impl From<SingleAxis> for UserInput {
 impl From<VirtualDPad> for UserInput {
     fn from(input: VirtualDPad) -> Self {
         UserInput::VirtualDPad(input)
+    }
+}
+
+impl From<VirtualAxis> for UserInput {
+    fn from(input: VirtualAxis) -> Self {
+        UserInput::VirtualAxis(input)
     }
 }
 
