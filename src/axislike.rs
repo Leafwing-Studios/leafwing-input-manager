@@ -334,17 +334,17 @@ impl VirtualDPad {
     }
 }
 
-/// A virtual Axis that you can get an [`Axis`] from
+/// A virtual Axis that you can get a value between -1 and 1 from.
 ///
-/// Typically, you don't want to store a [`Axis`] in this type,
+/// Typically, you don't want to store a [`SingleAxis`] in this type,
 /// even though it can be stored as an [`InputKind`].
 ///
-/// Instead, use it directly as [`InputKind::Axis`]!
+/// Instead, use it directly as [`InputKind::SingleAxis`]!
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct VirtualAxis {
-    /// The input that represents the up direction in this virtual DPad
+    /// The input that represents the negative direction of this virtual axis
     pub negative: InputKind,
-    /// The input that represents the down direction in this virtual DPad
+    /// The input that represents the positive direction of this virtual axis
     pub positive: InputKind,
 }
 
