@@ -11,6 +11,7 @@ use bevy::ecs::component::Component;
 use bevy::input::gamepad::Gamepad;
 
 use core::fmt::Debug;
+use std::collections::HashMap;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -426,6 +427,21 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
+impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
+
+    /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
+    ///
+    /// # Panics
+    ///
+    /// Panics if the any value in map contains more than 16 distinct inputs.
+    fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
+        let bindings = map.iter().flat_map(|(action, inputs)| { 
+            inputs.iter().map(|input| (input.clone(), action.clone())) 
+        });
+        InputMap::new(bindings)
+    }
+}
+
 mod tests {
     use crate as leafwing_input_manager;
     use crate::prelude::*;
@@ -555,5 +571,24 @@ mod tests {
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
+    }
+
+    #[test]
+    fn from_test() {
+        use std::collections::HashMap;
+        use bevy::prelude::KeyCode;
+
+        let mut map: HashMap<Action, Vec<UserInput>>  = HashMap::default();
+        map.insert(Action::Hide, vec![UserInput::chord(vec![KeyCode::R, KeyCode::E])]);
+        map.insert(Action::Jump, vec![UserInput::from(KeyCode::Space)]);
+        map.insert(Action::Run, vec![KeyCode::LShift.into(), KeyCode::RShift.into()]);
+
+        let mut input_map = InputMap::default();
+        input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
+        input_map.insert(KeyCode::Space, Action::Jump);
+        input_map.insert(KeyCode::LShift, Action::Run);
+        input_map.insert(KeyCode::RShift, Action::Run);
+
+        assert_eq!(input_map, map.into());
     }
 }
