@@ -11,9 +11,9 @@ use bevy::ecs::component::Component;
 use bevy::input::gamepad::Gamepad;
 
 use core::fmt::Debug;
-use std::collections::HashMap;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::marker::PhantomData;
 
 /// Maps from raw inputs to an input-method agnostic representation
@@ -428,15 +428,14 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
-
     /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
     ///
     /// # Panics
     ///
     /// Panics if the any value in map contains more than 16 distinct inputs.
     fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
-        let bindings = map.iter().flat_map(|(action, inputs)| { 
-            inputs.iter().map(|input| (input.clone(), action.clone())) 
+        let bindings = map.iter().flat_map(|(action, inputs)| {
+            inputs.iter().map(|input| (input.clone(), action.clone()))
         });
         InputMap::new(bindings)
     }
@@ -575,13 +574,19 @@ mod tests {
 
     #[test]
     fn from_test() {
-        use std::collections::HashMap;
         use bevy::prelude::KeyCode;
+        use std::collections::HashMap;
 
-        let mut map: HashMap<Action, Vec<UserInput>>  = HashMap::default();
-        map.insert(Action::Hide, vec![UserInput::chord(vec![KeyCode::R, KeyCode::E])]);
+        let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
+        map.insert(
+            Action::Hide,
+            vec![UserInput::chord(vec![KeyCode::R, KeyCode::E])],
+        );
         map.insert(Action::Jump, vec![UserInput::from(KeyCode::Space)]);
-        map.insert(Action::Run, vec![KeyCode::LShift.into(), KeyCode::RShift.into()]);
+        map.insert(
+            Action::Run,
+            vec![KeyCode::LShift.into(), KeyCode::RShift.into()],
+        );
 
         let mut input_map = InputMap::default();
         input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
