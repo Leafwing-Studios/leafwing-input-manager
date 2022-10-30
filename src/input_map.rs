@@ -12,8 +12,9 @@ use bevy::input::gamepad::Gamepad;
 
 use core::fmt::Debug;
 use petitset::PetitSet;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::marker::PhantomData;
 
 /// Maps from raw inputs to an input-method agnostic representation
@@ -70,14 +71,12 @@ use std::marker::PhantomData;
 /// // Removal
 /// input_map.clear_action(Action::Hide);
 ///```
-#[derive(Component, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Component, Debug, Clone, PartialEq, Eq)]
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
     map: Vec<PetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
-    #[serde(skip)]
     marker: PhantomData<A>,
 }
 
@@ -441,15 +440,155 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     }
 }
 
+impl<A> Serialize for InputMap<A>
+where
+    A: Actionlike + Serialize + Eq + Hash,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+
+        let mut input_map = serializer.serialize_struct("InputMap", 1)?;
+        let mut mappings: HashMap<A, Vec<&UserInput>> = HashMap::new();
+        for (set, action) in self.iter() {
+            mappings.insert(action, set.iter().collect());
+        }
+
+        input_map.serialize_field("map", &mappings)?;
+        input_map.end()
+    }
+}
+
+impl<'de, A> Deserialize<'de> for InputMap<A>
+where
+    A: Actionlike + Eq + Hash + Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::Visitor;
+
+        #[derive(Deserialize, PartialEq)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {
+            Map,
+        }
+
+        struct InputMapVisitor<'de, A: Actionlike + Deserialize<'de>> {
+            marker: PhantomData<&'de A>,
+        }
+
+        impl<'de, A> Visitor<'de> for InputMapVisitor<'de, A>
+        where
+            A: Actionlike + Eq + Hash + Deserialize<'de>,
+        {
+            type Value = InputMap<A>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "a struct with field 'map' of type map where key is `Actionlike` and value is sequents of `UserInput`")
+            }
+
+            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            where
+                S: serde::de::SeqAccess<'de>,
+            {
+                let map = seq.next_element::<HashMap<A, Vec<UserInput>>>()?;
+                map.ok_or_else(|| {
+                    serde::de::Error::invalid_length(0, &"one argument with type `map`")
+                })
+                .map(InputMap::from)
+            }
+
+            fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+            where
+                M: serde::de::MapAccess<'de>,
+            {
+                map.next_key::<Field>()?
+                    .filter(|key| *key == Field::Map)
+                    .ok_or_else(|| serde::de::Error::missing_field("map"))?;
+                let value = map.next_value::<HashMap<A, Vec<UserInput>>>()?;
+                Ok(value.into())
+            }
+        }
+
+        let visitor = InputMapVisitor {
+            marker: PhantomData,
+        };
+        const FIELDS: &[&str] = &["map"];
+        deserializer.deserialize_struct("InputMap", FIELDS, visitor)
+    }
+}
+
 mod tests {
+    use serde::{Deserialize, Serialize};
+
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(Actionlike, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     enum Action {
         Run,
         Jump,
         Hide,
+    }
+
+    #[test]
+    fn serde() {
+        use bevy::prelude::KeyCode;
+
+        let input_map = InputMap::new([
+            (KeyCode::LShift, Action::Run),
+            (KeyCode::RShift, Action::Run),
+            (KeyCode::Space, Action::Jump),
+        ]);
+
+        println!("RON: {}", ron::to_string(&input_map).unwrap());
+
+        let expected = InputMap::new([(KeyCode::LShift, Action::Run)]);
+        let full_struct = "InputMap( map: { Run: [Single(Keyboard(LShift))] } )";
+        assert_eq!(expected, ron::from_str(full_struct).unwrap());
+        let struct_without_name = "( map: { Run: [Single(Keyboard(LShift))] } )";
+        assert_eq!(expected, ron::from_str(struct_without_name).unwrap());
+    }
+
+    #[test]
+    fn custom_serde() {
+        use bevy::prelude::KeyCode;
+        use serde_test::assert_tokens;
+        use serde_test::Token;
+
+        let input_map = InputMap::new([
+            (KeyCode::LShift, Action::Run),
+            (KeyCode::RShift, Action::Run),
+            (KeyCode::Space, Action::Jump),
+        ]);
+
+        assert_tokens(
+            &input_map,
+            &[
+                Token::Struct {
+                    name: "InputMap",
+                    len: 1,
+                },
+                Token::Str("map"),
+                Token::Map { len: Some(3) },
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Hide",
+                },
+                Token::Seq { len: Some(0) },
+                Token::SeqEnd,
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Run",
+                },
+                Token::Seq { len: Some(2) },
+                Token::StructEnd,
+            ],
+        )
     }
 
     #[test]
@@ -573,7 +712,7 @@ mod tests {
     }
 
     #[test]
-    fn from_test() {
+    fn from() {
         use bevy::prelude::KeyCode;
         use std::collections::HashMap;
 
