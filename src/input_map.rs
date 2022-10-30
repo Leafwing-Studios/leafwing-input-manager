@@ -536,62 +536,6 @@ mod tests {
     }
 
     #[test]
-    fn serde() {
-        use bevy::prelude::KeyCode;
-
-        let input_map = InputMap::new([
-            (KeyCode::LShift, Action::Run),
-            (KeyCode::RShift, Action::Run),
-            (KeyCode::Space, Action::Jump),
-        ]);
-
-        println!("RON: {}", ron::to_string(&input_map).unwrap());
-
-        let expected = InputMap::new([(KeyCode::LShift, Action::Run)]);
-        let full_struct = "InputMap( map: { Run: [Single(Keyboard(LShift))] } )";
-        assert_eq!(expected, ron::from_str(full_struct).unwrap());
-        let struct_without_name = "( map: { Run: [Single(Keyboard(LShift))] } )";
-        assert_eq!(expected, ron::from_str(struct_without_name).unwrap());
-    }
-
-    #[test]
-    fn custom_serde() {
-        use bevy::prelude::KeyCode;
-        use serde_test::assert_tokens;
-        use serde_test::Token;
-
-        let input_map = InputMap::new([
-            (KeyCode::LShift, Action::Run),
-            (KeyCode::RShift, Action::Run),
-            (KeyCode::Space, Action::Jump),
-        ]);
-
-        assert_tokens(
-            &input_map,
-            &[
-                Token::Struct {
-                    name: "InputMap",
-                    len: 1,
-                },
-                Token::Str("map"),
-                Token::Map { len: Some(3) },
-                Token::UnitVariant {
-                    name: "Action",
-                    variant: "Hide",
-                },
-                Token::Seq { len: Some(0) },
-                Token::SeqEnd,
-                Token::UnitVariant {
-                    name: "Action",
-                    variant: "Run",
-                },
-                Token::Seq { len: Some(2) },
-                Token::StructEnd,
-            ],
-        )
-    }
-
-    #[test]
     fn insertion_idempotency() {
         use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
