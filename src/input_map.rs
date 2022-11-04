@@ -475,7 +475,7 @@ where
 
 impl<'de, A> Deserialize<'de> for InputMap<A>
 where
-    A: Actionlike + Eq + Hash + Deserialize<'de>,
+    A: Actionlike + Deserialize<'de> + Eq + Hash,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
