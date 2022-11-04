@@ -4,7 +4,7 @@
 
 ### Usability 
 
-- Add custom implementation of the `Serialize` and `Deserialize` traits for `InputMap` to make the format more human readable
+- Added custom implementation of the `Serialize` and `Deserialize` traits for `InputMap` to make the format more human readable
 
 ## Version 0.6
 
