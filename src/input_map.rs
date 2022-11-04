@@ -432,6 +432,27 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     /// # Panics
     ///
     /// Panics if the any value in map contains more than 16 distinct inputs.
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::input_map::InputMap;
+    /// use leafwing_input_manager::user_input::UserInput;
+    /// use leafwing_input_manager::Actionlike;
+    /// use bevy::input::keyboard::KeyCode;
+    ///
+    /// use std::collections::HashMap;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
+    /// map.insert(
+    ///     Action::Run,
+    ///     vec![KeyCode::LShift.into(), KeyCode::RShift.into()],
+    /// );
+    /// let input_map = InputMap::from(map);
+    /// ```
     fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
         map.iter()
             .flat_map(|(action, inputs)| inputs.iter().map(|input| (action.clone(), input.clone())))
