@@ -433,30 +433,42 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     ///
     /// Panics if the any value in map contains more than 16 distinct inputs.
     fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
-        let bindings = map.iter().flat_map(|(action, inputs)| {
-            inputs.iter().map(|input| (input.clone(), action.clone()))
-        });
-        InputMap::new(bindings)
+        map.iter()
+            .flat_map(|(action, inputs)| inputs.iter().map(|input| (action.clone(), input.clone())))
+            .collect()
+    }
+}
+
+impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
+    /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
+    ///
+    /// # Panics
+    ///
+    /// Panics if there are more than 16 distinct inputs for the same action.
+    fn from_iter<T: IntoIterator<Item = (A, UserInput)>>(iter: T) -> Self {
+        InputMap::new(iter.into_iter().map(|(action, input)| (input, action)))
     }
 }
 
 impl<A> Serialize for InputMap<A>
 where
-    A: Actionlike + Serialize + Eq + Hash,
+    A: Actionlike + Serialize + Eq + Hash + Ord,
 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         use serde::ser::SerializeStruct;
+        use std::collections::BTreeMap;
 
         let mut input_map = serializer.serialize_struct("InputMap", 1)?;
-        let mut mappings: HashMap<A, Vec<&UserInput>> = HashMap::new();
-        for (set, action) in self.iter() {
-            mappings.insert(action, set.iter().collect());
-        }
-
-        input_map.serialize_field("map", &mappings)?;
+        input_map.serialize_field(
+            "map",
+            &self
+                .iter()
+                .map(|(set, action)| (action, set.iter().collect()))
+                .collect::<BTreeMap<A, Vec<&UserInput>>>(),
+        )?;
         input_map.end()
     }
 }
@@ -528,7 +540,9 @@ mod tests {
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
-    #[derive(Actionlike, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(
+        Actionlike, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug,
+    )]
     enum Action {
         Run,
         Jump,
@@ -678,5 +692,116 @@ mod tests {
         input_map.insert(KeyCode::RShift, Action::Run);
 
         assert_eq!(input_map, map.into());
+    }
+
+    #[test]
+    fn serde() {
+        use bevy::prelude::KeyCode;
+        use serde_test::assert_tokens;
+        use serde_test::Token;
+
+        let mut input_map = InputMap::default();
+        input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
+        input_map.insert(KeyCode::Space, Action::Jump);
+        input_map.insert(KeyCode::LShift, Action::Run);
+        input_map.insert(KeyCode::RShift, Action::Run);
+
+        assert_tokens(
+            &input_map,
+            &[
+                Token::Struct {
+                    name: "InputMap",
+                    len: 1,
+                },
+                Token::Str("map"),
+                Token::Map { len: Some(3) },
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Run",
+                },
+                Token::Seq { len: Some(2) },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Single",
+                },
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "LShift",
+                },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Single",
+                },
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "RShift",
+                },
+                Token::SeqEnd,
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Jump",
+                },
+                Token::Seq { len: Some(1) },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Single",
+                },
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "Space",
+                },
+                Token::SeqEnd,
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Hide",
+                },
+                Token::Seq { len: Some(1) },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Chord",
+                },
+                Token::Seq { len: Some(8) },
+                Token::Some,
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "R",
+                },
+                Token::Some,
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "E",
+                },
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::SeqEnd,
+                Token::SeqEnd,
+                Token::MapEnd,
+                Token::StructEnd,
+            ],
+        )
     }
 }
