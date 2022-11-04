@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Usability
+
+- Added custom implementation of the `Serialize` and `Deserialize` traits for `InputMap` to make the format more human readable.
+
 ## Version 0.7.1
 
 ### Bugs

@@ -13,7 +13,9 @@ use bevy::input::gamepad::Gamepad;
 
 use core::fmt::Debug;
 use petitset::PetitSet;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::collections::HashMap;
+use std::hash::Hash;
 use std::marker::PhantomData;
 
 /// Maps from raw inputs to an input-method agnostic representation
@@ -70,14 +72,12 @@ use std::marker::PhantomData;
 /// // Removal
 /// input_map.clear_action(Action::Hide);
 ///```
-#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(default)]
+#[derive(Resource, Component, Debug, Clone, PartialEq, Eq)]
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
     map: Vec<PetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
-    #[serde(skip)]
     marker: PhantomData<A>,
 }
 
@@ -427,11 +427,144 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
+impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
+    /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
+    ///
+    /// # Panics
+    ///
+    /// Panics if the any value in map contains more than 16 distinct inputs.
+    /// # Example
+    /// ```rust
+    /// use leafwing_input_manager::input_map::InputMap;
+    /// use leafwing_input_manager::user_input::UserInput;
+    /// use leafwing_input_manager::Actionlike;
+    /// use bevy::input::keyboard::KeyCode;
+    ///
+    /// use std::collections::HashMap;
+    ///
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// enum Action {
+    ///     Run,
+    ///     Jump,
+    /// }
+    /// let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
+    /// map.insert(
+    ///     Action::Run,
+    ///     vec![KeyCode::LShift.into(), KeyCode::RShift.into()],
+    /// );
+    /// let input_map = InputMap::from(map);
+    /// ```
+    fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
+        map.iter()
+            .flat_map(|(action, inputs)| inputs.iter().map(|input| (action.clone(), input.clone())))
+            .collect()
+    }
+}
+
+impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
+    /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
+    ///
+    /// # Panics
+    ///
+    /// Panics if there are more than 16 distinct inputs for the same action.
+    fn from_iter<T: IntoIterator<Item = (A, UserInput)>>(iter: T) -> Self {
+        InputMap::new(iter.into_iter().map(|(action, input)| (input, action)))
+    }
+}
+
+impl<A> Serialize for InputMap<A>
+where
+    A: Actionlike + Serialize + Eq + Hash + Ord,
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        use std::collections::BTreeMap;
+
+        let mut input_map = serializer.serialize_struct("InputMap", 1)?;
+        input_map.serialize_field(
+            "map",
+            &self
+                .iter()
+                .map(|(set, action)| (action, set.iter().collect()))
+                .collect::<BTreeMap<A, Vec<&UserInput>>>(),
+        )?;
+        input_map.end()
+    }
+}
+
+impl<'de, A> Deserialize<'de> for InputMap<A>
+where
+    A: Actionlike + Deserialize<'de> + Eq + Hash,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        use serde::de::Visitor;
+
+        #[derive(Deserialize, PartialEq)]
+        #[serde(field_identifier, rename_all = "lowercase")]
+        enum Field {
+            Map,
+        }
+
+        struct InputMapVisitor<'de, A: Actionlike + Deserialize<'de>> {
+            marker: PhantomData<&'de A>,
+        }
+
+        impl<'de, A> Visitor<'de> for InputMapVisitor<'de, A>
+        where
+            A: Actionlike + Eq + Hash + Deserialize<'de>,
+        {
+            type Value = InputMap<A>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "a struct with field 'map' of type map where key is `Actionlike` and value is sequents of `UserInput`")
+            }
+
+            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
+            where
+                S: serde::de::SeqAccess<'de>,
+            {
+                let map = seq.next_element::<HashMap<A, Vec<UserInput>>>()?;
+                map.ok_or_else(|| {
+                    serde::de::Error::invalid_length(0, &"one argument with type `map`")
+                })
+                .map(InputMap::from)
+            }
+
+            fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+            where
+                M: serde::de::MapAccess<'de>,
+            {
+                map.next_key::<Field>()?
+                    .filter(|key| *key == Field::Map)
+                    .ok_or_else(|| serde::de::Error::missing_field("map"))?;
+                let value = map.next_value::<HashMap<A, Vec<UserInput>>>()?;
+                Ok(value.into())
+            }
+        }
+
+        let visitor = InputMapVisitor {
+            marker: PhantomData,
+        };
+        const FIELDS: &[&str] = &["map"];
+        deserializer.deserialize_struct("InputMap", FIELDS, visitor)
+    }
+}
+
 mod tests {
+    use serde::{Deserialize, Serialize};
+
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(
+        Actionlike, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug,
+    )]
     enum Action {
         Run,
         Jump,
@@ -556,5 +689,141 @@ mod tests {
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
+    }
+
+    #[test]
+    fn from() {
+        use bevy::prelude::KeyCode;
+        use std::collections::HashMap;
+
+        let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
+        map.insert(
+            Action::Hide,
+            vec![UserInput::chord(vec![KeyCode::R, KeyCode::E])],
+        );
+        map.insert(Action::Jump, vec![UserInput::from(KeyCode::Space)]);
+        map.insert(
+            Action::Run,
+            vec![KeyCode::LShift.into(), KeyCode::RShift.into()],
+        );
+
+        let mut input_map = InputMap::default();
+        input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
+        input_map.insert(KeyCode::Space, Action::Jump);
+        input_map.insert(KeyCode::LShift, Action::Run);
+        input_map.insert(KeyCode::RShift, Action::Run);
+
+        assert_eq!(input_map, map.into());
+    }
+
+    #[test]
+    fn serde() {
+        use bevy::prelude::KeyCode;
+        use serde_test::assert_tokens;
+        use serde_test::Token;
+
+        let mut input_map = InputMap::default();
+        input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
+        input_map.insert(KeyCode::Space, Action::Jump);
+        input_map.insert(KeyCode::LShift, Action::Run);
+        input_map.insert(KeyCode::RShift, Action::Run);
+
+        assert_tokens(
+            &input_map,
+            &[
+                Token::Struct {
+                    name: "InputMap",
+                    len: 1,
+                },
+                Token::Str("map"),
+                Token::Map { len: Some(3) },
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Run",
+                },
+                Token::Seq { len: Some(2) },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Single",
+                },
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "LShift",
+                },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Single",
+                },
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "RShift",
+                },
+                Token::SeqEnd,
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Jump",
+                },
+                Token::Seq { len: Some(1) },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Single",
+                },
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "Space",
+                },
+                Token::SeqEnd,
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Hide",
+                },
+                Token::Seq { len: Some(1) },
+                Token::NewtypeVariant {
+                    name: "UserInput",
+                    variant: "Chord",
+                },
+                Token::Seq { len: Some(8) },
+                Token::Some,
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "R",
+                },
+                Token::Some,
+                Token::NewtypeVariant {
+                    name: "InputKind",
+                    variant: "Keyboard",
+                },
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "E",
+                },
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::None,
+                Token::SeqEnd,
+                Token::SeqEnd,
+                Token::MapEnd,
+                Token::StructEnd,
+            ],
+        )
     }
 }
