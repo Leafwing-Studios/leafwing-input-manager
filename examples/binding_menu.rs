@@ -37,7 +37,10 @@ fn controls_window_system(
     windows: Res<Windows>,
     control_settings: ResMut<ControlSettings>,
 ) {
-    let main_window = windows.get_primary().unwrap();
+    // The window may not exist when the application closes
+    let Some(main_window) = windows.get_primary() else {
+        return;
+    };
     let window_width_margin = egui.ctx_mut().style().spacing.window_margin.left * 2.0;
     Window::new("Settings")
         .anchor(Align2::CENTER_CENTER, (0.0, 0.0))
