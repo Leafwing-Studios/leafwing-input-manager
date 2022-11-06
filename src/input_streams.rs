@@ -32,11 +32,11 @@ pub struct InputStreams<'a> {
     /// A list of registered gamepads
     pub gamepads: &'a Gamepads,
     /// A [`KeyCode`] [`Input`] stream
-    pub keycode: &'a Input<KeyCode>,
+    pub keycodes: Option<&'a Input<KeyCode>>,
     /// A [`MouseButton`] [`Input`] stream
-    pub mouse_button: &'a Input<MouseButton>,
+    pub mouse_buttons: Option<&'a Input<MouseButton>>,
     /// A [`MouseWheel`] event stream
-    pub mouse_wheel: &'a Events<MouseWheel>,
+    pub mouse_wheel: Option<&'a Events<MouseWheel>>,
     /// A [`MouseMotion`] event stream
     pub mouse_motion: &'a Events<MouseMotion>,
     /// The [`Gamepad`] that this struct will detect inputs from
@@ -51,9 +51,9 @@ impl<'a> InputStreams<'a> {
         let gamepad_button_axes = world.resource::<Axis<GamepadButton>>();
         let gamepad_axes = world.resource::<Axis<GamepadAxis>>();
         let gamepads = world.resource::<Gamepads>();
-        let keyboard = world.resource::<Input<KeyCode>>();
-        let mouse = world.resource::<Input<MouseButton>>();
-        let mouse_wheel = world.resource::<Events<MouseWheel>>();
+        let keycodes = world.get_resource::<Input<KeyCode>>();
+        let mouse_buttons = world.get_resource::<Input<MouseButton>>();
+        let mouse_wheel = world.get_resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
 
         InputStreams {
@@ -61,8 +61,8 @@ impl<'a> InputStreams<'a> {
             gamepad_button_axes,
             gamepad_axes,
             gamepads,
-            keycode: keyboard,
-            mouse_button: mouse,
+            keycodes,
+            mouse_buttons,
             mouse_wheel,
             mouse_motion,
             associated_gamepad: gamepad,
@@ -143,23 +143,31 @@ impl<'a> InputStreams<'a> {
                     false
                 }
             }
-            InputKind::Keyboard(keycode) => self.keycode.pressed(keycode),
+            InputKind::Keyboard(keycode) => {
+                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
+            }
             InputKind::Modifier(modifier) => {
                 let key_codes = modifier.key_codes();
                 // Short circuiting is probably not worth the branch here
-                self.keycode.pressed(key_codes[0]) | self.keycode.pressed(key_codes[1])
+                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(key_codes[0]) | keycodes.pressed(key_codes[1]))
             }
-            InputKind::Mouse(mouse_button) => self.mouse_button.pressed(mouse_button),
+            InputKind::Mouse(mouse_button) => {
+                matches!(self.mouse_buttons, Some(mouse_buttons) if mouse_buttons.pressed(mouse_button))
+            }
             InputKind::MouseWheel(mouse_wheel_direction) => {
+                let Some(mouse_wheel) = self.mouse_wheel else {
+                    return false;
+                };
+
                 let mut total_mouse_wheel_movement = 0.0;
 
                 // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = self.mouse_wheel.get_reader();
+                let mut event_reader = mouse_wheel.get_reader();
 
                 // PERF: this summing is computed for every individual input
                 // This should probably be computed once, and then cached / read
                 // Fix upstream!
-                for mouse_wheel_event in event_reader.iter(self.mouse_wheel) {
+                for mouse_wheel_event in event_reader.iter(mouse_wheel) {
                     total_mouse_wheel_movement += match mouse_wheel_direction {
                         MouseWheelDirection::Up | MouseWheelDirection::Down => mouse_wheel_event.y,
                         MouseWheelDirection::Left | MouseWheelDirection::Right => {
@@ -267,11 +275,15 @@ impl<'a> InputStreams<'a> {
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
+                        let Some(mouse_wheel) = self.mouse_wheel else {
+                            return 0.0;
+                        };
+
                         let mut total_mouse_wheel_movement = 0.0;
                         // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = self.mouse_wheel.get_reader();
+                        let mut event_reader = mouse_wheel.get_reader();
 
-                        for mouse_wheel_event in event_reader.iter(self.mouse_wheel) {
+                        for mouse_wheel_event in event_reader.iter(mouse_wheel) {
                             total_mouse_wheel_movement += match axis_type {
                                 MouseWheelAxisType::X => mouse_wheel_event.x,
                                 MouseWheelAxisType::Y => mouse_wheel_event.y,
@@ -384,12 +396,12 @@ pub struct MutableInputStreams<'a> {
     pub gamepad_events: &'a mut Events<GamepadEventRaw>,
 
     /// A [`KeyCode`] [`Input`] stream
-    pub keycode: &'a mut Input<KeyCode>,
+    pub keycodes: &'a mut Input<KeyCode>,
     /// Events used for mocking keyboard-related inputs
     pub keyboard_events: &'a mut Events<KeyboardInput>,
 
     /// A [`MouseButton`] [`Input`] stream
-    pub mouse_button: &'a mut Input<MouseButton>,
+    pub mouse_buttons: &'a mut Input<MouseButton>,
     /// Events used for mocking [`MouseButton`] inputs
     pub mouse_button_events: &'a mut Events<MouseButtonInput>,
     /// A [`MouseWheel`] event stream
@@ -424,9 +436,9 @@ impl<'a> MutableInputStreams<'a> {
             gamepad_axes,
             gamepads,
             gamepad_events,
-            keyboard,
+            keycodes,
             keyboard_events,
-            mouse,
+            mouse_buttons,
             mouse_button_events,
             mouse_wheel,
             mouse_motion,
@@ -438,9 +450,9 @@ impl<'a> MutableInputStreams<'a> {
             gamepad_axes: gamepad_axes.into_inner(),
             gamepads: gamepads.into_inner(),
             gamepad_events: gamepad_events.into_inner(),
-            keycode: keyboard.into_inner(),
+            keycodes: keycodes.into_inner(),
             keyboard_events: keyboard_events.into_inner(),
-            mouse_button: mouse.into_inner(),
+            mouse_buttons: mouse_buttons.into_inner(),
             mouse_button_events: mouse_button_events.into_inner(),
             mouse_wheel: mouse_wheel.into_inner(),
             mouse_motion: mouse_motion.into_inner(),
@@ -463,16 +475,14 @@ impl<'a> MutableInputStreams<'a> {
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
         InputStreams {
-            // This absurd-looking &*(foo) pattern convinces the compiler
-            // that we want a reference to the underlying data with the correct lifetime
-            gamepad_buttons: &*(mutable_streams.gamepad_buttons),
-            gamepad_button_axes: &*(mutable_streams.gamepad_button_axes),
-            gamepad_axes: &*(mutable_streams.gamepad_axes),
-            gamepads: &*(mutable_streams.gamepads),
-            keycode: &*(mutable_streams.keycode),
-            mouse_button: &*(mutable_streams.mouse_button),
-            mouse_wheel: &*(mutable_streams.mouse_wheel),
-            mouse_motion: &*(mutable_streams.mouse_motion),
+            gamepad_buttons: mutable_streams.gamepad_buttons,
+            gamepad_button_axes: mutable_streams.gamepad_button_axes,
+            gamepad_axes: mutable_streams.gamepad_axes,
+            gamepads: mutable_streams.gamepads,
+            keycodes: Some(mutable_streams.keycodes),
+            mouse_buttons: Some(mutable_streams.mouse_buttons),
+            mouse_wheel: Some(mutable_streams.mouse_wheel),
+            mouse_motion: mutable_streams.mouse_motion,
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
@@ -481,16 +491,14 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
 impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: &'a MutableInputStreams<'a>) -> Self {
         InputStreams {
-            // This absurd-looking &*(foo) pattern convinces the compiler
-            // that we want a reference to the underlying data with the correct lifetime
-            gamepad_buttons: &*(mutable_streams.gamepad_buttons),
-            gamepad_button_axes: &*(mutable_streams.gamepad_button_axes),
-            gamepad_axes: &*(mutable_streams.gamepad_axes),
-            gamepads: &*(mutable_streams.gamepads),
-            keycode: &*(mutable_streams.keycode),
-            mouse_button: &*(mutable_streams.mouse_button),
-            mouse_wheel: &*(mutable_streams.mouse_wheel),
-            mouse_motion: &*(mutable_streams.mouse_motion),
+            gamepad_buttons: mutable_streams.gamepad_buttons,
+            gamepad_button_axes: mutable_streams.gamepad_button_axes,
+            gamepad_axes: mutable_streams.gamepad_axes,
+            gamepads: mutable_streams.gamepads,
+            keycodes: Some(mutable_streams.keycodes),
+            mouse_buttons: Some(mutable_streams.mouse_buttons),
+            mouse_wheel: Some(mutable_streams.mouse_wheel),
+            mouse_motion: mutable_streams.mouse_motion,
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }

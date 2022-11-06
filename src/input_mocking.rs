@@ -322,8 +322,8 @@ impl MockInput for MutableInputStreams<'_> {
         // as they are not actually input data
         *self.gamepad_buttons = Default::default();
         *self.gamepad_axes = Default::default();
-        *self.keycode = Default::default();
-        *self.mouse_button = Default::default();
+        *self.keycodes = Default::default();
+        *self.mouse_buttons = Default::default();
         *self.mouse_wheel = Default::default();
         *self.mouse_motion = Default::default();
     }
