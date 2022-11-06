@@ -20,6 +20,7 @@ members = ["./", "tools/ci", "macros"]
 [features]
 default = ['ui']
 ui = ['bevy/bevy_ui']
+# If this feature is enabled, egui will have priority over actions when processing inputs
 egui = ['dep:bevy_egui']
 
 [dependencies]
