@@ -87,6 +87,7 @@ pub fn update_action_state<A: Actionlike>(
     #[cfg(feature = "egui")]
     let (keycodes, mouse_buttons, mouse_wheel) = {
         let ctx = egui.ctx_mut();
+        // If egui wants to own inputs, don't also apply them to the game state
         let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
         let mouse_buttons = mouse_buttons.filter(|_| !ctx.wants_pointer_input());
         let mouse_wheel = mouse_wheel.filter(|_| !ctx.wants_pointer_input());
