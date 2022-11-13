@@ -83,7 +83,7 @@ fn spawn_player(mut commands: Commands) {
     ability_slot_map.insert(Slot::Ability3, Ability::Dash);
     ability_slot_map.insert(Slot::Ability4, Ability::PolymorphSheep);
 
-    commands.spawn_bundle(PlayerBundle {
+    commands.spawn(PlayerBundle {
         player: Player,
         slot_input_map: InputMap::new([
             (Q, Slot::Ability1),

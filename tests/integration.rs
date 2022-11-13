@@ -9,7 +9,7 @@ enum Action {
 }
 
 // A resource that represents whether respects have been paid or not
-#[derive(Default, PartialEq, Debug)]
+#[derive(Resource, Default, PartialEq, Debug)]
 struct Respect(bool);
 
 fn pay_respects(
@@ -44,12 +44,11 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     commands
-        .spawn()
-        .insert(Player)
-        .insert_bundle(InputManagerBundle::<Action> {
+        .spawn(InputManagerBundle::<Action> {
             input_map: InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]),
             ..Default::default()
-        });
+        })
+        .insert(Player);
 }
 
 #[test]
@@ -222,16 +221,15 @@ fn action_state_driver() {
 
     fn setup(mut commands: Commands) {
         let player_entity = commands
-            .spawn()
-            .insert(Player)
-            .insert_bundle(InputManagerBundle::<Action> {
+            .spawn(InputManagerBundle::<Action> {
                 input_map: InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]),
                 ..Default::default()
             })
+            .insert(Player)
             .id();
 
         commands
-            .spawn()
+            .spawn_empty()
             .insert(ButtonMarker)
             .insert(Interaction::None)
             .insert(ActionStateDriver::<Action> {

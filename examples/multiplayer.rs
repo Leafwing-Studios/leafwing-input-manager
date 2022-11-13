@@ -67,7 +67,7 @@ impl PlayerBundle {
 }
 
 fn spawn_players(mut commands: Commands) {
-    commands.spawn_bundle(PlayerBundle {
+    commands.spawn(PlayerBundle {
         player: Player::One,
         input_manager: InputManagerBundle {
             input_map: PlayerBundle::input_map(Player::One),
@@ -75,7 +75,7 @@ fn spawn_players(mut commands: Commands) {
         },
     });
 
-    commands.spawn_bundle(PlayerBundle {
+    commands.spawn(PlayerBundle {
         player: Player::Two,
         input_manager: InputManagerBundle {
             input_map: PlayerBundle::input_map(Player::Two),

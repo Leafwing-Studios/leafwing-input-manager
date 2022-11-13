@@ -42,7 +42,7 @@ fn spawn_input_map(mut commands: Commands) {
     input_map.insert_chord([LAlt, Key1], AltOne);
     input_map.insert_chord([LControl, LAlt, Key1], CtrlAltOne);
 
-    commands.spawn().insert(input_map);
+    commands.spawn(input_map);
 }
 
 trait ClashTestExt {

@@ -29,9 +29,7 @@ fn spawn_player(mut commands: Commands) {
     input_map.insert(KeyCode::Right, Action::Right);
 
     commands
-        .spawn()
-        .insert(Player)
-        .insert_bundle(SpriteBundle {
+        .spawn(SpriteBundle {
             transform: Transform {
                 scale: Vec3::new(100., 100., 1.0),
                 ..Default::default()
@@ -42,14 +40,15 @@ fn spawn_player(mut commands: Commands) {
             },
             ..Default::default()
         })
-        .insert_bundle(InputManagerBundle::<Action> {
+        .insert(InputManagerBundle::<Action> {
             input_map,
             ..Default::default()
-        });
+        })
+        .insert(Player);
 }
 
 fn spawn_cameras(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 }
 
 fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
@@ -57,12 +56,12 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
 
     // Left
     let left_button = commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(150.0), Val::Px(150.0)),
                 ..Default::default()
             },
-            color: Color::RED.into(),
+            background_color: Color::RED.into(),
             ..Default::default()
         })
         // This component links the button to the entity with the `ActionState` component
@@ -74,12 +73,12 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
 
     // Right
     let right_button = commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Px(150.0), Val::Px(150.0)),
                 ..Default::default()
             },
-            color: Color::BLUE.into(),
+            background_color: Color::BLUE.into(),
             ..Default::default()
         })
         .insert(ActionStateDriver {
@@ -90,13 +89,13 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
 
     // Container for layout
     commands
-        .spawn_bundle(NodeBundle {
+        .spawn(NodeBundle {
             style: Style {
                 size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
                 justify_content: JustifyContent::SpaceBetween,
                 ..Default::default()
             },
-            color: Color::NONE.into(),
+            background_color: Color::NONE.into(),
             ..Default::default()
         })
         .push_children(&[left_button, right_button]);

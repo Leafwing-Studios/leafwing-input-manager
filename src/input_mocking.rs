@@ -480,7 +480,10 @@ impl MockInput for App {
 #[cfg(test)]
 mod test {
     use crate::input_mocking::MockInput;
-    use bevy::{input::InputPlugin, prelude::*};
+    use bevy::{
+        input::{gamepad::GamepadInfo, InputPlugin},
+        prelude::*,
+    };
 
     #[test]
     fn ordinary_button_inputs() {
@@ -521,7 +524,9 @@ mod test {
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
         gamepad_events.send(GamepadEvent {
             gamepad,
-            event_type: GamepadEventType::Connected,
+            event_type: GamepadEventType::Connected(GamepadInfo {
+                name: "TestController".into(),
+            }),
         });
         app.update();
 
@@ -559,7 +564,9 @@ mod test {
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
         gamepad_events.send(GamepadEvent {
             gamepad,
-            event_type: GamepadEventType::Connected,
+            event_type: GamepadEventType::Connected(GamepadInfo {
+                name: "TestController".into(),
+            }),
         });
         app.update();
 

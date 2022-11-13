@@ -517,15 +517,13 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// // Spawn entity to track dance inputs
 /// let mut world = World::new();
 /// let dance_tracker = world
-///     .spawn()
-///     .insert(ActionState::<DanceDance>::default())
+///     .spawn(ActionState::<DanceDance>::default())
 ///     .id();
 ///
 /// // Spawn a button, which is wired up to the dance tracker
 /// // When used with InputManagerPlugin<DanceDance>, this button will press the DanceDance::Left action when it is pressed.
 /// world
-///     .spawn()
-///     .insert_bundle(ButtonBundle::default())
+///     .spawn(ButtonBundle::default())
 ///     // This component links the button to the entity with the `ActionState` component
 ///     .insert(ActionStateDriver {
 ///         action: DanceDance::Left,

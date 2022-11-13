@@ -85,6 +85,7 @@ fn close_menu<M: Resource + Menu>(
 
 // A quick mock of some UI behavior for demonstration purposes
 mod menu_mocking {
+    use bevy::prelude::Resource;
     pub trait Menu {
         fn is_open(&self) -> bool;
 
@@ -93,7 +94,7 @@ mod menu_mocking {
         fn close(&mut self);
     }
 
-    #[derive(Default)]
+    #[derive(Resource, Default)]
     pub struct MainMenu {
         is_open: bool,
     }
@@ -112,7 +113,7 @@ mod menu_mocking {
         }
     }
 
-    #[derive(Default)]
+    #[derive(Resource, Default)]
     pub struct SubMenu {
         is_open: bool,
     }
