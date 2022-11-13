@@ -8,6 +8,8 @@
 
 ### Usability
 
+- Added `egui` feature to not take specific input sources into account when egui is using them. For example, when the user clicks on a widget, the actions associated with the mouse will not be taken into account.
+
 ## Version 0.6.1
 
 ### Bugs
