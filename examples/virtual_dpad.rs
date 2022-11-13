@@ -24,9 +24,7 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     commands
-        .spawn()
-        .insert(Player)
-        .insert_bundle(InputManagerBundle::<Action> {
+        .spawn(InputManagerBundle::<Action> {
             // Stores "which actions are currently activated"
             // Map some arbitrary keys into a virtual direction pad that triggers our move action
             input_map: InputMap::new([(
@@ -40,7 +38,8 @@ fn spawn_player(mut commands: Commands) {
             )])
             .build(),
             ..default()
-        });
+        })
+        .insert(Player);
 }
 
 // Query for the `ActionState` component in your game logic systems!

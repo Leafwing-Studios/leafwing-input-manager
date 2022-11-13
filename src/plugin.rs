@@ -108,6 +108,14 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_system_to_stage(CoreStage::PostUpdate, release_on_input_map_removed::<A>);
 
+                #[cfg(feature = "egui")]
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    consume_input_events_when_egui_wants_focus
+                        .after(bevy_egui::EguiSystem::ProcessInput)
+                        .before(InputManagerSystem::Update),
+                );
+
                 #[cfg(feature = "ui")]
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
@@ -143,6 +151,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 /// Controls whether or not the [`ActionState`](crate::action_state::ActionState) / [`InputMap`](crate::input_map::InputMap) pairs of type `A` are active
 ///
 /// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
+#[derive(Resource)]
 pub struct ToggleActions<A: Actionlike> {
     /// When this is false, [`ActionState`](crate::action_state::ActionState)'s corresponding to `A` will ignore user inputs
     ///

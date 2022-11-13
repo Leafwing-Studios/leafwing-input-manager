@@ -116,7 +116,7 @@ fn spawn_player(mut commands: Commands) {
     use KeyCode::*;
 
     commands
-        .spawn_bundle(InputManagerBundle {
+        .spawn(InputManagerBundle {
             input_map: InputMap::new([(W, MoveLeft), (D, MoveRight), (Space, Jump)])
                 .insert(MouseButton::Left, Shoot)
                 .build(),

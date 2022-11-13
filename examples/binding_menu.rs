@@ -9,7 +9,9 @@ use bevy_egui::{
 };
 use derive_more::Display;
 use leafwing_input_manager::{prelude::*, user_input::InputKind};
+
 const UI_MARGIN: f32 = 10.0;
+
 fn main() {
     App::new()
         .insert_resource(ControlSettings::default())
@@ -23,14 +25,16 @@ fn main() {
         .add_system(binding_window_system)
         .run();
 }
+
 fn spawn_player_system(mut commands: Commands, control_settings: Res<ControlSettings>) {
-    commands.spawn().insert(control_settings.input.clone());
+    commands.spawn(control_settings.input.clone());
     commands.insert_resource(InputMap::<UiAction>::new([(
         KeyCode::Escape,
         UiAction::Back,
     )]));
     commands.insert_resource(ActionState::<UiAction>::default());
 }
+
 fn controls_window_system(
     mut commands: Commands,
     mut egui: ResMut<EguiContext>,
@@ -83,6 +87,7 @@ fn controls_window_system(
             ui.expand_to_include_rect(ui.available_rect_before_wrap());
         });
 }
+
 fn buttons_system(
     mut egui: ResMut<EguiContext>,
     mut control_settings: ResMut<ControlSettings>,
@@ -101,6 +106,7 @@ fn buttons_system(
             })
         });
 }
+
 fn binding_window_system(
     mut commands: Commands,
     mut egui: ResMut<EguiContext>,
@@ -170,6 +176,7 @@ fn binding_window_system(
             }
         });
 }
+
 #[derive(Actionlike, Debug, PartialEq, Clone, Copy, Display)]
 pub(crate) enum ControlAction {
     // Movement
@@ -185,13 +192,17 @@ pub(crate) enum ControlAction {
     Ability3,
     Ultimate,
 }
+
 #[derive(Actionlike, Debug, PartialEq, Clone, Copy)]
 pub(crate) enum UiAction {
     Back,
 }
+
+#[derive(Resource)]
 struct ControlSettings {
     input: InputMap<ControlAction>,
 }
+
 impl Default for ControlSettings {
     fn default() -> Self {
         let mut input = InputMap::default();
@@ -209,11 +220,14 @@ impl Default for ControlSettings {
         Self { input }
     }
 }
+
+#[derive(Resource)]
 struct ActiveBinding {
     action: ControlAction,
     index: usize,
     conflict: Option<BindingConflict>,
 }
+
 impl ActiveBinding {
     fn new(action: ControlAction, index: usize) -> Self {
         Self {
@@ -223,10 +237,12 @@ impl ActiveBinding {
         }
     }
 }
+
 struct BindingConflict {
     action: ControlAction,
     input_button: InputKind,
 }
+
 /// Helper for collecting input
 #[derive(SystemParam)]
 struct InputEvents<'w, 's> {
@@ -234,6 +250,7 @@ struct InputEvents<'w, 's> {
     mouse_buttons: EventReader<'w, 's, MouseButtonInput>,
     gamepad_events: EventReader<'w, 's, GamepadEvent>,
 }
+
 impl InputEvents<'_, '_> {
     fn input_button(&mut self) -> Option<InputKind> {
         if let Some(keyboard_input) = self.keys.iter().next() {

@@ -17,9 +17,8 @@ enum CameraMovement {
 
 fn setup(mut commands: Commands) {
     commands
-        .spawn()
-        .insert_bundle(Camera2dBundle::default())
-        .insert_bundle(InputManagerBundle::<CameraMovement> {
+        .spawn(Camera2dBundle::default())
+        .insert(InputManagerBundle::<CameraMovement> {
             input_map: InputMap::default()
                 // This will capture the total continous value, for direct use
                 // Note that you can also use discrete gesture-like motion, via the `MouseMotionDirection` enum
@@ -28,7 +27,7 @@ fn setup(mut commands: Commands) {
             ..default()
         });
 
-    commands.spawn().insert_bundle(SpriteBundle {
+    commands.spawn(SpriteBundle {
         transform: Transform::from_scale(Vec3::new(100., 100., 1.)),
         ..default()
     });
@@ -42,6 +41,7 @@ fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), W
     let camera_pan_vector = action_state.axis_pair(CameraMovement::Pan).unwrap();
 
     // Because we're moving the camera, not the object, we want to pan in the opposite direction
+    // However, UI cordinates are inverted on the y-axis, so we need to flip y a second time
     camera_transform.translation.x -= CAMERA_PAN_RATE * camera_pan_vector.x();
-    camera_transform.translation.y -= CAMERA_PAN_RATE * camera_pan_vector.y();
+    camera_transform.translation.y += CAMERA_PAN_RATE * camera_pan_vector.y();
 }

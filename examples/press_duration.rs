@@ -58,7 +58,7 @@ impl PlayerBundle {
 }
 
 fn spawn_player(mut commands: Commands) {
-    commands.spawn_bundle(PlayerBundle {
+    commands.spawn(PlayerBundle {
         player: Player,
         velocity: Velocity { x: 0.0 },
         input_manager: InputManagerBundle {
@@ -80,7 +80,7 @@ fn spawn_player(mut commands: Commands) {
 }
 
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 }
 
 /// The longer you hold, the faster you dash when released!

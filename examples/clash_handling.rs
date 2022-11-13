@@ -44,7 +44,7 @@ fn spawn_input_map(mut commands: Commands) {
 
     input_map.insert_chord([Key1, Key2, Key3], OneAndTwoAndThree);
 
-    commands.spawn_bundle(InputManagerBundle {
+    commands.spawn(InputManagerBundle {
         input_map,
         ..Default::default()
     });

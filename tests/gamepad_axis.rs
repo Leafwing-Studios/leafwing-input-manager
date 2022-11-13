@@ -1,4 +1,4 @@
-use bevy::input::gamepad::GamepadEventRaw;
+use bevy::input::gamepad::{GamepadEventRaw, GamepadInfo};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DualAxisData};
@@ -33,7 +33,9 @@ fn test_app() -> App {
     gamepad_events.send(GamepadEventRaw {
         // This MUST be consistent with any other mocked events
         gamepad: Gamepad { id: 1 },
-        event_type: GamepadEventType::Connected,
+        event_type: GamepadEventType::Connected(GamepadInfo {
+            name: "TestController".into(),
+        }),
     });
 
     // Ensure that the gamepad is picked up by the appropriate system

@@ -4,6 +4,7 @@ use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
+use bevy::prelude::Resource;
 use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -79,7 +80,7 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
-#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
     ///
@@ -516,15 +517,13 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// // Spawn entity to track dance inputs
 /// let mut world = World::new();
 /// let dance_tracker = world
-///     .spawn()
-///     .insert(ActionState::<DanceDance>::default())
+///     .spawn(ActionState::<DanceDance>::default())
 ///     .id();
 ///
 /// // Spawn a button, which is wired up to the dance tracker
 /// // When used with InputManagerPlugin<DanceDance>, this button will press the DanceDance::Left action when it is pressed.
 /// world
-///     .spawn()
-///     .insert_bundle(ButtonBundle::default())
+///     .spawn(ButtonBundle::default())
 ///     // This component links the button to the entity with the `ActionState` component
 ///     .insert(ActionStateDriver {
 ///         action: DanceDance::Left,
