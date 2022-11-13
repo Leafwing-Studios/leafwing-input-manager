@@ -79,7 +79,7 @@ impl<'a> InputStreams<'a> {
     pub fn guess_gamepad(&self) -> Option<Gamepad> {
         match self.associated_gamepad {
             Some(gamepad) => Some(gamepad),
-            None => self.gamepads.iter().next().copied(),
+            None => self.gamepads.iter().next(),
         }
     }
 
@@ -467,7 +467,7 @@ impl<'a> MutableInputStreams<'a> {
     pub fn guess_gamepad(&self) -> Option<Gamepad> {
         match self.associated_gamepad {
             Some(gamepad) => Some(gamepad),
-            None => self.gamepads.iter().next().copied(),
+            None => self.gamepads.iter().next(),
         }
     }
 }

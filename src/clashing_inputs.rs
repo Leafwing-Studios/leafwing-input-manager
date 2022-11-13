@@ -7,6 +7,7 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
+use bevy::prelude::Resource;
 use itertools::Itertools;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
@@ -27,7 +28,7 @@ use std::marker::PhantomData;
 /// This strategy is only used when assessing the actions and input holistically,
 /// in [`InputMap::which_pressed`], using [`InputMap::handle_clashes`].
 #[non_exhaustive]
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Resource, Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub enum ClashStrategy {
     /// All matching inputs will always be pressed
     PressAll,

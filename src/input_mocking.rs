@@ -593,12 +593,9 @@ mod test {
         app.add_plugin(InputPlugin);
 
         // Marked button
-        app.world
-            .spawn()
-            .insert(Interaction::None)
-            .insert(ButtonMarker);
+        app.world.spawn((Interaction::None, ButtonMarker));
         // Unmarked button
-        app.world.spawn().insert(Interaction::None);
+        app.world.spawn(Interaction::None);
 
         // Click the button
         app.world.click_button::<ButtonMarker>();

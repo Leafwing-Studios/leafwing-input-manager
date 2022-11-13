@@ -143,6 +143,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 /// Controls whether or not the [`ActionState`](crate::action_state::ActionState) / [`InputMap`](crate::input_map::InputMap) pairs of type `A` are active
 ///
 /// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
+#[derive(Resource)]
 pub struct ToggleActions<A: Actionlike> {
     /// When this is false, [`ActionState`](crate::action_state::ActionState)'s corresponding to `A` will ignore user inputs
     ///

@@ -4,6 +4,7 @@ use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
+use bevy::prelude::Resource;
 use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -79,7 +80,7 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
-#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
     ///
