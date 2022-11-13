@@ -108,6 +108,14 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_system_to_stage(CoreStage::PostUpdate, release_on_input_map_removed::<A>);
 
+                #[cfg(feature = "egui")]
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    consume_input_events_when_egui_wants_focus
+                        .after(bevy_egui::EguiSystem::ProcessInput)
+                        .before(InputManagerSystem::Update),
+                );
+
                 #[cfg(feature = "ui")]
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
