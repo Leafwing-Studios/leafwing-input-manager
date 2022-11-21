@@ -23,7 +23,7 @@ use bevy::ui::UiSystem;
 ///
 /// If you have more than one distinct type of action (e.g. menu actions, camera actions and player actions), consider creating multiple `Actionlike` enums
 /// and adding a copy of this plugin for each `Actionlike` type.
-///  
+///
 /// ## Systems
 ///
 /// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource is set.
@@ -136,8 +136,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                     CoreStage::PreUpdate,
                     tick_action_state::<A>
                         .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Tick)
-                        .before(InputManagerSystem::Update),
+                        .label(InputManagerSystem::Tick),
                 );
             }
         };
