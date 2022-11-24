@@ -364,6 +364,22 @@ impl VirtualAxis {
             positive: InputKind::Keyboard(KeyCode::Up),
         }
     }
+
+    /// Generates a [`VirtualDAxis`] corresponding to the `AD` keyboard keycodes.
+    pub fn ad() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::Keyboard(KeyCode::A),
+            positive: InputKind::Keyboard(KeyCode::D),
+        }
+    }
+
+    /// Generates a [`VirtualDAxis`] corresponding to the `WS` keyboard keycodes.
+    pub fn ws() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::Keyboard(KeyCode::S),
+            positive: InputKind::Keyboard(KeyCode::W),
+        }
+    }
 }
 
 /// The type of axis used by a [`UserInput`](crate::user_input::UserInput).
