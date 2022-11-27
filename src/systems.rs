@@ -89,8 +89,12 @@ pub fn update_action_state<A: Actionlike>(
         let ctx = egui.ctx_mut();
         // If egui wants to own inputs, don't also apply them to the game state
         let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
-        let mouse_buttons = mouse_buttons.filter(|_| !ctx.wants_pointer_input());
-        let mouse_wheel = mouse_wheel.filter(|_| !ctx.wants_pointer_input());
+        // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
+        // so `is_pointer_over_area` is also needed.
+        let mouse_buttons =
+            mouse_buttons.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
+        let mouse_wheel =
+            mouse_wheel.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
         (keycodes, mouse_buttons, mouse_wheel)
     };
 
