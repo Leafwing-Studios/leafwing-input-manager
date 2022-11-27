@@ -32,11 +32,11 @@ pub struct InputStreams<'a> {
     /// A list of registered gamepads
     pub gamepads: &'a Gamepads,
     /// A [`KeyCode`] [`Input`] stream
-    pub keycodes: &'a Input<KeyCode>,
+    pub keycodes: Option<&'a Input<KeyCode>>,
     /// A [`MouseButton`] [`Input`] stream
-    pub mouse_buttons: &'a Input<MouseButton>,
+    pub mouse_buttons: Option<&'a Input<MouseButton>>,
     /// A [`MouseWheel`] event stream
-    pub mouse_wheel: &'a Events<MouseWheel>,
+    pub mouse_wheel: Option<&'a Events<MouseWheel>>,
     /// A [`MouseMotion`] event stream
     pub mouse_motion: &'a Events<MouseMotion>,
     /// The [`Gamepad`] that this struct will detect inputs from
@@ -51,9 +51,9 @@ impl<'a> InputStreams<'a> {
         let gamepad_button_axes = world.resource::<Axis<GamepadButton>>();
         let gamepad_axes = world.resource::<Axis<GamepadAxis>>();
         let gamepads = world.resource::<Gamepads>();
-        let keycodes = world.resource::<Input<KeyCode>>();
-        let mouse_buttons = world.resource::<Input<MouseButton>>();
-        let mouse_wheel = world.resource::<Events<MouseWheel>>();
+        let keycodes = world.get_resource::<Input<KeyCode>>();
+        let mouse_buttons = world.get_resource::<Input<MouseButton>>();
+        let mouse_wheel = world.get_resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
 
         InputStreams {
@@ -143,23 +143,31 @@ impl<'a> InputStreams<'a> {
                     false
                 }
             }
-            InputKind::Keyboard(keycode) => self.keycodes.pressed(keycode),
-            InputKind::Modifier(modifier) => {
-                let modifiers = modifier.key_codes();
-                // Short circuiting is probably not worth the branch here
-                self.keycodes.pressed(modifiers[0]) | self.keycodes.pressed(modifiers[1])
+            InputKind::Keyboard(keycode) => {
+                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
             }
-            InputKind::Mouse(mouse_button) => self.mouse_buttons.pressed(mouse_button),
+            InputKind::Modifier(modifier) => {
+                let key_codes = modifier.key_codes();
+                // Short circuiting is probably not worth the branch here
+                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(key_codes[0]) | keycodes.pressed(key_codes[1]))
+            }
+            InputKind::Mouse(mouse_button) => {
+                matches!(self.mouse_buttons, Some(mouse_buttons) if mouse_buttons.pressed(mouse_button))
+            }
             InputKind::MouseWheel(mouse_wheel_direction) => {
+                let Some(mouse_wheel) = self.mouse_wheel else {
+                    return false;
+                };
+
                 let mut total_mouse_wheel_movement = 0.0;
 
                 // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = self.mouse_wheel.get_reader();
+                let mut event_reader = mouse_wheel.get_reader();
 
                 // PERF: this summing is computed for every individual input
                 // This should probably be computed once, and then cached / read
                 // Fix upstream!
-                for mouse_wheel_event in event_reader.iter(self.mouse_wheel) {
+                for mouse_wheel_event in event_reader.iter(mouse_wheel) {
                     total_mouse_wheel_movement += match mouse_wheel_direction {
                         MouseWheelDirection::Up | MouseWheelDirection::Down => mouse_wheel_event.y,
                         MouseWheelDirection::Left | MouseWheelDirection::Right => {
@@ -267,11 +275,15 @@ impl<'a> InputStreams<'a> {
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
+                        let Some(mouse_wheel) = self.mouse_wheel else {
+                            return 0.0;
+                        };
+
                         let mut total_mouse_wheel_movement = 0.0;
                         // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = self.mouse_wheel.get_reader();
+                        let mut event_reader = mouse_wheel.get_reader();
 
-                        for mouse_wheel_event in event_reader.iter(self.mouse_wheel) {
+                        for mouse_wheel_event in event_reader.iter(mouse_wheel) {
                             total_mouse_wheel_movement += match axis_type {
                                 MouseWheelAxisType::X => mouse_wheel_event.x,
                                 MouseWheelAxisType::Y => mouse_wheel_event.y,
@@ -467,9 +479,9 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
-            keycodes: mutable_streams.keycodes,
-            mouse_buttons: mutable_streams.mouse_buttons,
-            mouse_wheel: mutable_streams.mouse_wheel,
+            keycodes: Some(mutable_streams.keycodes),
+            mouse_buttons: Some(mutable_streams.mouse_buttons),
+            mouse_wheel: Some(mutable_streams.mouse_wheel),
             mouse_motion: mutable_streams.mouse_motion,
             associated_gamepad: mutable_streams.associated_gamepad,
         }
@@ -483,9 +495,9 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
-            keycodes: mutable_streams.keycodes,
-            mouse_buttons: mutable_streams.mouse_buttons,
-            mouse_wheel: mutable_streams.mouse_wheel,
+            keycodes: Some(mutable_streams.keycodes),
+            mouse_buttons: Some(mutable_streams.mouse_buttons),
+            mouse_wheel: Some(mutable_streams.mouse_wheel),
             mouse_motion: mutable_streams.mouse_motion,
             associated_gamepad: mutable_streams.associated_gamepad,
         }

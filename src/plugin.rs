@@ -95,13 +95,6 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_system_to_stage(
                     CoreStage::PreUpdate,
-                    update_action_state::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Update)
-                        .after(InputSystem),
-                )
-                .add_system_to_stage(
-                    CoreStage::PreUpdate,
                     release_on_disable::<A>
                         .label(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Update),
@@ -111,9 +104,19 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 #[cfg(feature = "egui")]
                 app.add_system_to_stage(
                     CoreStage::PreUpdate,
-                    consume_input_events_when_egui_wants_focus
-                        .after(bevy_egui::EguiSystem::ProcessInput)
-                        .before(InputManagerSystem::Update),
+                    update_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
+                        .label(InputManagerSystem::Update)
+                        .after(InputSystem)
+                        .after(bevy_egui::EguiSystem::ProcessInput),
+                );
+                #[cfg(not(feature = "egui"))]
+                app.add_system_to_stage(
+                    CoreStage::PreUpdate,
+                    update_action_state::<A>
+                        .with_run_criteria(run_if_enabled::<A>)
+                        .label(InputManagerSystem::Update)
+                        .after(InputSystem),
                 );
 
                 #[cfg(feature = "ui")]

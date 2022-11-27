@@ -65,11 +65,12 @@ pub fn update_action_state<A: Actionlike>(
     gamepad_button_axes: Res<Axis<GamepadButton>>,
     gamepad_axes: Res<Axis<GamepadAxis>>,
     gamepads: Res<Gamepads>,
-    keycodes: Res<Input<KeyCode>>,
-    mouse_buttons: Res<Input<MouseButton>>,
-    mouse_wheel: Res<Events<MouseWheel>>,
+    keycodes: Option<Res<Input<KeyCode>>>,
+    mouse_buttons: Option<Res<Input<MouseButton>>>,
+    mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
+    #[cfg(feature = "egui")] mut egui: ResMut<EguiContext>,
     mut action_state: Option<ResMut<ActionState<A>>>,
     mut input_map: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
@@ -78,10 +79,20 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_button_axes = gamepad_button_axes.into_inner();
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
-    let keycodes = keycodes.into_inner();
-    let mouse_buttons = mouse_buttons.into_inner();
-    let mouse_wheel = mouse_wheel.into_inner();
+    let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
+    let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
+    let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
     let mouse_motion = mouse_motion.into_inner();
+
+    #[cfg(feature = "egui")]
+    let (keycodes, mouse_buttons, mouse_wheel) = {
+        let ctx = egui.ctx_mut();
+        // If egui wants to own inputs, don't also apply them to the game state
+        let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
+        let mouse_buttons = mouse_buttons.filter(|_| !ctx.wants_pointer_input());
+        let mouse_wheel = mouse_wheel.filter(|_| !ctx.wants_pointer_input());
+        (keycodes, mouse_buttons, mouse_wheel)
+    };
 
     if let (Some(input_map), Some(action_state)) = (&mut input_map, &mut action_state) {
         let input_streams = InputStreams {

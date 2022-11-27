@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Bugs
+
+- `egui` feature now works correctly.
+
 ## Version 0.7
 
 ### Enhancements
