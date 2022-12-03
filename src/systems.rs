@@ -70,7 +70,7 @@ pub fn update_action_state<A: Actionlike>(
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
-    #[cfg(feature = "egui")] mut egui: ResMut<EguiContext>,
+    #[cfg(feature = "egui")] maybe_egui: Option<ResMut<EguiContext>>,
     mut action_state: Option<ResMut<ActionState<A>>>,
     mut input_map: Option<ResMut<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
@@ -85,7 +85,7 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_motion = mouse_motion.into_inner();
 
     #[cfg(feature = "egui")]
-    let (keycodes, mouse_buttons, mouse_wheel) = {
+    let (keycodes, mouse_buttons, mouse_wheel) = if let Some(mut egui) = maybe_egui {
         let ctx = egui.ctx_mut();
         // If egui wants to own inputs, don't also apply them to the game state
         let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
@@ -95,6 +95,10 @@ pub fn update_action_state<A: Actionlike>(
             mouse_buttons.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
         let mouse_wheel =
             mouse_wheel.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
+        (keycodes, mouse_buttons, mouse_wheel)
+    } else {
+        // We don't just want to make these variables mutable
+        // because then we'll have unused mut when the feature is not enabled
         (keycodes, mouse_buttons, mouse_wheel)
     };
 
@@ -135,20 +139,22 @@ pub fn update_action_state<A: Actionlike>(
 #[cfg(feature = "egui")]
 pub fn consume_input_events_when_egui_wants_focus(
     // This is mutable to ensure exclusive access, as recommended by bevy_egui
-    mut egui: ResMut<EguiContext>,
+    maybe_egui: Option<ResMut<EguiContext>>,
     mut keycodes: ResMut<Input<KeyCode>>,
     mut mouse_wheel: ResMut<Events<MouseWheel>>,
     mut mouse_motion: ResMut<Events<MouseMotion>>,
 ) {
-    let ctx = egui.ctx_mut();
+    if let Some(mut egui) = maybe_egui {
+        let ctx = egui.ctx_mut();
 
-    if ctx.wants_keyboard_input() {
-        keycodes.clear();
-    }
+        if ctx.wants_keyboard_input() {
+            keycodes.clear();
+        }
 
-    if ctx.wants_pointer_input() {
-        mouse_wheel.clear();
-        mouse_motion.clear();
+        if ctx.wants_pointer_input() {
+            mouse_wheel.clear();
+            mouse_motion.clear();
+        }
     }
 }
 
