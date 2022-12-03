@@ -135,29 +135,6 @@ pub fn update_action_state<A: Actionlike>(
     }
 }
 
-/// Consumes all input events when [`bevy_egui`] wants them
-#[cfg(feature = "egui")]
-pub fn consume_input_events_when_egui_wants_focus(
-    // This is mutable to ensure exclusive access, as recommended by bevy_egui
-    maybe_egui: Option<ResMut<EguiContext>>,
-    mut keycodes: ResMut<Input<KeyCode>>,
-    mut mouse_wheel: ResMut<Events<MouseWheel>>,
-    mut mouse_motion: ResMut<Events<MouseMotion>>,
-) {
-    if let Some(mut egui) = maybe_egui {
-        let ctx = egui.ctx_mut();
-
-        if ctx.wants_keyboard_input() {
-            keycodes.clear();
-        }
-
-        if ctx.wants_pointer_input() {
-            mouse_wheel.clear();
-            mouse_motion.clear();
-        }
-    }
-}
-
 /// When a button with a component of type `A` is clicked, press the corresponding action in the [`ActionState`]
 ///
 /// The action triggered is determined by the variant stored in your UI-defined button.
