@@ -1,10 +1,10 @@
 # Release Notes
 
-## Unreleased
+## Version 0.7.1
 
 ### Bugs
 
-- `egui` feature now works correctly.
+- `egui` feature now works correctly and more robustly if an `EguiPlugin` is not actually enabled.
 
 ## Version 0.7
 
