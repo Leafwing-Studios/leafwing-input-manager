@@ -5,6 +5,7 @@
 ### Usability
 
 - Added custom implementation of the `Serialize` and `Deserialize` traits for `InputMap` to make the format more human readable.
+- Added `TypeUuid` for `InputMap` to be able use it as asset without wrapper
 
 ## Version 0.7.1
 
