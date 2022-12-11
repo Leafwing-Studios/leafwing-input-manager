@@ -8,6 +8,7 @@ use bevy::input::{
     keyboard::KeyCode,
 };
 use bevy::math::Vec2;
+use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
@@ -484,7 +485,7 @@ pub struct AxisConversionError;
 ///
 /// This struct should store the processed form of your raw inputs in a device-agnostic fashion.
 /// Any deadzone correction, rescaling or drift-correction should be done at an earlier level.
-#[derive(Debug, Copy, Clone, PartialEq, Default, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Default, Deserialize, Serialize, Reflect, FromReflect)]
 pub struct DualAxisData {
     xy: Vec2,
 }

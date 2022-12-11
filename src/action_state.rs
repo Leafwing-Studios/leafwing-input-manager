@@ -5,6 +5,7 @@ use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
 use bevy::prelude::Resource;
+use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::{Duration, Instant};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
@@ -12,7 +13,7 @@ use std::marker::PhantomData;
 /// Metadata about an [`Actionlike`] action
 ///
 /// If a button is released, its `reasons_pressed` should be empty.
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect, FromReflect)]
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
@@ -80,12 +81,15 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
-#[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(
+    Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect, FromReflect,
+)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
     ///
     /// The position in this vector corresponds to [`Actionlike::index`].
     action_data: Vec<ActionData>,
+    #[reflect(ignore)]
     _phantom: PhantomData<A>,
 }
 
@@ -547,7 +551,7 @@ pub struct ActionStateDriver<A: Actionlike> {
 ///
 /// This struct is principally used as a field on [`ActionData`],
 /// which itself lives inside an [`ActionState`].
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Reflect, FromReflect)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
     /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.

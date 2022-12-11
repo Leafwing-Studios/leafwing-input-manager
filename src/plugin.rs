@@ -1,6 +1,7 @@
 //! Contains main plugin exported by this crate.
 
 use crate::clashing_inputs::ClashStrategy;
+use crate::prelude::ActionState;
 use crate::Actionlike;
 use core::hash::Hash;
 use core::marker::PhantomData;
@@ -144,8 +145,9 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
             }
         };
 
-        // Resources
-        app.init_resource::<ToggleActions<A>>()
+        app.register_type::<ActionState<A>>()
+            // Resources
+            .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();
     }
 }
