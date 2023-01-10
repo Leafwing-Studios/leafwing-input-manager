@@ -1,6 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::Actionlike;
+use crate::user_input::{UserInput, InputKind};
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
@@ -35,6 +36,11 @@ pub struct ActionData {
     /// Actions that are consumed cannot be pressed again until they are explicitly released.
     /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
     pub consumed: bool,
+    /// What inputs are responsible for this Action?
+    /// 
+    /// This is a plain copy of the inputs used to generate this Action. Usage may be slightly advanced, but you can use this for example to determine whether an input was generated from a keypress or from a mouse button.
+    #[reflect(ignore)]
+    pub inputs: Vec<UserInput>,
 }
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
@@ -111,6 +117,7 @@ impl<A: Actionlike> ActionState<A> {
 
             self.action_data[i].axis_pair = action_data[i].axis_pair;
             self.action_data[i].value = action_data[i].value;
+            self.action_data[i].inputs = action_data[i].inputs.clone();
         }
     }
 
@@ -464,6 +471,20 @@ impl<A: Actionlike> ActionState<A> {
         A::variants()
             .filter(|a| self.just_released(a.clone()))
             .collect()
+    }
+
+    /// Was this `action` fired with any kind of mouse input?
+    #[inline]
+    // #[must_use]
+    pub fn involved_mouse_input(&self, action: A) -> bool {
+        self.action_data[action.index()].inputs.iter().any(|i| i.contains_mouse_input())
+    }
+
+    /// Was this `action` fired using some input that involved the specified `InputKind`?
+    #[inline]
+    // #[must_use]
+    pub fn involved_input_kind(&self, action: A, input_kind: InputKind) -> bool {
+        self.action_data[action.index()].inputs.iter().any(|i| i.contains(input_kind))
     }
 
     /// The [`Instant`] that the action was last pressed or released

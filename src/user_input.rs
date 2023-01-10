@@ -144,6 +144,42 @@ impl UserInput {
         }
     }
 
+    /// Whether the underlying InputKind(s) contain mouse input. This includes MouseButton, MouseMotion, and MouseWheel InputKinds. For UserInput Chords, this function returns true if any InputKinds in the chord involve mouse input.
+    pub fn contains_mouse_input(&self) -> bool {
+        match self {
+            UserInput::Single(ik) => {
+                ik.is_mouse_input()
+            },
+            UserInput::Chord(set) => {
+                set.iter().any(|ik| ik.is_mouse_input())
+            },
+            UserInput::VirtualDPad(VirtualDPad { up, down, left, right }) => {
+                [up, down, left, right].iter().any(|ik| ik.is_mouse_input())
+            },
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
+                [negative, positive].iter().any(|ik| ik.is_mouse_input())
+            },
+        }
+    }
+
+    /// Whether the underlying InputKind(s) contain the specified InputKind. For UserInput Chords, this function returns true if any InputKinds in the chord involve the InputKind. VirtualDPad and VirtualAxis inputs also have their underlying InputKinds checked.
+    pub fn contains(&self, input_kind: InputKind) -> bool {
+        match self {
+            UserInput::Single(ik) => {
+                *ik == input_kind
+            },
+            UserInput::Chord(set) => {
+                set.iter().any(|ik| *ik == input_kind)
+            },
+            UserInput::VirtualDPad(VirtualDPad { up, down, left, right }) => {
+                [up, down, left, right].iter().any(|ik| **ik == input_kind)
+            },
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
+                [negative, positive].iter().any(|ik| **ik == input_kind)
+            },
+        }
+    }
+
     /// Returns the raw inputs that make up this [`UserInput`]
     pub fn raw_inputs(&self) -> RawInputs {
         let mut raw_inputs = RawInputs::default();
@@ -358,6 +394,22 @@ pub enum InputKind {
     MouseWheel(MouseWheelDirection),
     /// A discretized mouse movement
     MouseMotion(MouseMotionDirection),
+}
+
+impl InputKind {
+    /// Returns true if this InputKind comes from a MouseButton, MouseWheel, or MouseMotion.
+    pub fn is_mouse_input(&self) -> bool {
+        match self {
+            InputKind::GamepadButton(_) =>  false,
+            InputKind::SingleAxis(_) =>     false,
+            InputKind::DualAxis(_) =>       false,
+            InputKind::Keyboard(_) =>       false,
+            InputKind::Modifier(_) =>       false,
+            InputKind::Mouse(_) =>          true,
+            InputKind::MouseWheel(_) =>     true,
+            InputKind::MouseMotion(_) =>    true,
+        }
+    }
 }
 
 impl From<DualAxis> for InputKind {

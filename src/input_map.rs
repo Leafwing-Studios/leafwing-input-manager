@@ -359,6 +359,9 @@ impl<A: Actionlike> InputMap<A> {
             if !inputs.is_empty() {
                 action_data[action.index()].state = ButtonState::JustPressed;
             }
+
+            // Clone the raw input data into the action_data. This is useful for inspecting what input originated a particular action if you have more than one input mapped to a single action.
+            action_data[action.index()].inputs = inputs.clone();
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
