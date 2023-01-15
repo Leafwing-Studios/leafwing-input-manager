@@ -2,6 +2,7 @@
 use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::press_scheduler::PressScheduler;
 
 #[derive(Actionlike, Clone, Copy, Debug)]
 enum Action {
@@ -324,4 +325,44 @@ fn duration() {
         .world
         .resource::<ActionState<Action>>()
         .pressed(Action::PayRespects));
+}
+
+#[test]
+fn schedule_presses() {
+    use bevy::input::InputPlugin;
+
+    let mut app = App::new();
+
+    app.add_plugins(MinimalPlugins)
+        .add_plugin(InputPlugin)
+        .add_plugin(InputManagerPlugin::<Action>::default())
+        .init_resource::<ActionState<Action>>()
+        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
+        .init_resource::<PressScheduler<Action>>();
+
+    // Initializing
+    app.update();
+
+    // Press
+    app.world
+        .resource_mut::<PressScheduler<Action>>()
+        .schedule_press(Action::PayRespects);
+
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .released(Action::PayRespects));
+
+    // Check
+    app.update();
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .just_pressed(Action::PayRespects));
+
+    app.update();
+    assert!(app
+        .world
+        .resource::<ActionState<Action>>()
+        .just_released(Action::PayRespects));
 }
