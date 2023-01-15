@@ -7,7 +7,7 @@
 - Added custom implementation of the `Serialize` and `Deserialize` traits for `InputMap` to make the format more human readable.
 - Added `TypeUuid` for `InputMap` to be able use it as asset without wrapper
 - `ActionState` and its fields now implement `Reflect`. The type is automatically registered when the `InputManagerPlugin` is added.
-- Added `PressScheduler`.
+- Added `PressScheduler`, used to defer action presses until the start of the next frame to ease scheduling.
 
 ## Version 0.7.1
 
