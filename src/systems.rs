@@ -71,7 +71,7 @@ pub fn update_action_state<A: Actionlike>(
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
-    // #[cfg(feature = "egui")] maybe_egui: Option<ResMut<EguiContext>>,
+    #[cfg(feature = "egui")] maybe_egui: Option<ResMut<EguiContext>>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     press_scheduler: Option<ResMut<PressScheduler<A>>>,
