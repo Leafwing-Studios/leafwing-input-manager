@@ -8,6 +8,7 @@ use crate::{
     input_map::InputMap,
     input_streams::InputStreams,
     plugin::ToggleActions,
+    press_scheduler::PressScheduler,
     Actionlike,
 };
 
@@ -70,10 +71,15 @@ pub fn update_action_state<A: Actionlike>(
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
-    #[cfg(feature = "egui")] maybe_egui: Option<ResMut<EguiContext>>,
-    mut action_state: Option<ResMut<ActionState<A>>>,
-    mut input_map: Option<ResMut<InputMap<A>>>,
-    mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
+    // #[cfg(feature = "egui")] maybe_egui: Option<ResMut<EguiContext>>,
+    action_state: Option<ResMut<ActionState<A>>>,
+    input_map: Option<Res<InputMap<A>>>,
+    press_scheduler: Option<ResMut<PressScheduler<A>>>,
+    mut query: Query<(
+        &mut ActionState<A>,
+        &InputMap<A>,
+        Option<&mut PressScheduler<A>>,
+    )>,
 ) {
     let gamepad_buttons = gamepad_buttons.into_inner();
     let gamepad_button_axes = gamepad_button_axes.into_inner();
@@ -102,7 +108,17 @@ pub fn update_action_state<A: Actionlike>(
         (keycodes, mouse_buttons, mouse_wheel)
     };
 
-    if let (Some(input_map), Some(action_state)) = (&mut input_map, &mut action_state) {
+    let resources = input_map
+        .zip(action_state)
+        .map(|(input_map, action_state)| {
+            (
+                Mut::from(action_state),
+                input_map.into_inner(),
+                press_scheduler.map(Mut::from),
+            )
+        });
+
+    for (mut action_state, input_map, press_scheduler) in query.iter_mut().chain(resources) {
         let input_streams = InputStreams {
             gamepad_buttons,
             gamepad_button_axes,
@@ -116,22 +132,9 @@ pub fn update_action_state<A: Actionlike>(
         };
 
         action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
-    }
-
-    for (mut action_state, input_map) in query.iter_mut() {
-        let input_streams = InputStreams {
-            gamepad_buttons,
-            gamepad_button_axes,
-            gamepad_axes,
-            gamepads,
-            keycodes,
-            mouse_buttons,
-            mouse_wheel,
-            mouse_motion,
-            associated_gamepad: input_map.gamepad(),
-        };
-
-        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
+        if let Some(mut press_scheduler) = press_scheduler {
+            press_scheduler.apply(&mut action_state);
+        }
     }
 }
 

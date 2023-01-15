@@ -19,6 +19,7 @@ pub mod input_mocking;
 pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
+pub mod press_scheduler;
 pub mod systems;
 pub mod user_input;
 
