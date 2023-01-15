@@ -1,4 +1,9 @@
 //! This module contains [`PressScheduler`] and its supporting methods and impls.
+//!
+//! The [`PressScheduler`] is an optional addition to an [`InputManagerBundle`](crate::InputManagerBundle),
+//! which allows for a system that runs in [`CoreStage::Update`] later to correctly press an action.
+//! Directly using [`ActionState::press`] would not work, as inputs submitted late would be wiped out by the input manager systems.
+//! With this type, the action is pressed on the next time said systems run, making it so other systems can react to it correctly.
 
 use std::marker::PhantomData;
 
