@@ -35,5 +35,6 @@ impl<A: Actionlike> PressScheduler<A> {
         for i in self.bitset.ones() {
             action_state.press(A::get_at(i).unwrap())
         }
+        self.bitset.clear();
     }
 }
