@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.8.0
+
+### Usability
+
+- `bevy_egui` dependency has been bumped from 0.18 to 0.19.
+
 ## Version 0.7.2
 
 ### Usability
