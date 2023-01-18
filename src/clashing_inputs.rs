@@ -651,7 +651,7 @@ mod tests {
             app.send_input(Key2);
             app.update();
 
-            let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut action_data = vec![ActionData::default(); Action::n_variants()];
             action_data[One.index()].state = ButtonState::JustPressed;
             action_data[Two.index()].state = ButtonState::JustPressed;
             action_data[OneAndTwo.index()].state = ButtonState::JustPressed;
@@ -662,7 +662,7 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut expected = vec![ActionData::default(); Action::n_variants()];
             expected[OneAndTwo.index()].state = ButtonState::JustPressed;
 
             assert_eq!(action_data, expected);
@@ -679,7 +679,7 @@ mod tests {
             app.send_input(Up);
             app.update();
 
-            let mut action_data = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut action_data = vec![ActionData::default(); Action::n_variants()];
             action_data[MoveDPad.index()].state = ButtonState::JustPressed;
             action_data[CtrlUp.index()].state = ButtonState::JustPressed;
 
@@ -689,7 +689,7 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![ActionData::default(); Action::N_VARIANTS];
+            let mut expected = vec![ActionData::default(); Action::n_variants()];
             expected[CtrlUp.index()].state = ButtonState::JustPressed;
 
             assert_eq!(action_data, expected);

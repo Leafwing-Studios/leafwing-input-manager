@@ -22,7 +22,7 @@ pub struct PressScheduler<A: Actionlike> {
 impl<A: Actionlike> Default for PressScheduler<A> {
     fn default() -> Self {
         Self {
-            bitset: FixedBitSet::with_capacity(A::N_VARIANTS),
+            bitset: FixedBitSet::with_capacity(A::n_variants()),
             _phantom: Default::default(),
         }
     }

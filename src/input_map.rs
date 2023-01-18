@@ -330,7 +330,7 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> Vec<ActionData> {
-        let mut action_data = vec![ActionData::default(); A::N_VARIANTS];
+        let mut action_data = vec![ActionData::default(); A::n_variants()];
 
         // Generate the raw action presses
         for action in A::variants() {
