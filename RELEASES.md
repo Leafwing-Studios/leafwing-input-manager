@@ -5,6 +5,7 @@
 ### Usability
 
 - `bevy_egui` dependency has been bumped from 0.18 to 0.19.
+- The `Actionlike::N_VARIANTS` constant has been changed to a function.
 
 ## Version 0.7.2
 
