@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Enhancements
+
+- The `Actionlike::N_VARIANTS` constant has been changed to a function.
+
 ## Version 0.8.0
 
 ### Usability

@@ -98,7 +98,9 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
 
     quote! {
         impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
-            const N_VARIANTS: usize = #n_variants;
+            fn n_variants() -> usize {
+                #n_variants
+            }
 
             fn get_at(index: usize) -> Option<Self> {
                 match index {
