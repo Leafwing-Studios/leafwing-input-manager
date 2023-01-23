@@ -5,6 +5,7 @@
 ### Enhancements
 
 - The `Actionlike::N_VARIANTS` constant has been changed to a function.
+- Added the `DynAction` type and various companions to enable more advanced use cases.
 
 ## Version 0.8.0
 
