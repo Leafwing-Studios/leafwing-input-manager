@@ -37,7 +37,10 @@
 
 use std::any::TypeId;
 
-use bevy::{prelude::Resource, utils::HashMap};
+use bevy::{
+    prelude::{App, Resource},
+    utils::HashMap,
+};
 use once_cell::sync::OnceCell;
 
 use crate::Actionlike;
@@ -119,5 +122,21 @@ impl Actionlike for DynAction {
 
     fn index(&self) -> usize {
         self.0
+    }
+}
+
+/// Helper trait for registering [`DynAction`] types to an app where the [`DynActionRegistry`] exists as a resource
+pub trait RegisterActionToAppExt {
+    /// Calls [`DynActionRegistry::register`] on the [`DynActionRegistry`] resource if it exists, otherwise panics.
+    fn register_action<A: DynActionMarker>(&mut self) -> &mut Self;
+}
+
+impl RegisterActionToAppExt for App {
+    fn register_action<A: DynActionMarker>(&mut self) -> &mut Self {
+        self.world
+            .get_resource_mut::<DynActionRegistry>()
+            .expect("The `DynActionRegistry` isn't currently in the world!")
+            .register::<A>();
+        self
     }
 }
