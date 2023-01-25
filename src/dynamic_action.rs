@@ -37,7 +37,7 @@
 
 use std::any::TypeId;
 
-use bevy::utils::HashMap;
+use bevy::{prelude::Resource, utils::HashMap};
 use once_cell::sync::OnceCell;
 
 use crate::Actionlike;
@@ -52,6 +52,7 @@ static REGISTRY_CREATED: OnceCell<()> = OnceCell::new();
 pub struct DynAction(usize);
 
 /// Coordinates the registration of dynamic action types
+#[derive(Resource)]
 pub struct DynActionRegistry(Vec<TypeId>);
 
 impl DynActionRegistry {
