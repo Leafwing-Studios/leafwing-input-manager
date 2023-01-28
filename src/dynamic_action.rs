@@ -6,33 +6,36 @@
 //!
 //! Example:
 //! ```
-//! # use leafwing_input_manager::dynamic_action::{DynActionMarker, DynActionRegistry};
-//!
+//! # use leafwing_input_manager::dynamic_action::{DynActionMarker, DynActionRegistry, RegisterActionToAppExt};
+//! # use bevy::prelude::*;
 //! // In crate `feature_one`
 //! #[derive(DynActionMarker)]
 //! struct FeatureOneAction;
+//! struct FeatureOnePlugin;
 //!
-//! fn register_feature_one_actions(registry: &mut DynActionRegistry) {
-//!     // There could potentially be many types registered here
-//!     registry.register::<FeatureOneAction>();
+//! impl Plugin for FeatureOnePlugin {
+//!     fn build(&self, app: &mut App) {
+//!         app.register_action::<FeatureOneAction>();
+//!     }
 //! }
 //!
 //! // In crate `feature_two`
 //! #[derive(DynActionMarker)]
 //! struct FeatureTwoAction;
+//! struct FeatureTwoPlugin;
 //!
-//! fn register_feature_two_actions(registry: &mut DynActionRegistry) {
-//!     // There could potentially be many types registered here
-//!     registry.register::<FeatureTwoAction>();
+//! impl Plugin for FeatureTwoPlugin {
+//!     fn build(&self, app: &mut App) {
+//!         app.register_action::<FeatureTwoAction>();
+//!     }
 //! }
 //!
 //! // In crate `top_level_crate`, which depends on `feature_one` and `feature_two`
-//!
-//! let mut registry = DynActionRegistry::get().unwrap();
-//! register_feature_one_actions(&mut registry);
-//! register_feature_two_actions(&mut registry);
-//! registry.finish();
-//!
+//! let mut app = App::new();
+//! app.insert_resource(DynActionRegistry::get().unwrap())
+//!     .add_plugin(FeatureOnePlugin)
+//!     .add_plugin(FeatureTwoPlugin);
+//! app.world.remove_resource::<DynActionRegistry>().unwrap().finish();
 //! ```
 
 use std::any::TypeId;
@@ -47,10 +50,14 @@ use crate::Actionlike;
 
 pub use leafwing_input_manager_macros::DynActionMarker;
 
+// Here, we use a pair of global variables to track `DynAction` state.
+// `DYN_ACTION_MAP` needs to be a global to allow accessing it easily in arbitrary code,
+// especially in the case of the `Actionlike` implementation of `DynAction`.
 static DYN_ACTION_MAP: OnceCell<HashMap<TypeId, usize>> = OnceCell::new();
+// This simply tracks whether a `DynActionRegistry` has been created, to ensure that `DynActionRegistry::finish` is infallible.
 static REGISTRY_CREATED: OnceCell<()> = OnceCell::new();
 
-/// The runtime representation of action s declared via marker types
+/// The runtime representation of actions declared via marker types
 #[derive(Copy, Clone)]
 pub struct DynAction(usize);
 
