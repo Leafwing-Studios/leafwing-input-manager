@@ -68,11 +68,11 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
         // If you don't have a variable trigger, this will just return 0.0 when not pressed and 1.0
         // when pressed.
         let value = action_state.clamped_value(Action::Throttle);
-        println!("Throttle: {}", value);
+        println!("Throttle: {value}");
     }
 
     if action_state.pressed(Action::Rudder) {
         let value = action_state.clamped_value(Action::Rudder);
-        println!("Rudder: {}", value);
+        println!("Rudder: {value}");
     }
 }

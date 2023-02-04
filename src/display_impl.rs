@@ -26,16 +26,11 @@ impl Display for UserInput {
             }) => {
                 write!(
                     f,
-                    "VirtualDPad(up: {}, down: {}, left: {}, right: {})",
-                    up, down, left, right
+                    "VirtualDPad(up: {up}, down: {down}, left: {left}, right: {right})"
                 )
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                write!(
-                    f,
-                    "VirtualDPad(negative: {}, positive: {})",
-                    negative, positive,
-                )
+                write!(f, "VirtualDPad(negative: {negative}, positive: {positive})")
             }
         }
     }
