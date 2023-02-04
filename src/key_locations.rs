@@ -1,5 +1,7 @@
 //! Helpers for locations of keys on the keyboards.
 
+use bevy::prelude::ScanCode;
+
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
 /// The [`u32`] representation of this enum are the Set 1 scan codes of the corresponding keys.
@@ -147,4 +149,10 @@ pub enum QwertyKeyLocation {
     /// The location of the right arrow  key on the QWERTY keyboard layout.
     Right = 0xe0_4d,
     // FIXME: Add Numpad
+}
+
+impl From<QwertyKeyLocation> for ScanCode {
+    fn from(value: QwertyKeyLocation) -> Self {
+        ScanCode(value as u32)
+    }
 }

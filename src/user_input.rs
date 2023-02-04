@@ -8,6 +8,7 @@ use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
 use crate::axislike::VirtualAxis;
+use crate::key_locations::QwertyKeyLocation;
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
@@ -396,6 +397,18 @@ impl From<GamepadButtonType> for InputKind {
 impl From<KeyCode> for InputKind {
     fn from(input: KeyCode) -> Self {
         InputKind::Keyboard(input)
+    }
+}
+
+impl From<ScanCode> for InputKind {
+    fn from(input: ScanCode) -> Self {
+        InputKind::KeyLocation(input)
+    }
+}
+
+impl From<QwertyKeyLocation> for InputKind {
+    fn from(input: QwertyKeyLocation) -> Self {
+        InputKind::KeyLocation(input.into())
     }
 }
 
