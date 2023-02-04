@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::{key_locations::QwertyKeyLocation, prelude::*};
 
 fn main() {
     App::new()
@@ -25,14 +25,17 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     commands
         .spawn(InputManagerBundle::<Action> {
-            // Stores "which actions are currently activated"
-            // Map some arbitrary keys into a virtual direction pad that triggers our move action
+            // Stores "which actions are currently activated".
+            // Map the standard WASD movement keys into a virtual direction pad that triggers our move action.
+            // Note that we use `QwertyKeyLocation` instead of `KeyCode`,
+            // because we only care about the location of the keys, not the value that they represent.
+            // This way, the input still makes sense on other keyboard layouts such as AZERTY.
             input_map: InputMap::new([(
                 VirtualDPad {
-                    up: KeyCode::W.into(),
-                    down: KeyCode::S.into(),
-                    left: KeyCode::A.into(),
-                    right: KeyCode::D.into(),
+                    up: QwertyKeyLocation::W.into(),
+                    down: QwertyKeyLocation::S.into(),
+                    left: QwertyKeyLocation::A.into(),
+                    right: QwertyKeyLocation::D.into(),
                 },
                 Action::Move,
             )])

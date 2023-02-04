@@ -2,6 +2,8 @@
 
 use bevy::prelude::ScanCode;
 
+// TODO: Verify that this works on MacOS
+
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
 /// The [`u32`] representation of this enum are the Set 1 scan codes of the corresponding keys.
