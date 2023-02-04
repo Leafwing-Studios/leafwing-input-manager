@@ -92,61 +92,61 @@ pub enum QwertyScanCode {
     ///
     /// This is for example the `#` key on other layouts.
     NonUs1 = 0x00,
-    /// The location of the enter  key on the QWERTY keyboard layout.
+    /// The location of the Enter/Return key on the QWERTY keyboard layout.
     Enter = 0x1c,
-    /// The location of the left shift  key on the QWERTY keyboard layout.
+    /// The location of the left Shift key on the QWERTY keyboard layout.
     LShift = 0x2a,
-    /// The location of the `Z`  key on the QWERTY keyboard layout.
+    /// The location of the `Z` key on the QWERTY keyboard layout.
     Z = 0x2c,
-    /// The location of the `X`  key on the QWERTY keyboard layout.
+    /// The location of the `X` key on the QWERTY keyboard layout.
     X = 0x2d,
-    /// The location of the `C`  key on the QWERTY keyboard layout.
+    /// The location of the `C` key on the QWERTY keyboard layout.
     C = 0x2e,
-    /// The location of the `V`  key on the QWERTY keyboard layout.
+    /// The location of the `V key on the QWERTY keyboard layout.
     V = 0x2f,
-    /// The location of the `B`  key on the QWERTY keyboard layout.
+    /// The location of the `B` key on the QWERTY keyboard layout.
     B = 0x30,
-    /// The location of the `N`  key on the QWERTY keyboard layout.
+    /// The location of the `N` key on the QWERTY keyboard layout.
     N = 0x31,
-    /// The location of the `M`  key on the QWERTY keyboard layout.
+    /// The location of the `M` key on the QWERTY keyboard layout.
     M = 0x32,
-    /// The location of the `,`  key on the QWERTY keyboard layout.
+    /// The location of the `,` key on the QWERTY keyboard layout.
     Comma = 0x33,
-    /// The location of the `.`  key on the QWERTY keyboard layout.
+    /// The location of the `.` key on the QWERTY keyboard layout.
     Period = 0x34,
-    /// The location of the `/`  key on the QWERTY keyboard layout.
+    /// The location of the `/` key on the QWERTY keyboard layout.
     Slash = 0x35,
-    /// The location of the right shift  key on the QWERTY keyboard layout.
+    /// The location of the right Shift key on the QWERTY keyboard layout.
     RShift = 0x36,
-    /// The location of the left control  key on the QWERTY keyboard layout.
+    /// The location of the left Control key on the QWERTY keyboard layout.
     LCtrl = 0x1d,
-    /// The location of the left alt  key on the QWERTY keyboard layout.
+    /// The location of the left Alt key on the QWERTY keyboard layout.
     LAlt = 0x38,
-    /// The location of the space  key on the QWERTY keyboard layout.
+    /// The location of the Space key on the QWERTY keyboard layout.
     Space = 0x39,
-    /// The location of the right alt  key on the QWERTY keyboard layout.
+    /// The location of the right Alt key on the QWERTY keyboard layout.
     RAlt = 0xe0_e8,
-    /// The location of the right control  key on the QWERTY keyboard layout.
+    /// The location of the right Control key on the QWERTY keyboard layout.
     RCtrl = 0xe0_1d,
-    /// The location of the insert  key on the QWERTY keyboard layout.
+    /// The location of the Insert key on the QWERTY keyboard layout.
     Insert = 0xe0_52,
-    /// The location of the delete  key on the QWERTY keyboard layout.
+    /// The location of the Delete key on the QWERTY keyboard layout.
     Delete = 0xe0_53,
-    /// The location of the home  key on the QWERTY keyboard layout.
+    /// The location of the Home key on the QWERTY keyboard layout.
     Home = 0xe0_47,
-    /// The location of the end  key on the QWERTY keyboard layout.
+    /// The location of the End key on the QWERTY keyboard layout.
     End = 0xe0_4f,
-    /// The location of the page up  key on the QWERTY keyboard layout.
+    /// The location of the Page Up key on the QWERTY keyboard layout.
     PageUp = 0xe0_49,
-    /// The location of the page down  key on the QWERTY keyboard layout.
+    /// The location of the Page Down key on the QWERTY keyboard layout.
     PageDown = 0xe0_51,
-    /// The location of the left arrow  key on the QWERTY keyboard layout.
+    /// The location of the Arrow Left key on the QWERTY keyboard layout.
     Left = 0xe0_4b,
-    /// The location of the arrow up  key on the QWERTY keyboard layout.
+    /// The location of the Arrow Up key on the QWERTY keyboard layout.
     Up = 0xe0_48,
-    /// The location of the arrow down  key on the QWERTY keyboard layout.
+    /// The location of the Arrow Down key on the QWERTY keyboard layout.
     Down = 0xe0_50,
-    /// The location of the right arrow  key on the QWERTY keyboard layout.
+    /// The location of the Arrow Right key on the QWERTY keyboard layout.
     Right = 0xe0_4d,
     /// The location of the Numlock key on the QWERTY keyboard layout.
     Numlock = 0x45,

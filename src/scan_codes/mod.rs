@@ -2,9 +2,10 @@
 
 #[cfg(target_os = "macos")]
 mod mac_os;
+#[cfg(target_os = "macos")]
+pub use mac_os::QwertyScanCode;
 
 #[cfg(not(target_os = "macos"))]
 mod set_1;
-
 #[cfg(not(target_os = "macos"))]
 pub use set_1::QwertyScanCode;
