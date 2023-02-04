@@ -67,13 +67,13 @@ fn controls_window_system(
                                 Some(UserInput::Single(InputKind::GamepadButton(
                                     gamepad_button,
                                 ))) => {
-                                    format!("🎮 {:?}", gamepad_button)
+                                    format!("🎮 {gamepad_button:?}")
                                 }
                                 Some(UserInput::Single(InputKind::Keyboard(keycode))) => {
-                                    format!("🖮 {:?}", keycode)
+                                    format!("🖮 {keycode:?}")
                                 }
                                 Some(UserInput::Single(InputKind::Mouse(mouse_button))) => {
-                                    format!("🖱 {:?}", mouse_button)
+                                    format!("🖱 {mouse_button:?}")
                                 }
                                 _ => "Empty".to_string(),
                             };
