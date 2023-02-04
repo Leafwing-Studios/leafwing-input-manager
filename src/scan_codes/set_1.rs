@@ -1,15 +1,13 @@
-//! Helpers for locations of keys on the keyboards.
+//! Helper enum to define scan codes on the QWERTY keyboard layout.
 
 use bevy::prelude::ScanCode;
-
-// TODO: Verify that this works on MacOS
 
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
 /// The [`u32`] representation of this enum are the Set 1 scan codes of the corresponding keys.
 /// See section 10.6 at <https://www.win.tue.nl/~aeb/linux/kbd/scancodes-10.html#scancodesets>.
 #[repr(u32)]
-pub enum QwertyKeyLocation {
+pub enum QwertyScanCode {
     /// The location of the `` ` `` key on the QWERTY keyboard layout.
     Backtick = 0x29,
     /// The location of the `1` key on the QWERTY keyboard layout.
@@ -234,8 +232,8 @@ pub enum QwertyKeyLocation {
     Wake = 0xe0_63,
 }
 
-impl From<QwertyKeyLocation> for ScanCode {
-    fn from(value: QwertyKeyLocation) -> Self {
+impl From<QwertyScanCode> for ScanCode {
+    fn from(value: QwertyScanCode) -> Self {
         ScanCode(value as u32)
     }
 }

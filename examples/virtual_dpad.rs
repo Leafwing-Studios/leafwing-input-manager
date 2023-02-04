@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use leafwing_input_manager::{key_locations::QwertyKeyLocation, prelude::*};
+use leafwing_input_manager::{prelude::*, scan_codes::QwertyScanCode};
 
 fn main() {
     App::new()
@@ -32,10 +32,10 @@ fn spawn_player(mut commands: Commands) {
             // This way, the input still makes sense on other keyboard layouts such as AZERTY.
             input_map: InputMap::new([(
                 VirtualDPad {
-                    up: QwertyKeyLocation::W.into(),
-                    down: QwertyKeyLocation::S.into(),
-                    left: QwertyKeyLocation::A.into(),
-                    right: QwertyKeyLocation::D.into(),
+                    up: QwertyScanCode::W.into(),
+                    down: QwertyScanCode::S.into(),
+                    left: QwertyScanCode::A.into(),
+                    right: QwertyScanCode::D.into(),
                 },
                 Action::Move,
             )])

@@ -8,7 +8,7 @@ use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
 use crate::axislike::VirtualAxis;
-use crate::key_locations::QwertyKeyLocation;
+use crate::scan_codes::QwertyScanCode;
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
@@ -406,8 +406,8 @@ impl From<ScanCode> for InputKind {
     }
 }
 
-impl From<QwertyKeyLocation> for InputKind {
-    fn from(input: QwertyKeyLocation) -> Self {
+impl From<QwertyScanCode> for InputKind {
+    fn from(input: QwertyScanCode) -> Self {
         InputKind::KeyLocation(input.into())
     }
 }
