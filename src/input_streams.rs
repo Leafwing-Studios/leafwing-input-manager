@@ -1,10 +1,13 @@
 //! Unified input streams for working with [`bevy::input`] data.
 
-use bevy::input::{
-    gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEventRaw, Gamepads},
-    keyboard::{KeyCode, KeyboardInput},
-    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
-    Axis, Input,
+use bevy::{
+    input::{
+        gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEventRaw, Gamepads},
+        keyboard::{KeyCode, KeyboardInput},
+        mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
+        Axis, Input,
+    },
+    prelude::ScanCode,
 };
 use petitset::PetitSet;
 
@@ -33,6 +36,8 @@ pub struct InputStreams<'a> {
     pub gamepads: &'a Gamepads,
     /// A [`KeyCode`] [`Input`] stream
     pub keycodes: Option<&'a Input<KeyCode>>,
+    /// A [`ScanCode`] [`Input`] stream
+    pub scan_codes: Option<&'a Input<ScanCode>>,
     /// A [`MouseButton`] [`Input`] stream
     pub mouse_buttons: Option<&'a Input<MouseButton>>,
     /// A [`MouseWheel`] event stream
@@ -52,6 +57,7 @@ impl<'a> InputStreams<'a> {
         let gamepad_axes = world.resource::<Axis<GamepadAxis>>();
         let gamepads = world.resource::<Gamepads>();
         let keycodes = world.get_resource::<Input<KeyCode>>();
+        let scan_codes = world.get_resource::<Input<ScanCode>>();
         let mouse_buttons = world.get_resource::<Input<MouseButton>>();
         let mouse_wheel = world.get_resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
@@ -62,6 +68,7 @@ impl<'a> InputStreams<'a> {
             gamepad_axes,
             gamepads,
             keycodes,
+            scan_codes,
             mouse_buttons,
             mouse_wheel,
             mouse_motion,
@@ -145,6 +152,9 @@ impl<'a> InputStreams<'a> {
             }
             InputKind::Keyboard(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
+            }
+            InputKind::KeyLocation(scan_code) => {
+                matches!(self.scan_codes, Some(scan_codes) if scan_codes.pressed(scan_code))
             }
             InputKind::Modifier(modifier) => {
                 let key_codes = modifier.key_codes();
@@ -397,6 +407,8 @@ pub struct MutableInputStreams<'a> {
 
     /// A [`KeyCode`] [`Input`] stream
     pub keycodes: &'a mut Input<KeyCode>,
+    /// A [`ScanCode`] [`Input`] stream
+    pub scan_codes: &'a mut Input<ScanCode>,
     /// Events used for mocking keyboard-related inputs
     pub keyboard_events: &'a mut Events<KeyboardInput>,
 
@@ -423,6 +435,7 @@ impl<'a> MutableInputStreams<'a> {
             ResMut<Gamepads>,
             ResMut<Events<GamepadEventRaw>>,
             ResMut<Input<KeyCode>>,
+            ResMut<Input<ScanCode>>,
             ResMut<Events<KeyboardInput>>,
             ResMut<Input<MouseButton>>,
             ResMut<Events<MouseButtonInput>>,
@@ -437,6 +450,7 @@ impl<'a> MutableInputStreams<'a> {
             gamepads,
             gamepad_events,
             keycodes,
+            scan_codes,
             keyboard_events,
             mouse_buttons,
             mouse_button_events,
@@ -451,6 +465,7 @@ impl<'a> MutableInputStreams<'a> {
             gamepads: gamepads.into_inner(),
             gamepad_events: gamepad_events.into_inner(),
             keycodes: keycodes.into_inner(),
+            scan_codes: scan_codes.into_inner(),
             keyboard_events: keyboard_events.into_inner(),
             mouse_buttons: mouse_buttons.into_inner(),
             mouse_button_events: mouse_button_events.into_inner(),
@@ -480,6 +495,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
+            scan_codes: Some(mutable_streams.scan_codes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(mutable_streams.mouse_wheel),
             mouse_motion: mutable_streams.mouse_motion,
@@ -496,6 +512,7 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
+            scan_codes: Some(mutable_streams.scan_codes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(mutable_streams.mouse_wheel),
             mouse_motion: mutable_streams.mouse_motion,

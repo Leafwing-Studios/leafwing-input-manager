@@ -12,7 +12,6 @@ use crate::{
     Actionlike,
 };
 
-use bevy::ecs::{prelude::*, schedule::ShouldRun};
 use bevy::input::{
     gamepad::{GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
@@ -21,6 +20,10 @@ use bevy::input::{
 };
 use bevy::time::Time;
 use bevy::utils::Instant;
+use bevy::{
+    ecs::{prelude::*, schedule::ShouldRun},
+    prelude::ScanCode,
+};
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -67,6 +70,7 @@ pub fn update_action_state<A: Actionlike>(
     gamepad_axes: Res<Axis<GamepadAxis>>,
     gamepads: Res<Gamepads>,
     keycodes: Option<Res<Input<KeyCode>>>,
+    scan_codes: Option<Res<Input<ScanCode>>>,
     mouse_buttons: Option<Res<Input<MouseButton>>>,
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
@@ -86,6 +90,7 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
+    let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
     let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
     let mouse_motion = mouse_motion.into_inner();
@@ -95,6 +100,8 @@ pub fn update_action_state<A: Actionlike>(
         let ctx = egui.ctx_mut();
         // If egui wants to own inputs, don't also apply them to the game state
         let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
+        // FIXME: Probably need to handle scan codes here too
+
         // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
         // so `is_pointer_over_area` is also needed.
         let mouse_buttons =
@@ -125,6 +132,7 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_axes,
             gamepads,
             keycodes,
+            scan_codes,
             mouse_buttons,
             mouse_wheel,
             mouse_motion,
