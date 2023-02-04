@@ -401,6 +401,14 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data[index].timing.flip();
     }
 
+    /// Consumes all actions
+    #[inline]
+    pub fn consume_all(&mut self) {
+        for action in A::variants() {
+            self.consume(action);
+        }
+    }
+
     /// Releases all actions
     pub fn release_all(&mut self) {
         for action in A::variants() {
