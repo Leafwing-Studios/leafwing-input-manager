@@ -150,7 +150,88 @@ pub enum QwertyKeyLocation {
     Down = 0xe0_50,
     /// The location of the right arrow  key on the QWERTY keyboard layout.
     Right = 0xe0_4d,
-    // FIXME: Add Numpad
+    /// The location of the Numlock key on the QWERTY keyboard layout.
+    Numlock = 0x45,
+    /// The location of the `7` key on the numpad of the QWERTY keyboard layout.
+    Numpad7 = 0x47,
+    /// The location of the `4` key on the numpad of the QWERTY keyboard layout.
+    Numpad4 = 0x4b,
+    /// The location of the `1` key on the numpad of the QWERTY keyboard layout.
+    Numpad1 = 0x4f,
+    /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
+    NumpadDivide = 0xe0_35,
+    /// The location of the `8` key on the numpad of the QWERTY keyboard layout.
+    Numpad8 = 0x48,
+    /// The location of the `5` key on the numpad of the QWERTY keyboard layout.
+    Numpad5 = 0x4c,
+    /// The location of the `2` key on the numpad of the QWERTY keyboard layout.
+    Numpad2 = 0x50,
+    /// The location of the `0` key on the numpad of the QWERTY keyboard layout.
+    Numpad0 = 0x52,
+    /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
+    NumpadMultiply = 0x37,
+    /// The location of the `9` key on the numpad of the QWERTY keyboard layout.
+    Numpad9 = 0x49,
+    /// The location of the `6` key on the numpad of the QWERTY keyboard layout.
+    Numpad6 = 0x4d,
+    /// The location of the `3` key on the numpad of the QWERTY keyboard layout.
+    Numpad3 = 0x51,
+    /// The location of the `.` key on the numpad of the QWERTY keyboard layout.
+    NumpadDecimal = 0x53,
+    /// The location of the `-` key on the numpad of the QWERTY keyboard layout.
+    NumpadSubtract = 0x4a,
+    /// The location of the `+` key on the numpad of the QWERTY keyboard layout.
+    NumpadAdd = 0x4e,
+    /// The location of the Enter key on the numpad of the QWERTY keyboard layout.
+    NumpadEnter = 0xe0_1c,
+    /// The location of the Escape/Esc key on the QWERTY keyboard layout.
+    Escape = 0x01,
+    /// The location of the `F1` key on the QWERTY keyboard layout.
+    F1 = 0x3b,
+    /// The location of the `F2` key on the QWERTY keyboard layout.
+    F2 = 0x3c,
+    /// The location of the `F3` key on the QWERTY keyboard layout.
+    F3 = 0x3d,
+    /// The location of the `F4` key on the QWERTY keyboard layout.
+    F4 = 0x3e,
+    /// The location of the `F5` key on the QWERTY keyboard layout.
+    F5 = 0x3f,
+    /// The location of the `F6` key on the QWERTY keyboard layout.
+    F6 = 0x40,
+    /// The location of the `F7` key on the QWERTY keyboard layout.
+    F7 = 0x41,
+    /// The location of the `F8` key on the QWERTY keyboard layout.
+    F8 = 0x42,
+    /// The location of the `F9` key on the QWERTY keyboard layout.
+    F9 = 0x43,
+    /// The location of the `F10` key on the QWERTY keyboard layout.
+    F10 = 0x44,
+    /// The location of the `F11` key on the QWERTY keyboard layout.
+    F11 = 0x57,
+    /// The location of the `F12` key on the QWERTY keyboard layout.
+    F12 = 0x58,
+    /// The location of the Snapshot / Print Screen key on the QWERTY keyboard layout.
+    Snapshot = 0xe0_37,
+    /// The location of the Alt+Sysrq key on the QWERTY keyboard layout.
+    AltSysrq = 0x54,
+    /// The location of the Scroll / Scroll Lock key on the QWERTY keyboard layout.
+    Scroll = 0x46,
+    /// The location of the Pause key on the QWERTY keyboard layout.
+    Pause = 0xe1_1d_45,
+    /// The location of the Ctrl+Break key on the QWERTY keyboard layout.
+    CtrlBreak = 0xe0_46,
+    /// The location of the left Windows key on the QWERTY keyboard layout.
+    LWin = 0xe0_5b,
+    /// The location of the right Windows key on the QWERTY keyboard layout.
+    RWin = 0xe0_5c,
+    /// The location of the Menu key on the QWERTY keyboard layout.
+    Menu = 0xe0_5d,
+    /// The location of the Sleep key on the QWERTY keyboard layout.
+    Sleep = 0xe0_5f,
+    /// The location of the Power key on the QWERTY keyboard layout.
+    Power = 0xe0_5e,
+    /// The location of the Wake key on the QWERTY keyboard layout.
+    Wake = 0xe0_63,
 }
 
 impl From<QwertyKeyLocation> for ScanCode {
