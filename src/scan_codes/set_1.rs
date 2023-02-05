@@ -149,6 +149,7 @@ pub enum QwertyScanCode {
     /// The location of the Arrow Right key on the QWERTY keyboard layout.
     Right = 0xe0_4d,
     /// The location of the Numlock key on the QWERTY keyboard layout.
+    /// Maps to `NumpadClear` on MacOS.
     Numlock = 0x45,
     /// The location of the `7` key on the numpad of the QWERTY keyboard layout.
     Numpad7 = 0x47,
@@ -157,6 +158,7 @@ pub enum QwertyScanCode {
     /// The location of the `1` key on the numpad of the QWERTY keyboard layout.
     Numpad1 = 0x4f,
     /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
+    /// Maps to `NumpadEquals` on MacOS.
     NumpadDivide = 0xe0_35,
     /// The location of the `8` key on the numpad of the QWERTY keyboard layout.
     Numpad8 = 0x48,
@@ -167,6 +169,7 @@ pub enum QwertyScanCode {
     /// The location of the `0` key on the numpad of the QWERTY keyboard layout.
     Numpad0 = 0x52,
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
+    /// Maps to `NumpadDivide` on MacOS.
     NumpadMultiply = 0x37,
     /// The location of the `9` key on the numpad of the QWERTY keyboard layout.
     Numpad9 = 0x49,
@@ -176,7 +179,8 @@ pub enum QwertyScanCode {
     Numpad3 = 0x51,
     /// The location of the `.` key on the numpad of the QWERTY keyboard layout.
     NumpadDecimal = 0x53,
-    /// The location of the `-` key on the numpad of the QWERTY keyboard layout.
+    /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
+    /// Maps to `NumpadMultiply` on MacOS.
     NumpadSubtract = 0x4a,
     /// The location of the `+` key on the numpad of the QWERTY keyboard layout.
     NumpadAdd = 0x4e,

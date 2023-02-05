@@ -101,17 +101,22 @@ pub enum QwertyScanCode {
     /// The location of the `.` key on the numpad of the QWERTY keyboard layout.
     NumpadDecimal = 0x41,
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
-    NumpadMultiply = 0x43,
+    /// Maps to `NumpadMultiply` on MacOS.
+    NumpadSubtract = 0x43,
     /// The location of the `+` key on the numpad of the QWERTY keyboard layout.
     NumpadAdd = 0x45,
-    // KeypadClear = 0x47,
-    /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
-    NumpadDivide = 0x4b,
+    /// The location of the Numlock key on the QWERTY keyboard layout.
+    /// Maps to `NumpadClear` on MacOS.
+    Numlock = 0x47,
+    /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
+    /// Maps to `NumpadDivide` on MacOS.
+    NumpadMultiply = 0x4b,
     /// The location of the Enter key on the numpad of the QWERTY keyboard layout.
     NumpadEnter = 0x4c,
-    /// The location of the `-` key on the numpad of the QWERTY keyboard layout.
-    NumpadSubtract = 0x4e,
-    // TODO: KeypadEquals = 0x51,
+    // This is an extra key on mac keyboards: NumpadSubtract = 0x4e,
+    /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
+    /// Maps to `NumpadEquals` on MacOS.
+    NumpadDivide = 0x51,
     /// The location of the `0` key on the numpad of the QWERTY keyboard layout.
     Numpad0 = 0x52,
     /// The location of the `1` key on the numpad of the QWERTY keyboard layout.
@@ -223,8 +228,6 @@ pub enum QwertyScanCode {
     RAlt = 0xe0_e8,
     /// The location of the insert  key on the QWERTY keyboard layout.
     Insert = 0xe0_52,
-    /// The location of the Numlock key on the QWERTY keyboard layout.
-    Numlock = 0x45,
     /// The location of the Snapshot / Print Screen key on the QWERTY keyboard layout.
     Snapshot = 0xe0_37,
     /// The location of the Alt+Sysrq key on the QWERTY keyboard layout.
