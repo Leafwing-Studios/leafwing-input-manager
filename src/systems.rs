@@ -9,7 +9,7 @@ use crate::{
     input_streams::InputStreams,
     plugin::ToggleActions,
     press_scheduler::PressScheduler,
-    Actionlike,
+    scan_codes, Actionlike,
 };
 
 use bevy::input::{
@@ -96,11 +96,11 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_motion = mouse_motion.into_inner();
 
     #[cfg(feature = "egui")]
-    let (keycodes, mouse_buttons, mouse_wheel) = if let Some(mut egui) = maybe_egui {
+    let (keycodes, scan_codes, mouse_buttons, mouse_wheel) = if let Some(mut egui) = maybe_egui {
         let ctx = egui.ctx_mut();
         // If egui wants to own inputs, don't also apply them to the game state
         let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
-        // FIXME: Probably need to handle scan codes here too
+        let scan_codes = scan_codes.filter(|_| !ctx.wants_keyboard_input());
 
         // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
         // so `is_pointer_over_area` is also needed.
@@ -108,11 +108,11 @@ pub fn update_action_state<A: Actionlike>(
             mouse_buttons.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
         let mouse_wheel =
             mouse_wheel.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-        (keycodes, mouse_buttons, mouse_wheel)
+        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
     } else {
         // We don't just want to make these variables mutable
         // because then we'll have unused mut when the feature is not enabled
-        (keycodes, mouse_buttons, mouse_wheel)
+        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
     };
 
     let resources = input_map
