@@ -179,7 +179,11 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Panics if the map is full and `input` is not a duplicate.
     #[inline(always)]
-    pub fn insert_many_to_one(&mut self, input: impl IntoIterator<Item = impl Into<UserInput>>, action: A) -> &mut Self {
+    pub fn insert_many_to_one(
+        &mut self,
+        input: impl IntoIterator<Item = impl Into<UserInput>>,
+        action: A,
+    ) -> &mut Self {
         for input in input {
             self.insert(input, action.clone());
         }
@@ -191,7 +195,11 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert_one_to_many(&mut self, input: impl Into<UserInput>, action: impl IntoIterator<Item = A>) -> &mut Self {
+    pub fn insert_one_to_many(
+        &mut self,
+        input: impl Into<UserInput>,
+        action: impl IntoIterator<Item = A>,
+    ) -> &mut Self {
         let input: UserInput = input.into();
         for action in action {
             self.insert(input.clone(), action);
