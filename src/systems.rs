@@ -9,7 +9,7 @@ use crate::{
     input_streams::InputStreams,
     plugin::ToggleActions,
     press_scheduler::PressScheduler,
-    scan_codes, Actionlike,
+    Actionlike,
 };
 
 use bevy::input::{
