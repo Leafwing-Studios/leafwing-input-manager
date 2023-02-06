@@ -5,7 +5,6 @@ use leafwing_input_manager::{errors::NearlySingularConversion, orientation::Dire
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy::input::InputPlugin)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
         .add_plugin(InputManagerPlugin::<ArpgAction>::default())
@@ -49,8 +48,8 @@ impl ArpgAction {
         match self {
             ArpgAction::Up => Some(Direction::NORTH),
             ArpgAction::Down => Some(Direction::SOUTH),
-            ArpgAction::Left => Some(Direction::EAST),
-            ArpgAction::Right => Some(Direction::WEST),
+            ArpgAction::Left => Some(Direction::WEST),
+            ArpgAction::Right => Some(Direction::EAST),
             _ => None,
         }
     }
