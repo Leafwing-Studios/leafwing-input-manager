@@ -60,8 +60,10 @@ pub enum QwertyScanCode {
     Key9 = 0x19,
     /// The location of the `7` key on the QWERTY keyboard layout.
     Key7 = 0x1a,
+    /// The location of the `-` key on the QWERTY keyboard layout.
+    Minus = 0x1b,
     /// The location of the `8` key on the QWERTY keyboard layout.
-    Key8 = 0x09,
+    Key8 = 0x1c,
     /// The location of the `0` key on the QWERTY keyboard layout.
     Key0 = 0x1d,
     /// The location of the `]`  key on the QWERTY keyboard layout.
@@ -80,7 +82,8 @@ pub enum QwertyScanCode {
     L = 0x25,
     /// The location of the `J`  key on the QWERTY keyboard layout.
     J = 0x26,
-    // TODO: Quote = 0x27
+    /// The location of the `'`  key on the QWERTY keyboard layout.
+    Apostrophe = 0x27,
     /// The location of the `K`  key on the QWERTY keyboard layout.
     K = 0x28,
     /// The location of the `;`  key on the QWERTY keyboard layout.
@@ -97,25 +100,26 @@ pub enum QwertyScanCode {
     M = 0x2e,
     /// The location of the `.`  key on the QWERTY keyboard layout.
     Period = 0x2f,
-    // TODO: Grave = 0x32,
+    /// The location of the `` ` `` key on the QWERTY keyboard layout.
+    Backtick = 0x32,
     /// The location of the `.` key on the numpad of the QWERTY keyboard layout.
     NumpadDecimal = 0x41,
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
-    /// Maps to `NumpadMultiply` on MacOS.
+    /// Maps to `NumpadMultiply` on Apple keyboards.
     NumpadSubtract = 0x43,
     /// The location of the `+` key on the numpad of the QWERTY keyboard layout.
     NumpadAdd = 0x45,
     /// The location of the Numlock key on the QWERTY keyboard layout.
-    /// Maps to `NumpadClear` on MacOS.
+    /// Maps to `NumpadClear` on Apple keyboards.
     Numlock = 0x47,
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
-    /// Maps to `NumpadDivide` on MacOS.
+    /// Maps to `NumpadDivide` on Apple keyboards.
     NumpadMultiply = 0x4b,
     /// The location of the Enter key on the numpad of the QWERTY keyboard layout.
     NumpadEnter = 0x4c,
     // This is an extra key on mac keyboards: NumpadSubtract = 0x4e,
     /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
-    /// Maps to `NumpadEquals` on MacOS.
+    /// Maps to `NumpadEquals` on Apple keyboards.
     NumpadDivide = 0x51,
     /// The location of the `0` key on the numpad of the QWERTY keyboard layout.
     Numpad0 = 0x52,
@@ -137,7 +141,7 @@ pub enum QwertyScanCode {
     Numpad8 = 0x5b,
     /// The location of the `9` key on the numpad of the QWERTY keyboard layout.
     Numpad9 = 0x5c,
-    /// The location of the Enter/Return  key on the QWERTY keyboard layout.
+    /// The location of the Enter/Return key on the QWERTY keyboard layout.
     Enter = 0x1c,
     /// The location of the Tabulator key on the QWERTY keyboard layout.
     Tab = 0x30,
@@ -147,23 +151,29 @@ pub enum QwertyScanCode {
     Backspace = 0x33,
     /// The location of the Escape/Esc key on the QWERTY keyboard layout.
     Escape = 0x35,
-    // TODO: Command = 0x37,
-    /// The location of the left Shift  key on the QWERTY keyboard layout.
+    /// The location of the left Windows key on the QWERTY keyboard layout.
+    /// Maps to the Command key on Apple keyboards.
+    LWin = 0x37,
+    /// The location of the left Shift key on the QWERTY keyboard layout.
     LShift = 0x38,
-    /// The location of the Caps Lock  key on the QWERTY keyboard layout.
+    /// The location of the Caps Lock key on the QWERTY keyboard layout.
     CapsLock = 0x39,
-    // TODO: Option = 0x3a,
-    /// The location of the left Control  key on the QWERTY keyboard layout.
+    /// The location of the left Alt  key on the QWERTY keyboard layout.
+    /// Maps to left Option key on Apple keyboards.
+    LAlt = 0x3a,
+    /// The location of the left Control key on the QWERTY keyboard layout.
     LCtrl = 0x3b,
-    /// The location of the right Shift  key on the QWERTY keyboard layout.
+    /// The location of the right Shif  key on the QWERTY keyboard layout.
     RShift = 0x3c,
-    // TODO: RightOption = 0x3e,
-    /// The location of the right Control  key on the QWERTY keyboard layout.
-    RCtrl = 0x3e,
-    // TODO: Function = 0x3f,
-    // TODO: F18 = 0x4f,
-    // TODO: F19 = 0x50,
-    // TODO: F20 = 0x5a,
+    /// The location of the right Alt key on the QWERTY keyboard layout.
+    /// Maps to right Option key on Apple keyboards.
+    RAlt = 0x3e,
+    /// The location of the right Control key on the QWERTY keyboard layout.
+    RControl = 0x3e,
+    // This is an extra key on mac keyboards: Function = 0x3f,
+    // This is an extra key on mac keyboards: F18 = 0x4f,
+    // This is an extra key on mac keyboards: F19 = 0x50,
+    // This is an extra key on mac keyboards: F20 = 0x5a,
     /// The location of the `F5` key on the QWERTY keyboard layout.
     F5 = 0x60,
     /// The location of the `F6` key on the QWERTY keyboard layout.
@@ -178,20 +188,28 @@ pub enum QwertyScanCode {
     F9 = 0x45,
     /// The location of the `F11` key on the QWERTY keyboard layout.
     F11 = 0x67,
-    // TODO: F13 = 0x69,
-    // TODO: F16 = 0x6a,
-    // TODO: F14 = 0x6b,
+    /// The location of the Snapshot / Print Screen key on the QWERTY keyboard layout.
+    /// Maps to the `F13` key on Apple keyboards.
+    Snapshot = 0x69,
+    // This is an extra key on mac keyboards: F16 = 0x6a,
+    /// The location of the Scroll / Scroll Lock key on the QWERTY keyboard layout.
+    /// Maps to the `F14` key on Apple keyboards.
+    Scroll = 0x6b,
     /// The location of the `F10` key on the QWERTY keyboard layout.
     F10 = 0x6d,
     /// The location of the `F12` key on the QWERTY keyboard layout.
     F12 = 0x6f,
-    // TODO: F15 = 0x71,
-    // TODO: Help = 0x72,
-    /// The location of the home  key on the QWERTY keyboard layout.
+    /// The location of the Pause key on the QWERTY keyboard layout.
+    /// Maps to the `F15` key on Apple keyboards.
+    Pause = 0x71,
+    /// The location of the Insert key on the QWERTY keyboard layout.
+    /// Maps to the Help key on Apple keyboards.
+    Insert = 0xe0_52,
+    /// The location of the Home key on the QWERTY keyboard layout.
     Home = 0x73,
-    /// The location of the page up  key on the QWERTY keyboard layout.
+    /// The location of the Page Up key on the QWERTY keyboard layout.
     PageUp = 0x74,
-    /// The location of the delete  key on the QWERTY keyboard layout.
+    /// The location of the Delete key on the QWERTY keyboard layout.
     Delete = 0x75,
     /// The location of the `F4` key on the QWERTY keyboard layout.
     F4 = 0x76,
@@ -211,45 +229,6 @@ pub enum QwertyScanCode {
     Down = 0x7d,
     /// The location of the arrow up  key on the QWERTY keyboard layout.
     Up = 0x7e,
-
-    /// The location of the `` ` `` key on the QWERTY keyboard layout.
-    Backtick = 0x29,
-    /// The location of the `-` key on the QWERTY keyboard layout.
-    Minus = 0x0c,
-    /// The location of the `'`  key on the QWERTY keyboard layout.
-    Apostrophe = 0x28,
-    /// A key not available on the US QWERTY layout.
-    ///
-    /// This is for example the `#` key on other layouts.
-    NonUs1 = 0x00,
-    /// The location of the left alt  key on the QWERTY keyboard layout.
-    LAlt = 0x38,
-    /// The location of the right alt  key on the QWERTY keyboard layout.
-    RAlt = 0xe0_e8,
-    /// The location of the insert  key on the QWERTY keyboard layout.
-    Insert = 0xe0_52,
-    /// The location of the Snapshot / Print Screen key on the QWERTY keyboard layout.
-    Snapshot = 0xe0_37,
-    /// The location of the Alt+Sysrq key on the QWERTY keyboard layout.
-    AltSysrq = 0x54,
-    /// The location of the Scroll / Scroll Lock key on the QWERTY keyboard layout.
-    Scroll = 0x46,
-    /// The location of the Pause key on the QWERTY keyboard layout.
-    Pause = 0xe1_1d_45,
-    /// The location of the Ctrl+Break key on the QWERTY keyboard layout.
-    CtrlBreak = 0xe0_46,
-    /// The location of the left Windows key on the QWERTY keyboard layout.
-    LWin = 0xe0_5b,
-    /// The location of the right Windows key on the QWERTY keyboard layout.
-    RWin = 0xe0_5c,
-    /// The location of the Menu key on the QWERTY keyboard layout.
-    Menu = 0xe0_5d,
-    /// The location of the Sleep key on the QWERTY keyboard layout.
-    Sleep = 0xe0_5f,
-    /// The location of the Power key on the QWERTY keyboard layout.
-    Power = 0xe0_5e,
-    /// The location of the Wake key on the QWERTY keyboard layout.
-    Wake = 0xe0_63,
 }
 
 impl From<QwertyScanCode> for ScanCode {

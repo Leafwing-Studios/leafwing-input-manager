@@ -119,16 +119,19 @@ pub enum QwertyScanCode {
     /// The location of the right Shift key on the QWERTY keyboard layout.
     RShift = 0x36,
     /// The location of the left Control key on the QWERTY keyboard layout.
-    LCtrl = 0x1d,
-    /// The location of the left Alt key on the QWERTY keyboard layout.
+    LControl = 0x1d,
+    /// The location of the left Alt  key on the QWERTY keyboard layout.
+    /// Maps to left Option key on Apple keyboards.
     LAlt = 0x38,
     /// The location of the Space key on the QWERTY keyboard layout.
     Space = 0x39,
     /// The location of the right Alt key on the QWERTY keyboard layout.
+    /// Maps to right Option key on Apple keyboards.
     RAlt = 0xe0_e8,
     /// The location of the right Control key on the QWERTY keyboard layout.
     RCtrl = 0xe0_1d,
     /// The location of the Insert key on the QWERTY keyboard layout.
+    /// Maps to the Help key on Apple keyboards.
     Insert = 0xe0_52,
     /// The location of the Delete key on the QWERTY keyboard layout.
     Delete = 0xe0_53,
@@ -149,7 +152,7 @@ pub enum QwertyScanCode {
     /// The location of the Arrow Right key on the QWERTY keyboard layout.
     Right = 0xe0_4d,
     /// The location of the Numlock key on the QWERTY keyboard layout.
-    /// Maps to `NumpadClear` on MacOS.
+    /// Maps to `NumpadClear` on Apple keyboards.
     Numlock = 0x45,
     /// The location of the `7` key on the numpad of the QWERTY keyboard layout.
     Numpad7 = 0x47,
@@ -158,7 +161,7 @@ pub enum QwertyScanCode {
     /// The location of the `1` key on the numpad of the QWERTY keyboard layout.
     Numpad1 = 0x4f,
     /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
-    /// Maps to `NumpadEquals` on MacOS.
+    /// Maps to `NumpadEquals` on Apple keyboards.
     NumpadDivide = 0xe0_35,
     /// The location of the `8` key on the numpad of the QWERTY keyboard layout.
     Numpad8 = 0x48,
@@ -169,7 +172,7 @@ pub enum QwertyScanCode {
     /// The location of the `0` key on the numpad of the QWERTY keyboard layout.
     Numpad0 = 0x52,
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
-    /// Maps to `NumpadDivide` on MacOS.
+    /// Maps to `NumpadDivide` on Apple keyboards.
     NumpadMultiply = 0x37,
     /// The location of the `9` key on the numpad of the QWERTY keyboard layout.
     Numpad9 = 0x49,
@@ -180,7 +183,7 @@ pub enum QwertyScanCode {
     /// The location of the `.` key on the numpad of the QWERTY keyboard layout.
     NumpadDecimal = 0x53,
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
-    /// Maps to `NumpadMultiply` on MacOS.
+    /// Maps to `NumpadMultiply` on Apple keyboards.
     NumpadSubtract = 0x4a,
     /// The location of the `+` key on the numpad of the QWERTY keyboard layout.
     NumpadAdd = 0x4e,
@@ -213,16 +216,20 @@ pub enum QwertyScanCode {
     /// The location of the `F12` key on the QWERTY keyboard layout.
     F12 = 0x58,
     /// The location of the Snapshot / Print Screen key on the QWERTY keyboard layout.
+    /// Maps to the `F13` key on Apple keyboards.
     Snapshot = 0xe0_37,
     /// The location of the Alt+Sysrq key on the QWERTY keyboard layout.
     AltSysrq = 0x54,
     /// The location of the Scroll / Scroll Lock key on the QWERTY keyboard layout.
+    /// Maps to the `F14` key on Apple keyboards.
     Scroll = 0x46,
     /// The location of the Pause key on the QWERTY keyboard layout.
+    /// Maps to the `F15` key on Apple keyboards.
     Pause = 0xe1_1d_45,
     /// The location of the Ctrl+Break key on the QWERTY keyboard layout.
     CtrlBreak = 0xe0_46,
     /// The location of the left Windows key on the QWERTY keyboard layout.
+    /// Maps to the Command key on Apple keyboards.
     LWin = 0xe0_5b,
     /// The location of the right Windows key on the QWERTY keyboard layout.
     RWin = 0xe0_5c,
