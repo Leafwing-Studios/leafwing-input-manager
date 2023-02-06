@@ -173,6 +173,32 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
+    /// Insert a mapping between many `input`'s and one `action`
+    ///
+    /// # Panics
+    ///
+    /// Panics if the map is full and `input` is not a duplicate.
+    #[inline(always)]
+    pub fn insert_many_to_one(&mut self, input: impl IntoIterator<Item = impl Into<UserInput>>, action: A) -> &mut Self {
+        for input in input {
+            self.insert(input, action.clone());
+        }
+        self
+    }
+
+    /// Insert a mapping between one `input` and many `action`'s
+    ///
+    /// # Panics
+    ///
+    /// Panics if the map is full and `input` is not a duplicate.
+    pub fn insert_one_to_many(&mut self, input: impl Into<UserInput>, action: impl IntoIterator<Item = A>) -> &mut Self {
+        let input: UserInput = input.into();
+        for action in action {
+            self.insert(input.clone(), action);
+        }
+        self
+    }
+
     /// Insert a mapping between `input` and `action` at the provided index
     ///
     /// If a matching input already existed in the set, it will be moved to the supplied index. Any input that was previously there will be moved to the matching input’s original index.
