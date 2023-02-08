@@ -91,23 +91,23 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system(
                     tick_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_set(CoreSet::PreUpdate)
+                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
                 .add_system(
                     release_on_disable::<A>
-                        .in_set(CoreSet::PreUpdate)
+                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Update),
                 )
-                .add_system(release_on_input_map_removed::<A>.in_set(CoreSet::PostUpdate));
+                .add_system(release_on_input_map_removed::<A>.in_base_set(CoreSet::PostUpdate));
 
                 #[cfg(feature = "egui")]
                 app.add_system(
                     update_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_set(CoreSet::PostUpdate)
+                        .in_base_set(CoreSet::PostUpdate)
                         .in_set(InputManagerSystem::Update)
                         .after(InputSystem)
                         .after(bevy_egui::EguiSystem::ProcessInput),
@@ -116,7 +116,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system(
                     update_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_set(CoreSet::PreUpdate)
+                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Update)
                         .after(InputSystem),
                 );
@@ -139,7 +139,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system(
                     tick_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_set(CoreSet::PreUpdate)
+                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Tick),
                 );
             }
