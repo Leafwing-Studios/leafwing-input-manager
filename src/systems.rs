@@ -242,7 +242,7 @@ pub fn release_on_disable<A: Actionlike>(
 /// For components you must remove the [`InputMap<A>`] before [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate)
 /// or this will not run.
 pub fn release_on_input_map_removed<A: Actionlike>(
-    removed_components: RemovedComponents<InputMap<A>>,
+    mut removed_components: RemovedComponents<InputMap<A>>,
     input_map_resource: Option<ResMut<InputMap<A>>>,
     action_state_resource: Option<ResMut<ActionState<A>>>,
     mut input_map_resource_existed: Local<bool>,
