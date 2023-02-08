@@ -313,6 +313,18 @@ impl From<KeyCode> for UserInput {
     }
 }
 
+impl From<ScanCode> for UserInput {
+    fn from(input: ScanCode) -> Self {
+        UserInput::Single(InputKind::KeyLocation(input))
+    }
+}
+
+impl From<QwertyScanCode> for UserInput {
+    fn from(input: QwertyScanCode) -> Self {
+        UserInput::Single(InputKind::KeyLocation(input.into()))
+    }
+}
+
 impl From<MouseButton> for UserInput {
     fn from(input: MouseButton) -> Self {
         UserInput::Single(InputKind::Mouse(input))
