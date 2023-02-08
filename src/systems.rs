@@ -12,7 +12,7 @@ use crate::{
     Actionlike,
 };
 
-use bevy::ecs::{prelude::*, schedule::ShouldRun};
+use bevy::ecs::prelude::*;
 use bevy::input::{
     gamepad::{GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
@@ -270,10 +270,10 @@ pub fn release_on_input_map_removed<A: Actionlike>(
 }
 
 /// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
-pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
+pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> bool {
     if toggle_actions.enabled {
-        ShouldRun::Yes
+        true
     } else {
-        ShouldRun::No
+        false
     }
 }
