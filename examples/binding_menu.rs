@@ -1,6 +1,11 @@
 use bevy::{
     ecs::system::SystemParam,
-    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ButtonState},
+    input::{
+        gamepad::{GamepadButtonChangedEvent, GamepadEvent},
+        keyboard::KeyboardInput,
+        mouse::MouseButtonInput,
+        ButtonState,
+    },
     prelude::*,
 };
 use bevy_egui::{
@@ -265,15 +270,14 @@ impl InputEvents<'_, '_> {
                 return Some(mouse_input.button.into());
             }
         }
-        if let Some(GamepadEvent {
+        if let Some(GamepadEvent::Button(GamepadButtonChangedEvent {
             gamepad: _,
-            event_type,
-        }) = self.gamepad_events.iter().next()
+            button_type,
+            value: strength,
+        })) = self.gamepad_events.iter().next()
         {
-            if let GamepadEventType::ButtonChanged(button, strength) = event_type.to_owned() {
-                if strength <= 0.5 {
-                    return Some(button.into());
-                }
+            if strength <= 0.5 {
+                return Some(button_type.into());
             }
         }
         None
