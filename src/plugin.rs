@@ -107,7 +107,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system(
                     update_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_base_set(CoreSet::PostUpdate)
+                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Update)
                         .after(InputSystem)
                         .after(bevy_egui::EguiSystem::ProcessInput),
@@ -125,6 +125,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_system(
                     update_action_state_from_interaction::<A>
                         .run_if(run_if_enabled::<A>)
+                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::ManualControl)
                         .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
