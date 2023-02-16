@@ -12,7 +12,7 @@
 //! The mapping to the other keyboard layouts is done automatically.
 
 use bevy::prelude::*;
-use leafwing_input_manager::{prelude::*, scan_codes::QwertyScanCode};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()

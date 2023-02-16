@@ -35,6 +35,7 @@ pub mod prelude {
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     pub use crate::input_mocking::MockInput;
+    pub use crate::scan_codes::QwertyScanCode;
     pub use crate::user_input::{Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
