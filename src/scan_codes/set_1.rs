@@ -129,7 +129,7 @@ pub enum QwertyScanCode {
     /// Maps to right Option key on Apple keyboards.
     RAlt = 0xe0_e8,
     /// The location of the right Control key on the QWERTY keyboard layout.
-    RCtrl = 0xe0_1d,
+    RControl = 0xe0_1d,
     /// The location of the Insert key on the QWERTY keyboard layout.
     /// Maps to the Help key on Apple keyboards.
     Insert = 0xe0_52,
