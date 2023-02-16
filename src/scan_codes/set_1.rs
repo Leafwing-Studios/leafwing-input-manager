@@ -1,7 +1,5 @@
 //! Helper enum to define scan codes on the QWERTY keyboard layout.
 
-use bevy::prelude::ScanCode;
-
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
 /// The [`u32`] representation of this enum are the Set 1 scan codes of the corresponding keys.
@@ -241,10 +239,4 @@ pub enum QwertyScanCode {
     Power = 0xe0_5e,
     /// The location of the Wake key on the QWERTY keyboard layout.
     Wake = 0xe0_63,
-}
-
-impl From<QwertyScanCode> for ScanCode {
-    fn from(value: QwertyScanCode) -> Self {
-        ScanCode(value as u32)
-    }
 }

@@ -1,7 +1,5 @@
 //! Helper enum to define scan codes on the QWERTY keyboard layout.
 
-use bevy::prelude::ScanCode;
-
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
 /// The [`u32`] representation of this enum are the Mac OS scan codes of the corresponding keys.
@@ -229,10 +227,4 @@ pub enum QwertyScanCode {
     Down = 0x7d,
     /// The location of the arrow up  key on the QWERTY keyboard layout.
     Up = 0x7e,
-}
-
-impl From<QwertyScanCode> for ScanCode {
-    fn from(value: QwertyScanCode) -> Self {
-        ScanCode(value as u32)
-    }
 }

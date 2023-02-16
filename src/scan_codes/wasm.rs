@@ -263,9 +263,3 @@ pub enum QwertyScanCode {
     /// Maps to `NumpadMultiply` on Apple keyboards.
     NumpadSubtract = 0x6d,
 }
-
-impl From<QwertyScanCode> for ScanCode {
-    fn from(value: QwertyScanCode) -> Self {
-        ScanCode(value as u32)
-    }
-}
