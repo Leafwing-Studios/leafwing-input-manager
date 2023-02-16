@@ -140,7 +140,7 @@ pub enum QwertyScanCode {
     /// The location of the `9` key on the numpad of the QWERTY keyboard layout.
     Numpad9 = 0x5c,
     /// The location of the Enter/Return key on the QWERTY keyboard layout.
-    Enter = 0x1c,
+    Enter = 0x24,
     /// The location of the Tabulator key on the QWERTY keyboard layout.
     Tab = 0x30,
     /// The location of the space  key on the QWERTY keyboard layout.
@@ -150,7 +150,7 @@ pub enum QwertyScanCode {
     /// The location of the Escape/Esc key on the QWERTY keyboard layout.
     Escape = 0x35,
     /// The location of the left Windows key on the QWERTY keyboard layout.
-    /// Maps to the Command key on Apple keyboards.
+    /// Maps to the left Command key on Apple keyboards.
     LWin = 0x37,
     /// The location of the left Shift key on the QWERTY keyboard layout.
     LShift = 0x38,
@@ -165,7 +165,7 @@ pub enum QwertyScanCode {
     RShift = 0x3c,
     /// The location of the right Alt key on the QWERTY keyboard layout.
     /// Maps to right Option key on Apple keyboards.
-    RAlt = 0x3e,
+    RAlt = 0x3d,
     /// The location of the right Control key on the QWERTY keyboard layout.
     RControl = 0x3e,
     // This is an extra key on mac keyboards: Function = 0x3f,
@@ -227,4 +227,8 @@ pub enum QwertyScanCode {
     Down = 0x7d,
     /// The location of the arrow up  key on the QWERTY keyboard layout.
     Up = 0x7e,
+    // Not listed in the provided link, found by manual testing.
+    /// The location of the right Windows key on the QWERTY keyboard layout.
+    /// Maps to the right Command key on Apple keyboards.
+    RWin = 0x36,
 }
