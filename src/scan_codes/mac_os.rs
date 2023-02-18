@@ -183,7 +183,7 @@ pub enum QwertyScanCode {
     /// The location of the `F8` key on the QWERTY keyboard layout.
     F8 = 0x64,
     /// The location of the `F9` key on the QWERTY keyboard layout.
-    F9 = 0x45,
+    F9 = 0x65,
     /// The location of the `F11` key on the QWERTY keyboard layout.
     F11 = 0x67,
     /// The location of the Snapshot / Print Screen key on the QWERTY keyboard layout.
@@ -215,17 +215,17 @@ pub enum QwertyScanCode {
     End = 0x77,
     /// The location of the `F2` key on the QWERTY keyboard layout.
     F2 = 0x78,
-    /// The location of the page down  key on the QWERTY keyboard layout.
+    /// The location of the page down key on the QWERTY keyboard layout.
     PageDown = 0x79,
     /// The location of the `F1` key on the QWERTY keyboard layout.
     F1 = 0x7a,
-    /// The location of the left arrow  key on the QWERTY keyboard layout.
+    /// The location of the left arrow key on the QWERTY keyboard layout.
     Left = 0x7b,
-    /// The location of the right arrow  key on the QWERTY keyboard layout.
+    /// The location of the right arrow key on the QWERTY keyboard layout.
     Right = 0x7c,
-    /// The location of the arrow down  key on the QWERTY keyboard layout.
+    /// The location of the arrow down key on the QWERTY keyboard layout.
     Down = 0x7d,
-    /// The location of the arrow up  key on the QWERTY keyboard layout.
+    /// The location of the arrow up key on the QWERTY keyboard layout.
     Up = 0x7e,
     // Not listed in the provided link, found by manual testing.
     /// The location of the right Windows key on the QWERTY keyboard layout.
