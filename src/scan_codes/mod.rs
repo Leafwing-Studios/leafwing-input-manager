@@ -3,9 +3,9 @@ use bevy::prelude::ScanCode;
 
 // WASM
 #[cfg(target_family = "wasm")]
-mod mac_os;
+mod wasm;
 #[cfg(target_family = "wasm")]
-pub use mac_os::QwertyScanCode;
+pub use wasm::QwertyScanCode;
 
 // MacOs
 #[cfg(all(target_os = "macos", not(target_family = "wasm")))]

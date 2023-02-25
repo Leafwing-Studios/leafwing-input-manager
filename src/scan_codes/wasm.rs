@@ -1,7 +1,5 @@
 //! Helper enum to define scan codes on the QWERTY keyboard layout.
 
-use bevy::prelude::ScanCode;
-
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
 /// The [`u32`] representation of this enum are the `KeyboardEvent.code` values on WASM.
@@ -252,9 +250,8 @@ pub enum QwertyScanCode {
     NumpadDecimal = 0x6e,
     /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
     /// Maps to `NumpadEquals` on Apple keyboards.
-    NumpadDivide = 0x64,
-    /// The location of the Enter key on the numpad of the QWERTY keyboard layout.
-    NumpadEnter = 0x0d,
+    NumpadDivide = 0x6f,
+    // NumpadEnter = 0x0d, This is the same as `Enter` on WASM
     // NumpadEqual = 0x0c: No idea what the difference to NumpadEnter is.
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
     /// Maps to `NumpadDivide` on Apple keyboards.
