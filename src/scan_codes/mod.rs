@@ -1,7 +1,7 @@
 //! Helper enums to easily obtain the scan code of a key.
 use bevy::prelude::ScanCode;
 
-// WASM
+// Wasm
 #[cfg(target_family = "wasm")]
 mod wasm;
 #[cfg(target_family = "wasm")]

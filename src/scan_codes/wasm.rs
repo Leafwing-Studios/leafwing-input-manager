@@ -2,7 +2,7 @@
 
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
-/// The [`u32`] representation of this enum are the `KeyboardEvent.code` values on WASM.
+/// The [`u32`] representation of this enum are the `KeyboardEvent.code` values on Wasm.
 /// See <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#value_of_keycode>.
 #[repr(u32)]
 pub enum QwertyScanCode {
@@ -104,40 +104,40 @@ pub enum QwertyScanCode {
     /// The location of the right Alt key on the QWERTY keyboard layout.
     /// Maps to right Option key on Apple keyboards.
     ///
-    /// On WASM, this scan code value maps to the AltGraph key on Linux, if available.
+    /// On Wasm, this scan code value maps to the AltGraph key on Linux, if available.
     /// Note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     RAlt = 0xe1,
     /// The location of the caps lock  key on the QWERTY keyboard layout.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     CapsLock = 0x14,
     /// The location of the left Control key on the QWERTY keyboard layout.
     ///
-    /// On WASM, the right Control key has the same scan code, see:
+    /// On Wasm, the right Control key has the same scan code, see:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     LControl = 0x11,
     /// The location of the left Windows key on the QWERTY keyboard layout.
     /// Maps to the Command key on Apple keyboards.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     LWin = 0x5b,
     /// The location of the right Windows key on the QWERTY keyboard layout.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     RWin = 0x5c,
     /// The location of the left Shift key on the QWERTY keyboard layout.
     ///
-    /// On WASM, the right Shift key has the same scan code, see:
+    /// On Wasm, the right Shift key has the same scan code, see:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     LShift = 0x10,
 
     /// The location of the Menu key on the QWERTY keyboard layout.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     Menu = 0x5d,
     /// The location of the Enter/Return key on the QWERTY keyboard layout.
@@ -173,19 +173,19 @@ pub enum QwertyScanCode {
     /// The location of the Snapshot / Print Screen key on the QWERTY keyboard layout.
     /// Maps to the `F13` key on Apple keyboards.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     Snapshot = 0x2c,
     /// The location of the Scroll / Scroll Lock key on the QWERTY keyboard layout.
     /// Maps to the `F14` key on Apple keyboards.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     Scroll = 0x91,
     /// The location of the Pause key on the QWERTY keyboard layout.
     /// Maps to the `F15` key on Apple keyboards.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
     Pause = 0x13,
 
@@ -217,7 +217,7 @@ pub enum QwertyScanCode {
     /// The location of the Numlock key on the QWERTY keyboard layout.
     /// Maps to `NumpadClear` on Apple keyboards.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#numpad_keys>
     Numlock = 0x90,
     /// The location of the `0` key on the numpad of the QWERTY keyboard layout.
@@ -245,13 +245,13 @@ pub enum QwertyScanCode {
     // NumpadComma = 0xc2: No idea what the difference to NumpadDecimal is.
     /// The location of the `.` key on the numpad of the QWERTY keyboard layout.
     ///
-    /// On WASM, note the platform specific details here:
+    /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#numpad_keys>
     NumpadDecimal = 0x6e,
     /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
     /// Maps to `NumpadEquals` on Apple keyboards.
     NumpadDivide = 0x6f,
-    // NumpadEnter = 0x0d, This is the same as `Enter` on WASM
+    // NumpadEnter = 0x0d, This is the same as `Enter` on Wasm
     // NumpadEqual = 0x0c: No idea what the difference to NumpadEnter is.
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
     /// Maps to `NumpadDivide` on Apple keyboards.
