@@ -48,8 +48,8 @@ impl ArpgAction {
         match self {
             ArpgAction::Up => Some(Direction::NORTH),
             ArpgAction::Down => Some(Direction::SOUTH),
-            ArpgAction::Left => Some(Direction::EAST),
-            ArpgAction::Right => Some(Direction::WEST),
+            ArpgAction::Left => Some(Direction::WEST),
+            ArpgAction::Right => Some(Direction::EAST),
             _ => None,
         }
     }
