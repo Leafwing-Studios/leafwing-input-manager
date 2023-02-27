@@ -13,6 +13,7 @@ pub mod axislike;
 pub mod buttonlike;
 pub mod clashing_inputs;
 mod display_impl;
+pub mod dynamic_action;
 pub mod errors;
 pub mod input_map;
 pub mod input_mocking;
