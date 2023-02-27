@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Usability
+
+- Added `ActionState::consume_all()` to consume all actions.
+
 ### Enhancements
 
 - The `Actionlike::N_VARIANTS` constant has been changed to a function.

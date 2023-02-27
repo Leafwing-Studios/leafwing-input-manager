@@ -4,7 +4,6 @@ use leafwing_input_manager::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(bevy::input::InputPlugin)
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_players)
         .run();
