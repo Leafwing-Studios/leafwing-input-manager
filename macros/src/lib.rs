@@ -15,3 +15,15 @@ pub fn actionlike(input: TokenStream) -> TokenStream {
 
     crate::actionlike::actionlike_inner(&ast).into()
 }
+
+#[proc_macro_derive(DynActionMarker)]
+pub fn dyn_action_marker(input: TokenStream) -> TokenStream {
+    let ast = syn::parse_macro_input!(input as DeriveInput);
+    let ident = ast.ident;
+    let (impl_generics, ty_generics, where_clause) = ast.generics.split_for_impl();
+
+    let output = quote::quote! {
+        impl #impl_generics ::leafwing_input_manager::dynamic_action::DynActionMarker for #ident #ty_generics #where_clause {}
+    };
+    output.into()
+}
