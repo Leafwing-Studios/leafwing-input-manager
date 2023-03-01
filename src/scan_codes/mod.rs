@@ -15,9 +15,9 @@ pub use mac_os::QwertyScanCode;
 
 // Everything else (mainly Windows and Linux)
 #[cfg(all(not(target_family = "wasm"), not(target_os = "macos")))]
-mod set_1;
+mod windows;
 #[cfg(all(not(target_family = "wasm"), not(target_os = "macos")))]
-pub use set_1::QwertyScanCode;
+pub use windows::QwertyScanCode;
 
 impl From<QwertyScanCode> for ScanCode {
     fn from(value: QwertyScanCode) -> Self {
