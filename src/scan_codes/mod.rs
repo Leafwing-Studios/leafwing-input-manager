@@ -13,10 +13,24 @@ mod mac_os;
 #[cfg(all(target_os = "macos", not(target_family = "wasm")))]
 pub use mac_os::QwertyScanCode;
 
-// Everything else (mainly Windows and Linux)
-#[cfg(all(not(target_family = "wasm"), not(target_os = "macos")))]
+// Linux
+#[cfg(all(target_os = "linux", not(target_os = "macos")))]
+mod linux;
+#[cfg(all(target_os = "linux", not(target_os = "macos")))]
+pub use linux::QwertyScanCode;
+
+// Windows and other stuff using Set 1
+#[cfg(all(
+    not(target_family = "wasm"),
+    not(target_os = "macos"),
+    not(target_os = "linux")
+))]
 mod windows;
-#[cfg(all(not(target_family = "wasm"), not(target_os = "macos")))]
+#[cfg(all(
+    not(target_family = "wasm"),
+    not(target_os = "macos"),
+    not(target_os = "linux")
+))]
 pub use windows::QwertyScanCode;
 
 impl From<QwertyScanCode> for ScanCode {
