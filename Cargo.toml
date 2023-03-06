@@ -26,11 +26,13 @@ egui = ['dep:bevy_egui']
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.7" }
 
+# FIXME: Update to 0.10 once available
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.19", optional = true }
+# FIXME: Update to released version
+bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "bevy_main", optional = true }
 
 petitset = { version = "0.2.1", features = ["serde_compat"] }
 derive_more = { version = "0.99", default-features = false, features = [
@@ -43,6 +45,9 @@ fixedbitset = "0.4.2"
 once_cell = "1.17.0"
 
 [dev-dependencies]
+# FIXME: Update to released version
+bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "bevy_main" }
+# FIXME: Update to 0.10 once available
 bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
@@ -52,7 +57,6 @@ bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-fe
   "bevy_core_pipeline",
   "x11",
 ] }
-bevy_egui = { version = "0.19" }
 serde_test = "1.0"
 
 [lib]
