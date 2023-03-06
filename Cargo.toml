@@ -25,9 +25,7 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.7" }
-
-# FIXME: Update to 0.10 once available
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+bevy = { version = "0.10", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
@@ -47,8 +45,7 @@ once_cell = "1.17.0"
 [dev-dependencies]
 # FIXME: Update to released version
 bevy_egui = { git = "https://github.com/DGriffin91/bevy_egui", branch = "bevy_main" }
-# FIXME: Update to 0.10 once available
-bevy = { git = "https://github.com/bevyengine/bevy", branch = "main", default-features = false, features = [
+bevy = { version = "0.10", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
