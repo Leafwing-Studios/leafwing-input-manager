@@ -54,7 +54,7 @@ jobs:
       - name: check dead links
         continue-on-error: true
         id: run1
-        uses: gaurav-nelson/github-action-markdown-link-check@0a51127e9955b855a9bbfa1ff5577f1d1338c9a5
+        uses: gaurav-nelson/github-action-markdown-link-check@d53a906aa6b22b8979d33bc86170567e619495ec
         with:
           use-quiet-mode: "yes"
           use-verbose-mode: "yes"
@@ -67,7 +67,7 @@ jobs:
         continue-on-error: true
         id: run2
         if: steps.run1.outcome=='failure'
-        uses: gaurav-nelson/github-action-markdown-link-check@0a51127e9955b855a9bbfa1ff5577f1d1338c9a5
+        uses: gaurav-nelson/github-action-markdown-link-check@d53a906aa6b22b8979d33bc86170567e619495ec
         with:
           use-quiet-mode: "yes"
           use-verbose-mode: "yes"
@@ -80,7 +80,7 @@ jobs:
         continue-on-error: true
         id: run3
         if: steps.run2.outcome=='failure'
-        uses: gaurav-nelson/github-action-markdown-link-check@0a51127e9955b855a9bbfa1ff5577f1d1338c9a5
+        uses: gaurav-nelson/github-action-markdown-link-check@d53a906aa6b22b8979d33bc86170567e619495ec
         with:
           use-quiet-mode: "yes"
           use-verbose-mode: "yes"
