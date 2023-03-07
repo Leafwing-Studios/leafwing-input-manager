@@ -71,7 +71,7 @@ pub fn update_action_state<A: Actionlike>(
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
-    #[cfg(feature = "egui")] maybe_egui: Option<ResMut<EguiContext>>,
+    #[cfg(feature = "egui")] maybe_egui: Query<&EguiContext>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     press_scheduler: Option<ResMut<PressScheduler<A>>>,
@@ -91,8 +91,7 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_motion = mouse_motion.into_inner();
 
     #[cfg(feature = "egui")]
-    let (keycodes, mouse_buttons, mouse_wheel) = if let Some(mut egui) = maybe_egui {
-        let ctx = egui.ctx_mut();
+    let (keycodes, mouse_buttons, mouse_wheel) = if let Some(ctx) = maybe_egui.iter().next() {
         // If egui wants to own inputs, don't also apply them to the game state
         let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
         // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
