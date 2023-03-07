@@ -34,17 +34,17 @@ use bevy::ui::UiSystem;
 /// **WARNING:** Theses systems run during [`CoreStage::PreUpdate`].
 /// If you have systems that care about inputs and actions that also run during this stage,
 /// you must define an ordering between your systems or behavior will be very erratic.
-/// The stable in_sets for these systems are available under [`InputManagerSystem`] enum.
+/// The stable `in_sets` for these systems are available under [`InputManagerSystem`] enum.
 ///
 /// Complete list:
 ///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
-///     - in_seted [`InputManagerSystem::Reset`]
+///     - in set [`InputManagerSystem::Reset`]
 /// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`](crate::action_state::ActionState)
-///     - in_seted [`InputManagerSystem::Update`]
+///     - in set [`InputManagerSystem::Update`]
 /// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`](bevy::ui::Interaction) component
-///    - in_seted [`InputManagerSystem::Update`]
+///    - in set [`InputManagerSystem::Update`]
 /// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,

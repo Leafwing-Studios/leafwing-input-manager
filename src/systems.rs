@@ -270,9 +270,5 @@ pub fn release_on_input_map_removed<A: Actionlike>(
 
 /// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
 pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> bool {
-    if toggle_actions.enabled {
-        true
-    } else {
-        false
-    }
+    toggle_actions.enabled
 }
