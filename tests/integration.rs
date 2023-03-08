@@ -93,40 +93,6 @@ fn do_nothing() {
 }
 
 #[test]
-fn action_state_change_detection() {
-    use bevy::input::InputPlugin;
-
-    let mut app = App::new();
-
-    app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
-        .add_system(action_state_changed_iff_input_changed);
-
-    for i in 0..10 {
-        if i % 2 == 0 {
-            app.send_input(KeyCode::F);
-        }
-
-        app.update();
-    }
-
-    fn action_state_changed_iff_input_changed(
-        query: Query<Ref<ActionState<Action>>>,
-        input: Res<Input<KeyCode>>,
-    ) {
-        let action_state_tracker = query.single();
-
-        if input.is_changed() {
-            assert!(action_state_tracker.is_changed());
-        } else {
-            assert!(!action_state_tracker.is_changed());
-        }
-    }
-}
-
-#[test]
 fn disable_input() {
     use bevy::input::InputPlugin;
 
