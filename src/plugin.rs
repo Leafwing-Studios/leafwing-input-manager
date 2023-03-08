@@ -7,9 +7,10 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use bevy::app::{App, CoreStage, Plugin};
+use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
+use bevy::prelude::CoreSet;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -33,17 +34,17 @@ use bevy::ui::UiSystem;
 /// **WARNING:** Theses systems run during [`CoreStage::PreUpdate`].
 /// If you have systems that care about inputs and actions that also run during this stage,
 /// you must define an ordering between your systems or behavior will be very erratic.
-/// The stable labels for these systems are available under [`InputManagerSystem`] enum.
+/// The stable system sets for these systems are available under [`InputManagerSystem`] enum.
 ///
 /// Complete list:
 ///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
-///     - labeled [`InputManagerSystem::Reset`]
+///     - in set [`InputManagerSystem::Reset`]
 /// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`](crate::action_state::ActionState)
-///     - labeled [`InputManagerSystem::Update`]
+///     - in set [`InputManagerSystem::Update`]
 /// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`](bevy::ui::Interaction) component
-///    - labeled [`InputManagerSystem::Update`]
+///    - in set [`InputManagerSystem::Update`]
 /// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
@@ -87,45 +88,45 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 
         match self.machine {
             Machine::Client => {
-                app.add_system_to_stage(
-                    CoreStage::PreUpdate,
+                app.add_system(
                     tick_action_state::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Tick)
+                        .run_if(run_if_enabled::<A>)
+                        .in_base_set(CoreSet::PreUpdate)
+                        .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
-                .add_system_to_stage(
-                    CoreStage::PreUpdate,
+                .add_system(
                     release_on_disable::<A>
-                        .label(InputManagerSystem::ReleaseOnDisable)
+                        .in_base_set(CoreSet::PreUpdate)
+                        .in_set(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Update),
                 )
-                .add_system_to_stage(CoreStage::PostUpdate, release_on_input_map_removed::<A>);
+                .add_system(release_on_input_map_removed::<A>.in_base_set(CoreSet::PostUpdate));
 
                 #[cfg(feature = "egui")]
-                app.add_system_to_stage(
-                    CoreStage::PreUpdate,
+                app.add_system(
                     update_action_state::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Update)
+                        .run_if(run_if_enabled::<A>)
+                        .in_base_set(CoreSet::PreUpdate)
+                        .in_set(InputManagerSystem::Update)
                         .after(InputSystem)
-                        .after(bevy_egui::EguiSystem::ProcessInput),
+                        .after(bevy_egui::EguiSet::ProcessInput),
                 );
                 #[cfg(not(feature = "egui"))]
-                app.add_system_to_stage(
-                    CoreStage::PreUpdate,
+                app.add_system(
                     update_action_state::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Update)
+                        .run_if(run_if_enabled::<A>)
+                        .in_base_set(CoreSet::PreUpdate)
+                        .in_set(InputManagerSystem::Update)
                         .after(InputSystem),
                 );
 
                 #[cfg(feature = "ui")]
-                app.add_system_to_stage(
-                    CoreStage::PreUpdate,
+                app.add_system(
                     update_action_state_from_interaction::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::ManualControl)
+                        .run_if(run_if_enabled::<A>)
+                        .in_base_set(CoreSet::PreUpdate)
+                        .in_set(InputManagerSystem::ManualControl)
                         .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
                         // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
@@ -136,11 +137,11 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 );
             }
             Machine::Server => {
-                app.add_system_to_stage(
-                    CoreStage::PreUpdate,
+                app.add_system(
                     tick_action_state::<A>
-                        .with_run_criteria(run_if_enabled::<A>)
-                        .label(InputManagerSystem::Tick),
+                        .run_if(run_if_enabled::<A>)
+                        .in_base_set(CoreSet::PreUpdate)
+                        .in_set(InputManagerSystem::Tick),
                 );
             }
         };
@@ -188,10 +189,10 @@ impl<A: Actionlike> Default for ToggleActions<A> {
     }
 }
 
-/// [`SystemLabel`]s for the [`crate::systems`] used by this crate
+/// [`SystemSet`]s for the [`crate::systems`] used by this crate
 ///
 /// `Reset` must occur before `Update`
-#[derive(SystemLabel, Clone, Hash, Debug, PartialEq, Eq)]
+#[derive(SystemSet, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
     /// Advances action timers.
     ///

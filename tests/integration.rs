@@ -1,5 +1,3 @@
-#![cfg(test)]
-use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::press_scheduler::PressScheduler;
@@ -95,40 +93,6 @@ fn do_nothing() {
 }
 
 #[test]
-fn action_state_change_detection() {
-    use bevy::input::InputPlugin;
-
-    let mut app = App::new();
-
-    app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
-        .add_system(action_state_changed_iff_input_changed);
-
-    for i in 0..10 {
-        if i % 2 == 0 {
-            app.send_input(KeyCode::F);
-        }
-
-        app.update();
-    }
-
-    fn action_state_changed_iff_input_changed(
-        query: Query<ChangeTrackers<ActionState<Action>>>,
-        input: Res<Input<KeyCode>>,
-    ) {
-        let action_state_tracker = query.single();
-
-        if input.is_changed() {
-            assert!(action_state_tracker.is_changed());
-        } else {
-            assert!(!action_state_tracker.is_changed());
-        }
-    }
-}
-
-#[test]
 fn disable_input() {
     use bevy::input::InputPlugin;
 
@@ -144,7 +108,7 @@ fn disable_input() {
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<Respect>()
         .add_system(pay_respects)
-        .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
+        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
 
     // Press F to pay respects
     app.send_input(KeyCode::F);
@@ -184,7 +148,7 @@ fn release_when_input_map_removed() {
         .init_resource::<Respect>()
         .add_system(pay_respects)
         .add_system(remove_input_map)
-        .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
+        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
 
     // Press F to pay respects
     app.send_input(KeyCode::F);
@@ -244,7 +208,7 @@ fn action_state_driver() {
         .add_plugin(InputPlugin)
         .add_startup_system(setup)
         .add_system(pay_respects)
-        .add_system_to_stage(CoreStage::PreUpdate, respect_fades)
+        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate))
         .init_resource::<Respect>();
 
     app.update();

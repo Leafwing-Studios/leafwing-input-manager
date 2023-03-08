@@ -1,13 +1,10 @@
 //! Unified input streams for working with [`bevy::input`] data.
 
-use bevy::{
-    input::{
-        gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEventRaw, Gamepads},
-        keyboard::{KeyCode, KeyboardInput},
-        mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
-        Axis, Input,
-    },
-    prelude::ScanCode,
+use bevy::input::{
+    gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
+    keyboard::{KeyCode, KeyboardInput, ScanCode},
+    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
+    Axis, Input,
 };
 use petitset::PetitSet;
 
@@ -403,7 +400,7 @@ pub struct MutableInputStreams<'a> {
     /// A list of registered [`Gamepads`]
     pub gamepads: &'a mut Gamepads,
     /// Events used for mocking gamepad-related inputs
-    pub gamepad_events: &'a mut Events<GamepadEventRaw>,
+    pub gamepad_events: &'a mut Events<GamepadEvent>,
 
     /// A [`KeyCode`] [`Input`] stream
     pub keycodes: &'a mut Input<KeyCode>,
@@ -433,7 +430,7 @@ impl<'a> MutableInputStreams<'a> {
             ResMut<Axis<GamepadButton>>,
             ResMut<Axis<GamepadAxis>>,
             ResMut<Gamepads>,
-            ResMut<Events<GamepadEventRaw>>,
+            ResMut<Events<GamepadEvent>>,
             ResMut<Input<KeyCode>>,
             ResMut<Input<ScanCode>>,
             ResMut<Events<KeyboardInput>>,

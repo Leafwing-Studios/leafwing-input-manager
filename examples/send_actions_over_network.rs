@@ -36,10 +36,7 @@ fn main() {
         .add_plugin(InputPlugin)
         .add_plugin(InputManagerPlugin::<FpsAction>::default())
         // Creates an event stream of `ActionDiffs` to send to the server
-        .add_system_to_stage(
-            CoreStage::PostUpdate,
-            generate_action_diffs::<FpsAction, StableId>,
-        )
+        .add_system(generate_action_diffs::<FpsAction, StableId>.in_base_set(CoreSet::PostUpdate))
         .add_event::<ActionDiff<FpsAction, StableId>>()
         .add_startup_system(spawn_player);
 
@@ -49,10 +46,7 @@ fn main() {
         .add_plugin(InputManagerPlugin::<FpsAction>::server())
         .add_event::<ActionDiff<FpsAction, StableId>>()
         // Reads in the event stream of `ActionDiffs` to update the `ActionState`
-        .add_system_to_stage(
-            CoreStage::PreUpdate,
-            process_action_diffs::<FpsAction, StableId>,
-        )
+        .add_system(process_action_diffs::<FpsAction, StableId>.in_base_set(CoreSet::PreUpdate))
         // Typically, the rest of this information would synchronized as well
         .add_startup_system(spawn_player);
 

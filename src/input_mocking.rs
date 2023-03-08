@@ -18,11 +18,11 @@ use bevy::ecs::system::{ResMut, SystemState};
 use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
-use bevy::input::gamepad::GamepadEventRaw;
+use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
-    gamepad::{Gamepad, GamepadButton, GamepadEvent, GamepadEventType},
+    gamepad::{Gamepad, GamepadButton, GamepadEvent},
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
@@ -216,10 +216,12 @@ impl MockInput for MutableInputStreams<'_> {
         // Gamepad buttons
         for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
-                self.gamepad_events.send(GamepadEventRaw {
-                    gamepad,
-                    event_type: GamepadEventType::ButtonChanged(button_type, 1.0),
-                });
+                self.gamepad_events
+                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
+                        gamepad,
+                        button_type,
+                        value: 1.0,
+                    }));
             }
         }
 
@@ -229,10 +231,12 @@ impl MockInput for MutableInputStreams<'_> {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
                         if let Some(gamepad) = gamepad {
-                            self.gamepad_events.send(GamepadEventRaw {
-                                gamepad,
-                                event_type: GamepadEventType::AxisChanged(axis_type, position_data),
-                            });
+                            self.gamepad_events
+                                .send(GamepadEvent::Axis(GamepadAxisChangedEvent {
+                                    gamepad,
+                                    axis_type,
+                                    value: position_data,
+                                }));
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
@@ -281,10 +285,12 @@ impl MockInput for MutableInputStreams<'_> {
 
         for button_type in raw_inputs.gamepad_buttons {
             if let Some(gamepad) = gamepad {
-                self.gamepad_events.send(GamepadEventRaw {
-                    gamepad,
-                    event_type: GamepadEventType::ButtonChanged(button_type, 1.0),
-                });
+                self.gamepad_events
+                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
+                        gamepad,
+                        button_type,
+                        value: 1.0,
+                    }));
             }
         }
 
@@ -481,7 +487,10 @@ impl MockInput for App {
 mod test {
     use crate::input_mocking::MockInput;
     use bevy::{
-        input::{gamepad::GamepadInfo, InputPlugin},
+        input::{
+            gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo},
+            InputPlugin,
+        },
         prelude::*,
     };
 
@@ -522,12 +531,12 @@ mod test {
 
         let gamepad = Gamepad { id: 0 };
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent {
+        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             gamepad,
-            event_type: GamepadEventType::Connected(GamepadInfo {
+            connection: GamepadConnection::Connected(GamepadInfo {
                 name: "TestController".into(),
             }),
-        });
+        }));
         app.update();
 
         // Test that buttons are unpressed by default
@@ -562,12 +571,12 @@ mod test {
 
         let gamepad = Gamepad { id: 0 };
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent {
+        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             gamepad,
-            event_type: GamepadEventType::Connected(GamepadInfo {
+            connection: GamepadConnection::Connected(GamepadInfo {
                 name: "TestController".into(),
             }),
-        });
+        }));
         app.update();
 
         // Test that buttons are unpressed by default

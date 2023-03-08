@@ -20,15 +20,12 @@ use bevy::input::{
 };
 use bevy::time::Time;
 use bevy::utils::Instant;
-use bevy::{
-    ecs::{prelude::*, schedule::ShouldRun},
-    prelude::ScanCode,
-};
+use bevy::{ecs::prelude::*, prelude::ScanCode};
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
-use bevy_egui::EguiContext;
+use bevy_egui::EguiContexts;
 
 /// Advances actions timer.
 ///
@@ -75,7 +72,7 @@ pub fn update_action_state<A: Actionlike>(
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
-    #[cfg(feature = "egui")] maybe_egui: Option<ResMut<EguiContext>>,
+    #[cfg(feature = "egui")] mut maybe_egui: EguiContexts,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     press_scheduler: Option<ResMut<PressScheduler<A>>>,
@@ -96,23 +93,23 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_motion = mouse_motion.into_inner();
 
     #[cfg(feature = "egui")]
-    let (keycodes, scan_codes, mouse_buttons, mouse_wheel) = if let Some(mut egui) = maybe_egui {
-        let ctx = egui.ctx_mut();
-        // If egui wants to own inputs, don't also apply them to the game state
-        let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
-        let scan_codes = scan_codes.filter(|_| !ctx.wants_keyboard_input());
+    let ctx = maybe_egui.ctx_mut();
 
-        // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
-        // so `is_pointer_over_area` is also needed.
-        let mouse_buttons =
-            mouse_buttons.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-        let mouse_wheel =
-            mouse_wheel.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
+    // If egui wants to own inputs, don't also apply them to the game state
+    #[cfg(feature = "egui")]
+    let (keycodes, scan_codes) = if ctx.wants_keyboard_input() {
+        (None, None)
     } else {
-        // We don't just want to make these variables mutable
-        // because then we'll have unused mut when the feature is not enabled
-        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
+        (keycodes, scan_codes)
+    };
+
+    // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
+    // so `is_pointer_over_area` is also needed.
+    #[cfg(feature = "egui")]
+    let (mouse_buttons, mouse_wheel) = if ctx.is_pointer_over_area() || ctx.wants_pointer_input() {
+        (None, None)
+    } else {
+        (mouse_buttons, mouse_wheel)
     };
 
     let resources = input_map
@@ -250,7 +247,7 @@ pub fn release_on_disable<A: Actionlike>(
 /// For components you must remove the [`InputMap<A>`] before [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate)
 /// or this will not run.
 pub fn release_on_input_map_removed<A: Actionlike>(
-    removed_components: RemovedComponents<InputMap<A>>,
+    mut removed_components: RemovedComponents<InputMap<A>>,
     input_map_resource: Option<ResMut<InputMap<A>>>,
     action_state_resource: Option<ResMut<ActionState<A>>>,
     mut input_map_resource_existed: Local<bool>,
@@ -278,10 +275,6 @@ pub fn release_on_input_map_removed<A: Actionlike>(
 }
 
 /// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
-pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> ShouldRun {
-    if toggle_actions.enabled {
-        ShouldRun::Yes
-    } else {
-        ShouldRun::No
-    }
+pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> bool {
+    toggle_actions.enabled
 }

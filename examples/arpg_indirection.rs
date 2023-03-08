@@ -19,9 +19,10 @@ fn main() {
         .add_plugin(InputManagerPlugin::<Ability>::default())
         .add_startup_system(spawn_player)
         // This system coordinates the state of our two actions
-        .add_system_to_stage(
-            CoreStage::PreUpdate,
-            copy_action_state.after(InputManagerSystem::ManualControl),
+        .add_system(
+            copy_action_state
+                .in_base_set(CoreSet::PreUpdate)
+                .after(InputManagerSystem::ManualControl),
         )
         // Try it out, using QWER / left click / right click!
         .add_system(report_abilities_used)
