@@ -128,12 +128,7 @@ pub fn update_action_state<A: Actionlike>(
                 associated_gamepad: input_map.gamepad(),
             };
 
-            let action_data = input_map.which_pressed(&input_streams, *clash_strategy);
-
-            // This check is needed to correctly apply change detection
-            if !action_data.is_empty() {
-                action_state.update(action_data);
-            }
+            action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
 
             if let Some(mut press_scheduler) = press_scheduler {
                 press_scheduler.apply(&mut action_state);
@@ -156,13 +151,7 @@ pub fn update_action_state<A: Actionlike>(
             associated_gamepad: input_map.gamepad(),
         };
 
-        let action_data = input_map.which_pressed(&input_streams, *clash_strategy);
-
-        // This check is needed to correctly apply change detection
-        if !action_data.is_empty() {
-            action_state.update(action_data);
-        }
-
+        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
         if let Some(mut press_scheduler) = press_scheduler {
             press_scheduler.apply(&mut action_state);
         }
