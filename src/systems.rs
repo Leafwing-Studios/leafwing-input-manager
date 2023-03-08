@@ -112,17 +112,32 @@ pub fn update_action_state<A: Actionlike>(
         (mouse_buttons, mouse_wheel)
     };
 
-    let resources = input_map
-        .zip(action_state)
-        .map(|(input_map, action_state)| {
-            (
-                Mut::from(action_state),
-                input_map.into_inner(),
-                press_scheduler.map(Mut::from),
-            )
-        });
+    // Update resources
+    if let Some(input_map) = input_map {
+        if let Some(mut action_state) = action_state {
+            let input_streams = InputStreams {
+                gamepad_buttons,
+                gamepad_button_axes,
+                gamepad_axes,
+                gamepads,
+                keycodes,
+                scan_codes,
+                mouse_buttons,
+                mouse_wheel,
+                mouse_motion,
+                associated_gamepad: input_map.gamepad(),
+            };
 
-    for (mut action_state, input_map, press_scheduler) in query.iter_mut().chain(resources) {
+            action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
+
+            if let Some(mut press_scheduler) = press_scheduler {
+                press_scheduler.apply(&mut action_state);
+            }
+        }
+    }
+
+    // Update query
+    for (mut action_state, input_map, press_scheduler) in query.iter_mut() {
         let input_streams = InputStreams {
             gamepad_buttons,
             gamepad_button_axes,
