@@ -487,7 +487,10 @@ impl MockInput for App {
 mod test {
     use crate::input_mocking::MockInput;
     use bevy::{
-        input::{gamepad::GamepadInfo, InputPlugin},
+        input::{
+            gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo},
+            InputPlugin,
+        },
         prelude::*,
     };
 
@@ -528,12 +531,12 @@ mod test {
 
         let gamepad = Gamepad { id: 0 };
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent {
+        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             gamepad,
-            event_type: GamepadEventType::Connected(GamepadInfo {
+            connection: GamepadConnection::Connected(GamepadInfo {
                 name: "TestController".into(),
             }),
-        });
+        }));
         app.update();
 
         // Test that buttons are unpressed by default
@@ -568,12 +571,12 @@ mod test {
 
         let gamepad = Gamepad { id: 0 };
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent {
+        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             gamepad,
-            event_type: GamepadEventType::Connected(GamepadInfo {
+            connection: GamepadConnection::Connected(GamepadInfo {
                 name: "TestController".into(),
             }),
-        });
+        }));
         app.update();
 
         // Test that buttons are unpressed by default

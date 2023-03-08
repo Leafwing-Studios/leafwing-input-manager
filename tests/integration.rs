@@ -144,7 +144,7 @@ fn disable_input() {
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<Respect>()
         .add_system(pay_respects)
-        .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
+        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
 
     // Press F to pay respects
     app.send_input(KeyCode::F);
@@ -184,7 +184,7 @@ fn release_when_input_map_removed() {
         .init_resource::<Respect>()
         .add_system(pay_respects)
         .add_system(remove_input_map)
-        .add_system_to_stage(CoreStage::PreUpdate, respect_fades);
+        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
 
     // Press F to pay respects
     app.send_input(KeyCode::F);
@@ -244,7 +244,7 @@ fn action_state_driver() {
         .add_plugin(InputPlugin)
         .add_startup_system(setup)
         .add_system(pay_respects)
-        .add_system_to_stage(CoreStage::PreUpdate, respect_fades)
+        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate))
         .init_resource::<Respect>();
 
     app.update();
