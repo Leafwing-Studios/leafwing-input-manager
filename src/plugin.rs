@@ -34,7 +34,7 @@ use bevy::ui::UiSystem;
 /// **WARNING:** Theses systems run during [`CoreStage::PreUpdate`].
 /// If you have systems that care about inputs and actions that also run during this stage,
 /// you must define an ordering between your systems or behavior will be very erratic.
-/// The stable `in_sets` for these systems are available under [`InputManagerSystem`] enum.
+/// The stable system sets for these systems are available under [`InputManagerSystem`] enum.
 ///
 /// Complete list:
 ///
