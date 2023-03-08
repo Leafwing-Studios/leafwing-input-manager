@@ -9,7 +9,7 @@ fn main() {
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_player)
         .add_startup_system(spawn_cameras)
-        .add_startup_system(spawn_ui.in_set(StartupSet::PostStartup))
+        .add_startup_system(spawn_ui.in_base_set(StartupSet::PostStartup))
         .add_system(move_player)
         .run();
 }
