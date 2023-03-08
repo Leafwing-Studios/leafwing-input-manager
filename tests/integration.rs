@@ -1,5 +1,3 @@
-#![cfg(test)]
-use bevy::ecs::query::ChangeTrackers;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::press_scheduler::PressScheduler;
@@ -115,7 +113,7 @@ fn action_state_change_detection() {
     }
 
     fn action_state_changed_iff_input_changed(
-        query: Query<ChangeTrackers<ActionState<Action>>>,
+        query: Query<Ref<ActionState<Action>>>,
         input: Res<Input<KeyCode>>,
     ) {
         let action_state_tracker = query.single();
