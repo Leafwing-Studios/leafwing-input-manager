@@ -7,10 +7,11 @@ use bevy::{
         ButtonState,
     },
     prelude::*,
+    window::PrimaryWindow,
 };
 use bevy_egui::{
     egui::{Align2, Area, Grid, Window},
-    EguiContext, EguiPlugin,
+    EguiContexts, EguiPlugin,
 };
 use derive_more::Display;
 use leafwing_input_manager::{prelude::*, user_input::InputKind};
@@ -42,12 +43,12 @@ fn spawn_player_system(mut commands: Commands, control_settings: Res<ControlSett
 
 fn controls_window_system(
     mut commands: Commands,
-    mut egui: ResMut<EguiContext>,
-    windows: Res<Windows>,
+    mut egui: EguiContexts,
+    windows: Query<&bevy::window::Window, With<PrimaryWindow>>,
     control_settings: ResMut<ControlSettings>,
 ) {
     // The window may not exist when the application closes
-    let Some(main_window) = windows.get_primary() else {
+    let Ok(main_window) = windows.get_single() else {
         return;
     };
     let window_width_margin = egui.ctx_mut().style().spacing.window_margin.left * 2.0;
@@ -94,7 +95,7 @@ fn controls_window_system(
 }
 
 fn buttons_system(
-    mut egui: ResMut<EguiContext>,
+    mut egui: EguiContexts,
     mut control_settings: ResMut<ControlSettings>,
     mut player_mappings: Query<&mut InputMap<ControlAction>>,
 ) {
@@ -114,7 +115,7 @@ fn buttons_system(
 
 fn binding_window_system(
     mut commands: Commands,
-    mut egui: ResMut<EguiContext>,
+    mut egui: EguiContexts,
     mut input_events: InputEvents,
     active_binding: Option<ResMut<ActiveBinding>>,
     mut control_settings: ResMut<ControlSettings>,
@@ -276,8 +277,8 @@ impl InputEvents<'_, '_> {
             value: strength,
         })) = self.gamepad_events.iter().next()
         {
-            if strength <= 0.5 {
-                return Some(button_type.into());
+            if *strength <= 0.5 {
+                return Some((*button_type).into());
             }
         }
         None
