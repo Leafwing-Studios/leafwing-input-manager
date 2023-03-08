@@ -25,7 +25,7 @@ use bevy::{ecs::prelude::*, prelude::ScanCode};
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
-use bevy_egui::EguiContext;
+use bevy_egui::EguiContexts;
 
 /// Advances actions timer.
 ///
@@ -72,7 +72,7 @@ pub fn update_action_state<A: Actionlike>(
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
-    #[cfg(feature = "egui")] maybe_egui: Query<&EguiContext>,
+    #[cfg(feature = "egui")] mut maybe_egui: EguiContexts,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     press_scheduler: Option<ResMut<PressScheduler<A>>>,
@@ -92,20 +92,25 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
     let mouse_motion = mouse_motion.into_inner();
 
-    #[cfg(egui)]
-    if let Some(egui) = maybe_egui.iter().next() {
-        let ctx = egui.ctx_mut();
-        // If egui wants to own inputs, don't also apply them to the game state
-        keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
-        scan_codes = scan_codes.filter(|_| !ctx.wants_keyboard_input());
+    #[cfg(feature = "egui")]
+    let ctx = maybe_egui.ctx_mut();
 
-        // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
-        // so `is_pointer_over_area` is also needed.
-        mouse_buttons =
-            mouse_buttons.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-        mouse_wheel =
-            mouse_wheel.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-    }
+    // If egui wants to own inputs, don't also apply them to the game state
+    #[cfg(feature = "egui")]
+    let (keycodes, scan_codes) = if ctx.wants_keyboard_input() {
+        (None, None)
+    } else {
+        (keycodes, scan_codes)
+    };
+
+    // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
+    // so `is_pointer_over_area` is also needed.
+    #[cfg(feature = "egui")]
+    let (mouse_buttons, mouse_wheel) = if ctx.is_pointer_over_area() || ctx.wants_pointer_input() {
+        (None, None)
+    } else {
+        (mouse_buttons, mouse_wheel)
+    };
 
     let resources = input_map
         .zip(action_state)
