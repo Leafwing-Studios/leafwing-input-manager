@@ -2,7 +2,7 @@
 
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
-    keyboard::{KeyCode, KeyboardInput},
+    keyboard::{KeyCode, KeyboardInput, ScanCode},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     Axis, Input,
 };

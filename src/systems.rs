@@ -20,10 +20,7 @@ use bevy::input::{
 };
 use bevy::time::Time;
 use bevy::utils::Instant;
-use bevy::{
-    ecs::{prelude::*, schedule::ShouldRun},
-    prelude::ScanCode,
-};
+use bevy::{ecs::prelude::*, prelude::ScanCode};
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -95,24 +92,20 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
     let mouse_motion = mouse_motion.into_inner();
 
-    let (keycodes, scan_codes, mouse_buttons, mouse_wheel) = maybe_egui.iter().next() {
+    #[cfg(egui)]
+    if let Some(egui) = maybe_egui.iter().next() {
         let ctx = egui.ctx_mut();
         // If egui wants to own inputs, don't also apply them to the game state
-        let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
-        let scan_codes = scan_codes.filter(|_| !ctx.wants_keyboard_input());
+        keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
+        scan_codes = scan_codes.filter(|_| !ctx.wants_keyboard_input());
 
         // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
         // so `is_pointer_over_area` is also needed.
-        let mouse_buttons =
+        mouse_buttons =
             mouse_buttons.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-        let mouse_wheel =
+        mouse_wheel =
             mouse_wheel.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
-    } else {
-        // We don't just want to make these variables mutable
-        // because then we'll have unused mut when the feature is not enabled
-        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
-    };
+    }
 
     let resources = input_map
         .zip(action_state)
