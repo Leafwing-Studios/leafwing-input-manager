@@ -5,6 +5,8 @@
 ### Usability
 
 - Added `ActionState::consume_all()` to consume all actions.
+- `bevy_egui` dependency has been bumped from 0.19 to 0.20.
+- `bevy` dependency has been bumped from 0.9 to 0.10.
 
 ### Enhancements
 
