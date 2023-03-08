@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## Version 0.9.0
 
 ### Usability
 
@@ -10,6 +10,10 @@
 
 ### Enhancements
 
+- Added **scan code** support, which enables you to define keybindings depending on the key position rather than the key output.
+  This is useful to make the keybindings layout-independent and is commonly used for the WASD movement controls.
+  - Use `ScanCode` to define the raw scan code values.
+  - Use `QwertyScanCode` to define the scan code by the name of the key on the US QWERTY keyboard layout.
 - The `Actionlike::N_VARIANTS` constant has been changed to a function.
 - Added the `DynAction` type and various companions to enable more advanced use cases.
 
