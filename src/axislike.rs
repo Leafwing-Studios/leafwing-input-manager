@@ -2,6 +2,7 @@
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::orientation::{Direction, Rotation};
+use crate::prelude::QwertyScanCode;
 use crate::user_input::InputKind;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
@@ -281,13 +282,18 @@ impl VirtualDPad {
         }
     }
 
-    /// Generates a [`VirtualDPad`] corresponding to the `WASD` keyboard keycodes
+    /// Generates a [`VirtualDPad`] corresponding to the `WASD` keys on the standard US QWERTY layout.
+    ///
+    /// Note that on other keyboard layouts, different keys need to be pressed.
+    /// The _location_ of the keys is the same on all keyboard layouts.
+    /// This ensures that the classic triangular shape is retained on all layouts,
+    /// which enables comfortable movement controls.
     pub fn wasd() -> VirtualDPad {
         VirtualDPad {
-            up: InputKind::Keyboard(KeyCode::W),
-            down: InputKind::Keyboard(KeyCode::S),
-            left: InputKind::Keyboard(KeyCode::A),
-            right: InputKind::Keyboard(KeyCode::D),
+            up: InputKind::KeyLocation(QwertyScanCode::W.into()),
+            down: InputKind::KeyLocation(QwertyScanCode::S.into()),
+            left: InputKind::KeyLocation(QwertyScanCode::A.into()),
+            right: InputKind::KeyLocation(QwertyScanCode::D.into()),
         }
     }
 

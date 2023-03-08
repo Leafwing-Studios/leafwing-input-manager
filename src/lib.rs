@@ -21,6 +21,7 @@ pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
 pub mod press_scheduler;
+pub mod scan_codes;
 pub mod systems;
 pub mod user_input;
 
@@ -35,6 +36,7 @@ pub mod prelude {
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     pub use crate::input_mocking::MockInput;
+    pub use crate::scan_codes::QwertyScanCode;
     pub use crate::user_input::{Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
