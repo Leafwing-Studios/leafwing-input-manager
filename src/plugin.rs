@@ -110,7 +110,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                         .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Update)
                         .after(InputSystem)
-                        .after(bevy_egui::EguiSystem::ProcessInput),
+                        .after(bevy_egui::EguiSet::ProcessInput),
                 );
                 #[cfg(not(feature = "egui"))]
                 app.add_system(
