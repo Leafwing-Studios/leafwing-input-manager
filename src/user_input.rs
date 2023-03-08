@@ -2,11 +2,13 @@
 
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 
+use bevy::prelude::ScanCode;
 use bevy::utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
 use crate::axislike::VirtualAxis;
+use crate::scan_codes::QwertyScanCode;
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
@@ -163,6 +165,7 @@ impl UserInput {
                     .push((single_axis.axis_type, single_axis.value)),
                 InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                 InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
                 InputKind::Modifier(modifier) => {
                     let key_codes = modifier.key_codes();
                     raw_inputs.keycodes.push(key_codes[0]);
@@ -188,6 +191,7 @@ impl UserInput {
                             .push((single_axis.axis_type, single_axis.value)),
                         InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
                         InputKind::Modifier(modifier) => {
                             let key_codes = modifier.key_codes();
                             raw_inputs.keycodes.push(key_codes[0]);
@@ -220,6 +224,7 @@ impl UserInput {
                             .push((single_axis.axis_type, single_axis.value)),
                         InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
                         InputKind::Modifier(modifier) => {
                             let key_codes = modifier.key_codes();
                             raw_inputs.keycodes.push(key_codes[0]);
@@ -248,6 +253,7 @@ impl UserInput {
                             .push((single_axis.axis_type, single_axis.value)),
                         InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
                         InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
+                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
                         InputKind::Modifier(modifier) => {
                             let key_codes = modifier.key_codes();
                             raw_inputs.keycodes.push(key_codes[0]);
@@ -307,6 +313,18 @@ impl From<KeyCode> for UserInput {
     }
 }
 
+impl From<ScanCode> for UserInput {
+    fn from(input: ScanCode) -> Self {
+        UserInput::Single(InputKind::KeyLocation(input))
+    }
+}
+
+impl From<QwertyScanCode> for UserInput {
+    fn from(input: QwertyScanCode) -> Self {
+        UserInput::Single(InputKind::KeyLocation(input.into()))
+    }
+}
+
 impl From<MouseButton> for UserInput {
     fn from(input: MouseButton) -> Self {
         UserInput::Single(InputKind::Mouse(input))
@@ -348,8 +366,18 @@ pub enum InputKind {
     SingleAxis(SingleAxis),
     /// Two paired axes of continous motion
     DualAxis(DualAxis),
-    /// A button on a keyboard
+    /// A logical key on the keyboard.
+    ///
+    /// The actual (physical) key that has to be pressed depends on the keyboard layout.
+    /// If you care about the position of the key rather than what it stands for,
+    /// use [`InputKind::KeyLocation`] instead.
     Keyboard(KeyCode),
+    /// The physical location of a key on the keyboard.
+    ///
+    /// The logical key which is emitted by this key depends on the keyboard layout.
+    /// If you care about the output of the key rather than where it is positioned,
+    /// use [`InputKind::Keyboard`] instead.
+    KeyLocation(ScanCode),
     /// A keyboard modifier, like `Ctrl` or `Alt`, which doesn't care about which side it's on.
     Modifier(Modifier),
     /// A button on a mouse
@@ -381,6 +409,18 @@ impl From<GamepadButtonType> for InputKind {
 impl From<KeyCode> for InputKind {
     fn from(input: KeyCode) -> Self {
         InputKind::Keyboard(input)
+    }
+}
+
+impl From<ScanCode> for InputKind {
+    fn from(input: ScanCode) -> Self {
+        InputKind::KeyLocation(input)
+    }
+}
+
+impl From<QwertyScanCode> for InputKind {
+    fn from(input: QwertyScanCode) -> Self {
+        InputKind::KeyLocation(input.into())
     }
 }
 
@@ -444,8 +484,10 @@ impl Modifier {
 /// Obtained by calling [`UserInput::raw_inputs()`].
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct RawInputs {
-    /// Physical keyboard buttons
+    /// Logical keyboard keys.
     pub keycodes: Vec<KeyCode>,
+    /// Physical key locations.
+    pub scan_codes: Vec<ScanCode>,
     /// Mouse buttons
     pub mouse_buttons: Vec<MouseButton>,
     /// Discretized mouse wheel inputs

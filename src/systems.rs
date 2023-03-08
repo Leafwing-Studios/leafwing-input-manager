@@ -12,7 +12,6 @@ use crate::{
     Actionlike,
 };
 
-use bevy::ecs::prelude::*;
 use bevy::input::{
     gamepad::{GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
@@ -21,6 +20,10 @@ use bevy::input::{
 };
 use bevy::time::Time;
 use bevy::utils::Instant;
+use bevy::{
+    ecs::{prelude::*, schedule::ShouldRun},
+    prelude::ScanCode,
+};
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -67,6 +70,7 @@ pub fn update_action_state<A: Actionlike>(
     gamepad_axes: Res<Axis<GamepadAxis>>,
     gamepads: Res<Gamepads>,
     keycodes: Option<Res<Input<KeyCode>>>,
+    scan_codes: Option<Res<Input<ScanCode>>>,
     mouse_buttons: Option<Res<Input<MouseButton>>>,
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
@@ -86,25 +90,28 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
+    let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
     let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
     let mouse_motion = mouse_motion.into_inner();
 
-    #[cfg(feature = "egui")]
-    let (keycodes, mouse_buttons, mouse_wheel) = if let Some(ctx) = maybe_egui.iter().next() {
+    let (keycodes, scan_codes, mouse_buttons, mouse_wheel) = maybe_egui.iter().next() {
+        let ctx = egui.ctx_mut();
         // If egui wants to own inputs, don't also apply them to the game state
         let keycodes = keycodes.filter(|_| !ctx.wants_keyboard_input());
+        let scan_codes = scan_codes.filter(|_| !ctx.wants_keyboard_input());
+
         // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
         // so `is_pointer_over_area` is also needed.
         let mouse_buttons =
             mouse_buttons.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
         let mouse_wheel =
             mouse_wheel.filter(|_| !ctx.is_pointer_over_area() && !ctx.wants_pointer_input());
-        (keycodes, mouse_buttons, mouse_wheel)
+        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
     } else {
         // We don't just want to make these variables mutable
         // because then we'll have unused mut when the feature is not enabled
-        (keycodes, mouse_buttons, mouse_wheel)
+        (keycodes, scan_codes, mouse_buttons, mouse_wheel)
     };
 
     let resources = input_map
@@ -124,6 +131,7 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_axes,
             gamepads,
             keycodes,
+            scan_codes,
             mouse_buttons,
             mouse_wheel,
             mouse_motion,
