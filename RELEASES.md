@@ -4,7 +4,8 @@
 
 ### Usability
 
-- Added common conditions for actions that mirrors input conditions in Bevy.
+- Added common run conditions for actions that mirrors input conditions in Bevy.
+
 
 ## Version 0.9.0
 
