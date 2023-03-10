@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Usability
+
+- Added common conditions for actions that mirrors input conditions in Bevy.
+
 ## Version 0.9.0
 
 ### Usability
