@@ -12,6 +12,7 @@ pub mod action_state;
 pub mod axislike;
 pub mod buttonlike;
 pub mod clashing_inputs;
+pub mod common_conditions;
 mod display_impl;
 pub mod dynamic_action;
 pub mod errors;
