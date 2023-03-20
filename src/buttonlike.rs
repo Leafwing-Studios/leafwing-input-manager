@@ -7,7 +7,9 @@ use serde::{Deserialize, Serialize};
 /// usually corresponding to a single [`Actionlike`] action.
 ///
 /// By default, buttons are [`ButtonState::Released`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect, FromReflect, Default)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect, FromReflect, Default,
+)]
 pub enum ButtonState {
     /// The button was pressed since the most recent tick
     JustPressed,
