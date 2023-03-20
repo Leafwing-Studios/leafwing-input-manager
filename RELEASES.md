@@ -6,7 +6,6 @@
 
 - Added common run conditions for actions that mirrors input conditions in Bevy.
 
-
 ## Version 0.9.0
 
 ### Usability
