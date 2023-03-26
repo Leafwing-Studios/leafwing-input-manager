@@ -5,7 +5,6 @@ use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseBut
 use bevy::prelude::ScanCode;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
-use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
 use crate::axislike::VirtualAxis;
@@ -43,11 +42,11 @@ impl UserInput {
     pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
         let modifier: InputKind = modifier.into();
         let input: InputKind = input.into();
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
-        set.insert(modifier);
-        set.insert(input);
+        let mut chord: InputChord<8> = InputChord::default();
+        chord.insert(modifier);
+        chord.insert(input);
 
-        UserInput::Chord(set.into())
+        UserInput::Chord(chord)
     }
 
     /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
@@ -57,15 +56,15 @@ impl UserInput {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
+        let mut chord: InputChord<8> = InputChord::default();
         for button in inputs {
             length += 1;
-            set.insert(button.into());
+            chord.insert(button.into());
         }
 
         match length {
-            1 => UserInput::Single(set.into_iter().next().unwrap()),
-            _ => UserInput::Chord(set.into()),
+            1 => UserInput::Single(chord.into_iter().next().unwrap()),
+            _ => UserInput::Chord(chord),
         }
     }
 
@@ -77,7 +76,7 @@ impl UserInput {
     pub fn len(&self) -> usize {
         match self {
             UserInput::Single(_) => 1,
-            UserInput::Chord(button_set) => button_set.len(),
+            UserInput::Chord(chord) => chord.len(),
             UserInput::VirtualDPad { .. } => 1,
             UserInput::VirtualAxis { .. } => 1,
         }

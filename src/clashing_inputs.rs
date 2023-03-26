@@ -10,7 +10,6 @@ use crate::Actionlike;
 
 use bevy::prelude::Resource;
 use itertools::Itertools;
-use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::marker::PhantomData;
