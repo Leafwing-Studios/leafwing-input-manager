@@ -11,12 +11,15 @@ use petitset::PetitSet;
 use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
 
-use crate::axislike::{
-    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
-    VirtualDPad,
-};
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::user_input::{InputKind, UserInput};
+use crate::{
+    axislike::{
+        AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
+        VirtualDPad,
+    },
+    input_chord::InputChord,
+};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
@@ -224,7 +227,7 @@ impl<'a> InputStreams<'a> {
 
     /// Are all of the `buttons` pressed?
     #[must_use]
-    pub fn all_buttons_pressed(&self, buttons: &PetitSet<InputKind, 8>) -> bool {
+    pub fn all_buttons_pressed(&self, buttons: &InputChord<8>) -> bool {
         for &button in buttons.iter() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(button) {

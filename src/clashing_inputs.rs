@@ -2,6 +2,7 @@
 
 use crate::action_state::ActionData;
 use crate::axislike::{VirtualAxis, VirtualDPad};
+use crate::input_chord::InputChord;
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, UserInput};
@@ -203,7 +204,7 @@ impl<A: Actionlike> Clash<A> {
 
 // Does the `button` clash with the `chord`?
 #[must_use]
-fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> bool {
+fn button_chord_clash(button: &InputKind, chord: &InputChord<8>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -213,7 +214,7 @@ fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> boo
 
 // Does the `dpad` clash with the `chord`?
 #[must_use]
-fn dpad_chord_clash(dpad: &VirtualDPad, chord: &PetitSet<InputKind, 8>) -> bool {
+fn dpad_chord_clash(dpad: &VirtualDPad, chord: &InputChord<8>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -266,7 +267,7 @@ fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
 }
 
 #[must_use]
-fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &PetitSet<InputKind, 8>) -> bool {
+fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &InputChord<8>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -284,7 +285,7 @@ fn virtual_axis_virtual_axis_clash(axis1: &VirtualAxis, axis2: &VirtualAxis) -> 
 
 /// Does the `chord_a` clash with `chord_b`?
 #[must_use]
-fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputKind, 8>) -> bool {
+fn chord_chord_clash(chord_a: &InputChord<8>, chord_b: &InputChord<8>) -> bool {
     if chord_a.len() <= 1 || chord_b.len() <= 1 {
         return false;
     }

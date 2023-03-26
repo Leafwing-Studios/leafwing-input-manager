@@ -3,16 +3,20 @@
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 
 use bevy::prelude::ScanCode;
+use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 
 use crate::axislike::VirtualAxis;
+use crate::input_chord::InputChord;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
+
+pub use crate::input_chord::*;
 
 /// Some combination of user input, which may cross [`Input`]-mode boundaries
 ///
@@ -25,7 +29,7 @@ pub enum UserInput {
     ///
     /// Up to 8 (!!) buttons can be chorded together at once.
     /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
-    Chord(PetitSet<InputKind, 8>),
+    Chord(InputChord<8>),
     /// A virtual DPad that you can get an [`AxisPair`] from
     VirtualDPad(VirtualDPad),
     /// A virtual axis that you can get a [`SingleAxis`] from
@@ -43,7 +47,7 @@ impl UserInput {
         set.insert(modifier);
         set.insert(input);
 
-        UserInput::Chord(set)
+        UserInput::Chord(set.into())
     }
 
     /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
@@ -61,7 +65,7 @@ impl UserInput {
 
         match length {
             1 => UserInput::Single(set.into_iter().next().unwrap()),
-            _ => UserInput::Chord(set),
+            _ => UserInput::Chord(set.into()),
         }
     }
 
@@ -358,7 +362,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect, FromReflect)]
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
@@ -452,7 +456,7 @@ impl From<Modifier> for InputKind {
 ///
 /// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons are pressed.
 /// This will be decomposed into both values when converted into [`RawInputs`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect, FromReflect)]
 pub enum Modifier {
     /// Corresponds to [`KeyCode::LAlt`] and [`KeyCode::RAlt`].
     Alt,
