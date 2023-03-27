@@ -243,8 +243,8 @@ pub fn release_on_disable<A: Actionlike>(
 
 /// Release all inputs when an [`InputMap<A>`] is removed to prevent them from being held forever.
 ///
-/// By default, [`InputManagerPlugin<A>`] will run this on [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate).
-/// For components you must remove the [`InputMap<A>`] before [`CoreStage::PostUpdate`](bevy::prelude::CoreStage::PostUpdate)
+/// By default, [`InputManagerPlugin<A>`](crate::plugin::InputManagerPlugin) will run this on [`CoreSet::PostUpdate`](bevy::prelude::CoreSet::PostUpdate).
+/// For components you must remove the [`InputMap<A>`] before [`CoreSet::PostUpdate`](bevy::prelude::CoreSet::PostUpdate)
 /// or this will not run.
 pub fn release_on_input_map_removed<A: Actionlike>(
     mut removed_components: RemovedComponents<InputMap<A>>,
@@ -274,7 +274,7 @@ pub fn release_on_input_map_removed<A: Actionlike>(
     }
 }
 
-/// Returns [`ShouldRun::No`] if [`DisableInput`] exists and [`ShouldRun::Yes`] otherwise
+/// Uses the value of [`ToggleActions<A>`] to determine if input manager systems of type `A` should run.
 pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> bool {
     toggle_actions.enabled
 }

@@ -244,7 +244,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
     ///
-    /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
+    /// Any iterator that can be converted into a [`InputKind`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
     /// When working with keyboard modifier keys, consider using the `insert_modified` method instead.
