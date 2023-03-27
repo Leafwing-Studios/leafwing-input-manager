@@ -1,9 +1,12 @@
-use bevy::prelude::KeyCode;
+use bevy::{
+    input::InputPlugin,
+    prelude::{App, KeyCode},
+};
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use leafwing_input_manager::{
     action_state::ActionData,
     input_streams::InputStreams,
-    prelude::{ClashStrategy, InputMap},
+    prelude::{ClashStrategy, InputMap, MockInput},
     Actionlike,
 };
 
@@ -53,6 +56,20 @@ fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
     )
 }
 
+fn which_pressed(clash_strategy: ClashStrategy) -> Vec<ActionData> {
+    let mut app = App::new();
+    app.add_plugin(InputPlugin);
+    let input_map = construct_input_map_from_iter();
+
+    app.send_input(KeyCode::A);
+    app.send_input(KeyCode::B);
+    app.update();
+
+    let input_streams = InputStreams::from_world(&app.world, None);
+
+    input_map.which_pressed(&input_streams, clash_strategy)
+}
+
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("construct_input_map_from_iter", |b| {
         b.iter(|| construct_input_map_from_iter())
@@ -60,6 +77,14 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("construct_input_map_from_chained_calls", |b| {
         b.iter(|| construct_input_map_from_chained_calls())
     });
+    let mut which_pressed_group = c.benchmark_group("which_pressed");
+
+    for clash_strategy in ClashStrategy::variants() {
+        which_pressed_group.bench_function(format!("{:?}", clash_strategy), |b| {
+            b.iter(|| which_pressed(*clash_strategy))
+        });
+    }
+    which_pressed_group.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);
