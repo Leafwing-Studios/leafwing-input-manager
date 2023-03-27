@@ -56,18 +56,9 @@ fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
     )
 }
 
-fn which_pressed(clash_strategy: ClashStrategy) -> Vec<ActionData> {
-    let mut app = App::new();
-    app.add_plugin(InputPlugin);
+fn which_pressed(input_streams: &InputStreams, clash_strategy: ClashStrategy) -> Vec<ActionData> {
     let input_map = construct_input_map_from_iter();
-
-    app.send_input(KeyCode::A);
-    app.send_input(KeyCode::B);
-    app.update();
-
-    let input_streams = InputStreams::from_world(&app.world, None);
-
-    input_map.which_pressed(&input_streams, clash_strategy)
+    input_map.which_pressed(input_streams, clash_strategy)
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -79,9 +70,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
     let mut which_pressed_group = c.benchmark_group("which_pressed");
 
+    // Constructing our test app / input stream outside of the timed benchmark
+    let mut app = App::new();
+    app.add_plugin(InputPlugin);
+    app.send_input(KeyCode::A);
+    app.send_input(KeyCode::B);
+    app.update();
+
+    let input_streams = InputStreams::from_world(&app.world, None);
+
     for clash_strategy in ClashStrategy::variants() {
         which_pressed_group.bench_function(format!("{:?}", clash_strategy), |b| {
-            b.iter(|| which_pressed(*clash_strategy))
+            b.iter(|| which_pressed(&input_streams, *clash_strategy))
         });
     }
     which_pressed_group.finish();
