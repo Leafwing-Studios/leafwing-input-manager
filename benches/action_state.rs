@@ -20,28 +20,35 @@ enum TestAction {
     J,
 }
 
-fn pressed() -> bool {
-    let action_state = ActionState::<TestAction>::default();
+fn pressed(action_state: &ActionState<TestAction>) -> bool {
     action_state.pressed(TestAction::A)
 }
 
-fn just_pressed() -> bool {
-    let action_state = ActionState::<TestAction>::default();
+fn just_pressed(action_state: &ActionState<TestAction>) -> bool {
     action_state.just_pressed(TestAction::A)
 }
 
-fn released() -> bool {
-    let action_state = ActionState::<TestAction>::default();
+fn released(action_state: &ActionState<TestAction>) -> bool {
     action_state.released(TestAction::A)
 }
 
-fn just_released() -> bool {
-    let action_state = ActionState::<TestAction>::default();
+fn just_released(action_state: &ActionState<TestAction>) -> bool {
     action_state.just_released(TestAction::A)
 }
 
-fn update() {
-    let action_data = TestAction::variants()
+fn update(mut action_state: ActionState<TestAction>, action_data: Vec<ActionData>) {
+    action_state.update(action_data);
+}
+
+fn criterion_benchmark(c: &mut Criterion) {
+    let action_state = ActionState::<TestAction>::default();
+
+    c.bench_function("pressed", |b| b.iter(|| pressed(&action_state)));
+    c.bench_function("just_pressed", |b| b.iter(|| just_pressed(&action_state)));
+    c.bench_function("released", |b| b.iter(|| released(&action_state)));
+    c.bench_function("just_released", |b| b.iter(|| just_released(&action_state)));
+
+    let action_data: Vec<ActionData> = TestAction::variants()
         .map(|_action| ActionData {
             state: ButtonState::JustPressed,
             value: 0.0,
@@ -51,16 +58,9 @@ fn update() {
         })
         .collect();
 
-    let mut action_state = ActionState::<TestAction>::default();
-    action_state.update(action_data);
-}
-
-fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("pressed", |b| b.iter(|| pressed()));
-    c.bench_function("just_pressed", |b| b.iter(|| just_pressed()));
-    c.bench_function("released", |b| b.iter(|| released()));
-    c.bench_function("just_released", |b| b.iter(|| just_released()));
-    c.bench_function("update", |b| b.iter(|| update()));
+    c.bench_function("update", |b| {
+        b.iter(|| update(action_state.clone(), action_data.clone()))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);
