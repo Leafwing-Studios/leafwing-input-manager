@@ -28,13 +28,14 @@ use std::marker::PhantomData;
 /// This strategy is only used when assessing the actions and input holistically,
 /// in [`InputMap::which_pressed`], using [`InputMap::handle_clashes`].
 #[non_exhaustive]
-#[derive(Resource, Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Resource, Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
 pub enum ClashStrategy {
     /// All matching inputs will always be pressed
     PressAll,
     /// Only press the action that corresponds to the longest chord
     ///
     /// This is the default strategy.
+    #[default]
     PrioritizeLongest,
     /// Use the order in which actions are defined in the enum to resolve clashing inputs
     ///
@@ -43,9 +44,12 @@ pub enum ClashStrategy {
     UseActionOrder,
 }
 
-impl Default for ClashStrategy {
-    fn default() -> Self {
-        ClashStrategy::PrioritizeLongest
+impl ClashStrategy {
+    /// Returns the list of all possible clash strategies.
+    pub fn variants() -> &'static [ClashStrategy] {
+        use ClashStrategy::*;
+
+        &[PressAll, PrioritizeLongest, UseActionOrder]
     }
 }
 

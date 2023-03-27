@@ -177,9 +177,10 @@ mod rotation_direction {
     /// assert_eq!(Rotation::NORTH.rotation_direction(Rotation::WEST), RotationDirection::CounterClockwise);
     /// assert_eq!(Rotation::NORTH.rotation_direction(Rotation::SOUTH), RotationDirection::Clockwise);
     /// ```
-    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub enum RotationDirection {
         /// Corresponds to a positive rotation
+        #[default]
         Clockwise,
         /// Corresponds to a negative rotation
         CounterClockwise,
@@ -208,12 +209,6 @@ mod rotation_direction {
                 Clockwise => CounterClockwise,
                 CounterClockwise => Clockwise,
             }
-        }
-    }
-
-    impl Default for RotationDirection {
-        fn default() -> RotationDirection {
-            RotationDirection::Clockwise
         }
     }
 }

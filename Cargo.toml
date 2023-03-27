@@ -1,7 +1,7 @@
 [package]
 name = "leafwing-input-manager"
 description = "A powerfully direct stateful input manager for the Bevy game engine."
-version = "0.9.0"
+version = "0.9.1"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
 repository = "https://github.com/leafwing-studios/leafwing-input-manager"
@@ -53,6 +53,15 @@ bevy = { version = "0.10", default-features = false, features = [
   "x11",
 ] }
 serde_test = "1.0"
+criterion = "0.4"
+
+[[bench]]
+name = "action_state"
+harness = false
+
+[[bench]]
+name = "input_map"
+harness = false
 
 [lib]
 name = "leafwing_input_manager"
