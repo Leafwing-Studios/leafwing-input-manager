@@ -1,6 +1,11 @@
-use bevy::prelude::{info, KeyCode};
+use bevy::prelude::KeyCode;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use leafwing_input_manager::{prelude::InputMap, Actionlike};
+use leafwing_input_manager::{
+    action_state::ActionData,
+    input_streams::InputStreams,
+    prelude::{ClashStrategy, InputMap},
+    Actionlike,
+};
 
 #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TestAction {
@@ -55,8 +60,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("construct_input_map_from_chained_calls", |b| {
         b.iter(|| construct_input_map_from_chained_calls())
     });
-
-    info!("Finished benchmarking");
 }
 
 criterion_group!(benches, criterion_benchmark);
