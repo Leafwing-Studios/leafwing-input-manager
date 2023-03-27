@@ -44,6 +44,15 @@ pub enum ClashStrategy {
     UseActionOrder,
 }
 
+impl ClashStrategy {
+    /// Returns the list of all possible clash strategies.
+    pub fn variants() -> &'static [ClashStrategy] {
+        use ClashStrategy::*;
+
+        &[PressAll, PrioritizeLongest, UseActionOrder]
+    }
+}
+
 impl UserInput {
     /// Does `self` clash with `other`?
     #[must_use]

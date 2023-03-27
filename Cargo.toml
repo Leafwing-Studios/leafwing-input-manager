@@ -53,6 +53,15 @@ bevy = { version = "0.10", default-features = false, features = [
   "x11",
 ] }
 serde_test = "1.0"
+criterion = "0.4"
+
+[[bench]]
+name = "action_state"
+harness = false
+
+[[bench]]
+name = "input_map"
+harness = false
 
 [lib]
 name = "leafwing_input_manager"
