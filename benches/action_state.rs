@@ -43,6 +43,9 @@ fn update(mut action_state: ActionState<TestAction>, action_data: Vec<ActionData
 fn criterion_benchmark(c: &mut Criterion) {
     let action_state = ActionState::<TestAction>::default();
 
+    c.bench_function("action_state_default", |b| {
+        b.iter(|| ActionState::<TestAction>::default())
+    });
     c.bench_function("pressed", |b| b.iter(|| pressed(&action_state)));
     c.bench_function("just_pressed", |b| b.iter(|| just_pressed(&action_state)));
     c.bench_function("released", |b| b.iter(|| released(&action_state)));
