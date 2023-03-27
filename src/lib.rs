@@ -96,7 +96,7 @@ pub trait Actionlike: Send + Sync + Clone + 'static {
 
 /// An iterator of [`Actionlike`] actions
 ///
-/// Created by calling [`Actionlike::iter`].
+/// Created by calling [`Actionlike::variants()`].
 #[derive(Debug, Clone)]
 pub struct ActionIter<A: Actionlike> {
     index: usize,

@@ -166,7 +166,7 @@ mod orientation_trait {
 }
 
 mod rotation_direction {
-    /// A direction that a [`Rotation`] can be applied in
+    /// A direction that a [`Rotation`](crate::orientation::Rotation) can be applied in.
     ///
     /// # Example
     /// ```rust
@@ -477,7 +477,7 @@ mod direction {
 
     impl Default for Direction {
         /// [`Direction::EAST`] is the default direction,
-        /// as it is consistent with the default [`Rotation`]
+        /// as it is consistent with the default [`Rotation`](crate::orientation::Rotation)
         fn default() -> Direction {
             Direction::EAST
         }

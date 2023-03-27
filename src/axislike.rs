@@ -49,7 +49,7 @@ impl SingleAxis {
     /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
     ///
     /// All thresholds are set to 0.0.
-    /// Primarily useful for [input mocking](crate::MockInput).
+    /// Primarily useful for [input mocking](crate::input_mocking).
     #[must_use]
     pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
         SingleAxis {
@@ -157,8 +157,8 @@ impl std::hash::Hash for SingleAxis {
 ///
 /// These can be stored in a [`VirtualDPad`], which is itself stored in an [`InputKind`] for consumption.
 ///
-/// This input will generate [`AxisPair`] can be read with
-/// [`ActionState::action_axis_pair()`][crate::ActionState::action_axis_pair()].
+/// This input will generate a [`DualAxis`] which can be read with
+/// [`ActionState::axis_pair`][crate::action_state::ActionState::axis_pair].
 ///
 /// # Warning
 ///
@@ -193,7 +193,7 @@ impl DualAxis {
     /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
     ///
     /// All thresholds are set to 0.0.
-    /// Primarily useful for [input mocking](crate::MockInput).
+    /// Primarily useful for [input mocking](crate::input_mocking).
     #[must_use]
     pub fn from_value(
         x_axis_type: impl Into<AxisType>,
@@ -253,7 +253,7 @@ impl DualAxis {
 }
 
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
-/// A virtual DPad that you can get an [`AxisPair`] from
+/// A virtual DPad that you can get an [`DualAxis`] from.
 ///
 /// Typically, you don't want to store a [`DualAxis`] in this type,
 /// even though it can be stored as an [`InputKind`].
@@ -372,7 +372,7 @@ impl VirtualAxis {
         }
     }
 
-    /// Generates a [`VirtualDAxis`] corresponding to the `AD` keyboard keycodes.
+    /// Generates a [`VirtualAxis`] corresponding to the `AD` keyboard keycodes.
     pub fn ad() -> VirtualAxis {
         VirtualAxis {
             negative: InputKind::Keyboard(KeyCode::A),
@@ -380,7 +380,7 @@ impl VirtualAxis {
         }
     }
 
-    /// Generates a [`VirtualDAxis`] corresponding to the `WS` keyboard keycodes.
+    /// Generates a [`VirtualAxis`] corresponding to the `WS` keyboard keycodes.
     pub fn ws() -> VirtualAxis {
         VirtualAxis {
             negative: InputKind::Keyboard(KeyCode::S),
@@ -498,19 +498,19 @@ pub struct DualAxisData {
 
 // Constructors
 impl DualAxisData {
-    /// Creates a new [`AxisPair`] from the provided (x,y) coordinates
+    /// Creates a new [`DualAxisData`] from the provided (x,y) coordinates
     pub fn new(x: f32, y: f32) -> DualAxisData {
         DualAxisData {
             xy: Vec2::new(x, y),
         }
     }
 
-    /// Creates a new [`AxisPair`] directly from a [`Vec2`]
+    /// Creates a new [`DualAxisData`] directly from a [`Vec2`]
     pub fn from_xy(xy: Vec2) -> DualAxisData {
         DualAxisData { xy }
     }
 
-    /// Merge the state of this [`AxisPair`] with another.
+    /// Merge the state of this [`DualAxisData`] with another.
     ///
     /// This is useful if you have multiple sticks bound to the same game action,
     /// and you want to get their combined position.
@@ -518,7 +518,7 @@ impl DualAxisData {
     /// # Warning
     ///
     /// This method can result in values with a greater maximum magnitude than expected!
-    /// Use [`AxisPair::clamp_length`] to limit the resulting direction.
+    /// Use [`DualAxisData::clamp_length`] to limit the resulting direction.
     pub fn merged_with(&self, other: DualAxisData) -> DualAxisData {
         DualAxisData::from_xy(self.xy() + other.xy())
     }
