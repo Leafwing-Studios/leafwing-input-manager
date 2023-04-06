@@ -218,12 +218,44 @@ fn game_pad_dual_axis() {
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-
     assert!(action_state.pressed(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.8);
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(0.8, 0.0)
+    );
+
+    // Test deadzones, assuming the default of 0.1.
+    app.send_input(DualAxis::from_value(
+        GamepadAxisType::LeftStickX,
+        GamepadAxisType::LeftStickY,
+        0.05,
+        0.0,
+    ));
+
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.released(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
+    assert_eq!(
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(0.0, 0.0)
+    );
+
+    // Test that a single axis below the deadzone is filtered out, assuming the
+    // default deadzone of 0.1.
+    app.send_input(DualAxis::from_value(
+        GamepadAxisType::LeftStickX,
+        GamepadAxisType::LeftStickY,
+        0.2,
+        0.05,
+    ));
+
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
+    assert_eq!(
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(0.2, 0.0)
     );
 }
 
