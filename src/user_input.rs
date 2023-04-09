@@ -363,9 +363,9 @@ impl From<Modifier> for UserInput {
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
-    /// A single axis of continous motion
+    /// A single axis of continuous motion
     SingleAxis(SingleAxis),
-    /// Two paired axes of continous motion
+    /// Two paired axes of continuous motion
     DualAxis(DualAxis),
     /// A logical key on the keyboard.
     ///

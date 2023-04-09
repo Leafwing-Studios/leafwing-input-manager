@@ -53,7 +53,7 @@ impl PlayerBundle {
             .build(),
         };
 
-        // Each player will use the same gamepad controls, but on seperate gamepads
+        // Each player will use the same gamepad controls, but on separate gamepads.
         input_map.insert_multiple([
             (GamepadButtonType::DPadLeft, Action::Left),
             (GamepadButtonType::DPadRight, Action::Right),

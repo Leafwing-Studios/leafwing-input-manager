@@ -57,9 +57,9 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
-/// Fetches all of the releveant [`Input`] resources to update [`ActionState`] according to the [`InputMap`]
+/// Fetches all of the relevant [`Input`] resources to update [`ActionState`] according to the [`InputMap`].
 ///
-/// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed
+/// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
 #[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
     gamepad_buttons: Res<Input<GamepadButton>>,
@@ -163,7 +163,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 
 /// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
-/// The `ID` generic type should be a stable entity identifer,
+/// The `ID` generic type should be a stable entity identifier,
 /// suitable to be sent across a network.
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
@@ -190,7 +190,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
 
 /// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
 ///
-/// The `ID` generic type should be a stable entity identifer,
+/// The `ID` generic type should be a stable entity identifier,
 /// suitable to be sent across a network.
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
