@@ -80,7 +80,7 @@ pub trait MockInput {
     ///
     /// To send specific values for axislike inputs, set their `value` field.
     ///
-    /// Gamepad input will be sent by the first registed controller found.
+    /// Gamepad input will be sent by the first registered controller found.
     /// If none are found, gamepad input will be silently skipped.
     ///
     /// # Warning
@@ -99,7 +99,7 @@ pub trait MockInput {
 
     /// Releases the specified `user_input` directly
     ///
-    /// Gamepad input will be released by the first registed controller found.
+    /// Gamepad input will be released by the first registered controller found.
     /// If none are found, gamepad input will be silently skipped.
     fn release_input(&mut self, input: impl Into<UserInput>);
 

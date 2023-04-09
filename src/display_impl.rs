@@ -1,4 +1,4 @@
-//! Containment module for boring implmentations of the [`Display`] trait
+//! Containment module for boring implementations of the [`Display`] trait
 
 use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::user_input::{InputKind, UserInput};
@@ -9,7 +9,7 @@ impl Display for UserInput {
         match self {
             // The representation of the button
             UserInput::Single(button) => write!(f, "{button}"),
-            // The representation of each button, seperated by "+"
+            // The representation of each button, separated by "+"
             UserInput::Chord(button_set) => {
                 let mut string = String::default();
                 for button in button_set.iter() {

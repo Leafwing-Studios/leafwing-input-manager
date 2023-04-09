@@ -133,7 +133,7 @@ impl<A: Actionlike> InputMap<A> {
     ///  2. Add bindings and configure the struct using a chain of method calls directly on this struct.
     ///  3. Finish building your struct by calling `.build()`, receiving a concrete struct you can insert as a component.
     ///
-    /// Note that this is not the *orginal* input map, as we do not have ownership of the struct.
+    /// Note that this is not the *original* input map, as we do not have ownership of the struct.
     /// Under the hood, this is just a more-readable call to `.clone()`.
     ///
     /// # Example

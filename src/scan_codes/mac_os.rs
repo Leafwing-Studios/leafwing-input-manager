@@ -161,7 +161,7 @@ pub enum QwertyScanCode {
     LAlt = 0x3a,
     /// The location of the left Control key on the QWERTY keyboard layout.
     LControl = 0x3b,
-    /// The location of the right Shif  key on the QWERTY keyboard layout.
+    /// The location of the right Shift key on the QWERTY keyboard layout.
     RShift = 0x3c,
     /// The location of the right Alt key on the QWERTY keyboard layout.
     /// Maps to right Option key on Apple keyboards.

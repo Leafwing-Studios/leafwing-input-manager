@@ -28,7 +28,7 @@ enum FpsAction {
 struct StableId(u64);
 
 fn main() {
-    // In a real use case, these apps would be running on seperate devices
+    // In a real use case, these apps would be running on separate devices.
     let mut client_app = App::new();
 
     client_app

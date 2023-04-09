@@ -100,7 +100,7 @@
 - Added gamepad axis support.
   - Use the new `SingleAxis` and `DualAxis` types / variants.
 - Added mousewheel and mouse motion support.
-  - Use the new `SingleAxis` and `DualAxis` types / variants when you care about the continous values.
+  - Use the new `SingleAxis` and `DualAxis` types / variants when you care about the continuous values.
   - Use the new `MouseWheelDirection` enum as an `InputKind`.
 - Added `SingleAxis` and `DualAxis` structs that can be supplied to an `InputMap` to trigger on axis inputs.
 - Added `VirtualDPad` struct that can be supplied to an `InputMap` to trigger on four direction-representing inputs.
@@ -243,7 +243,7 @@
 
 - the `ActionState` component is no longer marked as `Changed` every frame
 - `InputManagerPlugin::run_in_state` now actually works!
-- virtually all methods now take actions and inputs by reference, rather than by ownership, eliminating unneccesary copies
+- virtually all methods now take actions and inputs by reference, rather than by ownership, eliminating unnecessary copies
 
 ## Version 0.1.2
 
