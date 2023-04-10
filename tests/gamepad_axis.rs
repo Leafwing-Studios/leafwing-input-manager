@@ -233,6 +233,8 @@ fn game_pad_dual_axis() {
         0.0,
     ));
 
+    app.update();
+
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.released(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
@@ -250,9 +252,11 @@ fn game_pad_dual_axis() {
         0.05,
     ));
 
+    app.update();
+
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::XY));
-    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.2);
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(0.2, 0.0)
