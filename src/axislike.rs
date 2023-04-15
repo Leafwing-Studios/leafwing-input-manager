@@ -131,7 +131,7 @@ impl SingleAxis {
     /// Returns this [`SingleAxis`] with the deadzone set to the specified value
     #[must_use]
     pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
-        self.negative_low = deadzone;
+        self.negative_low = -deadzone;
         self.positive_low = deadzone;
         self
     }
