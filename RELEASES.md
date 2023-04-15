@@ -1,10 +1,8 @@
 # Release Notes
 
-
-## Unreleased
+## Version 0.9.2
 
 ### Bugs
-
 
 - Fixed `DualAxis` inputs so deadzones apply across both axes, and filter
   out-of-range values correctly.
