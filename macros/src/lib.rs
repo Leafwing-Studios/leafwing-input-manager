@@ -1,7 +1,7 @@
 //! Derives the [`Actionlike`] trait
 //
 //! This derive macro was inspired by the `strum` crate's `EnumIter` macro.
-//! Original source: https://github.com/Peternator7/strum,
+//! Original source: <https://github.com/Peternator7/strum>,
 //! Copyright (c) 2019 Peter Glotfelty under the MIT License
 
 extern crate proc_macro;

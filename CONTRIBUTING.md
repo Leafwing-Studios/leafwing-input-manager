@@ -2,9 +2,6 @@
 
 This repository is open to community contributions!
 
-**Development occurs on the `dev` branch, which is merged into `main` on each release.**
-This ensures the examples are in-sync with the latest release.
-
 There are a few options if you'd like to help:
 
 1. File issues for bugs you find or new features you'd like.
@@ -12,6 +9,8 @@ There are a few options if you'd like to help:
 3. Review existing PRs, and leave thoughtful feedback. If you think a PR is ready to merge, hit "Approve" in your review!
 
 Any contributions made are provided under the license(s) listed in this repo at the time of their contribution, and do not require separate attribution.
+
+When you make a PR (other than for purely internal changes), please update the root level `CHANGELOG.md`.
 
 ## Testing
 

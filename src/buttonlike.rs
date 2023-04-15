@@ -4,7 +4,7 @@ use bevy::reflect::{FromReflect, Reflect};
 use serde::{Deserialize, Serialize};
 
 /// The current state of a particular button,
-/// usually corresponding to a single [`Actionlike`] action.
+/// usually corresponding to a single [`Actionlike`](crate::Actionlike) action.
 ///
 /// By default, buttons are [`ButtonState::Released`].
 #[derive(
@@ -71,14 +71,14 @@ impl ButtonState {
         *self == ButtonState::Released || *self == ButtonState::JustReleased
     }
 
-    /// Was the button pressed since the last time [`ActionState::update`] was called?
+    /// Was the button pressed since the last time [`ActionState::update`](crate::action_state::ActionState::update) was called?
     #[inline]
     #[must_use]
     pub fn just_pressed(&self) -> bool {
         *self == ButtonState::JustPressed
     }
 
-    /// Was the button released since the last time [`ActionState::update`] was called?
+    /// Was the button released since the last time [`ActionState::update`](crate::action_state::ActionState::update) was called?
     #[inline]
     #[must_use]
     pub fn just_released(&self) -> bool {

@@ -20,7 +20,7 @@ use bevy::ui::UiSystem;
 /// Each variant represents a "virtual button" whose state is stored in an [`ActionState`](crate::action_state::ActionState) struct.
 ///
 /// Each [`InputManagerBundle`](crate::InputManagerBundle) contains:
-///  - an [`InputMap`](crate::input_map::InputMap) component, which stores an entity-specific mapping between the assorted input streams and an internal repesentation of "actions"
+///  - an [`InputMap`](crate::input_map::InputMap) component, which stores an entity-specific mapping between the assorted input streams and an internal representation of "actions"
 ///  - an [`ActionState`](crate::action_state::ActionState) component, which stores the current input state for that entity in an source-agnostic fashion
 ///
 /// If you have more than one distinct type of action (e.g. menu actions, camera actions and player actions), consider creating multiple `Actionlike` enums
@@ -31,7 +31,7 @@ use bevy::ui::UiSystem;
 /// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource is set.
 /// This can be useful when working with states to pause the game, navigate menus or so on.
 ///
-/// **WARNING:** Theses systems run during [`CoreStage::PreUpdate`].
+/// **WARNING:** These systems run during [`CoreSet::PreUpdate`].
 /// If you have systems that care about inputs and actions that also run during this stage,
 /// you must define an ordering between your systems or behavior will be very erratic.
 /// The stable system sets for these systems are available under [`InputManagerSystem`] enum.
@@ -39,12 +39,9 @@ use bevy::ui::UiSystem;
 /// Complete list:
 ///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`](crate::action_state::ActionState) each frame
-///     - in set [`InputManagerSystem::Reset`]
 /// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`](crate::action_state::ActionState)
-///     - in set [`InputManagerSystem::Update`]
 /// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component baseod on an [`Interaction`](bevy::ui::Interaction) component
-///    - in set [`InputManagerSystem::Update`]
 /// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
@@ -204,6 +201,6 @@ pub enum InputManagerSystem {
     ReleaseOnDisable,
     /// Manually control the [`ActionState`](crate::action_state::ActionState)
     ///
-    /// Must run after [`InputManagerSystem::Update`] or the action state will be overriden
+    /// Must run after [`InputManagerSystem::Update`] or the action state will be overridden
     ManualControl,
 }

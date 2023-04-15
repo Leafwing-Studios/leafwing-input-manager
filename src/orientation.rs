@@ -166,7 +166,7 @@ mod orientation_trait {
 }
 
 mod rotation_direction {
-    /// A direction that a [`Rotation`] can be applied in
+    /// A direction that a [`Rotation`](crate::orientation::Rotation) can be applied in.
     ///
     /// # Example
     /// ```rust
@@ -200,7 +200,7 @@ mod rotation_direction {
             }
         }
 
-        /// Reverese the direction into the opposite enum variant
+        /// Reverse the direction into the opposite enum variant
         #[inline]
         pub fn reverse(self) -> RotationDirection {
             use RotationDirection::*;
@@ -477,7 +477,7 @@ mod direction {
 
     impl Default for Direction {
         /// [`Direction::EAST`] is the default direction,
-        /// as it is consistent with the default [`Rotation`]
+        /// as it is consistent with the default [`Rotation`](crate::orientation::Rotation)
         fn default() -> Direction {
             Direction::EAST
         }

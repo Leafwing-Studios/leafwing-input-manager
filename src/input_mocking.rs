@@ -75,19 +75,19 @@ use bevy::window::CursorMoved;
 pub trait MockInput {
     /// Send the specified `user_input` directly
     ///
-    /// These are sent as the raw input events, and do not set the value of [`Input`] or [`Axis`] directly.
+    /// These are sent as the raw input events, and do not set the value of [`Input`] or [`Axis`](bevy::input::Axis) directly.
     /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
     /// To send specific values for axislike inputs, set their `value` field.
     ///
-    /// Gamepad input will be sent by the first registed controller found.
+    /// Gamepad input will be sent by the first registered controller found.
     /// If none are found, gamepad input will be silently skipped.
     ///
     /// # Warning
     ///
     /// You *must* call `app.update()` at least once after sending input
     /// with `InputPlugin` included in your plugin set
-    /// for the raw input events to be processed into [`Input`] and [`Axis`] data.
+    /// for the raw input events to be processed into [`Input`] and [`Axis`](bevy::input::Axis) data.
     fn send_input(&mut self, input: impl Into<UserInput>);
 
     /// Send the specified `user_input` directly, using the specified gamepad
@@ -99,7 +99,7 @@ pub trait MockInput {
 
     /// Releases the specified `user_input` directly
     ///
-    /// Gamepad input will be released by the first registed controller found.
+    /// Gamepad input will be released by the first registered controller found.
     /// If none are found, gamepad input will be silently skipped.
     fn release_input(&mut self, input: impl Into<UserInput>);
 

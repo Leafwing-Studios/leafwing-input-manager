@@ -133,7 +133,7 @@ impl<A: Actionlike> InputMap<A> {
     ///  2. Add bindings and configure the struct using a chain of method calls directly on this struct.
     ///  3. Finish building your struct by calling `.build()`, receiving a concrete struct you can insert as a component.
     ///
-    /// Note that this is not the *orginal* input map, as we do not have ownership of the struct.
+    /// Note that this is not the *original* input map, as we do not have ownership of the struct.
     /// Under the hood, this is just a more-readable call to `.clone()`.
     ///
     /// # Example
@@ -244,7 +244,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
     ///
-    /// Any iterator that can be converted into a [`Button`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
+    /// Any iterator that can be converted into a [`InputKind`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
     /// When working with keyboard modifier keys, consider using the `insert_modified` method instead.

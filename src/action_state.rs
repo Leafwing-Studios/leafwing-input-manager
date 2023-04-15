@@ -19,14 +19,12 @@ pub struct ActionData {
     pub state: ButtonState,
     /// The "value" of the binding that triggered the action.
     ///
-    /// See [`ActionState::action_value()`] for more details.
+    /// See [`ActionState::value`] for more details.
     ///
     /// **Warning:** this value may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs.
     pub value: f32,
-    /// The [`AxisPair`] of the binding that triggered the action.
-    ///
-    /// See [`ActionState::action_axis_pair()`] for more details.
+    /// The [`DualAxisData`] of the binding that triggered the action.
     pub axis_pair: Option<DualAxisData>,
     /// When was the button pressed / released, and how long has it been held for?
     pub timing: Timing,
@@ -233,7 +231,7 @@ impl<A: Actionlike> ActionState<A> {
     /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
     /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
     /// repository.
-    /// - Dual axis inputs will return the magnitude of its [`AxisPair`] and will be in the range
+    /// - Dual axis inputs will return the magnitude of its [`DualAxisData`] and will be in the range
     /// `0.0..=1.0`.
     /// - Chord inputs will return the value of its first input.
     ///
@@ -256,8 +254,8 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only certain events such as [`VirtualDPad`][crate::user_input::VirtualDPad] and
-    /// [`DualAxis`][crate::user_input::DualAxis] provide an [`DualAxisData`], and this
+    /// Only certain events such as [`VirtualDPad`][crate::axislike::VirtualDPad] and
+    /// [`DualAxis`][crate::axislike::DualAxis] provide an [`DualAxisData`], and this
     /// will return [`None`] for other events.
     ///
     /// Chord inputs will return the [`DualAxisData`] of it's first input.
@@ -562,7 +560,7 @@ pub struct ActionStateDriver<A: Actionlike> {
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Reflect, FromReflect)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
-    /// Recorded as the [`Time`](bevy::core::Time) at the start of the tick after the state last changed.
+    /// Recorded as the [`Time`](bevy::time::Time) at the start of the tick after the state last changed.
     /// If this is none, [`Timing::tick`] has not been called yet.
     #[serde(skip)]
     pub instant_started: Option<Instant>,

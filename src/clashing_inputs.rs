@@ -139,7 +139,7 @@ impl<A: Actionlike> InputMap<A> {
             if action_data[clash.index_a].state.pressed()
                 && action_data[clash.index_b].state.pressed()
             {
-                // Check if the potential clash occured based on the pressed inputs
+                // Check if the potential clash occurred based on the pressed inputs
                 if let Some(clash) = check_clash(&clash, input_streams) {
                     clashes.push(clash)
                 }

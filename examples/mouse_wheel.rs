@@ -23,15 +23,15 @@ fn setup(mut commands: Commands) {
         .spawn(Camera2dBundle::default())
         .insert(InputManagerBundle::<CameraMovement> {
             input_map: InputMap::default()
-                // This will capture the total continous value, for direct use
+                // This will capture the total continuous value, for direct use.
                 .insert(SingleAxis::mouse_wheel_y(), CameraMovement::Zoom)
-                // This will return a binary button-like output
+                // This will return a binary button-like output.
                 .insert(MouseWheelDirection::Left, CameraMovement::PanLeft)
                 .insert(MouseWheelDirection::Right, CameraMovement::PanRight)
                 // Alternatively, you could model this as a virtual Dpad,
                 // which is extremely useful when you want to model 4-directional buttonlike inputs using the mouse wheel
                 // .insert(VirtualDpad::mouse_wheel(), Pan)
-                // Or even a continous `DualAxis`!
+                // Or even a continuous `DualAxis`!
                 // .insert(DualAxis::mouse_wheel(), Pan)
                 .build(),
             ..default()

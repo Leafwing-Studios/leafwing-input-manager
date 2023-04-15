@@ -14,7 +14,9 @@ use crate::{
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
-/// Some combination of user input, which may cross [`Input`]-mode boundaries
+/// Some combination of user input, which may cross input-mode boundaries.
+///
+/// For example, this may store mouse, keyboard or gamepad input, including cross-device chords!
 ///
 /// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -24,9 +26,8 @@ pub enum UserInput {
     /// A combination of buttons, pressed simultaneously
     ///
     /// Up to 8 (!!) buttons can be chorded together at once.
-    /// Chords are considered to belong to all of the [InputMode]s of their constituent buttons.
     Chord(PetitSet<InputKind, 8>),
-    /// A virtual DPad that you can get an [`AxisPair`] from
+    /// A virtual DPad that you can get an [`DualAxis`] from
     VirtualDPad(VirtualDPad),
     /// A virtual axis that you can get a [`SingleAxis`] from
     VirtualAxis(VirtualAxis),
@@ -351,7 +352,7 @@ impl From<Modifier> for UserInput {
 
 /// The different kinds of supported input bindings.
 ///
-/// See [`InputMode`] for the value-less equivalent. Commonly stored in the [`UserInput`] enum.
+/// Commonly stored in the [`UserInput`] enum.
 ///
 /// Unfortunately we cannot use a trait object here, as the types used by `Input`
 /// require traits that are not object-safe.
@@ -362,9 +363,9 @@ impl From<Modifier> for UserInput {
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
-    /// A single axis of continous motion
+    /// A single axis of continuous motion
     SingleAxis(SingleAxis),
-    /// Two paired axes of continous motion
+    /// Two paired axes of continuous motion
     DualAxis(DualAxis),
     /// A logical key on the keyboard.
     ///
