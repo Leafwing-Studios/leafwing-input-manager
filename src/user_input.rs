@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use bevy::prelude::ScanCode;
 use bevy::utils::HashSet;
 use petitset::PetitSet;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::axislike::VirtualAxis;
 use crate::scan_codes::QwertyScanCode;
@@ -39,6 +39,8 @@ pub trait InputLike: Send + Sync + Debug {
 
     /// Enables comparing [`InputLike`] while keeping dynamic dispatch support.
     fn eq_dyn(&self, other: &dyn InputLike) -> bool;
+
+    fn as_serialize(&self) -> Box<dyn erased_serde::Serialize>;
 }
 
 impl Clone for Box<dyn InputLike> {
@@ -83,6 +85,10 @@ impl InputLike for &dyn InputLike {
     fn eq_dyn(&self, other: &dyn InputLike) -> bool {
         self.eq_dyn(other)
     }
+
+    fn as_serialize(&self) -> Box<dyn erased_serde::Serialize> {
+        self.as_serialize()
+    }
 }
 
 impl InputLike for Box<dyn InputLike> {
@@ -108,6 +114,19 @@ impl InputLike for Box<dyn InputLike> {
 
     fn eq_dyn(&self, other: &dyn InputLike) -> bool {
         self.eq_dyn(other)
+    }
+
+    fn as_serialize(&self) -> Box<dyn erased_serde::Serialize> {
+        self.as_serialize()
+    }
+}
+
+impl Serialize for dyn InputLike {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.as_serialize().serialize(serializer)
     }
 }
 

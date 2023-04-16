@@ -571,7 +571,7 @@ where
             where
                 S: serde::de::SeqAccess<'de>,
             {
-                let map = seq.next_element::<HashMap<A, Vec<UserInput>>>()?;
+                let map = seq.next_element::<HashMap<A, Vec<Box<dyn InputLike>>>>()?;
                 map.ok_or_else(|| {
                     serde::de::Error::invalid_length(0, &"one argument with type `map`")
                 })
