@@ -1,6 +1,7 @@
 //! Helpful abstractions over user inputs of all sorts
 
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
+use std::fmt::Debug;
 
 use bevy::prelude::ScanCode;
 use bevy::utils::HashSet;
@@ -13,6 +14,102 @@ use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
+
+pub trait InputLike: Send + Sync + Debug {
+    /// Does `self` clash with `other`?
+    #[must_use]
+    fn clashes(&self, other: &dyn InputLike) -> bool;
+
+    /// Returns [`ButtonLike`] if it is implemented.
+    fn as_button(&self) -> Option<Box<dyn ButtonLike>>;
+
+    /// Returns [`AxisLike`] if it is implemented.
+    fn as_axis(&self) -> Option<Box<dyn AxisLike>>;
+
+    /// The number of logical inputs that make up the [`UserInput`].
+    ///
+    /// TODO: Update this
+    /// - A [`Single`][UserInput::Single] input returns 1
+    /// - A [`Chord`][UserInput::Chord] returns the number of buttons in the chord
+    /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
+    fn len(&self) -> usize;
+
+    /// Enables [`Clone`]ing [`InputLike`]s while keeping dynamic dispatch support.
+    fn clone_dyn(&self) -> Box<dyn InputLike>;
+
+    /// Enables comparing [`InputLike`] while keeping dynamic dispatch support.
+    fn eq_dyn(&self, other: &dyn InputLike) -> bool;
+}
+
+impl Clone for Box<dyn InputLike> {
+    fn clone(&self) -> Self {
+        self.clone_dyn()
+    }
+}
+
+impl PartialEq<Self> for dyn InputLike {
+    fn eq(&self, other: &Self) -> bool {
+        self.clashes(other)
+    }
+}
+
+impl Eq for dyn InputLike {}
+
+pub trait ButtonLike: InputLike {}
+
+pub trait AxisLike: InputLike {}
+
+impl InputLike for &dyn InputLike {
+    fn clashes(&self, other: &dyn InputLike) -> bool {
+        self.clashes(other)
+    }
+
+    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
+        self.as_button()
+    }
+
+    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
+        self.as_axis()
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn clone_dyn(&self) -> Box<dyn InputLike> {
+        self.clone_dyn()
+    }
+
+    fn eq_dyn(&self, other: &dyn InputLike) -> bool {
+        self.eq_dyn(other)
+    }
+}
+
+impl InputLike for Box<dyn InputLike> {
+    fn clashes(&self, other: &dyn InputLike) -> bool {
+        self.clashes(other)
+    }
+
+    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
+        self.as_button()
+    }
+
+    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
+        self.as_axis()
+    }
+
+    fn len(&self) -> usize {
+        self.len()
+    }
+
+    fn clone_dyn(&self) -> Box<dyn InputLike> {
+        self.clone_dyn()
+    }
+
+    fn eq_dyn(&self, other: &dyn InputLike) -> bool {
+        self.eq_dyn(other)
+    }
+}
 
 /// Some combination of user input, which may cross input-mode boundaries.
 ///

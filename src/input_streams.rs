@@ -17,7 +17,7 @@ use crate::axislike::{
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
-use crate::user_input::{InputKind, UserInput};
+use crate::user_input::{InputKind, InputLike, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
@@ -89,7 +89,7 @@ impl<'a> InputStreams<'a> {
     }
 
     /// Is the `input` matched by the [`InputStreams`]?
-    pub fn input_pressed(&self, input: &UserInput) -> bool {
+    pub fn input_pressed(&self, input: &dyn InputLike) -> bool {
         match input {
             UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
@@ -247,7 +247,7 @@ impl<'a> InputStreams<'a> {
     ///
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
     /// be sure to clamp the returned data.
-    pub fn input_value(&self, input: &UserInput) -> f32 {
+    pub fn input_value(&self, input: &impl InputLike) -> f32 {
         let use_button_value = || -> f32 {
             if self.input_pressed(input) {
                 1.0
@@ -352,7 +352,8 @@ impl<'a> InputStreams<'a> {
     ///
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
     /// be sure to clamp the returned data.
-    pub fn input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
+    pub fn input_axis_pair(&self, input: &impl InputLike) -> Option<DualAxisData> {
+        todo!();
         match input {
             UserInput::Chord(inputs) => inputs
                 .iter()

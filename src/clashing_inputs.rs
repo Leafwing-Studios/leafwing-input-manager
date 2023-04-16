@@ -4,7 +4,7 @@ use crate::action_state::ActionData;
 use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
-use crate::user_input::{InputKind, UserInput};
+use crate::user_input::{InputKind, InputLike, UserInput};
 use crate::Actionlike;
 
 use bevy::prelude::Resource;
@@ -12,7 +12,9 @@ use itertools::Itertools;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::ops::Deref;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
@@ -156,9 +158,9 @@ impl<A: Actionlike> InputMap<A> {
 
         for input_a in self.get(action_a).iter() {
             for input_b in self.get(action_b.clone()).iter() {
-                if input_a.clashes(input_b) {
-                    clash.inputs_a.push(input_a.clone());
-                    clash.inputs_b.push(input_b.clone());
+                if input_a.clashes(input_b.as_ref()) {
+                    clash.inputs_a.push(Box::new(input_a.deref()));
+                    clash.inputs_b.push(Box::new(input_b.deref()));
                 }
             }
         }
@@ -173,14 +175,13 @@ impl<A: Actionlike> InputMap<A> {
 
 /// A user-input clash, which stores the actions that are being clashed on,
 /// as well as the corresponding user inputs
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub(crate) struct Clash<A: Actionlike> {
     /// The `Actionlike::index` value corresponding to `action_a`
     index_a: usize,
     /// The `Actionlike::index` value corresponding to `action_b`
     index_b: usize,
-    inputs_a: Vec<UserInput>,
-    inputs_b: Vec<UserInput>,
+    inputs_a: Vec<Box<dyn InputLike>>,
+    inputs_b: Vec<Box<dyn InputLike>>,
     _phantom: PhantomData<A>,
 }
 
@@ -316,18 +317,18 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
     for input_a in clash
         .inputs_a
         .iter()
-        .filter(|&input| input_streams.input_pressed(input))
+        .filter(|&input| input_streams.input_pressed(input.as_ref()))
     {
         // For all inputs that were actually pressed that match action B
         for input_b in clash
             .inputs_b
             .iter()
-            .filter(|&input| input_streams.input_pressed(input))
+            .filter(|&input| input_streams.input_pressed(input.as_ref()))
         {
             // If a clash was detected,
-            if input_a.clashes(input_b) {
-                actual_clash.inputs_a.push(input_a.clone());
-                actual_clash.inputs_b.push(input_b.clone());
+            if input_a.clashes(input_b.as_ref()) {
+                actual_clash.inputs_a.push(Box::new(input_a.deref()));
+                actual_clash.inputs_b.push(Box::new(input_b.deref()));
             }
         }
     }
@@ -347,16 +348,16 @@ fn resolve_clash<A: Actionlike>(
     input_streams: &InputStreams,
 ) -> Option<A> {
     // Figure out why the actions are pressed
-    let reasons_a_is_pressed: Vec<&UserInput> = clash
+    let reasons_a_is_pressed: Vec<&Box<dyn InputLike>> = clash
         .inputs_a
         .iter()
-        .filter(|&input| input_streams.input_pressed(input))
+        .filter(|&input| input_streams.input_pressed(input.as_ref()))
         .collect();
 
-    let reasons_b_is_pressed: Vec<&UserInput> = clash
+    let reasons_b_is_pressed: Vec<&Box<dyn InputLike>> = clash
         .inputs_b
         .iter()
-        .filter(|&input| input_streams.input_pressed(input))
+        .filter(|&input| input_streams.input_pressed(input.as_ref()))
         .collect();
 
     // Clashes are spurious if the actions are pressed for any non-clashing reason
@@ -364,7 +365,7 @@ fn resolve_clash<A: Actionlike>(
         for reason_b in reasons_b_is_pressed.iter() {
             // If there is at least one non-clashing reason why these buttons should both be pressed,
             // we can avoid resolving the clash completely
-            if !reason_a.clashes(reason_b) {
+            if !reason_a.clashes(reason_b.as_ref()) {
                 return None;
             }
         }

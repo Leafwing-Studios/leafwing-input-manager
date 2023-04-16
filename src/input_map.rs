@@ -4,7 +4,7 @@ use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::{InputKind, Modifier, UserInput};
+use crate::user_input::{InputKind, InputLike, Modifier, UserInput};
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;
@@ -78,7 +78,7 @@ use std::marker::PhantomData;
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
-    map: Vec<PetitSet<UserInput, 16>>,
+    map: Vec<PetitSet<Box<dyn InputLike>, 16>>,
     associated_gamepad: Option<Gamepad>,
     marker: PhantomData<A>,
 }
@@ -119,7 +119,7 @@ impl<A: Actionlike> InputMap<A> {
     /// assert_eq!(input_map.len(), 2);
     /// ```
     #[must_use]
-    pub fn new(bindings: impl IntoIterator<Item = (impl Into<UserInput>, A)>) -> Self {
+    pub fn new(bindings: impl IntoIterator<Item = (impl InputLike, A)>) -> Self {
         let mut input_map = InputMap::default();
         input_map.insert_multiple(bindings);
 
@@ -165,8 +165,8 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert(&mut self, input: impl Into<UserInput>, action: A) -> &mut Self {
-        let input = input.into();
+    pub fn insert(&mut self, input: impl InputLike, action: A) -> &mut Self {
+        let input = Box::new(input);
 
         self.map[action.index()].insert(input);
 
@@ -181,11 +181,11 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn insert_many_to_one(
         &mut self,
-        input: impl IntoIterator<Item = impl Into<UserInput>>,
+        input: impl IntoIterator<Item = impl Into<Box<dyn InputLike>>>,
         action: A,
     ) -> &mut Self {
         for input in input {
-            self.insert(input, action.clone());
+            self.insert(input.into(), action.clone());
         }
         self
     }
@@ -197,12 +197,11 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and `input` is not a duplicate.
     pub fn insert_one_to_many(
         &mut self,
-        input: impl Into<UserInput>,
+        input: impl InputLike,
         action: impl IntoIterator<Item = A>,
     ) -> &mut Self {
-        let input: UserInput = input.into();
         for action in action {
-            self.insert(input.clone(), action);
+            self.insert(input.clone_dyn(), action);
         }
         self
     }
@@ -214,10 +213,8 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert_at(&mut self, input: impl Into<UserInput>, action: A, index: usize) -> &mut Self {
-        let input = input.into();
-
-        self.map[action.index()].insert_at(input, index);
+    pub fn insert_at(&mut self, input: impl InputLike, action: A, index: usize) -> &mut Self {
+        self.map[action.index()].insert_at(Box::new(input), index);
 
         self
     }
@@ -233,7 +230,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
-        input_action_pairs: impl IntoIterator<Item = (impl Into<UserInput>, A)>,
+        input_action_pairs: impl IntoIterator<Item = (impl InputLike, A)>,
     ) -> &mut Self {
         for (input, action) in input_action_pairs {
             self.insert(input, action);
@@ -257,8 +254,9 @@ impl<A: Actionlike> InputMap<A> {
         buttons: impl IntoIterator<Item = impl Into<InputKind>>,
         action: A,
     ) -> &mut Self {
-        self.insert(UserInput::chord(buttons), action);
-        self
+        todo!()
+        // self.insert(UserInput::chord(buttons), action);
+        // self
     }
 
     /// Inserts a mapping between the simultaneous combination of the [`Modifier`] plus the `input` and the `action` provided.
@@ -270,8 +268,9 @@ impl<A: Actionlike> InputMap<A> {
         input: impl Into<InputKind>,
         action: A,
     ) -> &mut Self {
-        self.insert(UserInput::modified(modifier, input), action);
-        self
+        todo!();
+        // self.insert(UserInput::modified(modifier, input), action);
+        // self
     }
 
     /// Merges the provided [`InputMap`] into the [`InputMap`] this method was called on
@@ -405,7 +404,7 @@ impl<A: Actionlike> InputMap<A> {
 // Utilities
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over actions with their inputs
-    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<Box<dyn InputLike>, 16>, A)> {
         self.map
             .iter()
             .enumerate()
@@ -413,13 +412,13 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Returns an iterator over all mapped inputs
-    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<UserInput, 16>> {
+    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<Box<dyn InputLike>, 16>> {
         self.map.iter()
     }
 
     /// Returns the `action` mappings
     #[must_use]
-    pub fn get(&self, action: A) -> &PetitSet<UserInput, 16> {
+    pub fn get(&self, action: A) -> &PetitSet<Box<dyn InputLike>, 16> {
         &self.map[action.index()]
     }
 
@@ -458,12 +457,18 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
-        self.map[action.index()].remove(&input.into())
+    pub fn remove(&mut self, action: A, input: impl InputLike) -> Option<usize> {
+        let position = self.map[action.index()]
+            .iter()
+            .position(|input| input.eq_dyn(input));
+        if let Some(position) = position {
+            self.map[action.index()].remove_at(position);
+        }
+        position
     }
 }
 
-impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
+impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLike>>>> for InputMap<A> {
     /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
     ///
     /// # Panics
@@ -490,20 +495,21 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     /// );
     /// let input_map = InputMap::from(map);
     /// ```
-    fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
+    fn from(map: HashMap<A, Vec<Box<dyn InputLike>>>) -> Self {
         map.iter()
             .flat_map(|(action, inputs)| inputs.iter().map(|input| (action.clone(), input.clone())))
             .collect()
     }
 }
 
-impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
+impl<A: Actionlike> FromIterator<(A, Box<dyn InputLike>)> for InputMap<A> {
     /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
     ///
     /// # Panics
     ///
     /// Panics if there are more than 16 distinct inputs for the same action.
-    fn from_iter<T: IntoIterator<Item = (A, UserInput)>>(iter: T) -> Self {
+
+    fn from_iter<T: IntoIterator<Item = (A, Box<dyn InputLike>)>>(iter: T) -> Self {
         InputMap::new(iter.into_iter().map(|(action, input)| (input, action)))
     }
 }
@@ -525,7 +531,7 @@ where
             &self
                 .iter()
                 .map(|(set, action)| (action, set.iter().collect()))
-                .collect::<BTreeMap<A, Vec<&UserInput>>>(),
+                .collect::<BTreeMap<A, Vec<&Box<dyn InputLike>>>>(),
         )?;
         input_map.end()
     }
