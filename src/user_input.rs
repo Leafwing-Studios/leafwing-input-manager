@@ -1,13 +1,15 @@
 //! Helpful abstractions over user inputs of all sorts
 
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
+use std::any::Any;
 use std::fmt::Debug;
 
-use bevy::prelude::ScanCode;
+use bevy::prelude::{ScanCode, World};
 use bevy::utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize, Serializer};
 
+use crate::action_state::ActionData;
 use crate::axislike::VirtualAxis;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
@@ -15,10 +17,18 @@ use crate::{
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
-pub trait InputLike: Send + Sync + Debug {
+pub trait InputLike<'de>: InputLikeMethods + Deserialize<'de> + Clone {
+    fn which_pressed(world: &mut World) -> Vec<ActionData>;
+}
+
+/// This trait is the
+/// [object safe](https://doc.rust-lang.org/reference/items/traits.html#object-safety) part of
+/// [`InputLike`], which is how they are stored in [`InputMap`].
+#[allow(clippy::len_without_is_empty)]
+pub trait InputLikeMethods: Send + Sync + Debug + Any {
     /// Does `self` clash with `other`?
     #[must_use]
-    fn clashes(&self, other: &dyn InputLike) -> bool;
+    fn clashes(&self, other: &dyn InputLikeMethods) -> bool;
 
     /// Returns [`ButtonLike`] if it is implemented.
     fn as_button(&self) -> Option<Box<dyn ButtonLike>>;
@@ -34,99 +44,137 @@ pub trait InputLike: Send + Sync + Debug {
     /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
     fn len(&self) -> usize;
 
-    /// Enables [`Clone`]ing [`InputLike`]s while keeping dynamic dispatch support.
-    fn clone_dyn(&self) -> Box<dyn InputLike>;
+    /// Returns the raw inputs that make up this [`UserInput`]
+    fn raw_inputs(&self) -> Vec<Box<dyn InputLikeMethods>>;
 
-    /// Enables comparing [`InputLike`] while keeping dynamic dispatch support.
-    fn eq_dyn(&self, other: &dyn InputLike) -> bool;
+    /// Enables [`Clone`]ing [`InputLikeMethods`]s while keeping dynamic dispatch support.
+    fn clone_dyn(&self) -> Box<dyn InputLikeMethods>;
 
-    fn as_serialize(&self) -> Box<dyn erased_serde::Serialize>;
+    /// Enables comparing [`InputLikeMethods`] while keeping dynamic dispatch support.
+    fn eq_dyn(&self, other: &dyn InputLikeMethods) -> bool {
+        self.type_id() == other.type_id() && self.input_variant_id() == other.input_variant_id()
+    }
+
+    fn as_serialize(&self) -> &dyn erased_serde::Serialize;
+
+    /// Indicates different inputs for the underlying type.
+    ///
+    /// For example, if the underlying type is a `MouseButton` enum, this might return 0 for
+    /// `MouseButton::Left` and 1 for `MouseButton::Right`.
+    /// The indexes are only unique between the same type.
+    fn input_variant_id(&self) -> usize;
 }
 
-impl Clone for Box<dyn InputLike> {
+impl Clone for Box<dyn InputLikeMethods> {
     fn clone(&self) -> Self {
         self.clone_dyn()
     }
 }
 
-impl PartialEq<Self> for dyn InputLike {
+impl PartialEq<Self> for dyn InputLikeMethods {
     fn eq(&self, other: &Self) -> bool {
-        self.clashes(other)
+        self.type_id() == other.type_id() && self.input_variant_id() == other.input_variant_id()
     }
 }
 
-impl Eq for dyn InputLike {}
+impl Eq for dyn InputLikeMethods {}
 
-pub trait ButtonLike: InputLike {}
+pub trait ButtonLike: InputLikeMethods {}
 
-pub trait AxisLike: InputLike {}
+pub trait AxisLike: InputLikeMethods {}
 
-impl InputLike for &dyn InputLike {
-    fn clashes(&self, other: &dyn InputLike) -> bool {
-        self.clashes(other)
+impl InputLikeMethods for Box<dyn InputLikeMethods> {
+    fn clashes(&self, other: &dyn InputLikeMethods) -> bool {
+        self.as_ref().clashes(other)
     }
 
     fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
-        self.as_button()
+        self.as_ref().as_button()
     }
 
     fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
-        self.as_axis()
+        self.as_ref().as_axis()
     }
 
     fn len(&self) -> usize {
-        self.len()
+        self.as_ref().len()
     }
 
-    fn clone_dyn(&self) -> Box<dyn InputLike> {
-        self.clone_dyn()
+    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeMethods)>> {
+        self.as_ref().raw_inputs()
     }
 
-    fn eq_dyn(&self, other: &dyn InputLike) -> bool {
-        self.eq_dyn(other)
+    fn clone_dyn(&self) -> Box<dyn InputLikeMethods> {
+        self.as_ref().clone_dyn()
     }
 
-    fn as_serialize(&self) -> Box<dyn erased_serde::Serialize> {
-        self.as_serialize()
-    }
-}
-
-impl InputLike for Box<dyn InputLike> {
-    fn clashes(&self, other: &dyn InputLike) -> bool {
-        self.clashes(other)
+    fn eq_dyn(&self, other: &dyn InputLikeMethods) -> bool {
+        self.as_ref().eq_dyn(other)
     }
 
-    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
-        self.as_button()
+    fn as_serialize(&self) -> &dyn erased_serde::Serialize {
+        self.as_ref().as_serialize()
     }
 
-    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
-        self.as_axis()
-    }
-
-    fn len(&self) -> usize {
-        self.len()
-    }
-
-    fn clone_dyn(&self) -> Box<dyn InputLike> {
-        self.clone_dyn()
-    }
-
-    fn eq_dyn(&self, other: &dyn InputLike) -> bool {
-        self.eq_dyn(other)
-    }
-
-    fn as_serialize(&self) -> Box<dyn erased_serde::Serialize> {
-        self.as_serialize()
+    fn input_variant_id(&self) -> usize {
+        self.as_ref().input_variant_id()
     }
 }
 
-impl Serialize for dyn InputLike {
+impl Serialize for dyn InputLikeMethods {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
         self.as_serialize().serialize(serializer)
+    }
+}
+
+pub struct ReflectInputLike {
+    deserialize: Box<dyn Fn(dyn erased_serde::Deserializer)>,
+}
+
+impl InputLikeMethods for KeyCode {
+    fn clashes(&self, other: &dyn InputLikeMethods) -> bool {
+        todo!()
+    }
+
+    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
+        todo!()
+    }
+
+    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
+        todo!()
+    }
+
+    fn len(&self) -> usize {
+        todo!()
+    }
+
+    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeMethods)>> {
+        todo!()
+    }
+
+    fn clone_dyn(&self) -> Box<dyn InputLikeMethods> {
+        todo!()
+    }
+
+    fn eq_dyn(&self, other: &dyn InputLikeMethods) -> bool {
+        todo!()
+    }
+
+    fn as_serialize(&self) -> &dyn erased_serde::Serialize {
+        todo!()
+    }
+
+    fn input_variant_id(&self) -> usize {
+        *self as usize
+    }
+}
+
+impl<'de> InputLike<'de> for KeyCode {
+    fn which_pressed(world: &mut World) -> Vec<ActionData> {
+        todo!()
     }
 }
 

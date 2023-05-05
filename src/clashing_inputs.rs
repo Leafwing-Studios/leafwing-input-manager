@@ -4,7 +4,7 @@ use crate::action_state::ActionData;
 use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
-use crate::user_input::{InputKind, InputLike, UserInput};
+use crate::user_input::{InputKind, InputLikeMethods, UserInput};
 use crate::Actionlike;
 
 use bevy::prelude::Resource;
@@ -14,7 +14,6 @@ use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::ops::Deref;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
@@ -159,8 +158,8 @@ impl<A: Actionlike> InputMap<A> {
         for input_a in self.get(action_a).iter() {
             for input_b in self.get(action_b.clone()).iter() {
                 if input_a.clashes(input_b.as_ref()) {
-                    clash.inputs_a.push(Box::new(input_a.deref()));
-                    clash.inputs_b.push(Box::new(input_b.deref()));
+                    clash.inputs_a.push(input_a.clone());
+                    clash.inputs_b.push(input_b.clone());
                 }
             }
         }
@@ -180,8 +179,8 @@ pub(crate) struct Clash<A: Actionlike> {
     index_a: usize,
     /// The `Actionlike::index` value corresponding to `action_b`
     index_b: usize,
-    inputs_a: Vec<Box<dyn InputLike>>,
-    inputs_b: Vec<Box<dyn InputLike>>,
+    inputs_a: Vec<Box<dyn InputLikeMethods>>,
+    inputs_b: Vec<Box<dyn InputLikeMethods>>,
     _phantom: PhantomData<A>,
 }
 
@@ -327,8 +326,8 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
         {
             // If a clash was detected,
             if input_a.clashes(input_b.as_ref()) {
-                actual_clash.inputs_a.push(Box::new(input_a.deref()));
-                actual_clash.inputs_b.push(Box::new(input_b.deref()));
+                actual_clash.inputs_a.push(input_a.clone());
+                actual_clash.inputs_b.push(input_b.clone());
             }
         }
     }
@@ -348,13 +347,13 @@ fn resolve_clash<A: Actionlike>(
     input_streams: &InputStreams,
 ) -> Option<A> {
     // Figure out why the actions are pressed
-    let reasons_a_is_pressed: Vec<&Box<dyn InputLike>> = clash
+    let reasons_a_is_pressed: Vec<&Box<dyn InputLikeMethods>> = clash
         .inputs_a
         .iter()
         .filter(|&input| input_streams.input_pressed(input.as_ref()))
         .collect();
 
-    let reasons_b_is_pressed: Vec<&Box<dyn InputLike>> = clash
+    let reasons_b_is_pressed: Vec<&Box<dyn InputLikeMethods>> = clash
         .inputs_b
         .iter()
         .filter(|&input| input_streams.input_pressed(input.as_ref()))

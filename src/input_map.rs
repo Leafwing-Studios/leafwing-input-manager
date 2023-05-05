@@ -4,17 +4,17 @@ use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::{InputKind, InputLike, Modifier, UserInput};
+use crate::user_input::{InputKind, InputLikeMethods, Modifier};
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
-use bevy::reflect::TypeUuid;
+use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 
 use core::fmt::Debug;
 use petitset::PetitSet;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserializer, Serialize};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -78,7 +78,7 @@ use std::marker::PhantomData;
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
-    map: Vec<PetitSet<Box<dyn InputLike>, 16>>,
+    map: Vec<PetitSet<Box<dyn InputLikeMethods>, 16>>,
     associated_gamepad: Option<Gamepad>,
     marker: PhantomData<A>,
 }
@@ -119,7 +119,7 @@ impl<A: Actionlike> InputMap<A> {
     /// assert_eq!(input_map.len(), 2);
     /// ```
     #[must_use]
-    pub fn new(bindings: impl IntoIterator<Item = (impl InputLike, A)>) -> Self {
+    pub fn new(bindings: impl IntoIterator<Item = (impl InputLikeMethods, A)>) -> Self {
         let mut input_map = InputMap::default();
         input_map.insert_multiple(bindings);
 
@@ -165,8 +165,8 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert(&mut self, input: impl InputLike, action: A) -> &mut Self {
-        let input = Box::new(input);
+    pub fn insert<I: InputLikeMethods>(&mut self, input: I, action: A) -> &mut Self {
+        let input = input.clone_dyn();
 
         self.map[action.index()].insert(input);
 
@@ -181,7 +181,7 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn insert_many_to_one(
         &mut self,
-        input: impl IntoIterator<Item = impl Into<Box<dyn InputLike>>>,
+        input: impl IntoIterator<Item = impl Into<Box<dyn InputLikeMethods>>>,
         action: A,
     ) -> &mut Self {
         for input in input {
@@ -197,7 +197,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and `input` is not a duplicate.
     pub fn insert_one_to_many(
         &mut self,
-        input: impl InputLike,
+        input: impl InputLikeMethods,
         action: impl IntoIterator<Item = A>,
     ) -> &mut Self {
         for action in action {
@@ -213,8 +213,13 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert_at(&mut self, input: impl InputLike, action: A, index: usize) -> &mut Self {
-        self.map[action.index()].insert_at(Box::new(input), index);
+    pub fn insert_at(
+        &mut self,
+        input: impl InputLikeMethods,
+        action: A,
+        index: usize,
+    ) -> &mut Self {
+        self.map[action.index()].insert_at(input.clone_dyn(), index);
 
         self
     }
@@ -230,7 +235,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
-        input_action_pairs: impl IntoIterator<Item = (impl InputLike, A)>,
+        input_action_pairs: impl IntoIterator<Item = (impl InputLikeMethods, A)>,
     ) -> &mut Self {
         for (input, action) in input_action_pairs {
             self.insert(input, action);
@@ -404,7 +409,7 @@ impl<A: Actionlike> InputMap<A> {
 // Utilities
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over actions with their inputs
-    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<Box<dyn InputLike>, 16>, A)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<Box<dyn InputLikeMethods>, 16>, A)> {
         self.map
             .iter()
             .enumerate()
@@ -412,13 +417,13 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Returns an iterator over all mapped inputs
-    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<Box<dyn InputLike>, 16>> {
+    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<Box<dyn InputLikeMethods>, 16>> {
         self.map.iter()
     }
 
     /// Returns the `action` mappings
     #[must_use]
-    pub fn get(&self, action: A) -> &PetitSet<Box<dyn InputLike>, 16> {
+    pub fn get(&self, action: A) -> &PetitSet<Box<dyn InputLikeMethods>, 16> {
         &self.map[action.index()]
     }
 
@@ -457,10 +462,10 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: A, input: impl InputLike) -> Option<usize> {
+    pub fn remove(&mut self, action: A, input: impl InputLikeMethods) -> Option<usize> {
         let position = self.map[action.index()]
             .iter()
-            .position(|input| input.eq_dyn(input));
+            .position(|i| i.eq_dyn(&input));
         if let Some(position) = position {
             self.map[action.index()].remove_at(position);
         }
@@ -468,7 +473,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLike>>>> for InputMap<A> {
+impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLikeMethods>>>> for InputMap<A> {
     /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
     ///
     /// # Panics
@@ -495,21 +500,21 @@ impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLike>>>> for InputMap<A> {
     /// );
     /// let input_map = InputMap::from(map);
     /// ```
-    fn from(map: HashMap<A, Vec<Box<dyn InputLike>>>) -> Self {
+    fn from(map: HashMap<A, Vec<Box<dyn InputLikeMethods>>>) -> Self {
         map.iter()
             .flat_map(|(action, inputs)| inputs.iter().map(|input| (action.clone(), input.clone())))
             .collect()
     }
 }
 
-impl<A: Actionlike> FromIterator<(A, Box<dyn InputLike>)> for InputMap<A> {
+impl<A: Actionlike> FromIterator<(A, Box<dyn InputLikeMethods>)> for InputMap<A> {
     /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
     ///
     /// # Panics
     ///
     /// Panics if there are more than 16 distinct inputs for the same action.
 
-    fn from_iter<T: IntoIterator<Item = (A, Box<dyn InputLike>)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = (A, Box<dyn InputLikeMethods>)>>(iter: T) -> Self {
         InputMap::new(iter.into_iter().map(|(action, input)| (input, action)))
     }
 }
@@ -531,70 +536,18 @@ where
             &self
                 .iter()
                 .map(|(set, action)| (action, set.iter().collect()))
-                .collect::<BTreeMap<A, Vec<&Box<dyn InputLike>>>>(),
+                .collect::<BTreeMap<A, Vec<&Box<dyn InputLikeMethods>>>>(),
         )?;
         input_map.end()
     }
 }
 
-impl<'de, A> Deserialize<'de> for InputMap<A>
-where
-    A: Actionlike + Deserialize<'de> + Eq + Hash,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use serde::de::Visitor;
-
-        #[derive(Deserialize, PartialEq)]
-        #[serde(field_identifier, rename_all = "lowercase")]
-        enum Field {
-            Map,
-        }
-
-        struct InputMapVisitor<'de, A: Actionlike + Deserialize<'de>> {
-            marker: PhantomData<&'de A>,
-        }
-
-        impl<'de, A> Visitor<'de> for InputMapVisitor<'de, A>
-        where
-            A: Actionlike + Eq + Hash + Deserialize<'de>,
-        {
-            type Value = InputMap<A>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(formatter, "a struct with field 'map' of type map where key is `Actionlike` and value is sequents of `UserInput`")
-            }
-
-            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
-            where
-                S: serde::de::SeqAccess<'de>,
-            {
-                let map = seq.next_element::<HashMap<A, Vec<Box<dyn InputLike>>>>()?;
-                map.ok_or_else(|| {
-                    serde::de::Error::invalid_length(0, &"one argument with type `map`")
-                })
-                .map(InputMap::from)
-            }
-
-            fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
-            where
-                M: serde::de::MapAccess<'de>,
-            {
-                map.next_key::<Field>()?
-                    .filter(|key| *key == Field::Map)
-                    .ok_or_else(|| serde::de::Error::missing_field("map"))?;
-                let value = map.next_value::<HashMap<A, Vec<UserInput>>>()?;
-                Ok(value.into())
-            }
-        }
-
-        let visitor = InputMapVisitor {
-            marker: PhantomData,
-        };
-        const FIELDS: &[&str] = &["map"];
-        deserializer.deserialize_struct("InputMap", FIELDS, visitor)
+impl<A: Actionlike> InputMap<A> {
+    pub fn deserialize<'de>(
+        deserializer: impl Deserializer<'de>,
+        type_registry: &TypeRegistryInternal,
+    ) {
+        todo!()
     }
 }
 

@@ -11,13 +11,9 @@ use petitset::PetitSet;
 use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
 
-use crate::axislike::{
-    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
-    VirtualDPad,
-};
-use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
+use crate::axislike::DualAxisData;
 use crate::prelude::DualAxis;
-use crate::user_input::{InputKind, InputLike, UserInput};
+use crate::user_input::{InputKind, InputLikeMethods, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
@@ -89,137 +85,21 @@ impl<'a> InputStreams<'a> {
     }
 
     /// Is the `input` matched by the [`InputStreams`]?
-    pub fn input_pressed(&self, input: &dyn InputLike) -> bool {
-        match input {
-            UserInput::Single(button) => self.button_pressed(*button),
-            UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                for button in [up, down, left, right] {
-                    if self.button_pressed(*button) {
-                        return true;
-                    }
-                }
-                false
-            }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.button_pressed(*negative) || self.button_pressed(*positive)
-            }
-        }
+    pub fn input_pressed(&self, input: &dyn InputLikeMethods) -> bool {
+        // todo!()
+        false
     }
 
     /// Is at least one of the `inputs` pressed?
     #[must_use]
     pub fn any_pressed(&self, inputs: &PetitSet<UserInput, 16>) -> bool {
-        for input in inputs.iter() {
-            if self.input_pressed(input) {
-                return true;
-            }
-        }
-        // If none of the inputs matched, return false
-        false
+        todo!()
     }
 
     /// Is the `button` pressed?
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
-        match button {
-            InputKind::DualAxis(axis) => {
-                self.button_pressed(InputKind::SingleAxis(axis.x))
-                    || self.button_pressed(InputKind::SingleAxis(axis.y))
-            }
-            InputKind::SingleAxis(axis) => {
-                let value = self.input_value(&UserInput::Single(button));
-
-                value < axis.negative_low || value > axis.positive_low
-            }
-            InputKind::GamepadButton(gamepad_button) => {
-                if let Some(gamepad) = self.guess_gamepad() {
-                    self.gamepad_buttons.pressed(GamepadButton {
-                        gamepad,
-                        button_type: gamepad_button,
-                    })
-                } else {
-                    false
-                }
-            }
-            InputKind::Keyboard(keycode) => {
-                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
-            }
-            InputKind::KeyLocation(scan_code) => {
-                matches!(self.scan_codes, Some(scan_codes) if scan_codes.pressed(scan_code))
-            }
-            InputKind::Modifier(modifier) => {
-                let key_codes = modifier.key_codes();
-                // Short circuiting is probably not worth the branch here
-                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(key_codes[0]) | keycodes.pressed(key_codes[1]))
-            }
-            InputKind::Mouse(mouse_button) => {
-                matches!(self.mouse_buttons, Some(mouse_buttons) if mouse_buttons.pressed(mouse_button))
-            }
-            InputKind::MouseWheel(mouse_wheel_direction) => {
-                let Some(mouse_wheel) = self.mouse_wheel else {
-                    return false;
-                };
-
-                let mut total_mouse_wheel_movement = 0.0;
-
-                // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = mouse_wheel.get_reader();
-
-                // PERF: this summing is computed for every individual input
-                // This should probably be computed once, and then cached / read
-                // Fix upstream!
-                for mouse_wheel_event in event_reader.iter(mouse_wheel) {
-                    total_mouse_wheel_movement += match mouse_wheel_direction {
-                        MouseWheelDirection::Up | MouseWheelDirection::Down => mouse_wheel_event.y,
-                        MouseWheelDirection::Left | MouseWheelDirection::Right => {
-                            mouse_wheel_event.x
-                        }
-                    }
-                }
-
-                match mouse_wheel_direction {
-                    MouseWheelDirection::Up | MouseWheelDirection::Right => {
-                        total_mouse_wheel_movement > 0.0
-                    }
-                    MouseWheelDirection::Down | MouseWheelDirection::Left => {
-                        total_mouse_wheel_movement < 0.0
-                    }
-                }
-            }
-            // CLEANUP: refactor to share code with MouseWheel
-            InputKind::MouseMotion(mouse_motion_direction) => {
-                let mut total_mouse_movement = 0.0;
-
-                // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = self.mouse_motion.get_reader();
-
-                for mouse_motion_event in event_reader.iter(self.mouse_motion) {
-                    total_mouse_movement += match mouse_motion_direction {
-                        MouseMotionDirection::Up | MouseMotionDirection::Down => {
-                            mouse_motion_event.delta.y
-                        }
-                        MouseMotionDirection::Left | MouseMotionDirection::Right => {
-                            mouse_motion_event.delta.x
-                        }
-                    }
-                }
-
-                match mouse_motion_direction {
-                    MouseMotionDirection::Up | MouseMotionDirection::Right => {
-                        total_mouse_movement > 0.0
-                    }
-                    MouseMotionDirection::Down | MouseMotionDirection::Left => {
-                        total_mouse_movement < 0.0
-                    }
-                }
-            }
-        }
+        todo!();
     }
 
     /// Are all of the `buttons` pressed?
@@ -247,99 +127,8 @@ impl<'a> InputStreams<'a> {
     ///
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
     /// be sure to clamp the returned data.
-    pub fn input_value(&self, input: &impl InputLike) -> f32 {
-        let use_button_value = || -> f32 {
-            if self.input_pressed(input) {
-                1.0
-            } else {
-                0.0
-            }
-        };
-
-        // Helper that takes the value returned by an axis and returns 0.0 if it is not within the
-        // triggering range.
-        let value_in_axis_range = |axis: &SingleAxis, value: f32| -> f32 {
-            if value >= axis.negative_low && value <= axis.positive_low {
-                0.0
-            } else {
-                value
-            }
-        };
-
-        match input {
-            UserInput::Single(InputKind::SingleAxis(single_axis)) => {
-                match single_axis.axis_type {
-                    AxisType::Gamepad(axis_type) => {
-                        if let Some(gamepad) = self.guess_gamepad() {
-                            let value = self
-                                .gamepad_axes
-                                .get(GamepadAxis { gamepad, axis_type })
-                                .unwrap_or_default();
-
-                            value_in_axis_range(single_axis, value)
-                        } else {
-                            0.0
-                        }
-                    }
-                    AxisType::MouseWheel(axis_type) => {
-                        let Some(mouse_wheel) = self.mouse_wheel else {
-                            return 0.0;
-                        };
-
-                        let mut total_mouse_wheel_movement = 0.0;
-                        // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = mouse_wheel.get_reader();
-
-                        for mouse_wheel_event in event_reader.iter(mouse_wheel) {
-                            total_mouse_wheel_movement += match axis_type {
-                                MouseWheelAxisType::X => mouse_wheel_event.x,
-                                MouseWheelAxisType::Y => mouse_wheel_event.y,
-                            }
-                        }
-                        value_in_axis_range(single_axis, total_mouse_wheel_movement)
-                    }
-                    // CLEANUP: deduplicate code with MouseWheel
-                    AxisType::MouseMotion(axis_type) => {
-                        let mut total_mouse_motion_movement = 0.0;
-                        // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = self.mouse_motion.get_reader();
-
-                        for mouse_wheel_event in event_reader.iter(self.mouse_motion) {
-                            total_mouse_motion_movement += match axis_type {
-                                MouseMotionAxisType::X => mouse_wheel_event.delta.x,
-                                MouseMotionAxisType::Y => mouse_wheel_event.delta.y,
-                            }
-                        }
-                        value_in_axis_range(single_axis, total_mouse_motion_movement)
-                    }
-                }
-            }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.input_value(&UserInput::Single(*positive)).abs()
-                    - self.input_value(&UserInput::Single(*negative)).abs()
-            }
-            UserInput::Single(InputKind::DualAxis(_)) => {
-                self.input_axis_pair(input).unwrap_or_default().length()
-            }
-            UserInput::VirtualDPad { .. } => {
-                self.input_axis_pair(input).unwrap_or_default().length()
-            }
-            // This is required because upstream bevy::input still waffles about whether triggers are buttons or axes
-            UserInput::Single(InputKind::GamepadButton(button_type)) => {
-                if let Some(gamepad) = self.guess_gamepad() {
-                    // Get the value from the registered gamepad
-                    self.gamepad_button_axes
-                        .get(GamepadButton {
-                            gamepad,
-                            button_type: *button_type,
-                        })
-                        .unwrap_or_else(use_button_value)
-                } else {
-                    0.0
-                }
-            }
-            _ => use_button_value(),
-        }
+    pub fn input_value(&self, input: &impl InputLikeMethods) -> f32 {
+        todo!();
     }
 
     /// Get the axis pair associated to the user input.
@@ -352,36 +141,9 @@ impl<'a> InputStreams<'a> {
     ///
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
     /// be sure to clamp the returned data.
-    pub fn input_axis_pair(&self, input: &impl InputLike) -> Option<DualAxisData> {
-        todo!();
-        match input {
-            UserInput::Chord(inputs) => inputs
-                .iter()
-                .flat_map(|input_kind| {
-                    if let InputKind::DualAxis(dual_axis) = input_kind {
-                        Some(self.extract_dual_axis_data(dual_axis))
-                    } else {
-                        None
-                    }
-                })
-                .next(),
-            UserInput::Single(InputKind::DualAxis(dual_axis)) => {
-                Some(self.extract_dual_axis_data(dual_axis))
-            }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                let x = self.input_value(&UserInput::Single(*right)).abs()
-                    - self.input_value(&UserInput::Single(*left)).abs();
-                let y = self.input_value(&UserInput::Single(*up)).abs()
-                    - self.input_value(&UserInput::Single(*down)).abs();
-                Some(DualAxisData::new(x, y))
-            }
-            _ => None,
-        }
+    pub fn input_axis_pair(&self, input: &impl InputLikeMethods) -> Option<DualAxisData> {
+        // TODO:
+        None
     }
 
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> DualAxisData {
