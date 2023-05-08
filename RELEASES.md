@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Usability
+
+- Added `VirtualAxis::horizontal_dpad()` and `VirtualAxis::vertical_dpad()`.
+
 ## Version 0.9.2
 
 ### Bugs

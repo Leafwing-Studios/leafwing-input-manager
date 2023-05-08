@@ -387,6 +387,24 @@ impl VirtualAxis {
             positive: InputKind::Keyboard(KeyCode::W),
         }
     }
+
+    #[allow(clippy::doc_markdown)]
+    /// Generates a [`VirtualAxis`] corresponding to the horizontal DPad buttons on a gamepad.
+    pub fn horizontal_dpad() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
+            positive: InputKind::GamepadButton(GamepadButtonType::DPadRight),
+        }
+    }
+
+    #[allow(clippy::doc_markdown)]
+    /// Generates a [`VirtualAxis`] corresponding to the vertical DPad buttons on a gamepad.
+    pub fn vertical_dpad() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
+            positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
+        }
+    }
 }
 
 /// The type of axis used by a [`UserInput`](crate::user_input::UserInput).
