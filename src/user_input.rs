@@ -1,34 +1,48 @@
 //! Helpful abstractions over user inputs of all sorts
 
-use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
+use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton, Input};
 use std::any::Any;
-use std::fmt::Debug;
+use std::fmt::{Debug, Display};
 
-use bevy::prelude::{ScanCode, World};
+use bevy::prelude::{Reflect, ScanCode, World};
+use bevy::reflect::FromType;
 use bevy::utils::HashSet;
 use petitset::PetitSet;
 use serde::{Deserialize, Serialize, Serializer};
 
-use crate::action_state::ActionData;
-use crate::axislike::VirtualAxis;
+use crate::axislike::{DualAxisData, VirtualAxis};
+use crate::input_streams::InputStreamsTrait;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
-pub trait InputLike<'de>: InputLikeMethods + Deserialize<'de> + Clone {
-    fn which_pressed(world: &mut World) -> Vec<ActionData>;
+pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {
+    fn input_streams(world: &World) -> Box<dyn InputStreamsTrait>;
+}
+
+#[derive(Clone)]
+pub struct ReflectInputLike {
+    pub input_streams: fn(&World) -> Box<dyn InputStreamsTrait>,
+}
+
+impl<'a, T: InputLike<'a>> FromType<T> for ReflectInputLike {
+    fn from_type() -> Self {
+        Self {
+            input_streams: T::input_streams,
+        }
+    }
 }
 
 /// This trait is the
 /// [object safe](https://doc.rust-lang.org/reference/items/traits.html#object-safety) part of
 /// [`InputLike`], which is how they are stored in [`InputMap`].
 #[allow(clippy::len_without_is_empty)]
-pub trait InputLikeMethods: Send + Sync + Debug + Any {
+pub trait InputLikeObject: Send + Sync + Debug + Any {
     /// Does `self` clash with `other`?
     #[must_use]
-    fn clashes(&self, other: &dyn InputLikeMethods) -> bool;
+    fn clashes(&self, other: &dyn InputLikeObject) -> bool;
 
     /// Returns [`ButtonLike`] if it is implemented.
     fn as_button(&self) -> Option<Box<dyn ButtonLike>>;
@@ -45,46 +59,43 @@ pub trait InputLikeMethods: Send + Sync + Debug + Any {
     fn len(&self) -> usize;
 
     /// Returns the raw inputs that make up this [`UserInput`]
-    fn raw_inputs(&self) -> Vec<Box<dyn InputLikeMethods>>;
+    fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>>;
 
-    /// Enables [`Clone`]ing [`InputLikeMethods`]s while keeping dynamic dispatch support.
-    fn clone_dyn(&self) -> Box<dyn InputLikeMethods>;
-
-    /// Enables comparing [`InputLikeMethods`] while keeping dynamic dispatch support.
-    fn eq_dyn(&self, other: &dyn InputLikeMethods) -> bool {
-        self.type_id() == other.type_id() && self.input_variant_id() == other.input_variant_id()
-    }
+    /// Enables [`Clone`]ing [`InputLikeObject`]s while keeping dynamic dispatch support.
+    fn clone_dyn(&self) -> Box<dyn InputLikeObject>;
 
     fn as_serialize(&self) -> &dyn erased_serde::Serialize;
 
-    /// Indicates different inputs for the underlying type.
-    ///
-    /// For example, if the underlying type is a `MouseButton` enum, this might return 0 for
-    /// `MouseButton::Left` and 1 for `MouseButton::Right`.
-    /// The indexes are only unique between the same type.
-    fn input_variant_id(&self) -> usize;
+    fn as_reflect(&self) -> &dyn Reflect;
 }
 
-impl Clone for Box<dyn InputLikeMethods> {
+impl Clone for Box<dyn InputLikeObject> {
     fn clone(&self) -> Self {
         self.clone_dyn()
     }
 }
 
-impl PartialEq<Self> for dyn InputLikeMethods {
+impl PartialEq<Self> for dyn InputLikeObject {
+    /// # Panics
+    ///
+    /// Panics If the underlying type does not support equality testing.
     fn eq(&self, other: &Self) -> bool {
-        self.type_id() == other.type_id() && self.input_variant_id() == other.input_variant_id()
+        self.type_id() == other.type_id()
+            && self
+                .as_reflect()
+                .reflect_partial_eq(other.as_reflect())
+                .unwrap()
     }
 }
 
-impl Eq for dyn InputLikeMethods {}
+impl Eq for dyn InputLikeObject {}
 
-pub trait ButtonLike: InputLikeMethods {}
+pub trait ButtonLike: InputLikeObject {}
 
-pub trait AxisLike: InputLikeMethods {}
+pub trait AxisLike: InputLikeObject {}
 
-impl InputLikeMethods for Box<dyn InputLikeMethods> {
-    fn clashes(&self, other: &dyn InputLikeMethods) -> bool {
+impl InputLikeObject for Box<dyn InputLikeObject> {
+    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
         self.as_ref().clashes(other)
     }
 
@@ -100,28 +111,24 @@ impl InputLikeMethods for Box<dyn InputLikeMethods> {
         self.as_ref().len()
     }
 
-    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeMethods)>> {
+    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeObject)>> {
         self.as_ref().raw_inputs()
     }
 
-    fn clone_dyn(&self) -> Box<dyn InputLikeMethods> {
+    fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
         self.as_ref().clone_dyn()
-    }
-
-    fn eq_dyn(&self, other: &dyn InputLikeMethods) -> bool {
-        self.as_ref().eq_dyn(other)
     }
 
     fn as_serialize(&self) -> &dyn erased_serde::Serialize {
         self.as_ref().as_serialize()
     }
 
-    fn input_variant_id(&self) -> usize {
-        self.as_ref().input_variant_id()
+    fn as_reflect(&self) -> &dyn Reflect {
+        self.as_ref().as_reflect()
     }
 }
 
-impl Serialize for dyn InputLikeMethods {
+impl Serialize for dyn InputLikeObject {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -130,13 +137,12 @@ impl Serialize for dyn InputLikeMethods {
     }
 }
 
-pub struct ReflectInputLike {
-    deserialize: Box<dyn Fn(dyn erased_serde::Deserializer)>,
-}
-
-impl InputLikeMethods for KeyCode {
-    fn clashes(&self, other: &dyn InputLikeMethods) -> bool {
-        todo!()
+impl InputLikeObject for KeyCode {
+    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
+        if let Some(other) = other.as_reflect().downcast_ref::<KeyCode>() {
+            return self == other;
+        }
+        false
     }
 
     fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
@@ -151,15 +157,11 @@ impl InputLikeMethods for KeyCode {
         todo!()
     }
 
-    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeMethods)>> {
+    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeObject)>> {
         todo!()
     }
 
-    fn clone_dyn(&self) -> Box<dyn InputLikeMethods> {
-        todo!()
-    }
-
-    fn eq_dyn(&self, other: &dyn InputLikeMethods) -> bool {
+    fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
         todo!()
     }
 
@@ -167,350 +169,34 @@ impl InputLikeMethods for KeyCode {
         todo!()
     }
 
-    fn input_variant_id(&self) -> usize {
-        *self as usize
+    fn as_reflect(&self) -> &dyn Reflect {
+        <KeyCode as bevy::prelude::Reflect>::as_reflect(self)
     }
 }
 
-impl<'de> InputLike<'de> for KeyCode {
-    fn which_pressed(world: &mut World) -> Vec<ActionData> {
+pub struct KeyCodeInputStreams<'a> {
+    pub keycodes: Option<&'a Input<KeyCode>>,
+}
+
+impl<'a> InputStreamsTrait for KeyCodeInputStreams<'a> {
+    fn input_pressed(&self, world: &World, input: &dyn InputLikeObject) -> bool {
+        todo!()
+    }
+
+    fn input_value(&self, world: &World, input: &dyn InputLikeObject) -> f32 {
+        todo!()
+    }
+
+    fn input_axis_pair(&self, world: &World, input: &dyn InputLikeObject) -> Option<DualAxisData> {
         todo!()
     }
 }
 
-/// Some combination of user input, which may cross input-mode boundaries.
-///
-/// For example, this may store mouse, keyboard or gamepad input, including cross-device chords!
-///
-/// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum UserInput {
-    /// A single button
-    Single(InputKind),
-    /// A combination of buttons, pressed simultaneously
-    ///
-    /// Up to 8 (!!) buttons can be chorded together at once.
-    Chord(PetitSet<InputKind, 8>),
-    /// A virtual DPad that you can get an [`DualAxis`] from
-    VirtualDPad(VirtualDPad),
-    /// A virtual axis that you can get a [`SingleAxis`] from
-    VirtualAxis(VirtualAxis),
-}
-
-impl UserInput {
-    /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` that can be converted into an [`InputKind`]
-    ///
-    /// When working with keyboard modifiers, should be preferred over manually specifying both the left and right variant.
-    pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
-        let modifier: InputKind = modifier.into();
-        let input: InputKind = input.into();
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
-        set.insert(modifier);
-        set.insert(input);
-
-        UserInput::Chord(set)
-    }
-
-    /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
-    ///
-    /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
-    pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
-        // We can't just check the length unless we add an ExactSizeIterator bound :(
-        let mut length: u8 = 0;
-
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
-        for button in inputs {
-            length += 1;
-            set.insert(button.into());
-        }
-
-        match length {
-            1 => UserInput::Single(set.into_iter().next().unwrap()),
-            _ => UserInput::Chord(set),
-        }
-    }
-
-    /// The number of logical inputs that make up the [`UserInput`].
-    ///
-    /// - A [`Single`][UserInput::Single] input returns 1
-    /// - A [`Chord`][UserInput::Chord] returns the number of buttons in the chord
-    /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
-    pub fn len(&self) -> usize {
-        match self {
-            UserInput::Single(_) => 1,
-            UserInput::Chord(button_set) => button_set.len(),
-            UserInput::VirtualDPad { .. } => 1,
-            UserInput::VirtualAxis { .. } => 1,
-        }
-    }
-
-    /// Is the number of buttons in the [`UserInput`] 0?
-    pub fn is_empty(&self) -> bool {
-        self.len() == 0
-    }
-
-    /// How many of the provided `buttons` are found in the [`UserInput`]
-    ///
-    /// # Example
-    /// ```rust
-    /// use bevy::input::keyboard::KeyCode::*;
-    /// use bevy::utils::HashSet;
-    /// use leafwing_input_manager::user_input::UserInput;
-    ///
-    /// let buttons = HashSet::from_iter([LControl.into(), LAlt.into()]);
-    /// let a: UserInput  = A.into();
-    /// let ctrl_a = UserInput::chord([LControl, A]);
-    /// let ctrl_alt_a = UserInput::chord([LControl, LAlt, A]);
-    ///
-    /// assert_eq!(a.n_matching(&buttons), 0);
-    /// assert_eq!(ctrl_a.n_matching(&buttons), 1);
-    /// assert_eq!(ctrl_alt_a.n_matching(&buttons), 2);
-    /// ```
-    pub fn n_matching(&self, buttons: &HashSet<InputKind>) -> usize {
-        match self {
-            UserInput::Single(button) => usize::from(buttons.contains(button)),
-            UserInput::Chord(chord_buttons) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    if chord_buttons.contains(button) {
-                        n_matching += 1;
-                    }
-                }
-
-                n_matching
-            }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    for dpad_button in [up, down, left, right] {
-                        if button == dpad_button {
-                            n_matching += 1;
-                        }
-                    }
-                }
-
-                n_matching
-            }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    for dpad_button in [negative, positive] {
-                        if button == dpad_button {
-                            n_matching += 1;
-                        }
-                    }
-                }
-
-                n_matching
-            }
-        }
-    }
-
-    /// Returns the raw inputs that make up this [`UserInput`]
-    pub fn raw_inputs(&self) -> RawInputs {
-        let mut raw_inputs = RawInputs::default();
-
-        match self {
-            UserInput::Single(button) => match *button {
-                InputKind::DualAxis(dual_axis) => {
-                    raw_inputs
-                        .axis_data
-                        .push((dual_axis.x.axis_type, dual_axis.x.value));
-                    raw_inputs
-                        .axis_data
-                        .push((dual_axis.y.axis_type, dual_axis.y.value));
-                }
-                InputKind::SingleAxis(single_axis) => raw_inputs
-                    .axis_data
-                    .push((single_axis.axis_type, single_axis.value)),
-                InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                InputKind::Modifier(modifier) => {
-                    let key_codes = modifier.key_codes();
-                    raw_inputs.keycodes.push(key_codes[0]);
-                    raw_inputs.keycodes.push(key_codes[1]);
-                }
-                InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-            },
-            UserInput::Chord(button_set) => {
-                for button in button_set.iter() {
-                    match *button {
-                        InputKind::DualAxis(dual_axis) => {
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.x.axis_type, dual_axis.x.value));
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.y.axis_type, dual_axis.y.value));
-                        }
-                        InputKind::SingleAxis(single_axis) => raw_inputs
-                            .axis_data
-                            .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                        InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                        InputKind::Modifier(modifier) => {
-                            let key_codes = modifier.key_codes();
-                            raw_inputs.keycodes.push(key_codes[0]);
-                            raw_inputs.keycodes.push(key_codes[1]);
-                        }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-                    }
-                }
-            }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                for button in [up, down, left, right] {
-                    match *button {
-                        InputKind::DualAxis(dual_axis) => {
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.x.axis_type, dual_axis.x.value));
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.y.axis_type, dual_axis.y.value));
-                        }
-                        InputKind::SingleAxis(single_axis) => raw_inputs
-                            .axis_data
-                            .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                        InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                        InputKind::Modifier(modifier) => {
-                            let key_codes = modifier.key_codes();
-                            raw_inputs.keycodes.push(key_codes[0]);
-                            raw_inputs.keycodes.push(key_codes[1]);
-                        }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-                    }
-                }
-            }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                for button in [negative, positive] {
-                    // todo: dedup with VirtualDPad?
-                    match *button {
-                        InputKind::DualAxis(dual_axis) => {
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.x.axis_type, dual_axis.x.value));
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.y.axis_type, dual_axis.y.value));
-                        }
-                        InputKind::SingleAxis(single_axis) => raw_inputs
-                            .axis_data
-                            .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                        InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                        InputKind::Modifier(modifier) => {
-                            let key_codes = modifier.key_codes();
-                            raw_inputs.keycodes.push(key_codes[0]);
-                            raw_inputs.keycodes.push(key_codes[1]);
-                        }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-                    }
-                }
-            }
-        };
-
-        raw_inputs
-    }
-}
-
-impl From<InputKind> for UserInput {
-    fn from(input: InputKind) -> Self {
-        UserInput::Single(input)
-    }
-}
-
-impl From<DualAxis> for UserInput {
-    fn from(input: DualAxis) -> Self {
-        UserInput::Single(InputKind::DualAxis(input))
-    }
-}
-
-impl From<SingleAxis> for UserInput {
-    fn from(input: SingleAxis) -> Self {
-        UserInput::Single(InputKind::SingleAxis(input))
-    }
-}
-
-impl From<VirtualDPad> for UserInput {
-    fn from(input: VirtualDPad) -> Self {
-        UserInput::VirtualDPad(input)
-    }
-}
-
-impl From<VirtualAxis> for UserInput {
-    fn from(input: VirtualAxis) -> Self {
-        UserInput::VirtualAxis(input)
-    }
-}
-
-impl From<GamepadButtonType> for UserInput {
-    fn from(input: GamepadButtonType) -> Self {
-        UserInput::Single(InputKind::GamepadButton(input))
-    }
-}
-
-impl From<KeyCode> for UserInput {
-    fn from(input: KeyCode) -> Self {
-        UserInput::Single(InputKind::Keyboard(input))
-    }
-}
-
-impl From<ScanCode> for UserInput {
-    fn from(input: ScanCode) -> Self {
-        UserInput::Single(InputKind::KeyLocation(input))
-    }
-}
-
-impl From<QwertyScanCode> for UserInput {
-    fn from(input: QwertyScanCode) -> Self {
-        UserInput::Single(InputKind::KeyLocation(input.into()))
-    }
-}
-
-impl From<MouseButton> for UserInput {
-    fn from(input: MouseButton) -> Self {
-        UserInput::Single(InputKind::Mouse(input))
-    }
-}
-
-impl From<MouseWheelDirection> for UserInput {
-    fn from(input: MouseWheelDirection) -> Self {
-        UserInput::Single(InputKind::MouseWheel(input))
-    }
-}
-
-impl From<MouseMotionDirection> for UserInput {
-    fn from(input: MouseMotionDirection) -> Self {
-        UserInput::Single(InputKind::MouseMotion(input))
-    }
-}
-
-impl From<Modifier> for UserInput {
-    fn from(input: Modifier) -> Self {
-        UserInput::Single(InputKind::Modifier(input))
+impl<'a> InputLike<'a> for KeyCode {
+    fn input_streams(world: &World) -> Box<dyn InputStreamsTrait> {
+        Box::new(KeyCodeInputStreams {
+            keycodes: world.get_resource::<Input<KeyCode>>(),
+        })
     }
 }
 

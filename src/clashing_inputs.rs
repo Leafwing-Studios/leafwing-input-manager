@@ -3,10 +3,10 @@
 use crate::action_state::ActionData;
 use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::input_map::InputMap;
-use crate::input_streams::InputStreams;
-use crate::user_input::{InputKind, InputLikeMethods, UserInput};
+use crate::user_input::{InputKind, InputLikeObject};
 use crate::Actionlike;
 
+use crate::input_streams::{InputStreamsRouter, InputStreamsTrait};
 use bevy::prelude::Resource;
 use itertools::Itertools;
 use petitset::PetitSet;
@@ -54,41 +54,6 @@ impl ClashStrategy {
     }
 }
 
-impl UserInput {
-    /// Does `self` clash with `other`?
-    #[must_use]
-    fn clashes(&self, other: &UserInput) -> bool {
-        use UserInput::*;
-
-        match self {
-            Single(self_button) => match other {
-                Single(_) => false,
-                Chord(other_chord) => button_chord_clash(self_button, other_chord),
-                VirtualDPad(other_dpad) => dpad_button_clash(other_dpad, self_button),
-                VirtualAxis(other_axis) => virtual_axis_button_clash(other_axis, self_button),
-            },
-            Chord(self_chord) => match other {
-                Single(other_button) => button_chord_clash(other_button, self_chord),
-                Chord(other_chord) => chord_chord_clash(self_chord, other_chord),
-                VirtualDPad(other_dpad) => dpad_chord_clash(other_dpad, self_chord),
-                VirtualAxis(other_axis) => virtual_axis_chord_clash(other_axis, self_chord),
-            },
-            VirtualDPad(self_dpad) => match other {
-                Single(other_button) => dpad_button_clash(self_dpad, other_button),
-                Chord(other_chord) => dpad_chord_clash(self_dpad, other_chord),
-                VirtualDPad(other_dpad) => dpad_dpad_clash(self_dpad, other_dpad),
-                VirtualAxis(other_axis) => virtual_axis_dpad_clash(other_axis, self_dpad),
-            },
-            VirtualAxis(self_axis) => match other {
-                Single(other_button) => virtual_axis_button_clash(self_axis, other_button),
-                Chord(other_chord) => virtual_axis_chord_clash(self_axis, other_chord),
-                VirtualDPad(other_dpad) => virtual_axis_dpad_clash(self_axis, other_dpad),
-                VirtualAxis(other_axis) => virtual_axis_virtual_axis_clash(self_axis, other_axis),
-            },
-        }
-    }
-}
-
 impl<A: Actionlike> InputMap<A> {
     /// Resolve clashing inputs, removing action presses that have been overruled
     ///
@@ -96,7 +61,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn handle_clashes(
         &self,
         action_data: &mut [ActionData],
-        input_streams: &InputStreams,
+        input_streams: &InputStreamsRouter,
         clash_strategy: ClashStrategy,
     ) {
         for clash in self.get_clashes(action_data, input_streams) {
@@ -129,7 +94,7 @@ impl<A: Actionlike> InputMap<A> {
     fn get_clashes(
         &self,
         action_data: &[ActionData],
-        input_streams: &InputStreams,
+        input_streams: &InputStreamsRouter,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -179,8 +144,8 @@ pub(crate) struct Clash<A: Actionlike> {
     index_a: usize,
     /// The `Actionlike::index` value corresponding to `action_b`
     index_b: usize,
-    inputs_a: Vec<Box<dyn InputLikeMethods>>,
-    inputs_b: Vec<Box<dyn InputLikeMethods>>,
+    inputs_a: Vec<Box<dyn InputLikeObject>>,
+    inputs_b: Vec<Box<dyn InputLikeObject>>,
     _phantom: PhantomData<A>,
 }
 
@@ -309,7 +274,10 @@ fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputK
 ///
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
 #[must_use]
-fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
+fn check_clash<A: Actionlike>(
+    clash: &Clash<A>,
+    input_streams: &InputStreamsRouter,
+) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = Clash::from_indexes(clash.index_a, clash.index_b);
 
     // For all inputs that were actually pressed that match action A
@@ -344,16 +312,16 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
 fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: ClashStrategy,
-    input_streams: &InputStreams,
+    input_streams: &InputStreamsRouter,
 ) -> Option<A> {
     // Figure out why the actions are pressed
-    let reasons_a_is_pressed: Vec<&Box<dyn InputLikeMethods>> = clash
+    let reasons_a_is_pressed: Vec<&Box<dyn InputLikeObject>> = clash
         .inputs_a
         .iter()
         .filter(|&input| input_streams.input_pressed(input.as_ref()))
         .collect();
 
-    let reasons_b_is_pressed: Vec<&Box<dyn InputLikeMethods>> = clash
+    let reasons_b_is_pressed: Vec<&Box<dyn InputLikeObject>> = clash
         .inputs_b
         .iter()
         .filter(|&input| input_streams.input_pressed(input.as_ref()))

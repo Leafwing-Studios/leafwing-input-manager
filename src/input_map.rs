@@ -3,8 +3,7 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::input_streams::InputStreams;
-use crate::user_input::{InputKind, InputLikeMethods, Modifier};
+use crate::user_input::{InputKind, InputLikeObject, Modifier};
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;
@@ -12,9 +11,10 @@ use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 
+use crate::input_streams::{InputStreamsRouter, InputStreamsTrait};
 use core::fmt::Debug;
 use petitset::PetitSet;
-use serde::{Deserializer, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -78,7 +78,7 @@ use std::marker::PhantomData;
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
-    map: Vec<PetitSet<Box<dyn InputLikeMethods>, 16>>,
+    map: Vec<PetitSet<Box<dyn InputLikeObject>, 16>>,
     associated_gamepad: Option<Gamepad>,
     marker: PhantomData<A>,
 }
@@ -119,7 +119,7 @@ impl<A: Actionlike> InputMap<A> {
     /// assert_eq!(input_map.len(), 2);
     /// ```
     #[must_use]
-    pub fn new(bindings: impl IntoIterator<Item = (impl InputLikeMethods, A)>) -> Self {
+    pub fn new(bindings: impl IntoIterator<Item = (impl InputLikeObject, A)>) -> Self {
         let mut input_map = InputMap::default();
         input_map.insert_multiple(bindings);
 
@@ -165,7 +165,7 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert<I: InputLikeMethods>(&mut self, input: I, action: A) -> &mut Self {
+    pub fn insert<I: InputLikeObject>(&mut self, input: I, action: A) -> &mut Self {
         let input = input.clone_dyn();
 
         self.map[action.index()].insert(input);
@@ -181,7 +181,7 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn insert_many_to_one(
         &mut self,
-        input: impl IntoIterator<Item = impl Into<Box<dyn InputLikeMethods>>>,
+        input: impl IntoIterator<Item = impl Into<Box<dyn InputLikeObject>>>,
         action: A,
     ) -> &mut Self {
         for input in input {
@@ -197,7 +197,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and `input` is not a duplicate.
     pub fn insert_one_to_many(
         &mut self,
-        input: impl InputLikeMethods,
+        input: impl InputLikeObject,
         action: impl IntoIterator<Item = A>,
     ) -> &mut Self {
         for action in action {
@@ -213,12 +213,7 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert_at(
-        &mut self,
-        input: impl InputLikeMethods,
-        action: A,
-        index: usize,
-    ) -> &mut Self {
+    pub fn insert_at(&mut self, input: impl InputLikeObject, action: A, index: usize) -> &mut Self {
         self.map[action.index()].insert_at(input.clone_dyn(), index);
 
         self
@@ -235,7 +230,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
-        input_action_pairs: impl IntoIterator<Item = (impl InputLikeMethods, A)>,
+        input_action_pairs: impl IntoIterator<Item = (impl InputLikeObject, A)>,
     ) -> &mut Self {
         for (input, action) in input_action_pairs {
             self.insert(input, action);
@@ -351,7 +346,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn pressed(
         &self,
         action: A,
-        input_streams: &InputStreams,
+        input_streams: &InputStreamsRouter,
         clash_strategy: ClashStrategy,
     ) -> bool {
         let action_data = self.which_pressed(input_streams, clash_strategy);
@@ -365,7 +360,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn which_pressed(
         &self,
-        input_streams: &InputStreams,
+        input_streams: &InputStreamsRouter,
         clash_strategy: ClashStrategy,
     ) -> Vec<ActionData> {
         let mut action_data = vec![ActionData::default(); A::n_variants()];
@@ -409,7 +404,7 @@ impl<A: Actionlike> InputMap<A> {
 // Utilities
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over actions with their inputs
-    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<Box<dyn InputLikeMethods>, 16>, A)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<Box<dyn InputLikeObject>, 16>, A)> {
         self.map
             .iter()
             .enumerate()
@@ -417,13 +412,13 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Returns an iterator over all mapped inputs
-    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<Box<dyn InputLikeMethods>, 16>> {
+    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<Box<dyn InputLikeObject>, 16>> {
         self.map.iter()
     }
 
     /// Returns the `action` mappings
     #[must_use]
-    pub fn get(&self, action: A) -> &PetitSet<Box<dyn InputLikeMethods>, 16> {
+    pub fn get(&self, action: A) -> &PetitSet<Box<dyn InputLikeObject>, 16> {
         &self.map[action.index()]
     }
 
@@ -462,10 +457,10 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: A, input: impl InputLikeMethods) -> Option<usize> {
+    pub fn remove(&mut self, action: A, input: impl InputLikeObject) -> Option<usize> {
         let position = self.map[action.index()]
             .iter()
-            .position(|i| i.eq_dyn(&input));
+            .position(|i| i.as_ref().eq(&input));
         if let Some(position) = position {
             self.map[action.index()].remove_at(position);
         }
@@ -473,7 +468,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLikeMethods>>>> for InputMap<A> {
+impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLikeObject>>>> for InputMap<A> {
     /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
     ///
     /// # Panics
@@ -500,21 +495,21 @@ impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLikeMethods>>>> for InputMa
     /// );
     /// let input_map = InputMap::from(map);
     /// ```
-    fn from(map: HashMap<A, Vec<Box<dyn InputLikeMethods>>>) -> Self {
+    fn from(map: HashMap<A, Vec<Box<dyn InputLikeObject>>>) -> Self {
         map.iter()
             .flat_map(|(action, inputs)| inputs.iter().map(|input| (action.clone(), input.clone())))
             .collect()
     }
 }
 
-impl<A: Actionlike> FromIterator<(A, Box<dyn InputLikeMethods>)> for InputMap<A> {
+impl<A: Actionlike> FromIterator<(A, Box<dyn InputLikeObject>)> for InputMap<A> {
     /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
     ///
     /// # Panics
     ///
     /// Panics if there are more than 16 distinct inputs for the same action.
 
-    fn from_iter<T: IntoIterator<Item = (A, Box<dyn InputLikeMethods>)>>(iter: T) -> Self {
+    fn from_iter<T: IntoIterator<Item = (A, Box<dyn InputLikeObject>)>>(iter: T) -> Self {
         InputMap::new(iter.into_iter().map(|(action, input)| (input, action)))
     }
 }
@@ -536,17 +531,17 @@ where
             &self
                 .iter()
                 .map(|(set, action)| (action, set.iter().collect()))
-                .collect::<BTreeMap<A, Vec<&Box<dyn InputLikeMethods>>>>(),
+                .collect::<BTreeMap<A, Vec<&Box<dyn InputLikeObject>>>>(),
         )?;
         input_map.end()
     }
 }
 
 impl<A: Actionlike> InputMap<A> {
-    pub fn deserialize<'de>(
-        deserializer: impl Deserializer<'de>,
+    pub fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
         type_registry: &TypeRegistryInternal,
-    ) {
+    ) -> Result<Self, D::Error> {
         todo!()
     }
 }
@@ -612,7 +607,6 @@ mod tests {
 
     #[test]
     fn chord_singleton_coercion() {
-        use crate::input_map::UserInput;
         use bevy::input::keyboard::KeyCode;
 
         // Single items in a chord should be coerced to a singleton

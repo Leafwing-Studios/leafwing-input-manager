@@ -645,7 +645,6 @@ mod tests {
         use crate::action_state::ActionState;
         use crate::clashing_inputs::ClashStrategy;
         use crate::input_map::InputMap;
-        use crate::input_streams::InputStreams;
         use bevy::input::InputPlugin;
         use bevy::prelude::*;
         use bevy::utils::{Duration, Instant};

@@ -6,12 +6,13 @@ use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
-    input_streams::InputStreams,
     plugin::ToggleActions,
     press_scheduler::PressScheduler,
     Actionlike,
 };
 
+use bevy::app::AppTypeRegistry;
+use bevy::ecs::system::SystemState;
 use bevy::input::{
     gamepad::{GamepadAxis, GamepadButton, Gamepads},
     keyboard::KeyCode,
@@ -22,6 +23,8 @@ use bevy::time::Time;
 use bevy::utils::Instant;
 use bevy::{ecs::prelude::*, prelude::ScanCode};
 
+use crate::input_streams::{InputStreamsRouter, InputStreamsTrait};
+use crate::user_input::ReflectInputLike;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
@@ -60,58 +63,32 @@ pub fn tick_action_state<A: Actionlike>(
 /// Fetches all of the relevant [`Input`] resources to update [`ActionState`] according to the [`InputMap`].
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
-#[allow(clippy::too_many_arguments)]
-pub fn update_action_state<A: Actionlike>(
-    gamepad_buttons: Res<Input<GamepadButton>>,
-    gamepad_button_axes: Res<Axis<GamepadButton>>,
-    gamepad_axes: Res<Axis<GamepadAxis>>,
-    gamepads: Res<Gamepads>,
-    keycodes: Option<Res<Input<KeyCode>>>,
-    scan_codes: Option<Res<Input<ScanCode>>>,
-    mouse_buttons: Option<Res<Input<MouseButton>>>,
-    mouse_wheel: Option<Res<Events<MouseWheel>>>,
-    mouse_motion: Res<Events<MouseMotion>>,
-    clash_strategy: Res<ClashStrategy>,
-    #[cfg(feature = "egui")] mut maybe_egui: EguiContexts,
-    action_state: Option<ResMut<ActionState<A>>>,
-    input_map: Option<Res<InputMap<A>>>,
-    press_scheduler: Option<ResMut<PressScheduler<A>>>,
-    mut query: Query<(
-        &mut ActionState<A>,
-        &InputMap<A>,
-        Option<&mut PressScheduler<A>>,
-    )>,
-) {
-    let gamepad_buttons = gamepad_buttons.into_inner();
-    let gamepad_button_axes = gamepad_button_axes.into_inner();
-    let gamepad_axes = gamepad_axes.into_inner();
-    let gamepads = gamepads.into_inner();
-    let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
-    let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
-    let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
-    let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
-    let mouse_motion = mouse_motion.into_inner();
+pub fn update_action_state<A: Actionlike>(world: &mut World) {
+    let input_likes = {
+        let type_registry = world.resource::<AppTypeRegistry>().read();
 
-    #[cfg(feature = "egui")]
-    let ctx = maybe_egui.ctx_mut();
-
-    // If egui wants to own inputs, don't also apply them to the game state
-    #[cfg(feature = "egui")]
-    let (keycodes, scan_codes) = if ctx.wants_keyboard_input() {
-        (None, None)
-    } else {
-        (keycodes, scan_codes)
+        type_registry
+            .iter()
+            .filter_map(|type_registration| {
+                type_registry.get_type_data::<ReflectInputLike>(type_registration.type_id())
+            })
+            .cloned()
+            .collect::<Vec<_>>()
     };
 
-    // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
-    // so `is_pointer_over_area` is also needed.
-    #[cfg(feature = "egui")]
-    let (mouse_buttons, mouse_wheel) = if ctx.is_pointer_over_area() || ctx.wants_pointer_input() {
-        (None, None)
-    } else {
-        (mouse_buttons, mouse_wheel)
-    };
-
+    let mut state = SystemState::<(
+        Res<ClashStrategy>,
+        Option<ResMut<ActionState<A>>>,
+        Option<Res<InputMap<A>>>,
+        Option<ResMut<PressScheduler<A>>>,
+        Query<(
+            &mut ActionState<A>,
+            &InputMap<A>,
+            Option<&mut PressScheduler<A>>,
+        )>,
+    )>::new(world);
+    let (clash_strategy, mut action_state, input_map, mut press_scheduler, mut query) =
+        state.get_mut(world);
     let resources = input_map
         .zip(action_state)
         .map(|(input_map, action_state)| {
@@ -121,22 +98,9 @@ pub fn update_action_state<A: Actionlike>(
                 press_scheduler.map(Mut::from),
             )
         });
-
+    let router = InputStreamsRouter::collect(input_likes.as_slice(), world);
     for (mut action_state, input_map, press_scheduler) in query.iter_mut().chain(resources) {
-        let input_streams = InputStreams {
-            gamepad_buttons,
-            gamepad_button_axes,
-            gamepad_axes,
-            gamepads,
-            keycodes,
-            scan_codes,
-            mouse_buttons,
-            mouse_wheel,
-            mouse_motion,
-            associated_gamepad: input_map.gamepad(),
-        };
-
-        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
+        action_state.update(input_map.which_pressed(&router, *clash_strategy));
         if let Some(mut press_scheduler) = press_scheduler {
             press_scheduler.apply(&mut action_state);
         }
