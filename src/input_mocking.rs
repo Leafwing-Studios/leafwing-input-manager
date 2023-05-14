@@ -7,7 +7,7 @@
 //! These are then parsed down to their [`UserInput::raw_inputs()`],
 //! which are then sent as [`bevy::input`] events of the appropriate types.
 
-use crate::user_input::InputLikeObject;
+use crate::input_like::InputLikeObject;
 
 use bevy::app::App;
 use bevy::ecs::event::Events;
@@ -49,7 +49,7 @@ use bevy::window::CursorMoved;
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::{input_mocking::MockInput, user_input::UserInput};
+/// use leafwing_input_manager::{input_mocking::MockInput, input_like::UserInput};
 ///
 /// let mut app = App::new();
 /// app.add_plugin(InputPlugin);

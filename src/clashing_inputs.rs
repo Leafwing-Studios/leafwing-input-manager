@@ -2,11 +2,11 @@
 
 use crate::action_state::ActionData;
 use crate::axislike::{VirtualAxis, VirtualDPad};
+use crate::input_like::{InputKind, InputLikeObject};
 use crate::input_map::InputMap;
-use crate::user_input::{InputKind, InputLikeObject};
 use crate::Actionlike;
 
-use crate::input_streams::{InputStreams, InputStreamsRouter};
+use crate::input_streams::InputStreamsRouter;
 use bevy::prelude::Resource;
 use itertools::Itertools;
 use petitset::PetitSet;

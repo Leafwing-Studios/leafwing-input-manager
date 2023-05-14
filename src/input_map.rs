@@ -3,7 +3,7 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::user_input::{InputKind, InputLikeObject, Modifier};
+use crate::input_like::{InputKind, InputLikeObject, Modifier};
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;
@@ -11,10 +11,10 @@ use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 
-use crate::input_streams::{InputStreams, InputStreamsRouter};
+use crate::input_streams::InputStreamsRouter;
 use core::fmt::Debug;
 use petitset::PetitSet;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserializer, Serialize};
 use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
@@ -40,7 +40,7 @@ use std::marker::PhantomData;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputKind;
+/// use leafwing_input_manager::input_like::InputKind;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -477,7 +477,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLikeObject>>>> for InputMap
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
-    /// use leafwing_input_manager::user_input::UserInput;
+    /// use leafwing_input_manager::input_like::UserInput;
     /// use leafwing_input_manager::Actionlike;
     /// use bevy::input::keyboard::KeyCode;
     ///
@@ -584,7 +584,7 @@ mod tests {
 
     #[test]
     fn multiple_insertion() {
-        use crate::user_input::UserInput;
+        use crate::input_like::UserInput;
         use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 

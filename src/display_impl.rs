@@ -1,6 +1,6 @@
 //! Containment module for boring implementations of the [`Display`] trait
 
-use crate::user_input::InputKind;
+use crate::input_like::InputKind;
 use std::fmt::Display;
 
 impl Display for InputKind {

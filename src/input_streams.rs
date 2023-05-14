@@ -1,6 +1,5 @@
 use crate::axislike::DualAxisData;
-use crate::prelude::DualAxis;
-use crate::user_input::{InputLikeObject, ReflectInputLike};
+use crate::input_like::{InputLikeObject, ReflectInputLike};
 use bevy::app::AppTypeRegistry;
 use bevy::prelude::World;
 use bevy::utils::HashMap;

@@ -11,25 +11,15 @@ use crate::{
     Actionlike,
 };
 
-use bevy::app::AppTypeRegistry;
+use bevy::ecs::prelude::*;
 use bevy::ecs::system::SystemState;
-use bevy::input::{
-    gamepad::{GamepadAxis, GamepadButton, Gamepads},
-    keyboard::KeyCode,
-    mouse::{MouseButton, MouseMotion, MouseWheel},
-    Axis, Input,
-};
 use bevy::time::Time;
 use bevy::utils::Instant;
-use bevy::{ecs::prelude::*, prelude::ScanCode};
 
 use crate::buttonlike::ButtonState;
-use crate::input_streams::{InputStreams, InputStreamsRouter};
-use crate::user_input::ReflectInputLike;
+use crate::input_streams::InputStreamsRouter;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
-#[cfg(feature = "egui")]
-use bevy_egui::EguiContexts;
 
 /// Advances actions timer.
 ///

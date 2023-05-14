@@ -1,7 +1,6 @@
 //! Helpful abstractions over user inputs of all sorts
 
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
-use std::any::Any;
 use std::fmt::Debug;
 
 use bevy::prelude::{Reflect, ScanCode, World};
@@ -174,7 +173,7 @@ impl InputLikeObject for KeyCode {
 
 pub struct KeyCodeInputStreams {}
 
-impl<'a> InputStreams for KeyCodeInputStreams {
+impl InputStreams for KeyCodeInputStreams {
     fn input_pressed(&self, world: &World, input: &dyn InputLikeObject) -> bool {
         todo!()
     }
@@ -406,7 +405,7 @@ impl RawInputs {
 mod raw_input_tests {
     use crate::{
         axislike::AxisType,
-        user_input::{InputKind, RawInputs, UserInput},
+        input_like::{InputKind, RawInputs, UserInput},
     };
 
     #[test]
@@ -445,7 +444,7 @@ mod raw_input_tests {
     }
 
     mod gamepad {
-        use crate::user_input::{RawInputs, UserInput};
+        use crate::input_like::{RawInputs, UserInput};
 
         #[test]
         fn gamepad_button() {
@@ -486,7 +485,7 @@ mod raw_input_tests {
     }
 
     mod keyboard {
-        use crate::user_input::{RawInputs, UserInput};
+        use crate::input_like::{RawInputs, UserInput};
 
         #[test]
         fn keyboard_button() {
@@ -500,7 +499,7 @@ mod raw_input_tests {
 
         #[test]
         fn modifier_key_decomposes_into_both_inputs() {
-            use crate::user_input::Modifier;
+            use crate::input_like::Modifier;
             use bevy::input::keyboard::KeyCode;
 
             let input = UserInput::modified(Modifier::Control, KeyCode::S);
@@ -514,7 +513,7 @@ mod raw_input_tests {
     }
 
     mod mouse {
-        use crate::user_input::{RawInputs, UserInput};
+        use crate::input_like::{RawInputs, UserInput};
 
         #[test]
         fn mouse_button() {

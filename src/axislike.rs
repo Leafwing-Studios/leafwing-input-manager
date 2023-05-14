@@ -1,9 +1,9 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
+use crate::input_like::InputKind;
 use crate::orientation::{Direction, Rotation};
 use crate::prelude::QwertyScanCode;
-use crate::user_input::InputKind;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
@@ -407,7 +407,7 @@ impl VirtualAxis {
     }
 }
 
-/// The type of axis used by a [`UserInput`](crate::user_input::UserInput).
+/// The type of axis used by a [`UserInput`](crate::input_like::UserInput).
 ///
 /// This is stored in either a [`SingleAxis`] or [`DualAxis`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]

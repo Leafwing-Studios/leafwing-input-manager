@@ -16,6 +16,7 @@ pub mod common_conditions;
 mod display_impl;
 pub mod dynamic_action;
 pub mod errors;
+pub mod input_like;
 pub mod input_map;
 pub mod input_mocking;
 pub mod input_streams;
@@ -24,7 +25,6 @@ pub mod plugin;
 pub mod press_scheduler;
 pub mod scan_codes;
 pub mod systems;
-pub mod user_input;
 
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
@@ -35,10 +35,10 @@ pub mod prelude {
     pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad};
     pub use crate::buttonlike::MouseWheelDirection;
     pub use crate::clashing_inputs::ClashStrategy;
+    pub use crate::input_like::Modifier;
     pub use crate::input_map::InputMap;
     pub use crate::input_mocking::MockInput;
     pub use crate::scan_codes::QwertyScanCode;
-    pub use crate::user_input::Modifier;
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;

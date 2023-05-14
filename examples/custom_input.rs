@@ -1,13 +1,16 @@
+//! Shows how you might integrate your own library with leafwing_input_manager to provide custom
+//! inputs.
+//! Creates a custom input type from [`WindowMotion`] events, and binds it to changing the background
+//! color.
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
 use bevy::window::WindowResolution;
 use itertools::Itertools;
 use leafwing_input_manager::axislike::DualAxisData;
-use leafwing_input_manager::input_streams::InputStreams;
-use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::{
+use leafwing_input_manager::input_like::{
     AxisLike, ButtonLike, InputLike, InputLikeObject, ReflectInputLike,
 };
+use leafwing_input_manager::input_streams::InputStreams;
+use leafwing_input_manager::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::any::TypeId;
 
