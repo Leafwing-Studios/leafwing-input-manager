@@ -6,7 +6,7 @@ use crate::input_map::InputMap;
 use crate::user_input::{InputKind, InputLikeObject};
 use crate::Actionlike;
 
-use crate::input_streams::{InputStreamsRouter, InputStreamsTrait};
+use crate::input_streams::{InputStreams, InputStreamsRouter};
 use bevy::prelude::Resource;
 use itertools::Itertools;
 use petitset::PetitSet;

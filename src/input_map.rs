@@ -11,7 +11,7 @@ use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 
-use crate::input_streams::{InputStreamsRouter, InputStreamsTrait};
+use crate::input_streams::{InputStreams, InputStreamsRouter};
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -457,7 +457,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: A, input: impl InputLikeObject) -> Option<usize> {
+    pub fn remove(&mut self, action: A, input: impl InputLikeObject + 'static) -> Option<usize> {
         let position = self.map[action.index()]
             .iter()
             .position(|i| i.as_ref().eq(&input));

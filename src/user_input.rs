@@ -1,30 +1,28 @@
 //! Helpful abstractions over user inputs of all sorts
 
-use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton, Input};
+use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use std::any::Any;
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 
 use bevy::prelude::{Reflect, ScanCode, World};
 use bevy::reflect::FromType;
-use bevy::utils::HashSet;
-use petitset::PetitSet;
 use serde::{Deserialize, Serialize, Serializer};
 
-use crate::axislike::{DualAxisData, VirtualAxis};
-use crate::input_streams::InputStreamsTrait;
+use crate::axislike::DualAxisData;
+use crate::input_streams::InputStreams;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
-    axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
+    axislike::{AxisType, DualAxis, SingleAxis},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
 pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {
-    fn input_streams(world: &World) -> Box<dyn InputStreamsTrait>;
+    fn input_streams(world: &World) -> Box<dyn InputStreams>;
 }
 
 #[derive(Clone)]
 pub struct ReflectInputLike {
-    pub input_streams: fn(&World) -> Box<dyn InputStreamsTrait>,
+    pub input_streams: fn(&World) -> Box<dyn InputStreams>,
 }
 
 impl<'a, T: InputLike<'a>> FromType<T> for ReflectInputLike {
@@ -39,7 +37,7 @@ impl<'a, T: InputLike<'a>> FromType<T> for ReflectInputLike {
 /// [object safe](https://doc.rust-lang.org/reference/items/traits.html#object-safety) part of
 /// [`InputLike`], which is how they are stored in [`InputMap`].
 #[allow(clippy::len_without_is_empty)]
-pub trait InputLikeObject: Send + Sync + Debug + Any {
+pub trait InputLikeObject: Send + Sync + Debug {
     /// Does `self` clash with `other`?
     #[must_use]
     fn clashes(&self, other: &dyn InputLikeObject) -> bool;
@@ -80,7 +78,7 @@ impl PartialEq<Self> for dyn InputLikeObject {
     ///
     /// Panics If the underlying type does not support equality testing.
     fn eq(&self, other: &Self) -> bool {
-        self.type_id() == other.type_id()
+        self.as_reflect().type_id() == other.as_reflect().type_id()
             && self
                 .as_reflect()
                 .reflect_partial_eq(other.as_reflect())
@@ -174,11 +172,9 @@ impl InputLikeObject for KeyCode {
     }
 }
 
-pub struct KeyCodeInputStreams<'a> {
-    pub keycodes: Option<&'a Input<KeyCode>>,
-}
+pub struct KeyCodeInputStreams {}
 
-impl<'a> InputStreamsTrait for KeyCodeInputStreams<'a> {
+impl<'a> InputStreams for KeyCodeInputStreams {
     fn input_pressed(&self, world: &World, input: &dyn InputLikeObject) -> bool {
         todo!()
     }
@@ -193,10 +189,8 @@ impl<'a> InputStreamsTrait for KeyCodeInputStreams<'a> {
 }
 
 impl<'a> InputLike<'a> for KeyCode {
-    fn input_streams(world: &World) -> Box<dyn InputStreamsTrait> {
-        Box::new(KeyCodeInputStreams {
-            keycodes: world.get_resource::<Input<KeyCode>>(),
-        })
+    fn input_streams(world: &World) -> Box<dyn InputStreams> {
+        Box::new(KeyCodeInputStreams {})
     }
 }
 

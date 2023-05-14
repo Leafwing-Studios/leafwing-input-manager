@@ -23,7 +23,8 @@ use bevy::time::Time;
 use bevy::utils::Instant;
 use bevy::{ecs::prelude::*, prelude::ScanCode};
 
-use crate::input_streams::{InputStreamsRouter, InputStreamsTrait};
+use crate::buttonlike::ButtonState;
+use crate::input_streams::{InputStreams, InputStreamsRouter};
 use crate::user_input::ReflectInputLike;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -64,45 +65,56 @@ pub fn tick_action_state<A: Actionlike>(
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
 pub fn update_action_state<A: Actionlike>(world: &mut World) {
-    let input_likes = {
-        let type_registry = world.resource::<AppTypeRegistry>().read();
-
-        type_registry
+    let input_maps: Vec<_> = {
+        let mut state =
+            SystemState::<(Option<Res<InputMap<A>>>, Query<(Entity, &InputMap<A>)>)>::new(world);
+        let (input_map_resource, input_maps) = state.get(world);
+        // Have to clone the input maps because we can't keep any references to world
+        input_maps
             .iter()
-            .filter_map(|type_registration| {
-                type_registry.get_type_data::<ReflectInputLike>(type_registration.type_id())
-            })
-            .cloned()
-            .collect::<Vec<_>>()
+            .map(|(e, m)| (e, m.clone()))
+            .chain(input_map_resource.map(|r| (Entity::PLACEHOLDER, r.clone())))
+            .collect()
     };
 
+    let entity_action_data = world.resource_scope(|world, clash_strategy: Mut<ClashStrategy>| {
+        let router = InputStreamsRouter::collect(world);
+        input_maps
+            .iter()
+            .map(|(e, m)| (*e, m.which_pressed(&router, *clash_strategy)))
+            .collect::<Vec<_>>()
+    });
+
     let mut state = SystemState::<(
-        Res<ClashStrategy>,
         Option<ResMut<ActionState<A>>>,
-        Option<Res<InputMap<A>>>,
         Option<ResMut<PressScheduler<A>>>,
-        Query<(
-            &mut ActionState<A>,
-            &InputMap<A>,
-            Option<&mut PressScheduler<A>>,
-        )>,
+        Query<(&mut ActionState<A>, Option<&mut PressScheduler<A>>)>,
     )>::new(world);
-    let (clash_strategy, mut action_state, input_map, mut press_scheduler, mut query) =
-        state.get_mut(world);
-    let resources = input_map
-        .zip(action_state)
-        .map(|(input_map, action_state)| {
-            (
-                Mut::from(action_state),
-                input_map.into_inner(),
-                press_scheduler.map(Mut::from),
-            )
-        });
-    let router = InputStreamsRouter::collect(input_likes.as_slice(), world);
-    for (mut action_state, input_map, press_scheduler) in query.iter_mut().chain(resources) {
-        action_state.update(input_map.which_pressed(&router, *clash_strategy));
+
+    for (entity, action_data) in entity_action_data {
+        let (action_state, press_scheduler, mut query) = state.get_mut(world);
+
+        // Get from either resource or component
+        let (mut action_state, press_scheduler) = if entity == Entity::PLACEHOLDER {
+            if let Some(action_state) = action_state {
+                (Mut::from(action_state), press_scheduler.map(Mut::from))
+            } else {
+                continue;
+            }
+        } else if let Ok((action_state, press_scheduler)) = query.get_mut(entity) {
+            (action_state, press_scheduler)
+        } else {
+            continue;
+        };
+
+        for action_data in &action_data {
+            if action_data.state == ButtonState::Pressed {
+                println!("{:?}", action_data);
+            }
+        }
+        action_state.update(action_data);
         if let Some(mut press_scheduler) = press_scheduler {
-            press_scheduler.apply(&mut action_state);
+            press_scheduler.apply(action_state.as_mut());
         }
     }
 }

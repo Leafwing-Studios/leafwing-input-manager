@@ -1,11 +1,12 @@
-use bevy::ecs::system::SystemState;
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
+use bevy::window::WindowResolution;
 use itertools::Itertools;
 use leafwing_input_manager::axislike::DualAxisData;
+use leafwing_input_manager::input_streams::InputStreams;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::press_scheduler::PressScheduler;
 use leafwing_input_manager::user_input::{
-    AxisLike, ButtonLike, InputLike, InputLikeObject, InputStreamsTrait, ReflectInputLike,
+    AxisLike, ButtonLike, InputLike, InputLikeObject, ReflectInputLike,
 };
 use serde::{Deserialize, Serialize};
 use std::any::TypeId;
@@ -74,19 +75,21 @@ impl InputLikeObject for WindowMotionDirection {
     }
 }
 
-pub struct WindowMotionInputStream<'a> {
-    window_motion: &'a Events<WindowMotion>,
-}
+pub struct WindowMotionInputStream {}
 
-impl<'a> InputStreamsTrait<'a> for WindowMotionInputStream<'a> {
+impl InputStreams for WindowMotionInputStream {
     fn input_pressed(&self, world: &World, input: &dyn InputLikeObject) -> bool {
         let Some(input) = input.as_reflect().downcast_ref::<WindowMotionDirection>() else {
             return false;
         };
+
         // FIXME: verify that this works and doesn't double count events
-        let mut event_reader = self.window_motion.get_reader();
+        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
+            return false;
+        };
+        let mut event_reader = window_motion.get_reader();
         event_reader
-            .iter(self.window_motion)
+            .iter(window_motion)
             .map(WindowMotionDirection::from)
             .contains(input)
     }
@@ -95,9 +98,13 @@ impl<'a> InputStreamsTrait<'a> for WindowMotionInputStream<'a> {
         let Some(input) = input.as_reflect().downcast_ref::<WindowMotionDirection>() else {
             return 0.0;
         };
-        let mut event_reader = self.window_motion.get_reader();
+
+        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
+            return 0.0;
+        };
+        let mut event_reader = window_motion.get_reader();
         event_reader
-            .iter(self.window_motion)
+            .iter(window_motion)
             .find(|i| WindowMotionDirection::from(*i) == *input)
             .map(|x| x.delta.x.abs().max(x.delta.y.abs()))
             .unwrap_or_default()
@@ -107,10 +114,13 @@ impl<'a> InputStreamsTrait<'a> for WindowMotionInputStream<'a> {
         let Some(input) = input.as_reflect().downcast_ref::<WindowMotionDirection>() else {
             return None;
         };
-        let mut event_reader = self.window_motion.get_reader();
+        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
+            return None;
+        };
+        let mut event_reader = window_motion.get_reader();
         Some(
             event_reader
-                .iter(self.window_motion)
+                .iter(window_motion)
                 .find(|i| WindowMotionDirection::from(*i) == *input)
                 .map(|x| DualAxisData::from_xy(x.delta))
                 .unwrap_or_default(),
@@ -119,10 +129,8 @@ impl<'a> InputStreamsTrait<'a> for WindowMotionInputStream<'a> {
 }
 
 impl<'de> InputLike<'de> for WindowMotionDirection {
-    fn input_streams(world: &mut World) -> Box<dyn InputStreamsTrait<'_> + '_> {
-        Box::new(WindowMotionInputStream {
-            window_motion: world.resource::<Events<WindowMotion>>(),
-        })
+    fn input_streams(_world: &World) -> Box<dyn InputStreams> {
+        Box::new(WindowMotionInputStream {})
     }
 }
 
@@ -130,7 +138,7 @@ impl TryFrom<&Box<dyn InputLikeObject>> for WindowMotionDirection {
     type Error = ();
 
     fn try_from(value: &Box<dyn InputLikeObject>) -> Result<Self, Self::Error> {
-        if value.as_ref().type_id() != TypeId::of::<WindowMotionDirection>() {
+        if value.as_ref().as_reflect().type_id() != TypeId::of::<WindowMotionDirection>() {
             return Err(());
         }
 
@@ -160,67 +168,24 @@ impl From<&WindowMotion> for WindowMotionDirection {
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                resolution: WindowResolution::new(480.0, 360.0),
+                resizable: false,
+                ..default()
+            }),
+            ..default()
+        }))
         .add_plugin(InputManagerPlugin::<ChangeColorAction>::default())
         .init_resource::<ActionState<ChangeColorAction>>()
         .add_event::<WindowMotion>()
         .register_type::<WindowMotionDirection>()
         .add_startup_system(setup)
-        .add_system(update_action_state::<ChangeColorAction>)
         .add_systems((update_window_motion, apply_system_buffers, update_color).chain())
         .run()
 }
 
-// TODO: This should be done in the library instead of in this example
-fn update_action_state<A: Actionlike>(world: &mut World) {
-    let input_likes = {
-        let type_registry = world.resource::<AppTypeRegistry>().read();
-
-        type_registry
-            .iter()
-            .filter_map(|type_registration| {
-                type_registry.get_type_data::<ReflectInputLike>(type_registration.type_id())
-            })
-            .cloned()
-            .collect::<Vec<_>>()
-    };
-
-    let mut state = SystemState::<(
-        Res<ClashStrategy>,
-        Option<ResMut<ActionState<A>>>,
-        Option<Res<InputMap<A>>>,
-        Option<ResMut<PressScheduler<A>>>,
-        Query<(
-            &mut ActionState<A>,
-            &InputMap<A>,
-            Option<&mut PressScheduler<A>>,
-        )>,
-    )>::new(world);
-    let (clash_strategy, mut action_state, input_map, mut press_scheduler, mut query) =
-        state.get_mut(world);
-    let resources = input_map
-        .zip(action_state)
-        .map(|(input_map, action_state)| {
-            (
-                Mut::from(action_state),
-                input_map.into_inner(),
-                press_scheduler.map(Mut::from),
-            )
-        });
-
-    let input_streams: Vec<_> = input_likes
-        .iter()
-        .map(|input_like| (input_like.input_streams)(world))
-        .collect();
-    for (mut action_state, input_map, press_scheduler) in query.iter_mut().chain(resources) {
-        action_state.update(input_map.which_pressed(input_streams, clash_strategy));
-        if let Some(mut press_scheduler) = press_scheduler {
-            press_scheduler.apply(&mut action_state);
-        }
-    }
-}
-
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.insert_resource(InputMap::<ChangeColorAction>::new([
         (WindowMotionDirection::Left, ChangeColorAction::Red),
         (WindowMotionDirection::Right, ChangeColorAction::Green),
@@ -228,24 +193,52 @@ fn setup(mut commands: Commands) {
         (WindowMotionDirection::Down, ChangeColorAction::Yellow),
     ]));
     commands.spawn(Camera2dBundle::default());
+    commands.spawn((TextBundle {
+        text: Text::from_section(
+            "Drag the window around to change the color!",
+            TextStyle {
+                font: asset_server.load("Montserrat/Montserrat-VariableFont_wght.ttf"),
+                font_size: 40.0,
+                color: Color::WHITE,
+            },
+        )
+        .with_alignment(TextAlignment::Center),
+        style: Style {
+            position_type: PositionType::Absolute,
+            position: UiRect::all(Val::Px(10.0)),
+            max_size: Size::new(Val::Px(460.0), Val::Undefined),
+            ..Default::default()
+        },
+        ..Default::default()
+    },));
 }
 
 fn update_color(
     action_state: Res<ActionState<ChangeColorAction>>,
     mut clear_color: ResMut<ClearColor>,
+    time: Res<Time>,
 ) {
-    if action_state.just_pressed(ChangeColorAction::Blue) {
-        clear_color.0 = Color::BLUE;
+    let delta = time.delta_seconds() * 2.0;
+    if action_state.pressed(ChangeColorAction::Blue) {
+        clear_color.0 += Color::BLUE * delta;
+        clear_color.0 += Color::rgb(1.0, 1.0, 0.0) * -delta;
     }
-    if action_state.just_pressed(ChangeColorAction::Green) {
-        clear_color.0 = Color::GREEN;
+    if action_state.pressed(ChangeColorAction::Green) {
+        clear_color.0 += Color::GREEN * delta;
+        clear_color.0 += Color::rgb(1.0, 0.0, 1.0) * -delta;
     }
-    if action_state.just_pressed(ChangeColorAction::Yellow) {
-        clear_color.0 = Color::YELLOW;
+    if action_state.pressed(ChangeColorAction::Yellow) {
+        clear_color.0 += Color::YELLOW * delta;
+        clear_color.0 += Color::rgb(0.0, 0.0, 1.0) * -delta;
     }
-    if action_state.just_pressed(ChangeColorAction::Red) {
-        clear_color.0 = Color::RED;
+    if action_state.pressed(ChangeColorAction::Red) {
+        clear_color.0 += Color::RED * delta;
+        clear_color.0 += Color::rgb(0.0, 1.0, 1.0) * -delta;
     }
+    let old_color = clear_color.0;
+    clear_color.0.set_r(old_color.r().clamp(0.0, 1.0));
+    clear_color.0.set_g(old_color.g().clamp(0.0, 1.0));
+    clear_color.0.set_b(old_color.b().clamp(0.0, 1.0));
 }
 
 fn update_window_motion(
