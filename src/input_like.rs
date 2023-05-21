@@ -11,7 +11,7 @@ use crate::axislike::DualAxisData;
 use crate::input_streams::InputStreams;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
-    axislike::{AxisType, DualAxis, SingleAxis},
+    axislike::{DualAxis, SingleAxis},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
