@@ -3,7 +3,7 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::input_like::{InputKind, InputLikeObject, Modifier};
+use crate::input_like::{InputKind, InputLikeObject};
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;
@@ -11,6 +11,7 @@ use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 
+use crate::input_like::keycode::Modifier;
 use crate::input_streams::InputStreamsRouter;
 use core::fmt::Debug;
 use petitset::PetitSet;

@@ -1,9 +1,15 @@
 //! Helper enum to define scan codes on the QWERTY keyboard layout.
 
+use crate::input_like::ReflectInputLike;
+use bevy::reflect::Reflect;
+use serde::{Deserialize, Serialize};
+
 /// The key locations as defined by the keys on the QWERTY keyboard layout.
 ///
 /// The [`u32`] representation of this enum are the Mac OS scan codes of the corresponding keys.
 /// See <https://stackoverflow.com/a/16125341>.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
+#[reflect(InputLike)]
 #[repr(u32)]
 pub enum QwertyScanCode {
     /// The location of the `A`  key on the QWERTY keyboard layout.

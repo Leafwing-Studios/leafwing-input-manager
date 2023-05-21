@@ -34,7 +34,7 @@ pub mod prelude {
     pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad};
     pub use crate::buttonlike::MouseWheelDirection;
     pub use crate::clashing_inputs::ClashStrategy;
-    pub use crate::input_like::Modifier;
+    pub use crate::input_like::keycode::Modifier;
     pub use crate::input_map::InputMap;
     pub use crate::scan_codes::QwertyScanCode;
 
