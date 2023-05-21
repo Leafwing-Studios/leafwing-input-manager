@@ -1,4 +1,4 @@
-//! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equvalents)
+//! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::orientation::{Direction, Rotation};
@@ -501,7 +501,7 @@ impl TryFrom<AxisType> for MouseMotionAxisType {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct AxisConversionError;
 
-/// A wrapped [`Vec2`] that represents the combaination of two input axes.
+/// A wrapped [`Vec2`] that represents the combination of two input axes.
 ///
 /// The neutral origin is always at 0, 0.
 /// When working with gamepad axes, both `x` and `y` values are bounded by [-1.0, 1.0].

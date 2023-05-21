@@ -269,7 +269,7 @@ mod rotation {
             }
         }
 
-        /// Returns the exact internal mesaurement, stored in tenths of a degree
+        /// Returns the exact internal measurement, stored in tenths of a degree
         ///
         /// Measured clockwise from midnight (x=0, y=1).
         /// 3600 make up a full circle.

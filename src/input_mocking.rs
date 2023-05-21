@@ -383,9 +383,9 @@ impl MockInput for World {
     fn reset_inputs(&mut self) {
         #[cfg(feature = "ui")]
         {
-            let mut interraction_system_state: SystemState<Query<&mut Interaction>> =
+            let mut interaction_system_state: SystemState<Query<&mut Interaction>> =
                 SystemState::new(self);
-            let mut interaction_query = interraction_system_state.get_mut(self);
+            let mut interaction_query = interaction_system_state.get_mut(self);
 
             for mut interaction in interaction_query.iter_mut() {
                 *interaction = Interaction::None;
