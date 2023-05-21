@@ -54,7 +54,7 @@ use std::marker::PhantomData;
 /// let mut input_map = InputMap::new([
 ///    // Note that the type of your iterators must be homogenous;
 ///    // you can use `InputKind` or `UserInput` if needed
-///    // as unifiying types
+///    // as unifying types
 ///   (GamepadButtonType::South, Action::Run),
 ///   (GamepadButtonType::LeftTrigger, Action::Hide),
 ///   (GamepadButtonType::RightTrigger, Action::Hide),

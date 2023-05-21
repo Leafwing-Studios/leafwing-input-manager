@@ -47,7 +47,7 @@ fn spawn_input_map(mut commands: Commands) {
 
 trait ClashTestExt {
     /// Asserts that the set of `pressed_actions` matches the actions observed
-    /// by the entity with the corresponding varaint of the [`ClashStrategy`] enum
+    /// by the entity with the corresponding variant of the [`ClashStrategy`] enum
     /// in its [`InputMap`] component
     fn assert_input_map_actions_eq(
         &mut self,
