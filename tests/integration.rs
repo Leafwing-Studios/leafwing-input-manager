@@ -111,7 +111,7 @@ fn disable_input() {
         .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
 
     // Press F to pay respects
-    app.send_input(KeyCode::F);
+    app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::F);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
@@ -126,7 +126,7 @@ fn disable_input() {
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
-    app.send_input(KeyCode::F);
+    app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::F);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
@@ -151,7 +151,7 @@ fn release_when_input_map_removed() {
         .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
 
     // Press F to pay respects
-    app.send_input(KeyCode::F);
+    app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::F);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
@@ -167,7 +167,7 @@ fn release_when_input_map_removed() {
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
-    app.send_input(KeyCode::F);
+    app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::F);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
@@ -237,7 +237,7 @@ fn action_state_driver() {
     assert_eq!(*respect, Respect(true));
 
     // Clear inputs
-    app.reset_inputs();
+    app.world.resource_mut::<Input<KeyCode>>().reset_all();
     app.update();
 
     let respect = app.world.resource::<Respect>();
@@ -278,7 +278,7 @@ fn duration() {
     app.update();
 
     // Press
-    app.send_input(KeyCode::F);
+    app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::F);
 
     // Hold
     std::thread::sleep(2 * RESPECTFUL_DURATION);

@@ -31,7 +31,7 @@ and a single input can result in multiple actions being triggered, which can be 
 - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
 - Networked multiplayer support: serializable structs, and a space-conscious `ActionDiff` representation to send on the wire
 - Powerful and easy-to-use input mocking API for integration testing your Bevy applications
-  - `app.send_input(KeyCode::B)` or `world.send_input(UserInput::chord([KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y])`
+  - `app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::B)` or `world.world.resource_mut::<Input<KeyCode>>().press(UserInput::chord([KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y])`
 - Control which state this plugin is active in: stop wandering around while in a menu!
 - Leafwing Studio's trademark `#![forbid(missing_docs)]`
 

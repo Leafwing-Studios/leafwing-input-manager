@@ -81,7 +81,7 @@ fn game_pad_single_axis_mocking() {
         negative_low: 0.0,
     };
 
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
     assert_eq!(events.drain().count(), 1);
 }
@@ -106,7 +106,7 @@ fn game_pad_dual_axis_mocking() {
             negative_low: 0.0,
         },
     };
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
     // Dual axis events are split out
     assert_eq!(events.drain().count(), 2);
@@ -133,7 +133,7 @@ fn game_pad_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
     };
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
@@ -145,7 +145,7 @@ fn game_pad_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
     };
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
@@ -157,7 +157,7 @@ fn game_pad_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
     };
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
@@ -169,7 +169,7 @@ fn game_pad_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
     };
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
@@ -182,7 +182,7 @@ fn game_pad_single_axis() {
         positive_low: 0.1,
         negative_low: 0.1,
     };
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(AxislikeTestAction::Y));
@@ -194,7 +194,7 @@ fn game_pad_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
     };
-    app.send_input(input);
+    app.world.resource_mut::<Input<KeyCode>>().press(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(AxislikeTestAction::Y));
@@ -208,12 +208,14 @@ fn game_pad_dual_axis() {
         AxislikeTestAction::XY,
     )]));
 
-    app.send_input(DualAxis::from_value(
-        GamepadAxisType::LeftStickX,
-        GamepadAxisType::LeftStickY,
-        0.8,
-        0.0,
-    ));
+    app.world
+        .resource_mut::<Input<KeyCode>>()
+        .press(DualAxis::from_value(
+            GamepadAxisType::LeftStickX,
+            GamepadAxisType::LeftStickY,
+            0.8,
+            0.0,
+        ));
 
     app.update();
 
@@ -226,12 +228,14 @@ fn game_pad_dual_axis() {
     );
 
     // Test deadzones, assuming the default of 0.1.
-    app.send_input(DualAxis::from_value(
-        GamepadAxisType::LeftStickX,
-        GamepadAxisType::LeftStickY,
-        0.05,
-        0.0,
-    ));
+    app.world
+        .resource_mut::<Input<KeyCode>>()
+        .press(DualAxis::from_value(
+            GamepadAxisType::LeftStickX,
+            GamepadAxisType::LeftStickY,
+            0.05,
+            0.0,
+        ));
 
     app.update();
 
@@ -245,12 +249,14 @@ fn game_pad_dual_axis() {
 
     // Test that a single axis below the deadzone is filtered out, assuming the
     // default deadzone of 0.1.
-    app.send_input(DualAxis::from_value(
-        GamepadAxisType::LeftStickX,
-        GamepadAxisType::LeftStickY,
-        0.2,
-        0.05,
-    ));
+    app.world
+        .resource_mut::<Input<KeyCode>>()
+        .press(DualAxis::from_value(
+            GamepadAxisType::LeftStickX,
+            GamepadAxisType::LeftStickY,
+            0.2,
+            0.05,
+        ));
 
     app.update();
 
@@ -271,7 +277,9 @@ fn game_pad_virtualdpad() {
         AxislikeTestAction::XY,
     )]));
 
-    app.send_input(GamepadButtonType::DPadLeft);
+    app.world
+        .resource_mut::<Input<KeyCode>>()
+        .press(GamepadButtonType::DPadLeft);
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

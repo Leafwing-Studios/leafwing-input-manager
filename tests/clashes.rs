@@ -96,8 +96,8 @@ fn two_inputs_clash_handling() {
     let mut app = test_app();
 
     // Two inputs
-    app.send_input(Key1);
-    app.send_input(Key2);
+    app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+    app.world.resource_mut::<Input<KeyCode>>().press(Key2);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
@@ -113,10 +113,10 @@ fn three_inputs_clash_handling() {
     let mut app = test_app();
 
     // Three inputs
-    app.reset_inputs();
-    app.send_input(Key1);
-    app.send_input(Key2);
-    app.send_input(Key3);
+    app.world.resource_mut::<Input<KeyCode>>().reset_all();
+    app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+    app.world.resource_mut::<Input<KeyCode>>().press(Key2);
+    app.world.resource_mut::<Input<KeyCode>>().press(Key3);
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -135,11 +135,11 @@ fn modifier_clash_handling() {
     let mut app = test_app();
 
     // Modifier
-    app.reset_inputs();
-    app.send_input(Key1);
-    app.send_input(Key2);
-    app.send_input(Key3);
-    app.send_input(LControl);
+    app.world.resource_mut::<Input<KeyCode>>().reset_all();
+    app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+    app.world.resource_mut::<Input<KeyCode>>().press(Key2);
+    app.world.resource_mut::<Input<KeyCode>>().press(Key3);
+    app.world.resource_mut::<Input<KeyCode>>().press(LControl);
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -161,10 +161,10 @@ fn multiple_modifiers_clash_handling() {
     let mut app = test_app();
 
     // Multiple modifiers
-    app.reset_inputs();
-    app.send_input(Key1);
-    app.send_input(LControl);
-    app.send_input(LAlt);
+    app.world.resource_mut::<Input<KeyCode>>().reset_all();
+    app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+    app.world.resource_mut::<Input<KeyCode>>().press(LControl);
+    app.world.resource_mut::<Input<KeyCode>>().press(LAlt);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, CtrlOne, AltOne, CtrlAltOne]);
@@ -180,9 +180,9 @@ fn action_order_clash_handling() {
     let mut app = test_app();
 
     // Action order
-    app.reset_inputs();
-    app.send_input(Key3);
-    app.send_input(Key2);
+    app.world.resource_mut::<Input<KeyCode>>().reset_all();
+    app.world.resource_mut::<Input<KeyCode>>().press(Key3);
+    app.world.resource_mut::<Input<KeyCode>>().press(Key2);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [Two, TwoAndThree]);

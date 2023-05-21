@@ -18,7 +18,6 @@ pub mod dynamic_action;
 pub mod errors;
 pub mod input_like;
 pub mod input_map;
-pub mod input_mocking;
 pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
@@ -37,7 +36,6 @@ pub mod prelude {
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_like::Modifier;
     pub use crate::input_map::InputMap;
-    pub use crate::input_mocking::MockInput;
     pub use crate::scan_codes::QwertyScanCode;
 
     pub use crate::plugin::InputManagerPlugin;

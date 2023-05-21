@@ -1,3 +1,4 @@
+use bevy::input::Input;
 use bevy::{
     input::InputPlugin,
     prelude::{App, KeyCode},
@@ -73,8 +74,9 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     // Constructing our test app / input stream outside of the timed benchmark
     let mut app = App::new();
     app.add_plugin(InputPlugin);
-    app.send_input(KeyCode::A);
-    app.send_input(KeyCode::B);
+    app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::A);
+    app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::B);
+
     app.update();
 
     let input_streams = InputStreams::from_world(&app.world, None);

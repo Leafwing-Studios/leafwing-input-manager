@@ -630,7 +630,6 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
 #[cfg(test)]
 mod tests {
     use crate as leafwing_input_manager;
-    use crate::input_mocking::MockInput;
     use leafwing_input_manager_macros::Actionlike;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
@@ -669,7 +668,7 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Pressing
-        app.send_input(KeyCode::R);
+        app.world.resource_mut::<Input<KeyCode>>().press(KeyCode::R);
         // Process the input events into Input<KeyCode> data
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
@@ -691,7 +690,9 @@ mod tests {
         assert!(!action_state.just_released(Action::Run));
 
         // Releasing
-        app.release_input(KeyCode::R);
+        app.world
+            .resource_mut::<Input<KeyCode>>()
+            .release(KeyCode::R);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 

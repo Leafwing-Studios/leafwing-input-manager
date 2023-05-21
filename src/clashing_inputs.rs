@@ -422,8 +422,8 @@ mod tests {
     mod basic_functionality {
         use crate::axislike::VirtualDPad;
         use crate::buttonlike::ButtonState;
-        use crate::input_mocking::MockInput;
-        use bevy::input::InputPlugin;
+        use bevy::input::{Input, InputPlugin};
+        use bevy::prelude::KeyCode;
         use Action::*;
 
         use super::*;
@@ -541,8 +541,8 @@ mod tests {
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
-            app.send_input(Key1);
-            app.send_input(Key2);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key2);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world, None);
@@ -569,7 +569,7 @@ mod tests {
             let chord_clash = input_map
                 .possible_clash(OneAndTwo, OneAndTwoAndThree)
                 .unwrap();
-            app.send_input(Key3);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key3);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world, None);
@@ -592,8 +592,8 @@ mod tests {
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, CtrlOne).unwrap();
             let reversed_clash = input_map.possible_clash(CtrlOne, One).unwrap();
-            app.send_input(Key1);
-            app.send_input(LControl);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+            app.world.resource_mut::<Input<KeyCode>>().press(LControl);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world, None);
@@ -619,8 +619,8 @@ mod tests {
             app.add_plugin(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(Key1);
-            app.send_input(Key2);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key2);
             app.update();
 
             let mut action_data = vec![ActionData::default(); Action::n_variants()];
@@ -647,8 +647,8 @@ mod tests {
             app.add_plugin(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(LControl);
-            app.send_input(Up);
+            app.world.resource_mut::<Input<KeyCode>>().press(LControl);
+            app.world.resource_mut::<Input<KeyCode>>().press(Up);
             app.update();
 
             let mut action_data = vec![ActionData::default(); Action::n_variants()];
@@ -673,9 +673,9 @@ mod tests {
             app.add_plugin(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(Key1);
-            app.send_input(Key2);
-            app.send_input(LControl);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key1);
+            app.world.resource_mut::<Input<KeyCode>>().press(Key2);
+            app.world.resource_mut::<Input<KeyCode>>().press(LControl);
             app.update();
 
             let action_data = input_map.which_pressed(
