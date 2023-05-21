@@ -235,8 +235,8 @@ impl<A: Actionlike> InputMap<A> {
         &mut self,
         input_action_pairs: impl IntoIterator<Item = (impl Into<UserInput>, A)>,
     ) -> &mut Self {
-        for (action, input) in input_action_pairs {
-            self.insert(action, input);
+        for (input, action) in input_action_pairs {
+            self.insert(input, action);
         }
 
         self
