@@ -1,6 +1,6 @@
 //! Helpful abstractions over user inputs of all sorts
 
-use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
+use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton, Input};
 use std::fmt::Debug;
 
 use bevy::prelude::{Reflect, ScanCode, World};
@@ -134,6 +134,8 @@ impl Serialize for dyn InputLikeObject {
     }
 }
 
+impl ButtonLike for KeyCode {}
+
 impl InputLikeObject for KeyCode {
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
         if let Some(other) = other.as_reflect().downcast_ref::<KeyCode>() {
@@ -143,27 +145,27 @@ impl InputLikeObject for KeyCode {
     }
 
     fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
-        todo!()
+        Some(Box::new(*self))
     }
 
     fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
-        todo!()
+        None
     }
 
     fn len(&self) -> usize {
-        todo!()
+        1
     }
 
     fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeObject)>> {
-        todo!()
+        vec![Box::new(*self)]
     }
 
     fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
-        todo!()
+        Box::new(*self)
     }
 
     fn as_serialize(&self) -> &dyn erased_serde::Serialize {
-        todo!()
+        self
     }
 
     fn as_reflect(&self) -> &dyn Reflect {
@@ -175,20 +177,32 @@ pub struct KeyCodeInputStreams {}
 
 impl InputStreams for KeyCodeInputStreams {
     fn input_pressed(&self, world: &World, input: &dyn InputLikeObject) -> bool {
-        todo!()
+        input
+            .as_reflect()
+            .downcast_ref::<KeyCode>()
+            .map(|input| world.resource::<Input<KeyCode>>().pressed(*input))
+            .unwrap_or(false)
     }
 
     fn input_value(&self, world: &World, input: &dyn InputLikeObject) -> f32 {
-        todo!()
+        if self.input_pressed(world, input) {
+            1.0
+        } else {
+            0.0
+        }
     }
 
-    fn input_axis_pair(&self, world: &World, input: &dyn InputLikeObject) -> Option<DualAxisData> {
-        todo!()
+    fn input_axis_pair(
+        &self,
+        _world: &World,
+        _input: &dyn InputLikeObject,
+    ) -> Option<DualAxisData> {
+        None
     }
 }
 
 impl<'a> InputLike<'a> for KeyCode {
-    fn input_streams(world: &World) -> Box<dyn InputStreams> {
+    fn input_streams(_world: &World) -> Box<dyn InputStreams> {
         Box::new(KeyCodeInputStreams {})
     }
 }
@@ -405,7 +419,7 @@ impl RawInputs {
 mod raw_input_tests {
     use crate::{
         axislike::AxisType,
-        input_like::{InputKind, RawInputs, UserInput},
+        input_like::{InputKind, RawInputs},
     };
 
     #[test]
@@ -444,7 +458,7 @@ mod raw_input_tests {
     }
 
     mod gamepad {
-        use crate::input_like::{RawInputs, UserInput};
+        use crate::input_like::RawInputs;
 
         #[test]
         fn gamepad_button() {
@@ -485,7 +499,7 @@ mod raw_input_tests {
     }
 
     mod keyboard {
-        use crate::input_like::{RawInputs, UserInput};
+        use crate::input_like::RawInputs;
 
         #[test]
         fn keyboard_button() {
@@ -513,7 +527,7 @@ mod raw_input_tests {
     }
 
     mod mouse {
-        use crate::input_like::{RawInputs, UserInput};
+        use crate::input_like::RawInputs;
 
         #[test]
         fn mouse_button() {
