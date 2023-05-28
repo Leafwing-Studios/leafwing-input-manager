@@ -40,14 +40,6 @@ impl InputLikeObject for KeyCode {
         None
     }
 
-    fn len(&self) -> usize {
-        1
-    }
-
-    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeObject)>> {
-        vec![Box::new(*self)]
-    }
-
     fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
         Box::new(*self)
     }
@@ -122,14 +114,6 @@ impl InputLikeObject for Modifier {
 
     fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
         None
-    }
-
-    fn len(&self) -> usize {
-        1
-    }
-
-    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeObject)>> {
-        vec![Box::new(*self)]
     }
 
     fn clone_dyn(&self) -> Box<dyn InputLikeObject> {

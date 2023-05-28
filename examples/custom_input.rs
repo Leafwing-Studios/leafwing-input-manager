@@ -82,14 +82,6 @@ impl InputLikeObject for WindowMotionDirection {
         None
     }
 
-    fn len(&self) -> usize {
-        1
-    }
-
-    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeObject)>> {
-        vec![Box::new(*self)]
-    }
-
     fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
         Box::new(*self)
     }

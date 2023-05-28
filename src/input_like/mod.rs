@@ -43,10 +43,14 @@ pub trait InputLikeObject: Send + Sync + Debug {
     /// - A [`Single`][UserInput::Single] input returns 1
     /// - A [`Chord`][UserInput::Chord] returns the number of buttons in the chord
     /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
-    fn len(&self) -> usize;
+    fn len(&self) -> usize {
+        1
+    }
 
     /// Returns the raw inputs that make up this [`UserInput`]
-    fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>>;
+    fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
+        vec![self.clone_dyn()]
+    }
 
     /// Enables [`Clone`]ing [`InputLikeObject`]s while keeping dynamic dispatch support.
     fn clone_dyn(&self) -> Box<dyn InputLikeObject>;

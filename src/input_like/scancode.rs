@@ -41,14 +41,6 @@ impl InputLikeObject for ScanCode {
         None
     }
 
-    fn len(&self) -> usize {
-        1
-    }
-
-    fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
-        vec![Box::new(*self)]
-    }
-
     fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
         Box::new(*self)
     }
@@ -106,14 +98,6 @@ impl InputLikeObject for QwertyScanCode {
 
     fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
         None
-    }
-
-    fn len(&self) -> usize {
-        1
-    }
-
-    fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
-        vec![Box::new(*self)]
     }
 
     fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
