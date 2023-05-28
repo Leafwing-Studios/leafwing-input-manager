@@ -12,7 +12,7 @@ use bevy::input::gamepad::Gamepad;
 use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 
 use crate::input_like::keycode::Modifier;
-use crate::input_streams::InputStreamsRouter;
+use crate::input_streams::InputStreams;
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserializer, Serialize};
@@ -347,7 +347,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn pressed(
         &self,
         action: A,
-        input_streams: &InputStreamsRouter,
+        input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
         let action_data = self.which_pressed(input_streams, clash_strategy);
@@ -361,7 +361,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn which_pressed(
         &self,
-        input_streams: &InputStreamsRouter,
+        input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> Vec<ActionData> {
         let mut action_data = vec![ActionData::default(); A::n_variants()];

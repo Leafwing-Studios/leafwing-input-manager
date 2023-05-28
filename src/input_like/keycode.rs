@@ -1,12 +1,24 @@
-use crate::axislike::DualAxisData;
-use crate::input_like::{AxisLike, ButtonLike, InputLike, InputLikeObject};
-use crate::input_streams::InputStreams;
+use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use bevy::input::Input;
 use bevy::prelude::{KeyCode, World};
 use bevy::reflect::Reflect;
 use serde::{Deserialize, Serialize};
 
-impl ButtonLike for KeyCode {}
+impl ButtonLike for KeyCode {
+    fn input_pressed(&self, world: &World) -> bool {
+        world.resource::<Input<KeyCode>>().pressed(*self)
+    }
+}
+
+impl SingleAxisLike for KeyCode {
+    fn input_value(&self, world: &World) -> f32 {
+        if self.input_pressed(world) {
+            1.0
+        } else {
+            0.0
+        }
+    }
+}
 
 impl InputLikeObject for KeyCode {
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
@@ -20,7 +32,11 @@ impl InputLikeObject for KeyCode {
         Some(Box::new(*self))
     }
 
-    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
+    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
+        None
+    }
+
+    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
         None
     }
 
@@ -47,37 +63,7 @@ impl InputLikeObject for KeyCode {
 
 pub struct KeyCodeInputStreams {}
 
-impl InputStreams for KeyCodeInputStreams {
-    fn input_pressed(&self, world: &World, input: &dyn InputLikeObject) -> bool {
-        input
-            .as_reflect()
-            .downcast_ref::<KeyCode>()
-            .map(|input| world.resource::<Input<KeyCode>>().pressed(*input))
-            .unwrap_or(false)
-    }
-
-    fn input_value(&self, world: &World, input: &dyn InputLikeObject) -> f32 {
-        if self.input_pressed(world, input) {
-            1.0
-        } else {
-            0.0
-        }
-    }
-
-    fn input_axis_pair(
-        &self,
-        _world: &World,
-        _input: &dyn InputLikeObject,
-    ) -> Option<DualAxisData> {
-        None
-    }
-}
-
-impl<'a> InputLike<'a> for KeyCode {
-    fn input_streams(_world: &World) -> Box<dyn InputStreams> {
-        Box::new(KeyCodeInputStreams {})
-    }
-}
+impl<'a> InputLike<'a> for KeyCode {}
 
 /// A keyboard modifier that combines two [`KeyCode`] values into one representation.
 ///
@@ -110,7 +96,13 @@ impl Modifier {
     }
 }
 
-impl ButtonLike for Modifier {}
+impl ButtonLike for Modifier {
+    fn input_pressed(&self, world: &World) -> bool {
+        world
+            .resource::<Input<KeyCode>>()
+            .any_just_pressed(self.key_codes())
+    }
+}
 
 impl InputLikeObject for Modifier {
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
@@ -124,7 +116,11 @@ impl InputLikeObject for Modifier {
         Some(Box::new(*self))
     }
 
-    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
+    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
+        None
+    }
+
+    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
         None
     }
 

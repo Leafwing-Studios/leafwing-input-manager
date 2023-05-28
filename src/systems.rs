@@ -17,7 +17,7 @@ use bevy::time::Time;
 use bevy::utils::Instant;
 
 use crate::buttonlike::ButtonState;
-use crate::input_streams::InputStreamsRouter;
+use crate::input_streams::InputStreams;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 
@@ -68,7 +68,7 @@ pub fn update_action_state<A: Actionlike>(world: &mut World) {
     };
 
     let entity_action_data = world.resource_scope(|world, clash_strategy: Mut<ClashStrategy>| {
-        let router = InputStreamsRouter::collect(world);
+        let router = InputStreams::from_world(world);
         input_maps
             .iter()
             .map(|(e, m)| (*e, m.which_pressed(&router, *clash_strategy)))

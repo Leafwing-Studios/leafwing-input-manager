@@ -7,12 +7,11 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use crate::input_like::ReflectInputLike;
 use crate::scan_codes::QwertyScanCode;
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
-use bevy::prelude::{CoreSet, KeyCode, ScanCode};
+use bevy::prelude::CoreSet;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -146,8 +145,6 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
         };
 
         app.register_type::<ActionState<A>>()
-            .register_type_data::<KeyCode, ReflectInputLike>()
-            .register_type_data::<ScanCode, ReflectInputLike>()
             .register_type::<QwertyScanCode>()
             // Resources
             .init_resource::<ToggleActions<A>>()

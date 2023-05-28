@@ -5,11 +5,9 @@
 use bevy::prelude::*;
 use bevy::window::WindowResolution;
 use itertools::Itertools;
-use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::input_like::{
-    AxisLike, ButtonLike, InputLike, InputLikeObject, ReflectInputLike,
+    ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike,
 };
-use leafwing_input_manager::input_streams::InputStreams;
 use leafwing_input_manager::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::any::TypeId;
@@ -30,7 +28,6 @@ enum ChangeColorAction {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Copy, Reflect)]
-#[reflect(InputLike, Debug, PartialEq, Serialize, Deserialize)]
 enum WindowMotionDirection {
     Left = 0,
     Right,
@@ -38,8 +35,32 @@ enum WindowMotionDirection {
     Down,
 }
 
-impl ButtonLike for WindowMotionDirection {}
-impl AxisLike for WindowMotionDirection {}
+impl ButtonLike for WindowMotionDirection {
+    fn input_pressed(&self, world: &World) -> bool {
+        // FIXME: verify that this works and doesn't double count events
+        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
+            return false;
+        };
+        let mut event_reader = window_motion.get_reader();
+        event_reader
+            .iter(window_motion)
+            .map(WindowMotionDirection::from)
+            .contains(self)
+    }
+}
+impl SingleAxisLike for WindowMotionDirection {
+    fn input_value(&self, world: &World) -> f32 {
+        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
+            return 0.0;
+        };
+        let mut event_reader = window_motion.get_reader();
+        event_reader
+            .iter(window_motion)
+            .find(|i| WindowMotionDirection::from(*i) == *self)
+            .map(|x| x.delta.x.abs().max(x.delta.y.abs()))
+            .unwrap_or_default()
+    }
+}
 
 impl InputLikeObject for WindowMotionDirection {
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
@@ -53,7 +74,11 @@ impl InputLikeObject for WindowMotionDirection {
         Some(Box::new(*self))
     }
 
-    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
+    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
+        None
+    }
+
+    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
         None
     }
 
@@ -78,64 +103,7 @@ impl InputLikeObject for WindowMotionDirection {
     }
 }
 
-pub struct WindowMotionInputStream {}
-
-impl InputStreams for WindowMotionInputStream {
-    fn input_pressed(&self, world: &World, input: &dyn InputLikeObject) -> bool {
-        let Some(input) = input.as_reflect().downcast_ref::<WindowMotionDirection>() else {
-            return false;
-        };
-
-        // FIXME: verify that this works and doesn't double count events
-        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
-            return false;
-        };
-        let mut event_reader = window_motion.get_reader();
-        event_reader
-            .iter(window_motion)
-            .map(WindowMotionDirection::from)
-            .contains(input)
-    }
-
-    fn input_value(&self, world: &World, input: &dyn InputLikeObject) -> f32 {
-        let Some(input) = input.as_reflect().downcast_ref::<WindowMotionDirection>() else {
-            return 0.0;
-        };
-
-        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
-            return 0.0;
-        };
-        let mut event_reader = window_motion.get_reader();
-        event_reader
-            .iter(window_motion)
-            .find(|i| WindowMotionDirection::from(*i) == *input)
-            .map(|x| x.delta.x.abs().max(x.delta.y.abs()))
-            .unwrap_or_default()
-    }
-
-    fn input_axis_pair(&self, world: &World, input: &dyn InputLikeObject) -> Option<DualAxisData> {
-        let Some(input) = input.as_reflect().downcast_ref::<WindowMotionDirection>() else {
-            return None;
-        };
-        let Some(window_motion) = world.get_resource::<Events<WindowMotion>>() else {
-            return None;
-        };
-        let mut event_reader = window_motion.get_reader();
-        Some(
-            event_reader
-                .iter(window_motion)
-                .find(|i| WindowMotionDirection::from(*i) == *input)
-                .map(|x| DualAxisData::from_xy(x.delta))
-                .unwrap_or_default(),
-        )
-    }
-}
-
-impl<'de> InputLike<'de> for WindowMotionDirection {
-    fn input_streams(_world: &World) -> Box<dyn InputStreams> {
-        Box::new(WindowMotionInputStream {})
-    }
-}
+impl<'de> InputLike<'de> for WindowMotionDirection {}
 
 impl TryFrom<&Box<dyn InputLikeObject>> for WindowMotionDirection {
     type Error = ();

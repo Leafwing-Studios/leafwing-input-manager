@@ -6,7 +6,7 @@ use crate::input_like::{InputKind, InputLikeObject};
 use crate::input_map::InputMap;
 use crate::Actionlike;
 
-use crate::input_streams::InputStreamsRouter;
+use crate::input_streams::InputStreams;
 use bevy::prelude::Resource;
 use itertools::Itertools;
 use petitset::PetitSet;
@@ -61,7 +61,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn handle_clashes(
         &self,
         action_data: &mut [ActionData],
-        input_streams: &InputStreamsRouter,
+        input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
         for clash in self.get_clashes(action_data, input_streams) {
@@ -94,7 +94,7 @@ impl<A: Actionlike> InputMap<A> {
     fn get_clashes(
         &self,
         action_data: &[ActionData],
-        input_streams: &InputStreamsRouter,
+        input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -274,10 +274,7 @@ fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputK
 ///
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
 #[must_use]
-fn check_clash<A: Actionlike>(
-    clash: &Clash<A>,
-    input_streams: &InputStreamsRouter,
-) -> Option<Clash<A>> {
+fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = Clash::from_indexes(clash.index_a, clash.index_b);
 
     // For all inputs that were actually pressed that match action A
@@ -312,7 +309,7 @@ fn check_clash<A: Actionlike>(
 fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: ClashStrategy,
-    input_streams: &InputStreamsRouter,
+    input_streams: &InputStreams,
 ) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&Box<dyn InputLikeObject>> = clash

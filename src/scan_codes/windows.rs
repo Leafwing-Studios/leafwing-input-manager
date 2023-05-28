@@ -1,6 +1,5 @@
 //! Helper enum to define scan codes on the QWERTY keyboard layout.
 
-use crate::input_like::ReflectInputLike;
 use bevy::reflect::Reflect;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +8,6 @@ use serde::{Deserialize, Serialize};
 /// The [`u32`] representation of this enum are the Set 1 scan codes of the corresponding keys.
 /// See section 10.6 at <https://www.win.tue.nl/~aeb/linux/kbd/scancodes-10.html#scancodesets>.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
-#[reflect(InputLike)]
 #[repr(u32)]
 pub enum QwertyScanCode {
     /// The location of the `` ` `` key on the QWERTY keyboard layout.

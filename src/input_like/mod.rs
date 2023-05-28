@@ -7,33 +7,17 @@ use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseBut
 use std::fmt::Debug;
 
 use bevy::prelude::{Reflect, ScanCode, World};
-use bevy::reflect::FromType;
 use serde::{Deserialize, Serialize, Serializer};
 
+use crate::axislike::DualAxisData;
 use crate::input_like::keycode::Modifier;
-use crate::input_streams::InputStreams;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
     axislike::{DualAxis, SingleAxis},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
 
-pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {
-    fn input_streams(world: &World) -> Box<dyn InputStreams>;
-}
-
-#[derive(Clone)]
-pub struct ReflectInputLike {
-    pub input_streams: fn(&World) -> Box<dyn InputStreams>,
-}
-
-impl<'a, T: InputLike<'a>> FromType<T> for ReflectInputLike {
-    fn from_type() -> Self {
-        Self {
-            input_streams: T::input_streams,
-        }
-    }
-}
+pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
 
 /// This trait is the
 /// [object safe](https://doc.rust-lang.org/reference/items/traits.html#object-safety) part of
@@ -47,8 +31,11 @@ pub trait InputLikeObject: Send + Sync + Debug {
     /// Returns [`ButtonLike`] if it is implemented.
     fn as_button(&self) -> Option<Box<dyn ButtonLike>>;
 
-    /// Returns [`AxisLike`] if it is implemented.
-    fn as_axis(&self) -> Option<Box<dyn AxisLike>>;
+    /// Returns [`SingleAxisLike`] if it is implemented.
+    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>>;
+
+    /// Returns [`DualAxisLike`] if it is implemented.
+    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>>;
 
     /// The number of logical inputs that make up the [`UserInput`].
     ///
@@ -90,9 +77,17 @@ impl PartialEq<Self> for dyn InputLikeObject {
 
 impl Eq for dyn InputLikeObject {}
 
-pub trait ButtonLike: InputLikeObject {}
+pub trait ButtonLike: InputLikeObject {
+    fn input_pressed(&self, world: &World) -> bool;
+}
 
-pub trait AxisLike: InputLikeObject {}
+pub trait SingleAxisLike: InputLikeObject {
+    fn input_value(&self, world: &World) -> f32;
+}
+
+pub trait DualAxisLike: InputLikeObject {
+    fn input_axis_pair(&self, world: &World) -> Option<DualAxisData>;
+}
 
 impl InputLikeObject for Box<dyn InputLikeObject> {
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
@@ -103,8 +98,12 @@ impl InputLikeObject for Box<dyn InputLikeObject> {
         self.as_ref().as_button()
     }
 
-    fn as_axis(&self) -> Option<Box<dyn AxisLike>> {
+    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
         self.as_ref().as_axis()
+    }
+
+    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
+        self.as_ref().as_dual_axis()
     }
 
     fn len(&self) -> usize {
