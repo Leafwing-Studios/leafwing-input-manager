@@ -21,13 +21,6 @@ impl SingleAxisLike for KeyCode {
 }
 
 impl InputLikeObject for KeyCode {
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
-        if let Some(other) = other.as_reflect().downcast_ref::<KeyCode>() {
-            return self == other;
-        }
-        false
-    }
-
     fn as_button(&self) -> Option<&dyn ButtonLike> {
         Some(self)
     }
@@ -97,13 +90,6 @@ impl ButtonLike for Modifier {
 }
 
 impl InputLikeObject for Modifier {
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
-        if let Some(other) = other.as_reflect().downcast_ref::<Modifier>() {
-            return self == other;
-        }
-        false
-    }
-
     fn as_button(&self) -> Option<&dyn ButtonLike> {
         Some(self)
     }

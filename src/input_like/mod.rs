@@ -1,5 +1,6 @@
 //! Helpful abstractions over user inputs of all sorts
 
+pub mod chords;
 pub mod keycode;
 pub mod scancode;
 
@@ -26,7 +27,28 @@ pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
 pub trait InputLikeObject: Send + Sync + Debug {
     /// Does `self` clash with `other`?
     #[must_use]
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool;
+    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
+        if self.len() <= 1 && other.len() <= 1 {
+            return false;
+        }
+
+        if self
+            .as_reflect()
+            .reflect_partial_eq(other.as_reflect())
+            .unwrap_or_default()
+        {
+            return false;
+        }
+
+        self.raw_inputs().iter().any(|input| {
+            for other in other.raw_inputs() {
+                if other.eq(input) {
+                    return true;
+                }
+            }
+            false
+        })
+    }
 
     /// Returns [`ButtonLike`] if it is implemented.
     fn as_button(&self) -> Option<&dyn ButtonLike>;
@@ -66,7 +88,7 @@ impl Clone for Box<dyn InputLikeObject> {
     }
 }
 
-impl PartialEq<Self> for dyn InputLikeObject {
+impl PartialEq<Self> for dyn InputLikeObject + '_ {
     /// # Panics
     ///
     /// Panics If the underlying type does not support equality testing.

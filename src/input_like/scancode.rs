@@ -21,14 +21,6 @@ impl SingleAxisLike for ScanCode {
 }
 
 impl InputLikeObject for ScanCode {
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
-        other
-            .as_reflect()
-            .downcast_ref::<ScanCode>()
-            .map(|other| self == other)
-            .unwrap_or_default()
-    }
-
     fn as_button(&self) -> Option<&dyn ButtonLike> {
         Some(self)
     }
@@ -75,19 +67,6 @@ impl SingleAxisLike for QwertyScanCode {
 }
 
 impl InputLikeObject for QwertyScanCode {
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
-        other
-            .as_reflect()
-            .downcast_ref::<QwertyScanCode>()
-            .map(|other| self == other)
-            .unwrap_or_default()
-            || other
-                .as_reflect()
-                .downcast_ref::<ScanCode>()
-                .map(|other| ScanCode::from(*self) == *other)
-                .unwrap_or_default()
-    }
-
     fn as_button(&self) -> Option<&dyn ButtonLike> {
         Some(self)
     }

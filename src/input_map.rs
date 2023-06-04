@@ -11,6 +11,7 @@ use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 
+use crate::input_like::chords::Chord;
 use crate::input_like::keycode::Modifier;
 use crate::input_streams::InputStreams;
 use core::fmt::Debug;
@@ -254,12 +255,14 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and `buttons` is not a duplicate.
     pub fn insert_chord(
         &mut self,
-        buttons: impl IntoIterator<Item = impl Into<InputKind>>,
+        buttons: impl IntoIterator<Item = impl Into<Box<dyn InputLikeObject>>>,
         action: A,
     ) -> &mut Self {
-        todo!()
-        // self.insert(UserInput::chord(buttons), action);
-        // self
+        self.insert(
+            Chord::new(buttons.into_iter().map(|b| b.into()).collect()),
+            action,
+        );
+        self
     }
 
     /// Inserts a mapping between the simultaneous combination of the [`Modifier`] plus the `input` and the `action` provided.

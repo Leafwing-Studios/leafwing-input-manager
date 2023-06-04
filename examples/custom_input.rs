@@ -63,13 +63,6 @@ impl SingleAxisLike for WindowMotionDirection {
 }
 
 impl InputLikeObject for WindowMotionDirection {
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
-        if let Some(other) = other.as_reflect().downcast_ref::<WindowMotionDirection>() {
-            return self == other;
-        }
-        false
-    }
-
     fn as_button(&self) -> Option<&dyn ButtonLike> {
         Some(self)
     }
