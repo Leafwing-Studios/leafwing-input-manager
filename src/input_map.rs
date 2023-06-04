@@ -120,7 +120,9 @@ impl<A: Actionlike> InputMap<A> {
     /// assert_eq!(input_map.len(), 2);
     /// ```
     #[must_use]
-    pub fn new(bindings: impl IntoIterator<Item = (impl InputLikeObject, A)>) -> Self {
+    pub fn new(
+        bindings: impl IntoIterator<Item = (impl Into<Box<dyn InputLikeObject>>, A)>,
+    ) -> Self {
         let mut input_map = InputMap::default();
         input_map.insert_multiple(bindings);
 
@@ -166,8 +168,8 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert<I: InputLikeObject>(&mut self, input: I, action: A) -> &mut Self {
-        let input = input.clone_dyn();
+    pub fn insert<I: Into<Box<dyn InputLikeObject>>>(&mut self, input: I, action: A) -> &mut Self {
+        let input = input.into();
 
         self.map[action.index()].insert(input);
 
@@ -231,7 +233,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Panics if the map is full and any of `inputs` is not a duplicate.
     pub fn insert_multiple(
         &mut self,
-        input_action_pairs: impl IntoIterator<Item = (impl InputLikeObject, A)>,
+        input_action_pairs: impl IntoIterator<Item = (impl Into<Box<dyn InputLikeObject>>, A)>,
     ) -> &mut Self {
         for (input, action) in input_action_pairs {
             self.insert(input, action);
@@ -374,7 +376,7 @@ impl<A: Actionlike> InputMap<A> {
                 let action = &mut action_data[action.index()];
 
                 // Merge axis pair into action data
-                let axis_pair = input_streams.input_axis_pair(input);
+                let axis_pair = input_streams.input_axis_pair(input.as_ref());
                 if let Some(axis_pair) = axis_pair {
                     if let Some(current_axis_pair) = &mut action.axis_pair {
                         *current_axis_pair = current_axis_pair.merged_with(axis_pair);
@@ -383,10 +385,10 @@ impl<A: Actionlike> InputMap<A> {
                     }
                 }
 
-                if input_streams.input_pressed(input) {
+                if input_streams.input_pressed(input.as_ref()) {
                     inputs.push(input.clone());
 
-                    action.value += input_streams.input_value(input);
+                    action.value += input_streams.input_value(input.as_ref());
                 }
             }
 

@@ -93,41 +93,9 @@ pub trait DualAxisLike: InputLikeObject {
     fn input_axis_pair(&self, world: &World) -> Option<DualAxisData>;
 }
 
-impl InputLikeObject for Box<dyn InputLikeObject> {
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
-        self.as_ref().clashes(other)
-    }
-
-    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
-        self.as_ref().as_button()
-    }
-
-    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
-        self.as_ref().as_axis()
-    }
-
-    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
-        self.as_ref().as_dual_axis()
-    }
-
-    fn len(&self) -> usize {
-        self.as_ref().len()
-    }
-
-    fn raw_inputs(&self) -> Vec<Box<(dyn InputLikeObject)>> {
-        self.as_ref().raw_inputs()
-    }
-
-    fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
-        self.as_ref().clone_dyn()
-    }
-
-    fn as_serialize(&self) -> &dyn erased_serde::Serialize {
-        self.as_ref().as_serialize()
-    }
-
-    fn as_reflect(&self) -> &dyn Reflect {
-        self.as_ref().as_reflect()
+impl<T: InputLikeObject> From<T> for Box<dyn InputLikeObject> {
+    fn from(input: T) -> Self {
+        input.clone_dyn()
     }
 }
 
