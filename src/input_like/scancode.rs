@@ -29,15 +29,15 @@ impl InputLikeObject for ScanCode {
             .unwrap_or_default()
     }
 
-    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
-        Some(Box::new(*self))
+    fn as_button(&self) -> Option<&dyn ButtonLike> {
+        Some(self)
     }
 
-    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
+    fn as_axis(&self) -> Option<&dyn SingleAxisLike> {
         None
     }
 
-    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
+    fn as_dual_axis(&self) -> Option<&dyn DualAxisLike> {
         None
     }
 
@@ -88,15 +88,15 @@ impl InputLikeObject for QwertyScanCode {
                 .unwrap_or_default()
     }
 
-    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
-        Some(Box::new(*self))
+    fn as_button(&self) -> Option<&dyn ButtonLike> {
+        Some(self)
     }
 
-    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
+    fn as_axis(&self) -> Option<&dyn SingleAxisLike> {
         None
     }
 
-    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
+    fn as_dual_axis(&self) -> Option<&dyn DualAxisLike> {
         None
     }
 

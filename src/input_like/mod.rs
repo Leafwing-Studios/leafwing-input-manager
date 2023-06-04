@@ -29,13 +29,13 @@ pub trait InputLikeObject: Send + Sync + Debug {
     fn clashes(&self, other: &dyn InputLikeObject) -> bool;
 
     /// Returns [`ButtonLike`] if it is implemented.
-    fn as_button(&self) -> Option<Box<dyn ButtonLike>>;
+    fn as_button(&self) -> Option<&dyn ButtonLike>;
 
     /// Returns [`SingleAxisLike`] if it is implemented.
-    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>>;
+    fn as_axis(&self) -> Option<&dyn SingleAxisLike>;
 
     /// Returns [`DualAxisLike`] if it is implemented.
-    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>>;
+    fn as_dual_axis(&self) -> Option<&dyn DualAxisLike>;
 
     /// The number of logical inputs that make up the [`UserInput`].
     ///

@@ -70,15 +70,15 @@ impl InputLikeObject for WindowMotionDirection {
         false
     }
 
-    fn as_button(&self) -> Option<Box<dyn ButtonLike>> {
-        Some(Box::new(*self))
+    fn as_button(&self) -> Option<&dyn ButtonLike> {
+        Some(self)
     }
 
-    fn as_axis(&self) -> Option<Box<dyn SingleAxisLike>> {
+    fn as_axis(&self) -> Option<&dyn SingleAxisLike> {
         None
     }
 
-    fn as_dual_axis(&self) -> Option<Box<dyn DualAxisLike>> {
+    fn as_dual_axis(&self) -> Option<&dyn DualAxisLike> {
         None
     }
 
