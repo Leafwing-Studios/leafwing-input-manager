@@ -268,12 +268,11 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_modified(
         &mut self,
         modifier: Modifier,
-        input: impl Into<InputKind>,
+        input: impl Into<Box<dyn InputLikeObject>>,
         action: A,
     ) -> &mut Self {
-        todo!();
-        // self.insert(UserInput::modified(modifier, input), action);
-        // self
+        self.insert(Chord::new([input.into(), modifier.into()]), action);
+        self
     }
 
     /// Merges the provided [`InputMap`] into the [`InputMap`] this method was called on
