@@ -258,10 +258,7 @@ impl<A: Actionlike> InputMap<A> {
         buttons: impl IntoIterator<Item = impl Into<Box<dyn InputLikeObject>>>,
         action: A,
     ) -> &mut Self {
-        self.insert(
-            Chord::new(buttons.into_iter().map(|b| b.into()).collect()),
-            action,
-        );
+        self.insert(Chord::new(buttons), action);
         self
     }
 

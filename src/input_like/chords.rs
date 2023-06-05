@@ -12,7 +12,8 @@ pub struct Chord {
 }
 
 impl Chord {
-    pub fn new(inputs: Vec<Box<dyn InputLikeObject>>) -> Self {
+    pub fn new(inputs: impl IntoIterator<Item = impl Into<Box<dyn InputLikeObject>>>) -> Self {
+        let inputs = inputs.into_iter().map(|x| x.into()).collect();
         Self { inputs }
     }
 
