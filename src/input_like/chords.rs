@@ -40,6 +40,10 @@ impl ButtonLike for Chord {
                 .unwrap_or_default()
         })
     }
+
+    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+        Box::new(self.clone())
+    }
 }
 
 impl InputLikeObject for Chord {

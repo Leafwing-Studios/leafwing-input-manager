@@ -574,20 +574,19 @@ mod tests {
 
         assert_eq!(
             *input_map.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
+            PetitSet::<_, 16>::from_iter([KeyCode::Space.into()])
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(KeyCode::Space, Action::Run);
         assert_eq!(
             *input_map.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
+            PetitSet::<_, 16>::from_iter([KeyCode::Space.into()])
         );
     }
 
     #[test]
     fn multiple_insertion() {
-        use crate::input_like::UserInput;
         use bevy::input::keyboard::KeyCode;
         use petitset::PetitSet;
 
@@ -597,7 +596,10 @@ mod tests {
 
         assert_eq!(
             *input_map_1.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into(), KeyCode::Return.into()])
+            PetitSet::<Box<dyn InputLikeObject>, 16>::from_iter([
+                KeyCode::Space.into(),
+                KeyCode::Return.into()
+            ])
         );
 
         let input_map_2 = InputMap::<Action>::new([
@@ -617,7 +619,7 @@ mod tests {
         input_map_1.insert(KeyCode::Space, Action::Run);
 
         let mut input_map_2 = InputMap::<Action>::default();
-        input_map_2.insert(UserInput::chord([KeyCode::Space]), Action::Run);
+        input_map_2.insert(Chord::new([KeyCode::Space]), Action::Run);
 
         assert_eq!(input_map_1, input_map_2);
     }
@@ -688,12 +690,12 @@ mod tests {
         use bevy::prelude::KeyCode;
         use std::collections::HashMap;
 
-        let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
+        let mut map: HashMap<Action, Vec<Box<dyn InputLikeObject>>> = HashMap::default();
         map.insert(
             Action::Hide,
-            vec![UserInput::chord(vec![KeyCode::R, KeyCode::E])],
+            vec![Chord::new(vec![KeyCode::R, KeyCode::E]).into()],
         );
-        map.insert(Action::Jump, vec![UserInput::from(KeyCode::Space)]);
+        map.insert(Action::Jump, vec![KeyCode::Space.into()]);
         map.insert(
             Action::Run,
             vec![KeyCode::LShift.into(), KeyCode::RShift.into()],

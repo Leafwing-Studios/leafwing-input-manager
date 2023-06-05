@@ -47,6 +47,10 @@ impl ButtonLike for WindowMotionDirection {
             .map(WindowMotionDirection::from)
             .contains(self)
     }
+
+    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+        Box::new(*self)
+    }
 }
 impl SingleAxisLike for WindowMotionDirection {
     fn input_value(&self, world: &World) -> f32 {

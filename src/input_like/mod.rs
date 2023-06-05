@@ -3,6 +3,7 @@
 pub mod chords;
 pub mod keycode;
 pub mod scancode;
+pub mod virtual_dpad;
 
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use std::fmt::Debug;
@@ -88,6 +89,12 @@ impl Clone for Box<dyn InputLikeObject> {
     }
 }
 
+impl Clone for Box<dyn ButtonLike> {
+    fn clone(&self) -> Self {
+        ButtonLike::clone_dyn(self.as_ref())
+    }
+}
+
 impl PartialEq<Self> for dyn InputLikeObject + '_ {
     /// # Panics
     ///
@@ -103,8 +110,20 @@ impl PartialEq<Self> for dyn InputLikeObject + '_ {
 
 impl Eq for dyn InputLikeObject {}
 
+impl PartialEq for dyn ButtonLike {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_reflect().type_id() == other.as_reflect().type_id()
+            && self
+                .as_reflect()
+                .reflect_partial_eq(other.as_reflect())
+                .unwrap()
+    }
+}
+
 pub trait ButtonLike: InputLikeObject {
     fn input_pressed(&self, world: &World) -> bool;
+
+    fn clone_dyn(&self) -> Box<dyn ButtonLike>;
 }
 
 pub trait SingleAxisLike: InputLikeObject {
@@ -112,7 +131,7 @@ pub trait SingleAxisLike: InputLikeObject {
 }
 
 pub trait DualAxisLike: InputLikeObject {
-    fn input_axis_pair(&self, world: &World) -> Option<DualAxisData>;
+    fn input_axis_pair(&self, world: &World) -> DualAxisData;
 }
 
 impl<T: InputLikeObject> From<T> for Box<dyn InputLikeObject> {
@@ -120,8 +139,22 @@ impl<T: InputLikeObject> From<T> for Box<dyn InputLikeObject> {
         input.clone_dyn()
     }
 }
+impl<T: ButtonLike> From<T> for Box<dyn ButtonLike> {
+    fn from(button: T) -> Self {
+        ButtonLike::clone_dyn(&button)
+    }
+}
 
 impl Serialize for dyn InputLikeObject {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.as_serialize().serialize(serializer)
+    }
+}
+
+impl Serialize for dyn ButtonLike {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

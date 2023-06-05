@@ -8,6 +8,10 @@ impl ButtonLike for ScanCode {
     fn input_pressed(&self, world: &World) -> bool {
         world.resource::<Input<ScanCode>>().pressed(*self)
     }
+
+    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+        Box::new(*self)
+    }
 }
 
 impl SingleAxisLike for ScanCode {
@@ -53,6 +57,10 @@ impl ButtonLike for QwertyScanCode {
         world
             .resource::<Input<ScanCode>>()
             .pressed(ScanCode::from(*self))
+    }
+
+    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+        Box::new(*self)
     }
 }
 

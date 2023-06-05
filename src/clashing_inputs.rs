@@ -1,15 +1,13 @@
 //! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
 
 use crate::action_state::ActionData;
-use crate::axislike::{VirtualAxis, VirtualDPad};
-use crate::input_like::{InputKind, InputLikeObject};
+use crate::input_like::InputLikeObject;
 use crate::input_map::InputMap;
 use crate::Actionlike;
 
 use crate::input_streams::InputStreams;
 use bevy::prelude::Resource;
 use itertools::Itertools;
-use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::fmt::Debug;
@@ -139,6 +137,7 @@ impl<A: Actionlike> InputMap<A> {
 
 /// A user-input clash, which stores the actions that are being clashed on,
 /// as well as the corresponding user inputs
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Clash<A: Actionlike> {
     /// The `Actionlike::index` value corresponding to `action_a`
     index_a: usize,
@@ -173,101 +172,6 @@ impl<A: Actionlike> Clash<A> {
             _phantom: PhantomData::default(),
         }
     }
-}
-
-// Does the `button` clash with the `chord`?
-#[must_use]
-fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> bool {
-    if chord.len() <= 1 {
-        return false;
-    }
-
-    chord.contains(button)
-}
-
-// Does the `dpad` clash with the `chord`?
-#[must_use]
-fn dpad_chord_clash(dpad: &VirtualDPad, chord: &PetitSet<InputKind, 8>) -> bool {
-    if chord.len() <= 1 {
-        return false;
-    }
-
-    for button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
-        if chord.contains(button) {
-            return true;
-        }
-    }
-
-    false
-}
-
-fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
-    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
-        if button == dpad_button {
-            return true;
-        }
-    }
-
-    false
-}
-
-fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
-    for button1 in &[dpad1.up, dpad1.down, dpad1.left, dpad1.right] {
-        for button2 in &[dpad2.up, dpad2.down, dpad2.left, dpad2.right] {
-            if button1 == button2 {
-                return true;
-            }
-        }
-    }
-
-    false
-}
-
-#[must_use]
-fn virtual_axis_button_clash(axis: &VirtualAxis, button: &InputKind) -> bool {
-    button == &axis.negative || button == &axis.positive
-}
-
-#[must_use]
-fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
-    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
-        if dpad_button == &axis.negative || dpad_button == &axis.positive {
-            return true;
-        }
-    }
-
-    false
-}
-
-#[must_use]
-fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &PetitSet<InputKind, 8>) -> bool {
-    if chord.len() <= 1 {
-        return false;
-    }
-
-    chord.contains(&axis.negative) || chord.contains(&axis.positive)
-}
-
-#[must_use]
-fn virtual_axis_virtual_axis_clash(axis1: &VirtualAxis, axis2: &VirtualAxis) -> bool {
-    axis1.negative == axis2.negative
-        || axis1.negative == axis2.positive
-        || axis1.positive == axis2.negative
-        || axis1.positive == axis2.positive
-}
-
-/// Does the `chord_a` clash with `chord_b`?
-#[must_use]
-fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputKind, 8>) -> bool {
-    if chord_a.len() <= 1 || chord_b.len() <= 1 {
-        return false;
-    }
-
-    if chord_a == chord_b {
-        return false;
-    }
-
-    chord_a.is_subset(chord_b) || chord_b.is_subset(chord_a)
 }
 
 /// Given the `input_streams`, does the provided clash actually occur?
@@ -371,6 +275,7 @@ fn resolve_clash<A: Actionlike>(
 mod tests {
     use super::*;
     use crate as leafwing_input_manager;
+    use crate::input_like::virtual_dpad::VirtualDPad;
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use leafwing_input_manager_macros::Actionlike;
@@ -417,8 +322,9 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::axislike::VirtualDPad;
         use crate::buttonlike::ButtonState;
+        use crate::input_like::chords::Chord;
+        use crate::input_like::virtual_dpad::VirtualDPad;
         use bevy::input::{Input, InputPlugin};
         use bevy::prelude::KeyCode;
         use Action::*;
@@ -427,42 +333,36 @@ mod tests {
 
         #[test]
         fn clash_detection() {
-            let a: UserInput = A.into();
-            let b: UserInput = B.into();
-            let c: UserInput = C.into();
-            let ab = UserInput::chord([A, B]);
-            let bc = UserInput::chord([B, C]);
-            let abc = UserInput::chord([A, B, C]);
-            let axyz_dpad: UserInput = VirtualDPad {
+            let ab = Chord::new([A, B]);
+            let bc = Chord::new([B, C]);
+            let abc = Chord::new([A, B, C]);
+            let axyz_dpad = VirtualDPad {
                 up: A.into(),
                 down: X.into(),
                 left: Y.into(),
                 right: Z.into(),
-            }
-            .into();
-            let abcd_dpad: UserInput = VirtualDPad {
+            };
+            let abcd_dpad = VirtualDPad {
                 up: A.into(),
                 down: B.into(),
                 left: C.into(),
                 right: D.into(),
-            }
-            .into();
+            };
 
-            let ctrl_up: UserInput = UserInput::chord([Up, LControl]);
-            let directions_dpad: UserInput = VirtualDPad {
+            let ctrl_up = Chord::new([Up, LControl]);
+            let directions_dpad = VirtualDPad {
                 up: Up.into(),
                 down: Down.into(),
                 left: Left.into(),
                 right: Right.into(),
-            }
-            .into();
+            };
 
-            assert!(!a.clashes(&b));
-            assert!(a.clashes(&ab));
-            assert!(!c.clashes(&ab));
+            assert!(!A.clashes(&B));
+            assert!(A.clashes(&ab));
+            assert!(!C.clashes(&ab));
             assert!(!ab.clashes(&bc));
             assert!(ab.clashes(&abc));
-            assert!(axyz_dpad.clashes(&a));
+            assert!(axyz_dpad.clashes(&A));
             assert!(axyz_dpad.clashes(&ab));
             assert!(!axyz_dpad.clashes(&bc));
             assert!(axyz_dpad.clashes(&abcd_dpad));
@@ -478,7 +378,7 @@ mod tests {
                 index_a: One.index(),
                 index_b: OneAndTwo.index(),
                 inputs_a: vec![Key1.into()],
-                inputs_b: vec![UserInput::chord([Key1, Key2])],
+                inputs_b: vec![Box::new(Chord::new([Key1, Key2]))],
                 _phantom: PhantomData::default(),
             };
 
@@ -495,8 +395,8 @@ mod tests {
             let correct_clash = Clash {
                 index_a: OneAndTwoAndThree.index(),
                 index_b: OneAndTwo.index(),
-                inputs_a: vec![UserInput::chord([Key1, Key2, Key3])],
-                inputs_b: vec![UserInput::chord([Key1, Key2])],
+                inputs_a: vec![Chord::new([Key1, Key2, Key3]).into()],
+                inputs_b: vec![Chord::new([Key1, Key2]).into()],
                 _phantom: PhantomData::default(),
             };
 
@@ -523,7 +423,7 @@ mod tests {
             assert_eq!(input_map.possible_clashes().len(), 13);
 
             // Possible clashes are cached upon binding insertion
-            input_map.insert(UserInput::chord([LControl, LAlt, Key1]), Action::Two);
+            input_map.insert(Chord::new([LControl, LAlt, Key1]), Action::Two);
             assert_eq!(input_map.possible_clashes().len(), 16);
 
             // Possible clashes are cached upon binding removal
@@ -542,7 +442,7 @@ mod tests {
             app.world.resource_mut::<Input<KeyCode>>().press(Key2);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
+            let input_streams = InputStreams::from_world(&app.world);
 
             assert_eq!(
                 resolve_clash(
@@ -569,7 +469,7 @@ mod tests {
             app.world.resource_mut::<Input<KeyCode>>().press(Key3);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
+            let input_streams = InputStreams::from_world(&app.world);
 
             assert_eq!(
                 resolve_clash(
@@ -593,7 +493,7 @@ mod tests {
             app.world.resource_mut::<Input<KeyCode>>().press(LControl);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
+            let input_streams = InputStreams::from_world(&app.world);
 
             assert_eq!(
                 resolve_clash(&simple_clash, ClashStrategy::UseActionOrder, &input_streams,),
@@ -627,7 +527,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(&app.world),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -654,7 +554,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(&app.world),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -676,7 +576,7 @@ mod tests {
             app.update();
 
             let action_data = input_map.which_pressed(
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(&app.world),
                 ClashStrategy::PrioritizeLongest,
             );
 

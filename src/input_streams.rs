@@ -20,8 +20,6 @@ impl<'a> InputStreams<'a> {
         input.as_axis().map_or(0.0, |x| x.input_value(self.world))
     }
     pub fn input_axis_pair(&self, input: &dyn InputLikeObject) -> Option<DualAxisData> {
-        input
-            .as_dual_axis()
-            .and_then(|x| x.input_axis_pair(self.world))
+        input.as_dual_axis().map(|x| x.input_axis_pair(self.world))
     }
 }

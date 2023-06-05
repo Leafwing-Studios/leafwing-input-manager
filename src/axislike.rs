@@ -1,9 +1,6 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
-
-use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::input_like::InputKind;
 use crate::orientation::{Direction, Rotation};
-use crate::prelude::QwertyScanCode;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
@@ -249,95 +246,6 @@ impl DualAxis {
         self.x = self.x.with_deadzone(deadzone);
         self.y = self.y.with_deadzone(deadzone);
         self
-    }
-}
-
-#[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
-/// A virtual DPad that you can get an [`DualAxis`] from.
-///
-/// Typically, you don't want to store a [`DualAxis`] in this type,
-/// even though it can be stored as an [`InputKind`].
-///
-/// Instead, use it directly as [`InputKind::DualAxis`]!
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct VirtualDPad {
-    /// The input that represents the up direction in this virtual DPad
-    pub up: InputKind,
-    /// The input that represents the down direction in this virtual DPad
-    pub down: InputKind,
-    /// The input that represents the left direction in this virtual DPad
-    pub left: InputKind,
-    /// The input that represents the right direction in this virtual DPad
-    pub right: InputKind,
-}
-
-impl VirtualDPad {
-    /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
-    pub fn arrow_keys() -> VirtualDPad {
-        VirtualDPad {
-            up: InputKind::Keyboard(KeyCode::Up),
-            down: InputKind::Keyboard(KeyCode::Down),
-            left: InputKind::Keyboard(KeyCode::Left),
-            right: InputKind::Keyboard(KeyCode::Right),
-        }
-    }
-
-    /// Generates a [`VirtualDPad`] corresponding to the `WASD` keys on the standard US QWERTY layout.
-    ///
-    /// Note that on other keyboard layouts, different keys need to be pressed.
-    /// The _location_ of the keys is the same on all keyboard layouts.
-    /// This ensures that the classic triangular shape is retained on all layouts,
-    /// which enables comfortable movement controls.
-    pub fn wasd() -> VirtualDPad {
-        VirtualDPad {
-            up: InputKind::KeyLocation(QwertyScanCode::W.into()),
-            down: InputKind::KeyLocation(QwertyScanCode::S.into()),
-            left: InputKind::KeyLocation(QwertyScanCode::A.into()),
-            right: InputKind::KeyLocation(QwertyScanCode::D.into()),
-        }
-    }
-
-    #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
-    /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
-    pub fn dpad() -> VirtualDPad {
-        VirtualDPad {
-            up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
-            down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
-            left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
-            right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-        }
-    }
-
-    /// Generates a [`VirtualDPad`] corresponding to the face buttons on a gamepad
-    ///
-    /// North corresponds to up, west corresponds to left, east corresponds to right, south corresponds to down
-    pub fn gamepad_face_buttons() -> VirtualDPad {
-        VirtualDPad {
-            up: InputKind::GamepadButton(GamepadButtonType::North),
-            down: InputKind::GamepadButton(GamepadButtonType::South),
-            left: InputKind::GamepadButton(GamepadButtonType::West),
-            right: InputKind::GamepadButton(GamepadButtonType::East),
-        }
-    }
-
-    /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
-    pub fn mouse_wheel() -> VirtualDPad {
-        VirtualDPad {
-            up: InputKind::MouseWheel(MouseWheelDirection::Up),
-            down: InputKind::MouseWheel(MouseWheelDirection::Down),
-            left: InputKind::MouseWheel(MouseWheelDirection::Left),
-            right: InputKind::MouseWheel(MouseWheelDirection::Right),
-        }
-    }
-
-    /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
-    pub fn mouse_motion() -> VirtualDPad {
-        VirtualDPad {
-            up: InputKind::MouseMotion(MouseMotionDirection::Up),
-            down: InputKind::MouseMotion(MouseMotionDirection::Down),
-            left: InputKind::MouseMotion(MouseMotionDirection::Left),
-            right: InputKind::MouseMotion(MouseMotionDirection::Right),
-        }
     }
 }
 

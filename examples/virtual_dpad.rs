@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use leafwing_input_manager::input_like::virtual_dpad::VirtualDPad;
 use leafwing_input_manager::prelude::*;
 
 fn main() {
