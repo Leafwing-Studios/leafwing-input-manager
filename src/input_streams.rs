@@ -344,7 +344,8 @@ impl<'a> InputStreams<'a> {
 
     /// Get the axis pair associated to the user input.
     ///
-    /// If `input` is a chord, returns result of the first dual axis on the lis.
+    /// If `input` is a chord, returns result of the first dual axis in the chord.
+
     /// If `input` is not a [`DualAxis`](crate::axislike::DualAxis) or [`VirtualDPad`], returns [`None`].
     ///
     /// # Warning
