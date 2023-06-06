@@ -16,6 +16,7 @@ use crate::axislike::{
     VirtualDPad,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
+use crate::prelude::DualAxis;
 use crate::user_input::{InputKind, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
@@ -343,9 +344,8 @@ impl<'a> InputStreams<'a> {
 
     /// Get the axis pair associated to the user input.
     ///
+    /// If `input` is a chord, returns result of the first dual axis on the lis.
     /// If `input` is not a [`DualAxis`](crate::axislike::DualAxis) or [`VirtualDPad`], returns [`None`].
-    ///
-    /// See [`ActionState::action_axis_pair()`](crate::action_state::ActionState) for usage.
     ///
     /// # Warning
     ///
@@ -353,19 +353,18 @@ impl<'a> InputStreams<'a> {
     /// be sure to clamp the returned data.
     pub fn input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
         match input {
+            UserInput::Chord(inputs) => inputs
+                .iter()
+                .flat_map(|input_kind| {
+                    if let InputKind::DualAxis(dual_axis) = input_kind {
+                        Some(self.extract_dual_axis_data(dual_axis))
+                    } else {
+                        None
+                    }
+                })
+                .next(),
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
-                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
-                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
-
-                if x > dual_axis.x.positive_low
-                    || x < dual_axis.x.negative_low
-                    || y > dual_axis.y.positive_low
-                    || y < dual_axis.y.negative_low
-                {
-                    Some(DualAxisData::new(x, y))
-                } else {
-                    Some(DualAxisData::new(0.0, 0.0))
-                }
+                Some(self.extract_dual_axis_data(dual_axis))
             }
             UserInput::VirtualDPad(VirtualDPad {
                 up,
@@ -380,6 +379,21 @@ impl<'a> InputStreams<'a> {
                 Some(DualAxisData::new(x, y))
             }
             _ => None,
+        }
+    }
+
+    fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> DualAxisData {
+        let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
+        let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
+
+        if x > dual_axis.x.positive_low
+            || x < dual_axis.x.negative_low
+            || y > dual_axis.y.positive_low
+            || y < dual_axis.y.negative_low
+        {
+            DualAxisData::new(x, y)
+        } else {
+            DualAxisData::new(0.0, 0.0)
         }
     }
 }

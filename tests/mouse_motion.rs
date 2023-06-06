@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseMotionAxisType};
 use leafwing_input_manager::buttonlike::MouseMotionDirection;
 use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::user_input::InputKind;
 
 #[derive(Actionlike, Clone, Copy, Debug)]
 enum ButtonlikeTestAction {
@@ -285,5 +286,39 @@ fn mouse_motion_virtualdpad() {
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
         // This should be unit length, because we're working with a VirtualDpad
         DualAxisData::new(0.0, -1.0)
+    );
+}
+
+#[test]
+fn mouse_drag() {
+    let mut app = test_app();
+
+    let mut input_map = InputMap::default();
+
+    input_map.insert_chord(
+        [
+            InputKind::from(DualAxis::mouse_motion()),
+            InputKind::from(MouseButton::Right),
+        ],
+        AxislikeTestAction::XY,
+    );
+
+    app.insert_resource(input_map);
+
+    app.send_input(DualAxis::from_value(
+        MouseMotionAxisType::X,
+        MouseMotionAxisType::Y,
+        5.0,
+        0.0,
+    ));
+    app.send_input(MouseButton::Right);
+    app.update();
+
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(
+        action_state.axis_pair(AxislikeTestAction::XY),
+        Some(DualAxisData::new(5.0, 0.0))
     );
 }
