@@ -3,6 +3,7 @@
 pub mod chords;
 pub mod keycode;
 pub mod mouse_button;
+pub mod mouse_wheel;
 pub mod scancode;
 pub mod virtual_dpad;
 
@@ -14,10 +15,11 @@ use serde::{Deserialize, Serialize, Serializer};
 
 use crate::axislike::DualAxisData;
 use crate::input_like::keycode::Modifier;
+use crate::input_like::mouse_wheel::MouseWheelDirection;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
     axislike::{DualAxis, SingleAxis},
-    buttonlike::{MouseMotionDirection, MouseWheelDirection},
+    buttonlike::MouseMotionDirection,
 };
 
 pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
