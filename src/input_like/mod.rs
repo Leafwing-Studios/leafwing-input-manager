@@ -2,6 +2,7 @@
 
 pub mod chords;
 pub mod keycode;
+pub mod mouse_button;
 pub mod scancode;
 pub mod virtual_dpad;
 
