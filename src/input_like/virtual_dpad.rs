@@ -2,7 +2,10 @@ use crate::axislike::DualAxisData;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use crate::prelude::QwertyScanCode;
 use bevy::prelude::{Reflect, World};
+use bevy::reflect::utility::NonGenericTypeInfoCell;
+use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
 use erased_serde::Serialize;
+use std::any::Any;
 
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
 /// A virtual DPad that you can get an [`DualAxis`] from.
@@ -141,7 +144,7 @@ impl InputLikeObject for VirtualDPad {
     }
 
     fn as_reflect(&self) -> &dyn Reflect {
-        todo!()
+        self
     }
 
     fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
@@ -158,7 +161,7 @@ impl InputLikeObject for VirtualDPad {
 }
 
 impl ButtonLike for VirtualDPad {
-    fn input_pressed(&self, world: &bevy::prelude::World) -> bool {
+    fn input_pressed(&self, world: &World) -> bool {
         self.raw_inputs().iter().any(|x| {
             x.as_button()
                 .map(|x| x.input_pressed(world))
@@ -206,5 +209,88 @@ impl DualAxisLike for VirtualDPad {
         };
 
         DualAxisData::new(x, y)
+    }
+}
+
+impl Typed for VirtualDPad {
+    fn type_info() -> &'static TypeInfo
+    where
+        Self: Sized,
+    {
+        static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
+        CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
+    }
+}
+
+impl Reflect for VirtualDPad {
+    fn type_name(&self) -> &str {
+        std::any::type_name::<Self>()
+    }
+
+    fn get_type_info(&self) -> &'static TypeInfo {
+        <Self as Typed>::type_info()
+    }
+
+    fn into_any(self: Box<Self>) -> Box<dyn Any> {
+        self
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
+
+    fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
+        self
+    }
+
+    fn as_reflect(&self) -> &dyn Reflect {
+        self
+    }
+
+    fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
+        self
+    }
+
+    fn apply(&mut self, value: &dyn Reflect) {
+        let value = value.as_any();
+        if let Some(value) = value.downcast_ref::<Self>() {
+            *self = value.clone();
+        } else {
+            panic!("Value is not a {}.", std::any::type_name::<Self>());
+        }
+    }
+
+    fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
+        *self = value.take()?;
+        Ok(())
+    }
+
+    fn reflect_ref(&self) -> ReflectRef {
+        ReflectRef::Value(self)
+    }
+
+    fn reflect_mut(&mut self) -> ReflectMut {
+        ReflectMut::Value(self)
+    }
+
+    fn reflect_owned(self: Box<Self>) -> ReflectOwned {
+        ReflectOwned::Value(self)
+    }
+
+    fn clone_value(&self) -> Box<dyn Reflect> {
+        Box::new(self.clone())
+    }
+
+    fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
+        let value = value.as_any();
+        if let Some(value) = value.downcast_ref::<Self>() {
+            Some(std::cmp::PartialEq::eq(self, value))
+        } else {
+            Some(false)
+        }
     }
 }
