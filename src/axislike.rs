@@ -57,28 +57,6 @@ impl SingleAxis {
         }
     }
 
-    /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
-    #[must_use]
-    pub const fn mouse_wheel_x() -> SingleAxis {
-        SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            positive_low: 0.,
-            negative_low: 0.,
-            value: None,
-        }
-    }
-
-    /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
-    #[must_use]
-    pub const fn mouse_wheel_y() -> SingleAxis {
-        SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            positive_low: 0.,
-            negative_low: 0.,
-            value: None,
-        }
-    }
-
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
     pub const fn mouse_motion_x() -> SingleAxis {
@@ -224,14 +202,6 @@ impl DualAxis {
         )
     }
 
-    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
-    pub const fn mouse_wheel() -> DualAxis {
-        DualAxis {
-            x: SingleAxis::mouse_wheel_x(),
-            y: SingleAxis::mouse_wheel_y(),
-        }
-    }
-
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     pub const fn mouse_motion() -> DualAxis {
         DualAxis {
@@ -322,27 +292,9 @@ impl VirtualAxis {
 pub enum AxisType {
     /// Input associated with a gamepad, such as the triggers or one axis of an analog stick.
     Gamepad(GamepadAxisType),
-    /// Input associated with a mouse wheel.
-    MouseWheel(MouseWheelAxisType),
     /// Input associated with movement of the mouse
     MouseMotion(MouseMotionAxisType),
 }
-
-/// The direction of motion of the mouse wheel.
-///
-/// Stored in the [`AxisType`] enum.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum MouseWheelAxisType {
-    /// Horizontal movement.
-    ///
-    /// This is much less common than the `Y` variant, and is only supported on some devices.
-    X,
-    /// Vertical movement.
-    ///
-    /// This is the standard behavior for a mouse wheel, used to scroll up and down pages.
-    Y,
-}
-
 /// The direction of motion of the mouse.
 ///
 /// Stored in the [`AxisType`] enum.
@@ -360,12 +312,6 @@ impl From<GamepadAxisType> for AxisType {
     }
 }
 
-impl From<MouseWheelAxisType> for AxisType {
-    fn from(axis_type: MouseWheelAxisType) -> Self {
-        AxisType::MouseWheel(axis_type)
-    }
-}
-
 impl From<MouseMotionAxisType> for AxisType {
     fn from(axis_type: MouseMotionAxisType) -> Self {
         AxisType::MouseMotion(axis_type)
@@ -378,17 +324,6 @@ impl TryFrom<AxisType> for GamepadAxisType {
     fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
         match axis_type {
             AxisType::Gamepad(inner) => Ok(inner),
-            _ => Err(AxisConversionError),
-        }
-    }
-}
-
-impl TryFrom<AxisType> for MouseWheelAxisType {
-    type Error = AxisConversionError;
-
-    fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
-        match axis_type {
-            AxisType::MouseWheel(inner) => Ok(inner),
             _ => Err(AxisConversionError),
         }
     }

@@ -24,7 +24,7 @@ fn setup(mut commands: Commands) {
         .insert(InputManagerBundle::<CameraMovement> {
             input_map: InputMap::default()
                 // This will capture the total continuous value, for direct use.
-                .insert(SingleAxis::mouse_wheel_y(), CameraMovement::Zoom)
+                .insert(MouseWheelAxis::Y, CameraMovement::Zoom)
                 // This will return a binary button-like output.
                 .insert(MouseWheelDirection::Left, CameraMovement::PanLeft)
                 .insert(MouseWheelDirection::Right, CameraMovement::PanRight)

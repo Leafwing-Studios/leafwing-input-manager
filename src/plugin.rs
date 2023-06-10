@@ -7,7 +7,7 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use crate::input_like::mouse_wheel::MouseWheelDirectionPlugin;
+use crate::input_like::mouse_wheel::MouseWheelInputPlugin;
 use crate::scan_codes::QwertyScanCode;
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
@@ -85,8 +85,8 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
-        if !app.is_plugin_added::<MouseWheelDirectionPlugin>() {
-            app.add_plugin(MouseWheelDirectionPlugin);
+        if !app.is_plugin_added::<MouseWheelInputPlugin>() {
+            app.add_plugin(MouseWheelInputPlugin);
         }
 
         match self.machine {

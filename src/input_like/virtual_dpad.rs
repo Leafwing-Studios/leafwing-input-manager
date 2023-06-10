@@ -1,6 +1,6 @@
 use crate::axislike::DualAxisData;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
-use crate::prelude::QwertyScanCode;
+use crate::prelude::{MouseWheelDirection, QwertyScanCode};
 use bevy::prelude::{Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
 use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
@@ -81,15 +81,15 @@ impl VirtualDPad {
     //     }
     // }
     //
-    // /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
-    // pub fn mouse_wheel() -> VirtualDPad {
-    //     VirtualDPad {
-    //         up: InputKind::MouseWheel(MouseWheelDirection::Up),
-    //         down: InputKind::MouseWheel(MouseWheelDirection::Down),
-    //         left: InputKind::MouseWheel(MouseWheelDirection::Left),
-    //         right: InputKind::MouseWheel(MouseWheelDirection::Right),
-    //     }
-    // }
+    /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
+    pub fn mouse_wheel() -> VirtualDPad {
+        VirtualDPad {
+            up: MouseWheelDirection::Up.into(),
+            down: MouseWheelDirection::Down.into(),
+            left: MouseWheelDirection::Left.into(),
+            right: MouseWheelDirection::Right.into(),
+        }
+    }
     //
     // /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
     // pub fn mouse_motion() -> VirtualDPad {
@@ -102,7 +102,7 @@ impl VirtualDPad {
     // }
 }
 
-fn deserialize_boxed_button<'de, D>(deserializer: D) -> Result<Box<dyn ButtonLike>, D::Error>
+fn deserialize_boxed_button<'de, D>(_deserializer: D) -> Result<Box<dyn ButtonLike>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -128,7 +128,7 @@ impl InputLikeObject for VirtualDPad {
     }
 
     fn as_axis(&self) -> Option<&dyn SingleAxisLike> {
-        None
+        Some(self)
     }
 
     fn as_dual_axis(&self) -> Option<&dyn DualAxisLike> {
@@ -174,6 +174,8 @@ impl ButtonLike for VirtualDPad {
     }
 }
 
+impl SingleAxisLike for VirtualDPad {}
+
 impl DualAxisLike for VirtualDPad {
     fn input_axis_pair(&self, world: &World) -> DualAxisData {
         let up = self
@@ -196,7 +198,7 @@ impl DualAxisLike for VirtualDPad {
             .as_button()
             .map(|x| x.input_pressed(world))
             .unwrap_or_default();
-
+        dbg!(up, down, left, right);
         let x = match (left, right) {
             (true, false) => -1.0,
             (false, true) => 1.0,
