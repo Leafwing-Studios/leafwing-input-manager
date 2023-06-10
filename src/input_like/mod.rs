@@ -127,8 +127,14 @@ pub trait ButtonLike: InputLikeObject {
     fn clone_dyn(&self) -> Box<dyn ButtonLike>;
 }
 
-pub trait SingleAxisLike: InputLikeObject {
-    fn input_value(&self, world: &World) -> f32;
+pub trait SingleAxisLike: InputLikeObject + ButtonLike {
+    fn input_value(&self, world: &World) -> f32 {
+        if self.input_pressed(world) {
+            1.0
+        } else {
+            0.0
+        }
+    }
 }
 
 pub trait DualAxisLike: InputLikeObject {
