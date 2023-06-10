@@ -3,7 +3,7 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::input_like::{InputKind, InputLikeObject};
+use crate::input_like::InputLikeObject;
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;
