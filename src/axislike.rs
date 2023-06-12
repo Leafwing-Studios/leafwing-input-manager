@@ -1,10 +1,7 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
 use crate::input_like::InputKind;
 use crate::orientation::{Direction, Rotation};
-use bevy::input::{
-    gamepad::{GamepadAxisType, GamepadButtonType},
-    keyboard::KeyCode,
-};
+use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
 use bevy::math::Vec2;
 use bevy::reflect::{FromReflect, Reflect};
 use bevy::utils::FloatOrd;
@@ -199,8 +196,6 @@ impl VirtualAxis {
 /// This is stored in either a [`SingleAxis`] or [`DualAxis`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AxisType {
-    /// Input associated with a gamepad, such as the triggers or one axis of an analog stick.
-    Gamepad(GamepadAxisType),
     /// Input associated with movement of the mouse
     MouseMotion(MouseMotionAxisType),
 }
@@ -215,26 +210,9 @@ pub enum MouseMotionAxisType {
     Y,
 }
 
-impl From<GamepadAxisType> for AxisType {
-    fn from(axis_type: GamepadAxisType) -> Self {
-        AxisType::Gamepad(axis_type)
-    }
-}
-
 impl From<MouseMotionAxisType> for AxisType {
     fn from(axis_type: MouseMotionAxisType) -> Self {
         AxisType::MouseMotion(axis_type)
-    }
-}
-
-impl TryFrom<AxisType> for GamepadAxisType {
-    type Error = AxisConversionError;
-
-    fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
-        match axis_type {
-            AxisType::Gamepad(inner) => Ok(inner),
-            _ => Err(AxisConversionError),
-        }
     }
 }
 
@@ -244,7 +222,6 @@ impl TryFrom<AxisType> for MouseMotionAxisType {
     fn try_from(axis_type: AxisType) -> Result<Self, AxisConversionError> {
         match axis_type {
             AxisType::MouseMotion(inner) => Ok(inner),
-            _ => Err(AxisConversionError),
         }
     }
 }

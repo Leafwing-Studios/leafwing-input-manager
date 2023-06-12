@@ -6,6 +6,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(InputManagerPlugin::<Action>::default())
         .add_startup_system(spawn_players)
+        .add_system(log_actions)
         .run();
 }
 
@@ -16,7 +17,7 @@ enum Action {
     Jump,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 enum Player {
     One,
     Two,
@@ -31,35 +32,36 @@ struct PlayerBundle {
 
 impl PlayerBundle {
     fn input_map(player: Player) -> InputMap<Action> {
-        let mut input_map = match player {
-            Player::One => InputMap::new([
-                (KeyCode::A, Action::Left),
-                (KeyCode::D, Action::Right),
-                (KeyCode::W, Action::Jump),
-            ])
-            // This is a quick and hacky solution:
-            // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
-            // and gracefully handle disconnects
-            // Note that this step is not required:
-            // if it is skipped all input maps will read from all connected gamepads
-            .set_gamepad(Gamepad { id: 0 })
-            .build(),
-            Player::Two => InputMap::new([
-                (KeyCode::Left, Action::Left),
-                (KeyCode::Right, Action::Right),
-                (KeyCode::Up, Action::Jump),
-            ])
-            .set_gamepad(Gamepad { id: 1 })
-            .build(),
-        };
-
         // Each player will use the same gamepad controls, but on separate gamepads.
-        input_map.insert_multiple([
+        let mut input_map = InputMap::new([
             (GamepadButtonType::DPadLeft, Action::Left),
             (GamepadButtonType::DPadRight, Action::Right),
             (GamepadButtonType::DPadUp, Action::Jump),
             (GamepadButtonType::South, Action::Jump),
         ]);
+        match player {
+            Player::One => input_map
+                .insert_multiple([
+                    (KeyCode::A, Action::Left),
+                    (KeyCode::D, Action::Right),
+                    (KeyCode::W, Action::Jump),
+                ])
+                // This is a quick and hacky solution:
+                // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
+                // and gracefully handle disconnects
+                // Note that this step is not required:
+                // if it is skipped all input maps will read from all connected gamepads
+                .set_gamepad(Gamepad { id: 0 })
+                .build(),
+            Player::Two => input_map
+                .insert_multiple([
+                    (KeyCode::Left, Action::Left),
+                    (KeyCode::Right, Action::Right),
+                    (KeyCode::Up, Action::Jump),
+                ])
+                .set_gamepad(Gamepad { id: 1 })
+                .build(),
+        };
 
         input_map
     }
@@ -81,4 +83,18 @@ fn spawn_players(mut commands: Commands) {
             ..Default::default()
         },
     });
+}
+
+fn log_actions(query: Query<(&Player, &ActionState<Action>)>) {
+    for (player, action_state) in query.iter() {
+        if action_state.just_pressed(Action::Left) {
+            println!("Player {:?} pressed left", player);
+        }
+        if action_state.just_pressed(Action::Right) {
+            println!("Player {:?} pressed right", player);
+        }
+        if action_state.just_pressed(Action::Jump) {
+            println!("Player {:?} pressed jump", player);
+        }
+    }
 }

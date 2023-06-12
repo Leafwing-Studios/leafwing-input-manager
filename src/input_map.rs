@@ -14,6 +14,7 @@ use bevy::reflect::{TypeRegistryInternal, TypeUuid};
 use crate::input_like::chords::Chord;
 use crate::input_like::keycode::Modifier;
 use crate::input_streams::InputStreams;
+use bevy::prelude::{GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType};
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserializer, Serialize};
@@ -318,22 +319,60 @@ impl<A: Actionlike> InputMap<A> {
         self.associated_gamepad
     }
 
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
+    /// Sets any [`Gamepad`] related inputs currently in this map to use the provided gamepad.
     ///
-    /// If this is not called, input from any connected gamepad will be used.
-    /// The first matching non-zero input will be accepted,
-    /// as determined by gamepad registration order.
-    ///
-    /// Because of this robust fallback behavior,
-    /// this method can typically be ignored when writing single-player games.
+    /// [`GamepadAxisType`] and [`GamepadButtonType`] inputs will be converted to
+    /// [`GamepadAxis`] and [`GamepadButton`] respectively, with the provided gamepad id.
     pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
-        self.associated_gamepad = Some(gamepad);
+        self.map.iter_mut().for_each(|x| {
+            for i in 0..x.len() {
+                if let Some(input) = x.get_at_mut(i) {
+                    let reflected = input.as_reflect();
+                    if let Some(button_type) =
+                        reflected.downcast_ref::<GamepadButtonType>().cloned()
+                    {
+                        *input = Box::new(GamepadButton::new(gamepad, button_type));
+                    } else if let Some(axis_type) =
+                        reflected.downcast_ref::<GamepadAxisType>().cloned()
+                    {
+                        // TODO
+                        // *input = Box::new(GamepadAxis::new(gamepad, axis_type));
+                    } else if let Some(button) = reflected.downcast_ref::<GamepadButton>().cloned()
+                    {
+                        *input = Box::new(GamepadButton::new(gamepad, button.button_type));
+                    } else if let Some(axis) = reflected.downcast_ref::<GamepadAxis>().cloned() {
+                        // TODO
+                        // *input = Box::new(GamepadAxis::new(gamepad, axis.axis_type));
+                    }
+                }
+            }
+        });
         self
     }
 
     /// Clears any [Gamepad] associated with the entity controlled by this input map
     pub fn clear_gamepad(&mut self) -> &mut Self {
-        self.associated_gamepad = None;
+        self.map.iter_mut().for_each(|x| {
+            for i in 0..x.len() {
+                if let Some(input) = x.get_at_mut(i) {
+                    let reflected = input.as_reflect();
+                    if let Some(button_type) = reflected.downcast_ref::<GamepadButton>().cloned() {
+                        *input = Box::new(button_type);
+                    } else if let Some(axis_type) =
+                        reflected.downcast_ref::<GamepadAxisType>().cloned()
+                    {
+                        // TODO
+                        // *input = Box::new(axis_type);
+                    } else if let Some(button) = reflected.downcast_ref::<GamepadButton>().cloned()
+                    {
+                        *input = Box::new(button.button_type);
+                    } else if let Some(axis) = reflected.downcast_ref::<GamepadAxis>().cloned() {
+                        // TODO
+                        // *input = Box::new(axis.axis_type);
+                    }
+                }
+            }
+        });
         self
     }
 }

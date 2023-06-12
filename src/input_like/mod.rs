@@ -2,6 +2,8 @@
 
 pub mod chords;
 pub mod dual_axis;
+pub mod gamepad_button;
+pub mod gamepad_button_type;
 pub mod keycode;
 pub mod mouse_button;
 pub mod mouse_wheel;
