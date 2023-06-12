@@ -69,19 +69,26 @@ fn controls_window_system(
                         ui.label(action.to_string());
                         let inputs = control_settings.input.get(action);
                         for index in 0..INPUT_VARIANTS {
-                            let button_text = match inputs.get_at(index) {
-                                Some(UserInput::Single(InputKind::GamepadButton(
-                                    gamepad_button,
-                                ))) => {
-                                    format!("🎮 {gamepad_button:?}")
+                            let button_text = {
+                                let input = inputs.get_at(index).map(|input| input.as_reflect());
+                                match input {
+                                    Some(x) => {
+                                        if let Some(gamepad_button) =
+                                            x.downcast_ref::<GamepadButtonType>()
+                                        {
+                                            format!("🎮 {gamepad_button:?}")
+                                        } else if let Some(mouse_button) =
+                                            x.downcast_ref::<MouseButton>()
+                                        {
+                                            format!("🖱 {mouse_button:?}")
+                                        } else if let Some(keycode) = x.downcast_ref::<KeyCode>() {
+                                            format!("🖮 {keycode:?}")
+                                        } else {
+                                            "Empty".to_string()
+                                        }
+                                    }
+                                    _ => "Empty".to_string(),
                                 }
-                                Some(UserInput::Single(InputKind::Keyboard(keycode))) => {
-                                    format!("🖮 {keycode:?}")
-                                }
-                                Some(UserInput::Single(InputKind::Mouse(mouse_button))) => {
-                                    format!("🖱 {mouse_button:?}")
-                                }
-                                _ => "Empty".to_string(),
                             };
                             if ui.button(button_text).clicked() {
                                 commands.insert_resource(ActiveBinding::new(action, index));

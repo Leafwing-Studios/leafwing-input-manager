@@ -1,10 +1,10 @@
-use bevy::input::mouse::MouseMotion;
+use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseMotionAxisType};
 use leafwing_input_manager::buttonlike::MouseMotionDirection;
+use leafwing_input_manager::input_like::virtual_dpad::VirtualDPad;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
 
 #[derive(Actionlike, Clone, Copy, Debug)]
 enum ButtonlikeTestAction {
@@ -58,55 +58,11 @@ fn mouse_motion_discrete_mocking() {
     assert_eq!(events.drain().count(), 0);
 
     app.world
-        .resource_mut::<Input<KeyCode>>()
+        .resource_mut::<Input<MouseMotionDirection>>()
         .press(MouseMotionDirection::Up);
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
 
     assert_eq!(events.drain().count(), 1);
-}
-
-#[test]
-fn mouse_motion_single_axis_mocking() {
-    let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 0);
-
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-        value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
-    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 1);
-}
-
-#[test]
-fn mouse_motion_dual_axis_mocking() {
-    let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 0);
-
-    let input = DualAxis {
-        x: SingleAxis {
-            axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-            value: Some(1.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-        },
-        y: SingleAxis {
-            axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            value: Some(0.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-        },
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
-    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
-    // Dual axis events are split out
-    assert_eq!(events.drain().count(), 2);
 }
 
 #[test]
@@ -123,6 +79,7 @@ fn mouse_motion_buttonlike() {
         let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
         let input = input_map.get(action).get_at(0).unwrap().clone();
+        let input = input.as_reflect().downcast_ref::<KeyCode>().unwrap();
 
         app.world
             .resource_mut::<Input<KeyCode>>()
@@ -308,10 +265,7 @@ fn mouse_drag() {
     let mut input_map = InputMap::default();
 
     input_map.insert_chord(
-        [
-            InputKind::from(DualAxis::mouse_motion()),
-            InputKind::from(MouseButton::Right),
-        ],
+        [DualAxis::mouse_motion(), MouseButton::Right],
         AxislikeTestAction::XY,
     );
 

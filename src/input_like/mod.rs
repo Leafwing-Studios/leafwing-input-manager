@@ -1,6 +1,7 @@
 //! Helpful abstractions over user inputs of all sorts
 
 pub mod chords;
+pub mod dual_axis;
 pub mod keycode;
 pub mod mouse_button;
 pub mod mouse_wheel;
@@ -17,10 +18,7 @@ use crate::axislike::DualAxisData;
 use crate::input_like::keycode::Modifier;
 use crate::input_like::mouse_wheel::MouseWheelDirection;
 use crate::scan_codes::QwertyScanCode;
-use crate::{
-    axislike::{DualAxis, SingleAxis},
-    buttonlike::MouseMotionDirection,
-};
+use crate::{axislike::SingleAxis, buttonlike::MouseMotionDirection};
 
 pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
 
@@ -94,7 +92,7 @@ impl Clone for Box<dyn InputLikeObject> {
 
 impl Clone for Box<dyn ButtonLike> {
     fn clone(&self) -> Self {
-        ButtonLike::clone_dyn(self.as_ref())
+        self.clone_button()
     }
 }
 
@@ -123,10 +121,20 @@ impl PartialEq for dyn ButtonLike {
     }
 }
 
+impl PartialEq for dyn SingleAxisLike {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_reflect().type_id() == other.as_reflect().type_id()
+            && self
+                .as_reflect()
+                .reflect_partial_eq(other.as_reflect())
+                .unwrap()
+    }
+}
+
 pub trait ButtonLike: InputLikeObject {
     fn input_pressed(&self, world: &World) -> bool;
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike>;
+    fn clone_button(&self) -> Box<dyn ButtonLike>;
 }
 
 pub trait SingleAxisLike: InputLikeObject + ButtonLike {
@@ -137,6 +145,8 @@ pub trait SingleAxisLike: InputLikeObject + ButtonLike {
             0.0
         }
     }
+
+    fn clone_axis(&self) -> Box<dyn SingleAxisLike>;
 }
 
 pub trait DualAxisLike: InputLikeObject {
@@ -148,9 +158,16 @@ impl<T: InputLikeObject> From<T> for Box<dyn InputLikeObject> {
         input.clone_dyn()
     }
 }
+
 impl<T: ButtonLike> From<T> for Box<dyn ButtonLike> {
     fn from(button: T) -> Self {
-        ButtonLike::clone_dyn(&button)
+        button.clone_button()
+    }
+}
+
+impl<T: SingleAxisLike> From<T> for Box<dyn SingleAxisLike> {
+    fn from(input: T) -> Self {
+        input.clone_axis()
     }
 }
 
@@ -164,6 +181,15 @@ impl Serialize for dyn InputLikeObject {
 }
 
 impl Serialize for dyn ButtonLike {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.as_serialize().serialize(serializer)
+    }
+}
+
+impl Serialize for dyn SingleAxisLike {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -187,8 +213,6 @@ pub enum InputKind {
     GamepadButton(GamepadButtonType),
     /// A single axis of continuous motion
     SingleAxis(SingleAxis),
-    /// Two paired axes of continuous motion
-    DualAxis(DualAxis),
     /// A logical key on the keyboard.
     ///
     /// The actual (physical) key that has to be pressed depends on the keyboard layout.
@@ -209,12 +233,6 @@ pub enum InputKind {
     MouseWheel(MouseWheelDirection),
     /// A discretized mouse movement
     MouseMotion(MouseMotionDirection),
-}
-
-impl From<DualAxis> for InputKind {
-    fn from(input: DualAxis) -> Self {
-        InputKind::DualAxis(input)
-    }
 }
 
 impl From<SingleAxis> for InputKind {

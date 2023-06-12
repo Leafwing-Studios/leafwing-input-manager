@@ -41,7 +41,7 @@ impl ButtonLike for Chord {
         })
     }
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+    fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(self.clone())
     }
 }

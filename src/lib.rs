@@ -31,12 +31,14 @@ pub use leafwing_input_manager_macros::Actionlike;
 /// Everything you need to get started
 pub mod prelude {
     pub use crate::action_state::{ActionState, ActionStateDriver};
-    pub use crate::axislike::{DualAxis, SingleAxis};
+    pub use crate::axislike::SingleAxis;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_like::chords::Chord;
+    pub use crate::input_like::dual_axis::DualAxis;
     pub use crate::input_like::keycode::Modifier;
     pub use crate::input_like::mouse_wheel::MouseWheelAxis;
     pub use crate::input_like::mouse_wheel::MouseWheelDirection;
+    pub use crate::input_like::virtual_dpad::VirtualDPad;
     pub use crate::input_like::InputLikeObject;
     pub use crate::input_map::InputMap;
     pub use crate::scan_codes::QwertyScanCode;

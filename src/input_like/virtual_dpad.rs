@@ -169,12 +169,16 @@ impl ButtonLike for VirtualDPad {
         })
     }
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+    fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(self.clone())
     }
 }
 
-impl SingleAxisLike for VirtualDPad {}
+impl SingleAxisLike for VirtualDPad {
+    fn clone_axis(&self) -> Box<dyn SingleAxisLike> {
+        Box::new(self.clone())
+    }
+}
 
 impl DualAxisLike for VirtualDPad {
     fn input_axis_pair(&self, world: &World) -> DualAxisData {

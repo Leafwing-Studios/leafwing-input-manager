@@ -9,7 +9,7 @@ impl ButtonLike for KeyCode {
         world.resource::<Input<KeyCode>>().pressed(*self)
     }
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+    fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(*self)
     }
 }
@@ -21,6 +21,10 @@ impl SingleAxisLike for KeyCode {
         } else {
             0.0
         }
+    }
+
+    fn clone_axis(&self) -> Box<dyn SingleAxisLike> {
+        Box::new(*self)
     }
 }
 
@@ -92,7 +96,7 @@ impl ButtonLike for Modifier {
             .any_just_pressed(self.key_codes())
     }
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+    fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(*self)
     }
 }

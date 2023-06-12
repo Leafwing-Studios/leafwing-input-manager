@@ -48,7 +48,7 @@ impl ButtonLike for WindowMotionDirection {
             .contains(self)
     }
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+    fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(*self)
     }
 }
@@ -63,6 +63,10 @@ impl SingleAxisLike for WindowMotionDirection {
             .find(|i| WindowMotionDirection::from(*i) == *self)
             .map(|x| x.delta.x.abs().max(x.delta.y.abs()))
             .unwrap_or_default()
+    }
+
+    fn clone_axis(&self) -> Box<dyn SingleAxisLike> {
+        Box::new(*self)
     }
 }
 

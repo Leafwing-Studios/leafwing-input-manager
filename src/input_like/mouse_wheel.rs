@@ -68,7 +68,6 @@ pub fn mouse_wheel_direction_system(
             MouseWheelDirection::Down,
         ),
     ] {
-        dbg!(value, pos, neg);
         if value > 0.0 {
             mouse_wheel_direction_input.press(pos);
             mouse_wheel_direction_input.release(neg);
@@ -91,12 +90,16 @@ impl ButtonLike for MouseWheelDirection {
         input.pressed(*self)
     }
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+    fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(*self)
     }
 }
 
-impl SingleAxisLike for MouseWheelDirection {}
+impl SingleAxisLike for MouseWheelDirection {
+    fn clone_axis(&self) -> Box<dyn SingleAxisLike> {
+        Box::new(*self)
+    }
+}
 
 impl InputLikeObject for MouseWheelDirection {
     fn as_button(&self) -> Option<&dyn ButtonLike> {
@@ -167,7 +170,7 @@ impl ButtonLike for MouseWheelAxis {
         axis.get(*self).unwrap_or_default() != 0.0
     }
 
-    fn clone_dyn(&self) -> Box<dyn ButtonLike> {
+    fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(*self)
     }
 }
@@ -179,6 +182,10 @@ impl SingleAxisLike for MouseWheelAxis {
         };
 
         axis.get(*self).unwrap_or_default()
+    }
+
+    fn clone_axis(&self) -> Box<dyn SingleAxisLike> {
+        Box::new(*self)
     }
 }
 
