@@ -1,8 +1,9 @@
-use bevy::input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel};
+use bevy::input::mouse::MouseMotion;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseMotionAxisType};
+use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::buttonlike::MouseMotionDirection;
+use leafwing_input_manager::input_like::mouse_motion_axis::MouseMotionAxis;
 use leafwing_input_manager::input_like::virtual_dpad::VirtualDPad;
 use leafwing_input_manager::prelude::*;
 
@@ -36,10 +37,7 @@ fn test_app() -> App {
 #[test]
 fn raw_mouse_motion_events() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        SingleAxis::from_value(AxisType::MouseMotion(MouseMotionAxisType::Y), 1.0),
-        AxislikeTestAction::X,
-    )]));
+    app.insert_resource(InputMap::new([(MouseMotionAxis::Y, AxislikeTestAction::X)]));
 
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
@@ -127,7 +125,7 @@ fn mouse_motion_single_axis() {
 
     // +X
     let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+        axis_type: AxisType::MouseMotion(MouseMotionAxis::X),
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
@@ -139,7 +137,7 @@ fn mouse_motion_single_axis() {
 
     // -X
     let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+        axis_type: AxisType::MouseMotion(MouseMotionAxis::X),
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
@@ -151,7 +149,7 @@ fn mouse_motion_single_axis() {
 
     // +Y
     let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
@@ -163,7 +161,7 @@ fn mouse_motion_single_axis() {
 
     // -Y
     let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
@@ -175,7 +173,7 @@ fn mouse_motion_single_axis() {
 
     // 0
     let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
         value: Some(0.0),
         // Usually a small deadzone threshold will be set
         positive_low: 0.1,
@@ -188,7 +186,7 @@ fn mouse_motion_single_axis() {
 
     // None
     let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
         value: None,
         positive_low: 0.0,
         negative_low: 0.0,
@@ -210,8 +208,8 @@ fn mouse_motion_dual_axis() {
     app.world
         .resource_mut::<Input<KeyCode>>()
         .press(DualAxis::from_value(
-            MouseMotionAxisType::X,
-            MouseMotionAxisType::Y,
+            MouseMotionAxis::X,
+            MouseMotionAxis::Y,
             5.0,
             0.0,
         ));
@@ -239,8 +237,8 @@ fn mouse_motion_virtualdpad() {
     app.world
         .resource_mut::<Input<KeyCode>>()
         .press(DualAxis::from_value(
-            MouseMotionAxisType::X,
-            MouseMotionAxisType::Y,
+            MouseMotionAxis::X,
+            MouseMotionAxis::Y,
             0.0,
             -2.0,
         ));
@@ -272,8 +270,8 @@ fn mouse_drag() {
     app.insert_resource(input_map);
 
     app.send_input(DualAxis::from_value(
-        MouseMotionAxisType::X,
-        MouseMotionAxisType::Y,
+        MouseMotionAxis::X,
+        MouseMotionAxis::Y,
         5.0,
         0.0,
     ));

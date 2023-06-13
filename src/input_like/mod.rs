@@ -8,6 +8,7 @@ pub mod gamepad_button;
 pub mod gamepad_button_type;
 pub mod keycode;
 pub mod mouse_button;
+pub mod mouse_motion_axis;
 pub mod mouse_wheel;
 pub mod scancode;
 pub mod virtual_axis;

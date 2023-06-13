@@ -1,4 +1,5 @@
 use crate::axislike::DualAxisData;
+use crate::input_like::mouse_motion_axis::MouseMotionAxis;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use crate::prelude::MouseWheelAxis;
 use bevy::math::Vec2;
@@ -84,14 +85,14 @@ impl DualAxis {
             y: Box::new(MouseWheelAxis::Y),
         }
     }
-    // todo
-    // /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
-    // pub const fn mouse_motion() -> DualAxis {
-    //     DualAxis {
-    //         x: SingleAxis::mouse_motion_x(),
-    //         y: SingleAxis::mouse_motion_y(),
-    //     }
-    // }
+
+    /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
+    pub fn mouse_motion() -> DualAxis {
+        DualAxis {
+            x: Box::new(MouseMotionAxis::X),
+            y: Box::new(MouseMotionAxis::Y),
+        }
+    }
 }
 
 impl ButtonLike for DualAxis {
