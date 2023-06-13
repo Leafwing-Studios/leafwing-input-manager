@@ -82,7 +82,6 @@ pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
     map: Vec<PetitSet<Box<dyn InputLikeObject>, 16>>,
-    associated_gamepad: Option<Gamepad>,
     marker: PhantomData<A>,
 }
 
@@ -90,7 +89,6 @@ impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
             map: A::variants().map(|_| PetitSet::default()).collect(),
-            associated_gamepad: None,
             marker: PhantomData,
         }
     }
@@ -283,14 +281,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
     pub fn merge(&mut self, other: &InputMap<A>) -> &mut Self {
-        let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
-            self.associated_gamepad
-        } else {
-            None
-        };
-
         let mut new_map = InputMap {
-            associated_gamepad,
             ..Default::default()
         };
 
@@ -311,12 +302,17 @@ impl<A: Actionlike> InputMap<A> {
 
 // Configuration
 impl<A: Actionlike> InputMap<A> {
-    /// Fetches the [Gamepad] associated with the entity controlled by this entity map
-    ///
-    /// If this is [`None`], input from any connected gamepad will be used.
+    /// Finds the first [Gamepad] found associated with any inputs in this map.
     #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
-        self.associated_gamepad
+        self.map.iter().find_map(|x| {
+            x.iter().find_map(|x| {
+                let x = x.as_reflect();
+                x.downcast_ref::<GamepadButton>()
+                    .map(|x| x.gamepad)
+                    .or_else(|| x.downcast_ref::<GamepadAxis>().map(|x| x.gamepad))
+            })
+        })
     }
 
     /// Sets any [`Gamepad`] related inputs currently in this map to use the provided gamepad.
@@ -335,14 +331,12 @@ impl<A: Actionlike> InputMap<A> {
                     } else if let Some(axis_type) =
                         reflected.downcast_ref::<GamepadAxisType>().cloned()
                     {
-                        // TODO
-                        // *input = Box::new(GamepadAxis::new(gamepad, axis_type));
+                        *input = Box::new(GamepadAxis::new(gamepad, axis_type));
                     } else if let Some(button) = reflected.downcast_ref::<GamepadButton>().cloned()
                     {
                         *input = Box::new(GamepadButton::new(gamepad, button.button_type));
                     } else if let Some(axis) = reflected.downcast_ref::<GamepadAxis>().cloned() {
-                        // TODO
-                        // *input = Box::new(GamepadAxis::new(gamepad, axis.axis_type));
+                        *input = Box::new(GamepadAxis::new(gamepad, axis.axis_type));
                     }
                 }
             }
@@ -361,14 +355,12 @@ impl<A: Actionlike> InputMap<A> {
                     } else if let Some(axis_type) =
                         reflected.downcast_ref::<GamepadAxisType>().cloned()
                     {
-                        // TODO
-                        // *input = Box::new(axis_type);
+                        *input = Box::new(axis_type);
                     } else if let Some(button) = reflected.downcast_ref::<GamepadButton>().cloned()
                     {
                         *input = Box::new(button.button_type);
                     } else if let Some(axis) = reflected.downcast_ref::<GamepadAxis>().cloned() {
-                        // TODO
-                        // *input = Box::new(axis.axis_type);
+                        *input = Box::new(axis.axis_type);
                     }
                 }
             }

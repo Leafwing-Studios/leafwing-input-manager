@@ -2,7 +2,7 @@ use crate::axislike::DualAxisData;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use crate::prelude::MouseWheelAxis;
 use bevy::math::Vec2;
-use bevy::prelude::{Reflect, World};
+use bevy::prelude::{GamepadAxisType, Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
 use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
 use serde::{Deserialize, Deserializer, Serialize};
@@ -53,7 +53,7 @@ impl DualAxis {
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
     #[must_use]
-    pub fn symmetric(
+    pub fn new(
         x_axis: impl Into<Box<dyn SingleAxisLike>>,
         y_axis: impl Into<Box<dyn SingleAxisLike>>,
     ) -> DualAxis {
@@ -65,26 +65,18 @@ impl DualAxis {
 
     // TODO
 
-    // /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
-    // #[must_use]
-    // pub fn left_stick() -> DualAxis {
-    //     DualAxis::symmetric(
-    //         GamepadAxisType::LeftStickX,
-    //         GamepadAxisType::LeftStickY,
-    //         Self::DEFAULT_DEADZONE,
-    //     )
-    // }
-    //
-    // /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
-    // #[must_use]
-    // pub fn right_stick() -> DualAxis {
-    //     DualAxis::symmetric(
-    //         GamepadAxisType::RightStickX,
-    //         GamepadAxisType::RightStickY,
-    //         Self::DEFAULT_DEADZONE,
-    //     )
-    // }
-    //
+    /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
+    #[must_use]
+    pub fn left_stick() -> DualAxis {
+        DualAxis::new(GamepadAxisType::LeftStickX, GamepadAxisType::LeftStickY)
+    }
+
+    /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
+    #[must_use]
+    pub fn right_stick() -> DualAxis {
+        DualAxis::new(GamepadAxisType::RightStickX, GamepadAxisType::RightStickY)
+    }
+
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     pub fn mouse_wheel() -> DualAxis {
         DualAxis {

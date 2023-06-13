@@ -38,7 +38,7 @@ fn spawn_player(mut commands: Commands) {
                 // And we'll use the right stick's x axis as a rudder control
                 .insert(
                     // This will trigger if the axis is moved 10% or more in either direction.
-                    SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
+                    GamepadAxisType::RightStickX,
                     Action::Rudder,
                 )
                 .build(),

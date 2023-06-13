@@ -69,66 +69,16 @@ fn raw_gamepad_axis_events() {
 }
 
 #[test]
-fn game_pad_single_axis_mocking() {
-    let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
-    assert_eq!(events.drain().count(), 0);
-
-    let input = SingleAxis {
-        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
-        value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
-    assert_eq!(events.drain().count(), 1);
-}
-
-#[test]
-fn game_pad_dual_axis_mocking() {
-    let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
-    assert_eq!(events.drain().count(), 0);
-
-    let input = DualAxis {
-        x: SingleAxis {
-            axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
-            value: Some(1.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-        },
-        y: SingleAxis {
-            axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-            value: Some(0.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-        },
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
-    // Dual axis events are split out
-    assert_eq!(events.drain().count(), 2);
-}
-
-#[test]
 fn game_pad_single_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (
-            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1),
-            AxislikeTestAction::X,
-        ),
-        (
-            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1),
-            AxislikeTestAction::Y,
-        ),
+        (GamepadAxisType::LeftStickX, AxislikeTestAction::X),
+        (GamepadAxisType::LeftStickY, AxislikeTestAction::Y),
     ]));
 
     // +X
     let input = SingleAxis {
-        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
+        axis_type: GamepadAxisType::LeftStickX,
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
