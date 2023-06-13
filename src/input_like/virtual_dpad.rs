@@ -102,7 +102,7 @@ impl VirtualDPad {
     // }
 }
 
-fn deserialize_boxed_button<'de, D>(_deserializer: D) -> Result<Box<dyn ButtonLike>, D::Error>
+pub fn deserialize_boxed_button<'de, D>(_deserializer: D) -> Result<Box<dyn ButtonLike>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {

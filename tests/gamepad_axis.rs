@@ -3,7 +3,7 @@ use bevy::input::gamepad::{
 };
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::{AxisType, DualAxisData};
+use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug)]

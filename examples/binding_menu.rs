@@ -14,7 +14,7 @@ use bevy_egui::{
     EguiContexts, EguiPlugin,
 };
 use derive_more::Display;
-use leafwing_input_manager::{input_like::InputKind, prelude::*};
+use leafwing_input_manager::prelude::*;
 
 const UI_MARGIN: f32 = 10.0;
 

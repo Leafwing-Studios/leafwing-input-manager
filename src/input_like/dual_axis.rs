@@ -84,7 +84,7 @@ impl DualAxis {
             y: Box::new(MouseWheelAxis::Y),
         }
     }
-    //
+    // todo
     // /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     // pub const fn mouse_motion() -> DualAxis {
     //     DualAxis {

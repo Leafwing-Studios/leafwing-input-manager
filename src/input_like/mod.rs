@@ -10,19 +10,15 @@ pub mod keycode;
 pub mod mouse_button;
 pub mod mouse_wheel;
 pub mod scancode;
+pub mod virtual_axis;
 pub mod virtual_dpad;
 
-use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use std::fmt::Debug;
 
-use bevy::prelude::{Reflect, ScanCode, World};
+use bevy::prelude::{Reflect, World};
 use serde::{Deserialize, Serialize, Serializer};
 
 use crate::axislike::DualAxisData;
-use crate::input_like::keycode::Modifier;
-use crate::input_like::mouse_wheel::MouseWheelDirection;
-use crate::scan_codes::QwertyScanCode;
-use crate::{axislike::SingleAxis, buttonlike::MouseMotionDirection};
 
 pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
 
@@ -199,96 +195,5 @@ impl Serialize for dyn SingleAxisLike {
         S: Serializer,
     {
         self.as_serialize().serialize(serializer)
-    }
-}
-
-/// The different kinds of supported input bindings.
-///
-/// Commonly stored in the [`UserInput`] enum.
-///
-/// Unfortunately we cannot use a trait object here, as the types used by `Input`
-/// require traits that are not object-safe.
-///
-/// Please contact the maintainers if you need support for another type!
-#[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum InputKind {
-    /// A button on a gamepad
-    GamepadButton(GamepadButtonType),
-    /// A single axis of continuous motion
-    SingleAxis(SingleAxis),
-    /// A logical key on the keyboard.
-    ///
-    /// The actual (physical) key that has to be pressed depends on the keyboard layout.
-    /// If you care about the position of the key rather than what it stands for,
-    /// use [`InputKind::KeyLocation`] instead.
-    Keyboard(KeyCode),
-    /// The physical location of a key on the keyboard.
-    ///
-    /// The logical key which is emitted by this key depends on the keyboard layout.
-    /// If you care about the output of the key rather than where it is positioned,
-    /// use [`InputKind::Keyboard`] instead.
-    KeyLocation(ScanCode),
-    /// A keyboard modifier, like `Ctrl` or `Alt`, which doesn't care about which side it's on.
-    Modifier(Modifier),
-    /// A button on a mouse
-    Mouse(MouseButton),
-    /// A discretized mousewheel movement
-    MouseWheel(MouseWheelDirection),
-    /// A discretized mouse movement
-    MouseMotion(MouseMotionDirection),
-}
-
-impl From<SingleAxis> for InputKind {
-    fn from(input: SingleAxis) -> Self {
-        InputKind::SingleAxis(input)
-    }
-}
-
-impl From<GamepadButtonType> for InputKind {
-    fn from(input: GamepadButtonType) -> Self {
-        InputKind::GamepadButton(input)
-    }
-}
-
-impl From<KeyCode> for InputKind {
-    fn from(input: KeyCode) -> Self {
-        InputKind::Keyboard(input)
-    }
-}
-
-impl From<ScanCode> for InputKind {
-    fn from(input: ScanCode) -> Self {
-        InputKind::KeyLocation(input)
-    }
-}
-
-impl From<QwertyScanCode> for InputKind {
-    fn from(input: QwertyScanCode) -> Self {
-        InputKind::KeyLocation(input.into())
-    }
-}
-
-impl From<MouseButton> for InputKind {
-    fn from(input: MouseButton) -> Self {
-        InputKind::Mouse(input)
-    }
-}
-
-impl From<MouseWheelDirection> for InputKind {
-    fn from(input: MouseWheelDirection) -> Self {
-        InputKind::MouseWheel(input)
-    }
-}
-
-impl From<MouseMotionDirection> for InputKind {
-    fn from(input: MouseMotionDirection) -> Self {
-        InputKind::MouseMotion(input)
-    }
-}
-
-impl From<Modifier> for InputKind {
-    fn from(input: Modifier) -> Self {
-        InputKind::Modifier(input)
     }
 }
