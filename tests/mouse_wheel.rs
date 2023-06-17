@@ -187,32 +187,29 @@ fn mouse_wheel_single_axis() {
 
 #[test]
 fn mouse_wheel_dual_axis() {
-    todo!("DualAxis is not updated to use the new InputLike trait yet");
-    // let mut app = test_app();
-    // app.insert_resource(InputMap::new([(
-    //     DualAxis::mouse_wheel(),
-    //     AxislikeTestAction::XY,
-    // )]));
-    //
-    // app.world
-    //     .resource_mut::<Input<KeyCode>>()
-    //     .press(DualAxis::from_value(
-    //         MouseWheelAxis::X,
-    //         MouseWheelAxis::Y,
-    //         5.0,
-    //         0.0,
-    //     ));
-    //
-    // app.update();
-    //
-    // let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    //
-    // assert!(action_state.pressed(AxislikeTestAction::XY));
-    // assert_eq!(action_state.value(AxislikeTestAction::XY), 5.0);
-    // assert_eq!(
-    //     action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
-    //     DualAxisData::new(5.0, 0.0)
-    // );
+    let mut app = test_app();
+    app.insert_resource(InputMap::new([(
+        DualAxis::mouse_wheel(),
+        AxislikeTestAction::XY,
+    )]));
+
+    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    events.send(MouseWheel {
+        unit: MouseScrollUnit::Pixel,
+        x: 5.0,
+        y: 0.0,
+    });
+
+    app.update();
+
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 5.0);
+    assert_eq!(
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(5.0, 0.0)
+    );
 }
 
 #[test]

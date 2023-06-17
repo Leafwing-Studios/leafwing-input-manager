@@ -3,7 +3,7 @@ use bevy::app::App;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::{Axis, Input, InputSystem};
 use bevy::math::Vec2;
-use bevy::prelude::{EventReader, IntoSystemConfig, Plugin, Reflect, ResMut, World};
+use bevy::prelude::{EventReader, Events, IntoSystemConfig, Plugin, Reflect, ResMut, World};
 use serde::{Deserialize, Serialize};
 
 pub struct MouseWheelInputPlugin;
@@ -19,7 +19,7 @@ impl Plugin for MouseWheelInputPlugin {
     }
 }
 
-/// A buttonlike-input triggered by [`MouseWheel`](bevy::input::mouse::MouseWheel) events
+/// A buttonlike-input triggered by [`MouseWheel`](MouseWheel) events
 ///
 /// These will be considered pressed if non-zero net movement in the correct direction is detected.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
@@ -173,11 +173,17 @@ impl ButtonLike for MouseWheelAxis {
 
 impl SingleAxisLike for MouseWheelAxis {
     fn input_value(&self, world: &World) -> f32 {
-        let Some(axis) = world.get_resource::<Axis<MouseWheelAxis>>() else {
+        // TODO: If/when https://github.com/bevyengine/bevy/pull/8871 gets merged,
+        //       we can use Axis<MouseWheelAxis> here.
+        let Some(events) = world.get_resource::<Events<MouseWheel>>() else {
             return 0.0;
         };
 
-        axis.get(*self).unwrap_or_default()
+        let mut event_reader = events.get_reader();
+        match self {
+            MouseWheelAxis::X => event_reader.iter(events).map(|event| event.x).sum(),
+            MouseWheelAxis::Y => event_reader.iter(events).map(|event| event.y).sum(),
+        }
     }
 
     fn clone_axis(&self) -> Box<dyn SingleAxisLike> {
