@@ -153,12 +153,8 @@ pub fn mouse_wheel_axis_system(
         total_y_movement += mouse_wheel_event.y;
     }
 
-    for (value, axis) in [
-        (total_x_movement, MouseWheelAxis::X),
-        (total_y_movement, MouseWheelAxis::Y),
-    ] {
-        mouse_wheel_axis_input.set(axis, value);
-    }
+    mouse_wheel_axis_input.set(MouseWheelAxis::X, total_x_movement);
+    mouse_wheel_axis_input.set(MouseWheelAxis::Y, total_y_movement);
 }
 
 impl ButtonLike for MouseWheelAxis {
