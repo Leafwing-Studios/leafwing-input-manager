@@ -85,18 +85,3 @@ impl ButtonState {
         *self == ButtonState::JustReleased
     }
 }
-
-/// A buttonlike-input triggered by [`MouseMotion`](bevy::input::mouse::MouseMotion) events
-///
-/// These will be considered pressed if non-zero net movement in the correct direction is detected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub enum MouseMotionDirection {
-    /// Corresponds to `+y`
-    Up,
-    /// Corresponds to `-y`
-    Down,
-    /// Corresponds to `+x`
-    Right,
-    /// Corresponds to `-x`
-    Left,
-}

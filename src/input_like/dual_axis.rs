@@ -1,5 +1,5 @@
 use crate::axislike::DualAxisData;
-use crate::input_like::mouse_motion_axis::MouseMotionAxis;
+use crate::input_like::mouse_motion::MouseMotionAxis;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use crate::prelude::MouseWheelAxis;
 use bevy::math::Vec2;

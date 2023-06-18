@@ -2,8 +2,7 @@ use bevy::input::mouse::MouseMotion;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::axislike::DualAxisData;
-use leafwing_input_manager::buttonlike::MouseMotionDirection;
-use leafwing_input_manager::input_like::mouse_motion_axis::MouseMotionAxis;
+use leafwing_input_manager::input_like::mouse_motion::{MouseMotionAxis, MouseMotionDirection};
 use leafwing_input_manager::input_like::virtual_dpad::VirtualDPad;
 use leafwing_input_manager::prelude::*;
 
