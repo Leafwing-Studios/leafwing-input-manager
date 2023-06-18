@@ -253,7 +253,7 @@ impl ActiveBinding {
 
 struct BindingConflict {
     action: ControlAction,
-    input_button: InputKind,
+    input_button: Box<dyn InputLikeObject>,
 }
 
 /// Helper for collecting input
@@ -265,7 +265,7 @@ struct InputEvents<'w, 's> {
 }
 
 impl InputEvents<'_, '_> {
-    fn input_button(&mut self) -> Option<InputKind> {
+    fn input_button(&mut self) -> Option<Box<dyn InputLikeObject>> {
         if let Some(keyboard_input) = self.keys.iter().next() {
             if keyboard_input.state == ButtonState::Released {
                 if let Some(key_code) = keyboard_input.key_code {

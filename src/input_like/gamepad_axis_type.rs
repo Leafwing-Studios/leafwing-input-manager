@@ -1,5 +1,5 @@
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
-use bevy::input::{Axis, Input};
+use bevy::input::Axis;
 use bevy::prelude::{GamepadAxis, GamepadAxisType, Gamepads, Reflect, World};
 use erased_serde::Serialize;
 
@@ -10,11 +10,22 @@ impl ButtonLike for GamepadAxisType {
     /// [`InputMap::set_gamepad`] to convert all the [`GamepadButtonType`]s to
     /// [`GamepadButtonType`]s to [`GamepadButton`]s.
     fn input_pressed(&self, world: &World) -> bool {
-        let Some(gamepad_axis) = world.get_resource::<Input<GamepadAxisType>>() else {
+        let Some(gamepads) = world.get_resource::<Gamepads>() else {
             return false;
         };
 
-        gamepad_axis.pressed(*self)
+        let Some(gamepad_axis) = world.get_resource::<Axis<GamepadAxis>>() else {
+            return false;
+        };
+        gamepads.iter().any(|gamepad| {
+            gamepad_axis
+                .get(GamepadAxis {
+                    gamepad,
+                    axis_type: *self,
+                })
+                .map(|axis_value| axis_value != 0.0)
+                .unwrap_or_default()
+        })
     }
 
     fn clone_button(&self) -> Box<dyn ButtonLike> {

@@ -52,7 +52,7 @@ fn test_app() -> App {
 fn raw_gamepad_axis_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
+        GamepadAxisType::RightStickX,
         ButtonlikeTestAction::Up,
     )]));
 
@@ -71,80 +71,74 @@ fn raw_gamepad_axis_events() {
 #[test]
 fn game_pad_single_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([
+    let mut input_map = InputMap::new([
         (GamepadAxisType::LeftStickX, AxislikeTestAction::X),
         (GamepadAxisType::LeftStickY, AxislikeTestAction::Y),
-    ]));
+    ]);
+    input_map.insert(
+        GamepadAxis::new(Gamepad { id: 1 }, GamepadAxisType::LeftStickX),
+        AxislikeTestAction::X,
+    );
+    // input_map.set_gamepad(Gamepad { id: 1 });
+    app.insert_resource(input_map);
 
     // +X
-    let input = SingleAxis {
-        axis_type: GamepadAxisType::LeftStickX,
-        value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    app.world
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickX,
+            value: 1.0,
+        });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
 
     // -X
-    let input = SingleAxis {
-        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
-        value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    app.world
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickX,
+            value: -1.0,
+        });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
 
     // +Y
-    let input = SingleAxis {
-        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-        value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    app.world
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickY,
+            value: 1.0,
+        });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
 
     // -Y
-    let input = SingleAxis {
-        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-        value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    app.world
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickY,
+            value: -1.0,
+        });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
 
     // 0
-    let input = SingleAxis {
-        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-        value: Some(0.0),
-        // Usually a small deadzone threshold will be set
-        positive_low: 0.1,
-        negative_low: 0.1,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
-    app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(AxislikeTestAction::Y));
+    app.world
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickY,
+            value: 0.0,
+        });
 
-    // None
-    let input = SingleAxis {
-        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-        value: None,
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(AxislikeTestAction::Y));
@@ -159,13 +153,12 @@ fn game_pad_dual_axis() {
     )]));
 
     app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(DualAxis::from_value(
-            GamepadAxisType::LeftStickX,
-            GamepadAxisType::LeftStickY,
-            0.8,
-            0.0,
-        ));
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickX,
+            value: 0.8,
+        });
 
     app.update();
 
@@ -179,13 +172,12 @@ fn game_pad_dual_axis() {
 
     // Test deadzones, assuming the default of 0.1.
     app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(DualAxis::from_value(
-            GamepadAxisType::LeftStickX,
-            GamepadAxisType::LeftStickY,
-            0.05,
-            0.0,
-        ));
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickX,
+            value: -0.05,
+        });
 
     app.update();
 
@@ -200,13 +192,19 @@ fn game_pad_dual_axis() {
     // Test that a single axis below the deadzone is filtered out, assuming the
     // default deadzone of 0.1.
     app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(DualAxis::from_value(
-            GamepadAxisType::LeftStickX,
-            GamepadAxisType::LeftStickY,
-            0.2,
-            0.05,
-        ));
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickX,
+            value: 0.2,
+        });
+    app.world
+        .resource_mut::<Events<GamepadAxisChangedEvent>>()
+        .send(GamepadAxisChangedEvent {
+            gamepad: Gamepad { id: 1 },
+            axis_type: GamepadAxisType::LeftStickY,
+            value: 0.05,
+        });
 
     app.update();
 
@@ -228,8 +226,11 @@ fn game_pad_virtualdpad() {
     )]));
 
     app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(GamepadButtonType::DPadLeft);
+        .resource_mut::<Input<GamepadButton>>()
+        .press(GamepadButton {
+            gamepad: Gamepad { id: 1 },
+            button_type: GamepadButtonType::DPadLeft,
+        });
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
