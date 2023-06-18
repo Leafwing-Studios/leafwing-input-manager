@@ -1,7 +1,8 @@
 use crate::axislike::DualAxisData;
+use crate::input_like::mouse_motion::MouseMotionDirection;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use crate::prelude::{MouseWheelDirection, QwertyScanCode};
-use bevy::prelude::{Reflect, World};
+use bevy::prelude::{GamepadButtonType, Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
 use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
 use erased_serde::Serialize;
@@ -56,31 +57,29 @@ impl VirtualDPad {
         }
     }
 
-    // TODO: add the rest of the helper functions once their corresponding InputLike is implemented
-    //
-    // #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
-    // /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
-    // pub fn dpad() -> VirtualDPad {
-    //     VirtualDPad {
-    //         up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
-    //         down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
-    //         left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
-    //         right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-    //     }
-    // }
-    //
-    // /// Generates a [`VirtualDPad`] corresponding to the face buttons on a gamepad
-    // ///
-    // /// North corresponds to up, west corresponds to left, east corresponds to right, south corresponds to down
-    // pub fn gamepad_face_buttons() -> VirtualDPad {
-    //     VirtualDPad {
-    //         up: InputKind::GamepadButton(GamepadButtonType::North),
-    //         down: InputKind::GamepadButton(GamepadButtonType::South),
-    //         left: InputKind::GamepadButton(GamepadButtonType::West),
-    //         right: InputKind::GamepadButton(GamepadButtonType::East),
-    //     }
-    // }
-    //
+    #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
+    /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
+    pub fn dpad() -> VirtualDPad {
+        VirtualDPad {
+            up: GamepadButtonType::DPadUp.into(),
+            down: GamepadButtonType::DPadDown.into(),
+            left: GamepadButtonType::DPadLeft.into(),
+            right: GamepadButtonType::DPadRight.into(),
+        }
+    }
+
+    /// Generates a [`VirtualDPad`] corresponding to the face buttons on a gamepad
+    ///
+    /// North corresponds to up, west corresponds to left, east corresponds to right, south corresponds to down
+    pub fn gamepad_face_buttons() -> VirtualDPad {
+        VirtualDPad {
+            up: GamepadButtonType::North.into(),
+            down: GamepadButtonType::South.into(),
+            left: GamepadButtonType::West.into(),
+            right: GamepadButtonType::East.into(),
+        }
+    }
+
     /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
     pub fn mouse_wheel() -> VirtualDPad {
         VirtualDPad {
@@ -90,16 +89,16 @@ impl VirtualDPad {
             right: MouseWheelDirection::Right.into(),
         }
     }
-    //
-    // /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
-    // pub fn mouse_motion() -> VirtualDPad {
-    //     VirtualDPad {
-    //         up: InputKind::MouseMotion(MouseMotionDirection::Up),
-    //         down: InputKind::MouseMotion(MouseMotionDirection::Down),
-    //         left: InputKind::MouseMotion(MouseMotionDirection::Left),
-    //         right: InputKind::MouseMotion(MouseMotionDirection::Right),
-    //     }
-    // }
+
+    /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
+    pub fn mouse_motion() -> VirtualDPad {
+        VirtualDPad {
+            up: MouseMotionDirection::Up.into(),
+            down: MouseMotionDirection::Down.into(),
+            left: MouseMotionDirection::Left.into(),
+            right: MouseMotionDirection::Right.into(),
+        }
+    }
 }
 
 pub fn deserialize_boxed_button<'de, D>(_deserializer: D) -> Result<Box<dyn ButtonLike>, D::Error>
