@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Bugs
+
+- Changed `Rotation` to be stored in millionths of a degree instead of tenths of a degree in order to reduce rounding errors.
+
 ### Usability
 
 - Added `VirtualAxis::horizontal_dpad()` and `VirtualAxis::vertical_dpad()`.
