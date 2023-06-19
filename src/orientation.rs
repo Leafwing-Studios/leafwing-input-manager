@@ -89,7 +89,7 @@ mod orientation_trait {
         /// assert_eq!(rotation, Rotation::WEST);
         ///
         /// // With a `max_rotation`, we don't get all the way there
-        /// rotation.rotate_towards(Rotation::SOUTH, Some(Rotation::degrees_int(45)));
+        /// rotation.rotate_towards(Rotation::SOUTH, Some(Rotation::from_degrees_int(45)));
         /// assert_eq!(rotation, Rotation::SOUTHWEST);
         /// ```
         #[inline]
@@ -254,7 +254,7 @@ mod rotation {
     pub struct Rotation {
         /// Millionths of a degree, measured clockwise from midnight (x=0, y=1)
         ///
-        /// 360_000_000 make up a full circle
+        /// `360_000_000` make up a full circle
         pub(crate) micro_degrees: u32,
     }
 
@@ -274,7 +274,7 @@ mod rotation {
         /// Returns the exact internal measurement, stored in millionths of a degree
         ///
         /// Measured clockwise from midnight (x=0, y=1).
-        /// 360_000_000 make up a full circle.
+        /// `360_000_000` make up a full circle.
         #[inline]
         #[must_use]
         pub const fn micro_degrees(&self) -> u32 {
