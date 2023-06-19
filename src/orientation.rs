@@ -30,14 +30,15 @@ mod orientation_trait {
         /// Asserts that `self` is approximately equal to `other`
         ///
         /// # Panics
-        /// Panics if the distance between `self` and `other` is greater than 2 deci-degrees.
+        /// Panics if the distance between `self` and `other` is greater than a hundredth of a degree.
+        #[track_caller]
         fn assert_approx_eq(self, other: impl Orientation) {
             let self_rotation: Rotation = self.into();
             let other_rotation: Rotation = other.into();
 
             let distance: Rotation = self_rotation.distance(other_rotation);
             assert!(
-                distance <= Rotation::new(2),
+                distance <= Rotation::new(Rotation::DEGREE / 100),
                 "{self:?} (converted to {self_rotation}) was {distance} away from {other:?} (converted to {other_rotation})."
             );
         }
@@ -67,7 +68,8 @@ mod orientation_trait {
 
             let rotation_to = target_rotation - self_rotation;
 
-            if rotation_to.deci_degrees == 0 || rotation_to.deci_degrees >= 1800 {
+            if rotation_to.micro_degrees == 0 || rotation_to.micro_degrees >= Rotation::HALF_CIRCLE
+            {
                 RotationDirection::Clockwise
             } else {
                 RotationDirection::CounterClockwise
@@ -87,7 +89,7 @@ mod orientation_trait {
         /// assert_eq!(rotation, Rotation::WEST);
         ///
         /// // With a `max_rotation`, we don't get all the way there
-        /// rotation.rotate_towards(Rotation::SOUTH, Some(Rotation::new(450)));
+        /// rotation.rotate_towards(Rotation::SOUTH, Some(Rotation::degrees_int(45)));
         /// assert_eq!(rotation, Rotation::SOUTHWEST);
         /// ```
         #[inline]
@@ -114,19 +116,19 @@ mod orientation_trait {
     impl Orientation for Rotation {
         #[inline]
         fn distance(&self, other: Rotation) -> Rotation {
-            let initial_distance = if self.deci_degrees >= other.deci_degrees {
-                self.deci_degrees - other.deci_degrees
+            let initial_distance = if self.micro_degrees >= other.micro_degrees {
+                self.micro_degrees - other.micro_degrees
             } else {
-                other.deci_degrees - self.deci_degrees
+                other.micro_degrees - self.micro_degrees
             };
 
             if initial_distance <= Rotation::FULL_CIRCLE / 2 {
                 Rotation {
-                    deci_degrees: initial_distance,
+                    micro_degrees: initial_distance,
                 }
             } else {
                 Rotation {
-                    deci_degrees: Rotation::FULL_CIRCLE - initial_distance,
+                    micro_degrees: Rotation::FULL_CIRCLE - initial_distance,
                 }
             }
         }
@@ -223,7 +225,7 @@ mod rotation {
 
     /// A discretized 2-dimensional rotation
     ///
-    /// Internally, these are stored in tenths of a degree, and so can be cleanly added
+    /// Internally, these are stored in millionths of a degree, and so can be cleanly added
     /// and reversed without accumulating error.
     ///
     /// # Example
@@ -250,59 +252,65 @@ mod rotation {
     /// ```
     #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Default, Display)]
     pub struct Rotation {
-        /// Tenths of a degree, measured clockwise from midnight (x=0, y=1)
+        /// Millionths of a degree, measured clockwise from midnight (x=0, y=1)
         ///
-        /// 3600 make up a full circle
-        pub(crate) deci_degrees: u16,
+        /// 360_000_000 make up a full circle
+        pub(crate) micro_degrees: u32,
     }
 
     // Useful methods
     impl Rotation {
-        /// Creates a new [`Rotation`] from a whole number of tenths of a degree
+        /// Creates a new [`Rotation`] from a whole number of millionths of a degree
         ///
         /// Measured clockwise from midnight.
         #[inline]
         #[must_use]
-        pub const fn new(deci_degrees: u16) -> Rotation {
+        pub const fn new(micro_degrees: u32) -> Rotation {
             Rotation {
-                deci_degrees: deci_degrees % Rotation::FULL_CIRCLE,
+                micro_degrees: micro_degrees % Rotation::FULL_CIRCLE,
             }
         }
 
-        /// Returns the exact internal measurement, stored in tenths of a degree
+        /// Returns the exact internal measurement, stored in millionths of a degree
         ///
         /// Measured clockwise from midnight (x=0, y=1).
-        /// 3600 make up a full circle.
+        /// 360_000_000 make up a full circle.
         #[inline]
         #[must_use]
-        pub const fn deci_degrees(&self) -> u16 {
-            self.deci_degrees
+        pub const fn micro_degrees(&self) -> u32 {
+            self.micro_degrees
         }
     }
 
     // Constants
     impl Rotation {
-        /// The number of deci-degrees that make up a full circle
-        pub const FULL_CIRCLE: u16 = 3600;
+        /// The number of micro-degrees in one degree
+        pub const DEGREE: u32 = 1_000_000;
+
+        /// The number of micro-degrees that make up a half circle
+        pub const HALF_CIRCLE: u32 = 180 * Rotation::DEGREE;
+
+        /// The number of micro-degrees that make up a full circle
+        pub const FULL_CIRCLE: u32 = 360 * Rotation::DEGREE;
 
         /// The direction that points straight up
-        pub const NORTH: Rotation = Rotation { deci_degrees: 900 };
+        pub const NORTH: Rotation = Rotation::from_degrees_int(90);
 
         /// The direction that points straight right
-        pub const EAST: Rotation = Rotation { deci_degrees: 0 };
+        pub const EAST: Rotation = Rotation::from_degrees_int(0);
         /// The direction that points straight down
-        pub const SOUTH: Rotation = Rotation { deci_degrees: 2700 };
+        pub const SOUTH: Rotation = Rotation::from_degrees_int(270);
         /// The direction that points straight left
-        pub const WEST: Rotation = Rotation { deci_degrees: 1800 };
+        pub const WEST: Rotation = Rotation::from_degrees_int(180);
 
         /// The direction that points halfway between up and right
-        pub const NORTHEAST: Rotation = Rotation { deci_degrees: 450 };
+        pub const NORTHEAST: Rotation = Rotation::from_degrees_int(45);
         /// The direction that points halfway between down and right
-        pub const SOUTHEAST: Rotation = Rotation { deci_degrees: 3150 };
+        pub const SOUTHEAST: Rotation = Rotation::from_degrees_int(315);
         /// The direction that points halfway between down and left
-        pub const SOUTHWEST: Rotation = Rotation { deci_degrees: 2250 };
+        pub const SOUTHWEST: Rotation = Rotation::from_degrees_int(225);
         /// The direction that points halfway between left and up
-        pub const NORTHWEST: Rotation = Rotation { deci_degrees: 1350 };
+        pub const NORTHWEST: Rotation = Rotation::from_degrees_int(135);
     }
 
     // Conversion methods
@@ -345,7 +353,7 @@ mod rotation {
             let normalized_radians = radians.into().rem_euclid(TAU);
 
             Rotation {
-                deci_degrees: (normalized_radians * (3600. / TAU)) as u16,
+                micro_degrees: (normalized_radians * (Rotation::FULL_CIRCLE as f32 / TAU)) as u32,
             }
         }
 
@@ -353,7 +361,7 @@ mod rotation {
         #[inline]
         #[must_use]
         pub fn into_radians(self) -> f32 {
-            self.deci_degrees as f32 * TAU / 3600.
+            self.micro_degrees as f32 * (TAU / Rotation::FULL_CIRCLE as f32)
         }
 
         /// Construct a [`Direction`](crate::orientation::Direction) from degrees, measured counterclockwise from the positive x axis
@@ -363,7 +371,16 @@ mod rotation {
             let normalized_degrees: f32 = degrees.into().rem_euclid(360.0);
 
             Rotation {
-                deci_degrees: (normalized_degrees * 10.0) as u16,
+                micro_degrees: (normalized_degrees * Rotation::DEGREE as f32) as u32,
+            }
+        }
+
+        /// Construct a [`Direction`](crate::orientation::Direction) from a whole number of degrees, measured counterclockwise from the positive x axis
+        #[must_use]
+        #[inline]
+        pub const fn from_degrees_int(degrees: u32) -> Rotation {
+            Rotation {
+                micro_degrees: degrees.rem_euclid(360) * Rotation::DEGREE,
             }
         }
 
@@ -371,41 +388,42 @@ mod rotation {
         #[inline]
         #[must_use]
         pub fn into_degrees(self) -> f32 {
-            self.deci_degrees as f32 / 10.
+            self.micro_degrees as f32 / Rotation::DEGREE as f32
         }
     }
 
     impl Add for Rotation {
         type Output = Rotation;
         fn add(self, rhs: Self) -> Rotation {
-            Rotation::new(self.deci_degrees + rhs.deci_degrees)
+            Rotation::new(self.micro_degrees + rhs.micro_degrees)
         }
     }
 
     impl Sub for Rotation {
         type Output = Rotation;
         fn sub(self, rhs: Self) -> Rotation {
-            if self.deci_degrees >= rhs.deci_degrees {
-                Rotation::new(self.deci_degrees - rhs.deci_degrees)
+            if self.micro_degrees >= rhs.micro_degrees {
+                Rotation::new(self.micro_degrees - rhs.micro_degrees)
             } else {
-                Rotation::new(self.deci_degrees + Rotation::FULL_CIRCLE - rhs.deci_degrees)
+                Rotation::new(self.micro_degrees + Rotation::FULL_CIRCLE - rhs.micro_degrees)
             }
         }
     }
 
     impl AddAssign for Rotation {
         fn add_assign(&mut self, rhs: Self) {
-            self.deci_degrees = (self.deci_degrees + rhs.deci_degrees) % Rotation::FULL_CIRCLE;
+            self.micro_degrees = (self.micro_degrees + rhs.micro_degrees) % Rotation::FULL_CIRCLE;
         }
     }
 
     impl SubAssign for Rotation {
         fn sub_assign(&mut self, rhs: Self) {
             // Be sure to avoid overflow when subtracting
-            if self.deci_degrees >= rhs.deci_degrees {
-                self.deci_degrees = self.deci_degrees - rhs.deci_degrees;
+            if self.micro_degrees >= rhs.micro_degrees {
+                self.micro_degrees = self.micro_degrees - rhs.micro_degrees;
             } else {
-                self.deci_degrees = Rotation::FULL_CIRCLE - (rhs.deci_degrees - self.deci_degrees);
+                self.micro_degrees =
+                    Rotation::FULL_CIRCLE - (rhs.micro_degrees - self.micro_degrees);
             }
         }
     }
@@ -414,7 +432,7 @@ mod rotation {
         type Output = Rotation;
         fn neg(self) -> Rotation {
             Rotation {
-                deci_degrees: Rotation::FULL_CIRCLE - self.deci_degrees,
+                micro_degrees: Rotation::FULL_CIRCLE - self.micro_degrees,
             }
         }
     }
@@ -627,7 +645,7 @@ mod conversions {
         fn from(direction: Direction) -> Rotation {
             let radians = direction.unit_vector.y.atan2(direction.unit_vector.x);
             // This dirty little trick helps us nudge the two (of eight) cardinal directions onto
-            // the correct decidegree. 32-bit floating point math rounds to the wrong decidegree,
+            // the correct microdegree. 32-bit floating point math rounds to the wrong microdegree,
             // which usually isn't a big deal, but can result in unexpected surprises when people
             // are dealing only with cardinal directions. The underlying problem is that f32 values
             // for 1.0 and -1.0 can't be represented exactly, so our unit vectors start with an
@@ -636,9 +654,9 @@ mod conversions {
             const APPROX_SOUTH: f32 = -1.5707964;
             const APPROX_NORTHWEST: f32 = 2.3561945;
             if radians == APPROX_NORTHWEST {
-                Rotation::new(1350)
+                Rotation::from_degrees_int(135)
             } else if radians == APPROX_SOUTH {
-                Rotation::new(2700)
+                Rotation::from_degrees_int(270)
             } else {
                 Rotation::from_radians(radians)
             }
@@ -763,50 +781,50 @@ mod test {
         let north_rot: Rotation = Direction::NORTH.into();
         assert_eq!(
             north_rot,
-            Rotation::new(900),
-            "we want north to end up exact in decidegrees"
+            Rotation::from_degrees_int(90),
+            "we want north to end up exact in microdegrees"
         );
         let northeast_rot: Rotation = Direction::NORTHEAST.into();
         assert_eq!(
             northeast_rot,
-            Rotation::new(450),
-            "we want northeast to end up exact in decidegrees"
+            Rotation::from_degrees_int(45),
+            "we want northeast to end up exact in microdegrees"
         );
         let northwest_rot: Rotation = Direction::NORTHWEST.into();
         assert_eq!(
             northwest_rot,
-            Rotation::new(1350),
-            "we want northwest to end up exact in decidegrees"
+            Rotation::from_degrees_int(135),
+            "we want northwest to end up exact in microdegrees"
         );
         let south_rot: Rotation = Direction::SOUTH.into();
         assert_eq!(
             south_rot,
-            Rotation::new(2700),
-            "we want south to end up exact in decidegrees"
+            Rotation::from_degrees_int(270),
+            "we want south to end up exact in microdegrees"
         );
         let southeast_rot: Rotation = Direction::SOUTHEAST.into();
         assert_eq!(
             southeast_rot,
-            Rotation::new(3150),
-            "we want southeast to end up exact in decidegrees"
+            Rotation::from_degrees_int(315),
+            "we want southeast to end up exact in microdegrees"
         );
         let southwest_rot: Rotation = Direction::SOUTHWEST.into();
         assert_eq!(
             southwest_rot,
-            Rotation::new(2250),
-            "we want southwest to end up exact in decidegrees"
+            Rotation::from_degrees_int(225),
+            "we want southwest to end up exact in microdegrees"
         );
         let east_rot: Rotation = Direction::EAST.into();
         assert_eq!(
             east_rot,
-            Rotation::new(0),
-            "we want east to end up exact in decidegrees"
+            Rotation::from_degrees_int(0),
+            "we want east to end up exact in microdegrees"
         );
         let west_rot: Rotation = Direction::WEST.into();
         assert_eq!(
             west_rot,
-            Rotation::new(1800),
-            "we want west to end up exact in decidegrees"
+            Rotation::from_degrees_int(180),
+            "we want west to end up exact in microdegrees"
         );
     }
 }
