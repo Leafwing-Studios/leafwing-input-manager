@@ -262,7 +262,11 @@ impl<'a> InputStreams<'a> {
             if value >= axis.negative_low && value <= axis.positive_low {
                 0.0
             } else {
-                value
+                if axis.inverted {
+                    -value
+                } else {
+                    value
+                }
             }
         };
 

@@ -74,6 +74,7 @@ fn mouse_wheel_single_axis_mocking() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
     };
 
     app.send_input(input);
@@ -93,12 +94,14 @@ fn mouse_wheel_dual_axis_mocking() {
             value: Some(1.),
             positive_low: 0.0,
             negative_low: 0.0,
+            inverted: false,
         },
         y: SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
             value: Some(0.),
             positive_low: 0.0,
             negative_low: 0.0,
+            inverted: false,
         },
     };
     app.send_input(input);
@@ -166,6 +169,7 @@ fn mouse_wheel_single_axis() {
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
     };
     app.send_input(input);
     app.update();
@@ -178,6 +182,7 @@ fn mouse_wheel_single_axis() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
     };
     app.send_input(input);
     app.update();
@@ -190,6 +195,7 @@ fn mouse_wheel_single_axis() {
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
     };
     app.send_input(input);
     app.update();
@@ -202,6 +208,7 @@ fn mouse_wheel_single_axis() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
     };
     app.send_input(input);
     app.update();
@@ -215,6 +222,7 @@ fn mouse_wheel_single_axis() {
         // Usually a small deadzone threshold will be set
         positive_low: 0.1,
         negative_low: 0.1,
+        inverted: false,
     };
     app.send_input(input);
     app.update();
@@ -227,6 +235,7 @@ fn mouse_wheel_single_axis() {
         value: None,
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
     };
     app.send_input(input);
     app.update();

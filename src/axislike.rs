@@ -28,6 +28,8 @@ pub struct SingleAxis {
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
+    /// Whether to invert output values from this axis.
+    pub inverted: bool,
     /// The target value for this input, used for input mocking.
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
@@ -42,6 +44,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             positive_low: threshold,
             negative_low: -threshold,
+            inverted: false,
             value: None,
         }
     }
@@ -56,6 +59,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             positive_low: 0.0,
             negative_low: 0.0,
+            inverted: false,
             value: Some(value),
         }
     }
@@ -67,6 +71,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -78,6 +83,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -89,6 +95,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -100,6 +107,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -112,6 +120,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             negative_low: threshold,
             positive_low: f32::MAX,
+            inverted: false,
             value: None,
         }
     }
@@ -124,6 +133,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             negative_low: f32::MIN,
             positive_low: threshold,
+            inverted: false,
             value: None,
         }
     }
@@ -133,6 +143,13 @@ impl SingleAxis {
     pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
         self.negative_low = -deadzone;
         self.positive_low = deadzone;
+        self
+    }
+
+    /// Returns this [`SingleAxis`] inverted.
+    #[must_use]
+    pub fn inverted(mut self) -> Self {
+        self.inverted = !self.inverted;
         self
     }
 }
@@ -248,6 +265,28 @@ impl DualAxis {
     pub fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
         self.x = self.x.with_deadzone(deadzone);
         self.y = self.y.with_deadzone(deadzone);
+        self
+    }
+
+    /// Returns this [`DualAxis`] with an inverted X-axis.
+    #[must_use]
+    pub fn inverted_x(mut self) -> DualAxis {
+        self.x = self.x.inverted();
+        self
+    }
+
+    /// Returns this [`DualAxis`] with an inverted Y-axis.
+    #[must_use]
+    pub fn inverted_y(mut self) -> DualAxis {
+        self.y = self.y.inverted();
+        self
+    }
+
+    /// Returns this [`DualAxis`] with inverted axes.
+    #[must_use]
+    pub fn inverted(mut self) -> DualAxis {
+        self.x = self.x.inverted();
+        self.y = self.y.inverted();
         self
     }
 }
@@ -404,6 +443,13 @@ impl VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
         }
+    }
+
+    /// Returns this [`VirtualAxis`] but with flipped positive/negative inputs.
+    #[must_use]
+    pub fn inverted(mut self) -> Self {
+        std::mem::swap(&mut self.positive, &mut self.negative);
+        self
     }
 }
 
