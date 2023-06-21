@@ -378,6 +378,25 @@ impl VirtualDPad {
             right: InputKind::MouseMotion(MouseMotionDirection::Right),
         }
     }
+
+    /// Returns this [`VirtualDPad`] but with `up` and `down` swapped.
+    pub fn inverted_y(mut self) -> Self {
+        std::mem::swap(&mut self.up, &mut self.down);
+        self
+    }
+
+    /// Returns this [`VirtualDPad`] but with `left` and `right` swapped.
+    pub fn inverted_x(mut self) -> Self {
+        std::mem::swap(&mut self.left, &mut self.right);
+        self
+    }
+
+    /// Returns this [`VirtualDPad`] but with inverted inputs.
+    pub fn inverted(mut self) -> Self {
+        std::mem::swap(&mut self.up, &mut self.down);
+        std::mem::swap(&mut self.left, &mut self.right);
+        self
+    }
 }
 
 /// A virtual Axis that you can get a value between -1 and 1 from.
