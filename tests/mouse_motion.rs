@@ -232,7 +232,7 @@ fn mouse_drag() {
 
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
-        delta: Vec2::new(5.0, 1.0),
+        delta: Vec2::new(5.0, 0.0),
     });
     app.world
         .resource_mut::<Input<MouseButton>>()

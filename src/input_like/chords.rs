@@ -1,3 +1,4 @@
+use crate::axislike::DualAxisData;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use bevy::prelude::{Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
@@ -46,6 +47,20 @@ impl ButtonLike for Chord {
     }
 }
 
+impl DualAxisLike for Chord {
+    fn input_axis_pair(&self, world: &World) -> DualAxisData {
+        let result = self
+            .inputs
+            .iter()
+            .filter_map(|i| i.as_dual_axis())
+            .map(|dual_axis| dual_axis.input_axis_pair(world))
+            .fold(DualAxisData::default(), |result, dual_axis_data| {
+                result.merged_with(dual_axis_data)
+            });
+        result
+    }
+}
+
 impl InputLikeObject for Chord {
     fn as_button(&self) -> Option<&dyn ButtonLike> {
         Some(self)
@@ -56,7 +71,7 @@ impl InputLikeObject for Chord {
     }
 
     fn as_dual_axis(&self) -> Option<&dyn DualAxisLike> {
-        None
+        Some(self)
     }
 
     fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
