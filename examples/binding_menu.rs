@@ -140,7 +140,8 @@ fn binding_window_system(
             if let Some(conflict) = &active_binding.conflict {
                 ui.label(format!(
                     "Input \"{}\" is already used by \"{}\"",
-                    conflict.input_button, conflict.action
+                    conflict.input_button.input_display(),
+                    conflict.action
                 ));
                 ui.horizontal(|ui| {
                     if ui.button("Replace").clicked() {
@@ -165,9 +166,7 @@ fn binding_window_system(
                 } else if let Some(input_button) = input_events.input_button() {
                     let conflict_action =
                         control_settings.input.iter().find_map(|(inputs, action)| {
-                            if action != active_binding.action
-                                && inputs.contains(&input_button.into())
-                            {
+                            if action != active_binding.action && inputs.contains(&input_button) {
                                 return Some(action);
                             }
                             None

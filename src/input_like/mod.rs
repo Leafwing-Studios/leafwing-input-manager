@@ -83,6 +83,11 @@ pub trait InputLikeObject: Send + Sync + Debug {
     fn as_serialize(&self) -> &dyn erased_serde::Serialize;
 
     fn as_reflect(&self) -> &dyn Reflect;
+
+    /// Returns a string that can be used to display this input to the user.
+    fn input_display(&self) -> String {
+        format!("{:?}", self)
+    }
 }
 
 impl Clone for Box<dyn InputLikeObject> {
