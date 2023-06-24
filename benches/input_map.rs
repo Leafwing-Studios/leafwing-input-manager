@@ -7,7 +7,7 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use leafwing_input_manager::{
     action_state::ActionData,
     input_streams::InputStreams,
-    prelude::{ClashStrategy, InputMap, MockInput},
+    prelude::{ClashStrategy, InputMap},
     Actionlike,
 };
 
@@ -64,10 +64,10 @@ fn which_pressed(input_streams: &InputStreams, clash_strategy: ClashStrategy) ->
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("construct_input_map_from_iter", |b| {
-        b.iter(|| construct_input_map_from_iter())
+        b.iter(construct_input_map_from_iter)
     });
     c.bench_function("construct_input_map_from_chained_calls", |b| {
-        b.iter(|| construct_input_map_from_chained_calls())
+        b.iter(construct_input_map_from_chained_calls)
     });
     let mut which_pressed_group = c.benchmark_group("which_pressed");
 
@@ -79,7 +79,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     app.update();
 
-    let input_streams = InputStreams::from_world(&app.world, None);
+    let input_streams = InputStreams::from_world(&app.world);
 
     for clash_strategy in ClashStrategy::variants() {
         which_pressed_group.bench_function(format!("{:?}", clash_strategy), |b| {
