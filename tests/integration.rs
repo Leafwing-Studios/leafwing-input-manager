@@ -217,7 +217,13 @@ fn action_state_driver() {
     assert_eq!(*respect, Respect(false));
 
     // Click button to pay respects
-    app.click_button::<ButtonMarker>();
+    let mut button_query = app
+        .world
+        .query_filtered::<&mut Interaction, With<ButtonMarker>>();
+
+    for mut interaction in button_query.iter_mut(&mut app.world) {
+        *interaction = Interaction::Clicked;
+    }
 
     // Verify that the button was in fact clicked
     let mut button_query = app.world.query::<&Interaction>();

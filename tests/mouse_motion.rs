@@ -78,9 +78,7 @@ fn mouse_motion_buttonlike() {
         let input = input_map.get(action).get_at(0).unwrap().clone();
         let input = input.as_reflect().downcast_ref::<KeyCode>().unwrap();
 
-        app.world
-            .resource_mut::<Input<KeyCode>>()
-            .press(input.clone());
+        app.world.resource_mut::<Input<KeyCode>>().press(*input);
         app.update();
 
         let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
