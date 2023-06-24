@@ -134,16 +134,8 @@ impl InputLikeObject for VirtualDPad {
         Some(self)
     }
 
-    fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
-        Box::new(self.clone())
-    }
-
-    fn as_serialize(&self) -> &dyn Serialize {
-        todo!()
-    }
-
-    fn as_reflect(&self) -> &dyn Reflect {
-        self
+    fn len(&self) -> usize {
+        4
     }
 
     fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
@@ -154,8 +146,16 @@ impl InputLikeObject for VirtualDPad {
             InputLikeObject::clone_dyn(self.right.as_ref()),
         ]
     }
-    fn len(&self) -> usize {
-        4
+
+    fn clone_dyn(&self) -> Box<dyn InputLikeObject> {
+        Box::new(self.clone())
+    }
+
+    fn as_serialize(&self) -> &dyn Serialize {
+        todo!()
+    }
+    fn as_reflect(&self) -> &dyn Reflect {
+        self
     }
 }
 

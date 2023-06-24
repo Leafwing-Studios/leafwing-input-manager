@@ -74,6 +74,10 @@ impl InputLikeObject for Chord {
         Some(self)
     }
 
+    fn len(&self) -> usize {
+        self.inputs.iter().flat_map(|x| x.raw_inputs()).count()
+    }
+
     fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
         self.inputs.iter().flat_map(|x| x.raw_inputs()).collect()
     }
@@ -88,10 +92,6 @@ impl InputLikeObject for Chord {
 
     fn as_reflect(&self) -> &dyn Reflect {
         self
-    }
-
-    fn len(&self) -> usize {
-        self.inputs.iter().flat_map(|x| x.raw_inputs()).count()
     }
 }
 
