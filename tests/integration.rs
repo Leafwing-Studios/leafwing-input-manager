@@ -244,6 +244,12 @@ fn action_state_driver() {
 
     // Clear inputs
     app.world.resource_mut::<Input<KeyCode>>().reset_all();
+    app.world
+        .query::<&mut Interaction>()
+        .for_each_mut(&mut app.world, |mut i| {
+            *i = Interaction::None;
+        });
+
     app.update();
 
     let respect = app.world.resource::<Respect>();
