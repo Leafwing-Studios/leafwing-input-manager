@@ -98,99 +98,73 @@ fn mouse_motion_buttonlike_cancels() {
         (MouseMotionDirection::Right, ButtonlikeTestAction::Right),
     ]));
 
-    app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(MouseMotionDirection::Up);
-    app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(MouseMotionDirection::Down);
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(1.0, 1.0),
+    });
 
-    // Correctly flushes the world
+    // Apply the event
     app.update();
-
     let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
+    assert!(action_state.pressed(ButtonlikeTestAction::Up));
+    assert!(action_state.pressed(ButtonlikeTestAction::Down));
 
+    // Ensure it doesn't stay pressed for more than one frame
+    app.update();
+    let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
     assert!(!action_state.pressed(ButtonlikeTestAction::Up));
     assert!(!action_state.pressed(ButtonlikeTestAction::Down));
 }
 
 #[test]
-fn mouse_motion_single_axis() {
+fn mouse_motion_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (SingleAxis::mouse_motion_x(), AxislikeTestAction::X),
-        (SingleAxis::mouse_motion_y(), AxislikeTestAction::Y),
+        (MouseMotionAxis::X, AxislikeTestAction::X),
+        (MouseMotionAxis::Y, AxislikeTestAction::Y),
     ]));
 
     // +X
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxis::X),
-        value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(1.0, 0.0),
+    });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
 
     // -X
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxis::X),
-        value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(-1.0, 0.0),
+    });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
 
     // +Y
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
-        value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(0.0, 1.0),
+    });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
 
     // -Y
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
-        value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(0.0, -1.0),
+    });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
 
     // 0
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
-        value: Some(0.0),
-        // Usually a small deadzone threshold will be set
-        positive_low: 0.1,
-        negative_low: 0.1,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
-    app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(AxislikeTestAction::Y));
-
-    // None
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxis::Y),
-        value: None,
-        positive_low: 0.0,
-        negative_low: 0.0,
-    };
-    app.world.resource_mut::<Input<KeyCode>>().press(input);
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(0.0, 0.0),
+    });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(AxislikeTestAction::Y));
@@ -204,14 +178,10 @@ fn mouse_motion_dual_axis() {
         AxislikeTestAction::XY,
     )]));
 
-    app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(DualAxis::from_value(
-            MouseMotionAxis::X,
-            MouseMotionAxis::Y,
-            5.0,
-            0.0,
-        ));
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(5.0, 1.0),
+    });
 
     app.update();
 
@@ -233,14 +203,10 @@ fn mouse_motion_virtualdpad() {
         AxislikeTestAction::XY,
     )]));
 
-    app.world
-        .resource_mut::<Input<KeyCode>>()
-        .press(DualAxis::from_value(
-            MouseMotionAxis::X,
-            MouseMotionAxis::Y,
-            0.0,
-            -2.0,
-        ));
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(0.0, -2.0),
+    });
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -260,21 +226,19 @@ fn mouse_drag() {
     let mut app = test_app();
 
     let mut input_map = InputMap::default();
-
-    input_map.insert_chord(
-        [DualAxis::mouse_motion(), MouseButton::Right],
-        AxislikeTestAction::XY,
-    );
+    let chord: [Box<dyn InputLikeObject>; 2] =
+        [DualAxis::mouse_motion().into(), MouseButton::Right.into()];
+    input_map.insert_chord(chord, AxislikeTestAction::XY);
 
     app.insert_resource(input_map);
 
-    app.send_input(DualAxis::from_value(
-        MouseMotionAxis::X,
-        MouseMotionAxis::Y,
-        5.0,
-        0.0,
-    ));
-    app.send_input(MouseButton::Right);
+    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    events.send(MouseMotion {
+        delta: Vec2::new(5.0, 1.0),
+    });
+    app.world
+        .resource_mut::<Input<MouseButton>>()
+        .press(MouseButton::Right);
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

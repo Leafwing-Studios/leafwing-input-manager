@@ -23,7 +23,7 @@ impl Chord {
 }
 
 fn deserialize_chord_inner<'de, D>(
-    deserializer: D,
+    _deserializer: D,
 ) -> Result<Vec<Box<dyn InputLikeObject>>, D::Error>
 where
     D: serde::Deserializer<'de>,

@@ -15,6 +15,7 @@ use crate::input_like::chords::Chord;
 use crate::input_like::keycode::Modifier;
 use crate::input_streams::InputStreams;
 use bevy::prelude::{GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType};
+use bevy::utils::label::DynEq;
 use core::fmt::Debug;
 use petitset::PetitSet;
 use serde::{Deserializer, Serialize};
@@ -216,7 +217,13 @@ impl<A: Actionlike> InputMap<A> {
     /// # Panics
     ///
     /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert_at(&mut self, input: impl InputLikeObject, action: A, index: usize) -> &mut Self {
+    pub fn insert_at<I: Into<Box<dyn InputLikeObject>>>(
+        &mut self,
+        input: I,
+        action: A,
+        index: usize,
+    ) -> &mut Self {
+        let input = input.into();
         self.map[action.index()].insert_at(input.clone_dyn(), index);
 
         self
@@ -490,10 +497,15 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: A, input: impl InputLikeObject + 'static) -> Option<usize> {
+    pub fn remove<I: Into<Box<dyn InputLikeObject>>>(
+        &mut self,
+        action: A,
+        input: I,
+    ) -> Option<usize> {
+        let input = input.into();
         let position = self.map[action.index()]
             .iter()
-            .position(|i| i.as_ref().eq(&input));
+            .position(|i| i.dyn_eq(&input));
         if let Some(position) = position {
             self.map[action.index()].remove_at(position);
         }
@@ -572,8 +584,8 @@ where
 
 impl<A: Actionlike> InputMap<A> {
     pub fn deserialize<'de, D: Deserializer<'de>>(
-        deserializer: D,
-        type_registry: &TypeRegistryInternal,
+        _deserializer: D,
+        _type_registry: &TypeRegistryInternal,
     ) -> Result<Self, D::Error> {
         todo!()
     }

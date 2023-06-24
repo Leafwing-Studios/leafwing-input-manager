@@ -146,9 +146,9 @@ fn binding_window_system(
                     if ui.button("Replace").clicked() {
                         control_settings
                             .input
-                            .remove(conflict.action, conflict.input_button);
+                            .remove(conflict.action, conflict.input_button.clone());
                         control_settings.input.insert_at(
-                            conflict.input_button,
+                            conflict.input_button.clone(),
                             active_binding.action,
                             active_binding.index,
                         );
