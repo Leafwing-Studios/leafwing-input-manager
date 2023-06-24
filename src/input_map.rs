@@ -591,7 +591,9 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
+#[cfg(test)]
 mod tests {
+    use bevy::prelude::GamepadAxisType;
     use serde::{Deserialize, Serialize};
 
     use crate as leafwing_input_manager;
@@ -718,6 +720,11 @@ mod tests {
         use bevy::input::gamepad::Gamepad;
 
         let mut input_map = InputMap::<Action>::default();
+
+        // Without a gamepad related input in the input map, setting the gamepad would do nothing
+        // as it wouldn't have any inputs to update.
+        input_map.insert(GamepadAxisType::LeftStickY, Action::Run);
+
         assert_eq!(input_map.gamepad(), None);
 
         input_map.set_gamepad(Gamepad { id: 0 });
