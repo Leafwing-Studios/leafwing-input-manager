@@ -152,7 +152,7 @@ impl InputLikeObject for VirtualDPad {
     }
 
     fn as_serialize(&self) -> &dyn Serialize {
-        todo!()
+        self
     }
     fn as_reflect(&self) -> &dyn Reflect {
         self
