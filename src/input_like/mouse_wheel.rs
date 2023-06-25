@@ -1,3 +1,4 @@
+use crate::input_like::mouse_motion::{mouse_motion_direction_system, MouseMotionDirection};
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use bevy::app::App;
 use bevy::input::mouse::MouseWheel;
@@ -6,15 +7,21 @@ use bevy::math::Vec2;
 use bevy::prelude::{EventReader, Events, IntoSystemConfig, Plugin, Reflect, ResMut, World};
 use serde::{Deserialize, Serialize};
 
-pub struct MouseWheelInputPlugin;
+// TODO: Move this plugin of the mouse_wheel module. Not sure where we want it yet.
+/// Adds Bevy [`Input`] resources for [`MouseWheelDirection`](MouseWheelDirection)
+/// and [`MouseMotionDirection`](MouseMotionDirection), and [`Axis`] resource for
+/// [`MouseWheelAxis`](MouseWheelAxis) with systems to update them.
+pub struct ExtraMouseInputsPlugin;
 
-impl Plugin for MouseWheelInputPlugin {
+impl Plugin for ExtraMouseInputsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Input<MouseWheelDirection>>();
         app.init_resource::<Axis<MouseWheelAxis>>();
+        app.init_resource::<Input<MouseMotionDirection>>();
         app.add_systems((
             mouse_wheel_direction_system.in_set(InputSystem),
             mouse_wheel_axis_system.in_set(InputSystem),
+            mouse_motion_direction_system.in_set(InputSystem),
         ));
     }
 }

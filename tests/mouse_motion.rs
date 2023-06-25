@@ -14,6 +14,17 @@ enum ButtonlikeTestAction {
     Right,
 }
 
+impl ButtonlikeTestAction {
+    pub fn direction_vector(self) -> Vec2 {
+        match self {
+            ButtonlikeTestAction::Up => Vec2::Y,
+            ButtonlikeTestAction::Down => Vec2::NEG_Y,
+            ButtonlikeTestAction::Left => Vec2::NEG_X,
+            ButtonlikeTestAction::Right => Vec2::X,
+        }
+    }
+}
+
 #[derive(Actionlike, Clone, Copy, Debug)]
 enum AxislikeTestAction {
     X,
@@ -73,16 +84,14 @@ fn mouse_motion_buttonlike() {
     ]));
 
     for action in ButtonlikeTestAction::variants() {
-        let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
-        // Get the first associated input
-        let input = input_map.get(action).get_at(0).unwrap().clone();
-        let input = input.as_reflect().downcast_ref::<KeyCode>().unwrap();
-
-        app.world.resource_mut::<Input<KeyCode>>().press(*input);
+        let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+        events.send(MouseMotion {
+            delta: action.direction_vector(),
+        });
         app.update();
 
         let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
-        assert!(action_state.pressed(action), "failed for {input:?}");
+        assert!(action_state.pressed(action), "failed for {action:?}");
     }
 }
 

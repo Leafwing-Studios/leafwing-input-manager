@@ -1,6 +1,7 @@
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use bevy::input::mouse::MouseMotion;
-use bevy::prelude::{Events, Reflect, World};
+use bevy::input::Input;
+use bevy::prelude::{EventReader, Events, Reflect, ResMut, World};
 use bevy::reflect::FromReflect;
 use serde::{Deserialize, Serialize};
 
@@ -143,5 +144,42 @@ impl ButtonLike for MouseMotionDirection {
 
     fn clone_button(&self) -> Box<dyn ButtonLike> {
         Box::new(*self)
+    }
+}
+
+pub fn mouse_motion_direction_system(
+    mut mouse_motion_direction_input: ResMut<Input<MouseMotionDirection>>,
+    mut event_reader: EventReader<MouseMotion>,
+) {
+    let mut total_x_movement = 0.0;
+    let mut total_y_movement = 0.0;
+
+    for mouse_motion_event in event_reader.iter() {
+        total_x_movement += mouse_motion_event.delta.x;
+        total_y_movement += mouse_motion_event.delta.y;
+    }
+
+    for (value, pos, neg) in [
+        (
+            total_x_movement,
+            MouseMotionDirection::Right,
+            MouseMotionDirection::Left,
+        ),
+        (
+            total_y_movement,
+            MouseMotionDirection::Up,
+            MouseMotionDirection::Down,
+        ),
+    ] {
+        if value > 0.0 {
+            mouse_motion_direction_input.press(pos);
+            mouse_motion_direction_input.release(neg);
+        } else if value < 0.0 {
+            mouse_motion_direction_input.press(neg);
+            mouse_motion_direction_input.release(pos);
+        } else {
+            mouse_motion_direction_input.release(pos);
+            mouse_motion_direction_input.release(neg);
+        }
     }
 }
