@@ -29,12 +29,23 @@ pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
 #[allow(clippy::len_without_is_empty)]
 pub trait InputLikeObject: Send + Sync + Debug {
     /// Does `self` clash with `other`?
+    ///
+    /// Inputs "clash" if and only if one [`UserInput`] is a strict subset of the other.
+    /// By example:
+    ///
+    /// - `S` and `W`: does not clash
+    /// - `LControl + S` and `S`: clashes
+    /// - `S` and `S`: does not clash
+    /// - `LControl + S` and ` LAlt + S`: clashes
+    /// - `LControl + S`, `LAlt + S` and `LControl + LAlt + S`: clashes
     #[must_use]
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
+        // Single inputs don't clash with other single inputs
         if self.len() <= 1 && other.len() <= 1 {
             return false;
         }
 
+        // If the inputs are equal, they don't clash
         if self
             .as_reflect()
             .reflect_partial_eq(other.as_reflect())
@@ -43,14 +54,31 @@ pub trait InputLikeObject: Send + Sync + Debug {
             return false;
         }
 
-        self.raw_inputs().iter().any(|input| {
-            for other in other.raw_inputs() {
-                if other.eq(input) {
-                    return true;
-                }
-            }
-            false
-        })
+        let a_is_subset_of_b = self.raw_inputs().iter().all(|input| {
+            other
+                .raw_inputs()
+                .iter()
+                .any(|other_input| input.eq(other_input))
+        });
+        let b_is_subset_of_a = other.raw_inputs().iter().all(|input| {
+            self.raw_inputs()
+                .iter()
+                .any(|other_input| input.eq(other_input))
+        });
+        if self.as_reflect().type_name().contains("Virtual")
+            | other.as_reflect().type_name().contains("Virtual")
+        {
+            println!(
+                "{} clashes {} = a_is_subset_of_b {} b_is_subset_of_a {} raw_inputs_a {:?} raw_inputs_b {:?}",
+                self.as_reflect().type_name(),
+                other.as_reflect().type_name(),
+                a_is_subset_of_b,
+                b_is_subset_of_a,
+                self.raw_inputs(),
+                other.raw_inputs()
+            );
+        }
+        a_is_subset_of_b || b_is_subset_of_a
     }
 
     /// Returns [`ButtonLike`] if it is implemented.
