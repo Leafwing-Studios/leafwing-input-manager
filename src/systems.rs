@@ -97,7 +97,7 @@ pub fn update_action_state<A: Actionlike>(
     #[cfg(feature = "ui")]
     let (mouse_buttons, mouse_wheel) = if interactions
         .iter()
-        .any(|&interaction| interaction == Interaction::Clicked)
+        .any(|&interaction| interaction != Interaction::None)
     {
         (None, None)
     } else {
