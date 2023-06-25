@@ -201,7 +201,6 @@ impl DualAxisLike for VirtualDPad {
             .as_button()
             .map(|x| x.input_pressed(world))
             .unwrap_or_default();
-        dbg!(up, down, left, right);
         let x = match (left, right) {
             (true, false) => -1.0,
             (false, true) => 1.0,

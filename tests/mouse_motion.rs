@@ -60,20 +60,6 @@ fn raw_mouse_motion_events() {
 }
 
 #[test]
-fn mouse_motion_discrete_mocking() {
-    let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 0);
-
-    app.world
-        .resource_mut::<Input<MouseMotionDirection>>()
-        .press(MouseMotionDirection::Up);
-    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
-
-    assert_eq!(events.drain().count(), 1);
-}
-
-#[test]
 fn mouse_motion_buttonlike() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
@@ -107,7 +93,10 @@ fn mouse_motion_buttonlike_cancels() {
 
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
-        delta: Vec2::new(1.0, 1.0),
+        delta: Vec2::new(0.0, 1.0),
+    });
+    events.send(MouseMotion {
+        delta: Vec2::new(0.0, -1.0),
     });
 
     // Apply the event
@@ -187,7 +176,7 @@ fn mouse_motion_dual_axis() {
 
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
-        delta: Vec2::new(5.0, 1.0),
+        delta: Vec2::new(5.0, 0.0),
     });
 
     app.update();

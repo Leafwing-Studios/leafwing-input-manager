@@ -139,7 +139,7 @@ impl ButtonLike for MouseMotionDirection {
                 MouseMotionDirection::Right => i.delta.x,
                 MouseMotionDirection::Left => -i.delta.x,
             })
-            .any(|i| i != 0.0)
+            .any(|i| i >= 0.0)
     }
 
     fn clone_button(&self) -> Box<dyn ButtonLike> {
