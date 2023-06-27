@@ -9,7 +9,11 @@ to update multiple entities if needed.
 
 ### Docs
 
-- Added example for getting driving a cursor position action.
+- Added example for driving cursor position action from another entity.
+
+### Usability
+
+- Makes `run_if_enabled` public.
 
 ## Version 0.9.3
 

@@ -582,12 +582,15 @@ impl ActionStateDriverTarget {
     /// Insert an entity as a target.
     #[inline(always)]
     pub fn insert(&mut self, entity: Entity) {
+        // Don't want to copy a bunch of logic, switch out the ref, then replace it
+        // rust doesn't like in place replacement
         *self = std::mem::replace(self, Self::None).with(entity);
     }
 
     /// Remove an entity as a target if it's in the target set.
     #[inline(always)]
     pub fn remove(&mut self, entity: Entity) {
+        // see insert
         *self = std::mem::replace(self, Self::None).without(entity);
     }
 
@@ -629,17 +632,13 @@ impl ActionStateDriverTarget {
     }
 
     /// Remove an entity as a target if it's in the set using a builder style pattern.
-    pub fn without(mut self, entity: Entity) -> Self {
+    pub fn without(self, entity: Entity) -> Self {
         match self {
             Self::None => Self::None,
             Self::Single(_) => Self::None,
-            Self::Multi(ref mut targets) => {
+            Self::Multi(mut targets) => {
                 targets.remove(&entity);
-                match targets.len() {
-                    0 => Self::None,
-                    1 => Self::Single(targets.drain().next().unwrap()),
-                    _ => self,
-                }
+                Self::from_iter(targets)
             }
         }
     }
@@ -654,6 +653,30 @@ impl From<Entity> for ActionStateDriverTarget {
 impl From<()> for ActionStateDriverTarget {
     fn from(_value: ()) -> Self {
         Self::None
+    }
+}
+
+impl FromIterator<Entity> for ActionStateDriverTarget {
+    fn from_iter<T: IntoIterator<Item = Entity>>(iter: T) -> Self {
+        let entities = HashSet::from_iter(iter);
+
+        match entities.len() {
+            0 => Self::None,
+            1 => Self::Single(entities.into_iter().next().unwrap()),
+            _ => Self::Multi(entities),
+        }
+    }
+}
+
+impl<'a> FromIterator<&'a Entity> for ActionStateDriverTarget {
+    fn from_iter<T: IntoIterator<Item = &'a Entity>>(iter: T) -> Self {
+        let entities = HashSet::from_iter(iter.into_iter().cloned());
+
+        match entities.len() {
+            0 => Self::None,
+            1 => Self::Single(entities.into_iter().next().unwrap()),
+            _ => Self::Multi(entities),
+        }
     }
 }
 
@@ -753,7 +776,10 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
 mod tests {
     use crate as leafwing_input_manager;
     use crate::input_mocking::MockInput;
+    use bevy::prelude::Entity;
     use leafwing_input_manager_macros::Actionlike;
+
+    use super::ActionStateDriverTarget;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     enum Action {
@@ -902,5 +928,47 @@ mod tests {
         assert_eq!(action_state.instant_started(Action::Jump), None);
         assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
         assert_eq!(action_state.previous_duration(Action::Jump), t2 - t0);
+    }
+
+    #[test]
+    fn action_state_driver_targets() {
+        let mut target = ActionStateDriverTarget::from(());
+
+        assert_eq!(0, target.len());
+
+        target.insert(Entity::from_raw(0));
+        assert_eq!(1, target.len());
+
+        target.insert(Entity::from_raw(1));
+        assert_eq!(2, target.len());
+
+        target.remove(Entity::from_raw(0));
+        assert_eq!(1, target.len());
+
+        target.remove(Entity::from_raw(1));
+        assert_eq!(0, target.len());
+
+        target = target.with(Entity::from_raw(0));
+        assert_eq!(1, target.len());
+
+        target = target.without(Entity::from_raw(0));
+        assert_eq!(0, target.len());
+
+        target.add(
+            [
+                Entity::from_raw(0),
+                Entity::from_raw(1),
+                Entity::from_raw(2),
+            ]
+            .iter()
+            .cloned(),
+        );
+        assert_eq!(3, target.len());
+
+        let mut sum = 0;
+        for entity in target.iter() {
+            sum += entity.index();
+        }
+        assert_eq!(3, sum);
     }
 }

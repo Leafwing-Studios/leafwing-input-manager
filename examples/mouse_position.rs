@@ -9,7 +9,7 @@ fn main() {
         .add_plugin(InputManagerPlugin::<BoxMovement>::default())
         .add_startup_system(setup)
         .add_system(
-            update_cursor_state_from_window::<BoxMovement>
+            update_cursor_state_from_window
                 .run_if(run_if_enabled::<BoxMovement>)
                 .in_base_set(CoreSet::PreUpdate)
                 .in_set(InputManagerSystem::ManualControl)
@@ -24,7 +24,7 @@ fn main() {
 
 #[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq)]
 enum BoxMovement {
-    Pan,
+    MousePosition,
 }
 
 fn setup(mut commands: Commands, window: Query<Entity, With<PrimaryWindow>>) {
@@ -40,16 +40,18 @@ fn setup(mut commands: Commands, window: Query<Entity, With<PrimaryWindow>>) {
         .id();
 
     commands.entity(window.single()).insert(ActionStateDriver {
-        action: BoxMovement::Pan,
+        action: BoxMovement::MousePosition,
         targets: entity.into(),
     });
 }
 
-fn update_cursor_state_from_window<A: Actionlike>(
-    window_query: Query<(&Window, &ActionStateDriver<A>)>,
-    mut action_state_query: Query<&mut ActionState<A>>,
+fn update_cursor_state_from_window(
+    window_query: Query<(&Window, &ActionStateDriver<BoxMovement>)>,
+    mut action_state_query: Query<&mut ActionState<BoxMovement>>,
 ) {
     // Update each actionstate with the mouse position from the window
+    // by using the referenced entities in ActionStateDriver and the stored action as
+    // a key into the action data
     for (window, driver) in window_query.iter() {
         for entity in driver.targets.iter() {
             let mut action_state = action_state_query
@@ -74,7 +76,7 @@ fn pan_camera(
 
     // Note: Nothing is stopping us from doing this in the action update system instead!
     if let Some(box_pan_vector) = action_state
-        .axis_pair(BoxMovement::Pan)
+        .axis_pair(BoxMovement::MousePosition)
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor.xy()))
         .map(|ray| ray.origin.truncate())
     {
