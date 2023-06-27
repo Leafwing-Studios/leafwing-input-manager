@@ -67,7 +67,7 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
         // This component links the button to the entity with the `ActionState` component
         .insert(ActionStateDriver {
             action: Action::Left,
-            entity: player_entity,
+            targets: player_entity.into(),
         })
         .id();
 
@@ -83,7 +83,7 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
         })
         .insert(ActionStateDriver {
             action: Action::Right,
-            entity: player_entity,
+            targets: player_entity.into(),
         })
         .id();
 
