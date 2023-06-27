@@ -72,6 +72,7 @@ pub fn update_action_state<A: Actionlike>(
     mouse_wheel: Option<Res<Events<MouseWheel>>>,
     mouse_motion: Res<Events<MouseMotion>>,
     clash_strategy: Res<ClashStrategy>,
+    #[cfg(feature = "ui")] interactions: Query<&Interaction>,
     #[cfg(feature = "egui")] mut maybe_egui: EguiContexts,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
@@ -91,6 +92,17 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
     let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
     let mouse_motion = mouse_motion.into_inner();
+
+    // If use clicks on a button, do not apply them to the game state
+    #[cfg(feature = "ui")]
+    let (mouse_buttons, mouse_wheel) = if interactions
+        .iter()
+        .any(|&interaction| interaction != Interaction::None)
+    {
+        (None, None)
+    } else {
+        (mouse_buttons, mouse_wheel)
+    };
 
     #[cfg(feature = "egui")]
     let ctx = maybe_egui.ctx_mut();

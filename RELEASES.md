@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## Version 0.9.3
 
 ### Bugs
 
@@ -9,6 +9,7 @@
 ### Usability
 
 - Added `VirtualAxis::horizontal_dpad()` and `VirtualAxis::vertical_dpad()`.
+- Do not read mouse input if any `bevy_ui` element have active `Interaction`.
 
 ## Version 0.9.2
 
