@@ -652,7 +652,7 @@ impl From<Entity> for ActionStateDriverTarget {
 }
 
 impl From<()> for ActionStateDriverTarget {
-    fn from(value: ()) -> Self {
+    fn from(_value: ()) -> Self {
         Self::None
     }
 }

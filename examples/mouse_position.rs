@@ -1,4 +1,4 @@
-use bevy::{ecs::entity, input::InputSystem, prelude::*, window::PrimaryWindow};
+use bevy::{input::InputSystem, prelude::*, window::PrimaryWindow};
 use leafwing_input_manager::{
     axislike::DualAxisData, plugin::InputManagerSystem, prelude::*, systems::run_if_enabled,
 };
