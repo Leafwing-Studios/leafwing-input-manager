@@ -1,5 +1,16 @@
 # Release Notes
 
+## Unreleased
+
+### Enhancements
+
+- Changed `entity` field of `ActionStateDriver` to `targets: ActionStateDriverTarget` with variants for 0, 1, or multiple targets, to allow for one driver 
+to update multiple entities if needed.
+
+### Docs
+
+- Added example for getting driving a cursor position action.
+
 ## Version 0.9.3
 
 ### Bugs
