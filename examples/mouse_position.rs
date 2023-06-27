@@ -15,8 +15,6 @@ fn main() {
                 .in_set(InputManagerSystem::ManualControl)
                 .before(InputManagerSystem::ReleaseOnDisable)
                 .after(InputManagerSystem::Tick)
-                // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
-                // not being pressed
                 .after(InputManagerSystem::Update)
                 .after(InputSystem),
         )
@@ -51,6 +49,7 @@ fn update_cursor_state_from_window<A: Actionlike>(
     window_query: Query<(&Window, &ActionStateDriver<A>)>,
     mut action_state_query: Query<&mut ActionState<A>>,
 ) {
+    // Update each actionstate with the mouse position from the window
     for (window, driver) in window_query.iter() {
         for entity in driver.targets.iter() {
             let mut action_state = action_state_query
@@ -79,8 +78,6 @@ fn pan_camera(
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor.xy()))
         .map(|ray| ray.origin.truncate())
     {
-        // Because we're moving the camera, not the object, we want to pan in the opposite direction.
-        // However, UI coordinates are inverted on the y-axis, so we need to flip y a second time.
         box_transform.translation.x = box_pan_vector.x;
         box_transform.translation.y = box_pan_vector.y;
     }
