@@ -165,10 +165,12 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 ) {
     for (&interaction, action_state_driver) in ui_query.iter() {
         if interaction == Interaction::Clicked {
-            let mut action_state = action_state_query
-                .get_mut(action_state_driver.entity)
-                .expect("Entity does not exist, or does not have an `ActionState` component.");
-            action_state.press(action_state_driver.action.clone());
+            for entity in action_state_driver.targets.iter() {
+                let mut action_state = action_state_query
+                    .get_mut(*entity)
+                    .expect("Entity does not exist, or does not have an `ActionState` component.");
+                action_state.press(action_state_driver.action.clone());
+            }
         }
     }
 }
@@ -287,6 +289,6 @@ pub fn release_on_input_map_removed<A: Actionlike>(
 }
 
 /// Uses the value of [`ToggleActions<A>`] to determine if input manager systems of type `A` should run.
-pub(super) fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> bool {
+pub fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> bool {
     toggle_actions.enabled
 }
