@@ -282,7 +282,7 @@ impl DualAxis {
         self
     }
 
-    /// Returns this [`DualAxis`] with inverted axes.
+    /// Returns this [`DualAxis`] with both axes inverted.
     #[must_use]
     pub fn inverted(mut self) -> DualAxis {
         self.x = self.x.inverted();
