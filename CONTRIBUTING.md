@@ -10,7 +10,7 @@ There are a few options if you'd like to help:
 
 Any contributions made are provided under the license(s) listed in this repo at the time of their contribution, and do not require separate attribution.
 
-When you make a PR (other than for purely internal changes), please update the root level `CHANGELOG.md`.
+When you make a PR (other than for purely internal changes), please update the root level `RELEASES.md`.
 
 ## Testing
 
