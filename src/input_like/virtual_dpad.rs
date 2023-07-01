@@ -157,6 +157,21 @@ impl InputLikeObject for VirtualDPad {
     fn as_reflect(&self) -> &dyn Reflect {
         self
     }
+
+    fn is_strict_subset(&self, other: Box<dyn InputLikeObject>) -> bool {
+        if self
+            .reflect_partial_eq(other.as_reflect())
+            .unwrap_or_default()
+        {
+            return false;
+        }
+
+        other.raw_inputs().iter().any(|input| {
+            self.raw_inputs()
+                .iter()
+                .any(|other_input| input.eq(other_input))
+        })
+    }
 }
 
 impl ButtonLike for VirtualDPad {

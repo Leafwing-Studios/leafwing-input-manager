@@ -28,59 +28,6 @@ pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
 /// [`InputLike`], which is how they are stored in [`InputMap`].
 #[allow(clippy::len_without_is_empty)]
 pub trait InputLikeObject: Send + Sync + Debug {
-    /// Does `self` clash with `other`?
-    ///
-    /// Inputs "clash" if and only if one [`UserInput`] is a strict subset of the other.
-    /// By example:
-    ///
-    /// - `S` and `W`: does not clash
-    /// - `LControl + S` and `S`: clashes
-    /// - `S` and `S`: does not clash
-    /// - `LControl + S` and ` LAlt + S`: clashes
-    /// - `LControl + S`, `LAlt + S` and `LControl + LAlt + S`: clashes
-    #[must_use]
-    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
-        // Single inputs don't clash with other single inputs
-        if self.len() <= 1 && other.len() <= 1 {
-            return false;
-        }
-
-        // If the inputs are equal, they don't clash
-        if self
-            .as_reflect()
-            .reflect_partial_eq(other.as_reflect())
-            .unwrap_or_default()
-        {
-            return false;
-        }
-
-        let a_is_subset_of_b = self.raw_inputs().iter().all(|input| {
-            other
-                .raw_inputs()
-                .iter()
-                .any(|other_input| input.eq(other_input))
-        });
-        let b_is_subset_of_a = other.raw_inputs().iter().all(|input| {
-            self.raw_inputs()
-                .iter()
-                .any(|other_input| input.eq(other_input))
-        });
-        if self.as_reflect().type_name().contains("Virtual")
-            | other.as_reflect().type_name().contains("Virtual")
-        {
-            println!(
-                "{} clashes {} = a_is_subset_of_b {} b_is_subset_of_a {} raw_inputs_a {:?} raw_inputs_b {:?}",
-                self.as_reflect().type_name(),
-                other.as_reflect().type_name(),
-                a_is_subset_of_b,
-                b_is_subset_of_a,
-                self.raw_inputs(),
-                other.raw_inputs()
-            );
-        }
-        a_is_subset_of_b || b_is_subset_of_a
-    }
-
     /// Returns [`ButtonLike`] if it is implemented.
     fn as_button(&self) -> Option<&dyn ButtonLike>;
 
@@ -115,6 +62,42 @@ pub trait InputLikeObject: Send + Sync + Debug {
     /// Returns a string that can be used to display this input to the user.
     fn input_display(&self) -> String {
         format!("{:?}", self)
+    }
+
+    /// Returns true if other is a strict subset of this input, i.e other contains all the
+    /// inputs in self and contains at least one more input.
+    ///
+    /// Override this if you need to change how clash handling detects if an input is a subset
+    /// of this input. An example of this is [`VirtualDPad`], which considers each of it's
+    /// inputs separately instead of a combination.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bevy::prelude::KeyCode::*;
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// assert!(Chord::new(vec![A, B, C]).is_strict_subset(Chord::new(vec![A, B]).into()));
+    /// assert!(!Chord::new(vec![A, B]).is_strict_subset(Chord::new(vec![A, B, C]).into()));
+    /// assert!(Chord::new(vec![A, B]).is_strict_subset(A.into()));
+    fn is_strict_subset(&self, other: Box<dyn InputLikeObject>) -> bool {
+        if self.len() <= 1 && other.len() <= 1 {
+            return false;
+        }
+
+        if self
+            .as_reflect()
+            .reflect_partial_eq(other.as_reflect())
+            .unwrap_or_default()
+        {
+            return false;
+        }
+
+        other.raw_inputs().iter().all(|input| {
+            self.raw_inputs()
+                .iter()
+                .any(|other_input| input.eq(other_input))
+        })
     }
 }
 

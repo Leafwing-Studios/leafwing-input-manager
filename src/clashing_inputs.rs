@@ -590,3 +590,55 @@ mod tests {
         }
     }
 }
+
+pub trait Clashes {
+    #[must_use]
+    fn clashes(&self, other: &dyn InputLikeObject) -> bool;
+}
+
+impl<T: ?Sized + InputLikeObject> Clashes for T {
+    /// Does `self` clash with `other`?
+    ///
+    /// Inputs "clash" if and only if one [`InputLikeObject`] is a strict subset of the other.
+    /// By example:
+    ///
+    /// - `S` and `W`: does not clash
+    /// - `LControl + S` and `S`: clashes
+    /// - `S` and `S`: does not clash
+    /// - `LControl + S` and ` LAlt + S`: clashes
+    /// - `LControl + S`, `LAlt + S` and `LControl + LAlt + S`: clashes
+    /// - `VirtualDPad::arrow_keys()` and `LControl + Up`:  clashes
+    ///
+    /// ```
+    /// # use bevy::input::prelude::*;
+    /// # use leafwing_input_manager::clashing_inputs::Clashes;
+    /// # use leafwing_input_manager::prelude::{Chord, VirtualDPad};
+    /// # use bevy::input::keyboard::KeyCode::*;
+    /// assert!(!S.clashes(&W));
+    /// assert!(Chord::new([LControl, S]).clashes(&S));
+    /// assert!(!S.clashes(&S));
+    /// assert!(Chord::new([Chord::new([LControl, S]), Chord::new([LAlt, S])]).clashes(&Chord::new([LAlt, S])));
+    /// assert!(Chord::new([LControl, S]).clashes(&Chord::new([LControl, LAlt, S])));
+    /// assert!(Chord::new([LAlt, S]).clashes(&Chord::new([LControl, LAlt, S])));
+    /// assert!(VirtualDPad::arrow_keys().clashes(&Chord::new([LControl, Up])));
+    /// ```
+    fn clashes(&self, other: &dyn InputLikeObject) -> bool {
+        // Single inputs don't clash with other single inputs
+        if self.len() <= 1 && other.len() <= 1 {
+            return false;
+        }
+
+        // If the inputs are equal, they aren't a _strict_ subset so they don't clash.
+        if self
+            .as_reflect()
+            .reflect_partial_eq(other.as_reflect())
+            .unwrap_or_default()
+        {
+            return false;
+        }
+
+        // Check subsets in both directions since [A, B, C] is not a subset of [A, B], but [A, B]
+        // is a subset of [A, B, C] and should still clash.
+        self.is_strict_subset(other.clone_dyn()) || other.is_strict_subset(self.clone_dyn())
+    }
+}
