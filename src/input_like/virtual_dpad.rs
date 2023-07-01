@@ -135,7 +135,7 @@ impl InputLikeObject for VirtualDPad {
     }
 
     fn len(&self) -> usize {
-        4
+        1
     }
 
     fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {

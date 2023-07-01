@@ -362,10 +362,11 @@ mod tests {
             assert!(!C.clashes(&ab));
             assert!(!ab.clashes(&bc));
             assert!(ab.clashes(&abc));
-            assert!(axyz_dpad.clashes(&A));
+            // VirtualDPads are considered single inputs so they don't clash with other single inputs
+            assert!(!axyz_dpad.clashes(&A));
             assert!(axyz_dpad.clashes(&ab));
             assert!(!axyz_dpad.clashes(&bc));
-            assert!(axyz_dpad.clashes(&abcd_dpad));
+            assert!(!axyz_dpad.clashes(&abcd_dpad));
             assert!(ctrl_up.clashes(&directions_dpad));
         }
 

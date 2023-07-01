@@ -39,10 +39,9 @@ pub trait InputLikeObject: Send + Sync + Debug {
 
     /// The number of logical inputs that make up the [`UserInput`].
     ///
-    /// TODO: Update this
-    /// - A [`Single`][UserInput::Single] input returns 1
-    /// - A [`Chord`][UserInput::Chord] returns the number of buttons in the chord
-    /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
+    /// - A single input returns 1 (e.g. [`KeyCode`][bevy::prelude::KeyCode])
+    /// - A [`Chord`][crate::prelude::Chord] returns the number of buttons in the chord
+    /// - A [`VirtualDPad`][crate::prelude::VirtualDPad] returns 1
     fn len(&self) -> usize {
         1
     }
@@ -80,6 +79,7 @@ pub trait InputLikeObject: Send + Sync + Debug {
     /// assert!(Chord::new(vec![A, B, C]).is_strict_subset(Chord::new(vec![A, B]).into()));
     /// assert!(!Chord::new(vec![A, B]).is_strict_subset(Chord::new(vec![A, B, C]).into()));
     /// assert!(Chord::new(vec![A, B]).is_strict_subset(A.into()));
+    /// ```
     fn is_strict_subset(&self, other: Box<dyn InputLikeObject>) -> bool {
         if self.len() <= 1 && other.len() <= 1 {
             return false;
