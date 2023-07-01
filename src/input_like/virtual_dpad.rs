@@ -140,10 +140,10 @@ impl InputLikeObject for VirtualDPad {
 
     fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
         vec![
-            InputLikeObject::clone_dyn(self.up.as_ref()),
-            InputLikeObject::clone_dyn(self.down.as_ref()),
-            InputLikeObject::clone_dyn(self.left.as_ref()),
-            InputLikeObject::clone_dyn(self.right.as_ref()),
+            self.up.clone_dyn(),
+            self.down.clone_dyn(),
+            self.left.clone_dyn(),
+            self.right.clone_dyn(),
         ]
     }
 
