@@ -2,7 +2,7 @@ use crate::axislike::DualAxisData;
 use crate::input_like::mouse_motion::MouseMotionDirection;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use crate::prelude::{MouseWheelDirection, QwertyScanCode};
-use bevy::prelude::{GamepadButtonType, Reflect, World};
+use bevy::prelude::{GamepadButtonType, KeyCode, Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
 use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
 use erased_serde::Serialize;
@@ -35,10 +35,10 @@ impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
     pub fn arrow_keys() -> Self {
         Self {
-            up: QwertyScanCode::Up.into(),
-            down: QwertyScanCode::Down.into(),
-            left: QwertyScanCode::Left.into(),
-            right: QwertyScanCode::Right.into(),
+            up: KeyCode::Up.into(),
+            down: KeyCode::Down.into(),
+            left: KeyCode::Left.into(),
+            right: KeyCode::Right.into(),
         }
     }
 
