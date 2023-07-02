@@ -13,9 +13,17 @@ pub struct Chord {
 }
 
 impl Chord {
-    pub fn new(inputs: impl IntoIterator<Item = impl Into<Box<dyn InputLikeObject>>>) -> Self {
-        let inputs = inputs.into_iter().map(|x| x.into()).collect();
-        Self { inputs }
+    /// Creates a new [`Chord`] from the given inputs, or returns the single input if there is only one.
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new(
+        inputs: impl IntoIterator<Item = impl Into<Box<dyn InputLikeObject>>>,
+    ) -> Box<dyn InputLikeObject> {
+        let inputs: Vec<Box<dyn InputLikeObject>> = inputs.into_iter().map(|x| x.into()).collect();
+        if inputs.len() == 1 {
+            inputs.into_iter().next().unwrap()
+        } else {
+            Self { inputs }.into()
+        }
     }
 
     pub fn contains(&self, input: &dyn InputLikeObject) -> bool {

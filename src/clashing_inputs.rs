@@ -358,14 +358,14 @@ mod tests {
             };
 
             assert!(!A.clashes(&B));
-            assert!(A.clashes(&ab));
-            assert!(!C.clashes(&ab));
-            assert!(!ab.clashes(&bc));
-            assert!(ab.clashes(&abc));
+            assert!(A.clashes(ab.as_ref()));
+            assert!(!C.clashes(ab.as_ref()));
+            assert!(!ab.clashes(bc.as_ref()));
+            assert!(ab.clashes(abc.as_ref()));
             // VirtualDPads are considered single inputs so they don't clash with other single inputs
             assert!(!axyz_dpad.clashes(&A));
-            assert!(axyz_dpad.clashes(&ab));
-            assert!(!axyz_dpad.clashes(&bc));
+            assert!(axyz_dpad.clashes(ab.as_ref()));
+            assert!(!axyz_dpad.clashes(bc.as_ref()));
             assert!(!axyz_dpad.clashes(&abcd_dpad));
             assert!(ctrl_up.clashes(&directions_dpad));
         }
@@ -379,7 +379,7 @@ mod tests {
                 index_a: One.index(),
                 index_b: OneAndTwo.index(),
                 inputs_a: vec![Key1.into()],
-                inputs_b: vec![Box::new(Chord::new([Key1, Key2]))],
+                inputs_b: vec![Chord::new([Key1, Key2])],
                 _phantom: PhantomData::default(),
             };
 
@@ -618,10 +618,10 @@ impl<T: ?Sized + InputLikeObject> Clashes for T {
     /// assert!(!S.clashes(&W));
     /// assert!(Chord::new([LControl, S]).clashes(&S));
     /// assert!(!S.clashes(&S));
-    /// assert!(Chord::new([Chord::new([LControl, S]), Chord::new([LAlt, S])]).clashes(&Chord::new([LAlt, S])));
-    /// assert!(Chord::new([LControl, S]).clashes(&Chord::new([LControl, LAlt, S])));
-    /// assert!(Chord::new([LAlt, S]).clashes(&Chord::new([LControl, LAlt, S])));
-    /// assert!(VirtualDPad::arrow_keys().clashes(&Chord::new([LControl, Up])));
+    /// assert!(Chord::new([Chord::new([LControl, S]), Chord::new([LAlt, S])]).clashes(Chord::new([LAlt, S]).as_ref()));
+    /// assert!(Chord::new([LControl, S]).clashes(Chord::new([LControl, LAlt, S]).as_ref()));
+    /// assert!(Chord::new([LAlt, S]).clashes(Chord::new([LControl, LAlt, S]).as_ref()));
+    /// assert!(VirtualDPad::arrow_keys().clashes(Chord::new([LControl, Up]).as_ref()));
     /// ```
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
         // Single inputs don't clash with other single inputs
