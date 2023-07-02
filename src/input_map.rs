@@ -44,7 +44,6 @@ use std::marker::PhantomData;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::input_like::InputKind;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
@@ -66,13 +65,16 @@ use std::marker::PhantomData;
 ///
 /// // Insertion
 /// input_map.insert(MouseButton::Left, Action::Run)
-/// .insert(KeyCode::LShift, Action::Run)
-/// // Chords
-/// .insert_modified(Modifier::Control, KeyCode::R, Action::Run)
-/// .insert_chord([InputKind::Keyboard(KeyCode::H),
-///                InputKind::GamepadButton(GamepadButtonType::South),
-///                InputKind::Mouse(MouseButton::Middle)],
-///            Action::Run);
+///     .insert(KeyCode::LShift, Action::Run)
+///     // Chords
+///     .insert_modified(Modifier::Control, KeyCode::R, Action::Run)
+///     .insert_chord([
+///             KeyCode::H.clone_dyn(),
+///             GamepadButtonType::South.clone_dyn(),
+///             MouseButton::Middle.clone_dyn()
+///         ],
+///         Action::Run
+///     );
 ///
 /// // Removal
 /// input_map.clear_action(Action::Hide);
@@ -522,7 +524,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLikeObject>>>> for InputMap
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
-    /// use leafwing_input_manager::input_like::UserInput;
+    /// use leafwing_input_manager::prelude::InputLikeObject;
     /// use leafwing_input_manager::Actionlike;
     /// use bevy::input::keyboard::KeyCode;
     ///
@@ -533,7 +535,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<Box<dyn InputLikeObject>>>> for InputMap
     ///     Run,
     ///     Jump,
     /// }
-    /// let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
+    /// let mut map: HashMap<Action, Vec<Box<dyn InputLikeObject>>> = HashMap::default();
     /// map.insert(
     ///     Action::Run,
     ///     vec![KeyCode::LShift.into(), KeyCode::RShift.into()],
