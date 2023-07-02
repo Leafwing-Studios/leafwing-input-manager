@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Enhancements
+
+- Changed `entity` field of `ActionStateDriver` to `targets: ActionStateDriverTarget` with variants for 0, 1, or multiple targets, to allow for one driver 
+to update multiple entities if needed.
+
+### Docs
+
+- Added example for driving cursor position action from another entity.
+
+### Usability
+
+- Makes `run_if_enabled` public.
+
+## Version 0.9.3
+
 ### Bugs
 
 - Changed `Rotation` to be stored in millionths of a degree instead of tenths of a degree in order to reduce rounding errors.
@@ -9,6 +24,7 @@
 ### Usability
 
 - Added `VirtualAxis::horizontal_dpad()` and `VirtualAxis::vertical_dpad()`.
+- Do not read mouse input if any `bevy_ui` element have active `Interaction`.
 
 ## Version 0.9.2
 

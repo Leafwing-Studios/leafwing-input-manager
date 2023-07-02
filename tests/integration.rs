@@ -199,7 +199,7 @@ fn action_state_driver() {
             .insert(Interaction::None)
             .insert(ActionStateDriver::<Action> {
                 action: Action::PayRespects,
-                entity: player_entity,
+                targets: player_entity.into(),
             });
     }
 
