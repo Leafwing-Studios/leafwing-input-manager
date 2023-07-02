@@ -28,6 +28,8 @@ pub struct SingleAxis {
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
+    /// Whether to invert output values from this axis.
+    pub inverted: bool,
     /// The target value for this input, used for input mocking.
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
@@ -42,6 +44,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             positive_low: threshold,
             negative_low: -threshold,
+            inverted: false,
             value: None,
         }
     }
@@ -56,6 +59,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             positive_low: 0.0,
             negative_low: 0.0,
+            inverted: false,
             value: Some(value),
         }
     }
@@ -67,6 +71,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -78,6 +83,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -89,6 +95,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -100,6 +107,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             value: None,
         }
     }
@@ -112,6 +120,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             negative_low: threshold,
             positive_low: f32::MAX,
+            inverted: false,
             value: None,
         }
     }
@@ -124,6 +133,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             negative_low: f32::MIN,
             positive_low: threshold,
+            inverted: false,
             value: None,
         }
     }
@@ -133,6 +143,13 @@ impl SingleAxis {
     pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
         self.negative_low = -deadzone;
         self.positive_low = deadzone;
+        self
+    }
+
+    /// Returns this [`SingleAxis`] inverted.
+    #[must_use]
+    pub fn inverted(mut self) -> Self {
+        self.inverted = !self.inverted;
         self
     }
 }
@@ -250,6 +267,28 @@ impl DualAxis {
         self.y = self.y.with_deadzone(deadzone);
         self
     }
+
+    /// Returns this [`DualAxis`] with an inverted X-axis.
+    #[must_use]
+    pub fn inverted_x(mut self) -> DualAxis {
+        self.x = self.x.inverted();
+        self
+    }
+
+    /// Returns this [`DualAxis`] with an inverted Y-axis.
+    #[must_use]
+    pub fn inverted_y(mut self) -> DualAxis {
+        self.y = self.y.inverted();
+        self
+    }
+
+    /// Returns this [`DualAxis`] with both axes inverted.
+    #[must_use]
+    pub fn inverted(mut self) -> DualAxis {
+        self.x = self.x.inverted();
+        self.y = self.y.inverted();
+        self
+    }
 }
 
 #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
@@ -339,6 +378,25 @@ impl VirtualDPad {
             right: InputKind::MouseMotion(MouseMotionDirection::Right),
         }
     }
+
+    /// Returns this [`VirtualDPad`] but with `up` and `down` swapped.
+    pub fn inverted_y(mut self) -> Self {
+        std::mem::swap(&mut self.up, &mut self.down);
+        self
+    }
+
+    /// Returns this [`VirtualDPad`] but with `left` and `right` swapped.
+    pub fn inverted_x(mut self) -> Self {
+        std::mem::swap(&mut self.left, &mut self.right);
+        self
+    }
+
+    /// Returns this [`VirtualDPad`] but with inverted inputs.
+    pub fn inverted(mut self) -> Self {
+        std::mem::swap(&mut self.up, &mut self.down);
+        std::mem::swap(&mut self.left, &mut self.right);
+        self
+    }
 }
 
 /// A virtual Axis that you can get a value between -1 and 1 from.
@@ -404,6 +462,13 @@ impl VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
         }
+    }
+
+    /// Returns this [`VirtualAxis`] but with flipped positive/negative inputs.
+    #[must_use]
+    pub fn inverted(mut self) -> Self {
+        std::mem::swap(&mut self.positive, &mut self.negative);
+        self
     }
 }
 
