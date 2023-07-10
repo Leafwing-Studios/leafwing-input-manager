@@ -257,8 +257,8 @@ pub fn release_on_disable<A: Actionlike>(
 
 /// Release all inputs when an [`InputMap<A>`] is removed to prevent them from being held forever.
 ///
-/// By default, [`InputManagerPlugin<A>`](crate::plugin::InputManagerPlugin) will run this on [`CoreSet::PostUpdate`](bevy::prelude::CoreSet::PostUpdate).
-/// For components you must remove the [`InputMap<A>`] before [`CoreSet::PostUpdate`](bevy::prelude::CoreSet::PostUpdate)
+/// By default, [`InputManagerPlugin<A>`](crate::plugin::InputManagerPlugin) will run this on [`PostUpdate`](bevy::prelude::PostUpdate).
+/// For components you must remove the [`InputMap<A>`] before [`PostUpdate`](bevy::prelude::PostUpdate)
 /// or this will not run.
 pub fn release_on_input_map_removed<A: Actionlike>(
     mut removed_components: RemovedComponents<InputMap<A>>,

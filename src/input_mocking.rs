@@ -132,13 +132,13 @@ pub trait MockInput {
 
     /// Presses all `bevy::ui` buttons with the matching `Marker` component
     ///
-    /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    /// Changes their [`Interaction`] component to [`Interaction::Pressed`]
     #[cfg(feature = "ui")]
     fn click_button<Marker: Component>(&mut self);
 
     /// Hovers over all `bevy::ui` buttons with the matching `Marker` component
     ///
-    /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    /// Changes their [`Interaction`] component to [`Interaction::Pressed`]
     #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self);
 }
