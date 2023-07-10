@@ -1,3 +1,4 @@
+use bevy::prelude::Reflect;
 use bevy::{
     input::InputPlugin,
     prelude::{App, KeyCode},
@@ -10,7 +11,7 @@ use leafwing_input_manager::{
     Actionlike,
 };
 
-#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 enum TestAction {
     A,
     B,
@@ -63,16 +64,16 @@ fn which_pressed(input_streams: &InputStreams, clash_strategy: ClashStrategy) ->
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("construct_input_map_from_iter", |b| {
-        b.iter(|| construct_input_map_from_iter())
+        b.iter(construct_input_map_from_iter)
     });
     c.bench_function("construct_input_map_from_chained_calls", |b| {
-        b.iter(|| construct_input_map_from_chained_calls())
+        b.iter(construct_input_map_from_chained_calls)
     });
     let mut which_pressed_group = c.benchmark_group("which_pressed");
 
     // Constructing our test app / input stream outside of the timed benchmark
     let mut app = App::new();
-    app.add_plugin(InputPlugin);
+    app.add_plugins(InputPlugin);
     app.send_input(KeyCode::A);
     app.send_input(KeyCode::B);
     app.update();

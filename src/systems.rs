@@ -164,7 +164,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
     mut action_state_query: Query<&mut ActionState<A>>,
 ) {
     for (&interaction, action_state_driver) in ui_query.iter() {
-        if interaction == Interaction::Clicked {
+        if interaction == Interaction::Pressed {
             for entity in action_state_driver.targets.iter() {
                 let mut action_state = action_state_query
                     .get_mut(*entity)

@@ -1,3 +1,4 @@
+use bevy::prelude::Reflect;
 use criterion::{criterion_group, criterion_main, Criterion};
 use leafwing_input_manager::{
     action_state::{ActionData, Timing},
@@ -6,7 +7,7 @@ use leafwing_input_manager::{
     Actionlike,
 };
 
-#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 enum TestAction {
     A,
     B,
@@ -44,7 +45,7 @@ fn criterion_benchmark(c: &mut Criterion) {
     let action_state = ActionState::<TestAction>::default();
 
     c.bench_function("action_state_default", |b| {
-        b.iter(|| ActionState::<TestAction>::default())
+        b.iter(ActionState::<TestAction>::default)
     });
     c.bench_function("pressed", |b| b.iter(|| pressed(&action_state)));
     c.bench_function("just_pressed", |b| b.iter(|| just_pressed(&action_state)));

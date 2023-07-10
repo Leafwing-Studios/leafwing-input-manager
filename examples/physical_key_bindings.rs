@@ -17,16 +17,16 @@ use leafwing_input_manager::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(InputManagerPlugin::<Action>::default())
         // The InputMap and ActionState components will be added to any entity with the Player component
-        .add_startup_system(spawn_player)
+        .add_systems(Startup, spawn_player)
         // Read the ActionState in your systems using queries!
-        .add_system(jump)
+        .add_systems(Update, jump)
         .run();
 }
 
 // This is the list of "things in the game I want to be able to do based on input"
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
     Forward,
     Left,

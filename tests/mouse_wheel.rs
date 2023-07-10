@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseWheelAxisType};
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -12,7 +12,7 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
 enum AxislikeTestAction {
     X,
     Y,
@@ -22,9 +22,9 @@ enum AxislikeTestAction {
 fn test_app() -> App {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<ButtonlikeTestAction>::default())
-        .add_plugin(InputManagerPlugin::<AxislikeTestAction>::default())
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<ButtonlikeTestAction>::default())
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
         .init_resource::<ActionState<ButtonlikeTestAction>>()
         .init_resource::<ActionState<AxislikeTestAction>>();
 
@@ -44,6 +44,7 @@ fn raw_mouse_wheel_events() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: 10.0,
+        window: Entity::PLACEHOLDER,
     });
 
     app.update();

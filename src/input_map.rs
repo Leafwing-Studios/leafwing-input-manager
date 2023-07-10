@@ -44,7 +44,7 @@ use std::marker::PhantomData;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
-/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 /// enum Action {
 ///     Run,
 ///     Hide,
@@ -62,7 +62,7 @@ use std::marker::PhantomData;
 ///
 /// // Insertion
 /// input_map.insert(MouseButton::Left, Action::Run)
-/// .insert(KeyCode::LShift, Action::Run)
+/// .insert(KeyCode::ShiftLeft, Action::Run)
 /// // Chords
 /// .insert_modified(Modifier::Control, KeyCode::R, Action::Run)
 /// .insert_chord([InputKind::Keyboard(KeyCode::H),
@@ -104,15 +104,16 @@ impl<A: Actionlike> InputMap<A> {
     /// use leafwing_input_manager::input_map::InputMap;
     /// use leafwing_input_manager::Actionlike;
     /// use bevy::input::keyboard::KeyCode;
+    /// use bevy::prelude::Reflect;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
     /// }
     ///
     /// let input_map = InputMap::new([
-    ///     (KeyCode::LShift, Action::Run),
+    ///     (KeyCode::ShiftLeft, Action::Run),
     ///     (KeyCode::Space, Action::Jump),
     /// ]);
     ///
@@ -141,8 +142,9 @@ impl<A: Actionlike> InputMap<A> {
     /// use leafwing_input_manager::prelude::*;
 
     /// use bevy::input::keyboard::KeyCode;
+    /// use bevy::prelude::Reflect;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -477,8 +479,9 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     /// use bevy::input::keyboard::KeyCode;
     ///
     /// use std::collections::HashMap;
+    /// use bevy::prelude::Reflect;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -486,7 +489,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     /// let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
     /// map.insert(
     ///     Action::Run,
-    ///     vec![KeyCode::LShift.into(), KeyCode::RShift.into()],
+    ///     vec![KeyCode::ShiftLeft.into(), KeyCode::ShiftRight.into()],
     /// );
     /// let input_map = InputMap::from(map);
     /// ```
@@ -593,13 +596,25 @@ where
 }
 
 mod tests {
+    use bevy::prelude::Reflect;
     use serde::{Deserialize, Serialize};
 
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
     #[derive(
-        Actionlike, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug,
+        Actionlike,
+        Serialize,
+        Deserialize,
+        Clone,
+        Copy,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        Hash,
+        Debug,
+        Reflect,
     )]
     enum Action {
         Run,
@@ -679,7 +694,7 @@ mod tests {
 
         // Remove input at existing index
         input_map.insert(KeyCode::Space, Action::Run);
-        input_map.insert(KeyCode::LShift, Action::Run);
+        input_map.insert(KeyCode::ShiftLeft, Action::Run);
         assert!(input_map.remove_at(Action::Run, 1));
         assert!(
             !input_map.remove_at(Action::Run, 1),
@@ -698,8 +713,8 @@ mod tests {
 
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
-        default_keyboard_map.insert(KeyCode::LShift, Action::Run);
-        default_keyboard_map.insert_chord([KeyCode::LControl, KeyCode::H], Action::Hide);
+        default_keyboard_map.insert(KeyCode::ShiftLeft, Action::Run);
+        default_keyboard_map.insert_chord([KeyCode::ControlLeft, KeyCode::H], Action::Hide);
         let mut default_gamepad_map = InputMap::default();
         default_gamepad_map.insert(GamepadButtonType::South, Action::Run);
         default_gamepad_map.insert(GamepadButtonType::East, Action::Hide);
@@ -740,14 +755,14 @@ mod tests {
         map.insert(Action::Jump, vec![UserInput::from(KeyCode::Space)]);
         map.insert(
             Action::Run,
-            vec![KeyCode::LShift.into(), KeyCode::RShift.into()],
+            vec![KeyCode::ShiftLeft.into(), KeyCode::ShiftRight.into()],
         );
 
         let mut input_map = InputMap::default();
         input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
         input_map.insert(KeyCode::Space, Action::Jump);
-        input_map.insert(KeyCode::LShift, Action::Run);
-        input_map.insert(KeyCode::RShift, Action::Run);
+        input_map.insert(KeyCode::ShiftLeft, Action::Run);
+        input_map.insert(KeyCode::ShiftRight, Action::Run);
 
         assert_eq!(input_map, map.into());
     }
@@ -761,8 +776,8 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
         input_map.insert(KeyCode::Space, Action::Jump);
-        input_map.insert(KeyCode::LShift, Action::Run);
-        input_map.insert(KeyCode::RShift, Action::Run);
+        input_map.insert(KeyCode::ShiftLeft, Action::Run);
+        input_map.insert(KeyCode::ShiftRight, Action::Run);
 
         assert_tokens(
             &input_map,
@@ -788,7 +803,7 @@ mod tests {
                 },
                 Token::UnitVariant {
                     name: "KeyCode",
-                    variant: "LShift",
+                    variant: "ShiftLeft",
                 },
                 Token::NewtypeVariant {
                     name: "UserInput",
@@ -800,7 +815,7 @@ mod tests {
                 },
                 Token::UnitVariant {
                     name: "KeyCode",
-                    variant: "RShift",
+                    variant: "ShiftRight",
                 },
                 Token::SeqEnd,
                 Token::UnitVariant {

@@ -545,12 +545,12 @@ mod tests {
     fn modifier_key_triggered_by_either_input() {
         use crate::user_input::Modifier;
         let mut app = App::new();
-        app.add_plugin(InputPlugin);
+        app.add_plugins(InputPlugin);
 
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
         assert!(!input_streams.pressed(Modifier::Control));
 
-        input_streams.send_input(KeyCode::LControl);
+        input_streams.send_input(KeyCode::ControlLeft);
         app.update();
 
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
@@ -562,7 +562,7 @@ mod tests {
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
         assert!(!input_streams.pressed(Modifier::Control));
 
-        input_streams.send_input(KeyCode::RControl);
+        input_streams.send_input(KeyCode::ControlRight);
         app.update();
 
         let input_streams = MutableInputStreams::from_world(&mut app.world, None);

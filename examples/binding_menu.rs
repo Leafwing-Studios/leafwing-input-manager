@@ -22,13 +22,18 @@ fn main() {
     App::new()
         .insert_resource(ControlSettings::default())
         .add_plugins(DefaultPlugins)
-        .add_plugin(EguiPlugin)
-        .add_plugin(InputManagerPlugin::<ControlAction>::default())
-        .add_plugin(InputManagerPlugin::<UiAction>::default())
-        .add_startup_system(spawn_player_system)
-        .add_system(controls_window_system)
-        .add_system(buttons_system)
-        .add_system(binding_window_system)
+        .add_plugins(EguiPlugin)
+        .add_plugins(InputManagerPlugin::<ControlAction>::default())
+        .add_plugins(InputManagerPlugin::<UiAction>::default())
+        .add_systems(Startup, spawn_player_system)
+        .add_systems(
+            Update,
+            (
+                controls_window_system,
+                buttons_system,
+                binding_window_system,
+            ),
+        )
         .run();
 }
 
@@ -183,7 +188,7 @@ fn binding_window_system(
         });
 }
 
-#[derive(Actionlike, Debug, PartialEq, Clone, Copy, Display)]
+#[derive(Actionlike, Debug, PartialEq, Clone, Copy, Display, Reflect)]
 pub(crate) enum ControlAction {
     // Movement
     Forward,
@@ -199,7 +204,7 @@ pub(crate) enum ControlAction {
     Ultimate,
 }
 
-#[derive(Actionlike, Debug, PartialEq, Clone, Copy)]
+#[derive(Actionlike, Debug, PartialEq, Clone, Copy, Reflect)]
 pub(crate) enum UiAction {
     Back,
 }
@@ -221,7 +226,7 @@ impl Default for ControlSettings {
             .insert(MouseButton::Left, ControlAction::BaseAttack)
             .insert(KeyCode::Q, ControlAction::Ability1)
             .insert(KeyCode::E, ControlAction::Ability2)
-            .insert(KeyCode::LShift, ControlAction::Ability3)
+            .insert(KeyCode::ShiftLeft, ControlAction::Ability3)
             .insert(KeyCode::R, ControlAction::Ultimate);
         Self { input }
     }

@@ -7,20 +7,20 @@ fn main() {
         .add_plugins(DefaultPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<ArpgAction>::default())
+        .add_plugins(InputManagerPlugin::<ArpgAction>::default())
         // The InputMap and ActionState components will be added to any entity with the Player component
-        .add_startup_system(spawn_player)
+        .add_systems(Startup, spawn_player)
         // The ActionState can be used directly
-        .add_system(cast_fireball)
+        .add_systems(Update, cast_fireball)
         // Or multiple parts of it can be inspected
-        .add_system(player_dash)
+        .add_systems(Update, player_dash)
         // Or it can be used to emit events for later processing
         .add_event::<PlayerWalk>()
-        .add_system(player_walks)
+        .add_systems(Update, player_walks)
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum ArpgAction {
     // Movement
     Up,
@@ -63,7 +63,6 @@ struct PlayerBundle {
     player: Player,
     // This bundle must be added to your player entity
     // (or whatever else you wish to control)
-    #[bundle]
     input_manager: InputManagerBundle<ArpgAction>,
 }
 
@@ -152,6 +151,7 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
     }
 }
 
+#[derive(Event)]
 pub struct PlayerWalk {
     pub direction: Direction,
 }

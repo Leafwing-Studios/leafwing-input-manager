@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::press_scheduler::PressScheduler;
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
 enum Action {
     PayRespects,
 }
@@ -58,9 +58,9 @@ fn do_nothing() {
     let mut app = App::new();
 
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]));
 
@@ -101,14 +101,14 @@ fn disable_input() {
     // Here we spawn a player and creating a global action state to check if [`DisableInput`]
     // releases correctly both
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<Respect>()
-        .add_system(pay_respects)
-        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
+        .add_systems(Update, pay_respects)
+        .add_systems(PreUpdate, respect_fades);
 
     // Press F to pay respects
     app.send_input(KeyCode::F);
@@ -140,15 +140,14 @@ fn release_when_input_map_removed() {
 
     // Spawn a player and create a global action state.
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<Respect>()
-        .add_system(pay_respects)
-        .add_system(remove_input_map)
-        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate));
+        .add_systems(Update, (pay_respects, remove_input_map))
+        .add_systems(PreUpdate, respect_fades);
 
     // Press F to pay respects
     app.send_input(KeyCode::F);
@@ -204,11 +203,11 @@ fn action_state_driver() {
     }
 
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_plugin(InputPlugin)
-        .add_startup_system(setup)
-        .add_system(pay_respects)
-        .add_system(respect_fades.in_base_set(CoreSet::PreUpdate))
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_plugins(InputPlugin)
+        .add_systems(Startup, setup)
+        .add_systems(Update, pay_respects)
+        .add_systems(PreUpdate, respect_fades)
         .init_resource::<Respect>();
 
     app.update();
@@ -222,7 +221,7 @@ fn action_state_driver() {
     // Verify that the button was in fact clicked
     let mut button_query = app.world.query::<&Interaction>();
     let interaction = button_query.iter(&app.world).next().unwrap();
-    assert_eq!(*interaction, Interaction::Clicked);
+    assert_eq!(*interaction, Interaction::Pressed);
 
     // Run the app once to process the clicks
     app.update();
@@ -266,13 +265,13 @@ fn duration() {
     let mut app = App::new();
 
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<Respect>()
-        .add_system(hold_f_to_pay_respects);
+        .add_systems(Update, hold_f_to_pay_respects);
 
     // Initializing
     app.update();
@@ -298,8 +297,8 @@ fn schedule_presses() {
     let mut app = App::new();
 
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<Action>::default())
         .init_resource::<ActionState<Action>>()
         .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
         .init_resource::<PressScheduler<Action>>();

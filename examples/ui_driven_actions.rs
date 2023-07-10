@@ -6,15 +6,15 @@ use leafwing_input_manager::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_player)
-        .add_startup_system(spawn_cameras)
-        .add_startup_system(spawn_ui.in_base_set(StartupSet::PostStartup))
-        .add_system(move_player)
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_systems(Startup, spawn_player)
+        .add_systems(Startup, spawn_cameras)
+        .add_systems(PostStartup, spawn_ui)
+        .add_systems(Update, move_player)
         .run();
 }
 
-#[derive(Actionlike, Component, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(Actionlike, Component, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
     Left,
     Right,
@@ -58,7 +58,8 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     let left_button = commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(150.0), Val::Px(150.0)),
+                width: Val::Px(150.0),
+                height: Val::Px(150.0),
                 ..Default::default()
             },
             background_color: Color::RED.into(),
@@ -75,7 +76,8 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     let right_button = commands
         .spawn(ButtonBundle {
             style: Style {
-                size: Size::new(Val::Px(150.0), Val::Px(150.0)),
+                width: Val::Px(150.0),
+                height: Val::Px(150.0),
                 ..Default::default()
             },
             background_color: Color::BLUE.into(),
@@ -91,7 +93,8 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
     commands
         .spawn(NodeBundle {
             style: Style {
-                size: Size::new(Val::Percent(100.0), Val::Percent(100.0)),
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
                 justify_content: JustifyContent::SpaceBetween,
                 ..Default::default()
             },

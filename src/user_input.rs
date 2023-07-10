@@ -93,10 +93,10 @@ impl UserInput {
     /// use bevy::utils::HashSet;
     /// use leafwing_input_manager::user_input::UserInput;
     ///
-    /// let buttons = HashSet::from_iter([LControl.into(), LAlt.into()]);
+    /// let buttons = HashSet::from_iter([ControlLeft.into(), AltLeft.into()]);
     /// let a: UserInput  = A.into();
-    /// let ctrl_a = UserInput::chord([LControl, A]);
-    /// let ctrl_alt_a = UserInput::chord([LControl, LAlt, A]);
+    /// let ctrl_a = UserInput::chord([ControlLeft, A]);
+    /// let ctrl_alt_a = UserInput::chord([ControlLeft, AltLeft, A]);
     ///
     /// assert_eq!(a.n_matching(&buttons), 0);
     /// assert_eq!(ctrl_a.n_matching(&buttons), 1);
@@ -455,13 +455,13 @@ impl From<Modifier> for InputKind {
 /// This will be decomposed into both values when converted into [`RawInputs`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum Modifier {
-    /// Corresponds to [`KeyCode::LAlt`] and [`KeyCode::RAlt`].
+    /// Corresponds to [`KeyCode::AltLeft`] and [`KeyCode::AltRight`].
     Alt,
-    /// Corresponds to [`KeyCode::LControl`] and [`KeyCode::RControl`].
+    /// Corresponds to [`KeyCode::ControlLeft`] and [`KeyCode::ControlRight`].
     Control,
-    /// The key that makes letters capitalized, corresponding to [`KeyCode::LShift`] and [`KeyCode::RShift`]
+    /// The key that makes letters capitalized, corresponding to [`KeyCode::ShiftLeft`] and [`KeyCode::ShiftRight`]
     Shift,
-    /// The OS or "Windows" key, corresponding to [`KeyCode::LWin`] and [`KeyCode::RWin`].
+    /// The OS or "Windows" key, corresponding to [`KeyCode::SuperLeft`] and [`KeyCode::SuperRight`].
     Win,
 }
 
@@ -472,10 +472,10 @@ impl Modifier {
     #[inline]
     pub fn key_codes(self) -> [KeyCode; 2] {
         match self {
-            Modifier::Alt => [KeyCode::LAlt, KeyCode::RAlt],
-            Modifier::Control => [KeyCode::LControl, KeyCode::RControl],
-            Modifier::Shift => [KeyCode::LShift, KeyCode::RShift],
-            Modifier::Win => [KeyCode::LWin, KeyCode::RWin],
+            Modifier::Alt => [KeyCode::AltLeft, KeyCode::AltRight],
+            Modifier::Control => [KeyCode::ControlLeft, KeyCode::ControlRight],
+            Modifier::Shift => [KeyCode::ShiftLeft, KeyCode::ShiftRight],
+            Modifier::Win => [KeyCode::SuperLeft, KeyCode::SuperRight],
         }
     }
 }
@@ -661,7 +661,7 @@ mod raw_input_tests {
 
             let input = UserInput::modified(Modifier::Control, KeyCode::S);
             let expected = RawInputs {
-                keycodes: vec![KeyCode::LControl, KeyCode::RControl, KeyCode::S],
+                keycodes: vec![KeyCode::ControlLeft, KeyCode::ControlRight, KeyCode::S],
                 ..Default::default()
             };
             let raw = input.raw_inputs();

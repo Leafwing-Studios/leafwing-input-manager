@@ -14,22 +14,21 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         // These are the generic "slots" that make up the player's action bar
-        .add_plugin(InputManagerPlugin::<Slot>::default())
+        .add_plugins(InputManagerPlugin::<Slot>::default())
         // These are the actual abilities used by our characters
-        .add_plugin(InputManagerPlugin::<Ability>::default())
-        .add_startup_system(spawn_player)
+        .add_plugins(InputManagerPlugin::<Ability>::default())
+        .add_systems(Startup, spawn_player)
         // This system coordinates the state of our two actions
-        .add_system(
-            copy_action_state
-                .in_base_set(CoreSet::PreUpdate)
-                .after(InputManagerSystem::ManualControl),
+        .add_systems(
+            PreUpdate,
+            copy_action_state.after(InputManagerSystem::ManualControl),
         )
         // Try it out, using QWER / left click / right click!
-        .add_system(report_abilities_used)
+        .add_systems(Update, report_abilities_used)
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash, Copy)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash, Copy, Reflect)]
 enum Slot {
     Primary,
     Secondary,
@@ -40,7 +39,7 @@ enum Slot {
 }
 
 // The list of possible abilities is typically longer than the list of slots
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Copy)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Copy, Reflect)]
 enum Ability {
     Slash,
     Shoot,
