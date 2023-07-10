@@ -38,7 +38,6 @@ pub struct Player;
 struct PlayerBundle {
     player: Player,
     velocity: Velocity,
-    #[bundle()]
     input_manager: InputManagerBundle<Action>,
     sprite: SpriteBundle,
 }
