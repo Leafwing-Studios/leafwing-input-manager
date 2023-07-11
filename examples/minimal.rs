@@ -6,16 +6,16 @@ fn main() {
         .add_plugins(DefaultPlugins)
         // This plugin maps inputs to an input-type agnostic action-state
         // We need to provide it with an enum which stores the possible actions a player could take
-        .add_plugin(InputManagerPlugin::<Action>::default())
+        .add_plugins(InputManagerPlugin::<Action>::default())
         // The InputMap and ActionState components will be added to any entity with the Player component
-        .add_startup_system(spawn_player)
+        .add_systems(Startup, spawn_player)
         // Read the ActionState in your systems using queries!
-        .add_system(jump)
+        .add_systems(Update, jump)
         .run();
 }
 
 // This is the list of "things in the game I want to be able to do based on input"
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
     Run,
     Jump,

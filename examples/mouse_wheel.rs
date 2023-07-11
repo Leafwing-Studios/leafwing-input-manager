@@ -4,14 +4,14 @@ use leafwing_input_manager::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputManagerPlugin::<CameraMovement>::default())
-        .add_startup_system(setup)
-        .add_system(zoom_camera)
-        .add_system(pan_camera.after(zoom_camera))
+        .add_plugins(InputManagerPlugin::<CameraMovement>::default())
+        .add_systems(Startup, setup)
+        .add_systems(Update, zoom_camera)
+        .add_systems(Update, pan_camera.after(zoom_camera))
         .run()
 }
 
-#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Reflect)]
 enum CameraMovement {
     Zoom,
     PanLeft,

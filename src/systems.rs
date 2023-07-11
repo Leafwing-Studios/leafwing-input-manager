@@ -164,7 +164,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
     mut action_state_query: Query<&mut ActionState<A>>,
 ) {
     for (&interaction, action_state_driver) in ui_query.iter() {
-        if interaction == Interaction::Clicked {
+        if interaction == Interaction::Pressed {
             for entity in action_state_driver.targets.iter() {
                 let mut action_state = action_state_query
                     .get_mut(*entity)
@@ -257,8 +257,8 @@ pub fn release_on_disable<A: Actionlike>(
 
 /// Release all inputs when an [`InputMap<A>`] is removed to prevent them from being held forever.
 ///
-/// By default, [`InputManagerPlugin<A>`](crate::plugin::InputManagerPlugin) will run this on [`CoreSet::PostUpdate`](bevy::prelude::CoreSet::PostUpdate).
-/// For components you must remove the [`InputMap<A>`] before [`CoreSet::PostUpdate`](bevy::prelude::CoreSet::PostUpdate)
+/// By default, [`InputManagerPlugin<A>`](crate::plugin::InputManagerPlugin) will run this on [`PostUpdate`](bevy::prelude::PostUpdate).
+/// For components you must remove the [`InputMap<A>`] before [`PostUpdate`](bevy::prelude::PostUpdate)
 /// or this will not run.
 pub fn release_on_input_map_removed<A: Actionlike>(
     mut removed_components: RemovedComponents<InputMap<A>>,

@@ -87,9 +87,9 @@ pub enum QwertyScanCode {
     /// The location of the `'`  key on the QWERTY keyboard layout.
     Apostrophe = 0xde,
     /// The location of the `[`  key on the QWERTY keyboard layout.
-    LBracket = 0xdb,
+    BracketLeft = 0xdb,
     /// The location of the `]`  key on the QWERTY keyboard layout.
-    RBracket = 0xdd,
+    BracketRight = 0xdd,
     /// The location of the `` ` `` key on the QWERTY keyboard layout.
     Backtick = 0xc0,
     /// The location of the `\` on the QWERTY keyboard layout.
@@ -100,14 +100,14 @@ pub enum QwertyScanCode {
     Equals = 0xbb,
     /// The location of the left Alt  key on the QWERTY keyboard layout.
     /// Maps to left Option key on Apple keyboards.
-    LAlt = 0x12,
+    AltLeft = 0x12,
     /// The location of the right Alt key on the QWERTY keyboard layout.
     /// Maps to right Option key on Apple keyboards.
     ///
     /// On Wasm, this scan code value maps to the AltGraph key on Linux, if available.
     /// Note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
-    RAlt = 0xe1,
+    AltRight = 0xe1,
     /// The location of the caps lock  key on the QWERTY keyboard layout.
     ///
     /// On Wasm, note the platform specific details here:
@@ -117,23 +117,23 @@ pub enum QwertyScanCode {
     ///
     /// On Wasm, the right Control key has the same scan code, see:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
-    LControl = 0x11,
+    ControlLeft = 0x11,
     /// The location of the left Windows key on the QWERTY keyboard layout.
     /// Maps to the Command key on Apple keyboards.
     ///
     /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
-    LWin = 0x5b,
+    SuperLeft = 0x5b,
     /// The location of the right Windows key on the QWERTY keyboard layout.
     ///
     /// On Wasm, note the platform specific details here:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
-    RWin = 0x5c,
+    SuperRight = 0x5c,
     /// The location of the left Shift key on the QWERTY keyboard layout.
     ///
     /// On Wasm, the right Shift key has the same scan code, see:
     /// <https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/keyCode#non-printable_keys_function_keys>
-    LShift = 0x10,
+    ShiftLeft = 0x10,
 
     /// The location of the Menu key on the QWERTY keyboard layout.
     ///

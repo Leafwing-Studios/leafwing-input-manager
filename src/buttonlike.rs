@@ -1,15 +1,13 @@
 //! Tools for working with button-like user inputs (mouse clicks, gamepad button, keyboard inputs and so on)
 //!
-use bevy::reflect::{FromReflect, Reflect};
+use bevy::reflect::Reflect;
 use serde::{Deserialize, Serialize};
 
 /// The current state of a particular button,
 /// usually corresponding to a single [`Actionlike`](crate::Actionlike) action.
 ///
 /// By default, buttons are [`ButtonState::Released`].
-#[derive(
-    Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect, FromReflect, Default,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect, Default)]
 pub enum ButtonState {
     /// The button was pressed since the most recent tick
     JustPressed,

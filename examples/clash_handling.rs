@@ -10,15 +10,15 @@ use leafwing_input_manager::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputManagerPlugin::<TestAction>::default())
-        .add_startup_system(spawn_input_map)
-        .add_system(report_pressed_actions)
+        .add_plugins(InputManagerPlugin::<TestAction>::default())
+        .add_systems(Startup, spawn_input_map)
+        .add_systems(Update, report_pressed_actions)
         // Change the value of this resource to change how clashes should be handled in your game
         .insert_resource(ClashStrategy::PrioritizeLongest)
         .run()
 }
 
-#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 enum TestAction {
     One,
     Two,

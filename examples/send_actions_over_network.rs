@@ -15,7 +15,7 @@ use leafwing_input_manager::systems::{generate_action_diffs, process_action_diff
 
 use std::fmt::Debug;
 
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
 enum FpsAction {
     MoveLeft,
     MoveRight,
@@ -33,22 +33,22 @@ fn main() {
 
     client_app
         .add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<FpsAction>::default())
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<FpsAction>::default())
         // Creates an event stream of `ActionDiffs` to send to the server
-        .add_system(generate_action_diffs::<FpsAction, StableId>.in_base_set(CoreSet::PostUpdate))
+        .add_systems(PostUpdate, generate_action_diffs::<FpsAction, StableId>)
         .add_event::<ActionDiff<FpsAction, StableId>>()
-        .add_startup_system(spawn_player);
+        .add_systems(Startup, spawn_player);
 
     let mut server_app = App::new();
     server_app
         .add_plugins(MinimalPlugins)
-        .add_plugin(InputManagerPlugin::<FpsAction>::server())
+        .add_plugins(InputManagerPlugin::<FpsAction>::server())
         .add_event::<ActionDiff<FpsAction, StableId>>()
         // Reads in the event stream of `ActionDiffs` to update the `ActionState`
-        .add_system(process_action_diffs::<FpsAction, StableId>.in_base_set(CoreSet::PreUpdate))
+        .add_systems(PreUpdate, process_action_diffs::<FpsAction, StableId>)
         // Typically, the rest of this information would synchronized as well
-        .add_startup_system(spawn_player);
+        .add_systems(Startup, spawn_player);
 
     // Starting up the game
     client_app.update();
@@ -129,7 +129,7 @@ fn spawn_player(mut commands: Commands) {
 ///
 /// The [`ManualEventReader`] returned must be reused in order to avoid double-sending events
 #[must_use]
-fn send_events<A: Send + Sync + 'static + Debug + Clone>(
+fn send_events<A: Send + Sync + 'static + Debug + Clone + Event>(
     client_app: &App,
     server_app: &mut App,
     reader: Option<ManualEventReader<A>>,

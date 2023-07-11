@@ -6,23 +6,23 @@ use leafwing_input_manager::{
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputManagerPlugin::<BoxMovement>::default())
-        .add_startup_system(setup)
-        .add_system(
+        .add_plugins(InputManagerPlugin::<BoxMovement>::default())
+        .add_systems(Startup, setup)
+        .add_systems(
+            Startup,
             update_cursor_state_from_window
                 .run_if(run_if_enabled::<BoxMovement>)
-                .in_base_set(CoreSet::PreUpdate)
                 .in_set(InputManagerSystem::ManualControl)
                 .before(InputManagerSystem::ReleaseOnDisable)
                 .after(InputManagerSystem::Tick)
                 .after(InputManagerSystem::Update)
                 .after(InputSystem),
         )
-        .add_system(pan_camera)
+        .add_systems(Update, pan_camera)
         .run();
 }
 
-#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq)]
+#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Reflect)]
 enum BoxMovement {
     MousePosition,
 }
@@ -59,9 +59,8 @@ fn update_cursor_state_from_window(
                 .expect("Entity does not exist, or does not have an `ActionState` component");
 
             if let Some(val) = window.cursor_position() {
-                action_state
-                    .action_data_mut(driver.action.clone())
-                    .axis_pair = Some(DualAxisData::from_xy(val));
+                action_state.action_data_mut(driver.action).axis_pair =
+                    Some(DualAxisData::from_xy(val));
             }
         }
     }

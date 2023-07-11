@@ -29,6 +29,7 @@ use bevy::input::{
     Input,
 };
 use bevy::math::Vec2;
+use bevy::prelude::Entity;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 use bevy::window::CursorMoved;
@@ -46,7 +47,7 @@ use bevy::window::CursorMoved;
 ///
 /// // Remember to add InputPlugin so the resources will be there!
 /// let mut app = App::new();
-/// app.add_plugin(InputPlugin);
+/// app.add_plugins(InputPlugin);
 ///
 /// // Pay respects!
 /// app.send_input(KeyCode::F);
@@ -59,7 +60,7 @@ use bevy::window::CursorMoved;
 /// use leafwing_input_manager::{input_mocking::MockInput, user_input::UserInput};
 ///
 /// let mut app = App::new();
-/// app.add_plugin(InputPlugin);
+/// app.add_plugins(InputPlugin);
 ///
 /// // Send inputs one at a time
 /// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
@@ -131,13 +132,13 @@ pub trait MockInput {
 
     /// Presses all `bevy::ui` buttons with the matching `Marker` component
     ///
-    /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    /// Changes their [`Interaction`] component to [`Interaction::Pressed`]
     #[cfg(feature = "ui")]
     fn click_button<Marker: Component>(&mut self);
 
     /// Hovers over all `bevy::ui` buttons with the matching `Marker` component
     ///
-    /// Changes their [`Interaction`] component to [`Interaction::Clicked`]
+    /// Changes their [`Interaction`] component to [`Interaction::Pressed`]
     #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self);
 }
@@ -158,6 +159,7 @@ impl MockInput for MutableInputStreams<'_> {
                 scan_code: u32::MAX,
                 key_code: Some(button),
                 state: ButtonState::Pressed,
+                window: Entity::PLACEHOLDER,
             });
         }
 
@@ -166,6 +168,7 @@ impl MockInput for MutableInputStreams<'_> {
             self.mouse_button_events.send(MouseButtonInput {
                 button,
                 state: ButtonState::Pressed,
+                window: Entity::PLACEHOLDER,
             });
         }
 
@@ -176,21 +179,25 @@ impl MockInput for MutableInputStreams<'_> {
                     unit: MouseScrollUnit::Pixel,
                     x: -1.0,
                     y: 0.0,
+                    window: Entity::PLACEHOLDER,
                 }),
                 MouseWheelDirection::Right => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: 1.0,
                     y: 0.0,
+                    window: Entity::PLACEHOLDER,
                 }),
                 MouseWheelDirection::Up => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: 0.0,
                     y: 1.0,
+                    window: Entity::PLACEHOLDER,
                 }),
                 MouseWheelDirection::Down => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: 0.0,
                     y: -1.0,
+                    window: Entity::PLACEHOLDER,
                 }),
             }
         }
@@ -246,11 +253,13 @@ impl MockInput for MutableInputStreams<'_> {
                                 unit: MouseScrollUnit::Pixel,
                                 x: position_data,
                                 y: 0.0,
+                                window: Entity::PLACEHOLDER,
                             }),
                             MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
                                 unit: MouseScrollUnit::Pixel,
                                 x: 0.0,
                                 y: position_data,
+                                window: Entity::PLACEHOLDER,
                             }),
                         }
                     }
@@ -299,6 +308,7 @@ impl MockInput for MutableInputStreams<'_> {
                 scan_code: u32::MAX,
                 key_code: Some(button),
                 state: ButtonState::Released,
+                window: Entity::PLACEHOLDER,
             });
         }
 
@@ -306,6 +316,7 @@ impl MockInput for MutableInputStreams<'_> {
             self.mouse_button_events.send(MouseButtonInput {
                 button,
                 state: ButtonState::Released,
+                window: Entity::PLACEHOLDER,
             });
         }
     }
@@ -429,7 +440,7 @@ impl MockInput for World {
         let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
 
         for mut interaction in button_query.iter_mut(self) {
-            *interaction = Interaction::Clicked;
+            *interaction = Interaction::Pressed;
         }
     }
 
@@ -497,7 +508,7 @@ mod test {
     #[test]
     fn ordinary_button_inputs() {
         let mut app = App::new();
-        app.add_plugin(InputPlugin);
+        app.add_plugins(InputPlugin);
 
         // Test that buttons are unpressed by default
         assert!(!app.pressed(KeyCode::Space));
@@ -527,7 +538,7 @@ mod test {
     #[test]
     fn explicit_gamepad_button_inputs() {
         let mut app = App::new();
-        app.add_plugin(InputPlugin);
+        app.add_plugins(InputPlugin);
 
         let gamepad = Gamepad { id: 0 };
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -567,7 +578,7 @@ mod test {
     #[test]
     fn implicit_gamepad_button_inputs() {
         let mut app = App::new();
-        app.add_plugin(InputPlugin);
+        app.add_plugins(InputPlugin);
 
         let gamepad = Gamepad { id: 0 };
         let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -606,7 +617,7 @@ mod test {
         struct ButtonMarker;
 
         let mut app = App::new();
-        app.add_plugin(InputPlugin);
+        app.add_plugins(InputPlugin);
 
         // Marked button
         app.world.spawn((Interaction::None, ButtonMarker));
@@ -620,7 +631,7 @@ mod test {
         let mut interaction_query = app.world.query::<(&Interaction, Option<&ButtonMarker>)>();
         for (interaction, maybe_marker) in interaction_query.iter(&app.world) {
             match maybe_marker {
-                Some(_) => assert_eq!(*interaction, Interaction::Clicked),
+                Some(_) => assert_eq!(*interaction, Interaction::Pressed),
                 None => assert_eq!(*interaction, Interaction::None),
             }
         }

@@ -33,13 +33,14 @@
 //! // In crate `top_level_crate`, which depends on `feature_one` and `feature_two`
 //! let mut app = App::new();
 //! app.insert_resource(DynActionRegistry::get().unwrap())
-//!     .add_plugin(FeatureOnePlugin)
-//!     .add_plugin(FeatureTwoPlugin);
+//!     .add_plugins(FeatureOnePlugin)
+//!     .add_plugins(FeatureTwoPlugin);
 //! app.world.remove_resource::<DynActionRegistry>().unwrap().finish();
 //! ```
 
 use std::any::TypeId;
 
+use bevy::reflect::TypePath;
 use bevy::{
     prelude::{App, Resource},
     utils::HashMap,
@@ -58,7 +59,7 @@ static DYN_ACTION_MAP: OnceCell<HashMap<TypeId, usize>> = OnceCell::new();
 static REGISTRY_CREATED: OnceCell<()> = OnceCell::new();
 
 /// The runtime representation of actions declared via marker types
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, TypePath)]
 pub struct DynAction(usize);
 
 /// Coordinates the registration of dynamic action types
