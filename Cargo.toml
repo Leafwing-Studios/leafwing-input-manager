@@ -29,7 +29,7 @@ bevy = { version = "0.11", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.20", optional = true }
+bevy_egui = { version = "0.21", optional = true }
 
 petitset = { version = "0.2.1", features = ["serde_compat"] }
 derive_more = { version = "0.99", default-features = false, features = [
@@ -42,7 +42,7 @@ fixedbitset = "0.4.2"
 once_cell = "1.17.1"
 
 [dev-dependencies]
-bevy_egui = { version = "0.20" }
+bevy_egui = { version = "0.21" }
 bevy = { version = "0.11", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
@@ -67,5 +67,3 @@ harness = false
 name = "leafwing_input_manager"
 path = "src/lib.rs"
 
-[patch.crates-io]
-bevy_egui = {git="https://github.com/Vrixyz/bevy_egui.git", rev="852b2db"}
