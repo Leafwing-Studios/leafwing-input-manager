@@ -408,10 +408,9 @@ mod tests {
     use crate as leafwing_input_manager;
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
-    use bevy::prelude::Reflect;
     use leafwing_input_manager_macros::Actionlike;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
     enum Action {
         One,
         Two,

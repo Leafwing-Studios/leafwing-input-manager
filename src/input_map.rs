@@ -44,7 +44,7 @@ use std::marker::PhantomData;
 ///
 /// // You can Run!
 /// // But you can't Hide :(
-/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
 /// enum Action {
 ///     Run,
 ///     Hide,
@@ -104,9 +104,8 @@ impl<A: Actionlike> InputMap<A> {
     /// use leafwing_input_manager::input_map::InputMap;
     /// use leafwing_input_manager::Actionlike;
     /// use bevy::input::keyboard::KeyCode;
-    /// use bevy::prelude::Reflect;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -142,9 +141,8 @@ impl<A: Actionlike> InputMap<A> {
     /// use leafwing_input_manager::prelude::*;
 
     /// use bevy::input::keyboard::KeyCode;
-    /// use bevy::prelude::Reflect;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -479,9 +477,8 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     /// use bevy::input::keyboard::KeyCode;
     ///
     /// use std::collections::HashMap;
-    /// use bevy::prelude::Reflect;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash)]
     /// enum Action {
     ///     Run,
     ///     Jump,

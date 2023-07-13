@@ -29,7 +29,7 @@ fn main() {
         .run()
 }
 
-#[derive(Actionlike, Debug, Clone, Reflect)]
+#[derive(Actionlike, Debug, Clone)]
 enum MenuAction {
     CloseWindow,
     OpenMainMenu,

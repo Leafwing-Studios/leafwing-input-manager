@@ -15,7 +15,7 @@ use leafwing_input_manager::systems::{generate_action_diffs, process_action_diff
 
 use std::fmt::Debug;
 
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
 enum FpsAction {
     MoveLeft,
     MoveRight,

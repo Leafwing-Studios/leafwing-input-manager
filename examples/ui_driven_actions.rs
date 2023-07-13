@@ -14,7 +14,7 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, Component, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, Component, PartialEq, Eq, Clone, Copy, Hash, Debug)]
 enum Action {
     Left,
     Right,

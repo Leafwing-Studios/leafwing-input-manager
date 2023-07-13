@@ -1,4 +1,3 @@
-use bevy::prelude::Reflect;
 use bevy::{
     input::InputPlugin,
     prelude::{App, KeyCode},
@@ -11,7 +10,7 @@ use leafwing_input_manager::{
     Actionlike,
 };
 
-#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum TestAction {
     A,
     B,

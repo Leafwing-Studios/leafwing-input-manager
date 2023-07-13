@@ -5,7 +5,8 @@ use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
 use bevy::prelude::{Event, Resource};
-use bevy::reflect::Reflect;
+use bevy::reflect::utility::GenericTypePathCell;
+use bevy::reflect::{Reflect, TypePath};
 use bevy::utils::hashbrown::hash_set::Iter;
 use bevy::utils::{Duration, HashSet, Instant};
 use serde::{Deserialize, Serialize};
@@ -47,7 +48,7 @@ pub struct ActionData {
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug, Reflect)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
 /// enum Action {
 ///     Left,
 ///     Right,
@@ -83,6 +84,7 @@ pub struct ActionData {
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
+#[reflect(type_path = false)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
     ///
@@ -90,6 +92,17 @@ pub struct ActionState<A: Actionlike> {
     action_data: Vec<ActionData>,
     #[reflect(ignore)]
     _phantom: PhantomData<A>,
+}
+
+impl<A: Actionlike> TypePath for ActionState<A> {
+    fn type_path() -> &'static str {
+        std::any::type_name::<Self>()
+    }
+
+    fn short_type_path() -> &'static str {
+        static CELL: GenericTypePathCell = GenericTypePathCell::new();
+        CELL.get_or_insert::<Self, _>(|| bevy::utils::get_short_name(std::any::type_name::<Self>()))
+    }
 }
 
 impl<A: Actionlike> ActionState<A> {
@@ -122,12 +135,11 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
-    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
     /// use bevy::utils::Instant;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -177,10 +189,9 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
-    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -203,10 +214,9 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
-    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -291,16 +301,15 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
-    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum AbilitySlot {
     ///     Slot1,
     ///     Slot2,
     /// }
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -369,10 +378,9 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     ///
     /// ```rust
-    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     /// enum Action {
     ///     Eat,
     ///     Sleep,
@@ -522,7 +530,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
-/// #[derive(Actionlike, Clone, Copy, Reflect)]
+/// #[derive(Actionlike, Clone, Copy)]
 /// enum DanceDance {
 ///     Left,
 ///     Right,
@@ -780,12 +788,12 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
 mod tests {
     use crate as leafwing_input_manager;
     use crate::input_mocking::MockInput;
-    use bevy::prelude::{Entity, Reflect};
+    use bevy::prelude::Entity;
     use leafwing_input_manager_macros::Actionlike;
 
     use super::ActionStateDriverTarget;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
     enum Action {
         Run,
         Jump,

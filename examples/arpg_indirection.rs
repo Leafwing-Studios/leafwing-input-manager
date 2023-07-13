@@ -28,7 +28,7 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash, Copy, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Hash, Copy)]
 enum Slot {
     Primary,
     Secondary,
@@ -39,7 +39,7 @@ enum Slot {
 }
 
 // The list of possible abilities is typically longer than the list of slots
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Copy, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Copy)]
 enum Ability {
     Slash,
     Shoot,

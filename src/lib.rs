@@ -6,7 +6,6 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use bevy::reflect::TypePath;
 use std::marker::PhantomData;
 
 pub mod action_state;
@@ -60,10 +59,9 @@ pub mod prelude {
 ///
 /// # Example
 /// ```rust
-/// use bevy::prelude::Reflect;
 /// use leafwing_input_manager::Actionlike;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Reflect)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Up,
@@ -78,7 +76,7 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Send + Sync + Clone + TypePath + 'static {
+pub trait Actionlike: Send + Sync + Clone + 'static {
     /// The number of variants of this action type
     fn n_variants() -> usize;
 

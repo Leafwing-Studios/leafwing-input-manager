@@ -67,3 +67,5 @@ harness = false
 name = "leafwing_input_manager"
 path = "src/lib.rs"
 
+[patch.crates-io]
+bevy = { git = "https://github.com/paul-hansen/bevy.git", rev = "d7ba279f"}
