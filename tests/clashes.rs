@@ -9,13 +9,13 @@ fn test_app() -> App {
     let mut app = App::new();
 
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_input_map);
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_systems(Startup, spawn_input_map);
     app
 }
 
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
 enum Action {
     One,
     Two,
@@ -38,9 +38,9 @@ fn spawn_input_map(mut commands: Commands) {
     input_map.insert_chord([Key1, Key2], OneAndTwo);
     input_map.insert_chord([Key2, Key3], TwoAndThree);
     input_map.insert_chord([Key1, Key2, Key3], OneAndTwoAndThree);
-    input_map.insert_chord([LControl, Key1], CtrlOne);
-    input_map.insert_chord([LAlt, Key1], AltOne);
-    input_map.insert_chord([LControl, LAlt, Key1], CtrlAltOne);
+    input_map.insert_chord([ControlLeft, Key1], CtrlOne);
+    input_map.insert_chord([AltLeft, Key1], AltOne);
+    input_map.insert_chord([ControlLeft, AltLeft, Key1], CtrlAltOne);
 
     commands.spawn(input_map);
 }
@@ -139,7 +139,7 @@ fn modifier_clash_handling() {
     app.world.resource_mut::<Input<KeyCode>>().press(Key1);
     app.world.resource_mut::<Input<KeyCode>>().press(Key2);
     app.world.resource_mut::<Input<KeyCode>>().press(Key3);
-    app.world.resource_mut::<Input<KeyCode>>().press(LControl);
+    app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -163,8 +163,8 @@ fn multiple_modifiers_clash_handling() {
     // Multiple modifiers
     app.world.resource_mut::<Input<KeyCode>>().reset_all();
     app.world.resource_mut::<Input<KeyCode>>().press(Key1);
-    app.world.resource_mut::<Input<KeyCode>>().press(LControl);
-    app.world.resource_mut::<Input<KeyCode>>().press(LAlt);
+    app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
+    app.world.resource_mut::<Input<KeyCode>>().press(AltLeft);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, CtrlOne, AltOne, CtrlAltOne]);

@@ -61,13 +61,13 @@ pub enum QwertyScanCode {
     /// The location of the `P`  key on the QWERTY keyboard layout.
     P = 25,
     /// The location of the `[`  key on the QWERTY keyboard layout.
-    LBracket = 26,
+    BracketLeft = 26,
     /// The location of the `]`  key on the QWERTY keyboard layout.
-    RBracket = 27,
+    BracketRight = 27,
     /// The location of the Enter/Return key on the QWERTY keyboard layout.
     Enter = 28,
     /// The location of the left Control key on the QWERTY keyboard layout.
-    LControl = 29,
+    ControlLeft = 29,
     /// The location of the `A`  key on the QWERTY keyboard layout.
     A = 30,
     /// The location of the `S`  key on the QWERTY keyboard layout.
@@ -93,7 +93,7 @@ pub enum QwertyScanCode {
     /// The location of the `` ` `` key on the QWERTY keyboard layout.
     Backtick = 41,
     /// The location of the left Shift key on the QWERTY keyboard layout.
-    LShift = 42,
+    ShiftLeft = 42,
     /// The location of the `\` on the QWERTY keyboard layout.
     Backslash = 43,
     /// The location of the `Z` key on the QWERTY keyboard layout.
@@ -117,13 +117,13 @@ pub enum QwertyScanCode {
     /// The location of the `/` key on the QWERTY keyboard layout.
     Slash = 53,
     /// The location of the right Shift key on the QWERTY keyboard layout.
-    RShift = 54,
+    ShiftRight = 54,
     /// The location of the `*` key on the numpad of the QWERTY keyboard layout.
     /// Maps to `NumpadDivide` on Apple keyboards.
     NumpadMultiply = 55,
     /// The location of the left Alt  key on the QWERTY keyboard layout.
     /// Maps to left Option key on Apple keyboards.
-    LAlt = 56,
+    AltLeft = 56,
     /// The location of the Space key on the QWERTY keyboard layout.
     Space = 57,
     /// The location of the caps lock  key on the QWERTY keyboard layout.
@@ -197,7 +197,7 @@ pub enum QwertyScanCode {
     /// The location of the Enter key on the numpad of the QWERTY keyboard layout.
     NumpadEnter = 96,
     /// The location of the right Control key on the QWERTY keyboard layout.
-    RControl = 97,
+    ControlRight = 97,
     /// The location of the `/` key on the numpad of the QWERTY keyboard layout.
     /// Maps to `NumpadEquals` on Apple keyboards.
     NumpadDivide = 98,
@@ -205,7 +205,7 @@ pub enum QwertyScanCode {
     AltSysrq = 99,
     /// The location of the right Alt key on the QWERTY keyboard layout.
     /// Maps to right Option key on Apple keyboards.
-    RAlt = 100,
+    AltRight = 100,
     // KEY_LINEFEED = 101,
     /// The location of the Home key on the QWERTY keyboard layout.
     Home = 102,
@@ -246,9 +246,9 @@ pub enum QwertyScanCode {
     // KEY_YEN = 124,
     /// The location of the left Windows key on the QWERTY keyboard layout.
     /// Maps to the Command key on Apple keyboards.
-    LWin = 125,
+    SuperLeft = 125,
     /// The location of the right Windows key on the QWERTY keyboard layout.
-    RWin = 126,
+    SuperRight = 126,
     // KEY_COMPOSE = 127,
     // KEY_STOP = 128,
     // KEY_AGAIN = 129,

@@ -4,8 +4,8 @@ use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
-use bevy::prelude::Resource;
-use bevy::reflect::{FromReflect, Reflect};
+use bevy::prelude::{Event, Resource};
+use bevy::reflect::Reflect;
 use bevy::utils::hashbrown::hash_set::Iter;
 use bevy::utils::{Duration, HashSet, Instant};
 use serde::{Deserialize, Serialize};
@@ -15,7 +15,7 @@ use std::marker::PhantomData;
 /// Metadata about an [`Actionlike`] action
 ///
 /// If a button is released, its `reasons_pressed` should be empty.
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect, FromReflect)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
@@ -43,10 +43,11 @@ pub struct ActionData {
 ///
 /// # Example
 /// ```rust
+/// use bevy::reflect::Reflect;
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug)]
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug, Reflect)]
 /// enum Action {
 ///     Left,
 ///     Right,
@@ -81,9 +82,7 @@ pub struct ActionData {
 /// assert!(action_state.released(Action::Jump));
 /// assert!(!action_state.just_released(Action::Jump));
 /// ```
-#[derive(
-    Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect, FromReflect,
-)]
+#[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
     ///
@@ -123,11 +122,12 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
+    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
     /// use bevy::utils::Instant;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -177,9 +177,10 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
+    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -202,9 +203,10 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
+    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -289,15 +291,16 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Example
     /// ```rust
+    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
     /// enum AbilitySlot {
     ///     Slot1,
     ///     Slot2,
     /// }
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -366,9 +369,10 @@ impl<A: Actionlike> ActionState<A> {
     /// # Example
     ///
     /// ```rust
+    /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
     /// enum Action {
     ///     Eat,
     ///     Sleep,
@@ -518,7 +522,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
-/// #[derive(Actionlike, Clone, Copy)]
+/// #[derive(Actionlike, Clone, Copy, Reflect)]
 /// enum DanceDance {
 ///     Left,
 ///     Right,
@@ -702,7 +706,7 @@ impl<'a> Iterator for ActionStateDriverTargetIterator<'a> {
 ///
 /// This struct is principally used as a field on [`ActionData`],
 /// which itself lives inside an [`ActionState`].
-#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Reflect, FromReflect)]
+#[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Reflect)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
     /// Recorded as the [`Time`](bevy::time::Time) at the start of the tick after the state last changed.
@@ -754,7 +758,7 @@ impl Timing {
 ///
 /// `ID` should be a component type that stores a unique stable identifier for the entity
 /// that stores the corresponding [`ActionState`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Event)]
 pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
     /// The action was pressed
     Pressed {
@@ -776,12 +780,12 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
 mod tests {
     use crate as leafwing_input_manager;
     use crate::input_streams::InputStreams;
-    use bevy::prelude::Entity;
+    use bevy::prelude::{Entity, Reflect};
     use leafwing_input_manager_macros::Actionlike;
 
     use super::ActionStateDriverTarget;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
     enum Action {
         Run,
         Jump,
@@ -798,7 +802,7 @@ mod tests {
         use bevy::utils::{Duration, Instant};
 
         let mut app = App::new();
-        app.add_plugin(InputPlugin);
+        app.add_plugins(InputPlugin);
 
         // Action state
         let mut action_state = ActionState::<Action>::default();

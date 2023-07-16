@@ -9,7 +9,7 @@ use menu_mocking::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputManagerPlugin::<MenuAction>::default())
+        .add_plugins(InputManagerPlugin::<MenuAction>::default())
         .init_resource::<ActionState<MenuAction>>()
         .insert_resource(InputMap::<MenuAction>::new([
             (KeyCode::Escape, MenuAction::CloseWindow),
@@ -18,18 +18,18 @@ fn main() {
         ]))
         .init_resource::<MainMenu>()
         .init_resource::<SubMenu>()
-        .add_system(report_menus)
-        .add_system(open_main_menu)
-        .add_system(open_sub_menu)
+        .add_systems(Update, report_menus)
+        .add_systems(Update, open_main_menu)
+        .add_systems(Update, open_sub_menu)
         // We want to ensure that if both the main menu and submenu are open
         // only the submenu is closed if the user hits (or holds) Escape
-        .add_system(close_menu::<SubMenu>.before(close_menu::<MainMenu>))
+        .add_systems(Update, close_menu::<SubMenu>.before(close_menu::<MainMenu>))
         // We can do this by ordering our systems and using `ActionState::consume`
-        .add_system(close_menu::<MainMenu>)
+        .add_systems(Update, close_menu::<MainMenu>)
         .run()
 }
 
-#[derive(Actionlike, Debug, Clone)]
+#[derive(Actionlike, Debug, Clone, Reflect)]
 enum MenuAction {
     CloseWindow,
     OpenMainMenu,

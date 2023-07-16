@@ -12,7 +12,7 @@ use crate::scan_codes::QwertyScanCode;
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
-use bevy::prelude::CoreSet;
+use bevy::prelude::{PostUpdate, PreUpdate};
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -33,7 +33,7 @@ use bevy::ui::UiSystem;
 /// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource is set.
 /// This can be useful when working with states to pause the game, navigate menus or so on.
 ///
-/// **WARNING:** These systems run during [`CoreSet::PreUpdate`].
+/// **WARNING:** These systems run during [`PreUpdate`].
 /// If you have systems that care about inputs and actions that also run during this stage,
 /// you must define an ordering between your systems or behavior will be very erratic.
 /// The stable system sets for these systems are available under [`InputManagerSystem`] enum.
@@ -91,44 +91,44 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 
         match self.machine {
             Machine::Client => {
-                app.add_system(
+                app.add_systems(
+                    PreUpdate,
                     tick_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
-                .add_system(
+                .add_systems(
+                    PreUpdate,
                     release_on_disable::<A>
-                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Update),
                 )
-                .add_system(release_on_input_map_removed::<A>.in_base_set(CoreSet::PostUpdate));
+                .add_systems(PostUpdate, release_on_input_map_removed::<A>);
 
                 #[cfg(feature = "egui")]
-                app.add_system(
+                app.add_systems(
+                    PreUpdate,
                     update_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Update)
                         .after(InputSystem)
                         .after(bevy_egui::EguiSet::ProcessInput),
                 );
                 #[cfg(not(feature = "egui"))]
-                app.add_system(
+                app.add_systems(
+                    PreUpdate,
                     update_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Update)
                         .after(InputSystem),
                 );
 
                 #[cfg(feature = "ui")]
-                app.add_system(
+                app.add_systems(
+                    PreUpdate,
                     update_action_state_from_interaction::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::ManualControl)
                         .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
@@ -140,10 +140,10 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 );
             }
             Machine::Server => {
-                app.add_system(
+                app.add_systems(
+                    PreUpdate,
                     tick_action_state::<A>
                         .run_if(run_if_enabled::<A>)
-                        .in_base_set(CoreSet::PreUpdate)
                         .in_set(InputManagerSystem::Tick),
                 );
             }

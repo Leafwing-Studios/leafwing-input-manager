@@ -61,9 +61,9 @@ pub enum QwertyScanCode {
     /// The location of the `P`  key on the QWERTY keyboard layout.
     P = 0x19,
     /// The location of the `[`  key on the QWERTY keyboard layout.
-    LBracket = 0x1a,
+    BracketLeft = 0x1a,
     /// The location of the `]`  key on the QWERTY keyboard layout.
-    RBracket = 0x1b,
+    BracketRight = 0x1b,
     /// The location of the `\` on the QWERTY keyboard layout.
     Backslash = 0x2b,
     /// The location of the caps lock  key on the QWERTY keyboard layout.
@@ -97,7 +97,7 @@ pub enum QwertyScanCode {
     /// The location of the Enter/Return key on the QWERTY keyboard layout.
     Enter = 0x1c,
     /// The location of the left Shift key on the QWERTY keyboard layout.
-    LShift = 0x2a,
+    ShiftLeft = 0x2a,
     /// The location of the `Z` key on the QWERTY keyboard layout.
     Z = 0x2c,
     /// The location of the `X` key on the QWERTY keyboard layout.
@@ -119,19 +119,19 @@ pub enum QwertyScanCode {
     /// The location of the `/` key on the QWERTY keyboard layout.
     Slash = 0x35,
     /// The location of the right Shift key on the QWERTY keyboard layout.
-    RShift = 0x36,
+    ShiftRight = 0x36,
     /// The location of the left Control key on the QWERTY keyboard layout.
-    LControl = 0x1d,
+    ControlLeft = 0x1d,
     /// The location of the left Alt  key on the QWERTY keyboard layout.
     /// Maps to left Option key on Apple keyboards.
-    LAlt = 0x38,
+    AltLeft = 0x38,
     /// The location of the Space key on the QWERTY keyboard layout.
     Space = 0x39,
     /// The location of the right Alt key on the QWERTY keyboard layout.
     /// Maps to right Option key on Apple keyboards.
-    RAlt = 0xe0_e8,
+    AltRight = 0xe0_e8,
     /// The location of the right Control key on the QWERTY keyboard layout.
-    RControl = 0xe0_1d,
+    ControlRight = 0xe0_1d,
     /// The location of the Insert key on the QWERTY keyboard layout.
     /// Maps to the Help key on Apple keyboards.
     Insert = 0xe0_52,
@@ -232,9 +232,9 @@ pub enum QwertyScanCode {
     CtrlBreak = 0xe0_46,
     /// The location of the left Windows key on the QWERTY keyboard layout.
     /// Maps to the Command key on Apple keyboards.
-    LWin = 0xe0_5b,
+    SuperLeft = 0xe0_5b,
     /// The location of the right Windows key on the QWERTY keyboard layout.
-    RWin = 0xe0_5c,
+    SuperRight = 0xe0_5c,
     /// The location of the Menu key on the QWERTY keyboard layout.
     Menu = 0xe0_5d,
     /// The location of the Sleep key on the QWERTY keyboard layout.

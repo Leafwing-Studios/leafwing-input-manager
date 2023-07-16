@@ -19,10 +19,10 @@ use std::marker::PhantomData;
 /// By example:
 ///
 /// - `S` and `W`: does not clash
-/// - `LControl + S` and `S`: clashes
+/// - `ControlLeft + S` and `S`: clashes
 /// - `S` and `S`: does not clash
-/// - `LControl + S` and ` LAlt + S`: clashes
-/// - `LControl + S`, `LAlt + S` and `LControl + LAlt + S`: clashes
+/// - `ControlLeft + S` and ` AltLeft + S`: clashes
+/// - `ControlLeft + S`, `AltLeft + S` and `ControlLeft + AltLeft + S`: clashes
 ///
 /// This strategy is only used when assessing the actions and input holistically,
 /// in [`InputMap::which_pressed`], using [`InputMap::handle_clashes`].
@@ -278,9 +278,10 @@ mod tests {
     use crate::input_like::virtual_dpad::VirtualDPad;
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
+    use bevy::prelude::Reflect;
     use leafwing_input_manager_macros::Actionlike;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
         One,
         Two,
@@ -304,9 +305,9 @@ mod tests {
         input_map.insert_chord([Key1, Key2], OneAndTwo);
         input_map.insert_chord([Key2, Key3], TwoAndThree);
         input_map.insert_chord([Key1, Key2, Key3], OneAndTwoAndThree);
-        input_map.insert_chord([LControl, Key1], CtrlOne);
-        input_map.insert_chord([LAlt, Key1], AltOne);
-        input_map.insert_chord([LControl, LAlt, Key1], CtrlAltOne);
+        input_map.insert_chord([ControlLeft, Key1], CtrlOne);
+        input_map.insert_chord([AltLeft, Key1], AltOne);
+        input_map.insert_chord([ControlLeft, AltLeft, Key1], CtrlAltOne);
         input_map.insert(
             VirtualDPad {
                 up: Up.into(),
@@ -316,7 +317,7 @@ mod tests {
             },
             MoveDPad,
         );
-        input_map.insert_chord([LControl, Up], CtrlUp);
+        input_map.insert_chord([ControlLeft, Up], CtrlUp);
 
         input_map
     }
@@ -349,7 +350,7 @@ mod tests {
                 right: D.into(),
             };
 
-            let ctrl_up = Chord::new([Up, LControl]);
+            let ctrl_up = Chord::new([Up, ControlLeft]);
             let directions_dpad = VirtualDPad {
                 up: Up.into(),
                 down: Down.into(),
@@ -424,7 +425,7 @@ mod tests {
             assert_eq!(input_map.possible_clashes().len(), 13);
 
             // Possible clashes are cached upon binding insertion
-            input_map.insert(Chord::new([LControl, LAlt, Key1]), Action::Two);
+            input_map.insert(Chord::new([ControlLeft, AltLeft, Key1]), Action::Two);
             assert_eq!(input_map.possible_clashes().len(), 16);
 
             // Possible clashes are cached upon binding removal
@@ -435,7 +436,7 @@ mod tests {
         #[test]
         fn resolve_prioritize_longest() {
             let mut app = App::new();
-            app.add_plugin(InputPlugin);
+            app.add_plugins(InputPlugin);
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
@@ -485,13 +486,13 @@ mod tests {
         #[test]
         fn resolve_use_action_order() {
             let mut app = App::new();
-            app.add_plugin(InputPlugin);
+            app.add_plugins(InputPlugin);
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(One, CtrlOne).unwrap();
             let reversed_clash = input_map.possible_clash(CtrlOne, One).unwrap();
             app.world.resource_mut::<Input<KeyCode>>().press(Key1);
-            app.world.resource_mut::<Input<KeyCode>>().press(LControl);
+            app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world);
@@ -514,7 +515,7 @@ mod tests {
         #[test]
         fn handle_clashes() {
             let mut app = App::new();
-            app.add_plugin(InputPlugin);
+            app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
             app.world.resource_mut::<Input<KeyCode>>().press(Key1);
@@ -542,10 +543,10 @@ mod tests {
         #[test]
         fn handle_clashes_dpad_chord() {
             let mut app = App::new();
-            app.add_plugin(InputPlugin);
+            app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.world.resource_mut::<Input<KeyCode>>().press(LControl);
+            app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
             app.world.resource_mut::<Input<KeyCode>>().press(Up);
             app.update();
 
@@ -568,12 +569,12 @@ mod tests {
         #[test]
         fn which_pressed() {
             let mut app = App::new();
-            app.add_plugin(InputPlugin);
+            app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
             app.world.resource_mut::<Input<KeyCode>>().press(Key1);
             app.world.resource_mut::<Input<KeyCode>>().press(Key2);
-            app.world.resource_mut::<Input<KeyCode>>().press(LControl);
+            app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
             app.update();
 
             let action_data = input_map.which_pressed(

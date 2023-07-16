@@ -6,7 +6,7 @@ use leafwing_input_manager::input_like::mouse_motion::{MouseMotionAxis, MouseMot
 use leafwing_input_manager::input_like::virtual_dpad::VirtualDPad;
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -25,7 +25,7 @@ impl ButtonlikeTestAction {
     }
 }
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
 enum AxislikeTestAction {
     X,
     Y,
@@ -35,9 +35,9 @@ enum AxislikeTestAction {
 fn test_app() -> App {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<ButtonlikeTestAction>::default())
-        .add_plugin(InputManagerPlugin::<AxislikeTestAction>::default())
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<ButtonlikeTestAction>::default())
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
         .init_resource::<ActionState<ButtonlikeTestAction>>()
         .init_resource::<ActionState<AxislikeTestAction>>();
 
@@ -124,6 +124,7 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(1.0, 0.0),
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -133,6 +134,7 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(-1.0, 0.0),
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -142,6 +144,7 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(0.0, 1.0),
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -151,6 +154,7 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(0.0, -1.0),
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

@@ -4,13 +4,13 @@ use leafwing_input_manager::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(InputManagerPlugin::<Action>::default())
-        .add_startup_system(spawn_players)
+        .add_plugins(InputManagerPlugin::<Action>::default())
+        .add_systems(Startup, spawn_players)
         .add_system(log_actions)
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
     Left,
     Right,
@@ -26,7 +26,6 @@ enum Player {
 #[derive(Bundle)]
 struct PlayerBundle {
     player: Player,
-    #[bundle]
     input_manager: InputManagerBundle<Action>,
 }
 

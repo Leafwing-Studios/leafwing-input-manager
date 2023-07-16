@@ -1,11 +1,19 @@
 # Release Notes
 
-## Unreleased
+## Version 0.10
+
+### Usability
+
+- `bevy` dependency has been bumped from 0.10 to 0.11.
+- `ActionLike` now requires Bevy's `TypePath` trait. Your actions will now need to derive `Reflect` or `TypePath`. See [bevy#7184](https://github.com/bevyengine/bevy/pull/7184)
+- `QwertyScanCode` has had its variants renamed to match bevy's `KeyCode` variants.
+  See [bevy#8792](https://github.com/bevyengine/bevy/pull/8792)
 
 ### Enhancements
 
-- Changed `entity` field of `ActionStateDriver` to `targets: ActionStateDriverTarget` with variants for 0, 1, or multiple targets, to allow for one driver 
+- Changed `entity` field of `ActionStateDriver` to `targets: ActionStateDriverTarget` with variants for 0, 1, or multiple targets, to allow for one driver
 to update multiple entities if needed.
+- Added builder-style functions to `SingleAxis`, `DualAxis`, and `VirtualDPad` that invert their output values, allowing, for example, binding inverted camera controls.
 
 ### Docs
 

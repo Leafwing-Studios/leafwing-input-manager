@@ -1,7 +1,7 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
 use crate::orientation::{Direction, Rotation};
 use bevy::math::Vec2;
-use bevy::reflect::{FromReflect, Reflect};
+use bevy::reflect::Reflect;
 use serde::{Deserialize, Serialize};
 
 /// A wrapped [`Vec2`] that represents the combination of two input axes.
@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// This struct should store the processed form of your raw inputs in a device-agnostic fashion.
 /// Any deadzone correction, rescaling or drift-correction should be done at an earlier level.
-#[derive(Debug, Copy, Clone, PartialEq, Default, Deserialize, Serialize, Reflect, FromReflect)]
+#[derive(Debug, Copy, Clone, PartialEq, Default, Deserialize, Serialize, Reflect)]
 pub struct DualAxisData {
     xy: Vec2,
 }

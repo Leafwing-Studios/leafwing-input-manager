@@ -5,7 +5,7 @@ use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::input_like::virtual_dpad::VirtualDPad;
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -13,7 +13,7 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Actionlike, Clone, Copy, Debug)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
 enum AxislikeTestAction {
     X,
     Y,
@@ -23,9 +23,9 @@ enum AxislikeTestAction {
 fn test_app() -> App {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
-        .add_plugin(InputPlugin)
-        .add_plugin(InputManagerPlugin::<ButtonlikeTestAction>::default())
-        .add_plugin(InputManagerPlugin::<AxislikeTestAction>::default())
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<ButtonlikeTestAction>::default())
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
         .init_resource::<ActionState<ButtonlikeTestAction>>()
         .init_resource::<ActionState<AxislikeTestAction>>();
 
@@ -45,6 +45,7 @@ fn raw_mouse_wheel_events() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: 10.0,
+        window: Entity::PLACEHOLDER,
     });
     app.update();
 
@@ -135,6 +136,7 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 1.0,
         y: 0.0,
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -146,6 +148,7 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: -1.0,
         y: 0.0,
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -157,6 +160,7 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: 1.0,
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -168,6 +172,7 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: -1.0,
+        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

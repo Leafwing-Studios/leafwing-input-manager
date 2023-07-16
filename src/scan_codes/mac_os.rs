@@ -69,13 +69,13 @@ pub enum QwertyScanCode {
     /// The location of the `0` key on the QWERTY keyboard layout.
     Key0 = 0x1d,
     /// The location of the `]`  key on the QWERTY keyboard layout.
-    RBracket = 0x1e,
+    BracketRight = 0x1e,
     /// The location of the `O`  key on the QWERTY keyboard layout.
     O = 0x1f,
     /// The location of the `U`  key on the QWERTY keyboard layout.
     U = 0x20,
     /// The location of the `[`  key on the QWERTY keyboard layout.
-    LBracket = 0x21,
+    BracketLeft = 0x21,
     /// The location of the `I`  key on the QWERTY keyboard layout.
     I = 0x22,
     /// The location of the `P`  key on the QWERTY keyboard layout.
@@ -155,23 +155,23 @@ pub enum QwertyScanCode {
     Escape = 0x35,
     /// The location of the left Windows key on the QWERTY keyboard layout.
     /// Maps to the left Command key on Apple keyboards.
-    LWin = 0x37,
+    SuperLeft = 0x37,
     /// The location of the left Shift key on the QWERTY keyboard layout.
-    LShift = 0x38,
+    ShiftLeft = 0x38,
     /// The location of the Caps Lock key on the QWERTY keyboard layout.
     CapsLock = 0x39,
     /// The location of the left Alt  key on the QWERTY keyboard layout.
     /// Maps to left Option key on Apple keyboards.
-    LAlt = 0x3a,
+    AltLeft = 0x3a,
     /// The location of the left Control key on the QWERTY keyboard layout.
-    LControl = 0x3b,
+    ControlLeft = 0x3b,
     /// The location of the right Shift key on the QWERTY keyboard layout.
-    RShift = 0x3c,
+    ShiftRight = 0x3c,
     /// The location of the right Alt key on the QWERTY keyboard layout.
     /// Maps to right Option key on Apple keyboards.
-    RAlt = 0x3d,
+    AltRight = 0x3d,
     /// The location of the right Control key on the QWERTY keyboard layout.
-    RControl = 0x3e,
+    ControlRight = 0x3e,
     // This is an extra key on mac keyboards: Function = 0x3f,
     // This is an extra key on mac keyboards: F18 = 0x4f,
     // This is an extra key on mac keyboards: F19 = 0x50,
@@ -234,5 +234,5 @@ pub enum QwertyScanCode {
     // Not listed in the provided link, found by manual testing.
     /// The location of the right Windows key on the QWERTY keyboard layout.
     /// Maps to the right Command key on Apple keyboards.
-    RWin = 0x36,
+    SuperRight = 0x36,
 }
