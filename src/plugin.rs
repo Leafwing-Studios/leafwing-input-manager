@@ -54,7 +54,7 @@ pub struct InputManagerPlugin<A: Actionlike> {
 impl<A: Actionlike> Default for InputManagerPlugin<A> {
     fn default() -> Self {
         Self {
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
             machine: Machine::Client,
         }
     }
@@ -69,7 +69,7 @@ impl<A: Actionlike> InputManagerPlugin<A> {
     #[must_use]
     pub fn server() -> Self {
         Self {
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
             machine: Machine::Server,
         }
     }

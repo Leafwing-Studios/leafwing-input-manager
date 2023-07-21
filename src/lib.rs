@@ -130,7 +130,7 @@ impl<A: Actionlike> Default for ActionIter<A> {
     fn default() -> Self {
         ActionIter {
             index: 0,
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
         }
     }
 }

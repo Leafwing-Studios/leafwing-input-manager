@@ -757,10 +757,7 @@ mod tests {
         use std::collections::HashMap;
 
         let mut map: HashMap<Action, Vec<Box<dyn InputLikeObject>>> = HashMap::default();
-        map.insert(
-            Action::Hide,
-            vec![Chord::new(vec![KeyCode::R, KeyCode::E]).into()],
-        );
+        map.insert(Action::Hide, vec![Chord::new(vec![KeyCode::R, KeyCode::E])]);
         map.insert(Action::Jump, vec![KeyCode::Space.into()]);
         map.insert(
             Action::Run,

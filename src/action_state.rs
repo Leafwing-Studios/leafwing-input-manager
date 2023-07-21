@@ -506,7 +506,7 @@ impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> ActionState<A> {
         ActionState {
             action_data: A::variants().map(|_| ActionData::default()).collect(),
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
         }
     }
 }

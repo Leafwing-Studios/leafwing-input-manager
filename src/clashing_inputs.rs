@@ -157,7 +157,7 @@ impl<A: Actionlike> Clash<A> {
             index_b: action_b.index(),
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
         }
     }
 
@@ -169,7 +169,7 @@ impl<A: Actionlike> Clash<A> {
             index_b,
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
         }
     }
 }
@@ -381,7 +381,7 @@ mod tests {
                 index_b: OneAndTwo.index(),
                 inputs_a: vec![Key1.into()],
                 inputs_b: vec![Chord::new([Key1, Key2])],
-                _phantom: PhantomData::default(),
+                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -397,9 +397,9 @@ mod tests {
             let correct_clash = Clash {
                 index_a: OneAndTwoAndThree.index(),
                 index_b: OneAndTwo.index(),
-                inputs_a: vec![Chord::new([Key1, Key2, Key3]).into()],
-                inputs_b: vec![Chord::new([Key1, Key2]).into()],
-                _phantom: PhantomData::default(),
+                inputs_a: vec![Chord::new([Key1, Key2, Key3])],
+                inputs_b: vec![Chord::new([Key1, Key2])],
+                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);
