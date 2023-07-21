@@ -492,7 +492,9 @@ mod tests {
             let simple_clash = input_map.possible_clash(One, CtrlOne).unwrap();
             let reversed_clash = input_map.possible_clash(CtrlOne, One).unwrap();
             app.world.resource_mut::<Input<KeyCode>>().press(Key1);
-            app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
+            app.world
+                .resource_mut::<Input<KeyCode>>()
+                .press(ControlLeft);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world);
@@ -546,7 +548,9 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
+            app.world
+                .resource_mut::<Input<KeyCode>>()
+                .press(ControlLeft);
             app.world.resource_mut::<Input<KeyCode>>().press(Up);
             app.update();
 
@@ -574,7 +578,9 @@ mod tests {
 
             app.world.resource_mut::<Input<KeyCode>>().press(Key1);
             app.world.resource_mut::<Input<KeyCode>>().press(Key2);
-            app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
+            app.world
+                .resource_mut::<Input<KeyCode>>()
+                .press(ControlLeft);
             app.update();
 
             let action_data = input_map.which_pressed(
@@ -617,12 +623,12 @@ impl<T: ?Sized + InputLikeObject> Clashes for T {
     /// # use leafwing_input_manager::prelude::{Chord, VirtualDPad};
     /// # use bevy::input::keyboard::KeyCode::*;
     /// assert!(!S.clashes(&W));
-    /// assert!(Chord::new([LControl, S]).clashes(&S));
+    /// assert!(Chord::new([ControlLeft, S]).clashes(&S));
     /// assert!(!S.clashes(&S));
-    /// assert!(Chord::new([Chord::new([LControl, S]), Chord::new([LAlt, S])]).clashes(Chord::new([LAlt, S]).as_ref()));
-    /// assert!(Chord::new([LControl, S]).clashes(Chord::new([LControl, LAlt, S]).as_ref()));
-    /// assert!(Chord::new([LAlt, S]).clashes(Chord::new([LControl, LAlt, S]).as_ref()));
-    /// assert!(VirtualDPad::arrow_keys().clashes(Chord::new([LControl, Up]).as_ref()));
+    /// assert!(Chord::new([Chord::new([ControlLeft, S]), Chord::new([AltLeft, S])]).clashes(Chord::new([AltLeft, S]).as_ref()));
+    /// assert!(Chord::new([ControlLeft, S]).clashes(Chord::new([ControlLeft, AltLeft, S]).as_ref()));
+    /// assert!(Chord::new([AltLeft, S]).clashes(Chord::new([ControlLeft, AltLeft, S]).as_ref()));
+    /// assert!(VirtualDPad::arrow_keys().clashes(Chord::new([ControlLeft, Up]).as_ref()));
     /// ```
     fn clashes(&self, other: &dyn InputLikeObject) -> bool {
         // Single inputs don't clash with other single inputs

@@ -4,7 +4,7 @@ use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, Si
 use crate::prelude::{MouseWheelDirection, QwertyScanCode};
 use bevy::prelude::{GamepadButtonType, KeyCode, Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
-use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
+use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypePath, Typed, ValueInfo};
 use erased_serde::Serialize;
 use std::any::Any;
 
@@ -15,7 +15,7 @@ use std::any::Any;
 /// even though it can be stored as an [`InputKind`].
 ///
 /// Instead, use it directly as [`InputKind::DualAxis`]!
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, TypePath)]
 pub struct VirtualDPad {
     /// The input that represents the up direction in this virtual DPad
     #[serde(deserialize_with = "deserialize_boxed_button")]
@@ -246,8 +246,8 @@ impl Reflect for VirtualDPad {
         std::any::type_name::<Self>()
     }
 
-    fn get_type_info(&self) -> &'static TypeInfo {
-        <Self as Typed>::type_info()
+    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
+        Some(<Self as Typed>::type_info())
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {

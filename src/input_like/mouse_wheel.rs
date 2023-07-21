@@ -1,10 +1,11 @@
 use crate::input_like::mouse_motion::{mouse_motion_direction_system, MouseMotionDirection};
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
+use crate::plugin::InputManagerSystem;
 use bevy::app::App;
 use bevy::input::mouse::MouseWheel;
 use bevy::input::{Axis, Input, InputSystem};
 use bevy::math::Vec2;
-use bevy::prelude::{EventReader, Events, IntoSystemConfig, Plugin, Reflect, ResMut, World};
+use bevy::prelude::{EventReader, IntoSystemConfigs, Plugin, PreUpdate, Reflect, ResMut, World};
 use serde::{Deserialize, Serialize};
 
 // TODO: Move this plugin of the mouse_wheel module. Not sure where we want it yet.
@@ -18,11 +19,16 @@ impl Plugin for ExtraMouseInputsPlugin {
         app.init_resource::<Input<MouseWheelDirection>>();
         app.init_resource::<Axis<MouseWheelAxis>>();
         app.init_resource::<Input<MouseMotionDirection>>();
-        app.add_systems((
-            mouse_wheel_direction_system.in_set(InputSystem),
-            mouse_wheel_axis_system.in_set(InputSystem),
-            mouse_motion_direction_system.in_set(InputSystem),
-        ));
+        app.add_systems(
+            PreUpdate,
+            (
+                mouse_wheel_direction_system,
+                mouse_wheel_axis_system,
+                mouse_motion_direction_system,
+            )
+                .in_set(InputManagerSystem::Update)
+                .after(InputSystem),
+        );
     }
 }
 
@@ -180,17 +186,11 @@ impl ButtonLike for MouseWheelAxis {
 
 impl SingleAxisLike for MouseWheelAxis {
     fn input_value(&self, world: &World) -> f32 {
-        // TODO: If/when https://github.com/bevyengine/bevy/pull/8871 gets merged,
-        //       we can use Axis<MouseWheelAxis> here.
-        let Some(events) = world.get_resource::<Events<MouseWheel>>() else {
+        let Some(axis) = world.get_resource::<Axis<MouseWheelAxis>>() else {
             return 0.0;
         };
 
-        let mut event_reader = events.get_reader();
-        match self {
-            MouseWheelAxis::X => event_reader.iter(events).map(|event| event.x).sum(),
-            MouseWheelAxis::Y => event_reader.iter(events).map(|event| event.y).sum(),
-        }
+        axis.get_unclamped(*self).unwrap_or_default()
     }
 
     fn clone_axis(&self) -> Box<dyn SingleAxisLike> {

@@ -124,7 +124,6 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(1.0, 0.0),
-        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -134,7 +133,6 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(-1.0, 0.0),
-        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -144,7 +142,6 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(0.0, 1.0),
-        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -154,7 +151,6 @@ fn mouse_motion_axis() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
         delta: Vec2::new(0.0, -1.0),
-        inverted: false,
     });
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

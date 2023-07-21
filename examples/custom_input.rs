@@ -3,6 +3,7 @@
 //! Creates a custom input type from [`WindowMotion`] events, and binds it to changing the background
 //! color.
 use bevy::prelude::*;
+use bevy::reflect::TypePath;
 use bevy::window::WindowResolution;
 use itertools::Itertools;
 use leafwing_input_manager::input_like::{
@@ -12,14 +13,14 @@ use leafwing_input_manager::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::any::TypeId;
 
-#[derive(Debug, Clone, Copy, PartialEq, Reflect, FromReflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize, Event)]
 #[reflect(Debug, PartialEq, Serialize, Deserialize)]
 pub struct WindowMotion {
     /// The change in the position of the Window since the last event was sent.
     pub delta: Vec2,
 }
 
-#[derive(Actionlike, Debug, Clone, Copy)]
+#[derive(Actionlike, Debug, Clone, Copy, TypePath)]
 enum ChangeColorAction {
     Red,
     Green,
@@ -140,12 +141,15 @@ fn main() {
             }),
             ..default()
         }))
-        .add_plugin(InputManagerPlugin::<ChangeColorAction>::default())
+        .add_plugins(InputManagerPlugin::<ChangeColorAction>::default())
         .init_resource::<ActionState<ChangeColorAction>>()
         .add_event::<WindowMotion>()
         .register_type::<WindowMotionDirection>()
-        .add_startup_system(setup)
-        .add_systems((update_window_motion, apply_system_buffers, update_color).chain())
+        .add_systems(Startup, setup)
+        .add_systems(
+            Update,
+            (update_window_motion, apply_deferred, update_color).chain(),
+        )
         .run()
 }
 
@@ -169,8 +173,12 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .with_alignment(TextAlignment::Center),
         style: Style {
             position_type: PositionType::Absolute,
-            position: UiRect::all(Val::Px(10.0)),
-            max_size: Size::new(Val::Px(460.0), Val::Undefined),
+            left: Val::Px(10.0),
+            top: Val::Px(10.0),
+            right: Val::Px(10.0),
+            bottom: Val::Px(10.0),
+            width: Val::Px(460.0),
+            height: Val::Auto,
             ..Default::default()
         },
         ..Default::default()

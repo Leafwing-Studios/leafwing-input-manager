@@ -2,7 +2,6 @@ use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, Si
 use bevy::input::mouse::MouseMotion;
 use bevy::input::Input;
 use bevy::prelude::{EventReader, Events, Reflect, ResMut, World};
-use bevy::reflect::FromReflect;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
@@ -86,7 +85,7 @@ impl<'a> InputLike<'a> for MouseMotionAxis {}
 /// A buttonlike-input triggered by [`MouseMotion`](bevy::input::mouse::MouseMotion) events
 ///
 /// These will be considered pressed if non-zero net movement in the correct direction is detected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect, FromReflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum MouseMotionDirection {
     /// Corresponds to `+y`
     Up,

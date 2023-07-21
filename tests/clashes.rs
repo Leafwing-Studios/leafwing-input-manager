@@ -139,7 +139,9 @@ fn modifier_clash_handling() {
     app.world.resource_mut::<Input<KeyCode>>().press(Key1);
     app.world.resource_mut::<Input<KeyCode>>().press(Key2);
     app.world.resource_mut::<Input<KeyCode>>().press(Key3);
-    app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
+    app.world
+        .resource_mut::<Input<KeyCode>>()
+        .press(ControlLeft);
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -163,7 +165,9 @@ fn multiple_modifiers_clash_handling() {
     // Multiple modifiers
     app.world.resource_mut::<Input<KeyCode>>().reset_all();
     app.world.resource_mut::<Input<KeyCode>>().press(Key1);
-    app.world.resource_mut::<Input<KeyCode>>().press(ControlLeft);
+    app.world
+        .resource_mut::<Input<KeyCode>>()
+        .press(ControlLeft);
     app.world.resource_mut::<Input<KeyCode>>().press(AltLeft);
     app.update();
 

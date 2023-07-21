@@ -6,7 +6,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_players)
-        .add_system(log_actions)
+        .add_systems(Update, log_actions)
         .run();
 }
 

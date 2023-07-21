@@ -3,7 +3,7 @@ use crate::input_like::ButtonLike;
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
 use bevy::prelude::Reflect;
 use bevy::reflect::utility::NonGenericTypeInfoCell;
-use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
+use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypePath, Typed, ValueInfo};
 use serde::{Deserialize, Serialize};
 use std::any::Any;
 
@@ -13,7 +13,7 @@ use std::any::Any;
 /// even though it can be stored as an [`InputKind`].
 ///
 /// Instead, use it directly as [`InputKind::SingleAxis`]!
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TypePath)]
 pub struct VirtualAxis {
     /// The input that represents the negative direction of this virtual axis
     #[serde(deserialize_with = "deserialize_boxed_button")]
@@ -98,8 +98,8 @@ impl Reflect for VirtualAxis {
         std::any::type_name::<Self>()
     }
 
-    fn get_type_info(&self) -> &'static TypeInfo {
-        <Self as Typed>::type_info()
+    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
+        Some(<Self as Typed>::type_info())
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {

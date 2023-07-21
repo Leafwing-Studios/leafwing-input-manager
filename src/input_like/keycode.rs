@@ -81,10 +81,10 @@ impl Modifier {
     #[inline]
     pub fn key_codes(self) -> [KeyCode; 2] {
         match self {
-            Modifier::Alt => [KeyCode::LAlt, KeyCode::RAlt],
-            Modifier::Control => [KeyCode::LControl, KeyCode::RControl],
-            Modifier::Shift => [KeyCode::LShift, KeyCode::RShift],
-            Modifier::Win => [KeyCode::LWin, KeyCode::RWin],
+            Modifier::Alt => [KeyCode::AltLeft, KeyCode::AltRight],
+            Modifier::Control => [KeyCode::ControlLeft, KeyCode::ControlRight],
+            Modifier::Shift => [KeyCode::ShiftLeft, KeyCode::ShiftRight],
+            Modifier::Win => [KeyCode::SuperLeft, KeyCode::SuperRight],
         }
     }
 }

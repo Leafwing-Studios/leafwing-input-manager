@@ -86,7 +86,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
         use crate::systems::*;
 
         if !app.is_plugin_added::<ExtraMouseInputsPlugin>() {
-            app.add_plugin(ExtraMouseInputsPlugin);
+            app.add_plugins(ExtraMouseInputsPlugin);
         }
 
         match self.machine {

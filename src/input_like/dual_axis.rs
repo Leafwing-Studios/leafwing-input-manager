@@ -5,12 +5,12 @@ use crate::prelude::MouseWheelAxis;
 use bevy::math::Vec2;
 use bevy::prelude::{GamepadAxisType, Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
-use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
+use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypePath, Typed, ValueInfo};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::any::Any;
 
 /// Two [`SingleAxisLike`]s combined as one input that implements [`DualAxisLike`].
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, TypePath)]
 pub struct DualAxis {
     /// The axis representing horizontal movement.
     #[serde(deserialize_with = "deserialize_boxed_single_axis")]
@@ -166,8 +166,8 @@ impl Reflect for DualAxis {
         std::any::type_name::<Self>()
     }
 
-    fn get_type_info(&self) -> &'static TypeInfo {
-        <Self as Typed>::type_info()
+    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
+        Some(<Self as Typed>::type_info())
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {

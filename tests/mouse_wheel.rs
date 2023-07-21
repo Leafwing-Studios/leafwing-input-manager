@@ -47,6 +47,9 @@ fn raw_mouse_wheel_events() {
         y: 10.0,
         window: Entity::PLACEHOLDER,
     });
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
 
     let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
@@ -78,8 +81,12 @@ fn mouse_wheel_buttonlike() {
             unit: MouseScrollUnit::Pixel,
             x: scroll_direction.x,
             y: scroll_direction.y,
+            window: Entity::PLACEHOLDER,
         });
 
+        // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+        //       Could be a sign of a system ordering issue.
+        app.update();
         app.update();
 
         let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
@@ -105,12 +112,14 @@ fn mouse_wheel_buttonlike_cancels() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: 10.0,
+        window: Entity::PLACEHOLDER,
     });
     let mut events = app.world.resource_mut::<Events<MouseWheel>>();
     events.send(MouseWheel {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: -10.0,
+        window: Entity::PLACEHOLDER,
     });
 
     // Correctly flushes the world
@@ -136,8 +145,11 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 1.0,
         y: 0.0,
-        inverted: false,
+        window: Entity::PLACEHOLDER,
     });
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
@@ -148,8 +160,11 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: -1.0,
         y: 0.0,
-        inverted: false,
+        window: Entity::PLACEHOLDER,
     });
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::X));
@@ -160,8 +175,11 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: 1.0,
-        inverted: false,
+        window: Entity::PLACEHOLDER,
     });
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
@@ -172,8 +190,11 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: -1.0,
-        inverted: false,
+        window: Entity::PLACEHOLDER,
     });
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::Y));
@@ -184,7 +205,11 @@ fn mouse_wheel_single_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: 0.0,
+        window: Entity::PLACEHOLDER,
     });
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(AxislikeTestAction::Y));
@@ -203,8 +228,12 @@ fn mouse_wheel_dual_axis() {
         unit: MouseScrollUnit::Pixel,
         x: 5.0,
         y: 0.0,
+        window: Entity::PLACEHOLDER,
     });
 
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -230,7 +259,11 @@ fn mouse_wheel_virtualdpad() {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
         y: -2.0,
+        window: Entity::PLACEHOLDER,
     });
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

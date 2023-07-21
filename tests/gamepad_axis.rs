@@ -160,11 +160,14 @@ fn game_pad_dual_axis() {
             value: 0.8,
         });
 
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.8);
+    assert!(action_state.pressed(AxislikeTestAction::XY));
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(0.8, 0.0)
@@ -179,11 +182,14 @@ fn game_pad_dual_axis() {
             value: -0.05,
         });
 
+    // TODO: Discover and document why two are required here, in 0.10 only one update was needed.
+    //       Could be a sign of a system ordering issue.
+    app.update();
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.released(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
+    assert!(action_state.released(AxislikeTestAction::XY));
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(0.0, 0.0)

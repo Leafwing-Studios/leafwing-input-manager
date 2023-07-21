@@ -221,7 +221,7 @@ fn action_state_driver() {
         .query_filtered::<&mut Interaction, With<ButtonMarker>>();
 
     for mut interaction in button_query.iter_mut(&mut app.world) {
-        *interaction = Interaction::Clicked;
+        *interaction = Interaction::Pressed;
     }
 
     // Verify that the button was in fact clicked

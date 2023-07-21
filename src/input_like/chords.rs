@@ -2,11 +2,11 @@ use crate::axislike::DualAxisData;
 use crate::input_like::{ButtonLike, DualAxisLike, InputLike, InputLikeObject, SingleAxisLike};
 use bevy::prelude::{Reflect, World};
 use bevy::reflect::utility::NonGenericTypeInfoCell;
-use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, Typed, ValueInfo};
+use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypePath, Typed, ValueInfo};
 use std::any::Any;
 use std::fmt::Debug;
 
-#[derive(Debug, Clone, serde::Serialize, Eq, PartialEq, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, Eq, PartialEq, serde::Deserialize, TypePath)]
 pub struct Chord {
     #[serde(deserialize_with = "deserialize_chord_inner")]
     pub inputs: Vec<Box<dyn InputLikeObject>>,
@@ -110,8 +110,8 @@ impl Reflect for Chord {
         std::any::type_name::<Self>()
     }
 
-    fn get_type_info(&self) -> &'static TypeInfo {
-        <Self as Typed>::type_info()
+    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
+        Some(<Self as Typed>::type_info())
     }
 
     fn into_any(self: Box<Self>) -> Box<dyn Any> {
