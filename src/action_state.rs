@@ -258,8 +258,8 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only certain events such as [`VirtualDPad`][crate::axislike::VirtualDPad] and
-    /// [`DualAxis`][crate::axislike::DualAxis] provide an [`DualAxisData`], and this
+    /// Only certain events such as [`VirtualDPad`][crate::input_like::virtual_dpad::VirtualDPad] and
+    /// [`DualAxis`][crate::input_like::dual_axis::DualAxis] provide an [`DualAxisData`], and this
     /// will return [`None`] for other events.
     ///
     /// Chord inputs will return the [`DualAxisData`] of it's first input.

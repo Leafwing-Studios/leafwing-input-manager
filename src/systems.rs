@@ -51,9 +51,8 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
-/// Fetches all of the relevant [`Input`] resources to update [`ActionState`] according to the [`InputMap`].
-///
-/// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
+/// Calls the [`InputLikeObject`](crate::input_like::InputLikeObject) methods to update
+/// [`ActionState`] according to the [`InputMap`].
 pub fn update_action_state<A: Actionlike>(world: &mut World) {
     let input_maps: Vec<_> = {
         let mut state =

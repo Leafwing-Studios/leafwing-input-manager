@@ -6,9 +6,10 @@ use erased_serde::Serialize;
 impl ButtonLike for GamepadAxisType {
     /// Returns true if the axis is pressed for any gamepad.
     ///
-    /// To specify a specific gamepad, use [`GamepadButton`] instead, or call
-    /// [`InputMap::set_gamepad`] to convert all the [`GamepadButtonType`]s to
-    /// [`GamepadButtonType`]s to [`GamepadButton`]s.
+    /// To specify a specific gamepad, use [`GamepadButton`](bevy::input::gamepad::Gamepad) instead,
+    /// or call [`InputMap::set_gamepad`](crate::InputMap::set_gamepad) to convert all the
+    /// [`GamepadButtonType`](bevy::input::gamepad::GamepadButtonType)s to
+    /// [`GamepadButton`](bevy::input::gamepad::Gamepad)s.
     fn input_pressed(&self, world: &World) -> bool {
         let Some(gamepads) = world.get_resource::<Gamepads>() else {
             return false;

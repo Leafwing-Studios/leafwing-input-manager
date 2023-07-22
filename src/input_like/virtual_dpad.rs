@@ -8,13 +8,8 @@ use bevy::reflect::{ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypePath, Ty
 use erased_serde::Serialize;
 use std::any::Any;
 
-#[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
-/// A virtual DPad that you can get an [`DualAxis`] from.
-///
-/// Typically, you don't want to store a [`DualAxis`] in this type,
-/// even though it can be stored as an [`InputKind`].
-///
-/// Instead, use it directly as [`InputKind::DualAxis`]!
+/// A virtual Directional Pad that implements [`DualAxisLike`] and you can get [`DualAxisData`]
+/// from using [`ActionState::axis_pair`](crate::ActionState::axis_pair).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, TypePath)]
 pub struct VirtualDPad {
     /// The input that represents the up direction in this virtual DPad

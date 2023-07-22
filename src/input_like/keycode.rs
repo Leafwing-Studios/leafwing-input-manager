@@ -59,18 +59,15 @@ pub struct KeyCodeInputStreams {}
 impl<'a> InputLike<'a> for KeyCode {}
 
 /// A keyboard modifier that combines two [`KeyCode`] values into one representation.
-///
-/// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons are pressed.
-/// This will be decomposed into both values when converted into [`RawInputs`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum Modifier {
-    /// Corresponds to [`KeyCode::LAlt`] and [`KeyCode::RAlt`].
+    /// Corresponds to [`KeyCode::AltLeft`] and [`KeyCode::AltRight`].
     Alt,
-    /// Corresponds to [`KeyCode::LControl`] and [`KeyCode::RControl`].
+    /// Corresponds to [`KeyCode::ControlLeft`] and [`KeyCode::ControlRight`].
     Control,
-    /// The key that makes letters capitalized, corresponding to [`KeyCode::LShift`] and [`KeyCode::RShift`]
+    /// The key that makes letters capitalized, corresponding to [`KeyCode::ShiftLeft`] and [`KeyCode::ShiftRight`]
     Shift,
-    /// The OS or "Windows" key, corresponding to [`KeyCode::LWin`] and [`KeyCode::RWin`].
+    /// The OS or "Windows" key, corresponding to [`KeyCode::SuperLeft`] and [`KeyCode::SuperRight`].
     Win,
 }
 

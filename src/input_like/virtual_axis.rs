@@ -8,11 +8,6 @@ use serde::{Deserialize, Serialize};
 use std::any::Any;
 
 /// A virtual Axis that you can get a value between -1 and 1 from.
-///
-/// Typically, you don't want to store a [`SingleAxis`] in this type,
-/// even though it can be stored as an [`InputKind`].
-///
-/// Instead, use it directly as [`InputKind::SingleAxis`]!
 #[derive(Debug, Clone, Serialize, Deserialize, TypePath)]
 pub struct VirtualAxis {
     /// The input that represents the negative direction of this virtual axis

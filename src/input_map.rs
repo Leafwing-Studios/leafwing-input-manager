@@ -28,7 +28,7 @@ use std::marker::PhantomData;
 /// Multiple inputs can be mapped to the same action,
 /// and each input can be mapped to multiple actions.
 ///
-/// The provided input types must be able to be converted into a [`UserInput`].
+/// The provided input types must be able to be converted into a [`InputLike`](crate::input_like::InputLike).
 ///
 /// The maximum number of bindings (total) that can be stored for each action is 16.
 /// Insertions will silently fail if you have reached this cap.
@@ -237,7 +237,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// This method creates multiple distinct bindings.
     /// If you want to require multiple buttons to be pressed at once, use [`insert_chord`](Self::insert_chord).
-    /// Any iterator that can be converted into a [`UserInput`] can be supplied.
+    /// Any iterator that can be converted into a [`InputLike`](crate::input_like::InputLike) can be supplied.
     ///
     /// # Panics
     ///
@@ -255,10 +255,10 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
     ///
-    /// Any iterator that can be converted into a [`InputKind`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
-    /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
+    /// Any iterator that can be converted into a [`InputLikeObject`] can be supplied.
+    /// Chords can also be added with the [insert](Self::insert) method, if the [`Chord`] variant is constructed explicitly.
     ///
-    /// When working with keyboard modifier keys, consider using the `insert_modified` method instead.
+    /// When working with keyboard modifier keys, consider using [`insert_modified`](Self::insert_modified) method instead.
     ///
     /// # Panics
     ///
@@ -397,7 +397,7 @@ impl<A: Actionlike> InputMap<A> {
         action_data[action.index()].state.pressed()
     }
 
-    /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
+    /// Returns the actions that are currently pressed, and the responsible [`InputLike`](crate::input_like::InputLike) for each action
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
     /// The position in each vector corresponds to `Actionlike::index()`.

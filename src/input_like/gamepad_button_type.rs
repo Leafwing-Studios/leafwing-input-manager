@@ -7,8 +7,8 @@ impl ButtonLike for GamepadButtonType {
     /// Returns true if the button is pressed for any gamepad.
     ///
     /// To specify a specific gamepad, use [`GamepadButton`] instead, or call
-    /// [`InputMap::set_gamepad`] to convert all the [`GamepadButtonType`]s to
-    /// [`GamepadButtonType`]s to [`GamepadButton`]s.
+    /// [`InputMap::set_gamepad`](crate::InputMap::set_gamepad) to convert all the [`GamepadButtonType`]s to
+    /// [`GamepadButtonType`]s to [`GamepadButton`](bevy::input::gamepad::Gamepad)s.
     fn input_pressed(&self, world: &World) -> bool {
         let Some(gamepads) = world.get_resource::<Gamepads>() else {
             return false;

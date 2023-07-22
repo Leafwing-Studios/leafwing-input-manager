@@ -15,7 +15,7 @@ use std::marker::PhantomData;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
-/// Inputs "clash" if and only if one [`UserInput`] is a strict subset of the other.
+/// Inputs "clash" if and only if one [`InputLike`](crate::input_like::InputLike) is a strict subset of the other.
 /// By example:
 ///
 /// - `S` and `W`: does not clash
@@ -87,7 +87,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Gets the set of clashing action-input pairs
     ///
-    /// Returns both the action and [`UserInput`]s for each clashing set
+    /// Returns both the action and [`InputLike`](crate::input_like::InputLike)s for each clashing set
     #[must_use]
     fn get_clashes(
         &self,

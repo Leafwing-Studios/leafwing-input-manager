@@ -25,7 +25,7 @@ pub trait InputLike<'a>: InputLikeObject + Deserialize<'a> + Clone + Eq {}
 
 /// This trait is the
 /// [object safe](https://doc.rust-lang.org/reference/items/traits.html#object-safety) part of
-/// [`InputLike`], which is how they are stored in [`InputMap`].
+/// [`InputLike`], which is how they are stored in [`InputMap`](crate::InputMap).
 #[allow(clippy::len_without_is_empty)]
 pub trait InputLikeObject: Send + Sync + Debug {
     /// Returns [`ButtonLike`] if it is implemented.
@@ -37,7 +37,7 @@ pub trait InputLikeObject: Send + Sync + Debug {
     /// Returns [`DualAxisLike`] if it is implemented.
     fn as_dual_axis(&self) -> Option<&dyn DualAxisLike>;
 
-    /// The number of logical inputs that make up the [`UserInput`].
+    /// The number of logical inputs that make up the [`InputLike`](crate::input_like::InputLike).
     ///
     /// - A single input returns 1 (e.g. [`KeyCode`][bevy::prelude::KeyCode])
     /// - A [`Chord`][crate::prelude::Chord] returns the number of buttons in the chord
@@ -46,7 +46,7 @@ pub trait InputLikeObject: Send + Sync + Debug {
         1
     }
 
-    /// Returns the raw inputs that make up this [`UserInput`]
+    /// Returns the raw inputs that make up this [`InputLike`](crate::input_like::InputLike)
     fn raw_inputs(&self) -> Vec<Box<dyn InputLikeObject>> {
         vec![self.clone_dyn()]
     }
@@ -67,8 +67,8 @@ pub trait InputLikeObject: Send + Sync + Debug {
     /// inputs in self and contains at least one more input.
     ///
     /// Override this if you need to change how clash handling detects if an input is a subset
-    /// of this input. An example of this is [`VirtualDPad`], which considers each of it's
-    /// inputs separately instead of a combination.
+    /// of this input. An example of this is [`VirtualDPad`](virtual_dpad::VirtualDPad), which
+    /// considers each of it's inputs separately instead of a combination.
     ///
     /// # Examples
     ///
