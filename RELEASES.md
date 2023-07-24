@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Docs
+
+- Fixed invalid example code in README
+
 ## Version 0.10
 
 ### Usability
