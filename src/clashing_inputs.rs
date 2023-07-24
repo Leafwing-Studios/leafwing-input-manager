@@ -193,7 +193,7 @@ impl<A: Actionlike> Clash<A> {
             index_b: action_b.index(),
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
         }
     }
 
@@ -205,7 +205,7 @@ impl<A: Actionlike> Clash<A> {
             index_b,
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
-            _phantom: PhantomData::default(),
+            _phantom: PhantomData,
         }
     }
 }
