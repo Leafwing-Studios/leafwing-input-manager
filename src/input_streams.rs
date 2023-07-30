@@ -13,7 +13,7 @@ use bevy::ecs::system::SystemState;
 
 use crate::axislike::{
     AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
-    VirtualDPad, DeadzoneShape,
+    VirtualDPad,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
@@ -259,7 +259,7 @@ impl<'a> InputStreams<'a> {
         // Helper that takes the value returned by an axis and returns 0.0 if it is not within the
         // triggering range.
         let value_in_axis_range = |axis: &SingleAxis, value: f32| -> f32 {
-            if value >= axis.negative_low && value <= axis.positive_low && include_deadzone{
+            if value >= axis.negative_low && value <= axis.positive_low && include_deadzone {
                 0.0
             } else if axis.inverted {
                 -value
@@ -386,39 +386,7 @@ impl<'a> InputStreams<'a> {
     }
 
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> DualAxisData {
-        match dual_axis.deadzone_shape {
-            DeadzoneShape::Cross => {
-                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), true);
-                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), true);
-
-                DualAxisData::new(x, y)
-            },
-            DeadzoneShape::Rect => {
-                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), false);
-                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), false);
-                if x > dual_axis.x.positive_low
-                || x < dual_axis.x.negative_low
-                || y > dual_axis.y.positive_low
-                || y < dual_axis.y.negative_low
-                {
-                    DualAxisData::new(x, y)
-                } else {
-                    DualAxisData::new(0.0, 0.0)
-                }
-            },
-            DeadzoneShape::Circle => {
-                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), false);
-                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), false);
-                let radius = dual_axis.x.positive_low.max(dual_axis.y.positive_low);
-
-                if (x.powi(2) + y.powi(2)).sqrt() >= radius
-                {
-                    DualAxisData::new(x, y)
-                } else {
-                    DualAxisData::new(0.0, 0.0)
-                }
-            },
-        }
+        dual_axis.deadzone_shape.get_dual_axis_data(dual_axis, self)
     }
 }
 

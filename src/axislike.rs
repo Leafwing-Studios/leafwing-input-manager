@@ -1,9 +1,10 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
+use crate::input_streams::InputStreams;
 use crate::orientation::{Direction, Rotation};
 use crate::prelude::QwertyScanCode;
-use crate::user_input::InputKind;
+use crate::user_input::{InputKind, UserInput};
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
@@ -187,7 +188,7 @@ pub struct DualAxis {
     /// The axis representing vertical movement.
     pub y: SingleAxis,
     /// The shape of the deadzone
-    pub deadzone_shape: DeadzoneShape,
+    pub deadzone_shape: DeadZoneShape,
 }
 
 impl DualAxis {
@@ -197,9 +198,12 @@ impl DualAxis {
     pub const DEFAULT_DEADZONE: f32 = 0.1;
 
     /// The default shape of the deadzone used by constructor methods.
-    /// 
-    /// This cannot be changed, but the struct can be easily manually constructed. 
-    pub const DEFAULT_DEADZONE_SHAPE: DeadzoneShape = DeadzoneShape::Cross;
+    ///
+    /// This cannot be changed, but the struct can be easily manually constructed.
+    pub const DEFAULT_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Cross {
+        horizontal_width: Self::DEFAULT_DEADZONE,
+        vertical_width: Self::DEFAULT_DEADZONE,
+    };
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
     #[must_use]
@@ -207,7 +211,7 @@ impl DualAxis {
         x_axis_type: impl Into<AxisType>,
         y_axis_type: impl Into<AxisType>,
         threshold: f32,
-        deadzone_shape: DeadzoneShape,
+        deadzone_shape: DeadZoneShape,
     ) -> DualAxis {
         DualAxis {
             x: SingleAxis::symmetric(x_axis_type, threshold),
@@ -276,9 +280,7 @@ impl DualAxis {
 
     /// Returns this [`DualAxis`] with the deadzone set to the specified values and shape
     #[must_use]
-    pub fn with_deadzone(mut self, deadzone_x: f32, deadzone_y: f32, deadzone: DeadzoneShape) -> DualAxis {
-        self.x = self.x.with_deadzone(deadzone_x);
-        self.y = self.y.with_deadzone(deadzone_y);
+    pub fn with_deadzone(mut self, deadzone: DeadZoneShape) -> DualAxis {
         self.deadzone_shape = deadzone;
         self
     }
@@ -705,20 +707,103 @@ impl From<DualAxisData> for Vec2 {
 }
 
 /// The shape of the deadzone for a [`DualAxis`] input.
-/// 
+///
 /// Uses the x and y thresholds on [`DualAxis`] to set the shape diamensions
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum DeadzoneShape{
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum DeadZoneShape {
     /// Deadzone with a cross
-    /// 
+    ///
     /// Uses the x threshold as the horizontal width and y threshold as the vertical width.
-    Cross,
+    Cross {
+        /// The width of the horizontal rectangle.
+        horizontal_width: f32,
+        /// The width of the vertical rectangle.
+        vertical_width: f32,
+    },
     /// Deadzone with a rectangle.
-    /// 
+    ///
     /// Uses the x threshold as the width and y threshold as the length.
-    Rect,
+    Rect {
+        /// The width of the rectangle.
+        width: f32,
+        /// The height of the rectangle.
+        height: f32,
+    },
     /// Deadzone with a circle.
-    /// 
+    ///
     /// Uses the larger of the x or y threshold as the radius
-    Circle,
+    Ellipse {
+        /// The horizontal radius
+        radius_x: f32,
+        /// The vertical radius
+        radius_y: f32,
+    },
+}
+
+impl Eq for DeadZoneShape {}
+impl std::hash::Hash for DeadZoneShape {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {}
+}
+
+impl DeadZoneShape {
+    /// 
+    pub fn get_dual_axis_data(
+        &self,
+        dual_axis: &DualAxis,
+        input_stream: &InputStreams,
+    ) -> DualAxisData {
+        match self {
+            DeadZoneShape::Cross {
+                horizontal_width,
+                vertical_width,
+            } => {
+                let x = input_stream
+                    .input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), true);
+                let y = input_stream
+                    .input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), true);
+
+                DualAxisData::new(x, y)
+            }
+            DeadZoneShape::Rect { width, height } => {
+                let x = input_stream.input_value(
+                    &UserInput::Single(InputKind::SingleAxis(dual_axis.x)),
+                    false,
+                );
+                let y = input_stream.input_value(
+                    &UserInput::Single(InputKind::SingleAxis(dual_axis.y)),
+                    false,
+                );
+
+                if DeadZoneShape::outside_rectangle(x, y, *width, *height) {
+                    DualAxisData::new(x, y)
+                } else {
+                    DualAxisData::new(0.0, 0.0)
+                }
+            }
+            DeadZoneShape::Ellipse { radius_x, radius_y } => {
+                let x = input_stream.input_value(
+                    &UserInput::Single(InputKind::SingleAxis(dual_axis.x)),
+                    false,
+                );
+                let y = input_stream.input_value(
+                    &UserInput::Single(InputKind::SingleAxis(dual_axis.y)),
+                    false,
+                );
+
+                if DeadZoneShape::outside_ellipse(x, y, *radius_x, *radius_y) {
+                    DualAxisData::new(x, y)
+                } else {
+                    DualAxisData::new(0.0, 0.0)
+                }
+            }
+        }
+    }
+
+    fn outside_ellipse(x: f32, y: f32, radius_x: f32, radius_y: f32) -> bool {
+        (x.powi(2) / radius_x.powi(2) + y.powi(2) / radius_y.powi(2)) >= 1.0
+    }
+
+    fn outside_rectangle(x: f32, y: f32, width: f32, height: f32) -> bool {
+        x > width || x < -width || y > height || y < -height
+    }
 }
