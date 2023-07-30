@@ -388,7 +388,7 @@ impl<A: Actionlike> InputMap<A> {
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
 
-                    action.value += input_streams.input_value(input);
+                    action.value += input_streams.input_value(input, true);
                 }
             }
 

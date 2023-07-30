@@ -186,6 +186,8 @@ pub struct DualAxis {
     pub x: SingleAxis,
     /// The axis representing vertical movement.
     pub y: SingleAxis,
+    /// The shape of the deadzone
+    pub deadzone_shape: DeadzoneShape,
 }
 
 impl DualAxis {
@@ -194,16 +196,23 @@ impl DualAxis {
     /// This cannot be changed, but the struct can be easily manually constructed.
     pub const DEFAULT_DEADZONE: f32 = 0.1;
 
-    /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold`.
+    /// The default shape of the deadzone used by constructor methods.
+    /// 
+    /// This cannot be changed, but the struct can be easily manually constructed. 
+    pub const DEFAULT_DEADZONE_SHAPE: DeadzoneShape = DeadzoneShape::Cross;
+
+    /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
     #[must_use]
     pub fn symmetric(
         x_axis_type: impl Into<AxisType>,
         y_axis_type: impl Into<AxisType>,
         threshold: f32,
+        deadzone_shape: DeadzoneShape,
     ) -> DualAxis {
         DualAxis {
             x: SingleAxis::symmetric(x_axis_type, threshold),
             y: SingleAxis::symmetric(y_axis_type, threshold),
+            deadzone_shape,
         }
     }
 
@@ -221,6 +230,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::from_value(x_axis_type, x_value),
             y: SingleAxis::from_value(y_axis_type, y_value),
+            deadzone_shape: Self::DEFAULT_DEADZONE_SHAPE,
         }
     }
 
@@ -231,6 +241,7 @@ impl DualAxis {
             GamepadAxisType::LeftStickX,
             GamepadAxisType::LeftStickY,
             Self::DEFAULT_DEADZONE,
+            Self::DEFAULT_DEADZONE_SHAPE,
         )
     }
 
@@ -241,6 +252,7 @@ impl DualAxis {
             GamepadAxisType::RightStickX,
             GamepadAxisType::RightStickY,
             Self::DEFAULT_DEADZONE,
+            Self::DEFAULT_DEADZONE_SHAPE,
         )
     }
 
@@ -249,6 +261,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_wheel_x(),
             y: SingleAxis::mouse_wheel_y(),
+            deadzone_shape: Self::DEFAULT_DEADZONE_SHAPE,
         }
     }
 
@@ -257,14 +270,16 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_motion_x(),
             y: SingleAxis::mouse_motion_y(),
+            deadzone_shape: Self::DEFAULT_DEADZONE_SHAPE,
         }
     }
 
-    /// Returns this [`DualAxis`] with the deadzone set to the specified value
+    /// Returns this [`DualAxis`] with the deadzone set to the specified values and shape
     #[must_use]
-    pub fn with_deadzone(mut self, deadzone: f32) -> DualAxis {
-        self.x = self.x.with_deadzone(deadzone);
-        self.y = self.y.with_deadzone(deadzone);
+    pub fn with_deadzone(mut self, deadzone_x: f32, deadzone_y: f32, deadzone: DeadzoneShape) -> DualAxis {
+        self.x = self.x.with_deadzone(deadzone_x);
+        self.y = self.y.with_deadzone(deadzone_y);
+        self.deadzone_shape = deadzone;
         self
     }
 
@@ -687,4 +702,23 @@ impl From<DualAxisData> for Vec2 {
     fn from(data: DualAxisData) -> Vec2 {
         data.xy
     }
+}
+
+/// The shape of the deadzone for a [`DualAxis`] input.
+/// 
+/// Uses the x and y thresholds on [`DualAxis`] to set the shape diamensions
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum DeadzoneShape{
+    /// Deadzone with a cross
+    /// 
+    /// Uses the x threshold as the horizontal width and y threshold as the vertical width.
+    Cross,
+    /// Deadzone with a rectangle.
+    /// 
+    /// Uses the x threshold as the width and y threshold as the length.
+    Rect,
+    /// Deadzone with a circle.
+    /// 
+    /// Uses the larger of the x or y threshold as the radius
+    Circle,
 }

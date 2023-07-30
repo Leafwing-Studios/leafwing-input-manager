@@ -13,7 +13,7 @@ use bevy::ecs::system::SystemState;
 
 use crate::axislike::{
     AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
-    VirtualDPad,
+    VirtualDPad, DeadzoneShape,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
@@ -133,7 +133,7 @@ impl<'a> InputStreams<'a> {
                     || self.button_pressed(InputKind::SingleAxis(axis.y))
             }
             InputKind::SingleAxis(axis) => {
-                let value = self.input_value(&UserInput::Single(button));
+                let value = self.input_value(&UserInput::Single(button), true);
 
                 value < axis.negative_low || value > axis.positive_low
             }
@@ -247,7 +247,7 @@ impl<'a> InputStreams<'a> {
     ///
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
     /// be sure to clamp the returned data.
-    pub fn input_value(&self, input: &UserInput) -> f32 {
+    pub fn input_value(&self, input: &UserInput, include_deadzone: bool) -> f32 {
         let use_button_value = || -> f32 {
             if self.input_pressed(input) {
                 1.0
@@ -259,7 +259,7 @@ impl<'a> InputStreams<'a> {
         // Helper that takes the value returned by an axis and returns 0.0 if it is not within the
         // triggering range.
         let value_in_axis_range = |axis: &SingleAxis, value: f32| -> f32 {
-            if value >= axis.negative_low && value <= axis.positive_low {
+            if value >= axis.negative_low && value <= axis.positive_low && include_deadzone{
                 0.0
             } else if axis.inverted {
                 -value
@@ -317,8 +317,8 @@ impl<'a> InputStreams<'a> {
                 }
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.input_value(&UserInput::Single(*positive)).abs()
-                    - self.input_value(&UserInput::Single(*negative)).abs()
+                self.input_value(&UserInput::Single(*positive), true).abs()
+                    - self.input_value(&UserInput::Single(*negative), true).abs()
             }
             UserInput::Single(InputKind::DualAxis(_)) => {
                 self.input_axis_pair(input).unwrap_or_default().length()
@@ -375,10 +375,10 @@ impl<'a> InputStreams<'a> {
                 left,
                 right,
             }) => {
-                let x = self.input_value(&UserInput::Single(*right)).abs()
-                    - self.input_value(&UserInput::Single(*left)).abs();
-                let y = self.input_value(&UserInput::Single(*up)).abs()
-                    - self.input_value(&UserInput::Single(*down)).abs();
+                let x = self.input_value(&UserInput::Single(*right), true).abs()
+                    - self.input_value(&UserInput::Single(*left), true).abs();
+                let y = self.input_value(&UserInput::Single(*up), true).abs()
+                    - self.input_value(&UserInput::Single(*down), true).abs();
                 Some(DualAxisData::new(x, y))
             }
             _ => None,
@@ -386,17 +386,38 @@ impl<'a> InputStreams<'a> {
     }
 
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> DualAxisData {
-        let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)));
-        let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)));
+        match dual_axis.deadzone_shape {
+            DeadzoneShape::Cross => {
+                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), true);
+                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), true);
 
-        if x > dual_axis.x.positive_low
-            || x < dual_axis.x.negative_low
-            || y > dual_axis.y.positive_low
-            || y < dual_axis.y.negative_low
-        {
-            DualAxisData::new(x, y)
-        } else {
-            DualAxisData::new(0.0, 0.0)
+                DualAxisData::new(x, y)
+            },
+            DeadzoneShape::Rect => {
+                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), false);
+                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), false);
+                if x > dual_axis.x.positive_low
+                || x < dual_axis.x.negative_low
+                || y > dual_axis.y.positive_low
+                || y < dual_axis.y.negative_low
+                {
+                    DualAxisData::new(x, y)
+                } else {
+                    DualAxisData::new(0.0, 0.0)
+                }
+            },
+            DeadzoneShape::Circle => {
+                let x = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), false);
+                let y = self.input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), false);
+                let radius = dual_axis.x.positive_low.max(dual_axis.y.positive_low);
+
+                if (x.powi(2) + y.powi(2)).sqrt() >= radius
+                {
+                    DualAxisData::new(x, y)
+                } else {
+                    DualAxisData::new(0.0, 0.0)
+                }
+            },
         }
     }
 }
