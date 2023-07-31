@@ -108,7 +108,7 @@ fn game_pad_dual_axis_mocking() {
             negative_low: 0.0,
             inverted: false,
         },
-        deadzone_shape: DualAxis::DEFAULT_DEADZONE_SHAPE,
+        deadzone: DualAxis::DEFAULT_DEADZONE_SHAPE,
     };
     app.send_input(input);
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();

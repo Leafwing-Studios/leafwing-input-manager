@@ -386,7 +386,20 @@ impl<'a> InputStreams<'a> {
     }
 
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> DualAxisData {
-        dual_axis.deadzone_shape.get_dual_axis_data(dual_axis, self)
+        let x = self.input_value(
+            &UserInput::Single(InputKind::SingleAxis(dual_axis.x)),
+            false,
+        );
+        let y = self.input_value(
+            &UserInput::Single(InputKind::SingleAxis(dual_axis.y)),
+            false,
+        );
+
+        if dual_axis.deadzone.input_outside_deadzone(x, y) {
+            DualAxisData::new(x, y)
+        } else {
+            DualAxisData::new(0.0, 0.0)
+        }
     }
 }
 

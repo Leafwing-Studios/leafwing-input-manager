@@ -1,10 +1,9 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
-use crate::input_streams::InputStreams;
 use crate::orientation::{Direction, Rotation};
 use crate::prelude::QwertyScanCode;
-use crate::user_input::{InputKind, UserInput};
+use crate::user_input::InputKind;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
@@ -188,7 +187,7 @@ pub struct DualAxis {
     /// The axis representing vertical movement.
     pub y: SingleAxis,
     /// The shape of the deadzone
-    pub deadzone_shape: DeadZoneShape,
+    pub deadzone: DeadZoneShape,
 }
 
 impl DualAxis {
@@ -201,8 +200,10 @@ impl DualAxis {
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
     pub const DEFAULT_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Cross {
-        horizontal_width: Self::DEFAULT_DEADZONE,
-        vertical_width: Self::DEFAULT_DEADZONE,
+        rect_1_width: Self::DEFAULT_DEADZONE,
+        rect_1_height: Self::DEFAULT_DEADZONE,
+        rect_2_width: Self::DEFAULT_DEADZONE,
+        rect_2_height: Self::DEFAULT_DEADZONE,
     };
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
@@ -216,7 +217,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::symmetric(x_axis_type, threshold),
             y: SingleAxis::symmetric(y_axis_type, threshold),
-            deadzone_shape,
+            deadzone: deadzone_shape,
         }
     }
 
@@ -234,7 +235,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::from_value(x_axis_type, x_value),
             y: SingleAxis::from_value(y_axis_type, y_value),
-            deadzone_shape: Self::DEFAULT_DEADZONE_SHAPE,
+            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
         }
     }
 
@@ -265,7 +266,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_wheel_x(),
             y: SingleAxis::mouse_wheel_y(),
-            deadzone_shape: Self::DEFAULT_DEADZONE_SHAPE,
+            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
         }
     }
 
@@ -274,14 +275,14 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_motion_x(),
             y: SingleAxis::mouse_motion_y(),
-            deadzone_shape: Self::DEFAULT_DEADZONE_SHAPE,
+            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
         }
     }
 
     /// Returns this [`DualAxis`] with the deadzone set to the specified values and shape
     #[must_use]
     pub fn with_deadzone(mut self, deadzone: DeadZoneShape) -> DualAxis {
-        self.deadzone_shape = deadzone;
+        self.deadzone = deadzone;
         self
     }
 
@@ -707,35 +708,31 @@ impl From<DualAxisData> for Vec2 {
 }
 
 /// The shape of the deadzone for a [`DualAxis`] input.
-///
-/// Uses the x and y thresholds on [`DualAxis`] to set the shape diamensions
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum DeadZoneShape {
-    /// Deadzone with a cross
-    ///
-    /// Uses the x threshold as the horizontal width and y threshold as the vertical width.
+    /// Deadzone with the shape of a cross. The cross is represented by two perpendicular rectangles.
     Cross {
-        /// The width of the horizontal rectangle.
-        horizontal_width: f32,
-        /// The width of the vertical rectangle.
-        vertical_width: f32,
+        /// The width of the first rectangle.
+        rect_1_width: f32,
+        /// The height of the first rectangle.
+        rect_1_height: f32,
+        /// The width of the second rectangle.
+        rect_2_width: f32,
+        /// The height of the second rectangle.
+        rect_2_height: f32,
     },
-    /// Deadzone with a rectangle.
-    ///
-    /// Uses the x threshold as the width and y threshold as the length.
+    /// Deadzone with the shape of a rectangle.
     Rect {
         /// The width of the rectangle.
         width: f32,
         /// The height of the rectangle.
         height: f32,
     },
-    /// Deadzone with a circle.
-    ///
-    /// Uses the larger of the x or y threshold as the radius
+    /// Deadzone with the shpae of an ellipse.
     Ellipse {
-        /// The horizontal radius
+        /// The horizontal radius of the ellipse.
         radius_x: f32,
-        /// The vertical radius
+        /// The vertical radius of the ellipse.
         radius_y: f32,
     },
 }
@@ -746,64 +743,50 @@ impl std::hash::Hash for DeadZoneShape {
 }
 
 impl DeadZoneShape {
-    /// 
-    pub fn get_dual_axis_data(
-        &self,
-        dual_axis: &DualAxis,
-        input_stream: &InputStreams,
-    ) -> DualAxisData {
+    /// Returns whether the (x, y) input is outside the deadzone.
+    pub fn input_outside_deadzone(&self, x: f32, y: f32) -> bool {
         match self {
             DeadZoneShape::Cross {
-                horizontal_width,
-                vertical_width,
-            } => {
-                let x = input_stream
-                    .input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.x)), true);
-                let y = input_stream
-                    .input_value(&UserInput::Single(InputKind::SingleAxis(dual_axis.y)), true);
-
-                DualAxisData::new(x, y)
-            }
-            DeadZoneShape::Rect { width, height } => {
-                let x = input_stream.input_value(
-                    &UserInput::Single(InputKind::SingleAxis(dual_axis.x)),
-                    false,
-                );
-                let y = input_stream.input_value(
-                    &UserInput::Single(InputKind::SingleAxis(dual_axis.y)),
-                    false,
-                );
-
-                if DeadZoneShape::outside_rectangle(x, y, *width, *height) {
-                    DualAxisData::new(x, y)
-                } else {
-                    DualAxisData::new(0.0, 0.0)
-                }
-            }
+                rect_1_width,
+                rect_1_height,
+                rect_2_width,
+                rect_2_height,
+            } => self.outside_cross(
+                x,
+                y,
+                *rect_1_width,
+                *rect_1_height,
+                *rect_2_width,
+                *rect_2_height,
+            ),
+            DeadZoneShape::Rect { width, height } => self.outside_rectangle(x, y, *width, *height),
             DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                let x = input_stream.input_value(
-                    &UserInput::Single(InputKind::SingleAxis(dual_axis.x)),
-                    false,
-                );
-                let y = input_stream.input_value(
-                    &UserInput::Single(InputKind::SingleAxis(dual_axis.y)),
-                    false,
-                );
-
-                if DeadZoneShape::outside_ellipse(x, y, *radius_x, *radius_y) {
-                    DualAxisData::new(x, y)
-                } else {
-                    DualAxisData::new(0.0, 0.0)
-                }
+                self.outside_ellipse(x, y, *radius_x, *radius_y)
             }
         }
     }
 
-    fn outside_ellipse(x: f32, y: f32, radius_x: f32, radius_y: f32) -> bool {
-        (x.powi(2) / radius_x.powi(2) + y.powi(2) / radius_y.powi(2)) >= 1.0
+    /// Returns whether the (x, y) input is outside a cross.
+    fn outside_cross(
+        &self,
+        x: f32,
+        y: f32,
+        horizontal_width: f32,
+        horizontal_height: f32,
+        vertical_width: f32,
+        vertical_height: f32,
+    ) -> bool {
+        self.outside_rectangle(x, y, horizontal_width, horizontal_height)
+            && self.outside_rectangle(x, y, vertical_width, vertical_height)
     }
 
-    fn outside_rectangle(x: f32, y: f32, width: f32, height: f32) -> bool {
+    /// Returns whether the (x, y) input is outside a rectangle.
+    fn outside_rectangle(&self, x: f32, y: f32, width: f32, height: f32) -> bool {
         x > width || x < -width || y > height || y < -height
+    }
+
+    /// Returns whether the (x, y) input is outside an ellipse.
+    fn outside_ellipse(&self, x: f32, y: f32, radius_x: f32, radius_y: f32) -> bool {
+        (x.powi(2) / radius_x.powi(2) + y.powi(2) / radius_y.powi(2)) >= 1.0
     }
 }
