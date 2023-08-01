@@ -129,8 +129,10 @@ impl<'a> InputStreams<'a> {
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
             InputKind::DualAxis(axis) => {
-                self.button_pressed(InputKind::SingleAxis(axis.x))
-                    || self.button_pressed(InputKind::SingleAxis(axis.y))
+                let x_value = self.input_value(&UserInput::Single(InputKind::SingleAxis(axis.x)), false);
+                let y_value = self.input_value(&UserInput::Single(InputKind::SingleAxis(axis.y)), false);
+                
+                axis.deadzone.input_outside_deadzone(x_value, y_value)
             }
             InputKind::SingleAxis(axis) => {
                 let value = self.input_value(&UserInput::Single(button), true);

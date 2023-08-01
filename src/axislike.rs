@@ -200,10 +200,10 @@ impl DualAxis {
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
     pub const DEFAULT_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Cross {
-        rect_1_width: Self::DEFAULT_DEADZONE,
+        rect_1_width: Self::DEFAULT_DEADZONE / 2.0,
         rect_1_height: Self::DEFAULT_DEADZONE,
         rect_2_width: Self::DEFAULT_DEADZONE,
-        rect_2_height: Self::DEFAULT_DEADZONE,
+        rect_2_height: Self::DEFAULT_DEADZONE / 2.0,
     };
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
@@ -211,12 +211,11 @@ impl DualAxis {
     pub fn symmetric(
         x_axis_type: impl Into<AxisType>,
         y_axis_type: impl Into<AxisType>,
-        threshold: f32,
         deadzone_shape: DeadZoneShape,
     ) -> DualAxis {
         DualAxis {
-            x: SingleAxis::symmetric(x_axis_type, threshold),
-            y: SingleAxis::symmetric(y_axis_type, threshold),
+            x: SingleAxis::symmetric(x_axis_type, 0.0),
+            y: SingleAxis::symmetric(y_axis_type, 0.0),
             deadzone: deadzone_shape,
         }
     }
@@ -245,7 +244,6 @@ impl DualAxis {
         DualAxis::symmetric(
             GamepadAxisType::LeftStickX,
             GamepadAxisType::LeftStickY,
-            Self::DEFAULT_DEADZONE,
             Self::DEFAULT_DEADZONE_SHAPE,
         )
     }
@@ -256,7 +254,6 @@ impl DualAxis {
         DualAxis::symmetric(
             GamepadAxisType::RightStickX,
             GamepadAxisType::RightStickY,
-            Self::DEFAULT_DEADZONE,
             Self::DEFAULT_DEADZONE_SHAPE,
         )
     }
@@ -710,7 +707,7 @@ impl From<DualAxisData> for Vec2 {
 /// The shape of the deadzone for a [`DualAxis`] input.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum DeadZoneShape {
-    /// Deadzone with the shape of a cross. The cross is represented by two perpendicular rectangles.
+    /// Deadzone with the shape of a cross. The cross is represented by two rectangles.
     Cross {
         /// The width of the first rectangle.
         rect_1_width: f32,
@@ -728,7 +725,7 @@ pub enum DeadZoneShape {
         /// The height of the rectangle.
         height: f32,
     },
-    /// Deadzone with the shpae of an ellipse.
+    /// Deadzone with the shape of an ellipse.
     Ellipse {
         /// The horizontal radius of the ellipse.
         radius_x: f32,
@@ -760,9 +757,7 @@ impl DeadZoneShape {
                 *rect_2_height,
             ),
             DeadZoneShape::Rect { width, height } => self.outside_rectangle(x, y, *width, *height),
-            DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                self.outside_ellipse(x, y, *radius_x, *radius_y)
-            }
+            DeadZoneShape::Ellipse { radius_x, radius_y } => self.outside_ellipse(x, y, *radius_x, *radius_y),
         }
     }
 
@@ -771,13 +766,13 @@ impl DeadZoneShape {
         &self,
         x: f32,
         y: f32,
-        horizontal_width: f32,
-        horizontal_height: f32,
-        vertical_width: f32,
-        vertical_height: f32,
+        rect_1_width: f32,
+        rect_1_height: f32,
+        rect_2_width: f32,
+        rect_2_height: f32,
     ) -> bool {
-        self.outside_rectangle(x, y, horizontal_width, horizontal_height)
-            && self.outside_rectangle(x, y, vertical_width, vertical_height)
+        self.outside_rectangle(x, y, rect_1_width, rect_1_height)
+            && self.outside_rectangle(x, y, rect_2_width, rect_2_height)
     }
 
     /// Returns whether the (x, y) input is outside a rectangle.
@@ -787,6 +782,6 @@ impl DeadZoneShape {
 
     /// Returns whether the (x, y) input is outside an ellipse.
     fn outside_ellipse(&self, x: f32, y: f32, radius_x: f32, radius_y: f32) -> bool {
-        (x.powi(2) / radius_x.powi(2) + y.powi(2) / radius_y.powi(2)) >= 1.0
+        (x.powi(2) / radius_x.powi(2) + y.powi(2) / radius_y.powi(2)) > 1.0
     }
 }
