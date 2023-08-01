@@ -741,7 +741,29 @@ pub enum DeadZoneShape {
 
 impl Eq for DeadZoneShape {}
 impl std::hash::Hash for DeadZoneShape {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {}
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match self {
+            DeadZoneShape::Cross {
+                rect_1_width,
+                rect_1_height,
+                rect_2_width,
+                rect_2_height,
+            } => {
+                FloatOrd(*rect_1_width).hash(state);
+                FloatOrd(*rect_1_height).hash(state);
+                FloatOrd(*rect_2_width).hash(state);
+                FloatOrd(*rect_2_height).hash(state);
+            }
+            DeadZoneShape::Rect { width, height } => {
+                FloatOrd(*width).hash(state);
+                FloatOrd(*height).hash(state);
+            }
+            DeadZoneShape::Ellipse { radius_x, radius_y } => {
+                FloatOrd(*radius_x).hash(state);
+                FloatOrd(*radius_y).hash(state);
+            }
+        }
+    }
 }
 
 impl DeadZoneShape {
