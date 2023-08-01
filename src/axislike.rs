@@ -705,9 +705,14 @@ impl From<DualAxisData> for Vec2 {
 }
 
 /// The shape of the deadzone for a [`DualAxis`] input.
+///
+/// Input values that are on the line of the shape are counted as inside
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum DeadZoneShape {
-    /// Deadzone with the shape of a cross. The cross is represented by two rectangles.
+    /// Deadzone with the shape of a cross.
+    ///
+    /// The cross is represented by two rectangles. When using [`DeadZoneShape::Cross`],
+    /// make sure rect_1 and rect_2 do not have the same values, otherwise the shape will be a rectangle
     Cross {
         /// The width of the first rectangle.
         rect_1_width: f32,
@@ -757,7 +762,9 @@ impl DeadZoneShape {
                 *rect_2_height,
             ),
             DeadZoneShape::Rect { width, height } => self.outside_rectangle(x, y, *width, *height),
-            DeadZoneShape::Ellipse { radius_x, radius_y } => self.outside_ellipse(x, y, *radius_x, *radius_y),
+            DeadZoneShape::Ellipse { radius_x, radius_y } => {
+                self.outside_ellipse(x, y, *radius_x, *radius_y)
+            }
         }
     }
 

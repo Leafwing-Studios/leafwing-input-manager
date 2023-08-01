@@ -3,7 +3,7 @@ use bevy::input::gamepad::{
 };
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::{AxisType, DualAxisData, DeadZoneShape};
+use leafwing_input_manager::axislike::{AxisType, DeadZoneShape, DualAxisData};
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect)]
@@ -214,7 +214,12 @@ fn game_pad_single_axis() {
 fn game_pad_dual_axis_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross { rect_1_width: 0.1, rect_1_height: 0.05, rect_2_width: 0.05, rect_2_height: 0.1 }),
+        DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
+            rect_1_width: 0.1,
+            rect_1_height: 0.05,
+            rect_2_width: 0.05,
+            rect_2_height: 0.1,
+        }),
         AxislikeTestAction::XY,
     )]));
 
@@ -259,7 +264,10 @@ fn game_pad_dual_axis_cross() {
 fn game_pad_dual_axis_rect() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        DualAxis::left_stick().with_deadzone(DeadZoneShape::Rect { width: 0.1, height: 0.1 }),
+        DualAxis::left_stick().with_deadzone(DeadZoneShape::Rect {
+            width: 0.1,
+            height: 0.1,
+        }),
         AxislikeTestAction::XY,
     )]));
 
@@ -304,7 +312,10 @@ fn game_pad_dual_axis_rect() {
 fn game_pad_dual_axis_ellipse() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        DualAxis::left_stick().with_deadzone(DeadZoneShape::Ellipse { radius_x: 0.1, radius_y: 0.1 }),
+        DualAxis::left_stick().with_deadzone(DeadZoneShape::Ellipse {
+            radius_x: 0.1,
+            radius_y: 0.1,
+        }),
         AxislikeTestAction::XY,
     )]));
 
