@@ -811,6 +811,6 @@ impl DeadZoneShape {
 
     /// Returns whether the (x, y) input is outside an ellipse.
     fn outside_ellipse(&self, x: f32, y: f32, radius_x: f32, radius_y: f32) -> bool {
-        (x.powi(2) / radius_x.powi(2) + y.powi(2) / radius_y.powi(2)) > 1.0
+        ((x / radius_x).powi(2) + (y / radius_y).powi(2)) > 1.0
     }
 }
