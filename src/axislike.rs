@@ -199,11 +199,9 @@ impl DualAxis {
     /// The default shape of the deadzone used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Cross {
-        rect_1_width: Self::DEFAULT_DEADZONE / 2.0,
-        rect_1_height: Self::DEFAULT_DEADZONE,
-        rect_2_width: Self::DEFAULT_DEADZONE,
-        rect_2_height: Self::DEFAULT_DEADZONE / 2.0,
+    pub const DEFAULT_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Ellipse {
+        radius_x: Self::DEFAULT_DEADZONE,
+        radius_y: Self::DEFAULT_DEADZONE,
     };
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
