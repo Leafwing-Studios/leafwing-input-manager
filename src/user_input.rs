@@ -26,7 +26,7 @@ pub enum UserInput {
     /// A combination of buttons, pressed simultaneously
     ///
     /// Up to 8 (!!) buttons can be chorded together at once.
-    Chord(PetitSet<InputKind, 8>),
+    Chord(Box<PetitSet<InputKind, 8>>),
     /// A virtual DPad that you can get an [`DualAxis`] from
     VirtualDPad(VirtualDPad),
     /// A virtual axis that you can get a [`SingleAxis`] from
@@ -44,7 +44,7 @@ impl UserInput {
         set.insert(modifier);
         set.insert(input);
 
-        UserInput::Chord(set)
+        UserInput::Chord(Box::new(set))
     }
 
     /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
@@ -62,7 +62,7 @@ impl UserInput {
 
         match length {
             1 => UserInput::Single(set.into_iter().next().unwrap()),
-            _ => UserInput::Chord(set),
+            _ => UserInput::Chord(Box::new(set)),
         }
     }
 
