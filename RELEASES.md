@@ -6,6 +6,9 @@
 
 - Fixed invalid example code in README
 
+### Enhancements
+- Added `DeadZoneShape` for `DualAxis` which allows for different deadzones shapes: cross, rectangle, and ellipse.
+
 ## Version 0.10
 
 ### Usability
