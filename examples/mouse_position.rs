@@ -9,7 +9,7 @@ fn main() {
         .add_plugins(InputManagerPlugin::<BoxMovement>::default())
         .add_systems(Startup, setup)
         .add_systems(
-            Startup,
+            Update,
             update_cursor_state_from_window
                 .run_if(run_if_enabled::<BoxMovement>)
                 .in_set(InputManagerSystem::ManualControl)
