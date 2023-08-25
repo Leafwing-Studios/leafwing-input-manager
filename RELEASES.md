@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Bugs
+- Fixed system order ambiguity between bevy_ui and update_action_state systems
+
 ### Docs
 
 - Fixed invalid example code in README

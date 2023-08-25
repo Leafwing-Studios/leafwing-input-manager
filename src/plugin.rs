@@ -115,6 +115,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                     update_action_state::<A>
                         .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Update)
+                        .after(UiSystem::Focus)
                         .after(InputSystem),
                 );
 
