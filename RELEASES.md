@@ -8,6 +8,7 @@
 ### Docs
 
 - Fixed invalid example code in README
+- Added example for setting default controls
 
 ### Enhancements
 - Added `DeadZoneShape` for `DualAxis` which allows for different deadzones shapes: cross, rectangle, and ellipse.
