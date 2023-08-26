@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::{prelude::*, user_input::InputKind};
 
-fn main(){
+fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(InputManagerPlugin::<PlayerAction>::default())
@@ -20,8 +20,8 @@ enum PlayerAction {
 }
 
 // Exhaustively match `PlayerAction` and define the default binding to the input
-impl PlayerAction{
-    fn default_keyboard_mouse_input(action: PlayerAction) -> UserInput{
+impl PlayerAction {
+    fn default_keyboard_mouse_input(action: PlayerAction) -> UserInput {
         // Match against the provided action to get the correct default keyboard-mouse input
         match action {
             Self::Run => UserInput::VirtualDPad(VirtualDPad::wasd()),
@@ -30,12 +30,14 @@ impl PlayerAction{
         }
     }
 
-    fn default_gamepad_input(action: PlayerAction) -> UserInput{
+    fn default_gamepad_input(action: PlayerAction) -> UserInput {
         // Match against the provided action to get the correct default gamepad input
         match action {
             Self::Run => UserInput::Single(InputKind::DualAxis(DualAxis::left_stick())),
             Self::Jump => UserInput::Single(InputKind::GamepadButton(GamepadButtonType::South)),
-            Self::UseItem => UserInput::Single(InputKind::GamepadButton(GamepadButtonType::RightTrigger2))
+            Self::UseItem => {
+                UserInput::Single(InputKind::GamepadButton(GamepadButtonType::RightTrigger2))
+            }
         }
     }
 }
@@ -43,7 +45,7 @@ impl PlayerAction{
 #[derive(Component)]
 struct Player;
 
-fn spawn_player(mut commands: Commands){
+fn spawn_player(mut commands: Commands) {
     // Create an `InputMap` to add default inputs to
     let mut input_map = InputMap::default();
 
@@ -55,28 +57,35 @@ fn spawn_player(mut commands: Commands){
     }
 
     // Spawn the player with the populated input_map
-    commands.spawn(InputManagerBundle::<PlayerAction> {
-        input_map,
-        ..default()
-    })
-    .insert(Player);
+    commands
+        .spawn(InputManagerBundle::<PlayerAction> {
+            input_map,
+            ..default()
+        })
+        .insert(Player);
 }
 
-fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>){
+fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
     let action_state = query.single();
 
     // When the default input for `PlayerAction::Run` is pressed, print the clamped direction of the axis
-    if action_state.pressed(PlayerAction::Run){
-        println!("Moving in direction {}", action_state.clamped_axis_pair(PlayerAction::Run).unwrap().xy());
+    if action_state.pressed(PlayerAction::Run) {
+        println!(
+            "Moving in direction {}",
+            action_state
+                .clamped_axis_pair(PlayerAction::Run)
+                .unwrap()
+                .xy()
+        );
     }
-    
+
     // When the default input for `PlayerAction::Jump` is pressed, print "Jump!"
-    if action_state.just_pressed(PlayerAction::Jump){
+    if action_state.just_pressed(PlayerAction::Jump) {
         println!("Jumped!");
     }
 
     // When the default input for `PlayerAction::UseItem` is pressed, print "Used an Item!"
-    if action_state.just_pressed(PlayerAction::UseItem){
+    if action_state.just_pressed(PlayerAction::UseItem) {
         println!("Used an Item!");
     }
 }
