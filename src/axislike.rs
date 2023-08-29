@@ -30,6 +30,8 @@ pub struct SingleAxis {
     pub negative_low: f32,
     /// Whether to invert output values from this axis.
     pub inverted: bool,
+    
+    pub sensitivity: f32,
     /// The target value for this input, used for input mocking.
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
@@ -45,6 +47,7 @@ impl SingleAxis {
             positive_low: threshold,
             negative_low: -threshold,
             inverted: false,
+            sensitivity: 1.0,
             value: None,
         }
     }
@@ -60,6 +63,7 @@ impl SingleAxis {
             positive_low: 0.0,
             negative_low: 0.0,
             inverted: false,
+            sensitivity: 1.0,
             value: Some(value),
         }
     }
@@ -72,6 +76,7 @@ impl SingleAxis {
             positive_low: 0.,
             negative_low: 0.,
             inverted: false,
+            sensitivity: 1.0,
             value: None,
         }
     }
@@ -84,6 +89,7 @@ impl SingleAxis {
             positive_low: 0.,
             negative_low: 0.,
             inverted: false,
+            sensitivity: 1.0,
             value: None,
         }
     }
@@ -96,6 +102,7 @@ impl SingleAxis {
             positive_low: 0.,
             negative_low: 0.,
             inverted: false,
+            sensitivity: 1.0,
             value: None,
         }
     }
@@ -108,6 +115,7 @@ impl SingleAxis {
             positive_low: 0.,
             negative_low: 0.,
             inverted: false,
+            sensitivity: 1.0,
             value: None,
         }
     }
@@ -121,6 +129,7 @@ impl SingleAxis {
             negative_low: threshold,
             positive_low: f32::MAX,
             inverted: false,
+            sensitivity: 1.0,
             value: None,
         }
     }
@@ -134,6 +143,7 @@ impl SingleAxis {
             negative_low: f32::MIN,
             positive_low: threshold,
             inverted: false,
+            sensitivity: 1.0,
             value: None,
         }
     }
@@ -143,6 +153,12 @@ impl SingleAxis {
     pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
         self.negative_low = -deadzone;
         self.positive_low = deadzone;
+        self
+    }
+
+    #[must_use]
+    pub fn with_sensitivity(mut self, sensitivity: f32) -> SingleAxis{
+        self.sensitivity = sensitivity;
         self
     }
 
@@ -278,6 +294,13 @@ impl DualAxis {
     #[must_use]
     pub fn with_deadzone(mut self, deadzone: DeadZoneShape) -> DualAxis {
         self.deadzone = deadzone;
+        self
+    }
+
+    #[must_use]
+    pub fn with_sensitivity(mut self, x_sensitivity: f32, y_sensitivity: f32) -> DualAxis{
+        self.x.sensitivity = x_sensitivity;
+        self.y.sensitivity = y_sensitivity;
         self
     }
 

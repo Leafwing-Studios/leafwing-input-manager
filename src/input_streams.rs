@@ -266,9 +266,9 @@ impl<'a> InputStreams<'a> {
             if value >= axis.negative_low && value <= axis.positive_low && include_deadzone {
                 0.0
             } else if axis.inverted {
-                -value
+                -value * axis.sensitivity
             } else {
-                value
+                value * axis.sensitivity
             }
         };
 
