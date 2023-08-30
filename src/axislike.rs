@@ -175,6 +175,7 @@ impl PartialEq for SingleAxis {
         self.axis_type == other.axis_type
             && FloatOrd(self.positive_low) == FloatOrd(other.positive_low)
             && FloatOrd(self.negative_low) == FloatOrd(other.negative_low)
+            && FloatOrd(self.sensitivity) == FloatOrd(other.sensitivity)
     }
 }
 impl Eq for SingleAxis {}
@@ -183,6 +184,7 @@ impl std::hash::Hash for SingleAxis {
         self.axis_type.hash(state);
         FloatOrd(self.positive_low).hash(state);
         FloatOrd(self.negative_low).hash(state);
+        FloatOrd(self.sensitivity).hash(state);
     }
 }
 
