@@ -705,7 +705,7 @@ impl From<DualAxisData> for Vec2 {
 /// The shape of the deadzone for a [`DualAxis`] input.
 ///
 /// Input values that are on the line of the shape are counted as inside.
-/// 
+///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum DeadZoneShape {
