@@ -80,7 +80,6 @@ fn game_pad_single_axis_mocking() {
         positive_low: 0.0,
         negative_low: 0.0,
         sensitivity: 1.0,
-        inverted: false,
     };
 
     app.send_input(input);
@@ -101,7 +100,6 @@ fn game_pad_dual_axis_mocking() {
             positive_low: 0.0,
             negative_low: 0.0,
             sensitivity: 1.0,
-            inverted: false,
         },
         y: SingleAxis {
             axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
@@ -109,7 +107,6 @@ fn game_pad_dual_axis_mocking() {
             positive_low: 0.0,
             negative_low: 0.0,
             sensitivity: 1.0,
-            inverted: false,
         },
         deadzone: DualAxis::DEFAULT_DEADZONE_SHAPE,
     };
@@ -139,7 +136,6 @@ fn game_pad_single_axis() {
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
-        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -153,7 +149,6 @@ fn game_pad_single_axis() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
-        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -167,7 +162,6 @@ fn game_pad_single_axis() {
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
-        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -181,7 +175,6 @@ fn game_pad_single_axis() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
-        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -196,7 +189,6 @@ fn game_pad_single_axis() {
         // Usually a small deadzone threshold will be set
         positive_low: 0.1,
         negative_low: 0.1,
-        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -210,7 +202,6 @@ fn game_pad_single_axis() {
         value: None,
         positive_low: 0.0,
         negative_low: 0.0,
-        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);

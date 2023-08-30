@@ -265,9 +265,8 @@ impl<'a> InputStreams<'a> {
         let value_in_axis_range = |axis: &SingleAxis, value: f32| -> f32 {
             if value >= axis.negative_low && value <= axis.positive_low && include_deadzone {
                 0.0
-            } else if axis.inverted {
-                -value * axis.sensitivity
-            } else {
+            }
+            else {
                 value * axis.sensitivity
             }
         };
