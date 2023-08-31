@@ -33,6 +33,8 @@ pub struct SingleAxis {
     /// How sensitive the axis is to input values.
     ///
     /// Since sensitivity is a multiplier, any value `>1.0` will increase sensitivity while any value `<1.0` will decrease sensitivity.
+    /// This value should always be strictly positive: a value of 0 will cause the axis to stop functioning,
+    /// while negative values will invert the direction.
     pub sensitivity: f32,
     /// The target value for this input, used for input mocking.
     ///
