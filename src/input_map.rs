@@ -98,7 +98,7 @@ fn spawn_player(mut commands: Commands){
 
 fn change_left_stick_values(mut query: Query<&mut InputMap<Action>>){
     let mut input_map = query.single_mut();
-    
+
     // Get the input at the 0 index since the left stick was added first in `Action::Look`
     let input = input_map.get_mut(Action::Look).get_at_mut(0).unwrap();
 
