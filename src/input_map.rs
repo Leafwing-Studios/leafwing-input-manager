@@ -425,6 +425,12 @@ impl<A: Actionlike> InputMap<A> {
         &self.map[action.index()]
     }
 
+    /// Returns the `action` mappings
+    #[must_use]
+    pub fn get_mut(&mut self, action: A) -> &mut PetitSet<UserInput, 16> {
+        &mut self.map[action.index()]
+    }
+
     /// How many input bindings are registered total?
     #[must_use]
     pub fn len(&self) -> usize {
