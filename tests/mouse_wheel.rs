@@ -75,6 +75,7 @@ fn mouse_wheel_single_axis_mocking() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
         sensitivity: 1.0,
     };
 
@@ -95,6 +96,7 @@ fn mouse_wheel_dual_axis_mocking() {
             value: Some(1.),
             positive_low: 0.0,
             negative_low: 0.0,
+            inverted: false,
             sensitivity: 1.0,
         },
         y: SingleAxis {
@@ -102,6 +104,7 @@ fn mouse_wheel_dual_axis_mocking() {
             value: Some(0.),
             positive_low: 0.0,
             negative_low: 0.0,
+            inverted: false,
             sensitivity: 1.0,
         },
         deadzone: DualAxis::DEFAULT_DEADZONE_SHAPE,
@@ -171,6 +174,7 @@ fn mouse_wheel_single_axis() {
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -184,6 +188,7 @@ fn mouse_wheel_single_axis() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -197,6 +202,7 @@ fn mouse_wheel_single_axis() {
         value: Some(1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -210,6 +216,7 @@ fn mouse_wheel_single_axis() {
         value: Some(-1.),
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -224,6 +231,7 @@ fn mouse_wheel_single_axis() {
         // Usually a small deadzone threshold will be set
         positive_low: 0.1,
         negative_low: 0.1,
+        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);
@@ -237,6 +245,7 @@ fn mouse_wheel_single_axis() {
         value: None,
         positive_low: 0.0,
         negative_low: 0.0,
+        inverted: false,
         sensitivity: 1.0,
     };
     app.send_input(input);

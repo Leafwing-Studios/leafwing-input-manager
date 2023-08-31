@@ -28,10 +28,11 @@ pub struct SingleAxis {
     pub positive_low: f32,
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
+    /// Whether to invert output values from this axis.
+    pub inverted: bool,
     /// How sensitive the axis is to input values.
     ///
     /// Since sensitivity is a multiplier, any value `>1.0` will increase sensitivity while any value `<1.0` will decrease sensitivity.
-    /// Negative values will invert the axis.
     pub sensitivity: f32,
     /// The target value for this input, used for input mocking.
     ///
@@ -47,6 +48,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             positive_low: threshold,
             negative_low: -threshold,
+            inverted: false,
             sensitivity: 1.0,
             value: None,
         }
@@ -62,6 +64,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             positive_low: 0.0,
             negative_low: 0.0,
+            inverted: false,
             sensitivity: 1.0,
             value: Some(value),
         }
@@ -74,6 +77,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             sensitivity: 1.0,
             value: None,
         }
@@ -86,6 +90,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             sensitivity: 1.0,
             value: None,
         }
@@ -98,6 +103,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             sensitivity: 1.0,
             value: None,
         }
@@ -110,6 +116,7 @@ impl SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
             positive_low: 0.,
             negative_low: 0.,
+            inverted: false,
             sensitivity: 1.0,
             value: None,
         }
@@ -123,6 +130,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             negative_low: threshold,
             positive_low: f32::MAX,
+            inverted: false,
             sensitivity: 1.0,
             value: None,
         }
@@ -136,6 +144,7 @@ impl SingleAxis {
             axis_type: axis_type.into(),
             negative_low: f32::MIN,
             positive_low: threshold,
+            inverted: false,
             sensitivity: 1.0,
             value: None,
         }
@@ -159,7 +168,7 @@ impl SingleAxis {
     /// Returns this [`SingleAxis`] inverted.
     #[must_use]
     pub fn inverted(mut self) -> Self {
-        self.sensitivity = -self.sensitivity;
+        self.inverted = !self.inverted;
         self
     }
 }
