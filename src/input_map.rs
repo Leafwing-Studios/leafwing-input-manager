@@ -73,6 +73,44 @@ use std::marker::PhantomData;
 /// // Removal
 /// input_map.clear_action(Action::Hide);
 ///```
+///
+/// # Example
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::InputKind;
+///
+/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+/// enum Action {
+///     Look,
+/// }
+///
+/// fn spawn_player(mut commands: Commands){
+///     commands.spawn(InputManagerBundle::<Action> {
+///         action_state: ActionState::default(),
+///         input_map: InputMap::default()
+///             .insert(DualAxis::left_stick().with_sensitivity(1.0, 1.0), Action::Look)
+///             .insert(DualAxis::mouse_motion().with_sensitivity(1.0, 1.0), Action::Look)
+///             .build(),
+///     });
+/// }
+///
+/// fn change_left_stick_values(mut query: Query<&mut InputMap<Action>>){
+///     let mut input_map = query.single_mut();
+///     
+///     // Get the input at the 0 index since the left stick was added first in `Action::Look`
+///     let input = input_map.get_mut(Action::Look).get_at_mut(0).unwrap();
+///
+///     // Some pattern matching is needed to get to the `DualAxis`
+///     if let UserInput::Single(kind) = input{
+///         if let InputKind::DualAxis(dual_axis) = kind{
+///             // Here any value of the left stick `DualAxis` can be changed
+///             dual_axis.x.sensitivity = 0.8;
+///             dual_axis.y.sensitivity = 0.8;
+///             dual_axis.deadzone = DeadZoneShape::Rect { width: 1.0, height: 1.0 }
+///         }
+///     }
+/// }
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid)]
 #[uuid = "D7DECC78-8573-42FF-851A-F0344C7D05C9"]
 pub struct InputMap<A: Actionlike> {
