@@ -19,98 +19,101 @@ use std::collections::HashMap;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-/// Maps from raw inputs to an input-method agnostic representation
-///
-/// Multiple inputs can be mapped to the same action,
-/// and each input can be mapped to multiple actions.
-///
-/// The provided input types must be able to be converted into a [`UserInput`].
-///
-/// The maximum number of bindings (total) that can be stored for each action is 16.
-/// Insertions will silently fail if you have reached this cap.
-///
-/// By default, if two actions would be triggered by a combination of buttons,
-/// and one combination is a strict subset of the other, only the larger input is registered.
-/// For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
-/// but not enter the letters `s`.
-/// Set the [`ClashStrategy`](crate::clashing_inputs::ClashStrategy) resource
-/// to configure this behavior.
-///
-/// # Example
-/// ```rust
-/// use bevy::prelude::*;
-/// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputKind;
-///
-/// // You can Run!
-/// // But you can't Hide :(
-/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
-/// enum Action {
-///     Run,
-///     Hide,
-/// }
-///
-/// // Construction
-/// let mut input_map = InputMap::new([
-///    // Note that the type of your iterators must be homogenous;
-///    // you can use `InputKind` or `UserInput` if needed
-///    // as unifying types
-///   (GamepadButtonType::South, Action::Run),
-///   (GamepadButtonType::LeftTrigger, Action::Hide),
-///   (GamepadButtonType::RightTrigger, Action::Hide),
-/// ]);
-///
-/// // Insertion
-/// input_map.insert(MouseButton::Left, Action::Run)
-/// .insert(KeyCode::ShiftLeft, Action::Run)
-/// // Chords
-/// .insert_modified(Modifier::Control, KeyCode::R, Action::Run)
-/// .insert_chord([InputKind::Keyboard(KeyCode::H),
-///                InputKind::GamepadButton(GamepadButtonType::South),
-///                InputKind::Mouse(MouseButton::Middle)],
-///            Action::Run);
-///
-/// // Removal
-/// input_map.clear_action(Action::Hide);
-///```
-///
-/// # Example
-/// ```rust
-/// use bevy::prelude::*;
-/// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputKind;
-///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
-/// enum Action {
-///     Look,
-/// }
-///
-/// fn spawn_player(mut commands: Commands){
-///     commands.spawn(InputManagerBundle::<Action> {
-///         action_state: ActionState::default(),
-///         input_map: InputMap::default()
-///             .insert(DualAxis::left_stick().with_sensitivity(1.0, 1.0), Action::Look)
-///             .insert(DualAxis::mouse_motion().with_sensitivity(1.0, 1.0), Action::Look)
-///             .build(),
-///     });
-/// }
-///
-/// fn change_left_stick_values(mut query: Query<&mut InputMap<Action>>){
-///     let mut input_map = query.single_mut();
-///     
-///     // Get the input at the 0 index since the left stick was added first in `Action::Look`
-///     let input = input_map.get_mut(Action::Look).get_at_mut(0).unwrap();
-///
-///     // Some pattern matching is needed to get to the `DualAxis`
-///     if let UserInput::Single(kind) = input{
-///         if let InputKind::DualAxis(dual_axis) = kind{
-///             // Here any value of the left stick `DualAxis` can be changed
-///             dual_axis.x.sensitivity = 0.8;
-///             dual_axis.y.sensitivity = 0.8;
-///             dual_axis.deadzone = DeadZoneShape::Rect { width: 1.0, height: 1.0 }
-///         }
-///     }
-/// }
+/**
+Maps from raw inputs to an input-method agnostic representation
+
+Multiple inputs can be mapped to the same action,
+and each input can be mapped to multiple actions.
+
+The provided input types must be able to be converted into a [`UserInput`].
+
+The maximum number of bindings (total) that can be stored for each action is 16.
+Insertions will silently fail if you have reached this cap.
+
+By default, if two actions would be triggered by a combination of buttons,
+and one combination is a strict subset of the other, only the larger input is registered.
+For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
+but not enter the letters `s`.
+Set the [`ClashStrategy`](crate::clashing_inputs::ClashStrategy) resource
+to configure this behavior.
+
+# Example
+```rust
+use bevy::prelude::*;
+use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::user_input::InputKind;
+
+// You can Run!
+// But you can't Hide :(
+#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+enum Action {
+    Run,
+    Hide,
+}
+
+// Construction
+let mut input_map = InputMap::new([
+   // Note that the type of your iterators must be homogenous;
+   // you can use `InputKind` or `UserInput` if needed
+   // as unifying types
+  (GamepadButtonType::South, Action::Run),
+  (GamepadButtonType::LeftTrigger, Action::Hide),
+  (GamepadButtonType::RightTrigger, Action::Hide),
+]);
+
+// Insertion
+input_map.insert(MouseButton::Left, Action::Run)
+.insert(KeyCode::ShiftLeft, Action::Run)
+// Chords
+.insert_modified(Modifier::Control, KeyCode::R, Action::Run)
+.insert_chord([InputKind::Keyboard(KeyCode::H),
+               InputKind::GamepadButton(GamepadButtonType::South),
+               InputKind::Mouse(MouseButton::Middle)],
+           Action::Run);
+
+// Removal
+input_map.clear_action(Action::Hide);
+```
+
+# Example
+```rust
+use bevy::prelude::*;
+use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::user_input::InputKind;
+
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+enum Action {
+    Look,
+}
+
+fn spawn_player(mut commands: Commands){
+    commands.spawn(InputManagerBundle::<Action> {
+        action_state: ActionState::default(),
+        input_map: InputMap::default()
+            .insert(DualAxis::left_stick().with_sensitivity(1.0, 1.0), Action::Look)
+            .insert(DualAxis::mouse_motion().with_sensitivity(1.0, 1.0), Action::Look)
+            .build(),
+    });
+}
+
+fn change_left_stick_values(mut query: Query<&mut InputMap<Action>>){
+    let mut input_map = query.single_mut();
+    
+    // Get the input at the 0 index since the left stick was added first in `Action::Look`
+    let input = input_map.get_mut(Action::Look).get_at_mut(0).unwrap();
+
+    // Some pattern matching is needed to get to the `DualAxis`
+    if let UserInput::Single(kind) = input{
+        if let InputKind::DualAxis(dual_axis) = kind{
+            // Here any value of the left stick `DualAxis` can be changed
+            dual_axis.x.sensitivity = 0.8;
+            dual_axis.y.sensitivity = 0.8;
+            dual_axis.deadzone = DeadZoneShape::Rect { width: 1.0, height: 1.0 }
+        }
+    }
+}
+```
+**/
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid)]
 #[uuid = "D7DECC78-8573-42FF-851A-F0344C7D05C9"]
 pub struct InputMap<A: Actionlike> {
