@@ -231,7 +231,8 @@ fn game_pad_single_axis_inverted() {
         positive_low: 0.0,
         negative_low: 0.0,
         sensitivity: -1.0,
-    }.inverted();
+    }
+    .inverted();
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

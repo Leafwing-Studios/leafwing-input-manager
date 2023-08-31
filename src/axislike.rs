@@ -29,7 +29,7 @@ pub struct SingleAxis {
     /// Any axis value lower than this will trigger the input.
     pub negative_low: f32,
     /// How sensitive the axis is to input values.
-    /// 
+    ///
     /// Since sensitivity is a multiplier, any value `>1.0` will increase sensitivity while any value `<1.0` will decrease sensitivity.
     /// Negative values will invert the axis.
     pub sensitivity: f32,
@@ -151,7 +151,7 @@ impl SingleAxis {
 
     /// Returns this [`SingleAxis`] with the sensitivity set to the specified value
     #[must_use]
-    pub fn with_sensitivity(mut self, sensitivity: f32) -> SingleAxis{
+    pub fn with_sensitivity(mut self, sensitivity: f32) -> SingleAxis {
         self.sensitivity = sensitivity;
         self
     }
@@ -295,7 +295,7 @@ impl DualAxis {
 
     /// Returns this [`DualAxis`] with the sensitivity set to the specified values
     #[must_use]
-    pub fn with_sensitivity(mut self, x_sensitivity: f32, y_sensitivity: f32) -> DualAxis{
+    pub fn with_sensitivity(mut self, x_sensitivity: f32, y_sensitivity: f32) -> DualAxis {
         self.x.sensitivity = x_sensitivity;
         self.y.sensitivity = y_sensitivity;
         self
