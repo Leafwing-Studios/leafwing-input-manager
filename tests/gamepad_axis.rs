@@ -211,6 +211,77 @@ fn game_pad_single_axis() {
 }
 
 #[test]
+fn game_pad_single_axis_inverted() {
+    let mut app = test_app();
+    app.insert_resource(InputMap::new([
+        (
+            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1).inverted(),
+            AxislikeTestAction::X,
+        ),
+        (
+            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1).inverted(),
+            AxislikeTestAction::Y,
+        ),
+    ]));
+
+    // +X
+    let input = SingleAxis {
+        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
+        value: Some(1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+        sensitivity: -1.0,
+    }.inverted();
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::X));
+    assert!(action_state.value(AxislikeTestAction::X) == -1.0);
+
+    // -X
+    let input = SingleAxis {
+        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
+        value: Some(-1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+        sensitivity: -1.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::X));
+    assert!(action_state.value(AxislikeTestAction::X) == 1.0);
+
+    // +Y
+    let input = SingleAxis {
+        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
+        value: Some(1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+        sensitivity: -1.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::Y));
+    assert!(action_state.value(AxislikeTestAction::Y) == -1.0);
+
+    // -Y
+    let input = SingleAxis {
+        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
+        value: Some(-1.),
+        positive_low: 0.0,
+        negative_low: 0.0,
+        sensitivity: -1.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::Y));
+    assert!(action_state.value(AxislikeTestAction::Y) == 1.0);
+}
+
+#[test]
 fn game_pad_dual_axis_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
