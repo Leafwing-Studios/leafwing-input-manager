@@ -75,6 +75,7 @@ fn mouse_motion_single_axis_mocking() {
         positive_low: 0.0,
         negative_low: 0.0,
         inverted: false,
+        sensitivity: 1.0,
     };
 
     app.send_input(input);
@@ -95,6 +96,7 @@ fn mouse_motion_dual_axis_mocking() {
             positive_low: 0.0,
             negative_low: 0.0,
             inverted: false,
+            sensitivity: 1.0,
         },
         y: SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
@@ -102,6 +104,7 @@ fn mouse_motion_dual_axis_mocking() {
             positive_low: 0.0,
             negative_low: 0.0,
             inverted: false,
+            sensitivity: 1.0,
         },
         deadzone: DualAxis::DEFAULT_DEADZONE_SHAPE,
     };
@@ -171,6 +174,7 @@ fn mouse_motion_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
         inverted: false,
+        sensitivity: 1.0,
     };
     app.send_input(input);
     app.update();
@@ -184,6 +188,7 @@ fn mouse_motion_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
         inverted: false,
+        sensitivity: 1.0,
     };
     app.send_input(input);
     app.update();
@@ -197,6 +202,7 @@ fn mouse_motion_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
         inverted: false,
+        sensitivity: 1.0,
     };
     app.send_input(input);
     app.update();
@@ -210,6 +216,7 @@ fn mouse_motion_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
         inverted: false,
+        sensitivity: 1.0,
     };
     app.send_input(input);
     app.update();
@@ -224,6 +231,7 @@ fn mouse_motion_single_axis() {
         positive_low: 0.1,
         negative_low: 0.1,
         inverted: false,
+        sensitivity: 1.0,
     };
     app.send_input(input);
     app.update();
@@ -237,6 +245,7 @@ fn mouse_motion_single_axis() {
         positive_low: 0.0,
         negative_low: 0.0,
         inverted: false,
+        sensitivity: 1.0,
     };
     app.send_input(input);
     app.update();
