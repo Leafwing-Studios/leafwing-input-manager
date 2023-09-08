@@ -77,17 +77,6 @@ impl<'a> InputStreams<'a> {
 
 // Input checking
 impl<'a> InputStreams<'a> {
-    /// Guess which registered [`Gamepad`] should be used.
-    ///
-    /// If an associated gamepad is set, use that.
-    /// Otherwise use the first registered gamepad, if any.
-    pub fn guess_gamepad(&self) -> Option<Gamepad> {
-        match self.associated_gamepad {
-            Some(gamepad) => Some(gamepad),
-            None => self.gamepads.iter().next(),
-        }
-    }
-
     /// Is the `input` matched by the [`InputStreams`]?
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
@@ -142,12 +131,23 @@ impl<'a> InputStreams<'a> {
                 value < axis.negative_low || value > axis.positive_low
             }
             InputKind::GamepadButton(gamepad_button) => {
-                if let Some(gamepad) = self.guess_gamepad() {
+                if let Some(gamepad) = self.associated_gamepad {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
                         button_type: gamepad_button,
                     })
                 } else {
+                    for gamepad in self.gamepads.iter() {
+                        if self.gamepad_buttons.pressed(GamepadButton {
+                            gamepad,
+                            button_type: gamepad_button,
+                        }) {
+                            // Return early if *any* gamepad is pressing this button
+                            return true;
+                        }
+                    }
+
+                    // If we don't have the required data, fall back to false
                     false
                 }
             }
@@ -276,7 +276,7 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::SingleAxis(single_axis)) => {
                 match single_axis.axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(gamepad) = self.guess_gamepad() {
+                        if let Some(gamepad) = self.associated_gamepad {
                             let value = self
                                 .gamepad_axes
                                 .get(GamepadAxis { gamepad, axis_type })
@@ -284,6 +284,19 @@ impl<'a> InputStreams<'a> {
 
                             value_in_axis_range(single_axis, value)
                         } else {
+                            for gamepad in self.gamepads.iter() {
+                                let value = self
+                                    .gamepad_axes
+                                    .get(GamepadAxis { gamepad, axis_type })
+                                    .unwrap_or_default();
+
+                                // Return early if *any* gamepad is pressing this axis
+                                if value != 0.0 {
+                                    return value_in_axis_range(single_axis, value);
+                                }
+                            }
+
+                            // If we don't have the required data, fall back to 0.0
                             0.0
                         }
                     }
@@ -364,7 +377,7 @@ impl<'a> InputStreams<'a> {
             }
             // This is required because upstream bevy::input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
-                if let Some(gamepad) = self.guess_gamepad() {
+                if let Some(gamepad) = self.associated_gamepad {
                     // Get the value from the registered gamepad
                     self.gamepad_button_axes
                         .get(GamepadButton {
@@ -373,6 +386,22 @@ impl<'a> InputStreams<'a> {
                         })
                         .unwrap_or_else(use_button_value)
                 } else {
+                    for gamepad in self.gamepads.iter() {
+                        let value = self
+                            .gamepad_button_axes
+                            .get(GamepadButton {
+                                gamepad,
+                                button_type: *button_type,
+                            })
+                            .unwrap_or_else(use_button_value);
+
+                        // Return early if *any* gamepad is pressing this button
+                        if value != 0.0 {
+                            return value;
+                        }
+                    }
+
+                    // If we don't have the required data, fall back to 0.0
                     0.0
                 }
             }
