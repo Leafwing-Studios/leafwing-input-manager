@@ -4,6 +4,7 @@
 
 ### Bugs
 - Fixed system order ambiguity between bevy_ui and update_action_state systems
+- The input values of axis inputs in a `Chord` are now prioritized over buttons
 
 ### Docs
 
