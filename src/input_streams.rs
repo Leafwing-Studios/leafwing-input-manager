@@ -330,6 +330,25 @@ impl<'a> InputStreams<'a> {
             UserInput::VirtualDPad { .. } => {
                 self.input_axis_pair(input).unwrap_or_default().length()
             }
+            UserInput::Chord(inputs) => {
+                let mut value = 0.0;
+
+                inputs.iter().for_each(|input| {
+                    value += match input {
+                        InputKind::SingleAxis(axis) => {
+                            self.input_value(&UserInput::Single(InputKind::SingleAxis(*axis)), true)
+                        }
+                        InputKind::MouseWheel(axis) => {
+                            self.input_value(&UserInput::Single(InputKind::MouseWheel(*axis)), true)
+                        }
+                        InputKind::MouseMotion(axis) => self
+                            .input_value(&UserInput::Single(InputKind::MouseMotion(*axis)), true),
+                        _ => use_button_value(),
+                    };
+                });
+
+                value
+            }
             // This is required because upstream bevy::input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
                 if let Some(gamepad) = self.guess_gamepad() {
