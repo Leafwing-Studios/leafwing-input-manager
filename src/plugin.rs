@@ -100,6 +100,11 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_systems(PostUpdate, release_on_input_map_removed::<A>);
 
+                app.add_systems(
+                    PreUpdate,
+                    update_action_state::<A>.in_set(InputManagerSystem::Update),
+                );
+
                 app.configure_set(
                     PreUpdate,
                     InputManagerSystem::Update
@@ -128,11 +133,6 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                         .after(InputManagerSystem::Update)
                         .after(UiSystem::Focus)
                         .after(InputSystem),
-                );
-
-                app.add_systems(
-                    PreUpdate,
-                    update_action_state::<A>.in_set(InputManagerSystem::Update),
                 );
 
                 #[cfg(feature = "ui")]
