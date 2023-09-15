@@ -100,21 +100,37 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 )
                 .add_systems(PostUpdate, release_on_input_map_removed::<A>);
 
-                #[cfg(feature = "egui")]
                 app.add_systems(
                     PreUpdate,
-                    update_action_state::<A>
-                        .run_if(run_if_enabled::<A>)
-                        .in_set(InputManagerSystem::Update)
-                        .after(InputSystem)
-                        .after(bevy_egui::EguiSet::ProcessInput),
+                    update_action_state::<A>.in_set(InputManagerSystem::Update),
                 );
-                #[cfg(not(feature = "egui"))]
-                app.add_systems(
+
+                app.configure_set(
                     PreUpdate,
-                    update_action_state::<A>
+                    InputManagerSystem::Update
                         .run_if(run_if_enabled::<A>)
-                        .in_set(InputManagerSystem::Update)
+                        .after(InputSystem),
+                );
+
+                #[cfg(feature = "egui")]
+                app.configure_set(
+                    PreUpdate,
+                    InputManagerSystem::Update.after(bevy_egui::EguiSet::ProcessInput),
+                );
+
+                #[cfg(feature = "ui")]
+                app.configure_set(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
+
+                #[cfg(feature = "ui")]
+                app.configure_set(
+                    PreUpdate,
+                    InputManagerSystem::ManualControl
+                        .run_if(run_if_enabled::<A>)
+                        .before(InputManagerSystem::ReleaseOnDisable)
+                        .after(InputManagerSystem::Tick)
+                        // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
+                        // not being pressed
+                        .after(InputManagerSystem::Update)
                         .after(UiSystem::Focus)
                         .after(InputSystem),
                 );
@@ -123,15 +139,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_systems(
                     PreUpdate,
                     update_action_state_from_interaction::<A>
-                        .run_if(run_if_enabled::<A>)
-                        .in_set(InputManagerSystem::ManualControl)
-                        .before(InputManagerSystem::ReleaseOnDisable)
-                        .after(InputManagerSystem::Tick)
-                        // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
-                        // not being pressed
-                        .after(InputManagerSystem::Update)
-                        .after(UiSystem::Focus)
-                        .after(InputSystem),
+                        .in_set(InputManagerSystem::ManualControl),
                 );
             }
             Machine::Server => {
