@@ -10,7 +10,7 @@ use crate::Actionlike;
 use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
-use bevy::reflect::TypeUuid;
+use bevy::reflect::{TypePath, TypeUuid};
 
 use core::fmt::Debug;
 use petitset::PetitSet;
@@ -114,7 +114,7 @@ fn change_left_stick_values(mut query: Query<&mut InputMap<Action>>){
 }
 ```
 **/
-#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid)]
+#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid, TypePath)]
 #[uuid = "D7DECC78-8573-42FF-851A-F0344C7D05C9"]
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
