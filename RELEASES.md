@@ -16,6 +16,7 @@
 
 ### Enhancements
 
+- Implement `TypePath` for `InputMap`.
 - Added `DeadZoneShape` for `DualAxis` which allows for different deadzones shapes: cross, rectangle, and ellipse.
 - Added sensitivity for `SingleAxis` and `DualAxis`, allowing you to scale mouse, keypad and gamepad inputs differently for each action.
 - Added a helper `from_keys` to `VirtualAxis` to simplify creating one from two keys
