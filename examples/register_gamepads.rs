@@ -1,4 +1,5 @@
 //! Demonstrates how to register gamepads in local multiplayer fashion
+
 use bevy::{prelude::*, utils::HashMap};
 use leafwing_input_manager::prelude::*;
 
@@ -55,6 +56,8 @@ fn join(
                     input_map: InputMap::default()
                         .insert(GamepadButtonType::South, Action::Jump)
                         .insert(GamepadButtonType::Select, Action::Disconnect)
+                        // Make sure to set the gamepad or all gamepads will be used!
+                        .set_gamepad(gamepad)
                         .build(),
                 })
                 .insert(Player { gamepad })
