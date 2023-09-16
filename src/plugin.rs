@@ -1,7 +1,11 @@
 //! Contains main plugin exported by this crate.
 
+use crate::action_state::ActionState;
+use crate::axislike::{DualAxis, SingleAxis, VirtualAxis, VirtualDPad};
+use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
-use crate::prelude::ActionState;
+use crate::input_map::InputMap;
+use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
 use core::hash::Hash;
 use core::marker::PhantomData;
@@ -153,6 +157,17 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
         };
 
         app.register_type::<ActionState<A>>()
+            .register_type::<InputMap<A>>()
+            .register_type::<UserInput>()
+            .register_type::<UserInput>()
+            .register_type::<InputKind>()
+            .register_type::<VirtualDPad>()
+            .register_type::<VirtualAxis>()
+            .register_type::<SingleAxis>()
+            .register_type::<DualAxis>()
+            .register_type::<Modifier>()
+            .register_type::<MouseWheelDirection>()
+            .register_type::<MouseMotionDirection>()
             // Resources
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();

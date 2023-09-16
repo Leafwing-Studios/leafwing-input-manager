@@ -34,6 +34,9 @@ bevy_egui = { version = "0.22", optional = true }
 
 petitset = { version = "0.2.1", features = ["serde_compat"] }
 derive_more = { version = "0.99", default-features = false, features = [
+  "as_ref",
+  "as_mut",
+  "from",
   "display",
   "error",
 ] }

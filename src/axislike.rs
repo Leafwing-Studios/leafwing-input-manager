@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
 pub struct SingleAxis {
     /// The axis that is being checked.
     pub axis_type: AxisType,
@@ -203,7 +203,7 @@ impl std::hash::Hash for SingleAxis {
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for both `x` and `y` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, Reflect)]
 pub struct DualAxis {
     /// The axis representing horizontal movement.
     pub x: SingleAxis,
@@ -342,7 +342,7 @@ impl DualAxis {
 /// even though it can be stored as an [`InputKind`].
 ///
 /// Instead, use it directly as [`InputKind::DualAxis`]!
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub struct VirtualDPad {
     /// The input that represents the up direction in this virtual DPad
     pub up: InputKind,
@@ -449,7 +449,7 @@ impl VirtualDPad {
 /// even though it can be stored as an [`InputKind`].
 ///
 /// Instead, use it directly as [`InputKind::SingleAxis`]!
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub struct VirtualAxis {
     /// The input that represents the negative direction of this virtual axis
     pub negative: InputKind,
@@ -516,7 +516,7 @@ impl VirtualAxis {
 /// The type of axis used by a [`UserInput`](crate::user_input::UserInput).
 ///
 /// This is stored in either a [`SingleAxis`] or [`DualAxis`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum AxisType {
     /// Input associated with a gamepad, such as the triggers or one axis of an analog stick.
     Gamepad(GamepadAxisType),
@@ -529,7 +529,7 @@ pub enum AxisType {
 /// The direction of motion of the mouse wheel.
 ///
 /// Stored in the [`AxisType`] enum.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum MouseWheelAxisType {
     /// Horizontal movement.
     ///
@@ -544,7 +544,7 @@ pub enum MouseWheelAxisType {
 /// The direction of motion of the mouse.
 ///
 /// Stored in the [`AxisType`] enum.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum MouseMotionAxisType {
     /// Horizontal movement.
     X,
@@ -736,7 +736,7 @@ impl From<DualAxisData> for Vec2 {
 /// If a volume of a shape is 0, then all input values are read.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
 pub enum DeadZoneShape {
     /// Deadzone with the shape of a cross.
     ///

@@ -4,13 +4,14 @@ use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
+use crate::reflect::ReflectPetitSet;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
 
 use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy::reflect::{Reflect, TypeUuid};
 
 use core::fmt::Debug;
 use petitset::PetitSet;
@@ -114,20 +115,21 @@ fn change_left_stick_values(mut query: Query<&mut InputMap<Action>>){
 }
 ```
 **/
-#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid, TypePath)]
+#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid, Reflect)]
 #[uuid = "D7DECC78-8573-42FF-851A-F0344C7D05C9"]
 pub struct InputMap<A: Actionlike> {
     /// The raw vector of [PetitSet]s used to store the input mapping,
     /// indexed by the `Actionlike::id` of `A`
-    map: Vec<PetitSet<UserInput, 16>>,
+    map: Vec<ReflectPetitSet<UserInput, 16>>,
     associated_gamepad: Option<Gamepad>,
+    #[reflect(ignore)]
     marker: PhantomData<A>,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
-            map: A::variants().map(|_| PetitSet::default()).collect(),
+            map: A::variants().map(|_| ReflectPetitSet::default()).collect(),
             associated_gamepad: None,
             marker: PhantomData,
         }
@@ -452,12 +454,12 @@ impl<A: Actionlike> InputMap<A> {
         self.map
             .iter()
             .enumerate()
-            .map(|(action_index, inputs)| (inputs, A::get_at(action_index).unwrap()))
+            .map(|(action_index, inputs)| (inputs.as_ref(), A::get_at(action_index).unwrap()))
     }
 
     /// Returns an iterator over all mapped inputs
     pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<UserInput, 16>> {
-        self.map.iter()
+        self.map.iter().map(|inputs| inputs.as_ref())
     }
 
     /// Returns the `action` mappings
