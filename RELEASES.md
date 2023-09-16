@@ -11,6 +11,7 @@
 
 - Fixed invalid example code in README
 - Added example for setting default controls
+- Added example for registering gamepads in a local multiplayer fashion
 
 ### Enhancements
 - Added `DeadZoneShape` for `DualAxis` which allows for different deadzones shapes: cross, rectangle, and ellipse.
