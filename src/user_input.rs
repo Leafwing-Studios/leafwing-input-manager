@@ -360,6 +360,8 @@ impl From<Modifier> for UserInput {
 /// require traits that are not object-safe.
 ///
 /// Please contact the maintainers if you need support for another type!
+// TODO: https://github.com/bevyengine/bevy/issues/3392
+#[allow(clippy::large_enum_variant)]
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum InputKind {
