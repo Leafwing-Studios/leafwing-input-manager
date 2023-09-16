@@ -37,35 +37,30 @@ fn join(
     for gamepad in gamepads.iter() {
         // Join the game when both bumpers (L+R) on the controller are pressed
         // We drop down the Bevy's input to get the input from each gamepad
-        if button_inputs.just_pressed(GamepadButton::new(gamepad, GamepadButtonType::LeftTrigger))
-            && button_inputs
-                .just_pressed(GamepadButton::new(gamepad, GamepadButtonType::RightTrigger))
+        if button_inputs.pressed(GamepadButton::new(gamepad, GamepadButtonType::LeftTrigger))
+            && button_inputs.pressed(GamepadButton::new(gamepad, GamepadButtonType::RightTrigger))
         {
             // Make sure a player can not join twice
-            if joined_players.0.contains_key(&gamepad) {
-                println!("Player {} has already joined the game!", gamepad.id);
+            if !joined_players.0.contains_key(&gamepad) {
+                println!("Player {} has joined the game!", gamepad.id);
 
-                continue;
+                let player = commands
+                    .spawn(InputManagerBundle::<Action> {
+                        action_state: ActionState::default(),
+                        input_map: InputMap::default()
+                            .insert(GamepadButtonType::South, Action::Jump)
+                            .insert(GamepadButtonType::Select, Action::Disconnect)
+                            // Make sure to set the gamepad or all gamepads will be used!
+                            .set_gamepad(gamepad)
+                            .build(),
+                    })
+                    .insert(Player { gamepad })
+                    .id();
+
+                // Insert the created player and its gamepad to the hashmap of joined players
+                // Since uniqueness was already checked above, we can insert here unchecked
+                joined_players.0.insert_unique_unchecked(gamepad, player);
             }
-
-            println!("Player {} has joined the game!", gamepad.id);
-
-            let player = commands
-                .spawn(InputManagerBundle::<Action> {
-                    action_state: ActionState::default(),
-                    input_map: InputMap::default()
-                        .insert(GamepadButtonType::South, Action::Jump)
-                        .insert(GamepadButtonType::Select, Action::Disconnect)
-                        // Make sure to set the gamepad or all gamepads will be used!
-                        .set_gamepad(gamepad)
-                        .build(),
-                })
-                .insert(Player { gamepad })
-                .id();
-
-            // Insert the created player and its gamepad to the hashmap of joined players
-            // Since uniqueness was already checked above, we can insert here unchecked
-            joined_players.0.insert_unique_unchecked(gamepad, player);
         }
     }
 }
