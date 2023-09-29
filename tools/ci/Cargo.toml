@@ -7,4 +7,4 @@ edition = "2018"
 
 [dependencies]
 xshell = "0.2"
-bitflags = "1.3"
+bitflags = "2"
