@@ -34,7 +34,7 @@ By default, if two actions would be triggered by a combination of buttons,
 and one combination is a strict subset of the other, only the larger input is registered.
 For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
 but not enter the letters `s`.
-Set the [`ClashStrategy`](crate::clashing_inputs::ClashStrategy) resource
+Set the [`ClashStrategy`] resource
 to configure this behavior.
 
 # Example
