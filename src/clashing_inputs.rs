@@ -1,4 +1,4 @@
-//! Handles clashing inputs into a [`InputMap`](crate::input_map::InputMap) in a configurable fashion.
+//! Handles clashing inputs into a [`InputMap`] in a configurable fashion.
 
 use crate::action_state::ActionData;
 use crate::axislike::{VirtualAxis, VirtualDPad};

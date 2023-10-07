@@ -177,7 +177,7 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
     }
 }
 
-/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`] stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifier,
 /// suitable to be sent across a network.
@@ -204,7 +204,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
     }
 }
 
-/// Generates an [`Events`](bevy::ecs::event::Events) stream of [`ActionDiff`] from [`ActionState`]
+/// Generates an [`Events`] stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifier,
 /// suitable to be sent across a network.
