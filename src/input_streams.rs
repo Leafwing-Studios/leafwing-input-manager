@@ -21,7 +21,7 @@ use crate::user_input::{InputKind, UserInput};
 
 /// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
-/// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
+/// These are typically collected via a system from the [`World`] as resources.
 #[derive(Debug, Clone)]
 pub struct InputStreams<'a> {
     /// A [`GamepadButton`] [`Input`] stream
@@ -413,7 +413,7 @@ impl<'a> InputStreams<'a> {
     ///
     /// If `input` is a chord, returns result of the first dual axis in the chord.
 
-    /// If `input` is not a [`DualAxis`](crate::axislike::DualAxis) or [`VirtualDPad`], returns [`None`].
+    /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
     ///
     /// # Warning
     ///
@@ -470,7 +470,7 @@ impl<'a> InputStreams<'a> {
 
 /// A mutable collection of [`Input`] structs, which can be used for mocking user inputs.
 ///
-/// These are typically collected via a system from the [`World`](bevy::prelude::World) as resources.
+/// These are typically collected via a system from the [`World`] as resources.
 // WARNING: If you update the fields of this type, you must also remember to update `InputMocking::reset_inputs`.
 #[derive(Debug)]
 pub struct MutableInputStreams<'a> {
