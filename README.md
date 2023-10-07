@@ -39,12 +39,7 @@ and a single input can result in multiple actions being triggered, which can be 
 
 - Gamepads must be manually assigned to each input map: read from the `Gamepads` resource and use `InputMap::set_gamepad`.
 
-## Instructions
-
-**Development occurs on the `dev` branch, which is merged into `main` on each release.**
-This ensures the examples are in-sync with the latest release.
-
-### Getting started
+## Getting started
 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
 2. Create an enum of the logical actions you want to represent, and derive the `Actionlike` trait for it.
