@@ -7,7 +7,6 @@
 - Fixed system order ambiguity between bevy_ui and update_action_state systems
 - The input values of axis inputs in a `Chord` are now prioritized over buttons
 - Fixed unassigned `InputMaps`s not receiving input from all connected gamepads
-- Fixed ellipse deadzone shape dividing by zero when radius is zero
 
 ### Docs
 
