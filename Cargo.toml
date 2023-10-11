@@ -30,7 +30,7 @@ bevy = { version = "0.11", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.21", optional = true }
+bevy_egui = { version = "0.22", optional = true }
 
 petitset = { version = "0.2.1", features = ["serde_compat"] }
 derive_more = { version = "0.99", default-features = false, features = [
@@ -43,7 +43,7 @@ fixedbitset = "0.4.2"
 once_cell = "1.17.1"
 
 [dev-dependencies]
-bevy_egui = { version = "0.21" }
+bevy_egui = { version = "0.22" }
 bevy = { version = "0.11", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
