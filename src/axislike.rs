@@ -735,7 +735,7 @@ impl From<DualAxisData> for Vec2 {
 
 /// The shape of the deadzone for a [`DualAxis`] input.
 ///
-/// Input values that are on the line of the shape are counted as outside.
+/// Input values that are on the boundary of the shape are counted as outside.
 /// If a volume of a shape is 0, then all input values are read.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
