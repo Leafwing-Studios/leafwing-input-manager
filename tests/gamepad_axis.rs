@@ -312,8 +312,8 @@ fn game_pad_dual_axis_cross() {
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
-        0.1,
-        0.05,
+        0.04,
+        0.04,
     ));
 
     app.update();
@@ -330,18 +330,18 @@ fn game_pad_dual_axis_cross() {
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
-        0.06,
-        0.06,
+        0.1,
+        0.05,
     ));
 
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::XY));
-    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.084852815);
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.111803405);
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.06, 0.06)
+        DualAxisData::new(0.1, 0.05)
     );
 }
 
@@ -360,8 +360,8 @@ fn game_pad_dual_axis_rect() {
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
-        0.1,
-        0.1,
+        0.05,
+        0.05,
     ));
 
     app.update();
@@ -379,17 +379,17 @@ fn game_pad_dual_axis_rect() {
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
         0.1,
-        0.2,
+        0.1,
     ));
 
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::XY));
-    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.22360681);
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.14142136);
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.1, 0.2)
+        DualAxisData::new(0.1, 0.1)
     );
 }
 
@@ -427,17 +427,17 @@ fn game_pad_dual_axis_ellipse() {
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
         0.1,
-        0.1,
+        0.0,
     ));
 
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(AxislikeTestAction::XY));
-    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.14142136);
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.1);
     assert_eq!(
         action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.1, 0.1)
+        DualAxisData::new(0.1, 0.0)
     );
 }
 
