@@ -442,6 +442,99 @@ fn game_pad_dual_axis_ellipse() {
 }
 
 #[test]
+fn test_zero_volume_cross() {
+    let mut app = test_app();
+    app.insert_resource(InputMap::new([(
+        DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
+            rect_1_width: 0.0,
+            rect_1_height: 0.0,
+            rect_2_width: 0.0,
+            rect_2_height: 0.0,
+        }),
+        AxislikeTestAction::XY,
+    )]));
+
+    // Test any input, even (0, 0), will count as input
+    app.send_input(DualAxis::from_value(
+        GamepadAxisType::LeftStickX,
+        GamepadAxisType::LeftStickY,
+        0.0,
+        0.0,
+    ));
+
+    app.update();
+
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
+    assert_eq!(
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(0.0, 0.0)
+    );
+}
+
+#[test]
+fn test_zero_volume_rect() {
+    let mut app = test_app();
+    app.insert_resource(InputMap::new([(
+        DualAxis::left_stick().with_deadzone(DeadZoneShape::Rect {
+            width: 0.0,
+            height: 0.0,
+        }),
+        AxislikeTestAction::XY,
+    )]));
+
+    // Test any input, even (0, 0), will count as input
+    app.send_input(DualAxis::from_value(
+        GamepadAxisType::LeftStickX,
+        GamepadAxisType::LeftStickY,
+        0.0,
+        0.0,
+    ));
+
+    app.update();
+
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
+    assert_eq!(
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(0.0, 0.0)
+    );
+}
+
+
+#[test]
+fn test_zero_volume_ellipse() {
+    let mut app = test_app();
+    app.insert_resource(InputMap::new([(
+        DualAxis::left_stick().with_deadzone(DeadZoneShape::Ellipse {
+            radius_x: 0.0,
+            radius_y: 0.0,
+        }),
+        AxislikeTestAction::XY,
+    )]));
+
+    // Test any input, even (0, 0), will count as input
+    app.send_input(DualAxis::from_value(
+        GamepadAxisType::LeftStickX,
+        GamepadAxisType::LeftStickY,
+        0.0,
+        0.0,
+    ));
+
+    app.update();
+
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
+    assert_eq!(
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(0.0, 0.0)
+    );
+}
+
+#[test]
 fn game_pad_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
