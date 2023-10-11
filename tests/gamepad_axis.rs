@@ -503,7 +503,6 @@ fn test_zero_volume_rect() {
     );
 }
 
-
 #[test]
 fn test_zero_volume_ellipse() {
     let mut app = test_app();
