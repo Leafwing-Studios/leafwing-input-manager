@@ -735,7 +735,8 @@ impl From<DualAxisData> for Vec2 {
 
 /// The shape of the deadzone for a [`DualAxis`] input.
 ///
-/// Input values that are on the line of the shape are counted as inside.
+/// Input values that are on the boundary of the shape are counted as outside.
+/// If a volume of a shape is 0, then all input values are read.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -837,7 +838,7 @@ impl DeadZoneShape {
 
     /// Returns whether the (x, y) input is outside a rectangle.
     fn outside_rectangle(&self, x: f32, y: f32, width: f32, height: f32) -> bool {
-        x > width || x < -width || y > height || y < -height
+        x >= width || x <= -width || y >= height || y <= -height
     }
 
     /// Returns whether the (x, y) input is outside an ellipse.
@@ -846,6 +847,6 @@ impl DeadZoneShape {
             return true;
         }
 
-        ((x / radius_x).powi(2) + (y / radius_y).powi(2)) > 1.0
+        ((x / radius_x).powi(2) + (y / radius_y).powi(2)) >= 1.0
     }
 }
