@@ -72,22 +72,32 @@ fn controls_window_system(
                 .show(ui, |ui| {
                     for action in ControlAction::variants() {
                         ui.label(action.to_string());
-                        let inputs = control_settings.input.get(action);
+                        let empty_vec = Vec::new();
+
+                        let inputs = if let Some(inputs) = control_settings.input.get(action) {
+                            inputs
+                        } else {
+                            &empty_vec
+                        };
+
                         for index in 0..INPUT_VARIANTS {
-                            let button_text = match inputs.get_at(index) {
-                                Some(UserInput::Single(InputKind::GamepadButton(
-                                    gamepad_button,
-                                ))) => {
-                                    format!("🎮 {gamepad_button:?}")
+                            let button_text = if index > inputs.len() {
+                                "Empty".to_string()
+                            } else {
+                                match inputs[index] {
+                                    UserInput::Single(InputKind::GamepadButton(gamepad_button)) => {
+                                        format!("🎮 {gamepad_button:?}")
+                                    }
+                                    UserInput::Single(InputKind::Keyboard(keycode)) => {
+                                        format!("🖮 {keycode:?}")
+                                    }
+                                    UserInput::Single(InputKind::Mouse(mouse_button)) => {
+                                        format!("🖱 {mouse_button:?}")
+                                    }
+                                    _ => "Empty".to_string(),
                                 }
-                                Some(UserInput::Single(InputKind::Keyboard(keycode))) => {
-                                    format!("🖮 {keycode:?}")
-                                }
-                                Some(UserInput::Single(InputKind::Mouse(mouse_button))) => {
-                                    format!("🖱 {mouse_button:?}")
-                                }
-                                _ => "Empty".to_string(),
                             };
+
                             if ui.button(button_text).clicked() {
                                 commands.insert_resource(ActiveBinding::new(action, index));
                             }
@@ -162,8 +172,8 @@ fn binding_window_system(
                     commands.remove_resource::<ActiveBinding>();
                 } else if let Some(input_button) = input_events.input_button() {
                     let conflict_action =
-                        control_settings.input.iter().find_map(|(inputs, action)| {
-                            if action != active_binding.action
+                        control_settings.input.iter().find_map(|(action, inputs)| {
+                            if *action != active_binding.action
                                 && inputs.contains(&input_button.into())
                             {
                                 return Some(action);
@@ -172,7 +182,7 @@ fn binding_window_system(
                         });
                     if let Some(action) = conflict_action {
                         active_binding.conflict.replace(BindingConflict {
-                            action,
+                            action: *action,
                             input_button,
                         });
                     } else {
