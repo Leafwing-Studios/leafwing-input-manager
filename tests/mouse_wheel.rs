@@ -128,7 +128,7 @@ fn mouse_wheel_buttonlike() {
     for action in ButtonlikeTestAction::variants() {
         let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
-        let input = input_map.get(action).get_at(0).unwrap().clone();
+        let input = input_map.get(action).unwrap().first().unwrap().clone();
 
         app.send_input(input.clone());
         app.update();
