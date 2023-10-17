@@ -227,7 +227,7 @@ impl<'a> InputStreams<'a> {
 
     /// Are all of the `buttons` pressed?
     #[must_use]
-    pub fn all_buttons_pressed(&self, buttons: &HashSet<InputKind>) -> bool {
+    pub fn all_buttons_pressed(&self, buttons: &Vec<InputKind>) -> bool {
         for &button in buttons.iter() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(button) {

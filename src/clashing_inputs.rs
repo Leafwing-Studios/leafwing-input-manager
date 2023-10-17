@@ -8,7 +8,6 @@ use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
 use bevy::prelude::Resource;
-use bevy::utils::HashSet;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -212,7 +211,7 @@ impl<A: Actionlike> Clash<A> {
 
 // Does the `button` clash with the `chord`?
 #[must_use]
-fn button_chord_clash(button: &InputKind, chord: &HashSet<InputKind>) -> bool {
+fn button_chord_clash(button: &InputKind, chord: &Vec<InputKind>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -222,7 +221,7 @@ fn button_chord_clash(button: &InputKind, chord: &HashSet<InputKind>) -> bool {
 
 // Does the `dpad` clash with the `chord`?
 #[must_use]
-fn dpad_chord_clash(dpad: &VirtualDPad, chord: &HashSet<InputKind>) -> bool {
+fn dpad_chord_clash(dpad: &VirtualDPad, chord: &Vec<InputKind>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -275,7 +274,7 @@ fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
 }
 
 #[must_use]
-fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &HashSet<InputKind>) -> bool {
+fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &Vec<InputKind>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -293,7 +292,7 @@ fn virtual_axis_virtual_axis_clash(axis1: &VirtualAxis, axis2: &VirtualAxis) -> 
 
 /// Does the `chord_a` clash with `chord_b`?
 #[must_use]
-fn chord_chord_clash(chord_a: &HashSet<InputKind>, chord_b: &HashSet<InputKind>) -> bool {
+fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool {
     if chord_a.len() <= 1 || chord_b.len() <= 1 {
         return false;
     }
@@ -302,7 +301,17 @@ fn chord_chord_clash(chord_a: &HashSet<InputKind>, chord_b: &HashSet<InputKind>)
         return false;
     }
 
-    chord_a.is_subset(chord_b) || chord_b.is_subset(chord_a)
+    is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a)
+}
+
+fn is_subset(vec_a: &Vec<InputKind>, vec_b: &Vec<InputKind>) -> bool {
+    for a in vec_a {
+        if !vec_b.contains(a) {
+            return false;
+        }
+    }
+
+    true
 }
 
 /// Given the `input_streams`, does the provided clash actually occur?

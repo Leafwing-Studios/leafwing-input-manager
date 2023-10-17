@@ -22,9 +22,12 @@ pub enum UserInput {
     /// A single button
     Single(InputKind),
     /// A combination of buttons, pressed simultaneously
-    ///
-    /// Up to 8 (!!) buttons can be chorded together at once.
-    Chord(HashSet<InputKind>),
+    // Note: we cannot use a HashSet here because of https://users.rust-lang.org/t/hash-not-implemented-why-cant-it-be-derived/92416/8
+    // We cannot use a BTreeSet because the underlying types don't impl Ord
+    // We don't want to use a PetitSet here because of memory bloat
+    // So a vec it is!
+    // RIP your uniqueness guarantees
+    Chord(Vec<InputKind>),
     /// A virtual DPad that you can get an [`DualAxis`] from
     VirtualDPad(VirtualDPad),
     /// A virtual axis that you can get a [`SingleAxis`] from
@@ -38,11 +41,11 @@ impl UserInput {
     pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
         let modifier: InputKind = modifier.into();
         let input: InputKind = input.into();
-        let mut set: HashSet<InputKind> = HashSet::default();
-        set.insert(modifier);
-        set.insert(input);
+        let mut vec = Vec::new();
+        vec.push(modifier);
+        vec.push(input);
 
-        UserInput::Chord(set)
+        UserInput::Chord(vec)
     }
 
     /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
@@ -52,15 +55,15 @@ impl UserInput {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: HashSet<InputKind> = HashSet::default();
+        let mut vec: Vec<InputKind> = Vec::default();
         for button in inputs {
             length += 1;
-            set.insert(button.into());
+            vec.push(button.into());
         }
 
         match length {
-            1 => UserInput::Single(set.into_iter().next().unwrap()),
-            _ => UserInput::Chord(set),
+            1 => UserInput::Single(*vec.first().unwrap()),
+            _ => UserInput::Chord(vec),
         }
     }
 

@@ -27,6 +27,7 @@
 
 - Removed the `petitset` dependency in favor of a `MultiMap` to reduce stack size of input types.
   - As a result, the `Actionlike` trait now has the additional `Hash` and `Eq` trait bounds
+  - `UserInput::Chord` now stores a simple `Vec` of `InputKind`s
 
 ### Docs
 
