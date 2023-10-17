@@ -785,7 +785,7 @@ mod tests {
 
     use super::ActionStateDriverTarget;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
         Run,
         Jump,

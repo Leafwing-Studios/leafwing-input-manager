@@ -2,17 +2,15 @@
 
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 
-use bevy::prelude::ScanCode;
-use bevy::utils::HashSet;
-use petitset::PetitSet;
-use serde::{Deserialize, Serialize};
-
 use crate::axislike::VirtualAxis;
 use crate::scan_codes::QwertyScanCode;
 use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
+use bevy::prelude::ScanCode;
+use bevy::utils::HashSet;
+use serde::{Deserialize, Serialize};
 
 /// Some combination of user input, which may cross input-mode boundaries.
 ///
@@ -26,7 +24,7 @@ pub enum UserInput {
     /// A combination of buttons, pressed simultaneously
     ///
     /// Up to 8 (!!) buttons can be chorded together at once.
-    Chord(Box<PetitSet<InputKind, 8>>),
+    Chord(HashSet<InputKind>),
     /// A virtual DPad that you can get an [`DualAxis`] from
     VirtualDPad(VirtualDPad),
     /// A virtual axis that you can get a [`SingleAxis`] from
@@ -40,11 +38,11 @@ impl UserInput {
     pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
         let modifier: InputKind = modifier.into();
         let input: InputKind = input.into();
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
+        let mut set: HashSet<InputKind> = HashSet::default();
         set.insert(modifier);
         set.insert(input);
 
-        UserInput::Chord(Box::new(set))
+        UserInput::Chord(set)
     }
 
     /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
@@ -54,7 +52,7 @@ impl UserInput {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
+        let mut set: HashSet<InputKind> = HashSet::default();
         for button in inputs {
             length += 1;
             set.insert(button.into());
@@ -62,7 +60,7 @@ impl UserInput {
 
         match length {
             1 => UserInput::Single(set.into_iter().next().unwrap()),
-            _ => UserInput::Chord(Box::new(set)),
+            _ => UserInput::Chord(set),
         }
     }
 

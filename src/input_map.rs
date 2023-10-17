@@ -11,13 +11,11 @@ use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::TypeUuid;
+use bevy::utils::HashMap;
+use multimap::MultiMap;
+use serde::{Deserialize, Serialize};
 
 use core::fmt::Debug;
-use petitset::PetitSet;
-use serde::{Deserialize, Deserializer, Serialize};
-use std::collections::HashMap;
-use std::hash::Hash;
-use std::marker::PhantomData;
 
 /**
 Maps from raw inputs to an input-method agnostic representation
@@ -114,22 +112,19 @@ fn change_left_stick_values(mut query: Query<&mut InputMap<Action>>){
 }
 ```
 **/
-#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid)]
+#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid, Serialize, Deserialize)]
 #[uuid = "D7DECC78-8573-42FF-851A-F0344C7D05C9"]
 pub struct InputMap<A: Actionlike> {
-    /// The raw vector of [PetitSet]s used to store the input mapping,
-    /// indexed by the `Actionlike::id` of `A`
-    map: Vec<PetitSet<UserInput, 16>>,
+    /// The usize stored here is the index of the input in the Actionlike iterator
+    map: MultiMap<A, UserInput>,
     associated_gamepad: Option<Gamepad>,
-    marker: PhantomData<A>,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
-            map: A::variants().map(|_| PetitSet::default()).collect(),
+            map: MultiMap::default(),
             associated_gamepad: None,
-            marker: PhantomData,
         }
     }
 }
@@ -211,7 +206,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert(&mut self, input: impl Into<UserInput>, action: A) -> &mut Self {
         let input = input.into();
 
-        self.map[action.index()].insert(input);
+        self.map.insert(action, input);
 
         self
     }
@@ -250,21 +245,6 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Insert a mapping between `input` and `action` at the provided index
-    ///
-    /// If a matching input already existed in the set, it will be moved to the supplied index. Any input that was previously there will be moved to the matching input’s original index.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the map is full and `input` is not a duplicate.
-    pub fn insert_at(&mut self, input: impl Into<UserInput>, action: A, index: usize) -> &mut Self {
-        let input = input.into();
-
-        self.map[action.index()].insert_at(input, index);
-
-        self
-    }
-
     /// Insert a mapping between the provided `input_action_pairs`
     ///
     /// This method creates multiple distinct bindings.
@@ -287,7 +267,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
     ///
-    /// Any iterator that can be converted into a [`InputKind`] can be supplied, but will be converted into a [`PetitSet`] for storage and use.
+    /// Any iterator that can be converted into a [`InputKind`] can be supplied, but will be converted into a [`HashSet`](bevy::utils::HashSet) for storage and use.
     /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
     /// When working with keyboard modifier keys, consider using the `insert_modified` method instead.
@@ -336,12 +316,16 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         for action in A::variants() {
-            for input in self.get(action.clone()).iter() {
-                new_map.insert(input.clone(), action.clone());
+            if let Some(input_vec) = self.get(action.clone()) {
+                for input in input_vec {
+                    new_map.insert(input.clone(), action.clone());
+                }
             }
 
-            for input in other.get(action.clone()).iter() {
-                new_map.insert(input.clone(), action.clone());
+            if let Some(input_vec) = other.get(action.clone()) {
+                for input in input_vec {
+                    new_map.insert(input.clone(), action.clone());
+                }
             }
         }
 
@@ -413,7 +397,11 @@ impl<A: Actionlike> InputMap<A> {
         for action in A::variants() {
             let mut inputs = Vec::new();
 
-            for input in self.get(action.clone()).iter() {
+            let Some(input_vec) = self.get(action.clone()) else {
+                break;
+            };
+
+            for input in input_vec {
                 let action = &mut action_data[action.index()];
 
                 // Merge axis pair into action data
@@ -448,28 +436,19 @@ impl<A: Actionlike> InputMap<A> {
 // Utilities
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over actions with their inputs
-    pub fn iter(&self) -> impl Iterator<Item = (&PetitSet<UserInput, 16>, A)> {
-        self.map
-            .iter()
-            .enumerate()
-            .map(|(action_index, inputs)| (inputs, A::get_at(action_index).unwrap()))
+    pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<UserInput>)> {
+        self.map.iter_all()
     }
-
-    /// Returns an iterator over all mapped inputs
-    pub fn iter_inputs(&self) -> impl Iterator<Item = &PetitSet<UserInput, 16>> {
-        self.map.iter()
-    }
-
-    /// Returns the `action` mappings
+    /// Returns a reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get(&self, action: A) -> &PetitSet<UserInput, 16> {
-        &self.map[action.index()]
+    pub fn get(&self, action: A) -> Option<&Vec<UserInput>> {
+        self.map.get_vec(&action)
     }
 
-    /// Returns the `action` mappings
+    /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get_mut(&mut self, action: A) -> &mut PetitSet<UserInput, 16> {
-        &mut self.map[action.index()]
+    pub fn get_mut(&mut self, action: A) -> Option<&mut Vec<UserInput>> {
+        self.map.get_vec_mut(&action)
     }
 
     /// How many input bindings are registered total?
@@ -477,7 +456,10 @@ impl<A: Actionlike> InputMap<A> {
     pub fn len(&self) -> usize {
         let mut i = 0;
         for action in A::variants() {
-            i += self.get(action).len();
+            i += match self.get(action) {
+                Some(input_vec) => input_vec.len(),
+                None => 0,
+            };
         }
         i
     }
@@ -494,21 +476,30 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Clears all inputs registered for the `action`
     pub fn clear_action(&mut self, action: A) {
-        self.map[action.index()].clear();
+        self.map.remove(&action);
     }
 
     /// Removes the input for the `action` at the provided index
     ///
-    /// Returns `true` if an element was found.
-    pub fn remove_at(&mut self, action: A, index: usize) -> bool {
-        self.map[action.index()].remove_at(index)
+    /// Returns `Some(input)` if found.
+    pub fn remove_at(&mut self, action: A, index: usize) -> Option<UserInput> {
+        let input_vec = self.map.get_vec_mut(&action)?;
+        if input_vec.len() <= index {
+            None
+        } else {
+            Some(input_vec.remove(index))
+        }
     }
 
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
     pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
-        self.map[action.index()].remove(&input.into())
+        let input_vec = self.map.get_vec_mut(&action)?;
+        let user_input = input.into();
+        let index = input_vec.iter().position(|i| i == &user_input)?;
+        input_vec.remove(index);
+        Some(index)
     }
 }
 
@@ -558,90 +549,6 @@ impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
     }
 }
 
-impl<A> Serialize for InputMap<A>
-where
-    A: Actionlike + Serialize + Eq + Hash + Ord,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        use serde::ser::SerializeStruct;
-        use std::collections::BTreeMap;
-
-        let mut input_map = serializer.serialize_struct("InputMap", 1)?;
-        input_map.serialize_field(
-            "map",
-            &self
-                .iter()
-                .map(|(set, action)| (action, set.iter().collect()))
-                .collect::<BTreeMap<A, Vec<&UserInput>>>(),
-        )?;
-        input_map.end()
-    }
-}
-
-impl<'de, A> Deserialize<'de> for InputMap<A>
-where
-    A: Actionlike + Deserialize<'de> + Eq + Hash,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        use serde::de::Visitor;
-
-        #[derive(Deserialize, PartialEq)]
-        #[serde(field_identifier, rename_all = "lowercase")]
-        enum Field {
-            Map,
-        }
-
-        struct InputMapVisitor<'de, A: Actionlike + Deserialize<'de>> {
-            marker: PhantomData<&'de A>,
-        }
-
-        impl<'de, A> Visitor<'de> for InputMapVisitor<'de, A>
-        where
-            A: Actionlike + Eq + Hash + Deserialize<'de>,
-        {
-            type Value = InputMap<A>;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                write!(formatter, "a struct with field 'map' of type map where key is `Actionlike` and value is sequents of `UserInput`")
-            }
-
-            fn visit_seq<S>(self, mut seq: S) -> Result<Self::Value, S::Error>
-            where
-                S: serde::de::SeqAccess<'de>,
-            {
-                let map = seq.next_element::<HashMap<A, Vec<UserInput>>>()?;
-                map.ok_or_else(|| {
-                    serde::de::Error::invalid_length(0, &"one argument with type `map`")
-                })
-                .map(InputMap::from)
-            }
-
-            fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
-            where
-                M: serde::de::MapAccess<'de>,
-            {
-                map.next_key::<Field>()?
-                    .filter(|key| *key == Field::Map)
-                    .ok_or_else(|| serde::de::Error::missing_field("map"))?;
-                let value = map.next_value::<HashMap<A, Vec<UserInput>>>()?;
-                Ok(value.into())
-            }
-        }
-
-        let visitor = InputMapVisitor {
-            marker: PhantomData,
-        };
-        const FIELDS: &[&str] = &["map"];
-        deserializer.deserialize_struct("InputMap", FIELDS, visitor)
-    }
-}
-
 mod tests {
     use bevy::prelude::Reflect;
     use serde::{Deserialize, Serialize};
@@ -672,37 +579,34 @@ mod tests {
     #[test]
     fn insertion_idempotency() {
         use bevy::input::keyboard::KeyCode;
-        use petitset::PetitSet;
 
         let mut input_map = InputMap::<Action>::default();
         input_map.insert(KeyCode::Space, Action::Run);
 
         assert_eq!(
-            *input_map.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
+            input_map.get(Action::Run),
+            Some(&vec![KeyCode::Space.into()])
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(KeyCode::Space, Action::Run);
         assert_eq!(
-            *input_map.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into()])
+            input_map.get(Action::Run),
+            Some(&vec![KeyCode::Space.into()])
         );
     }
 
     #[test]
     fn multiple_insertion() {
-        use crate::user_input::UserInput;
         use bevy::input::keyboard::KeyCode;
-        use petitset::PetitSet;
 
         let mut input_map_1 = InputMap::<Action>::default();
         input_map_1.insert(KeyCode::Space, Action::Run);
         input_map_1.insert(KeyCode::Return, Action::Run);
 
         assert_eq!(
-            *input_map_1.get(Action::Run),
-            PetitSet::<UserInput, 16>::from_iter([KeyCode::Space.into(), KeyCode::Return.into()])
+            input_map_1.get(Action::Run),
+            Some(&vec![KeyCode::Space.into(), KeyCode::Return.into()])
         );
 
         let input_map_2 = InputMap::<Action>::new([
@@ -742,15 +646,15 @@ mod tests {
         // Remove input at existing index
         input_map.insert(KeyCode::Space, Action::Run);
         input_map.insert(KeyCode::ShiftLeft, Action::Run);
-        assert!(input_map.remove_at(Action::Run, 1));
+        assert!(input_map.remove_at(Action::Run, 1).is_some());
         assert!(
-            !input_map.remove_at(Action::Run, 1),
-            "Should return false on second removal at the same index"
+            input_map.remove_at(Action::Run, 1).is_none(),
+            "Should return None on second removal at the same index"
         );
-        assert!(input_map.remove_at(Action::Run, 0));
+        assert!(input_map.remove_at(Action::Run, 0).is_some());
         assert!(
-            !input_map.remove_at(Action::Run, 0),
-            "Should return false on second removal at the same index"
+            input_map.remove_at(Action::Run, 0).is_none(),
+            "Should return None on second removal at the same index"
         );
     }
 
@@ -792,15 +696,12 @@ mod tests {
     #[test]
     fn from() {
         use bevy::prelude::KeyCode;
-        use std::collections::HashMap;
+        use multimap::MultiMap;
 
-        let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
-        map.insert(
-            Action::Hide,
-            vec![UserInput::chord(vec![KeyCode::R, KeyCode::E])],
-        );
-        map.insert(Action::Jump, vec![UserInput::from(KeyCode::Space)]);
-        map.insert(
+        let mut map: MultiMap<Action, UserInput> = MultiMap::default();
+        map.insert(Action::Hide, UserInput::chord(vec![KeyCode::R, KeyCode::E]));
+        map.insert(Action::Jump, UserInput::from(KeyCode::Space));
+        map.insert_many(
             Action::Run,
             vec![KeyCode::ShiftLeft.into(), KeyCode::ShiftRight.into()],
         );

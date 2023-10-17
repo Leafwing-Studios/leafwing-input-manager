@@ -12,6 +12,10 @@
 
 - Added `block_ui_interactions` feature flag; when on, mouse input won't be read if any `bevy_ui` element has an active `Interaction`.
 - Chords no longer have a max length.
+- The `UserInput::insert_at` method has been removed.
+- `InputMap::iter()` now returns a simple iterator of (action, input) pairs
+  - As a result, the `InputMap::iter_inputs` method has been removed.
+- The `InputMap::remove_at` API now returns `Some(removed_input)`, rather than just a `bool`.
 
 ### Bugs
 
@@ -21,7 +25,8 @@
 
 ### Performance
 
-- Removed the `petitset` dependency in favor of a simple `HashMap` to reduce stack size of input types.
+- Removed the `petitset` dependency in favor of a `MultiMap` to reduce stack size of input types.
+  - As a result, the `Actionlike` trait now has the additional `Hash` and `Eq` trait bounds
 
 ### Docs
 
