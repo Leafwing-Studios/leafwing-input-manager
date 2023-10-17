@@ -694,28 +694,6 @@ mod tests {
     }
 
     #[test]
-    fn from() {
-        use bevy::prelude::KeyCode;
-        use multimap::MultiMap;
-
-        let mut map: MultiMap<Action, UserInput> = MultiMap::default();
-        map.insert(Action::Hide, UserInput::chord(vec![KeyCode::R, KeyCode::E]));
-        map.insert(Action::Jump, UserInput::from(KeyCode::Space));
-        map.insert_many(
-            Action::Run,
-            vec![KeyCode::ShiftLeft.into(), KeyCode::ShiftRight.into()],
-        );
-
-        let mut input_map = InputMap::default();
-        input_map.insert_chord(vec![KeyCode::R, KeyCode::E], Action::Hide);
-        input_map.insert(KeyCode::Space, Action::Jump);
-        input_map.insert(KeyCode::ShiftLeft, Action::Run);
-        input_map.insert(KeyCode::ShiftRight, Action::Run);
-
-        assert_eq!(input_map, map.into());
-    }
-
-    #[test]
     fn serde() {
         use bevy::prelude::KeyCode;
         use serde_test::assert_tokens;
