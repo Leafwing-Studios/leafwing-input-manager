@@ -11,7 +11,7 @@ fn main() {
         .run()
 }
 
-#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Reflect)]
+#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 enum CameraMovement {
     Zoom,
     PanLeft,

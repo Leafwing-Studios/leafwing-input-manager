@@ -39,7 +39,7 @@ enum Slot {
 }
 
 // The list of possible abilities is typically longer than the list of slots
-#[derive(Actionlike, PartialEq, Eq, Clone, Debug, Copy, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Hash, Clone, Debug, Copy, Reflect)]
 enum Ability {
     Slash,
     Shoot,
