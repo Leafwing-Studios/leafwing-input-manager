@@ -12,15 +12,18 @@ use crate::{
     Actionlike,
 };
 
-use bevy::input::{
-    gamepad::{GamepadAxis, GamepadButton, Gamepads},
-    keyboard::KeyCode,
-    mouse::{MouseButton, MouseMotion, MouseWheel},
-    Axis, Input,
-};
 use bevy::time::Time;
 use bevy::utils::Instant;
 use bevy::{ecs::prelude::*, prelude::ScanCode};
+use bevy::{
+    input::{
+        gamepad::{GamepadAxis, GamepadButton, Gamepads},
+        keyboard::KeyCode,
+        mouse::{MouseButton, MouseMotion, MouseWheel},
+        Axis, Input,
+    },
+    time::Real,
+};
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -34,7 +37,7 @@ use bevy_egui::EguiContexts;
 pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     action_state: Option<ResMut<ActionState<A>>>,
-    time: Res<Time>,
+    time: Res<Time<Real>>,
     mut stored_previous_instant: Local<Option<Instant>>,
 ) {
     // If this is the very first tick, measure from the start of the app
@@ -215,7 +218,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
     mut action_diffs: EventReader<ActionDiff<A, ID>>,
 ) {
     // PERF: This would probably be faster with an index, but is much more fussy
-    for action_diff in action_diffs.iter() {
+    for action_diff in action_diffs.read() {
         for (mut action_state, id) in action_state_query.iter_mut() {
             match action_diff {
                 ActionDiff::Pressed {
@@ -269,7 +272,7 @@ pub fn release_on_input_map_removed<A: Actionlike>(
     mut input_map_resource_existed: Local<bool>,
     mut action_state_query: Query<&mut ActionState<A>>,
 ) {
-    let mut iter = action_state_query.iter_many_mut(removed_components.iter());
+    let mut iter = action_state_query.iter_many_mut(removed_components.read());
     while let Some(mut action_state) = iter.fetch_next() {
         action_state.release_all();
     }
