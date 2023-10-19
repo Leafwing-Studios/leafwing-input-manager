@@ -458,36 +458,33 @@ pub struct VirtualAxis {
 }
 
 impl VirtualAxis {
+    /// Helper function for generating a [`VirtualAxis`] from arbitrary keycodes, shorthand for
+    /// wrapping each key in [`InputKind::Keyboard`]
+    pub fn from_keys(negative: KeyCode, positive: KeyCode) -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::Keyboard(negative),
+            positive: InputKind::Keyboard(positive),
+        }
+    }
+
     /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
     pub fn horizontal_arrow_keys() -> VirtualAxis {
-        VirtualAxis {
-            negative: InputKind::Keyboard(KeyCode::Left),
-            positive: InputKind::Keyboard(KeyCode::Right),
-        }
+        VirtualAxis::from_keys(KeyCode::Left, KeyCode::Right)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
     pub fn vertical_arrow_keys() -> VirtualAxis {
-        VirtualAxis {
-            negative: InputKind::Keyboard(KeyCode::Down),
-            positive: InputKind::Keyboard(KeyCode::Up),
-        }
+        VirtualAxis::from_keys(KeyCode::Down, KeyCode::Up)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the `AD` keyboard keycodes.
     pub fn ad() -> VirtualAxis {
-        VirtualAxis {
-            negative: InputKind::Keyboard(KeyCode::A),
-            positive: InputKind::Keyboard(KeyCode::D),
-        }
+        VirtualAxis::from_keys(KeyCode::A, KeyCode::D)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the `WS` keyboard keycodes.
     pub fn ws() -> VirtualAxis {
-        VirtualAxis {
-            negative: InputKind::Keyboard(KeyCode::S),
-            positive: InputKind::Keyboard(KeyCode::W),
-        }
+        VirtualAxis::from_keys(KeyCode::S, KeyCode::W)
     }
 
     #[allow(clippy::doc_markdown)]
@@ -735,7 +732,8 @@ impl From<DualAxisData> for Vec2 {
 
 /// The shape of the deadzone for a [`DualAxis`] input.
 ///
-/// Input values that are on the line of the shape are counted as inside.
+/// Input values that are on the boundary of the shape are counted as outside.
+/// If a volume of a shape is 0, then all input values are read.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
@@ -837,7 +835,7 @@ impl DeadZoneShape {
 
     /// Returns whether the (x, y) input is outside a rectangle.
     fn outside_rectangle(&self, x: f32, y: f32, width: f32, height: f32) -> bool {
-        x > width || x < -width || y > height || y < -height
+        x >= width || x <= -width || y >= height || y <= -height
     }
 
     /// Returns whether the (x, y) input is outside an ellipse.
@@ -846,6 +844,6 @@ impl DeadZoneShape {
             return true;
         }
 
-        ((x / radius_x).powi(2) + (y / radius_y).powi(2)) > 1.0
+        ((x / radius_x).powi(2) + (y / radius_y).powi(2)) >= 1.0
     }
 }
