@@ -264,14 +264,14 @@ struct InputEvents<'w, 's> {
 
 impl InputEvents<'_, '_> {
     fn input_button(&mut self) -> Option<InputKind> {
-        if let Some(keyboard_input) = self.keys.iter().next() {
+        if let Some(keyboard_input) = self.keys.read().next() {
             if keyboard_input.state == ButtonState::Released {
                 if let Some(key_code) = keyboard_input.key_code {
                     return Some(key_code.into());
                 }
             }
         }
-        if let Some(mouse_input) = self.mouse_buttons.iter().next() {
+        if let Some(mouse_input) = self.mouse_buttons.read().next() {
             if mouse_input.state == ButtonState::Released {
                 return Some(mouse_input.button.into());
             }
@@ -280,7 +280,7 @@ impl InputEvents<'_, '_> {
             gamepad: _,
             button_type,
             value: strength,
-        })) = self.gamepad_events.iter().next()
+        })) = self.gamepad_events.read().next()
         {
             if *strength <= 0.5 {
                 return Some((*button_type).into());
