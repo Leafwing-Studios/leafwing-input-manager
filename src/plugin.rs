@@ -113,7 +113,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 );
 
                 #[cfg(feature = "egui")]
-                app.configure_set(
+                app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::Update.after(bevy_egui::EguiSet::ProcessInput),
                 );
