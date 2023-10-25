@@ -41,11 +41,8 @@ impl UserInput {
     pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
         let modifier: InputKind = modifier.into();
         let input: InputKind = input.into();
-        let mut vec = Vec::new();
-        vec.push(modifier);
-        vec.push(input);
 
-        UserInput::Chord(vec)
+        UserInput::chord(vec![modifier, input])
     }
 
     /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s

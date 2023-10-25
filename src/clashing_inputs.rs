@@ -304,9 +304,9 @@ fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool
     is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a)
 }
 
-fn is_subset(vec_a: &Vec<InputKind>, vec_b: &Vec<InputKind>) -> bool {
-    for a in vec_a {
-        if !vec_b.contains(a) {
+fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
+    for a in slice_a {
+        if !slice_b.contains(a) {
             return false;
         }
     }
@@ -524,7 +524,7 @@ mod tests {
                 index_b: OneAndTwo.index(),
                 inputs_a: vec![Key1.into()],
                 inputs_b: vec![UserInput::chord([Key1, Key2])],
-                _phantom: PhantomData::default(),
+                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -542,7 +542,7 @@ mod tests {
                 index_b: OneAndTwo.index(),
                 inputs_a: vec![UserInput::chord([Key1, Key2, Key3])],
                 inputs_b: vec![UserInput::chord([Key1, Key2])],
-                _phantom: PhantomData::default(),
+                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);
