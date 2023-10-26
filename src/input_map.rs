@@ -513,9 +513,6 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
     ///
-    /// # Panics
-    ///
-    /// Panics if the any value in map contains more than 16 distinct inputs.
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::input_map::InputMap;
@@ -536,7 +533,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     ///     Action::Run,
     ///     vec![KeyCode::ShiftLeft.into(), KeyCode::ShiftRight.into()],
     /// );
-    /// let input_map = InputMap::from(map);
+    /// let input_map: InputMap<Action> = InputMap::from(map);
     /// ```
     fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
         map.iter()

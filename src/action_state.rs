@@ -127,7 +127,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use leafwing_input_manager::buttonlike::ButtonState;
     /// use bevy::utils::Instant;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -180,7 +180,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -206,7 +206,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -294,13 +294,13 @@ impl<A: Actionlike> ActionState<A> {
     /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum AbilitySlot {
     ///     Slot1,
     ///     Slot2,
     /// }
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
@@ -372,7 +372,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Debug, Reflect)]
+    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum Action {
     ///     Eat,
     ///     Sleep,
@@ -522,7 +522,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
-/// #[derive(Actionlike, Clone, Copy, Reflect)]
+/// #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Reflect)]
 /// enum DanceDance {
 ///     Left,
 ///     Right,
@@ -551,7 +551,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 /// although this should be reserved for cases where the entity whose value you want to check
 /// is distinct from the entity whose [`ActionState`] you want to set.
 /// Check the source code of [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction) for an example of how this is done.
-#[derive(Component, Clone, PartialEq, Eq)]
+#[derive(Debug, Component, Clone, PartialEq, Eq)]
 pub struct ActionStateDriver<A: Actionlike> {
     /// The action triggered by this entity
     pub action: A,
@@ -560,7 +560,7 @@ pub struct ActionStateDriver<A: Actionlike> {
 }
 
 /// Represents the entities that an ``ActionStateDriver`` targets.
-#[derive(Component, Clone, PartialEq, Eq)]
+#[derive(Debug, Component, Clone, PartialEq, Eq)]
 pub enum ActionStateDriverTarget {
     /// No targets
     None,
