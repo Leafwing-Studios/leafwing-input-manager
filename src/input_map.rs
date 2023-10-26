@@ -516,9 +516,9 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     /// use leafwing_input_manager::user_input::UserInput;
     /// use leafwing_input_manager::Actionlike;
     /// use bevy::input::keyboard::KeyCode;
+    /// use bevy::reflect::Reflect;
     ///
-    /// use std::collections::HashMap;
-    /// use bevy::prelude::Reflect;
+    /// use bevy::utils::HashMap;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     /// enum Action {
