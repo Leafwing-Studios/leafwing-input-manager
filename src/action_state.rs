@@ -47,7 +47,7 @@ pub struct ActionData {
 /// use leafwing_input_manager::prelude::*;
 /// use bevy::utils::Instant;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Debug, Reflect)]
+/// #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 /// enum Action {
 ///     Left,
 ///     Right,
