@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- The `UserInput::insert_at` method has been removed: build this abstraction into your input binding menus if desired.
+- `InputMap::iter()` now returns a simple iterator of (action, input) pairs
+  - As a result, the `InputMap::iter_inputs` method has been removed.
+- The `InputMap::remove_at` API now returns `Some(removed_input)`, rather than just a `bool`.
+- The serialization format for `InputMap` has changed. You will need to re-generate your input maps if you were storing these persistently.
+
 ### Enhancements
 
 - Added `DeadZoneShape` for `DualAxis` which allows for different deadzones shapes: cross, rectangle, and ellipse.
@@ -12,10 +20,6 @@
 
 - Added `block_ui_interactions` feature flag; when on, mouse input won't be read if any `bevy_ui` element has an active `Interaction`.
 - Chords no longer have a max length.
-- The `UserInput::insert_at` method has been removed.
-- `InputMap::iter()` now returns a simple iterator of (action, input) pairs
-  - As a result, the `InputMap::iter_inputs` method has been removed.
-- The `InputMap::remove_at` API now returns `Some(removed_input)`, rather than just a `bool`.
 
 ### Bugs
 
