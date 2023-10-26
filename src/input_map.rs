@@ -25,9 +25,6 @@ and each input can be mapped to multiple actions.
 
 The provided input types must be able to be converted into a [`UserInput`].
 
-The maximum number of bindings (total) that can be stored for each action is 16.
-Insertions will silently fail if you have reached this cap.
-
 By default, if two actions would be triggered by a combination of buttons,
 and one combination is a strict subset of the other, only the larger input is registered.
 For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
@@ -533,7 +530,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
     ///     Action::Run,
     ///     vec![KeyCode::ShiftLeft.into(), KeyCode::ShiftRight.into()],
     /// );
-    /// let input_map: InputMap<Action> = InputMap::from(map);
+    /// let input_map = InputMap::<Action>::from(map);
     /// ```
     fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
         map.iter()
@@ -544,10 +541,6 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
 
 impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
     /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
-    ///
-    /// # Panics
-    ///
-    /// Panics if there are more than 16 distinct inputs for the same action.
     fn from_iter<T: IntoIterator<Item = (A, UserInput)>>(iter: T) -> Self {
         InputMap::new(iter.into_iter().map(|(action, input)| (input, action)))
     }
