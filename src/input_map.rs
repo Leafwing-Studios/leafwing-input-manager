@@ -206,6 +206,13 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert(&mut self, input: impl Into<UserInput>, action: A) -> &mut Self {
         let input = input.into();
 
+        // Check for existing copies of the input: insertion should be idempotent
+        if let Some(vec) = self.map.get_vec(&action) {
+            if vec.contains(&input) {
+                return self;
+            }
+        }
+
         self.map.insert(action, input);
 
         self
