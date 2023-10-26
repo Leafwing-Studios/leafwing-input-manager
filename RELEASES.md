@@ -20,6 +20,7 @@
 
 - Added `block_ui_interactions` feature flag; when on, mouse input won't be read if any `bevy_ui` element has an active `Interaction`.
 - Chords no longer have a max length.
+- `InputMap`, `UserInput` and all of the contained types now implement `Reflect`. As a result, the trait bound on `Actionlike` has been changed from `TypePath` to `Reflect`.
 
 ### Bugs
 
