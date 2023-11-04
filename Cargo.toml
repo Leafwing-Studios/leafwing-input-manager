@@ -26,11 +26,11 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.9" }
-bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "a042924", default-features = false, features = [
+bevy = { version = "0.12", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { git = "https://github.com/paul-hansen/bevy_egui.git", rev = "17e80f8", optional = true }
+bevy_egui = { git = "https://github.com/raffaeleragni/bevy_egui.git", rev = "8ce18a1", optional = true }
 
 petitset = { version = "0.2.1", features = ["serde_compat"] }
 derive_more = { version = "0.99", default-features = false, features = [
@@ -43,8 +43,8 @@ fixedbitset = "0.4.2"
 once_cell = "1.17.1"
 
 [dev-dependencies]
-bevy_egui = { git = "https://github.com/paul-hansen/bevy_egui.git", rev = "17e80f8" }
-bevy = { git = "https://github.com/bevyengine/bevy.git", rev = "a042924", default-features = false, features = [
+bevy_egui = { git = "https://github.com/raffaeleragni/bevy_egui.git", rev = "8ce18a1" }
+bevy = { version = "0.12", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
