@@ -1,7 +1,7 @@
 [package]
 name = "leafwing-input-manager"
 description = "A powerfully direct stateful input manager for the Bevy game engine."
-version = "0.10.0"
+version = "0.11.0"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
 repository = "https://github.com/leafwing-studios/leafwing-input-manager"
@@ -21,16 +21,13 @@ members = ["./", "tools/ci", "macros"]
 default = ['ui', 'block_ui_interactions']
 ui = ['bevy/bevy_ui']
 block_ui_interactions = []
-# If this feature is enabled, egui will have priority over actions when processing inputs
-egui = ['dep:bevy_egui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.9" }
-bevy = { version = "0.11", default-features = false, features = [
+leafwing_input_manager_macros = { path = "macros", version = "0.11" }
+bevy = { version = "0.12", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.22", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
@@ -43,7 +40,7 @@ once_cell = "1.17.1"
 multimap = "0.9.0"
 
 [dev-dependencies]
-bevy = { version = "0.11", default-features = false, features = [
+bevy = { version = "0.12", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",

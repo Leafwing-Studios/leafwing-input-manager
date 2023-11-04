@@ -534,6 +534,7 @@ fn test_zero_volume_ellipse() {
 }
 
 #[test]
+#[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407"]
 fn game_pad_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
