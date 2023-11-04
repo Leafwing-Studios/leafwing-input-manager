@@ -178,7 +178,7 @@ impl<'a> InputStreams<'a> {
                 // PERF: this summing is computed for every individual input
                 // This should probably be computed once, and then cached / read
                 // Fix upstream!
-                for mouse_wheel_event in event_reader.iter(mouse_wheel) {
+                for mouse_wheel_event in event_reader.read(mouse_wheel) {
                     total_mouse_wheel_movement += match mouse_wheel_direction {
                         MouseWheelDirection::Up | MouseWheelDirection::Down => mouse_wheel_event.y,
                         MouseWheelDirection::Left | MouseWheelDirection::Right => {
@@ -203,7 +203,7 @@ impl<'a> InputStreams<'a> {
                 // FIXME: verify that this works and doesn't double count events
                 let mut event_reader = self.mouse_motion.get_reader();
 
-                for mouse_motion_event in event_reader.iter(self.mouse_motion) {
+                for mouse_motion_event in event_reader.read(self.mouse_motion) {
                     total_mouse_movement += match mouse_motion_direction {
                         MouseMotionDirection::Up | MouseMotionDirection::Down => {
                             mouse_motion_event.delta.y
@@ -309,7 +309,7 @@ impl<'a> InputStreams<'a> {
                         // FIXME: verify that this works and doesn't double count events
                         let mut event_reader = mouse_wheel.get_reader();
 
-                        for mouse_wheel_event in event_reader.iter(mouse_wheel) {
+                        for mouse_wheel_event in event_reader.read(mouse_wheel) {
                             total_mouse_wheel_movement += match axis_type {
                                 MouseWheelAxisType::X => mouse_wheel_event.x,
                                 MouseWheelAxisType::Y => mouse_wheel_event.y,
@@ -323,7 +323,7 @@ impl<'a> InputStreams<'a> {
                         // FIXME: verify that this works and doesn't double count events
                         let mut event_reader = self.mouse_motion.get_reader();
 
-                        for mouse_wheel_event in event_reader.iter(self.mouse_motion) {
+                        for mouse_wheel_event in event_reader.read(self.mouse_motion) {
                             total_mouse_motion_movement += match axis_type {
                                 MouseMotionAxisType::X => mouse_wheel_event.delta.x,
                                 MouseMotionAxisType::Y => mouse_wheel_event.delta.y,
