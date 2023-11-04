@@ -23,7 +23,7 @@ ui = ['bevy/bevy_ui']
 block_ui_interactions = []
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.9" }
+leafwing_input_manager_macros = { path = "macros", version = "0.11" }
 bevy = { version = "0.12", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
