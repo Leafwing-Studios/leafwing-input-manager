@@ -112,12 +112,6 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                         .after(InputSystem),
                 );
 
-                #[cfg(feature = "egui")]
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::Update.after(bevy_egui::EguiSet::ProcessInput),
-                );
-
                 #[cfg(feature = "ui")]
                 app.configure_sets(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
 

@@ -27,8 +27,6 @@ use bevy::{
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
-#[cfg(feature = "egui")]
-use bevy_egui::EguiContexts;
 
 /// Advances actions timer.
 ///
@@ -78,7 +76,6 @@ pub fn update_action_state<A: Actionlike>(
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))] interactions: Query<
         &Interaction,
     >,
-    #[cfg(feature = "egui")] mut maybe_egui: EguiContexts,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     press_scheduler: Option<ResMut<PressScheduler<A>>>,
