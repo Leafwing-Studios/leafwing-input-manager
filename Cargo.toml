@@ -21,6 +21,8 @@ members = ["./", "tools/ci", "macros"]
 default = ['ui', 'block_ui_interactions']
 ui = ['bevy/bevy_ui']
 block_ui_interactions = []
+# If this feature is enabled, egui will have priority over actions when processing inputs
+egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.11" }
@@ -28,6 +30,7 @@ bevy = { version = "0.12", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
+bevy_egui = { version = "0.23", optional = true }
 
 petitset = { version = "0.2.1", features = ["serde_compat"] }
 derive_more = { version = "0.99", default-features = false, features = [
@@ -49,6 +52,7 @@ bevy = { version = "0.12", default-features = false, features = [
   "bevy_core_pipeline",
   "x11",
 ] }
+bevy_egui = { version = "0.23" }
 serde_test = "1.0"
 criterion = "0.5"
 
