@@ -1,5 +1,8 @@
 # Release Notes
 
+## Version 0.11.1
+- `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
+
 ## Version 0.11
 
 ### Known issues
