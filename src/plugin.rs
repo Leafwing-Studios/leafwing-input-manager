@@ -107,11 +107,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                         .in_set(InputManagerSystem::Update),
                 );
 
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::Update
-                        .after(InputSystem),
-                );
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(InputSystem));
 
                 #[cfg(feature = "egui")]
                 app.configure_sets(
