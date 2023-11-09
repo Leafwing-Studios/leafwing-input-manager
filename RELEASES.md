@@ -3,7 +3,21 @@
 ## Version 0.11.1
 - `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
 
+### Bugs
+- A disabled `ToggleActions` of one `Action` now does not release other `Action`'s inputs.
+
+## Version 0.11.1
+- `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
+
 ## Version 0.11
+
+### Known issues
+
+- `bevy_egui` integration and the `egui` feature flag have been temporarily removed to ensure a timely release
+- gamepad input mocking is not completely functional due to upstream changes: see [#407](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407)
+  - additional experiments and information would be helpful!
+
+### Bugs
 
 ### Known issues
 

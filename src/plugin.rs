@@ -103,15 +103,12 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
 
                 app.add_systems(
                     PreUpdate,
-                    update_action_state::<A>.in_set(InputManagerSystem::Update),
+                    update_action_state::<A>
+                        .run_if(run_if_enabled::<A>)
+                        .in_set(InputManagerSystem::Update),
                 );
 
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::Update
-                        .run_if(run_if_enabled::<A>)
-                        .after(InputSystem),
-                );
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(InputSystem));
 
                 #[cfg(feature = "egui")]
                 app.configure_sets(
@@ -126,7 +123,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::ManualControl
-                        .run_if(run_if_enabled::<A>)
                         .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
                         // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
@@ -140,6 +136,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 app.add_systems(
                     PreUpdate,
                     update_action_state_from_interaction::<A>
+                        .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::ManualControl),
                 );
             }
