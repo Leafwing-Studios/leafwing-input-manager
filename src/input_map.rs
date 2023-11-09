@@ -359,12 +359,8 @@ impl<A: Actionlike> InputMap<A> {
         let mut action_data = vec![ActionData::default(); A::n_variants()];
 
         // Generate the raw action presses
-        for action in A::variants() {
+        for (action, input_vec) in self.iter() {
             let mut inputs = Vec::new();
-
-            let Some(input_vec) = self.get(action.clone()) else {
-                break;
-            };
 
             for input in input_vec {
                 let action = &mut action_data[action.index()];
