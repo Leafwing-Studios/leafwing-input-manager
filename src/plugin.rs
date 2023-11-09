@@ -106,7 +106,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                     update_action_state::<A>.in_set(InputManagerSystem::Update),
                 );
 
-                app.configure_set(
+                app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::Update
                         .run_if(run_if_enabled::<A>)
@@ -114,16 +114,16 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 );
 
                 #[cfg(feature = "egui")]
-                app.configure_set(
+                app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::Update.after(bevy_egui::EguiSet::ProcessInput),
                 );
 
                 #[cfg(feature = "ui")]
-                app.configure_set(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
 
                 #[cfg(feature = "ui")]
-                app.configure_set(
+                app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::ManualControl
                         .run_if(run_if_enabled::<A>)
