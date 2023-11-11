@@ -1,15 +1,14 @@
 //! Unified input streams for working with [`bevy::input`] data.
 
+use bevy::ecs::prelude::{Events, ResMut, World};
+use bevy::ecs::system::SystemState;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput, ScanCode},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     Axis, Input,
 };
-use petitset::PetitSet;
-
-use bevy::ecs::prelude::{Events, ResMut, World};
-use bevy::ecs::system::SystemState;
+use bevy::utils::HashSet;
 
 use crate::axislike::{
     AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
@@ -103,7 +102,7 @@ impl<'a> InputStreams<'a> {
 
     /// Is at least one of the `inputs` pressed?
     #[must_use]
-    pub fn any_pressed(&self, inputs: &PetitSet<UserInput, 16>) -> bool {
+    pub fn any_pressed(&self, inputs: &HashSet<UserInput>) -> bool {
         for input in inputs.iter() {
             if self.input_pressed(input) {
                 return true;
@@ -228,7 +227,7 @@ impl<'a> InputStreams<'a> {
 
     /// Are all of the `buttons` pressed?
     #[must_use]
-    pub fn all_buttons_pressed(&self, buttons: &PetitSet<InputKind, 8>) -> bool {
+    pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
         for &button in buttons.iter() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(button) {

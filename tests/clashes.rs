@@ -62,7 +62,7 @@ impl ClashTestExt for App {
         clash_strategy: ClashStrategy,
         pressed_actions: impl IntoIterator<Item = Action>,
     ) {
-        let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions.into_iter());
+        let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions);
         // SystemState is love, SystemState is life
         let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
             SystemState::new(&mut self.world);

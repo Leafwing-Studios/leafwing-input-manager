@@ -1,11 +1,7 @@
 //! Helpful abstractions over user inputs of all sorts
 
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
-
-use bevy::prelude::ScanCode;
-use bevy::utils::HashSet;
-use petitset::PetitSet;
-use serde::{Deserialize, Serialize};
+use bevy::reflect::Reflect;
 
 use crate::axislike::VirtualAxis;
 use crate::scan_codes::QwertyScanCode;
@@ -13,20 +9,26 @@ use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
+use bevy::prelude::ScanCode;
+use bevy::utils::HashSet;
+use serde::{Deserialize, Serialize};
 
 /// Some combination of user input, which may cross input-mode boundaries.
 ///
 /// For example, this may store mouse, keyboard or gamepad input, including cross-device chords!
 ///
 /// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum UserInput {
     /// A single button
     Single(InputKind),
     /// A combination of buttons, pressed simultaneously
-    ///
-    /// Up to 8 (!!) buttons can be chorded together at once.
-    Chord(Box<PetitSet<InputKind, 8>>),
+    // Note: we cannot use a HashSet here because of https://users.rust-lang.org/t/hash-not-implemented-why-cant-it-be-derived/92416/8
+    // We cannot use a BTreeSet because the underlying types don't impl Ord
+    // We don't want to use a PetitSet here because of memory bloat
+    // So a vec it is!
+    // RIP your uniqueness guarantees
+    Chord(Vec<InputKind>),
     /// A virtual DPad that you can get an [`DualAxis`] from
     VirtualDPad(VirtualDPad),
     /// A virtual axis that you can get a [`SingleAxis`] from
@@ -40,11 +42,8 @@ impl UserInput {
     pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
         let modifier: InputKind = modifier.into();
         let input: InputKind = input.into();
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
-        set.insert(modifier);
-        set.insert(input);
 
-        UserInput::Chord(Box::new(set))
+        UserInput::chord(vec![modifier, input])
     }
 
     /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
@@ -54,15 +53,15 @@ impl UserInput {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
         let mut length: u8 = 0;
 
-        let mut set: PetitSet<InputKind, 8> = PetitSet::default();
+        let mut vec: Vec<InputKind> = Vec::default();
         for button in inputs {
             length += 1;
-            set.insert(button.into());
+            vec.push(button.into());
         }
 
         match length {
-            1 => UserInput::Single(set.into_iter().next().unwrap()),
-            _ => UserInput::Chord(Box::new(set)),
+            1 => UserInput::Single(*vec.first().unwrap()),
+            _ => UserInput::Chord(vec),
         }
     }
 
@@ -359,7 +358,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
@@ -453,7 +452,7 @@ impl From<Modifier> for InputKind {
 ///
 /// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons are pressed.
 /// This will be decomposed into both values when converted into [`RawInputs`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
 pub enum Modifier {
     /// Corresponds to [`KeyCode::AltLeft`] and [`KeyCode::AltRight`].
     Alt,

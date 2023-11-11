@@ -9,7 +9,6 @@ use crate::Actionlike;
 
 use bevy::prelude::Resource;
 use itertools::Itertools;
-use petitset::PetitSet;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::marker::PhantomData;
@@ -154,8 +153,8 @@ impl<A: Actionlike> InputMap<A> {
     fn possible_clash(&self, action_a: A, action_b: A) -> Option<Clash<A>> {
         let mut clash = Clash::new(action_a.clone(), action_b.clone());
 
-        for input_a in self.get(action_a).iter() {
-            for input_b in self.get(action_b.clone()).iter() {
+        for input_a in self.get(action_a)? {
+            for input_b in self.get(action_b.clone())? {
                 if input_a.clashes(input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
@@ -212,7 +211,7 @@ impl<A: Actionlike> Clash<A> {
 
 // Does the `button` clash with the `chord`?
 #[must_use]
-fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> bool {
+fn button_chord_clash(button: &InputKind, chord: &Vec<InputKind>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -222,7 +221,7 @@ fn button_chord_clash(button: &InputKind, chord: &PetitSet<InputKind, 8>) -> boo
 
 // Does the `dpad` clash with the `chord`?
 #[must_use]
-fn dpad_chord_clash(dpad: &VirtualDPad, chord: &PetitSet<InputKind, 8>) -> bool {
+fn dpad_chord_clash(dpad: &VirtualDPad, chord: &Vec<InputKind>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -275,7 +274,7 @@ fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
 }
 
 #[must_use]
-fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &PetitSet<InputKind, 8>) -> bool {
+fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &Vec<InputKind>) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -293,7 +292,7 @@ fn virtual_axis_virtual_axis_clash(axis1: &VirtualAxis, axis2: &VirtualAxis) -> 
 
 /// Does the `chord_a` clash with `chord_b`?
 #[must_use]
-fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputKind, 8>) -> bool {
+fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool {
     if chord_a.len() <= 1 || chord_b.len() <= 1 {
         return false;
     }
@@ -302,7 +301,17 @@ fn chord_chord_clash(chord_a: &PetitSet<InputKind, 8>, chord_b: &PetitSet<InputK
         return false;
     }
 
-    chord_a.is_subset(chord_b) || chord_b.is_subset(chord_a)
+    is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a)
+}
+
+fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
+    for a in slice_a {
+        if !slice_b.contains(a) {
+            return false;
+        }
+    }
+
+    true
 }
 
 /// Given the `input_streams`, does the provided clash actually occur?
@@ -515,7 +524,7 @@ mod tests {
                 index_b: OneAndTwo.index(),
                 inputs_a: vec![Key1.into()],
                 inputs_b: vec![UserInput::chord([Key1, Key2])],
-                _phantom: PhantomData::default(),
+                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -533,7 +542,7 @@ mod tests {
                 index_b: OneAndTwo.index(),
                 inputs_a: vec![UserInput::chord([Key1, Key2, Key3])],
                 inputs_b: vec![UserInput::chord([Key1, Key2])],
-                _phantom: PhantomData::default(),
+                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);

@@ -6,7 +6,8 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use bevy::reflect::TypePath;
+use bevy::reflect::Reflect;
+use std::hash::Hash;
 use std::marker::PhantomData;
 
 pub mod action_state;
@@ -80,7 +81,7 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Send + Sync + Clone + TypePath + 'static {
+pub trait Actionlike: Eq + Hash + Send + Sync + Clone + Hash + Reflect + 'static {
     /// The number of variants of this action type
     fn n_variants() -> usize;
 

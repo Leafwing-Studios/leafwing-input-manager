@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DeadZoneShape, DualAxisData};
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -14,7 +14,7 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum AxislikeTestAction {
     X,
     Y,

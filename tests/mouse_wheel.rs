@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseWheelAxisType};
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -12,7 +12,7 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum AxislikeTestAction {
     X,
     Y,
@@ -128,7 +128,7 @@ fn mouse_wheel_buttonlike() {
     for action in ButtonlikeTestAction::variants() {
         let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
-        let input = input_map.get(action).get_at(0).unwrap().clone();
+        let input = input_map.get(action).unwrap().first().unwrap().clone();
 
         app.send_input(input.clone());
         app.update();

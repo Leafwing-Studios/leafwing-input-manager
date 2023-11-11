@@ -11,6 +11,7 @@ use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
 use bevy::prelude::{PostUpdate, PreUpdate};
+use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -79,7 +80,7 @@ enum Machine {
     Client,
 }
 
-impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
+impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
