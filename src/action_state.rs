@@ -72,6 +72,15 @@ impl ActionData {
         timing: Timing::TEST,
         consumed: false,
     };
+
+    /// A default value, representing the state of an action that is currently.
+    pub const CONSUMED: ActionData = ActionData {
+        state: ButtonState::JustReleased,
+        value: 0.0,
+        axis_pair: None,
+        timing: Timing::TEST,
+        consumed: true,
+    };
 }
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
@@ -374,7 +383,8 @@ impl<A: Actionlike> ActionState<A> {
 
             action_data.state.press();
         } else {
-            todo!("Handle missing action data")
+            self.action_data_map
+                .insert(action.clone(), ActionData::JUST_PRESSED);
         }
     }
 
@@ -393,7 +403,8 @@ impl<A: Actionlike> ActionState<A> {
 
             action_data.state.release();
         } else {
-            todo!("Handle missing action data")
+            self.action_data_map
+                .insert(action.clone(), ActionData::JUST_RELEASED);
         }
     }
 
@@ -443,7 +454,8 @@ impl<A: Actionlike> ActionState<A> {
         if let Some(action_data) = self.action_data_map.get_mut(action) {
             action_data.consumed = true;
         } else {
-            todo!("Handle missing action data")
+            self.action_data_map
+                .insert(action.clone(), ActionData::CONSUMED);
         }
     }
 
@@ -467,48 +479,55 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Is this `action` currently pressed?
+    ///
+    /// If the action is missing from the [`ActionState`], this will return `false`.
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
         if let Some(action_data) = self.action_data_map.get(action) {
             action_data.state.pressed()
         } else {
-            todo!("Handle missing action data")
+            false
         }
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    ///
+    /// If the action is missing from the [`ActionState`], this will return `false`.
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
         if let Some(action_data) = self.action_data_map.get(action) {
             action_data.state.just_pressed()
         } else {
-            todo!("Handle missing action data")
+            false
         }
     }
 
     /// Is this `action` currently released?
     ///
-    /// This is always the logical negation of [pressed](ActionState::pressed)
+    /// This is always the logical negation of [pressed](ActionState::pressed).
+    /// If the action is missing from the [`ActionState`], this will return `false`.
     #[inline]
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
         if let Some(action_data) = self.action_data_map.get(action) {
             action_data.state.released()
         } else {
-            todo!("Handle missing action data")
+            true
         }
     }
 
     /// Was this `action` released since the last time [tick](ActionState::tick) was called?
+    ///
+    /// If the action is missing from the [`ActionState`], this will return `false`.
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
         if let Some(action_data) = self.action_data_map.get(action) {
             action_data.state.just_released()
         } else {
-            todo!("Handle missing action data")
+            false
         }
     }
 

@@ -27,7 +27,7 @@
 
 - Chords no longer have a max length
 - `InputMap`, `UserInput` and all of the contained types now implement `Reflect`. As a result, the trait bound on `Actionlike` has been changed from `TypePath` to `Reflect`
-- Added more constants for testing `ActionData::PRESSED/RELEASED/JUST_PRESSED/JUST_RELEASED` and `Timing::TEST`
+- Added more constants for testing: `ActionData::PRESSED/RELEASED/JUST_PRESSED/JUST_RELEASED/CONSUMED` and `Timing::TEST`
 - `ActionData::iter`, `ActionData::keys` and `InputMap::keys` have been added
 
 ### Performance

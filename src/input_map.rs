@@ -365,32 +365,30 @@ impl<A: Actionlike> InputMap<A> {
             let mut inputs = Vec::new();
 
             for input in input_vec {
-                if let Some(action_data) = action_data_map.get_mut(action) {
-                    // Merge axis pair into action data
-                    let axis_pair = input_streams.input_axis_pair(input);
-                    if let Some(axis_pair) = axis_pair {
-                        if let Some(current_axis_pair) = &mut action_data.axis_pair {
-                            *current_axis_pair = current_axis_pair.merged_with(axis_pair);
-                        } else {
-                            action_data.axis_pair = Some(axis_pair);
-                        }
-                    }
+                let action_data = action_data_map
+                    .entry(action.clone())
+                    .or_insert_with(ActionData::default);
 
-                    if input_streams.input_pressed(input) {
-                        inputs.push(input.clone());
-
-                        action_data.value += input_streams.input_value(input, true);
+                // Merge axis pair into action data
+                let axis_pair = input_streams.input_axis_pair(input);
+                if let Some(axis_pair) = axis_pair {
+                    if let Some(current_axis_pair) = &mut action_data.axis_pair {
+                        *current_axis_pair = current_axis_pair.merged_with(axis_pair);
+                    } else {
+                        action_data.axis_pair = Some(axis_pair);
                     }
-                } else {
-                    todo!("Handle missing actions.");
+                }
+
+                if input_streams.input_pressed(input) {
+                    inputs.push(input.clone());
+
+                    action_data.value += input_streams.input_value(input, true);
                 }
             }
 
             if !inputs.is_empty() {
                 if let Some(action_data) = action_data_map.get_mut(action) {
                     action_data.state = ButtonState::JustPressed;
-                } else {
-                    todo!("Handle missing actions.");
                 }
             }
         }
