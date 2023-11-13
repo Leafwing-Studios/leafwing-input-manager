@@ -6,9 +6,8 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use bevy::reflect::Reflect;
+use bevy::reflect::{FromReflect, Reflect};
 use std::hash::Hash;
-use std::marker::PhantomData;
 
 pub mod action_state;
 pub mod axislike;
@@ -16,7 +15,6 @@ pub mod buttonlike;
 pub mod clashing_inputs;
 pub mod common_conditions;
 mod display_impl;
-pub mod dynamic_action;
 pub mod errors;
 pub mod input_map;
 pub mod input_mocking;
@@ -81,44 +79,9 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Eq + Hash + Send + Sync + Clone + Hash + Reflect + 'static {}
-
-/// An iterator of [`Actionlike`] actions
-///
-/// Created by calling [`Actionlike::variants()`].
-#[derive(Debug, Clone)]
-pub struct ActionIter<A: Actionlike> {
-    index: usize,
-    _phantom: PhantomData<A>,
-}
-
-impl<A: Actionlike> Iterator for ActionIter<A> {
-    type Item = A;
-
-    fn next(&mut self) -> Option<A> {
-        let item = A::get_at(self.index);
-        if item.is_some() {
-            self.index += 1;
-        }
-
-        item
-    }
-}
-
-impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {
-    fn len(&self) -> usize {
-        A::n_variants()
-    }
-}
-
-// We can't derive this, because otherwise it won't work when A is not default
-impl<A: Actionlike> Default for ActionIter<A> {
-    fn default() -> Self {
-        ActionIter {
-            index: 0,
-            _phantom: PhantomData,
-        }
-    }
+pub trait Actionlike:
+    Eq + Hash + Send + Sync + Clone + Hash + Reflect + FromReflect + 'static
+{
 }
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources

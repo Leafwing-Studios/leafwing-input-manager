@@ -10,6 +10,14 @@
 - The `InputMap::remove_at` API now returns `Some(removed_input)`, rather than just a `bool`
 - The serialization format for `InputMap` has changed. You will need to re-generate your input maps if you were storing these persistently
 - The trait methods `n_variants`, `variants`, `get_at` and `index` were removed from `Actionlike.`
+  - The `ActionIter` type has been removed, as you can no longer iterate over arbitrary actions.
+  - `ClashStrategy::UseActionOrder` has been removed.
+  - In most cases, you can use `ActionState::keys` or `InputMap::keys` to replace this.
+  - When constructing default keybindings for simple enum actions, consider pairing LWIM with the `strum` crate, which allows you to iterate over enum variants.
+- All methods now take action types as a `&A`, rather than `A` for performance and ergonomics reasons.
+  - This is more important now that more complex action types are supported: they are no longer always be simple `Copy` enums
+- `ActionState::action_data` and `ActionState::action_data_mut` now return `Option<&(mut) ActionData>`
+- `dynamic_action.rs` has been removed, as it is no longer required: non-trivial action types are now directly supported
 
 ### Enhancements
 
@@ -17,8 +25,10 @@
 
 ### Usability
 
-- Chords no longer have a max length.
-- `InputMap`, `UserInput` and all of the contained types now implement `Reflect`. As a result, the trait bound on `Actionlike` has been changed from `TypePath` to `Reflect`.
+- Chords no longer have a max length
+- `InputMap`, `UserInput` and all of the contained types now implement `Reflect`. As a result, the trait bound on `Actionlike` has been changed from `TypePath` to `Reflect`
+- Added more constants for testing `ActionData::PRESSED/RELEASED/JUST_PRESSED/JUST_RELEASED` and `Timing::TEST`
+- `ActionData::iter`, `ActionData::keys` and `InputMap::keys` have been added
 
 ### Performance
 

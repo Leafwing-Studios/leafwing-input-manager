@@ -51,7 +51,7 @@ impl PlayerAction {
         }
     }
 
-    fn default_mkb_binding(&self) -> UserInput {
+    fn default_kbm_binding(&self) -> UserInput {
         // Match against the provided action to get the correct default gamepad input
         match self {
             Self::Move => UserInput::VirtualDPad(VirtualDPad::wasd()),
@@ -155,9 +155,9 @@ fn player_mouse_look(
         let diff = (p - player_transform.translation).xz();
         if diff.length_squared() > 1e-3f32 {
             // Press the look action, so we can check that it is active
-            action_state.press(PlayerAction::Look);
+            action_state.press(&PlayerAction::Look);
             // Modify the action data to set the axis
-            let action_data = action_state.action_data_mut(PlayerAction::Look);
+            let action_data = action_state.action_data_mut(&PlayerAction::Look).unwrap();
             // Flipping y sign here to be consistent with gamepad input. We could also invert the gamepad y axis
             action_data.axis_pair = Some(DualAxisData::from_xy(Vec2::new(diff.x, -diff.y)));
         }
@@ -171,28 +171,28 @@ fn control_player(
     mut query: Query<&mut Transform, With<Player>>,
 ) {
     let mut player_transform = query.single_mut();
-    if action_state.pressed(PlayerAction::Move) {
+    if action_state.pressed(&PlayerAction::Move) {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
         let move_delta = time.delta_seconds()
             * action_state
-                .clamped_axis_pair(PlayerAction::Move)
+                .clamped_axis_pair(&PlayerAction::Move)
                 .unwrap()
                 .xy();
         player_transform.translation += Vec3::new(move_delta.x, 0.0, move_delta.y);
         println!("Player moved to: {}", player_transform.translation.xz());
     }
 
-    if action_state.pressed(PlayerAction::Look) {
+    if action_state.pressed(&PlayerAction::Look) {
         let look = action_state
-            .axis_pair(PlayerAction::Look)
+            .axis_pair(&PlayerAction::Look)
             .unwrap()
             .xy()
             .normalize();
         println!("Player looking in direction: {}", look);
     }
 
-    if action_state.pressed(PlayerAction::Shoot) {
+    if action_state.pressed(&PlayerAction::Shoot) {
         println!("Shoot!")
     }
 }

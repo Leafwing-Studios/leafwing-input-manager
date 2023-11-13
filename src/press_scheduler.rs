@@ -5,25 +5,21 @@
 //! Directly using [`ActionState::press`] would not work, as inputs submitted late would be wiped out by the input manager systems.
 //! With this type, the action is pressed on the next time said systems run, making it so other systems can react to it correctly.
 
-use std::marker::PhantomData;
-
-use bevy::prelude::*;
-use fixedbitset::FixedBitSet;
+use bevy::{prelude::*, utils::HashSet};
 
 use crate::{prelude::ActionState, Actionlike};
 
 /// Allows for scheduling an action to be pressed for the next frame
 #[derive(Component, Resource)]
 pub struct PressScheduler<A: Actionlike> {
-    bitset: FixedBitSet,
-    _phantom: PhantomData<A>,
+    set: HashSet<A>,
 }
 
+// Required because of footgun with derives and trait bounds
 impl<A: Actionlike> Default for PressScheduler<A> {
     fn default() -> Self {
         Self {
-            bitset: FixedBitSet::with_capacity(A::n_variants()),
-            _phantom: Default::default(),
+            set: HashSet::default(),
         }
     }
 }
@@ -32,14 +28,14 @@ impl<A: Actionlike> PressScheduler<A> {
     /// Schedule a press for this action for the next frame
     /// The action will be pressed the next time [`crate::systems::update_action_state`] runs.
     pub fn schedule_press(&mut self, action: A) {
-        self.bitset.set(action.index(), true);
+        self.set.insert(action);
     }
 
     /// Applies the scheduled presses to the given [`ActionState`]
     pub fn apply(&mut self, action_state: &mut ActionState<A>) {
-        for i in self.bitset.ones() {
-            action_state.press(A::get_at(i).unwrap())
+        for action in &self.set {
+            action_state.press(&action)
         }
-        self.bitset.clear();
+        self.set.clear();
     }
 }

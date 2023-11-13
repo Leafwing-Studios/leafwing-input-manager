@@ -1,4 +1,5 @@
 use bevy::prelude::Reflect;
+use bevy::utils::HashMap;
 use bevy::{
     input::InputPlugin,
     prelude::{App, KeyCode},
@@ -57,7 +58,10 @@ fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
     )
 }
 
-fn which_pressed(input_streams: &InputStreams, clash_strategy: ClashStrategy) -> Vec<ActionData> {
+fn which_pressed(
+    input_streams: &InputStreams,
+    clash_strategy: ClashStrategy,
+) -> HashMap<TestAction, ActionData> {
     let input_map = construct_input_map_from_iter();
     input_map.which_pressed(input_streams, clash_strategy)
 }

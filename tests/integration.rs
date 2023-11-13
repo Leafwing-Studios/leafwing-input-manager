@@ -17,12 +17,12 @@ fn pay_respects(
     mut respect: ResMut<Respect>,
 ) {
     if let Ok(action_state) = action_state_query.get_single() {
-        if action_state.pressed(Action::PayRespects) {
+        if action_state.pressed(&Action::PayRespects) {
             respect.0 = true;
         }
     }
     if let Some(action_state) = action_state_resource {
-        if action_state.pressed(Action::PayRespects) {
+        if action_state.pressed(&Action::PayRespects) {
             respect.0 = true;
         }
     }
@@ -66,7 +66,7 @@ fn do_nothing() {
 
     app.update();
     let action_state = app.world.resource::<ActionState<Action>>();
-    let t0 = action_state.instant_started(Action::PayRespects);
+    let t0 = action_state.instant_started(&Action::PayRespects);
     assert!(t0.is_some());
     let mut duration_last_update = Duration::ZERO;
 
@@ -75,19 +75,19 @@ fn do_nothing() {
         let action_state = app.world.resource::<ActionState<Action>>();
 
         // Sanity checking state to catch wonkiness
-        assert!(!action_state.pressed(Action::PayRespects));
-        assert!(!action_state.just_pressed(Action::PayRespects));
-        assert!(action_state.released(Action::PayRespects));
-        assert!(!action_state.just_released(Action::PayRespects));
+        assert!(!action_state.pressed(&Action::PayRespects));
+        assert!(!action_state.just_pressed(&Action::PayRespects));
+        assert!(action_state.released(&Action::PayRespects));
+        assert!(!action_state.just_released(&Action::PayRespects));
 
-        assert_eq!(action_state.instant_started(Action::PayRespects), t0);
+        assert_eq!(action_state.instant_started(&Action::PayRespects), t0);
         assert_eq!(
-            action_state.previous_duration(Action::PayRespects),
+            action_state.previous_duration(&Action::PayRespects),
             Duration::ZERO
         );
-        assert!(action_state.current_duration(Action::PayRespects) > duration_last_update);
+        assert!(action_state.current_duration(&Action::PayRespects) > duration_last_update);
 
-        duration_last_update = action_state.current_duration(Action::PayRespects);
+        duration_last_update = action_state.current_duration(&Action::PayRespects);
         dbg!(duration_last_update);
     }
 }
@@ -229,7 +229,7 @@ fn action_state_driver() {
     // Check the action state
     let mut action_state_query = app.world.query::<&ActionState<Action>>();
     let action_state = action_state_query.iter(&app.world).next().unwrap();
-    assert!(action_state.pressed(Action::PayRespects));
+    assert!(action_state.pressed(&Action::PayRespects));
 
     // Check the effects of that action state
     let respect = app.world.resource::<Respect>();
@@ -254,9 +254,9 @@ fn duration() {
         action_state: Res<ActionState<Action>>,
         mut respect: ResMut<Respect>,
     ) {
-        if action_state.pressed(Action::PayRespects)
+        if action_state.pressed(&Action::PayRespects)
             // Unrealistically disrespectful, but makes the tests faster
-            && action_state.current_duration(Action::PayRespects) > RESPECTFUL_DURATION
+            && action_state.current_duration(&Action::PayRespects) > RESPECTFUL_DURATION
         {
             respect.0 = true;
         }
@@ -287,7 +287,7 @@ fn duration() {
     assert!(app
         .world
         .resource::<ActionState<Action>>()
-        .pressed(Action::PayRespects));
+        .pressed(&Action::PayRespects));
 }
 
 #[test]
@@ -314,18 +314,18 @@ fn schedule_presses() {
     assert!(app
         .world
         .resource::<ActionState<Action>>()
-        .released(Action::PayRespects));
+        .released(&Action::PayRespects));
 
     // Check
     app.update();
     assert!(app
         .world
         .resource::<ActionState<Action>>()
-        .just_pressed(Action::PayRespects));
+        .just_pressed(&Action::PayRespects));
 
     app.update();
     assert!(app
         .world
         .resource::<ActionState<Action>>()
-        .just_released(Action::PayRespects));
+        .just_released(&Action::PayRespects));
 }

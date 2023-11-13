@@ -54,7 +54,7 @@ fn report_pressed_actions(
     query: Query<&ActionState<TestAction>, Changed<ActionState<TestAction>>>,
 ) {
     let action_state = query.single();
-    for action in TestAction::variants() {
+    for action in action_state.keys() {
         if action_state.just_pressed(action) {
             dbg!(action);
         }

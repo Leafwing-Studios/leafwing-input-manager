@@ -51,7 +51,7 @@ fn zoom_camera(
     let (mut camera_projection, action_state) = query.single_mut();
     // Here, we use the `action_value` method to extract the total net amount that the mouse wheel has travelled
     // Up and right axis movements are always positive by default
-    let zoom_delta = action_state.value(CameraMovement::Zoom);
+    let zoom_delta = action_state.value(&CameraMovement::Zoom);
 
     // We want to zoom in when we use mouse wheel up
     // so we increase the scale proportionally
@@ -65,11 +65,11 @@ fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), W
     let (mut camera_transform, action_state) = query.single_mut();
 
     // When using the `MouseWheelDirection` type, mouse wheel inputs can be treated like simple buttons
-    if action_state.pressed(CameraMovement::PanLeft) {
+    if action_state.pressed(&CameraMovement::PanLeft) {
         camera_transform.translation.x -= CAMERA_PAN_RATE;
     }
 
-    if action_state.pressed(CameraMovement::PanRight) {
+    if action_state.pressed(&CameraMovement::PanRight) {
         camera_transform.translation.x += CAMERA_PAN_RATE;
     }
 }

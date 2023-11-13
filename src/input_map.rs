@@ -280,17 +280,15 @@ impl<A: Actionlike> InputMap<A> {
             ..Default::default()
         };
 
-        for action in A::variants() {
-            if let Some(input_vec) = self.get(action.clone()) {
-                for input in input_vec {
-                    new_map.insert(input.clone(), action.clone());
-                }
+        for (action_a, inputs_a) in self.iter() {
+            for input_a in inputs_a {
+                new_map.insert(input_a.clone(), action_a.clone());
             }
+        }
 
-            if let Some(input_vec) = other.get(action.clone()) {
-                for input in input_vec {
-                    new_map.insert(input.clone(), action.clone());
-                }
+        for (action_b, inputs_b) in other.iter() {
+            for input_b in inputs_b {
+                new_map.insert(input_b.clone(), action_b.clone());
             }
         }
 
@@ -338,12 +336,16 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn pressed(
         &self,
-        action: A,
+        action: &A,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let action_data = self.which_pressed(input_streams, clash_strategy);
-        action_data[action.index()].state.pressed()
+        let action_data_map = self.which_pressed(input_streams, clash_strategy);
+        if let Some(action_data) = action_data_map.get(action) {
+            action_data.state.pressed()
+        } else {
+            false
+        }
     }
 
     /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
@@ -355,42 +357,48 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> Vec<ActionData> {
-        let mut action_data = vec![ActionData::default(); A::n_variants()];
+    ) -> HashMap<A, ActionData> {
+        let mut action_data_map: HashMap<A, ActionData> = HashMap::new();
 
         // Generate the raw action presses
         for (action, input_vec) in self.iter() {
             let mut inputs = Vec::new();
 
             for input in input_vec {
-                let action = &mut action_data[action.index()];
-
-                // Merge axis pair into action data
-                let axis_pair = input_streams.input_axis_pair(input);
-                if let Some(axis_pair) = axis_pair {
-                    if let Some(current_axis_pair) = &mut action.axis_pair {
-                        *current_axis_pair = current_axis_pair.merged_with(axis_pair);
-                    } else {
-                        action.axis_pair = Some(axis_pair);
+                if let Some(action_data) = action_data_map.get_mut(action) {
+                    // Merge axis pair into action data
+                    let axis_pair = input_streams.input_axis_pair(input);
+                    if let Some(axis_pair) = axis_pair {
+                        if let Some(current_axis_pair) = &mut action_data.axis_pair {
+                            *current_axis_pair = current_axis_pair.merged_with(axis_pair);
+                        } else {
+                            action_data.axis_pair = Some(axis_pair);
+                        }
                     }
-                }
 
-                if input_streams.input_pressed(input) {
-                    inputs.push(input.clone());
+                    if input_streams.input_pressed(input) {
+                        inputs.push(input.clone());
 
-                    action.value += input_streams.input_value(input, true);
+                        action_data.value += input_streams.input_value(input, true);
+                    }
+                } else {
+                    todo!("Handle missing actions.");
                 }
             }
 
             if !inputs.is_empty() {
-                action_data[action.index()].state = ButtonState::JustPressed;
+                if let Some(action_data) = action_data_map.get_mut(action) {
+                    action_data.state = ButtonState::JustPressed;
+                } else {
+                    todo!("Handle missing actions.");
+                }
             }
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut action_data, input_streams, clash_strategy);
+        self.handle_clashes(&mut action_data_map, input_streams, clash_strategy);
 
-        action_data
+        action_data_map
     }
 }
 
@@ -400,29 +408,32 @@ impl<A: Actionlike> InputMap<A> {
     pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<UserInput>)> {
         self.map.iter_all()
     }
+
+    /// Returns an iterator over the list of registered actions
+    pub fn keys(&self) -> impl Iterator<Item = &A> {
+        self.map.keys()
+    }
+
     /// Returns a reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get(&self, action: A) -> Option<&Vec<UserInput>> {
+    pub fn get(&self, action: &A) -> Option<&Vec<UserInput>> {
         self.map.get_vec(&action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get_mut(&mut self, action: A) -> Option<&mut Vec<UserInput>> {
+    pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<UserInput>> {
         self.map.get_vec_mut(&action)
     }
 
     /// How many input bindings are registered total?
     #[must_use]
     pub fn len(&self) -> usize {
-        let mut i = 0;
-        for action in A::variants() {
-            i += match self.get(action) {
-                Some(input_vec) => input_vec.len(),
-                None => 0,
-            };
+        let mut sum = 0;
+        for (_action, inputs) in self.iter() {
+            sum += inputs.len();
         }
-        i
+        sum
     }
 
     /// Are any input bindings registered at all?
@@ -538,14 +549,14 @@ mod tests {
         input_map.insert(KeyCode::Space, Action::Run);
 
         assert_eq!(
-            input_map.get(Action::Run),
+            input_map.get(&Action::Run),
             Some(&vec![KeyCode::Space.into()])
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(KeyCode::Space, Action::Run);
         assert_eq!(
-            input_map.get(Action::Run),
+            input_map.get(&Action::Run),
             Some(&vec![KeyCode::Space.into()])
         );
     }
@@ -559,7 +570,7 @@ mod tests {
         input_map_1.insert(KeyCode::Return, Action::Run);
 
         assert_eq!(
-            input_map_1.get(Action::Run),
+            input_map_1.get(&Action::Run),
             Some(&vec![KeyCode::Space.into(), KeyCode::Return.into()])
         );
 

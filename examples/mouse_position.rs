@@ -59,8 +59,10 @@ fn update_cursor_state_from_window(
                 .expect("Entity does not exist, or does not have an `ActionState` component");
 
             if let Some(val) = window.cursor_position() {
-                action_state.action_data_mut(driver.action).axis_pair =
-                    Some(DualAxisData::from_xy(val));
+                action_state
+                    .action_data_mut(&driver.action)
+                    .unwrap()
+                    .axis_pair = Some(DualAxisData::from_xy(val));
             }
         }
     }
@@ -75,7 +77,7 @@ fn pan_camera(
 
     // Note: Nothing is stopping us from doing this in the action update system instead!
     if let Some(box_pan_vector) = action_state
-        .axis_pair(BoxMovement::MousePosition)
+        .axis_pair(&BoxMovement::MousePosition)
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor.xy()))
         .map(|ray| ray.origin.truncate())
     {
