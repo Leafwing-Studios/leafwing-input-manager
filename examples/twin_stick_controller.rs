@@ -1,22 +1,15 @@
 //! This is a fairly complete example that implements a twin stick controller.
-//! 
+//!
 //! The controller supports both gamepad/MKB input and switches between them depending on
 //! the most recent input.
-//! 
+//!
 //! This example builds on top of several of the concepts introduced in other examples. In particular,
 //! the `default_controls`. `mouse_position`, and `action_state_resource` examples.
 
 use bevy::{
-    input::gamepad::GamepadEvent,
-    input::keyboard::KeyboardInput,
-    prelude::*,
-    window::PrimaryWindow
+    input::gamepad::GamepadEvent, input::keyboard::KeyboardInput, prelude::*, window::PrimaryWindow,
 };
-use leafwing_input_manager::{
-    axislike::DualAxisData,
-    prelude::*,
-    user_input::InputKind
-};
+use leafwing_input_manager::{axislike::DualAxisData, prelude::*, user_input::InputKind};
 
 fn main() {
     App::new()
@@ -31,24 +24,18 @@ fn main() {
         // Set up the input processing
         .add_systems(
             Update,
-            player_mouse_look
-                .run_if(in_state(ActiveInput::MouseKeyboard))
+            player_mouse_look.run_if(in_state(ActiveInput::MouseKeyboard)),
         )
-        .add_systems(
-            Update,
-            control_player
-                .after(player_mouse_look)
-        )
+        .add_systems(Update, control_player.after(player_mouse_look))
         .run();
 }
-
 
 // ----------------------------- Player Action Input Handling -----------------------------
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum PlayerAction {
     Move,
     Look,
-    Shoot
+    Shoot,
 }
 
 // Exhaustively match `PlayerAction` and define the default binding to the input
@@ -57,9 +44,7 @@ impl PlayerAction {
         // Match against the provided action to get the correct default gamepad input
         match self {
             Self::Move => UserInput::Single(InputKind::DualAxis(DualAxis::left_stick())),
-            Self::Look => {
-                UserInput::Single(InputKind::DualAxis(DualAxis::right_stick()))
-            }
+            Self::Look => UserInput::Single(InputKind::DualAxis(DualAxis::right_stick())),
             Self::Shoot => {
                 UserInput::Single(InputKind::GamepadButton(GamepadButtonType::RightTrigger))
             }
@@ -86,7 +71,6 @@ impl PlayerAction {
     }
 }
 
-
 // ----------------------------- Input mode handling -----------------------------
 pub struct InputModeManagerPlugin;
 
@@ -97,15 +81,10 @@ impl Plugin for InputModeManagerPlugin {
             // System to switch to gamepad as active input
             .add_systems(
                 Update,
-                activate_gamepad
-                    .run_if(in_state(ActiveInput::MouseKeyboard))
+                activate_gamepad.run_if(in_state(ActiveInput::MouseKeyboard)),
             )
             // System to switch to MKB as active input
-            .add_systems(
-                Update,
-                activate_mkb
-                    .run_if(in_state(ActiveInput::Gamepad))
-            );
+            .add_systems(Update, activate_mkb.run_if(in_state(ActiveInput::Gamepad)));
     }
 }
 
@@ -136,7 +115,7 @@ fn activate_gamepad(
 /// Switch to mouse and keyboard input when any keyboard button is pressed
 fn activate_mkb(
     mut next_state: ResMut<NextState<ActiveInput>>,
-    mut kb_evr: EventReader<KeyboardInput>
+    mut kb_evr: EventReader<KeyboardInput>,
 ) {
     for _ev in kb_evr.read() {
         info!("Switching to mouse and keyboard input");
@@ -159,7 +138,9 @@ fn player_mouse_look(
     // a key into the action data
     let (camera_transform, camera) = camera_query.get_single().expect("Need a single camera");
     let player_transform = player_query.get_single().expect("Need a single player");
-    let window = window_query.get_single().expect("Need a single primary window");
+    let window = window_query
+        .get_single()
+        .expect("Need a single primary window");
 
     // Many steps can fail here, so we'll wrap in an option pipeline
     // First check if cursor is in window
@@ -187,19 +168,27 @@ fn player_mouse_look(
 fn control_player(
     time: Res<Time>,
     action_state: Res<ActionState<PlayerAction>>,
-    mut query: Query<&mut Transform, With<Player>>
+    mut query: Query<&mut Transform, With<Player>>,
 ) {
     let mut player_transform = query.single_mut();
     if action_state.pressed(PlayerAction::Move) {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
-        let move_delta = time.delta_seconds() * action_state.clamped_axis_pair(PlayerAction::Move).unwrap().xy();
+        let move_delta = time.delta_seconds()
+            * action_state
+                .clamped_axis_pair(PlayerAction::Move)
+                .unwrap()
+                .xy();
         player_transform.translation += Vec3::new(move_delta.x, 0.0, move_delta.y);
         println!("Player moved to: {}", player_transform.translation.xz());
     }
 
     if action_state.pressed(PlayerAction::Look) {
-        let look = action_state.axis_pair(PlayerAction::Look).unwrap().xy().normalize();
+        let look = action_state
+            .axis_pair(PlayerAction::Look)
+            .unwrap()
+            .xy()
+            .normalize();
         println!("Player looking in direction: {}", look);
     }
 
@@ -208,15 +197,12 @@ fn control_player(
     }
 }
 
-
 // ----------------------------- Scene setup -----------------------------
 // A player marker
 #[derive(Component)]
 struct Player;
 
-fn setup_scene(
-    mut commands: Commands
-) {
+fn setup_scene(mut commands: Commands) {
     // We need a camera
     commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, 10.0, 15.0)
@@ -225,8 +211,7 @@ fn setup_scene(
     });
 
     // And a player
-    commands.spawn(Player)
-        .insert(Transform::default());
+    commands.spawn(Player).insert(Transform::default());
 
     // But note that there is no visibility in this example
 }
