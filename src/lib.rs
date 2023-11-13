@@ -81,23 +81,7 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
-pub trait Actionlike: Eq + Hash + Send + Sync + Clone + Hash + Reflect + 'static {
-    /// The number of variants of this action type
-    fn n_variants() -> usize;
-
-    /// Iterates over the possible actions in the order they were defined
-    fn variants() -> ActionIter<Self> {
-        ActionIter::default()
-    }
-
-    /// Returns the default value for the action stored at the provided index if it exists
-    ///
-    /// This is mostly used internally, to enable space-efficient iteration.
-    fn get_at(index: usize) -> Option<Self>;
-
-    /// Returns the position in the defining enum of the given action
-    fn index(&self) -> usize;
-}
+pub trait Actionlike: Eq + Hash + Send + Sync + Clone + Hash + Reflect + 'static {}
 
 /// An iterator of [`Actionlike`] actions
 ///
