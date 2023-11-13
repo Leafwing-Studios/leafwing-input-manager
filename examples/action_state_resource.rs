@@ -1,6 +1,6 @@
 //! Oftentimes your input actions can be handled globally and are
 //! best represented as a [`Resource`].
-//! 
+//!
 //! This example demonstrates how to create a simple `ActionLike`
 //! and include it as a resource in a bevy app.
 
@@ -22,19 +22,17 @@ fn main() {
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum PlayerAction {
     Move,
-    Jump
+    Jump,
 }
 
 // Exhaustively match `PlayerAction` and define the default binding to the input
 impl PlayerAction {
     fn mkb_input_map() -> InputMap<PlayerAction> {
         use KeyCode::*;
-        InputMap::new(
-            [
-                (UserInput::Single(InputKind::Keyboard(Space)), Self::Jump),
-                (UserInput::VirtualDPad(VirtualDPad::wasd()), Self::Move)
-            ]
-        )
+        InputMap::new([
+            (UserInput::Single(InputKind::Keyboard(Space)), Self::Jump),
+            (UserInput::VirtualDPad(VirtualDPad::wasd()), Self::Move),
+        ])
     }
 }
 
