@@ -54,6 +54,7 @@ bevy = { version = "0.12", default-features = false, features = [
 bevy_egui = { version = "0.23" }
 serde_test = "1.0"
 criterion = "0.5"
+strum = { version = "0.25", features = ["derive"] }
 
 [[bench]]
 name = "action_state"

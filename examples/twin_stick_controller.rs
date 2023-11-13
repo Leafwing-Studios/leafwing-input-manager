@@ -10,6 +10,7 @@ use bevy::{
     input::gamepad::GamepadEvent, input::keyboard::KeyboardInput, prelude::*, window::PrimaryWindow,
 };
 use leafwing_input_manager::{axislike::DualAxisData, prelude::*, user_input::InputKind};
+use strum::{EnumIter, IntoEnumIterator};
 
 fn main() {
     App::new()
@@ -31,7 +32,7 @@ fn main() {
 }
 
 // ----------------------------- Player Action Input Handling -----------------------------
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, EnumIter, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum PlayerAction {
     Move,
     Look,
@@ -63,8 +64,8 @@ impl PlayerAction {
     fn default_input_map() -> InputMap<PlayerAction> {
         let mut input_map = InputMap::default();
 
-        for variant in PlayerAction::variants() {
-            input_map.insert(variant.default_mkb_binding(), variant.clone());
+        for variant in PlayerAction::iter() {
+            input_map.insert(variant.default_kbm_binding(), variant.clone());
             input_map.insert(variant.default_gamepad_binding(), variant);
         }
         input_map

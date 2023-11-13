@@ -5,8 +5,9 @@ use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseMotionAxisTy
 use leafwing_input_manager::buttonlike::MouseMotionDirection;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
+use strum::{EnumIter, IntoEnumIterator};
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Actionlike, EnumIter, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -124,10 +125,10 @@ fn mouse_motion_buttonlike() {
         (MouseMotionDirection::Right, ButtonlikeTestAction::Right),
     ]));
 
-    for action in ButtonlikeTestAction::variants() {
+    for action in ButtonlikeTestAction::iter() {
         let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
-        let input = input_map.get(action).unwrap().first().unwrap().clone();
+        let input = input_map.get(&action).unwrap().first().unwrap().clone();
 
         app.send_input(input.clone());
         app.update();

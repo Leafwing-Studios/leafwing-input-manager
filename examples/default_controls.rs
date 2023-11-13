@@ -2,6 +2,7 @@
 
 use bevy::prelude::*;
 use leafwing_input_manager::{prelude::*, user_input::InputKind};
+use strum::{EnumIter, IntoEnumIterator};
 
 fn main() {
     App::new()
@@ -12,7 +13,7 @@ fn main() {
         .run()
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, EnumIter, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum PlayerAction {
     Run,
     Jump,
@@ -51,7 +52,7 @@ fn spawn_player(mut commands: Commands) {
 
     // Loop through each action in `PlayerAction` and get the default `UserInput`,
     // then insert each default input into input_map
-    for action in PlayerAction::variants() {
+    for action in PlayerAction::iter() {
         input_map.insert(PlayerAction::default_keyboard_mouse_input(action), action);
         input_map.insert(PlayerAction::default_gamepad_input(action), action);
     }

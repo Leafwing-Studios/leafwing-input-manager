@@ -4,6 +4,7 @@ use bevy::prelude::*;
 use bevy::utils::HashSet;
 use leafwing_input_manager::input_streams::InputStreams;
 use leafwing_input_manager::prelude::*;
+use strum::{EnumIter, IntoEnumIterator};
 
 fn test_app() -> App {
     let mut app = App::new();
@@ -15,7 +16,7 @@ fn test_app() -> App {
     app
 }
 
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+#[derive(Actionlike, EnumIter, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
 enum Action {
     One,
     Two,
@@ -72,15 +73,15 @@ impl ClashTestExt for App {
         let input_map = input_map_query.single();
         let keyboard_input = self.world.resource::<Input<KeyCode>>();
 
-        for action in Action::variants() {
+        for action in Action::iter() {
             if pressed_actions.contains(&action) {
                 assert!(
-                    input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
+                    input_map.pressed(&action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
+                    !input_map.pressed(&action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }
@@ -102,7 +103,6 @@ fn two_inputs_clash_handling() {
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
     app.assert_input_map_actions_eq(ClashStrategy::PrioritizeLongest, [OneAndTwo]);
-    app.assert_input_map_actions_eq(ClashStrategy::UseActionOrder, [One, Two]);
 }
 
 #[test]
