@@ -10,23 +10,14 @@ use leafwing_input_manager::{prelude::*, user_input::InputKind};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(ActionResourcePlugin)
+        .add_plugins(InputManagerPlugin::<PlayerAction>::default())
+        // Initialize the ActionState resource
+        .init_resource::<ActionState<PlayerAction>>()
+        // Insert the InputMap resource
+        .insert_resource(PlayerAction::mkb_input_map())
+        .add_systems(Update, move_player)
         .run();
 }
-
-pub struct ActionResourcePlugin;
-
-impl Plugin for ActionResourcePlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<PlayerAction>::default())
-            // Initialize the ActionState resource
-            .init_resource::<ActionState<PlayerAction>>()
-            // Insert the InputMap resource
-            .insert_resource(PlayerAction::mkb_input_map())
-            .add_systems(Update, move_player);
-    }
-}
-
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum PlayerAction {
