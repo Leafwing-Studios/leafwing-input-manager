@@ -34,7 +34,7 @@ impl<A: Actionlike> PressScheduler<A> {
     /// Applies the scheduled presses to the given [`ActionState`]
     pub fn apply(&mut self, action_state: &mut ActionState<A>) {
         for action in &self.set {
-            action_state.press(&action)
+            action_state.press(action)
         }
         self.set.clear();
     }

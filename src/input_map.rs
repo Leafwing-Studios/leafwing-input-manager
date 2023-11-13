@@ -417,13 +417,13 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns a reference to the inputs mapped to `action`
     #[must_use]
     pub fn get(&self, action: &A) -> Option<&Vec<UserInput>> {
-        self.map.get_vec(&action)
+        self.map.get_vec(action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
     pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<UserInput>> {
-        self.map.get_vec_mut(&action)
+        self.map.get_vec_mut(action)
     }
 
     /// How many input bindings are registered total?
