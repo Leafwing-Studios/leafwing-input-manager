@@ -938,6 +938,7 @@ mod tests {
         let input_streams = InputStreams::from_world(&app.world, None);
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
+        dbg!("Starting state", &action_state);
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
         assert!(action_state.released(&Action::Run));
@@ -951,15 +952,17 @@ mod tests {
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
+        dbg!("Pressing", &action_state);
         assert!(action_state.pressed(&Action::Run));
         assert!(action_state.just_pressed(&Action::Run));
         assert!(!action_state.released(&Action::Run));
         assert!(!action_state.just_released(&Action::Run));
 
-        // Waiting
+        // Waiting after pressing
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
+        dbg!("Waiting after pressing", &action_state);
         assert!(action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
         assert!(!action_state.released(&Action::Run));
@@ -972,15 +975,17 @@ mod tests {
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
+        dbg!("Releasing", &action_state);
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
         assert!(action_state.released(&Action::Run));
         assert!(action_state.just_released(&Action::Run));
 
-        // Waiting
+        // Waiting after releasing
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
+        dbg!("Waiting after releasing", &action_state);
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
         assert!(action_state.released(&Action::Run));
