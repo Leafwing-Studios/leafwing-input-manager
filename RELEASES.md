@@ -1,12 +1,20 @@
 # Release Notes
 
+## Version 0.11.2
+
+- fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/285) with mouse motion and mouse wheel events being improperly counted
+  - this was pre-existing, but dramatically worsened by the release of Bevy 0.12.1
+
 ## Version 0.11.1
+
 - `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
 
 ### Bugs
+
 - A disabled `ToggleActions` of one `Action` now does not release other `Action`'s inputs.
 
 ## Version 0.11.1
+
 - `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
 
 ## Version 0.11
