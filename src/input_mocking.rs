@@ -12,21 +12,23 @@ use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::input_streams::{InputStreams, MutableInputStreams};
 use crate::user_input::UserInput;
 
-use bevy::{app::App, input::mouse::{MouseScrollUnit, MouseMotion}, math::Vec2};
+use bevy::app::App;
 use bevy::ecs::event::Events;
 use bevy::ecs::system::{ResMut, SystemState};
 use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
+use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
     gamepad::{Gamepad, GamepadButton, GamepadEvent},
     keyboard::{KeyCode, KeyboardInput},
-    mouse::{MouseButton, MouseButtonInput, MouseWheel},
+    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
     Input,
 };
+use bevy::math::Vec2;
 use bevy::prelude::Entity;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
