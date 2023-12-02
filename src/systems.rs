@@ -72,8 +72,8 @@ pub fn update_action_state<A: Actionlike>(
     keycodes: Option<Res<Input<KeyCode>>>,
     scan_codes: Option<Res<Input<ScanCode>>>,
     mouse_buttons: Option<Res<Input<MouseButton>>>,
-    mouse_wheel: Option<Res<Events<MouseWheel>>>,
-    mouse_motion: Res<Events<MouseMotion>>,
+    mut mouse_wheel: EventReader<MouseWheel>,
+    mut mouse_motion: EventReader<MouseMotion>,
     clash_strategy: Res<ClashStrategy>,
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))] interactions: Query<
         &Interaction,
@@ -95,8 +95,9 @@ pub fn update_action_state<A: Actionlike>(
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
     let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
-    let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
-    let mouse_motion = mouse_motion.into_inner();
+
+    let mouse_wheel: Vec<MouseWheel> = mouse_wheel.read().cloned().collect();
+    let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
 
     // If use clicks on a button, do not apply them to the game state
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))]
@@ -106,7 +107,7 @@ pub fn update_action_state<A: Actionlike>(
     {
         (None, None)
     } else {
-        (mouse_buttons, mouse_wheel)
+        (mouse_buttons, Some(mouse_wheel))
     };
 
     #[cfg(feature = "egui")]
@@ -148,8 +149,8 @@ pub fn update_action_state<A: Actionlike>(
             keycodes,
             scan_codes,
             mouse_buttons,
-            mouse_wheel,
-            mouse_motion,
+            mouse_wheel: mouse_wheel.clone(),
+            mouse_motion: mouse_motion.clone(),
             associated_gamepad: input_map.gamepad(),
         };
 
