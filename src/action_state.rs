@@ -4,6 +4,7 @@ use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::{component::Component, entity::Entity};
+use bevy::math::Vec2;
 use bevy::prelude::{Event, Resource};
 use bevy::reflect::Reflect;
 use bevy::utils::hashbrown::hash_set::Iter;
@@ -758,7 +759,7 @@ impl Timing {
 ///
 /// `ID` should be a component type that stores a unique stable identifier for the entity
 /// that stores the corresponding [`ActionState`].
-#[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize, Event)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Event)]
 pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
     /// The action was pressed
     Pressed {
@@ -773,6 +774,15 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
         action: A,
         /// The stable identifier of the entity
         id: ID,
+    },
+    /// The axis value of the action changed
+    AxisChanged {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+        /// The new value of the axis
+        value: Vec2,
     },
 }
 

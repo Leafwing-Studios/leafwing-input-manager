@@ -4,6 +4,7 @@
 use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
+    axislike::DualAxisData,
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
     input_streams::InputStreams,
@@ -12,8 +13,6 @@ use crate::{
     Actionlike,
 };
 
-use bevy::time::Time;
-use bevy::utils::Instant;
 use bevy::{ecs::prelude::*, prelude::ScanCode};
 use bevy::{
     input::{
@@ -22,8 +21,11 @@ use bevy::{
         mouse::{MouseButton, MouseMotion, MouseWheel},
         Axis, Input,
     },
-    time::Real,
+    math::Vec2,
+    time::{Real, Time},
+    utils::{HashMap, Instant},
 };
+use core::hash::Hash;
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -187,9 +189,10 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 /// suitable to be sent across a network.
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
-pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
+pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
     action_state_query: Query<(&ActionState<A>, &ID)>,
     mut action_diffs: EventWriter<ActionDiff<A, ID>>,
+    mut previous_axes_by_action: Local<HashMap<A, HashMap<ID, Vec2>>>,
 ) {
     for (action_state, id) in action_state_query.iter() {
         for action in action_state.get_just_pressed() {
@@ -204,6 +207,30 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
                 action: action.clone(),
                 id: id.clone(),
             });
+            if let Some(previous_axes) = previous_axes_by_action.get_mut(&action) {
+                previous_axes.remove(&id.clone());
+            }
+        }
+        for action in action_state.get_pressed() {
+            if let Some(value) = action_state.axis_pair(action.clone()).map(|data| data.xy()) {
+                let previous_axes = previous_axes_by_action
+                    .raw_entry_mut()
+                    .from_key(&action)
+                    .or_insert_with(|| (action.clone(), HashMap::default()))
+                    .1;
+
+                if let Some(previous_axis) = previous_axes.get_mut(&id.clone()) {
+                    if previous_axis == &value {
+                        continue;
+                    }
+                }
+                action_diffs.send(ActionDiff::AxisChanged {
+                    action: action.clone(),
+                    id: id.clone(),
+                    value: value.into(),
+                });
+                previous_axes.insert(id.clone(), value);
+            }
         }
     }
 }
@@ -237,6 +264,18 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 } => {
                     if event_id == id {
                         action_state.release(action.clone());
+                        action_state.action_data_mut(action.clone()).axis_pair = None;
+                        continue;
+                    }
+                }
+                ActionDiff::AxisChanged {
+                    action,
+                    id: event_id,
+                    value,
+                } => {
+                    if event_id == id {
+                        action_state.action_data_mut(action.clone()).axis_pair =
+                            Some(DualAxisData::from_xy(*value));
                         continue;
                     }
                 }
