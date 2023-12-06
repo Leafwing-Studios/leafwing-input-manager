@@ -264,7 +264,6 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 } => {
                     if event_id == id {
                         action_state.release(action.clone());
-                        action_state.action_data_mut(action.clone()).axis_pair = None;
                         continue;
                     }
                 }
