@@ -317,7 +317,9 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 } => {
                     if event_id == id {
                         action_state.release(action.clone());
-                        action_state.action_data_mut(action.clone()).value = 0.;
+                        let action_data = action_state.action_data_mut(action.clone());
+                        action_data.value = 0.;
+                        action_data.axis_pair = None;
                         continue;
                     }
                 }
