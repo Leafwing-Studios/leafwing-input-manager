@@ -1,5 +1,9 @@
 # Release Notes
 
+## Version 0.11.3
+
+- added support in `ActionDiff` for value and axis_pair changes
+
 ## Version 0.11.2
 
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/285) with mouse motion and mouse wheel events being improperly counted

@@ -775,14 +775,23 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
         /// The stable identifier of the entity
         id: ID,
     },
-    /// The axis value of the action changed
-    AxisChanged {
+    /// The value of the action changed
+    ValueChanged {
+        /// The value of the action
+        action: A,
+        /// The stable identifier of the entity
+        id: ID,
+        /// The new value of the action
+        value: f32,
+    },
+    /// The axis pair of the action changed
+    AxisPairChanged {
         /// The value of the action
         action: A,
         /// The stable identifier of the entity
         id: ID,
         /// The new value of the axis
-        value: Vec2,
+        axis_pair: Vec2,
     },
 }
 

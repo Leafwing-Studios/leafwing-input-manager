@@ -192,44 +192,96 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
     action_state_query: Query<(&ActionState<A>, &ID)>,
     mut action_diffs: EventWriter<ActionDiff<A, ID>>,
-    mut previous_axes_by_action: Local<HashMap<A, HashMap<ID, Vec2>>>,
+    mut previous_values: Local<HashMap<A, HashMap<ID, f32>>>,
+    mut previous_axis_pairs: Local<HashMap<A, HashMap<ID, Vec2>>>,
 ) {
     for (action_state, id) in action_state_query.iter() {
         for action in action_state.get_just_pressed() {
-            action_diffs.send(ActionDiff::Pressed {
-                action: action.clone(),
-                id: id.clone(),
-            });
+            match action_state.action_data(action.clone()).axis_pair {
+                Some(axis_pair) => {
+                    action_diffs.send(ActionDiff::AxisPairChanged {
+                        action: action.clone(),
+                        id: id.clone(),
+                        axis_pair: axis_pair.into(),
+                    });
+                    previous_axis_pairs
+                        .raw_entry_mut()
+                        .from_key(&action)
+                        .or_insert_with(|| (action.clone(), HashMap::default()))
+                        .1
+                        .insert(id.clone(), axis_pair.xy());
+                }
+                None => {
+                    let value = action_state.value(action.clone());
+                    action_diffs.send(if value == 1. {
+                        ActionDiff::Pressed {
+                            action: action.clone(),
+                            id: id.clone(),
+                        }
+                    } else {
+                        ActionDiff::ValueChanged {
+                            action: action.clone(),
+                            id: id.clone(),
+                            value,
+                        }
+                    });
+                    previous_values
+                        .raw_entry_mut()
+                        .from_key(&action)
+                        .or_insert_with(|| (action.clone(), HashMap::default()))
+                        .1
+                        .insert(id.clone(), value);
+                }
+            }
         }
+        for action in action_state.get_pressed() {
+            if action_state.just_pressed(action.clone()) {
+                continue;
+            }
+            match action_state.action_data(action.clone()).axis_pair {
+                Some(axis_pair) => {
+                    let previous_axis_pairs = previous_axis_pairs.get_mut(&action).unwrap();
 
+                    if let Some(previous_axis_pair) = previous_axis_pairs.get(&id.clone()) {
+                        if *previous_axis_pair == axis_pair.xy() {
+                            continue;
+                        }
+                    }
+                    action_diffs.send(ActionDiff::AxisPairChanged {
+                        action: action.clone(),
+                        id: id.clone(),
+                        axis_pair: axis_pair.into(),
+                    });
+                    previous_axis_pairs.insert(id.clone(), axis_pair.xy());
+                }
+                None => {
+                    let value = action_state.value(action.clone());
+                    let previous_values = previous_values.get_mut(&action).unwrap();
+
+                    if let Some(previous_value) = previous_values.get(&id.clone()) {
+                        if *previous_value == value {
+                            continue;
+                        }
+                    }
+                    action_diffs.send(ActionDiff::ValueChanged {
+                        action: action.clone(),
+                        id: id.clone(),
+                        value,
+                    });
+                    previous_values.insert(id.clone(), value);
+                }
+            }
+        }
         for action in action_state.get_just_released() {
             action_diffs.send(ActionDiff::Released {
                 action: action.clone(),
                 id: id.clone(),
             });
-            if let Some(previous_axes) = previous_axes_by_action.get_mut(&action) {
+            if let Some(previous_axes) = previous_axis_pairs.get_mut(&action) {
                 previous_axes.remove(&id.clone());
             }
-        }
-        for action in action_state.get_pressed() {
-            if let Some(value) = action_state.axis_pair(action.clone()).map(|data| data.xy()) {
-                let previous_axes = previous_axes_by_action
-                    .raw_entry_mut()
-                    .from_key(&action)
-                    .or_insert_with(|| (action.clone(), HashMap::default()))
-                    .1;
-
-                if let Some(previous_axis) = previous_axes.get_mut(&id.clone()) {
-                    if previous_axis == &value {
-                        continue;
-                    }
-                }
-                action_diffs.send(ActionDiff::AxisChanged {
-                    action: action.clone(),
-                    id: id.clone(),
-                    value: value.into(),
-                });
-                previous_axes.insert(id.clone(), value);
+            if let Some(previous_values) = previous_values.get_mut(&action) {
+                previous_values.remove(&id.clone());
             }
         }
     }
@@ -255,6 +307,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 } => {
                     if event_id == id {
                         action_state.press(action.clone());
+                        action_state.action_data_mut(action.clone()).value = 1.;
                         continue;
                     }
                 }
@@ -264,17 +317,31 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 } => {
                     if event_id == id {
                         action_state.release(action.clone());
+                        action_state.action_data_mut(action.clone()).value = 0.;
                         continue;
                     }
                 }
-                ActionDiff::AxisChanged {
+                ActionDiff::ValueChanged {
                     action,
                     id: event_id,
                     value,
                 } => {
                     if event_id == id {
-                        action_state.action_data_mut(action.clone()).axis_pair =
-                            Some(DualAxisData::from_xy(*value));
+                        action_state.press(action.clone());
+                        action_state.action_data_mut(action.clone()).value = *value;
+                        continue;
+                    }
+                }
+                ActionDiff::AxisPairChanged {
+                    action,
+                    id: event_id,
+                    axis_pair,
+                } => {
+                    if event_id == id {
+                        action_state.press(action.clone());
+                        let action_data = action_state.action_data_mut(action.clone());
+                        action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
+                        action_data.value = axis_pair.length();
                         continue;
                     }
                 }
