@@ -497,9 +497,9 @@ pub struct MutableInputStreams<'a> {
     /// Events used for mocking [`MouseButton`] inputs
     pub mouse_button_events: &'a mut Events<MouseButtonInput>,
     /// A [`MouseWheel`] event stream
-    pub mouse_wheel: Vec<MouseWheel>,
+    pub mouse_wheel: &'a mut Events<MouseWheel>,
     /// A [`MouseMotion`] event stream
-    pub mouse_motion: Vec<MouseMotion>,
+    pub mouse_motion: &'a mut Events<MouseMotion>,
 
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
@@ -538,18 +538,6 @@ impl<'a> MutableInputStreams<'a> {
             mouse_motion,
         ) = input_system_state.get_mut(world);
 
-        let mouse_wheel: Vec<MouseWheel> = mouse_wheel
-            .get_reader()
-            .read(&mouse_wheel)
-            .cloned()
-            .collect();
-
-        let mouse_motion: Vec<MouseMotion> = mouse_motion
-            .get_reader()
-            .read(&mouse_motion)
-            .cloned()
-            .collect();
-
         MutableInputStreams {
             gamepad_buttons: gamepad_buttons.into_inner(),
             gamepad_button_axes: gamepad_button_axes.into_inner(),
@@ -561,8 +549,8 @@ impl<'a> MutableInputStreams<'a> {
             keyboard_events: keyboard_events.into_inner(),
             mouse_buttons: mouse_buttons.into_inner(),
             mouse_button_events: mouse_button_events.into_inner(),
-            mouse_wheel,
-            mouse_motion,
+            mouse_wheel: mouse_wheel.into_inner(),
+            mouse_motion: mouse_motion.into_inner(),
             associated_gamepad: gamepad,
         }
     }
@@ -589,8 +577,20 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             keycodes: Some(mutable_streams.keycodes),
             scan_codes: Some(mutable_streams.scan_codes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(mutable_streams.mouse_wheel),
-            mouse_motion: mutable_streams.mouse_motion,
+            mouse_wheel: Some(
+                mutable_streams
+                    .mouse_wheel
+                    .get_reader()
+                    .read(mutable_streams.mouse_wheel)
+                    .cloned()
+                    .collect(),
+            ),
+            mouse_motion: mutable_streams
+                .mouse_motion
+                .get_reader()
+                .read(mutable_streams.mouse_motion)
+                .cloned()
+                .collect(),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
@@ -606,8 +606,20 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             keycodes: Some(mutable_streams.keycodes),
             scan_codes: Some(mutable_streams.scan_codes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(mutable_streams.mouse_wheel.clone()),
-            mouse_motion: mutable_streams.mouse_motion.clone(),
+            mouse_wheel: Some(
+                mutable_streams
+                    .mouse_wheel
+                    .get_reader()
+                    .read(mutable_streams.mouse_wheel)
+                    .cloned()
+                    .collect(),
+            ),
+            mouse_motion: mutable_streams
+                .mouse_motion
+                .get_reader()
+                .read(mutable_streams.mouse_motion)
+                .cloned()
+                .collect(),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }

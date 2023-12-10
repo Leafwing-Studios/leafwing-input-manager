@@ -175,25 +175,25 @@ impl MockInput for MutableInputStreams<'_> {
         // Discrete mouse wheel events
         for mouse_wheel_direction in raw_inputs.mouse_wheel {
             match mouse_wheel_direction {
-                MouseWheelDirection::Left => self.mouse_wheel.push(MouseWheel {
+                MouseWheelDirection::Left => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: -1.0,
                     y: 0.0,
                     window: Entity::PLACEHOLDER,
                 }),
-                MouseWheelDirection::Right => self.mouse_wheel.push(MouseWheel {
+                MouseWheelDirection::Right => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: 1.0,
                     y: 0.0,
                     window: Entity::PLACEHOLDER,
                 }),
-                MouseWheelDirection::Up => self.mouse_wheel.push(MouseWheel {
+                MouseWheelDirection::Up => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: 0.0,
                     y: 1.0,
                     window: Entity::PLACEHOLDER,
                 }),
-                MouseWheelDirection::Down => self.mouse_wheel.push(MouseWheel {
+                MouseWheelDirection::Down => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: 0.0,
                     y: -1.0,
@@ -205,16 +205,16 @@ impl MockInput for MutableInputStreams<'_> {
         // Discrete mouse motion event
         for mouse_motion_direction in raw_inputs.mouse_motion {
             match mouse_motion_direction {
-                MouseMotionDirection::Up => self.mouse_motion.push(MouseMotion {
+                MouseMotionDirection::Up => self.mouse_motion.send(MouseMotion {
                     delta: Vec2 { x: 0.0, y: 1.0 },
                 }),
-                MouseMotionDirection::Down => self.mouse_motion.push(MouseMotion {
+                MouseMotionDirection::Down => self.mouse_motion.send(MouseMotion {
                     delta: Vec2 { x: 0.0, y: -1.0 },
                 }),
-                MouseMotionDirection::Right => self.mouse_motion.push(MouseMotion {
+                MouseMotionDirection::Right => self.mouse_motion.send(MouseMotion {
                     delta: Vec2 { x: 1.0, y: 0.0 },
                 }),
-                MouseMotionDirection::Left => self.mouse_motion.push(MouseMotion {
+                MouseMotionDirection::Left => self.mouse_motion.send(MouseMotion {
                     delta: Vec2 { x: -1.0, y: 0.0 },
                 }),
             }
@@ -249,13 +249,13 @@ impl MockInput for MutableInputStreams<'_> {
                     AxisType::MouseWheel(axis_type) => {
                         match axis_type {
                             // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-                            MouseWheelAxisType::X => self.mouse_wheel.push(MouseWheel {
+                            MouseWheelAxisType::X => self.mouse_wheel.send(MouseWheel {
                                 unit: MouseScrollUnit::Pixel,
                                 x: position_data,
                                 y: 0.0,
                                 window: Entity::PLACEHOLDER,
                             }),
-                            MouseWheelAxisType::Y => self.mouse_wheel.push(MouseWheel {
+                            MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
                                 unit: MouseScrollUnit::Pixel,
                                 x: 0.0,
                                 y: position_data,
@@ -264,13 +264,13 @@ impl MockInput for MutableInputStreams<'_> {
                         }
                     }
                     AxisType::MouseMotion(axis_type) => match axis_type {
-                        MouseMotionAxisType::X => self.mouse_motion.push(MouseMotion {
+                        MouseMotionAxisType::X => self.mouse_motion.send(MouseMotion {
                             delta: Vec2 {
                                 x: position_data,
                                 y: 0.0,
                             },
                         }),
-                        MouseMotionAxisType::Y => self.mouse_motion.push(MouseMotion {
+                        MouseMotionAxisType::Y => self.mouse_motion.send(MouseMotion {
                             delta: Vec2 {
                                 x: 0.0,
                                 y: position_data,
@@ -341,8 +341,8 @@ impl MockInput for MutableInputStreams<'_> {
         *self.gamepad_axes = Default::default();
         *self.keycodes = Default::default();
         *self.mouse_buttons = Default::default();
-        self.mouse_wheel = Default::default();
-        self.mouse_motion = Default::default();
+        *self.mouse_wheel = Default::default();
+        *self.mouse_motion = Default::default();
     }
 
     #[cfg(feature = "ui")]
