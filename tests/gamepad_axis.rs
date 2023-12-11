@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DeadZoneShape, DualAxisData};
 use leafwing_input_manager::prelude::*;
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum ButtonlikeTestAction {
     Up,
     Down,
@@ -14,7 +14,7 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum AxislikeTestAction {
     X,
     Y,
@@ -69,6 +69,7 @@ fn raw_gamepad_axis_events() {
 }
 
 #[test]
+#[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn game_pad_single_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -89,6 +90,7 @@ fn game_pad_single_axis_mocking() {
 }
 
 #[test]
+#[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn game_pad_dual_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -534,6 +536,7 @@ fn test_zero_volume_ellipse() {
 }
 
 #[test]
+#[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407"]
 fn game_pad_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(

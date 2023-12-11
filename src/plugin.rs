@@ -15,6 +15,7 @@ use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
 use bevy::prelude::{PostUpdate, PreUpdate};
+use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -83,7 +84,7 @@ enum Machine {
     Client,
 }
 
-impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
+impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
@@ -106,30 +107,26 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
 
                 app.add_systems(
                     PreUpdate,
-                    update_action_state::<A>.in_set(InputManagerSystem::Update),
+                    update_action_state::<A>
+                        .run_if(run_if_enabled::<A>)
+                        .in_set(InputManagerSystem::Update),
                 );
 
-                app.configure_set(
-                    PreUpdate,
-                    InputManagerSystem::Update
-                        .run_if(run_if_enabled::<A>)
-                        .after(InputSystem),
-                );
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(InputSystem));
 
                 #[cfg(feature = "egui")]
-                app.configure_set(
+                app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::Update.after(bevy_egui::EguiSet::ProcessInput),
                 );
 
                 #[cfg(feature = "ui")]
-                app.configure_set(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
 
                 #[cfg(feature = "ui")]
-                app.configure_set(
+                app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::ManualControl
-                        .run_if(run_if_enabled::<A>)
                         .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
                         // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
@@ -143,6 +140,7 @@ impl<A: Actionlike> Plugin for InputManagerPlugin<A> {
                 app.add_systems(
                     PreUpdate,
                     update_action_state_from_interaction::<A>
+                        .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::ManualControl),
                 );
             }

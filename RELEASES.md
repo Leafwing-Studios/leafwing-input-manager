@@ -1,18 +1,45 @@
 # Release Notes
 
-## Unreleased
+## Version 0.11.2
+
+- fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/285) with mouse motion and mouse wheel events being improperly counted
+  - this was pre-existing, but dramatically worsened by the release of Bevy 0.12.1
+
+## Version 0.11.1
+
+- `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
 
 ### Bugs
 
-- Fixed system order ambiguity between bevy_ui and update_action_state systems
-- The input values of axis inputs in a `Chord` are now prioritized over buttons
-- Fixed unassigned `InputMaps`s not receiving input from all connected gamepads
+- A disabled `ToggleActions` of one `Action` now does not release other `Action`'s inputs.
 
-### Docs
+## Version 0.11.1
 
-- Fixed invalid example code in README
-- Added example for setting default controls
-- Added example for registering gamepads in a local multiplayer fashion
+- `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
+
+## Version 0.11
+
+### Known issues
+
+- `bevy_egui` integration and the `egui` feature flag have been temporarily removed to ensure a timely release
+- gamepad input mocking is not completely functional due to upstream changes: see [#407](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407)
+  - additional experiments and information would be helpful!
+
+### Bugs
+
+### Known issues
+
+- `bevy_egui` integration and the `egui` feature flag have been temporarily removed to ensure a timely release
+- gamepad input mocking is not completely functional due to upstream changes: see [#407](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407)
+  - additional experiments and information would be helpful!
+
+### Breaking Changes
+
+- The `UserInput::insert_at` method has been removed: build this abstraction into your input binding menus if desired.
+- `InputMap::iter()` now returns a simple iterator of (action, input) pairs
+  - As a result, the `InputMap::iter_inputs` method has been removed.
+- The `InputMap::remove_at` API now returns `Some(removed_input)`, rather than just a `bool`.
+- The serialization format for `InputMap` has changed. You will need to re-generate your input maps if you were storing these persistently.
 
 ### Enhancements
 
@@ -21,10 +48,29 @@
 - Added sensitivity for `SingleAxis` and `DualAxis`, allowing you to scale mouse, keypad and gamepad inputs differently for each action.
 - Added a helper `from_keys` to `VirtualAxis` to simplify creating one from two keys
 
-
 ### Usability
 
 - Added `block_ui_interactions` feature flag; when on, mouse input won't be read if any `bevy_ui` element has an active `Interaction`.
+- Chords no longer have a max length.
+- `InputMap`, `UserInput` and all of the contained types now implement `Reflect`. As a result, the trait bound on `Actionlike` has been changed from `TypePath` to `Reflect`.
+
+### Bugs
+
+- Fixed system order ambiguity between bevy_ui and update_action_state systems
+- The input values of axis inputs in a `Chord` are now prioritized over buttons
+- Fixed unassigned `InputMaps`s not receiving input from all connected gamepads
+
+### Performance
+
+- Removed the `petitset` dependency in favor of a `MultiMap` to reduce stack size of input types.
+  - As a result, the `Actionlike` trait now has the additional `Hash` and `Eq` trait bounds
+  - `UserInput::Chord` now stores a simple `Vec` of `InputKind`s
+
+### Docs
+
+- Fixed invalid example code in README
+- Added example for setting default controls
+- Added example for registering gamepads in a local multiplayer fashion
 
 ## Version 0.10
 

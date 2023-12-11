@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::press_scheduler::PressScheduler;
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
     PayRespects,
 }

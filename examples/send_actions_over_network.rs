@@ -141,7 +141,7 @@ fn send_events<A: Send + Sync + 'static + Debug + Clone + Event>(
     let mut reader = reader.unwrap_or_else(|| client_events.get_reader());
 
     // Push the clients' events to the server
-    for client_event in reader.iter(client_events) {
+    for client_event in reader.read(client_events) {
         dbg!(client_event.clone());
         server_events.send(client_event.clone());
     }

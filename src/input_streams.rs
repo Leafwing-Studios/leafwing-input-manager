@@ -1,15 +1,14 @@
 //! Unified input streams for working with [`bevy::input`] data.
 
+use bevy::ecs::prelude::{Events, ResMut, World};
+use bevy::ecs::system::SystemState;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput, ScanCode},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     Axis, Input,
 };
-use petitset::PetitSet;
-
-use bevy::ecs::prelude::{Events, ResMut, World};
-use bevy::ecs::system::SystemState;
+use bevy::utils::HashSet;
 
 use crate::axislike::{
     AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
@@ -39,9 +38,9 @@ pub struct InputStreams<'a> {
     /// A [`MouseButton`] [`Input`] stream
     pub mouse_buttons: Option<&'a Input<MouseButton>>,
     /// A [`MouseWheel`] event stream
-    pub mouse_wheel: Option<&'a Events<MouseWheel>>,
+    pub mouse_wheel: Option<Vec<MouseWheel>>,
     /// A [`MouseMotion`] event stream
-    pub mouse_motion: &'a Events<MouseMotion>,
+    pub mouse_motion: Vec<MouseMotion>,
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
 }
@@ -57,8 +56,19 @@ impl<'a> InputStreams<'a> {
         let keycodes = world.get_resource::<Input<KeyCode>>();
         let scan_codes = world.get_resource::<Input<ScanCode>>();
         let mouse_buttons = world.get_resource::<Input<MouseButton>>();
-        let mouse_wheel = world.get_resource::<Events<MouseWheel>>();
+        let mouse_wheel = world.resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
+
+        let mouse_wheel: Vec<MouseWheel> = mouse_wheel
+            .get_reader()
+            .read(mouse_wheel)
+            .cloned()
+            .collect();
+        let mouse_motion: Vec<MouseMotion> = mouse_motion
+            .get_reader()
+            .read(mouse_motion)
+            .cloned()
+            .collect();
 
         InputStreams {
             gamepad_buttons,
@@ -68,7 +78,7 @@ impl<'a> InputStreams<'a> {
             keycodes,
             scan_codes,
             mouse_buttons,
-            mouse_wheel,
+            mouse_wheel: Some(mouse_wheel),
             mouse_motion,
             associated_gamepad: gamepad,
         }
@@ -103,7 +113,7 @@ impl<'a> InputStreams<'a> {
 
     /// Is at least one of the `inputs` pressed?
     #[must_use]
-    pub fn any_pressed(&self, inputs: &PetitSet<UserInput, 16>) -> bool {
+    pub fn any_pressed(&self, inputs: &HashSet<UserInput>) -> bool {
         for input in inputs.iter() {
             if self.input_pressed(input) {
                 return true;
@@ -166,19 +176,16 @@ impl<'a> InputStreams<'a> {
                 matches!(self.mouse_buttons, Some(mouse_buttons) if mouse_buttons.pressed(mouse_button))
             }
             InputKind::MouseWheel(mouse_wheel_direction) => {
-                let Some(mouse_wheel) = self.mouse_wheel else {
+                let Some(mouse_wheel) = &self.mouse_wheel else {
                     return false;
                 };
 
                 let mut total_mouse_wheel_movement = 0.0;
 
-                // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = mouse_wheel.get_reader();
-
                 // PERF: this summing is computed for every individual input
                 // This should probably be computed once, and then cached / read
                 // Fix upstream!
-                for mouse_wheel_event in event_reader.iter(mouse_wheel) {
+                for mouse_wheel_event in mouse_wheel {
                     total_mouse_wheel_movement += match mouse_wheel_direction {
                         MouseWheelDirection::Up | MouseWheelDirection::Down => mouse_wheel_event.y,
                         MouseWheelDirection::Left | MouseWheelDirection::Right => {
@@ -200,10 +207,7 @@ impl<'a> InputStreams<'a> {
             InputKind::MouseMotion(mouse_motion_direction) => {
                 let mut total_mouse_movement = 0.0;
 
-                // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = self.mouse_motion.get_reader();
-
-                for mouse_motion_event in event_reader.iter(self.mouse_motion) {
+                for mouse_motion_event in &self.mouse_motion {
                     total_mouse_movement += match mouse_motion_direction {
                         MouseMotionDirection::Up | MouseMotionDirection::Down => {
                             mouse_motion_event.delta.y
@@ -228,7 +232,7 @@ impl<'a> InputStreams<'a> {
 
     /// Are all of the `buttons` pressed?
     #[must_use]
-    pub fn all_buttons_pressed(&self, buttons: &PetitSet<InputKind, 8>) -> bool {
+    pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
         for &button in buttons.iter() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
             if !self.button_pressed(button) {
@@ -301,15 +305,13 @@ impl<'a> InputStreams<'a> {
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
-                        let Some(mouse_wheel) = self.mouse_wheel else {
+                        let Some(mouse_wheel) = &self.mouse_wheel else {
                             return 0.0;
                         };
 
                         let mut total_mouse_wheel_movement = 0.0;
-                        // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = mouse_wheel.get_reader();
 
-                        for mouse_wheel_event in event_reader.iter(mouse_wheel) {
+                        for mouse_wheel_event in mouse_wheel {
                             total_mouse_wheel_movement += match axis_type {
                                 MouseWheelAxisType::X => mouse_wheel_event.x,
                                 MouseWheelAxisType::Y => mouse_wheel_event.y,
@@ -320,10 +322,8 @@ impl<'a> InputStreams<'a> {
                     // CLEANUP: deduplicate code with MouseWheel
                     AxisType::MouseMotion(axis_type) => {
                         let mut total_mouse_motion_movement = 0.0;
-                        // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = self.mouse_motion.get_reader();
 
-                        for mouse_wheel_event in event_reader.iter(self.mouse_motion) {
+                        for mouse_wheel_event in &self.mouse_motion {
                             total_mouse_motion_movement += match axis_type {
                                 MouseMotionAxisType::X => mouse_wheel_event.delta.x,
                                 MouseMotionAxisType::Y => mouse_wheel_event.delta.y,
@@ -497,9 +497,9 @@ pub struct MutableInputStreams<'a> {
     /// Events used for mocking [`MouseButton`] inputs
     pub mouse_button_events: &'a mut Events<MouseButtonInput>,
     /// A [`MouseWheel`] event stream
-    pub mouse_wheel: &'a mut Events<MouseWheel>,
+    pub mouse_wheel: Vec<MouseWheel>,
     /// A [`MouseMotion`] event stream
-    pub mouse_motion: &'a mut Events<MouseMotion>,
+    pub mouse_motion: Vec<MouseMotion>,
 
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
@@ -538,6 +538,18 @@ impl<'a> MutableInputStreams<'a> {
             mouse_motion,
         ) = input_system_state.get_mut(world);
 
+        let mouse_wheel: Vec<MouseWheel> = mouse_wheel
+            .get_reader()
+            .read(&mouse_wheel)
+            .cloned()
+            .collect();
+
+        let mouse_motion: Vec<MouseMotion> = mouse_motion
+            .get_reader()
+            .read(&mouse_motion)
+            .cloned()
+            .collect();
+
         MutableInputStreams {
             gamepad_buttons: gamepad_buttons.into_inner(),
             gamepad_button_axes: gamepad_button_axes.into_inner(),
@@ -549,8 +561,8 @@ impl<'a> MutableInputStreams<'a> {
             keyboard_events: keyboard_events.into_inner(),
             mouse_buttons: mouse_buttons.into_inner(),
             mouse_button_events: mouse_button_events.into_inner(),
-            mouse_wheel: mouse_wheel.into_inner(),
-            mouse_motion: mouse_motion.into_inner(),
+            mouse_wheel,
+            mouse_motion,
             associated_gamepad: gamepad,
         }
     }
@@ -594,8 +606,8 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             keycodes: Some(mutable_streams.keycodes),
             scan_codes: Some(mutable_streams.scan_codes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(mutable_streams.mouse_wheel),
-            mouse_motion: mutable_streams.mouse_motion,
+            mouse_wheel: Some(mutable_streams.mouse_wheel.clone()),
+            mouse_motion: mutable_streams.mouse_motion.clone(),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }

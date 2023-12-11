@@ -39,8 +39,9 @@
 //! ```
 
 use std::any::TypeId;
+use std::hash::Hash;
 
-use bevy::reflect::TypePath;
+use bevy::reflect::Reflect;
 use bevy::{
     prelude::{App, Resource},
     utils::HashMap,
@@ -59,7 +60,7 @@ static DYN_ACTION_MAP: OnceCell<HashMap<TypeId, usize>> = OnceCell::new();
 static REGISTRY_CREATED: OnceCell<()> = OnceCell::new();
 
 /// The runtime representation of actions declared via marker types
-#[derive(Copy, Clone, TypePath)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Reflect)]
 pub struct DynAction(usize);
 
 /// Coordinates the registration of dynamic action types

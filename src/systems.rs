@@ -12,15 +12,18 @@ use crate::{
     Actionlike,
 };
 
-use bevy::input::{
-    gamepad::{GamepadAxis, GamepadButton, Gamepads},
-    keyboard::KeyCode,
-    mouse::{MouseButton, MouseMotion, MouseWheel},
-    Axis, Input,
-};
 use bevy::time::Time;
 use bevy::utils::Instant;
 use bevy::{ecs::prelude::*, prelude::ScanCode};
+use bevy::{
+    input::{
+        gamepad::{GamepadAxis, GamepadButton, Gamepads},
+        keyboard::KeyCode,
+        mouse::{MouseButton, MouseMotion, MouseWheel},
+        Axis, Input,
+    },
+    time::Real,
+};
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -34,7 +37,7 @@ use bevy_egui::EguiContexts;
 pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     action_state: Option<ResMut<ActionState<A>>>,
-    time: Res<Time>,
+    time: Res<Time<Real>>,
     mut stored_previous_instant: Local<Option<Instant>>,
 ) {
     // If this is the very first tick, measure from the start of the app
@@ -69,8 +72,8 @@ pub fn update_action_state<A: Actionlike>(
     keycodes: Option<Res<Input<KeyCode>>>,
     scan_codes: Option<Res<Input<ScanCode>>>,
     mouse_buttons: Option<Res<Input<MouseButton>>>,
-    mouse_wheel: Option<Res<Events<MouseWheel>>>,
-    mouse_motion: Res<Events<MouseMotion>>,
+    mut mouse_wheel: EventReader<MouseWheel>,
+    mut mouse_motion: EventReader<MouseMotion>,
     clash_strategy: Res<ClashStrategy>,
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))] interactions: Query<
         &Interaction,
@@ -92,8 +95,9 @@ pub fn update_action_state<A: Actionlike>(
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
     let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
-    let mouse_wheel = mouse_wheel.map(|mouse_wheel| mouse_wheel.into_inner());
-    let mouse_motion = mouse_motion.into_inner();
+
+    let mouse_wheel: Vec<MouseWheel> = mouse_wheel.read().cloned().collect();
+    let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
 
     // If use clicks on a button, do not apply them to the game state
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))]
@@ -103,7 +107,7 @@ pub fn update_action_state<A: Actionlike>(
     {
         (None, None)
     } else {
-        (mouse_buttons, mouse_wheel)
+        (mouse_buttons, Some(mouse_wheel))
     };
 
     #[cfg(feature = "egui")]
@@ -145,8 +149,8 @@ pub fn update_action_state<A: Actionlike>(
             keycodes,
             scan_codes,
             mouse_buttons,
-            mouse_wheel,
-            mouse_motion,
+            mouse_wheel: mouse_wheel.clone(),
+            mouse_motion: mouse_motion.clone(),
             associated_gamepad: input_map.gamepad(),
         };
 
@@ -215,7 +219,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
     mut action_diffs: EventReader<ActionDiff<A, ID>>,
 ) {
     // PERF: This would probably be faster with an index, but is much more fussy
-    for action_diff in action_diffs.iter() {
+    for action_diff in action_diffs.read() {
         for (mut action_state, id) in action_state_query.iter_mut() {
             match action_diff {
                 ActionDiff::Pressed {
@@ -269,7 +273,7 @@ pub fn release_on_input_map_removed<A: Actionlike>(
     mut input_map_resource_existed: Local<bool>,
     mut action_state_query: Query<&mut ActionState<A>>,
 ) {
-    let mut iter = action_state_query.iter_many_mut(removed_components.iter());
+    let mut iter = action_state_query.iter_many_mut(removed_components.read());
     while let Some(mut action_state) = iter.fetch_next() {
         action_state.release_all();
     }
