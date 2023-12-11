@@ -139,7 +139,7 @@ pub trait QueryInput {
 
 /// Send fake UI interaction for testing purposes.
 #[cfg(feature = "ui")]
-pub trait MockUIInput {
+pub trait MockUIInteraction {
     /// Presses all `bevy::ui` buttons with the matching `Marker` component
     ///
     /// Changes their [`Interaction`] component to [`Interaction::Pressed`]
@@ -438,7 +438,7 @@ impl QueryInput for World {
 }
 
 #[cfg(feature = "ui")]
-impl MockUIInput for World {
+impl MockUIInteraction for World {
     fn click_button<Marker: Component>(&mut self) {
         let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
 
@@ -489,7 +489,7 @@ impl QueryInput for App {
 }
 
 #[cfg(feature = "ui")]
-impl MockUIInput for App {
+impl MockUIInteraction for App {
     fn click_button<Marker: Component>(&mut self) {
         self.world.click_button::<Marker>();
     }
@@ -501,7 +501,7 @@ impl MockUIInput for App {
 
 #[cfg(test)]
 mod test {
-    use crate::input_mocking::{MockInput, MockUIInput, QueryInput};
+    use crate::input_mocking::{MockInput, MockUIInteraction, QueryInput};
     use bevy::{
         input::{
             gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo},

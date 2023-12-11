@@ -41,7 +41,7 @@ pub mod prelude {
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     #[cfg(feature = "ui")]
-    pub use crate::input_mocking::MockUIInput;
+    pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
     pub use crate::scan_codes::QwertyScanCode;
     pub use crate::user_input::{Modifier, UserInput};
