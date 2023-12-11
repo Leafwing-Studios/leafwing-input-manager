@@ -1,9 +1,13 @@
 //! Contains main plugin exported by this crate.
 
-use crate::action_state::ActionState;
-use crate::axislike::{DualAxis, SingleAxis, VirtualAxis, VirtualDPad};
+use crate::action_state::{ActionData, ActionState, Timing};
+use crate::axislike::{
+    AxisType, DeadZoneShape, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
+    SingleAxis, VirtualAxis, VirtualDPad,
+};
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
+use crate::dynamic_action::DynAction;
 use crate::input_map::InputMap;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
@@ -13,7 +17,7 @@ use std::fmt::Debug;
 
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
-use bevy::input::InputSystem;
+use bevy::input::{ButtonState, InputSystem};
 use bevy::prelude::{PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
@@ -157,15 +161,24 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
         app.register_type::<ActionState<A>>()
             .register_type::<InputMap<A>>()
             .register_type::<UserInput>()
-            .register_type::<UserInput>()
             .register_type::<InputKind>()
+            .register_type::<ActionData>()
+            .register_type::<Modifier>()
+            .register_type::<ActionState<A>>()
+            .register_type::<Timing>()
             .register_type::<VirtualDPad>()
             .register_type::<VirtualAxis>()
             .register_type::<SingleAxis>()
             .register_type::<DualAxis>()
-            .register_type::<Modifier>()
+            .register_type::<AxisType>()
+            .register_type::<MouseWheelAxisType>()
+            .register_type::<MouseMotionAxisType>()
+            .register_type::<DualAxisData>()
+            .register_type::<DeadZoneShape>()
+            .register_type::<ButtonState>()
             .register_type::<MouseWheelDirection>()
             .register_type::<MouseMotionDirection>()
+            .register_type::<DynAction>()
             // Resources
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();

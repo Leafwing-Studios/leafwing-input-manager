@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`.
+- Register types in the reflection system.
 
 ## Version 0.11.2
 
@@ -47,7 +48,6 @@
 
 ### Enhancements
 
-- Implement `Reflect` for `InputMap` and most other types.
 - Added `DeadZoneShape` for `DualAxis` which allows for different deadzones shapes: cross, rectangle, and ellipse.
 - Added sensitivity for `SingleAxis` and `DualAxis`, allowing you to scale mouse, keypad and gamepad inputs differently for each action.
 - Added a helper `from_keys` to `VirtualAxis` to simplify creating one from two keys
