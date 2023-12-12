@@ -1,5 +1,9 @@
 # Release Notes
 
+## Unreleased
+
+- Added `InputMap::Clear`.
+
 ## Version 0.11.2
 
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/285) with mouse motion and mouse wheel events being improperly counted
