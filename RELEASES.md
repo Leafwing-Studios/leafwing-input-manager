@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- added support in `ActionDiff` for value and axis_pair changes
 - Added `InputMap::Clear`.
 
 ## Version 0.11.2

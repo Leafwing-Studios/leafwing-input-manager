@@ -24,7 +24,7 @@ enum FpsAction {
 }
 
 /// This identifier uniquely identifies entities across the network
-#[derive(Component, Clone, PartialEq, Eq, Debug)]
+#[derive(Component, Clone, PartialEq, Eq, Hash, Debug)]
 struct StableId(u64);
 
 fn main() {
