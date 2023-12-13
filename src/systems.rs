@@ -98,7 +98,7 @@ pub fn update_action_state<A: Actionlike>(
     let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
 
-    let mouse_wheel: Vec<MouseWheel> = mouse_wheel.read().cloned().collect();
+    let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
     let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
 
     // If use clicks on a button, do not apply them to the game state
@@ -109,7 +109,7 @@ pub fn update_action_state<A: Actionlike>(
     {
         (None, None)
     } else {
-        (mouse_buttons, Some(mouse_wheel))
+        (mouse_buttons, mouse_wheel)
     };
 
     #[cfg(feature = "egui")]
