@@ -439,6 +439,13 @@ impl<A: Actionlike> InputMap<A> {
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
+
+    /// Clears the map, removing all action-inputs pairs.
+    ///
+    /// Keeps the allocated memory for reuse.
+    pub fn clear(&mut self) {
+        self.map.clear();
+    }
 }
 
 // Removing

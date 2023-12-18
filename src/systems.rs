@@ -4,6 +4,7 @@
 use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
+    axislike::DualAxisData,
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
     input_streams::InputStreams,
@@ -12,8 +13,6 @@ use crate::{
     Actionlike,
 };
 
-use bevy::time::Time;
-use bevy::utils::Instant;
 use bevy::{ecs::prelude::*, prelude::ScanCode};
 use bevy::{
     input::{
@@ -22,8 +21,11 @@ use bevy::{
         mouse::{MouseButton, MouseMotion, MouseWheel},
         Axis, Input,
     },
-    time::Real,
+    math::Vec2,
+    time::{Real, Time},
+    utils::{HashMap, Instant},
 };
+use core::hash::Hash;
 
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
@@ -96,7 +98,7 @@ pub fn update_action_state<A: Actionlike>(
     let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
 
-    let mouse_wheel: Vec<MouseWheel> = mouse_wheel.read().cloned().collect();
+    let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
     let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
 
     // If use clicks on a button, do not apply them to the game state
@@ -107,7 +109,7 @@ pub fn update_action_state<A: Actionlike>(
     {
         (None, None)
     } else {
-        (mouse_buttons, Some(mouse_wheel))
+        (mouse_buttons, mouse_wheel)
     };
 
     #[cfg(feature = "egui")]
@@ -187,23 +189,100 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 /// suitable to be sent across a network.
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
-pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component>(
+pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
     action_state_query: Query<(&ActionState<A>, &ID)>,
     mut action_diffs: EventWriter<ActionDiff<A, ID>>,
+    mut previous_values: Local<HashMap<A, HashMap<ID, f32>>>,
+    mut previous_axis_pairs: Local<HashMap<A, HashMap<ID, Vec2>>>,
 ) {
     for (action_state, id) in action_state_query.iter() {
         for action in action_state.get_just_pressed() {
-            action_diffs.send(ActionDiff::Pressed {
-                action: action.clone(),
-                id: id.clone(),
-            });
+            match action_state.action_data(action.clone()).axis_pair {
+                Some(axis_pair) => {
+                    action_diffs.send(ActionDiff::AxisPairChanged {
+                        action: action.clone(),
+                        id: id.clone(),
+                        axis_pair: axis_pair.into(),
+                    });
+                    previous_axis_pairs
+                        .raw_entry_mut()
+                        .from_key(&action)
+                        .or_insert_with(|| (action.clone(), HashMap::default()))
+                        .1
+                        .insert(id.clone(), axis_pair.xy());
+                }
+                None => {
+                    let value = action_state.value(action.clone());
+                    action_diffs.send(if value == 1. {
+                        ActionDiff::Pressed {
+                            action: action.clone(),
+                            id: id.clone(),
+                        }
+                    } else {
+                        ActionDiff::ValueChanged {
+                            action: action.clone(),
+                            id: id.clone(),
+                            value,
+                        }
+                    });
+                    previous_values
+                        .raw_entry_mut()
+                        .from_key(&action)
+                        .or_insert_with(|| (action.clone(), HashMap::default()))
+                        .1
+                        .insert(id.clone(), value);
+                }
+            }
         }
+        for action in action_state.get_pressed() {
+            if action_state.just_pressed(action.clone()) {
+                continue;
+            }
+            match action_state.action_data(action.clone()).axis_pair {
+                Some(axis_pair) => {
+                    let previous_axis_pairs = previous_axis_pairs.get_mut(&action).unwrap();
 
+                    if let Some(previous_axis_pair) = previous_axis_pairs.get(&id.clone()) {
+                        if *previous_axis_pair == axis_pair.xy() {
+                            continue;
+                        }
+                    }
+                    action_diffs.send(ActionDiff::AxisPairChanged {
+                        action: action.clone(),
+                        id: id.clone(),
+                        axis_pair: axis_pair.into(),
+                    });
+                    previous_axis_pairs.insert(id.clone(), axis_pair.xy());
+                }
+                None => {
+                    let value = action_state.value(action.clone());
+                    let previous_values = previous_values.get_mut(&action).unwrap();
+
+                    if let Some(previous_value) = previous_values.get(&id.clone()) {
+                        if *previous_value == value {
+                            continue;
+                        }
+                    }
+                    action_diffs.send(ActionDiff::ValueChanged {
+                        action: action.clone(),
+                        id: id.clone(),
+                        value,
+                    });
+                    previous_values.insert(id.clone(), value);
+                }
+            }
+        }
         for action in action_state.get_just_released() {
             action_diffs.send(ActionDiff::Released {
                 action: action.clone(),
                 id: id.clone(),
             });
+            if let Some(previous_axes) = previous_axis_pairs.get_mut(&action) {
+                previous_axes.remove(&id.clone());
+            }
+            if let Some(previous_values) = previous_values.get_mut(&action) {
+                previous_values.remove(&id.clone());
+            }
         }
     }
 }
@@ -228,6 +307,7 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 } => {
                     if event_id == id {
                         action_state.press(action.clone());
+                        action_state.action_data_mut(action.clone()).value = 1.;
                         continue;
                     }
                 }
@@ -237,6 +317,33 @@ pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
                 } => {
                     if event_id == id {
                         action_state.release(action.clone());
+                        let action_data = action_state.action_data_mut(action.clone());
+                        action_data.value = 0.;
+                        action_data.axis_pair = None;
+                        continue;
+                    }
+                }
+                ActionDiff::ValueChanged {
+                    action,
+                    id: event_id,
+                    value,
+                } => {
+                    if event_id == id {
+                        action_state.press(action.clone());
+                        action_state.action_data_mut(action.clone()).value = *value;
+                        continue;
+                    }
+                }
+                ActionDiff::AxisPairChanged {
+                    action,
+                    id: event_id,
+                    axis_pair,
+                } => {
+                    if event_id == id {
+                        action_state.press(action.clone());
+                        let action_data = action_state.action_data_mut(action.clone());
+                        action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
+                        action_data.value = axis_pair.length();
                         continue;
                     }
                 }

@@ -4,6 +4,8 @@
 
 - Removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`.
 - Register types in the reflection system.
+- added support in `ActionDiff` for value and axis_pair changes
+- Added `InputMap::Clear`.
 
 ## Version 0.11.2
 
