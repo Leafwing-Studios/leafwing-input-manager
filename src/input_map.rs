@@ -7,12 +7,12 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
 
+use bevy::asset::Asset;
 use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
-use bevy::reflect::TypeUuid;
-use bevy::utils::HashMap;
-use multimap::MultiMap;
+use bevy::reflect::Reflect;
+use bevy::utils::{Entry, HashMap};
 use serde::{Deserialize, Serialize};
 
 use core::fmt::Debug;
@@ -70,18 +70,19 @@ input_map.insert(MouseButton::Left, Action::Run)
 input_map.clear_action(Action::Hide);
 ```
 **/
-#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, TypeUuid, Serialize, Deserialize)]
-#[uuid = "D7DECC78-8573-42FF-851A-F0344C7D05C9"]
+#[derive(
+    Resource, Component, Debug, Clone, PartialEq, Eq, Asset, Reflect, Serialize, Deserialize,
+)]
 pub struct InputMap<A: Actionlike> {
     /// The usize stored here is the index of the input in the Actionlike iterator
-    map: MultiMap<A, UserInput>,
+    map: HashMap<A, Vec<UserInput>>,
     associated_gamepad: Option<Gamepad>,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
-            map: MultiMap::default(),
+            map: HashMap::default(),
             associated_gamepad: None,
         }
     }
@@ -165,13 +166,20 @@ impl<A: Actionlike> InputMap<A> {
         let input = input.into();
 
         // Check for existing copies of the input: insertion should be idempotent
-        if let Some(vec) = self.map.get_vec(&action) {
+        if let Some(vec) = self.map.get(&action) {
             if vec.contains(&input) {
                 return self;
             }
         }
 
-        self.map.insert(action, input);
+        match self.map.entry(action) {
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().push(input);
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(vec![input]);
+            }
+        };
 
         self
     }
@@ -398,18 +406,18 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over actions with their inputs
     pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<UserInput>)> {
-        self.map.iter_all()
+        self.map.iter()
     }
     /// Returns a reference to the inputs mapped to `action`
     #[must_use]
     pub fn get(&self, action: A) -> Option<&Vec<UserInput>> {
-        self.map.get_vec(&action)
+        self.map.get(&action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
     pub fn get_mut(&mut self, action: A) -> Option<&mut Vec<UserInput>> {
-        self.map.get_vec_mut(&action)
+        self.map.get_mut(&action)
     }
 
     /// How many input bindings are registered total?
@@ -451,7 +459,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Returns `Some(input)` if found.
     pub fn remove_at(&mut self, action: A, index: usize) -> Option<UserInput> {
-        let input_vec = self.map.get_vec_mut(&action)?;
+        let input_vec = self.map.get_mut(&action)?;
         if input_vec.len() <= index {
             None
         } else {
@@ -463,7 +471,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
     pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
-        let input_vec = self.map.get_vec_mut(&action)?;
+        let input_vec = self.map.get_mut(&action)?;
         let user_input = input.into();
         let index = input_vec.iter().position(|i| i == &user_input)?;
         input_vec.remove(index);
