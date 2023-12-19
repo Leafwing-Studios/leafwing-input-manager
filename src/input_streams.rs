@@ -38,9 +38,9 @@ pub struct InputStreams<'a> {
     /// A [`MouseButton`] [`Input`] stream
     pub mouse_buttons: Option<&'a Input<MouseButton>>,
     /// A [`MouseWheel`] event stream
-    pub mouse_wheel: Option<&'a Events<MouseWheel>>,
+    pub mouse_wheel: Option<Vec<MouseWheel>>,
     /// A [`MouseMotion`] event stream
-    pub mouse_motion: &'a Events<MouseMotion>,
+    pub mouse_motion: Vec<MouseMotion>,
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
 }
@@ -56,8 +56,19 @@ impl<'a> InputStreams<'a> {
         let keycodes = world.get_resource::<Input<KeyCode>>();
         let scan_codes = world.get_resource::<Input<ScanCode>>();
         let mouse_buttons = world.get_resource::<Input<MouseButton>>();
-        let mouse_wheel = world.get_resource::<Events<MouseWheel>>();
+        let mouse_wheel = world.resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
+
+        let mouse_wheel: Vec<MouseWheel> = mouse_wheel
+            .get_reader()
+            .read(mouse_wheel)
+            .cloned()
+            .collect();
+        let mouse_motion: Vec<MouseMotion> = mouse_motion
+            .get_reader()
+            .read(mouse_motion)
+            .cloned()
+            .collect();
 
         InputStreams {
             gamepad_buttons,
@@ -67,7 +78,7 @@ impl<'a> InputStreams<'a> {
             keycodes,
             scan_codes,
             mouse_buttons,
-            mouse_wheel,
+            mouse_wheel: Some(mouse_wheel),
             mouse_motion,
             associated_gamepad: gamepad,
         }
@@ -165,19 +176,16 @@ impl<'a> InputStreams<'a> {
                 matches!(self.mouse_buttons, Some(mouse_buttons) if mouse_buttons.pressed(mouse_button))
             }
             InputKind::MouseWheel(mouse_wheel_direction) => {
-                let Some(mouse_wheel) = self.mouse_wheel else {
+                let Some(mouse_wheel) = &self.mouse_wheel else {
                     return false;
                 };
 
                 let mut total_mouse_wheel_movement = 0.0;
 
-                // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = mouse_wheel.get_reader();
-
                 // PERF: this summing is computed for every individual input
                 // This should probably be computed once, and then cached / read
                 // Fix upstream!
-                for mouse_wheel_event in event_reader.read(mouse_wheel) {
+                for mouse_wheel_event in mouse_wheel {
                     total_mouse_wheel_movement += match mouse_wheel_direction {
                         MouseWheelDirection::Up | MouseWheelDirection::Down => mouse_wheel_event.y,
                         MouseWheelDirection::Left | MouseWheelDirection::Right => {
@@ -199,10 +207,7 @@ impl<'a> InputStreams<'a> {
             InputKind::MouseMotion(mouse_motion_direction) => {
                 let mut total_mouse_movement = 0.0;
 
-                // FIXME: verify that this works and doesn't double count events
-                let mut event_reader = self.mouse_motion.get_reader();
-
-                for mouse_motion_event in event_reader.read(self.mouse_motion) {
+                for mouse_motion_event in &self.mouse_motion {
                     total_mouse_movement += match mouse_motion_direction {
                         MouseMotionDirection::Up | MouseMotionDirection::Down => {
                             mouse_motion_event.delta.y
@@ -300,15 +305,13 @@ impl<'a> InputStreams<'a> {
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
-                        let Some(mouse_wheel) = self.mouse_wheel else {
+                        let Some(mouse_wheel) = &self.mouse_wheel else {
                             return 0.0;
                         };
 
                         let mut total_mouse_wheel_movement = 0.0;
-                        // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = mouse_wheel.get_reader();
 
-                        for mouse_wheel_event in event_reader.read(mouse_wheel) {
+                        for mouse_wheel_event in mouse_wheel {
                             total_mouse_wheel_movement += match axis_type {
                                 MouseWheelAxisType::X => mouse_wheel_event.x,
                                 MouseWheelAxisType::Y => mouse_wheel_event.y,
@@ -319,10 +322,8 @@ impl<'a> InputStreams<'a> {
                     // CLEANUP: deduplicate code with MouseWheel
                     AxisType::MouseMotion(axis_type) => {
                         let mut total_mouse_motion_movement = 0.0;
-                        // FIXME: verify that this works and doesn't double count events
-                        let mut event_reader = self.mouse_motion.get_reader();
 
-                        for mouse_wheel_event in event_reader.read(self.mouse_motion) {
+                        for mouse_wheel_event in &self.mouse_motion {
                             total_mouse_motion_movement += match axis_type {
                                 MouseMotionAxisType::X => mouse_wheel_event.delta.x,
                                 MouseMotionAxisType::Y => mouse_wheel_event.delta.y,
@@ -576,8 +577,20 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             keycodes: Some(mutable_streams.keycodes),
             scan_codes: Some(mutable_streams.scan_codes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(mutable_streams.mouse_wheel),
-            mouse_motion: mutable_streams.mouse_motion,
+            mouse_wheel: Some(
+                mutable_streams
+                    .mouse_wheel
+                    .get_reader()
+                    .read(mutable_streams.mouse_wheel)
+                    .cloned()
+                    .collect(),
+            ),
+            mouse_motion: mutable_streams
+                .mouse_motion
+                .get_reader()
+                .read(mutable_streams.mouse_motion)
+                .cloned()
+                .collect(),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
@@ -593,8 +606,20 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             keycodes: Some(mutable_streams.keycodes),
             scan_codes: Some(mutable_streams.scan_codes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(mutable_streams.mouse_wheel),
-            mouse_motion: mutable_streams.mouse_motion,
+            mouse_wheel: Some(
+                mutable_streams
+                    .mouse_wheel
+                    .get_reader()
+                    .read(mutable_streams.mouse_wheel)
+                    .cloned()
+                    .collect(),
+            ),
+            mouse_motion: mutable_streams
+                .mouse_motion
+                .get_reader()
+                .read(mutable_streams.mouse_motion)
+                .cloned()
+                .collect(),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
@@ -602,8 +627,8 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::MutableInputStreams;
-    use crate::prelude::MockInput;
+    use super::{InputStreams, MutableInputStreams};
+    use crate::prelude::{MockInput, QueryInput};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
@@ -614,24 +639,24 @@ mod tests {
         app.add_plugins(InputPlugin);
 
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
-        assert!(!input_streams.pressed(Modifier::Control));
+        assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
 
         input_streams.send_input(KeyCode::ControlLeft);
         app.update();
 
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
-        assert!(input_streams.pressed(Modifier::Control));
+        assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
 
         input_streams.reset_inputs();
         app.update();
 
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
-        assert!(!input_streams.pressed(Modifier::Control));
+        assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
 
         input_streams.send_input(KeyCode::ControlRight);
         app.update();
 
         let input_streams = MutableInputStreams::from_world(&mut app.world, None);
-        assert!(input_streams.pressed(Modifier::Control));
+        assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
     }
 }

@@ -6,7 +6,7 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use bevy::reflect::{FromReflect, Reflect};
+use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
 
 pub mod action_state;
@@ -38,7 +38,9 @@ pub mod prelude {
     pub use crate::buttonlike::MouseWheelDirection;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
-    pub use crate::input_mocking::MockInput;
+    #[cfg(feature = "ui")]
+    pub use crate::input_mocking::MockUIInteraction;
+    pub use crate::input_mocking::{MockInput, QueryInput};
     pub use crate::scan_codes::QwertyScanCode;
     pub use crate::user_input::{Modifier, UserInput};
 
@@ -81,8 +83,7 @@ pub mod prelude {
 /// ```
 pub trait Actionlike:
     Eq + Hash + Send + Sync + Clone + Hash + Reflect + FromReflect + 'static
-{
-}
+{ }
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
 ///

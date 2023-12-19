@@ -1,7 +1,10 @@
 //! Helpful abstractions over user inputs of all sorts
 
+use bevy::input::keyboard::ScanCode;
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use bevy::reflect::Reflect;
+use bevy::utils::HashSet;
+use serde::{Deserialize, Serialize};
 
 use crate::axislike::VirtualAxis;
 use crate::scan_codes::QwertyScanCode;
@@ -9,16 +12,13 @@ use crate::{
     axislike::{AxisType, DualAxis, SingleAxis, VirtualDPad},
     buttonlike::{MouseMotionDirection, MouseWheelDirection},
 };
-use bevy::prelude::ScanCode;
-use bevy::utils::HashSet;
-use serde::{Deserialize, Serialize};
 
 /// Some combination of user input, which may cross input-mode boundaries.
 ///
 /// For example, this may store mouse, keyboard or gamepad input, including cross-device chords!
 ///
 /// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum UserInput {
     /// A single button
     Single(InputKind),
@@ -358,7 +358,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
@@ -452,7 +452,7 @@ impl From<Modifier> for InputKind {
 ///
 /// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons are pressed.
 /// This will be decomposed into both values when converted into [`RawInputs`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum Modifier {
     /// Corresponds to [`KeyCode::AltLeft`] and [`KeyCode::AltRight`].
     Alt,

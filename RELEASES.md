@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.12
+## Unreleased
 
 ### Breaking Changes
 
@@ -29,6 +29,10 @@
 - `InputMap`, `UserInput` and all of the contained types now implement `Reflect`. As a result, the trait bound on `Actionlike` has been changed from `TypePath` to `Reflect`
 - Added more constants for testing: `ActionData::PRESSED/RELEASED/JUST_PRESSED/JUST_RELEASED/CONSUMED` and `Timing::TEST`
 - `ActionData::iter`, `ActionData::keys` and `InputMap::keys` have been added
+- Removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`.
+- Register types in the reflection system.
+- added support in `ActionDiff` for value and axis_pair changes
+- Added `InputMap::Clear`.
 
 ### Performance
 
@@ -40,6 +44,12 @@
 
 - Added an example that shows how to use resources to store input maps and action states
 - Added an example that demonstrates a more advanced twin-stick controller
+
+
+## Version 0.11.2
+
+- fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/285) with mouse motion and mouse wheel events being improperly counted
+  - this was pre-existing, but dramatically worsened by the release of Bevy 0.12.1
 
 ## Version 0.11.1
 

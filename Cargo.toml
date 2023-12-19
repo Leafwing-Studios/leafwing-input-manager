@@ -30,16 +30,15 @@ bevy = { version = "0.12", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.23", optional = true }
+bevy_egui = { version = "0.24", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
   "error",
 ] }
-itertools = "0.11"
+itertools = "0.12"
 serde = { version = "1.0", features = ["derive"] }
 once_cell = "1.17.1"
-multimap = "0.9.0"
 
 [dev-dependencies]
 bevy = { version = "0.12", default-features = false, features = [
@@ -51,7 +50,7 @@ bevy = { version = "0.12", default-features = false, features = [
   "bevy_core_pipeline",
   "x11",
 ] }
-bevy_egui = { version = "0.23" }
+bevy_egui = { version = "0.24" }
 serde_test = "1.0"
 criterion = "0.5"
 strum = { version = "0.25", features = ["derive"] }

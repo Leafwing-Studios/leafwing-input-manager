@@ -109,6 +109,21 @@ pub trait MockInput {
     /// Provide the [`Gamepad`] identifier to control which gamepad you are emulating.
     fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
+    /// Clears all user input streams, resetting them to their default state
+    ///
+    /// All buttons are released, and `just_pressed` and `just_released` information on the [`Input`] type are lost.
+    /// `just_pressed` and `just_released` on the [`ActionState`](crate::action_state::ActionState) will be kept.
+    ///
+    /// This will clear all [`KeyCode`], [`GamepadButton`] and [`MouseButton`] input streams,
+    /// as well as any [`Interaction`] components and all input [`Events`].
+    fn reset_inputs(&mut self);
+}
+
+/// Query [`Input`] state directly for testing purposes.
+///
+/// In game code, you should (almost) always be using [`ActionState`](crate::action_state::ActionState)
+/// methods instead.
+pub trait QueryInput {
     /// Is the provided `user_input` pressed?
     ///
     /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
@@ -120,26 +135,19 @@ pub trait MockInput {
     /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
     /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool;
+}
 
-    /// Clears all user input streams, resetting them to their default state
-    ///
-    /// All buttons are released, and `just_pressed` and `just_released` information on the [`Input`] type are lost.
-    /// `just_pressed` and `just_released` on the [`ActionState`](crate::action_state::ActionState) will be kept.
-    ///
-    /// This will clear all [`KeyCode`], [`GamepadButton`] and [`MouseButton`] input streams,
-    /// as well as any [`Interaction`] components and all input [`Events`].
-    fn reset_inputs(&mut self);
-
+/// Send fake UI interaction for testing purposes.
+#[cfg(feature = "ui")]
+pub trait MockUIInteraction {
     /// Presses all `bevy::ui` buttons with the matching `Marker` component
     ///
     /// Changes their [`Interaction`] component to [`Interaction::Pressed`]
-    #[cfg(feature = "ui")]
     fn click_button<Marker: Component>(&mut self);
 
     /// Hovers over all `bevy::ui` buttons with the matching `Marker` component
     ///
     /// Changes their [`Interaction`] component to [`Interaction::Pressed`]
-    #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self);
 }
 
@@ -321,18 +329,6 @@ impl MockInput for MutableInputStreams<'_> {
         }
     }
 
-    fn pressed(&self, input: impl Into<UserInput>) -> bool {
-        let input_streams: InputStreams = self.into();
-        input_streams.input_pressed(&input.into())
-    }
-
-    fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
-        let mut input_streams: InputStreams = self.into();
-        input_streams.associated_gamepad = gamepad;
-
-        input_streams.input_pressed(&input.into())
-    }
-
     fn reset_inputs(&mut self) {
         // WARNING: this *must* be updated when MutableInputStreams's fields change
         // Note that we deliberately are not resetting either Gamepads or associated_gamepad
@@ -344,15 +340,18 @@ impl MockInput for MutableInputStreams<'_> {
         *self.mouse_wheel = Default::default();
         *self.mouse_motion = Default::default();
     }
+}
 
-    #[cfg(feature = "ui")]
-    fn click_button<Marker: Component>(&mut self) {
-        panic!("Cannot use bevy_ui input mocking from `MutableInputStreams`, use an `App` or `World` instead.")
+impl QueryInput for InputStreams<'_> {
+    fn pressed(&self, input: impl Into<UserInput>) -> bool {
+        self.input_pressed(&input.into())
     }
 
-    #[cfg(feature = "ui")]
-    fn hover_button<Marker: Component>(&mut self) {
-        panic!("Cannot use bevy_ui input mocking from `MutableInputStreams`, use an `App` or `World` instead.")
+    fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
+        let mut input_streams = self.clone();
+        input_streams.associated_gamepad = gamepad;
+
+        input_streams.input_pressed(&input.into())
     }
 }
 
@@ -379,16 +378,6 @@ impl MockInput for World {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.release_input_as_gamepad(input, gamepad);
-    }
-
-    fn pressed(&self, input: impl Into<UserInput>) -> bool {
-        self.pressed_for_gamepad(input, None)
-    }
-
-    fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
-        let input_streams = InputStreams::from_world(self, gamepad);
-
-        input_streams.input_pressed(&input.into())
     }
 
     fn reset_inputs(&mut self) {
@@ -434,8 +423,22 @@ impl MockInput for World {
         self.insert_resource(Touches::default());
         self.insert_resource(Events::<TouchInput>::default());
     }
+}
 
-    #[cfg(feature = "ui")]
+impl QueryInput for World {
+    fn pressed(&self, input: impl Into<UserInput>) -> bool {
+        self.pressed_for_gamepad(input, None)
+    }
+
+    fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
+        let input_streams = InputStreams::from_world(self, gamepad);
+
+        input_streams.input_pressed(&input.into())
+    }
+}
+
+#[cfg(feature = "ui")]
+impl MockUIInteraction for World {
     fn click_button<Marker: Component>(&mut self) {
         let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
 
@@ -444,7 +447,6 @@ impl MockInput for World {
         }
     }
 
-    #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self) {
         let mut button_query = self.query_filtered::<&mut Interaction, With<Marker>>();
 
@@ -471,6 +473,12 @@ impl MockInput for App {
         self.world.release_input_as_gamepad(input, gamepad);
     }
 
+    fn reset_inputs(&mut self) {
+        self.world.reset_inputs();
+    }
+}
+
+impl QueryInput for App {
     fn pressed(&self, input: impl Into<UserInput>) -> bool {
         self.world.pressed(input)
     }
@@ -478,17 +486,14 @@ impl MockInput for App {
     fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
         self.world.pressed_for_gamepad(input, gamepad)
     }
+}
 
-    fn reset_inputs(&mut self) {
-        self.world.reset_inputs();
-    }
-
-    #[cfg(feature = "ui")]
+#[cfg(feature = "ui")]
+impl MockUIInteraction for App {
     fn click_button<Marker: Component>(&mut self) {
         self.world.click_button::<Marker>();
     }
 
-    #[cfg(feature = "ui")]
     fn hover_button<Marker: Component>(&mut self) {
         self.world.hover_button::<Marker>();
     }
@@ -496,7 +501,7 @@ impl MockInput for App {
 
 #[cfg(test)]
 mod test {
-    use crate::input_mocking::MockInput;
+    use crate::input_mocking::{MockInput, MockUIInteraction, QueryInput};
     use bevy::{
         input::{
             gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo},

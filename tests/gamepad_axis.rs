@@ -69,6 +69,7 @@ fn raw_gamepad_axis_events() {
 }
 
 #[test]
+#[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn game_pad_single_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -89,6 +90,7 @@ fn game_pad_single_axis_mocking() {
 }
 
 #[test]
+#[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn game_pad_dual_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
