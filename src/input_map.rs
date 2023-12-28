@@ -406,7 +406,7 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
-/// Merge axis pair into action data.
+/// Merges axis pair into action data.
 #[inline]
 fn merge_axis_pair_into_action(
     action: &mut ActionData,
