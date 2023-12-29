@@ -373,15 +373,19 @@ impl<A: Actionlike> InputMap<A> {
             for input in input_vec {
                 let action = &mut action_data[action.index()];
 
-                // Merge axis pair into action data
-                let axis_pair = input_streams.input_axis_pair(input);
-                if let Some(axis_pair) = axis_pair {
-                    if let Some(current_axis_pair) = &mut action.axis_pair {
-                        *current_axis_pair = current_axis_pair.merged_with(axis_pair);
-                    } else {
-                        action.axis_pair = Some(axis_pair);
+                // Exclude chord combining both button-like and axis-like inputs unless all buttons are pressed.
+                if let UserInput::Chord(buttons) = input {
+                    if input_streams.all_buttons_pressed(buttons) {
+                        inputs.push(input.clone());
+
+                        action.value += input_streams.input_value(input, true);
+
+                        merge_axis_pair_into_action(action, input_streams, input);
                     }
+                    continue;
                 }
+
+                merge_axis_pair_into_action(action, input_streams, input);
 
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
@@ -399,6 +403,22 @@ impl<A: Actionlike> InputMap<A> {
         self.handle_clashes(&mut action_data, input_streams, clash_strategy);
 
         action_data
+    }
+}
+
+/// Merges axis pair into action data.
+#[inline]
+fn merge_axis_pair_into_action(
+    action: &mut ActionData,
+    input_streams: &InputStreams,
+    input: &UserInput,
+) {
+    if let Some(axis_pair) = input_streams.input_axis_pair(input) {
+        if let Some(current_axis_pair) = &mut action.axis_pair {
+            *current_axis_pair = current_axis_pair.merged_with(axis_pair);
+        } else {
+            action.axis_pair = Some(axis_pair);
+        }
     }
 }
 
