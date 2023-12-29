@@ -421,16 +421,20 @@ impl<'a> InputStreams<'a> {
     /// be sure to clamp the returned data.
     pub fn input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
         match input {
-            UserInput::Chord(inputs) => inputs
-                .iter()
-                .flat_map(|input_kind| {
-                    if let InputKind::DualAxis(dual_axis) = input_kind {
-                        Some(self.extract_dual_axis_data(dual_axis))
-                    } else {
-                        None
+            UserInput::Chord(inputs) => {
+                for input_kind in inputs.iter() {
+                    // Exclude chord combining both button-like and axis-like inputs unless all buttons are pressed.
+                    if !self.button_pressed(*input_kind) {
+                        return None;
                     }
-                })
-                .next(),
+
+                    // Return result of the first dual axis in the chord.
+                    if let InputKind::DualAxis(dual_axis) = input_kind {
+                        return Some(self.extract_dual_axis_data(dual_axis));
+                    }
+                }
+                None
+            }
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
                 Some(self.extract_dual_axis_data(dual_axis))
             }
