@@ -287,7 +287,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
     }
 }
 
-/// Generates an [`Events`] stream of [`ActionDiff`] from [`ActionState`]
+/// Processes an [`Events`] stream of [`ActionDiff`] to update an [`ActionState`]
 ///
 /// The `ID` generic type should be a stable entity identifier,
 /// suitable to be sent across a network.
