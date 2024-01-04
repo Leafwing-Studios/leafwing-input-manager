@@ -507,31 +507,21 @@ impl<A: Actionlike> ActionState<A> {
     /// This lets you reconstruct an [`ActionState`] from a stream of [`ActionDiff`]s
     pub fn apply_diff(&mut self, action_diff: &ActionDiff<A>) {
         match action_diff {
-            ActionDiff::Pressed {
-                action,
-            } => {
+            ActionDiff::Pressed { action } => {
                 self.press(action.clone());
                 self.action_data_mut(action.clone()).value = 1.;
             }
-            ActionDiff::Released {
-                action,
-            } => {
+            ActionDiff::Released { action } => {
                 self.release(action.clone());
                 let action_data = self.action_data_mut(action.clone());
                 action_data.value = 0.;
                 action_data.axis_pair = None;
             }
-            ActionDiff::ValueChanged {
-                action,
-                value,
-            } => {
+            ActionDiff::ValueChanged { action, value } => {
                 self.press(action.clone());
                 self.action_data_mut(action.clone()).value = *value;
             }
-            ActionDiff::AxisPairChanged {
-                action,
-                axis_pair,
-            } => {
+            ActionDiff::AxisPairChanged { action, axis_pair } => {
                 self.press(action.clone());
                 let action_data = self.action_data_mut(action.clone());
                 action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
@@ -802,7 +792,6 @@ pub struct ActionDiffEvent<A: Actionlike> {
     /// The `ActionDiff` that was generated
     pub action_diff: ActionDiff<A>,
 }
-
 
 /// Stores presses and releases of buttons without timing information
 ///

@@ -9,9 +9,9 @@
 use bevy::ecs::event::{Events, ManualEventReader};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::action_state::{ActionDiffEvent};
+use leafwing_input_manager::action_state::ActionDiffEvent;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::systems::{generate_action_diffs};
+use leafwing_input_manager::systems::generate_action_diffs;
 
 use std::fmt::Debug;
 
@@ -104,11 +104,8 @@ fn main() {
 
     // Sending over the new `ActionDiff` event stream,
     // we can see that the actions are now released on the server too
-    let _event_reader = send_events::<ActionDiffEvent<FpsAction>>(
-        &client_app,
-        &mut server_app,
-        Some(event_reader),
-    );
+    let _event_reader =
+        send_events::<ActionDiffEvent<FpsAction>>(&client_app, &mut server_app, Some(event_reader));
 
     server_app.update();
 

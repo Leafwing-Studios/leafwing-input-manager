@@ -25,11 +25,11 @@ use bevy::{
     utils::{HashMap, Instant},
 };
 
+use crate::action_state::ActionDiffEvent;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
 use bevy_egui::EguiContexts;
-use crate::action_state::ActionDiffEvent;
 
 /// Advances actions timer.
 ///
@@ -193,11 +193,14 @@ pub fn generate_action_diffs<A: Actionlike>(
     mut previous_axis_pairs: Local<HashMap<A, HashMap<Option<Entity>, Vec2>>>,
 ) {
     // we use None to represent the global ActionState
-    let action_state_iter = action_state_query.iter().map(|(entity, action_state)| {
-        (Some(entity), action_state)
-    }).chain(action_state.as_ref().map(|action_state| {
-        (None, action_state.as_ref())
-    }));
+    let action_state_iter = action_state_query
+        .iter()
+        .map(|(entity, action_state)| (Some(entity), action_state))
+        .chain(
+            action_state
+                .as_ref()
+                .map(|action_state| (None, action_state.as_ref())),
+        );
     for (maybe_entity, action_state) in action_state_iter {
         for action in action_state.get_just_pressed() {
             match action_state.action_data(action.clone()).axis_pair {
@@ -207,7 +210,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                         action_diff: ActionDiff::AxisPairChanged {
                             action: action.clone(),
                             axis_pair: axis_pair.into(),
-                        }
+                        },
                     });
                     previous_axis_pairs
                         .raw_entry_mut()
@@ -218,8 +221,6 @@ pub fn generate_action_diffs<A: Actionlike>(
                 }
                 None => {
                     let value = action_state.value(action.clone());
-                    // NOTE: this seems strange; we detect if the button is Pressed/ValueChanged just based on the value?
-                    //  what if we have a 'Value' type button that has a value of 1.0?
                     action_diffs.send(ActionDiffEvent {
                         owner: maybe_entity,
                         action_diff: if value == 1. {
@@ -231,7 +232,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                                 action: action.clone(),
                                 value,
                             }
-                        }
+                        },
                     });
                     previous_values
                         .raw_entry_mut()
@@ -257,10 +258,11 @@ pub fn generate_action_diffs<A: Actionlike>(
                     }
                     action_diffs.send(ActionDiffEvent {
                         owner: maybe_entity,
-                        action_diff:  ActionDiff::AxisPairChanged {
+                        action_diff: ActionDiff::AxisPairChanged {
                             action: action.clone(),
                             axis_pair: axis_pair.into(),
-                        }});
+                        },
+                    });
                     previous_axis_pairs.insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
@@ -277,7 +279,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                         action_diff: ActionDiff::ValueChanged {
                             action: action.clone(),
                             value,
-                        }
+                        },
                     });
                     previous_values.insert(maybe_entity, value);
                 }
@@ -288,7 +290,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                 owner: maybe_entity,
                 action_diff: ActionDiff::Released {
                     action: action.clone(),
-                }
+                },
             });
             if let Some(previous_axes) = previous_axis_pairs.get_mut(&action) {
                 previous_axes.remove(&maybe_entity);
@@ -299,7 +301,6 @@ pub fn generate_action_diffs<A: Actionlike>(
         }
     }
 }
-
 
 /// Release all inputs if the [`ToggleActions<A>`] resource exists and its `enabled` field is false.
 pub fn release_on_disable<A: Actionlike>(
