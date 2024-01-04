@@ -790,7 +790,7 @@ pub struct ActionDiffEvent<A: Actionlike> {
     /// If none: `ActionState<A>` is a Resource, not a component
     pub owner: Option<Entity>,
     /// The `ActionDiff` that was generated
-    pub action_diff: ActionDiff<A>,
+    pub action_diffs: Vec<ActionDiff<A>>,
 }
 
 /// Stores presses and releases of buttons without timing information

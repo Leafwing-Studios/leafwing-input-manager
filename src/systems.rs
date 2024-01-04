@@ -202,15 +202,13 @@ pub fn generate_action_diffs<A: Actionlike>(
                 .map(|action_state| (None, action_state.as_ref())),
         );
     for (maybe_entity, action_state) in action_state_iter {
+        let mut diffs = vec![];
         for action in action_state.get_just_pressed() {
             match action_state.action_data(action.clone()).axis_pair {
                 Some(axis_pair) => {
-                    action_diffs.send(ActionDiffEvent {
-                        owner: maybe_entity,
-                        action_diff: ActionDiff::AxisPairChanged {
-                            action: action.clone(),
-                            axis_pair: axis_pair.into(),
-                        },
+                    diffs.push(ActionDiff::AxisPairChanged {
+                        action: action.clone(),
+                        axis_pair: axis_pair.into(),
                     });
                     previous_axis_pairs
                         .raw_entry_mut()
@@ -221,18 +219,15 @@ pub fn generate_action_diffs<A: Actionlike>(
                 }
                 None => {
                     let value = action_state.value(action.clone());
-                    action_diffs.send(ActionDiffEvent {
-                        owner: maybe_entity,
-                        action_diff: if value == 1. {
-                            ActionDiff::Pressed {
-                                action: action.clone(),
-                            }
-                        } else {
-                            ActionDiff::ValueChanged {
-                                action: action.clone(),
-                                value,
-                            }
-                        },
+                    diffs.push(if value == 1. {
+                        ActionDiff::Pressed {
+                            action: action.clone(),
+                        }
+                    } else {
+                        ActionDiff::ValueChanged {
+                            action: action.clone(),
+                            value,
+                        }
                     });
                     previous_values
                         .raw_entry_mut()
@@ -256,12 +251,9 @@ pub fn generate_action_diffs<A: Actionlike>(
                             continue;
                         }
                     }
-                    action_diffs.send(ActionDiffEvent {
-                        owner: maybe_entity,
-                        action_diff: ActionDiff::AxisPairChanged {
-                            action: action.clone(),
-                            axis_pair: axis_pair.into(),
-                        },
+                    diffs.push(ActionDiff::AxisPairChanged {
+                        action: action.clone(),
+                        axis_pair: axis_pair.into(),
                     });
                     previous_axis_pairs.insert(maybe_entity, axis_pair.xy());
                 }
@@ -274,23 +266,17 @@ pub fn generate_action_diffs<A: Actionlike>(
                             continue;
                         }
                     }
-                    action_diffs.send(ActionDiffEvent {
-                        owner: maybe_entity,
-                        action_diff: ActionDiff::ValueChanged {
-                            action: action.clone(),
-                            value,
-                        },
+                    diffs.push(ActionDiff::ValueChanged {
+                        action: action.clone(),
+                        value,
                     });
                     previous_values.insert(maybe_entity, value);
                 }
             }
         }
         for action in action_state.get_just_released() {
-            action_diffs.send(ActionDiffEvent {
-                owner: maybe_entity,
-                action_diff: ActionDiff::Released {
-                    action: action.clone(),
-                },
+            diffs.push(ActionDiff::Released {
+                action: action.clone(),
             });
             if let Some(previous_axes) = previous_axis_pairs.get_mut(&action) {
                 previous_axes.remove(&maybe_entity);
@@ -298,6 +284,12 @@ pub fn generate_action_diffs<A: Actionlike>(
             if let Some(previous_values) = previous_values.get_mut(&action) {
                 previous_values.remove(&maybe_entity);
             }
+        }
+        if !diffs.is_empty() {
+            action_diffs.send(ActionDiffEvent {
+                owner: maybe_entity,
+                action_diffs: diffs,
+            });
         }
     }
 }

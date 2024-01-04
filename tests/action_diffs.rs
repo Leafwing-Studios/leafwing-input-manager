@@ -43,7 +43,7 @@ fn process_action_diffs<A: Actionlike>(
     for action_diff_event in action_diff_events.read() {
         if action_diff_event.owner.is_some() {
             let mut action_state = action_state_query.get_single_mut().unwrap();
-            action_state.apply_diff(&action_diff_event.action_diff);
+            action_diff_event.action_diffs.iter().for_each(|diff| action_state.apply_diff(diff));
         }
     }
 }
@@ -102,10 +102,11 @@ fn assert_action_diff_created(
     action_diff_events.clear();
 }
 
-fn assert_action_diff_received(app: &mut App, action_diff: ActionDiffEvent<Action>) {
+fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent<Action>) {
     let mut action_state_query = app.world.query::<&ActionState<Action>>();
     let action_state = action_state_query.get_single(&app.world).unwrap();
-    match action_diff.action_diff {
+    assert_eq!(action_diff_event.action_diffs.len(), 1);
+    match action_diff_event.action_diffs.first().unwrap().clone() {
         ActionDiff::Pressed { action } => {
             assert!(action_state.pressed(action));
             assert!(action_state.value(action) == 1.);
@@ -151,9 +152,10 @@ fn generate_binary_action_diffs() {
     .add_systems(PostUpdate, generate_action_diffs::<Action>);
 
     app.update();
-    assert_action_diff_created(&mut app, |action_diff| {
-        assert_eq!(action_diff.owner, Some(entity));
-        match action_diff.action_diff {
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action } => {
                 assert_eq!(action, Action::PayTheBills);
             }
@@ -171,9 +173,10 @@ fn generate_binary_action_diffs() {
 
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff| {
-        assert_eq!(action_diff.owner, Some(entity));
-        match action_diff.action_diff {
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
                 assert_eq!(action, Action::PayTheBills);
             }
@@ -202,9 +205,10 @@ fn generate_value_action_diffs() {
 
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff| {
-        assert_eq!(action_diff.owner, Some(entity));
-        match action_diff.action_diff {
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::ValueChanged { action, value } => {
                 assert_eq!(action, Action::PayTheBills);
                 assert_eq!(value, input_value);
@@ -225,9 +229,10 @@ fn generate_value_action_diffs() {
 
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff| {
-        assert_eq!(action_diff.owner, Some(entity));
-        match action_diff.action_diff {
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
                 assert_eq!(action, Action::PayTheBills);
             }
@@ -258,9 +263,10 @@ fn generate_axis_action_diffs() {
 
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff| {
-        assert_eq!(action_diff.owner, Some(entity));
-        match action_diff.action_diff {
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::AxisPairChanged {
                 action,
                 axis_pair,
@@ -284,9 +290,10 @@ fn generate_axis_action_diffs() {
 
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff| {
-        assert_eq!(action_diff.owner, Some(entity));
-        match action_diff.action_diff {
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
                 assert_eq!(action, Action::PayTheBills);
             }
@@ -305,25 +312,23 @@ fn process_binary_action_diffs() {
     let entity = app.world.query_filtered::<Entity, With<ActionState<Action>>>().single(&app.world);
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
-    let action_diff = ActionDiff::Pressed {
-        action: Action::PayTheBills,
-    };
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
-        action_diff,
-    };
+        action_diffs: vec![ActionDiff::Pressed {
+            action: Action::PayTheBills,
+        }
+    ]};
     send_action_diff(&mut app, action_diff_event.clone());
 
     app.update();
 
     assert_action_diff_received(&mut app, action_diff_event);
 
-    let action_diff = ActionDiff::Released {
-        action: Action::PayTheBills,
-    };
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
-        action_diff,
+        action_diffs: vec![ActionDiff::Released {
+            action: Action::PayTheBills,
+        }]
     };
     send_action_diff(&mut app, action_diff_event.clone());
 
@@ -338,13 +343,13 @@ fn process_value_action_diff() {
     let entity = app.world.query_filtered::<Entity, With<ActionState<Action>>>().single(&app.world);
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
-    let action_diff = ActionDiff::ValueChanged {
-        action: Action::PayTheBills,
-        value: 0.5,
-    };
+
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
-        action_diff,
+        action_diffs: vec![ActionDiff::ValueChanged {
+            action: Action::PayTheBills,
+            value: 0.5,
+        }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
 
@@ -352,12 +357,11 @@ fn process_value_action_diff() {
 
     assert_action_diff_received(&mut app, action_diff_event);
 
-    let action_diff = ActionDiff::Released {
-        action: Action::PayTheBills,
-    };
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
-        action_diff,
+        action_diffs: vec![ActionDiff::Released {
+        action: Action::PayTheBills,
+    }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
 
@@ -372,13 +376,13 @@ fn process_axis_action_diff() {
     let entity = app.world.query_filtered::<Entity, With<ActionState<Action>>>().single(&app.world);
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
-    let action_diff = ActionDiff::AxisPairChanged {
-        action: Action::PayTheBills,
-        axis_pair: Vec2 { x: 1., y: 0. },
-    };
+
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
-        action_diff,
+        action_diffs: vec![ActionDiff::AxisPairChanged {
+        action: Action::PayTheBills,
+        axis_pair: Vec2 { x: 1., y: 0. },
+    }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
 
@@ -386,12 +390,11 @@ fn process_axis_action_diff() {
 
     assert_action_diff_received(&mut app, action_diff_event);
 
-    let action_diff = ActionDiff::Released {
-        action: Action::PayTheBills,
-    };
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
-        action_diff,
+        action_diffs: vec![ActionDiff::Released {
+        action: Action::PayTheBills,
+    }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
 
