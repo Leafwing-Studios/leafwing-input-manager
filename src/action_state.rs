@@ -798,7 +798,7 @@ pub struct ActionDiffEvent<A: Actionlike> {
 /// These are typically accessed using the `Events<ActionDiffEvent>` resource.
 /// Uses a minimal storage format, in order to facilitate transport over the network.
 ///
-/// An `ActionState` can be fully reconstructed from a stream of `ActionDiff`
+/// An `ActionState` can be fully reconstructed from a stream of `ActionDiff`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ActionDiff<A: Actionlike> {
     /// The action was pressed
