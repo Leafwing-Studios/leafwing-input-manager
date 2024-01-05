@@ -807,11 +807,11 @@ impl DeadZoneShape {
         let new_value = Vec2::new(new_x, new_y);
 
         if new_value == Vec2::ZERO {
-            return None;
+            None
         } else {
             let scaled_value =
                 Self::scale_value(new_value, Vec2::new(vertical_width, horizontal_width));
-            return Some(DualAxisData::from_xy(scaled_value));
+            Some(DualAxisData::from_xy(scaled_value))
         }
     }
 
@@ -829,7 +829,7 @@ impl DeadZoneShape {
         }
 
         let scaled_value = Self::scale_value(value, Vec2::new(radius_x, radius_y));
-        return Some(DualAxisData::from_xy(scaled_value));
+        Some(DualAxisData::from_xy(scaled_value))
     }
 
     fn scale_value(value: Vec2, deadzone_size: Vec2) -> Vec2 {
