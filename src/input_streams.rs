@@ -442,13 +442,13 @@ impl<'a> InputStreams<'a> {
 
                     // Return result of the first dual axis in the chord.
                     if let InputKind::DualAxis(dual_axis) = input_kind {
-                        return self.extract_dual_axis_data(dual_axis);
+                        return Some(self.extract_dual_axis_data(dual_axis).unwrap_or_default());
                     }
                 }
                 None
             }
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
-                self.extract_dual_axis_data(dual_axis)
+                Some(self.extract_dual_axis_data(dual_axis).unwrap_or_default())
             }
             UserInput::VirtualDPad(VirtualDPad {
                 up,

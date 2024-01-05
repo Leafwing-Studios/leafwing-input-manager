@@ -336,7 +336,7 @@ fn game_pad_dual_axis_cross() {
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.released(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
-    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY), None);
+    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY).unwrap(), DualAxisData::new(0.0, 0.0));
 
     // Test that an input outside the cross deadzone is not filtered out.
     app.send_input(DualAxis::from_value(
@@ -399,7 +399,7 @@ fn game_pad_dual_axis_ellipse() {
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.released(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
-    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY), None);
+    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY).unwrap(), DualAxisData::new(0.0, 0.0));
 
     // Test that an input outside the ellipse deadzone is not filtered out, assuming values of 0.1
     app.send_input(DualAxis::from_value(
@@ -444,7 +444,7 @@ fn test_zero_cross() {
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.released(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
-    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY), None);
+    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY).unwrap(), DualAxisData::new(0.0, 0.0));
 }
 
 #[test]
@@ -471,7 +471,7 @@ fn test_zero_ellipse() {
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.released(AxislikeTestAction::XY));
     assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
-    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY), None);
+    assert_eq!(action_state.axis_pair(AxislikeTestAction::XY).unwrap(), DualAxisData::new(0.0, 0.0));
 }
 
 #[test]
