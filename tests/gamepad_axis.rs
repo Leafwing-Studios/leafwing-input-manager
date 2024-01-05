@@ -317,8 +317,8 @@ fn game_pad_dual_axis_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
-            width_x: 0.1,
-            width_y: 0.1,
+            horizontal_width: 0.1,
+            vertical_width: 0.1,
         }),
         AxislikeTestAction::XY,
     )]));
@@ -425,8 +425,8 @@ fn test_zero_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
-            width_x: 0.0,
-            width_y: 0.0,
+            horizontal_width: 0.0,
+            vertical_width: 0.0,
         }),
         AxislikeTestAction::XY,
     )]));
