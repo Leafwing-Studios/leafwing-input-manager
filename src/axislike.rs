@@ -743,11 +743,11 @@ pub enum DeadZoneShape {
     /// The cross is represented by two rectangles.
     Cross {
         /// The width of the horizonal axis.
-        /// 
+        ///
         /// Affects the snapping of the y-axis.
         horizontal_width: f32,
         /// The width of the vertical axis.
-        /// 
+        ///
         /// Affects the snapping of the x-axis.
         vertical_width: f32,
     },
@@ -809,7 +809,8 @@ impl DeadZoneShape {
         if new_value == Vec2::ZERO {
             return None;
         } else {
-            let scaled_value = Self::scale_value(new_value, Vec2::new(vertical_width, horizontal_width));
+            let scaled_value =
+                Self::scale_value(new_value, Vec2::new(vertical_width, horizontal_width));
             return Some(DualAxisData::from_xy(scaled_value));
         }
     }
