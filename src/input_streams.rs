@@ -133,10 +133,12 @@ impl<'a> InputStreams<'a> {
                 let y_value =
                     self.input_value(&UserInput::Single(InputKind::SingleAxis(axis.y)), false);
 
-                axis.deadzone.input_outside_deadzone(x_value, y_value)
+                axis.deadzone
+                    .deadzone_input_value(x_value, y_value)
+                    .is_some()
             }
             InputKind::SingleAxis(axis) => {
-                let value = self.input_value(&UserInput::Single(button), true);
+                let value = self.input_value(&UserInput::Single(button), false);
 
                 value < axis.negative_low || value > axis.positive_low
             }
@@ -266,14 +268,24 @@ impl<'a> InputStreams<'a> {
 
         // Helper that takes the value returned by an axis and returns 0.0 if it is not within the
         // triggering range.
-        let value_in_axis_range = |axis: &SingleAxis, value: f32| -> f32 {
-            if value >= axis.negative_low && value <= axis.positive_low && include_deadzone {
-                0.0
-            } else if axis.inverted {
-                -value * axis.sensitivity
-            } else {
-                value * axis.sensitivity
+        let value_in_axis_range = |axis: &SingleAxis, mut value: f32| -> f32 {
+            if include_deadzone {
+                if value >= axis.negative_low && value <= axis.positive_low {
+                    return 0.0;
+                }
+
+                let width = if value.is_sign_positive() {
+                    axis.positive_low.abs()
+                } else {
+                    axis.negative_low.abs()
+                };
+                value = value.signum() * (value.abs() - width).max(0.0) / (1.0 - width);
             }
+            if axis.inverted {
+                value *= -1.0;
+            }
+
+            value * axis.sensitivity
         };
 
         match input {
@@ -430,13 +442,13 @@ impl<'a> InputStreams<'a> {
 
                     // Return result of the first dual axis in the chord.
                     if let InputKind::DualAxis(dual_axis) = input_kind {
-                        return Some(self.extract_dual_axis_data(dual_axis));
+                        return self.extract_dual_axis_data(dual_axis);
                     }
                 }
                 None
             }
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
-                Some(self.extract_dual_axis_data(dual_axis))
+                self.extract_dual_axis_data(dual_axis)
             }
             UserInput::VirtualDPad(VirtualDPad {
                 up,
@@ -454,7 +466,7 @@ impl<'a> InputStreams<'a> {
         }
     }
 
-    fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> DualAxisData {
+    fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> Option<DualAxisData> {
         let x = self.input_value(
             &UserInput::Single(InputKind::SingleAxis(dual_axis.x)),
             false,
@@ -464,11 +476,7 @@ impl<'a> InputStreams<'a> {
             false,
         );
 
-        if dual_axis.deadzone.input_outside_deadzone(x, y) {
-            DualAxisData::new(x, y)
-        } else {
-            DualAxisData::new(0.0, 0.0)
-        }
+        dual_axis.deadzone.deadzone_input_value(x, y)
     }
 }
 
