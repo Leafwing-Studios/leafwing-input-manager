@@ -10,7 +10,7 @@
 
 ### Enhancements
 
-- Changed `DualAxis` and `SingleAxis` deadzones to be more accessible. 
+- Improved deadzone handling for both `DualAxis` and `SingleAxis` deadzones 
   - All deadzones now scale the input so that it is continuous.
   - `DeadZoneShape::Cross` handles each axis seperately, making a per-axis "snapping" effect.
   - An input that falls on the exact boundary of a deadzone is now considered inside it.
