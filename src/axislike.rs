@@ -830,9 +830,9 @@ impl DeadZoneShape {
         radius_x: f32,
         radius_y: f32,
     ) -> Option<DualAxisData> {
-        let radius_x = radius_x.max(f32::EPSILON);
-        let radius_y = radius_y.max(f32::EPSILON);
-        if (value.x / radius_x).powi(2) + (value.y / radius_y).powi(2) < 1.0 {
+        let clamped_radius_x = radius_x.max(f32::EPSILON);
+        let clamped_radius_y = radius_y.max(f32::EPSILON);
+        if (value.x / clamped_radius_x).powi(2) + (value.y / clamped_radius_y).powi(2) < 1.0 {
             return None;
         }
 
