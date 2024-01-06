@@ -742,6 +742,9 @@ impl From<DualAxisData> for Vec2 {
 ///
 /// Input values that are on the boundary of the shape are counted as inside.
 /// If a size of a shape is 0.0, then all input values are read, except for 0.0.
+/// 
+/// All inputs are scaled to be continuous. 
+/// So with a ellipse deadzone of a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
