@@ -748,7 +748,8 @@ impl From<DualAxisData> for Vec2 {
 pub enum DeadZoneShape {
     /// Deadzone with the shape of a cross.
     ///
-    /// The cross is represented by two rectangles.
+    /// The cross is represented by horizonal and vertical rectangles.
+    /// Each axis is handled seperately which creates a per-axis "snapping" effect.
     Cross {
         /// The width of the horizonal axis.
         ///
@@ -788,7 +789,7 @@ impl std::hash::Hash for DeadZoneShape {
 }
 
 impl DeadZoneShape {
-    /// Returns whether the (x, y) input is outside the deadzone.
+    /// Computes the input value based on the deadzone.
     pub fn deadzone_input_value(&self, x: f32, y: f32) -> Option<DualAxisData> {
         let value = Vec2::new(x, y);
 
