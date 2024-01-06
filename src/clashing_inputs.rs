@@ -110,7 +110,7 @@ impl<A: Actionlike> InputMap<A> {
         let mut clashes = Vec::default();
 
         for action_pair in A::variants().combinations(2) {
-            let action_a = action_pair.get(0).unwrap().clone();
+            let action_a = action_pair.first().unwrap().clone();
             let action_b = action_pair.get(1).unwrap().clone();
 
             if let Some(clash) = self.possible_clash(action_a, action_b) {
