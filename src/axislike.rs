@@ -292,7 +292,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_wheel_x(),
             y: SingleAxis::mouse_wheel_y(),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+            deadzone: Self::ZERO_DEADZONE_SHAPE,
         }
     }
 

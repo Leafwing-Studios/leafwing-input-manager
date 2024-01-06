@@ -107,7 +107,7 @@ fn mouse_wheel_dual_axis_mocking() {
             inverted: false,
             sensitivity: 1.0,
         },
-        deadzone: DualAxis::DEFAULT_DEADZONE_SHAPE,
+        deadzone: DualAxis::ZERO_DEADZONE_SHAPE,
     };
     app.send_input(input);
     let mut events = app.world.resource_mut::<Events<MouseWheel>>();
