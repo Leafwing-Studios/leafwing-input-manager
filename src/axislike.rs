@@ -227,6 +227,14 @@ impl DualAxis {
         radius_y: Self::DEFAULT_DEADZONE,
     };
 
+    /// A deadzone with a size of 0.0 used by constructor methods.
+    ///
+    /// This cannot be changed, but the struct can be easily manually constructed.
+    pub const ZERO_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Ellipse {
+        radius_x: 0.0,
+        radius_y: 0.0,
+    };
+
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
     #[must_use]
     pub fn symmetric(
@@ -293,7 +301,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_motion_x(),
             y: SingleAxis::mouse_motion_y(),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+            deadzone: Self::ZERO_DEADZONE_SHAPE,
         }
     }
 
