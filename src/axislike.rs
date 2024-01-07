@@ -227,6 +227,14 @@ impl DualAxis {
         radius_y: Self::DEFAULT_DEADZONE,
     };
 
+    /// A deadzone with a size of 0.0 used by constructor methods.
+    ///
+    /// This cannot be changed, but the struct can be easily manually constructed.
+    pub const ZERO_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Ellipse {
+        radius_x: 0.0,
+        radius_y: 0.0,
+    };
+
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
     #[must_use]
     pub fn symmetric(
@@ -284,7 +292,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_wheel_x(),
             y: SingleAxis::mouse_wheel_y(),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+            deadzone: Self::ZERO_DEADZONE_SHAPE,
         }
     }
 
@@ -293,7 +301,7 @@ impl DualAxis {
         DualAxis {
             x: SingleAxis::mouse_motion_x(),
             y: SingleAxis::mouse_motion_y(),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+            deadzone: Self::ZERO_DEADZONE_SHAPE,
         }
     }
 
@@ -732,32 +740,28 @@ impl From<DualAxisData> for Vec2 {
 
 /// The shape of the deadzone for a [`DualAxis`] input.
 ///
-/// Input values that are on the boundary of the shape are counted as outside.
-/// If a volume of a shape is 0, then all input values are read.
+/// Input values that are on the boundary of the shape are counted as inside.
+/// If a size of a shape is 0.0, then all input values are read, except for 0.0.
+///
+/// All inputs are scaled to be continuous.
+/// So with a ellipse deadzone of a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
 pub enum DeadZoneShape {
     /// Deadzone with the shape of a cross.
     ///
-    /// The cross is represented by two rectangles. When using [`DeadZoneShape::Cross`],
-    /// make sure rect_1 and rect_2 do not have the same values, otherwise the shape will be a rectangle
+    /// The cross is represented by horizonal and vertical rectangles.
+    /// Each axis is handled seperately which creates a per-axis "snapping" effect.
     Cross {
-        /// The width of the first rectangle.
-        rect_1_width: f32,
-        /// The height of the first rectangle.
-        rect_1_height: f32,
-        /// The width of the second rectangle.
-        rect_2_width: f32,
-        /// The height of the second rectangle.
-        rect_2_height: f32,
-    },
-    /// Deadzone with the shape of a rectangle.
-    Rect {
-        /// The width of the rectangle.
-        width: f32,
-        /// The height of the rectangle.
-        height: f32,
+        /// The width of the horizonal axis.
+        ///
+        /// Affects the snapping of the y-axis.
+        horizontal_width: f32,
+        /// The width of the vertical axis.
+        ///
+        /// Affects the snapping of the x-axis.
+        vertical_width: f32,
     },
     /// Deadzone with the shape of an ellipse.
     Ellipse {
@@ -773,19 +777,11 @@ impl std::hash::Hash for DeadZoneShape {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {
             DeadZoneShape::Cross {
-                rect_1_width,
-                rect_1_height,
-                rect_2_width,
-                rect_2_height,
+                horizontal_width,
+                vertical_width,
             } => {
-                FloatOrd(*rect_1_width).hash(state);
-                FloatOrd(*rect_1_height).hash(state);
-                FloatOrd(*rect_2_width).hash(state);
-                FloatOrd(*rect_2_height).hash(state);
-            }
-            DeadZoneShape::Rect { width, height } => {
-                FloatOrd(*width).hash(state);
-                FloatOrd(*height).hash(state);
+                FloatOrd(*horizontal_width).hash(state);
+                FloatOrd(*vertical_width).hash(state);
             }
             DeadZoneShape::Ellipse { radius_x, radius_y } => {
                 FloatOrd(*radius_x).hash(state);
@@ -796,54 +792,59 @@ impl std::hash::Hash for DeadZoneShape {
 }
 
 impl DeadZoneShape {
-    /// Returns whether the (x, y) input is outside the deadzone.
-    pub fn input_outside_deadzone(&self, x: f32, y: f32) -> bool {
+    /// Computes the input value based on the deadzone.
+    pub fn deadzone_input_value(&self, x: f32, y: f32) -> Option<DualAxisData> {
+        let value = Vec2::new(x, y);
+
         match self {
             DeadZoneShape::Cross {
-                rect_1_width,
-                rect_1_height,
-                rect_2_width,
-                rect_2_height,
-            } => self.outside_cross(
-                x,
-                y,
-                *rect_1_width,
-                *rect_1_height,
-                *rect_2_width,
-                *rect_2_height,
-            ),
-            DeadZoneShape::Rect { width, height } => self.outside_rectangle(x, y, *width, *height),
+                horizontal_width,
+                vertical_width,
+            } => self.cross_deadzone_value(value, *horizontal_width, *vertical_width),
             DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                self.outside_ellipse(x, y, *radius_x, *radius_y)
+                self.ellipse_deadzone_value(value, *radius_x, *radius_y)
             }
         }
     }
 
-    /// Returns whether the (x, y) input is outside a cross.
-    fn outside_cross(
+    /// Computes the input value based on the cross deadzone.
+    fn cross_deadzone_value(
         &self,
-        x: f32,
-        y: f32,
-        rect_1_width: f32,
-        rect_1_height: f32,
-        rect_2_width: f32,
-        rect_2_height: f32,
-    ) -> bool {
-        self.outside_rectangle(x, y, rect_1_width, rect_1_height)
-            && self.outside_rectangle(x, y, rect_2_width, rect_2_height)
+        value: Vec2,
+        horizontal_width: f32,
+        vertical_width: f32,
+    ) -> Option<DualAxisData> {
+        let new_x = f32::from(value.x.abs() > vertical_width) * value.x;
+        let new_y = f32::from(value.y.abs() > horizontal_width) * value.y;
+        let new_value = Vec2::new(new_x, new_y);
+
+        if new_value == Vec2::ZERO {
+            None
+        } else {
+            let scaled_value =
+                Self::scale_value(new_value, Vec2::new(vertical_width, horizontal_width));
+            Some(DualAxisData::from_xy(scaled_value))
+        }
     }
 
-    /// Returns whether the (x, y) input is outside a rectangle.
-    fn outside_rectangle(&self, x: f32, y: f32, width: f32, height: f32) -> bool {
-        x >= width || x <= -width || y >= height || y <= -height
-    }
-
-    /// Returns whether the (x, y) input is outside an ellipse.
-    fn outside_ellipse(&self, x: f32, y: f32, radius_x: f32, radius_y: f32) -> bool {
-        if radius_x == 0.0 || radius_y == 0.0 {
-            return true;
+    /// Computes the input value based on the ellipse deadzone.
+    fn ellipse_deadzone_value(
+        &self,
+        value: Vec2,
+        radius_x: f32,
+        radius_y: f32,
+    ) -> Option<DualAxisData> {
+        let clamped_radius_x = radius_x.max(f32::EPSILON);
+        let clamped_radius_y = radius_y.max(f32::EPSILON);
+        if (value.x / clamped_radius_x).powi(2) + (value.y / clamped_radius_y).powi(2) < 1.0 {
+            return None;
         }
 
-        ((x / radius_x).powi(2) + (y / radius_y).powi(2)) >= 1.0
+        let scaled_value = Self::scale_value(value, Vec2::new(radius_x, radius_y));
+        Some(DualAxisData::from_xy(scaled_value))
+    }
+
+    fn scale_value(value: Vec2, deadzone_size: Vec2) -> Vec2 {
+        value.signum() * (value.abs() - deadzone_size).max(Vec2::ZERO) / (1.0 - deadzone_size)
     }
 }

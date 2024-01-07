@@ -8,6 +8,14 @@
 - Added `InputMap::Clear`.
 - Fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/430) related to incorrect axis data in `Chord` when not all buttons are pressed.
 
+### Enhancements
+
+- Improved deadzone handling for both `DualAxis` and `SingleAxis` deadzones 
+  - All deadzones now scale the input so that it is continuous.
+  - `DeadZoneShape::Cross` handles each axis seperately, making a per-axis "snapping" effect.
+  - An input that falls on the exact boundary of a deadzone is now considered inside it.
+
+
 ## Version 0.11.2
 
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/285) with mouse motion and mouse wheel events being improperly counted
