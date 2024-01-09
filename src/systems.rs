@@ -29,7 +29,7 @@ use crate::action_state::ActionDiffEvent;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
-use bevy_egui::EguiContexts;
+use bevy_egui::EguiContext;
 
 /// Advances actions timer.
 ///
@@ -79,7 +79,7 @@ pub fn update_action_state<A: Actionlike>(
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))] interactions: Query<
         &Interaction,
     >,
-    #[cfg(feature = "egui")] mut maybe_egui: EguiContexts,
+    #[cfg(feature = "egui")] mut maybe_egui: Query<(Entity, &'static mut EguiContext)>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     press_scheduler: Option<ResMut<PressScheduler<A>>>,
@@ -111,12 +111,12 @@ pub fn update_action_state<A: Actionlike>(
         (mouse_buttons, mouse_wheel)
     };
 
-    #[cfg(feature = "egui")]
-    let ctx = maybe_egui.ctx_mut();
-
     // If egui wants to own inputs, don't also apply them to the game state
     #[cfg(feature = "egui")]
-    let (keycodes, scan_codes) = if ctx.wants_keyboard_input() {
+    let (keycodes, scan_codes) = if maybe_egui
+        .iter_mut()
+        .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
+    {
         (None, None)
     } else {
         (keycodes, scan_codes)
@@ -125,7 +125,9 @@ pub fn update_action_state<A: Actionlike>(
     // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
     // so `is_pointer_over_area` is also needed.
     #[cfg(feature = "egui")]
-    let (mouse_buttons, mouse_wheel) = if ctx.is_pointer_over_area() || ctx.wants_pointer_input() {
+    let (mouse_buttons, mouse_wheel) = if maybe_egui.iter_mut().any(|(_, mut ctx)| {
+        ctx.get_mut().is_pointer_over_area() || ctx.get_mut().wants_pointer_input()
+    }) {
         (None, None)
     } else {
         (mouse_buttons, mouse_wheel)
