@@ -421,6 +421,13 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
+    /// Is this `action` currently consumed?
+    #[inline]
+    #[must_use]
+    pub fn consumed(&self, action: A) -> bool {
+        self.action_data[action.index()].consumed
+    }
+
     /// Is this `action` currently pressed?
     #[inline]
     #[must_use]
