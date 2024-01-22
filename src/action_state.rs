@@ -479,6 +479,13 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
+    /// Is this `action` currently consumed?
+    #[inline]
+    #[must_use]
+    pub fn consumed(&self, action: A) -> bool {
+        self.action_data[action.index()].consumed
+    }
+
     /// Is this `action` currently pressed?
     ///
     /// If the action is missing from the [`ActionState`], this will return `false`.
@@ -614,6 +621,34 @@ impl<A: Actionlike> ActionState<A> {
     /// Returns an iterator over the list of registered actions
     pub fn keys(&self) -> impl Iterator<Item = &A> {
         self.action_data_map.keys()
+    }
+
+    /// Applies an [`ActionDiff`] (usually received over the network) to the [`ActionState`].
+    ///
+    /// This lets you reconstruct an [`ActionState`] from a stream of [`ActionDiff`]s
+    pub fn apply_diff(&mut self, action_diff: &ActionDiff<A>) {
+        match action_diff {
+            ActionDiff::Pressed { action } => {
+                self.press(action.clone());
+                self.action_data_mut(action.clone()).value = 1.;
+            }
+            ActionDiff::Released { action } => {
+                self.release(action.clone());
+                let action_data = self.action_data_mut(action.clone());
+                action_data.value = 0.;
+                action_data.axis_pair = None;
+            }
+            ActionDiff::ValueChanged { action, value } => {
+                self.press(action.clone());
+                self.action_data_mut(action.clone()).value = *value;
+            }
+            ActionDiff::AxisPairChanged { action, axis_pair } => {
+                self.press(action.clone());
+                let action_data = self.action_data_mut(action.clone());
+                action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
+                action_data.value = axis_pair.length();
+            }
+        };
     }
 }
 
@@ -874,35 +909,41 @@ impl Timing {
     }
 }
 
+/// Will store an `ActionDiff` as well as what generated it (either an Entity, or nothing if the
+/// input actions are represented by a `Resource`)
+///
+/// These are typically accessed using the `Events<ActionDiffEvent>` resource.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Event)]
+pub struct ActionDiffEvent<A: Actionlike> {
+    /// If some: the entity that has the `ActionState<A>` component
+    /// If none: `ActionState<A>` is a Resource, not a component
+    pub owner: Option<Entity>,
+    /// The `ActionDiff` that was generated
+    pub action_diffs: Vec<ActionDiff<A>>,
+}
+
 /// Stores presses and releases of buttons without timing information
 ///
-/// These are typically accessed using the `Events<ActionDiff>` resource.
+/// These are typically accessed using the `Events<ActionDiffEvent>` resource.
 /// Uses a minimal storage format, in order to facilitate transport over the network.
 ///
-/// `ID` should be a component type that stores a unique stable identifier for the entity
-/// that stores the corresponding [`ActionState`].
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Event)]
-pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
+/// An `ActionState` can be fully reconstructed from a stream of `ActionDiff`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum ActionDiff<A: Actionlike> {
     /// The action was pressed
     Pressed {
         /// The value of the action
         action: A,
-        /// The stable identifier of the entity
-        id: ID,
     },
     /// The action was released
     Released {
         /// The value of the action
         action: A,
-        /// The stable identifier of the entity
-        id: ID,
     },
     /// The value of the action changed
     ValueChanged {
         /// The value of the action
         action: A,
-        /// The stable identifier of the entity
-        id: ID,
         /// The new value of the action
         value: f32,
     },
@@ -910,8 +951,6 @@ pub enum ActionDiff<A: Actionlike, ID: Eq + Clone + Component> {
     AxisPairChanged {
         /// The value of the action
         action: A,
-        /// The stable identifier of the entity
-        id: ID,
         /// The new value of the axis
         axis_pair: Vec2,
     },

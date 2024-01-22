@@ -4,7 +4,6 @@
 use crate::action_state::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
-    axislike::DualAxisData,
     clashing_inputs::ClashStrategy,
     input_map::InputMap,
     input_streams::InputStreams,
@@ -25,12 +24,12 @@ use bevy::{
     time::{Real, Time},
     utils::{HashMap, Instant},
 };
-use core::hash::Hash;
 
+use crate::action_state::ActionDiffEvent;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
-use bevy_egui::EguiContexts;
+use bevy_egui::EguiContext;
 
 /// Advances actions timer.
 ///
@@ -80,7 +79,7 @@ pub fn update_action_state<A: Actionlike>(
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))] interactions: Query<
         &Interaction,
     >,
-    #[cfg(feature = "egui")] mut maybe_egui: EguiContexts,
+    #[cfg(feature = "egui")] mut maybe_egui: Query<(Entity, &'static mut EguiContext)>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     press_scheduler: Option<ResMut<PressScheduler<A>>>,
@@ -112,12 +111,12 @@ pub fn update_action_state<A: Actionlike>(
         (mouse_buttons, mouse_wheel)
     };
 
-    #[cfg(feature = "egui")]
-    let ctx = maybe_egui.ctx_mut();
-
     // If egui wants to own inputs, don't also apply them to the game state
     #[cfg(feature = "egui")]
-    let (keycodes, scan_codes) = if ctx.wants_keyboard_input() {
+    let (keycodes, scan_codes) = if maybe_egui
+        .iter_mut()
+        .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
+    {
         (None, None)
     } else {
         (keycodes, scan_codes)
@@ -126,7 +125,9 @@ pub fn update_action_state<A: Actionlike>(
     // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
     // so `is_pointer_over_area` is also needed.
     #[cfg(feature = "egui")]
-    let (mouse_buttons, mouse_wheel) = if ctx.is_pointer_over_area() || ctx.wants_pointer_input() {
+    let (mouse_buttons, mouse_wheel) = if maybe_egui.iter_mut().any(|(_, mut ctx)| {
+        ctx.get_mut().is_pointer_over_area() || ctx.get_mut().wants_pointer_input()
+    }) {
         (None, None)
     } else {
         (mouse_buttons, mouse_wheel)
@@ -185,23 +186,30 @@ pub fn update_action_state_from_interaction<A: Actionlike>(
 
 /// Generates an [`Events`] stream of [`ActionDiff`] from [`ActionState`]
 ///
-/// The `ID` generic type should be a stable entity identifier,
-/// suitable to be sent across a network.
-///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
-pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
-    action_state_query: Query<(&ActionState<A>, &ID)>,
-    mut action_diffs: EventWriter<ActionDiff<A, ID>>,
-    mut previous_values: Local<HashMap<A, HashMap<ID, f32>>>,
-    mut previous_axis_pairs: Local<HashMap<A, HashMap<ID, Vec2>>>,
+pub fn generate_action_diffs<A: Actionlike>(
+    action_state: Option<ResMut<ActionState<A>>>,
+    action_state_query: Query<(Entity, &ActionState<A>)>,
+    mut action_diffs: EventWriter<ActionDiffEvent<A>>,
+    mut previous_values: Local<HashMap<A, HashMap<Option<Entity>, f32>>>,
+    mut previous_axis_pairs: Local<HashMap<A, HashMap<Option<Entity>, Vec2>>>,
 ) {
-    for (action_state, id) in action_state_query.iter() {
+    // we use None to represent the global ActionState
+    let action_state_iter = action_state_query
+        .iter()
+        .map(|(entity, action_state)| (Some(entity), action_state))
+        .chain(
+            action_state
+                .as_ref()
+                .map(|action_state| (None, action_state.as_ref())),
+        );
+    for (maybe_entity, action_state) in action_state_iter {
+        let mut diffs = vec![];
         for action in action_state.get_just_pressed() {
             match action_state.action_data(action.clone()).axis_pair {
                 Some(axis_pair) => {
-                    action_diffs.send(ActionDiff::AxisPairChanged {
+                    diffs.push(ActionDiff::AxisPairChanged {
                         action: action.clone(),
-                        id: id.clone(),
                         axis_pair: axis_pair.into(),
                     });
                     previous_axis_pairs
@@ -209,19 +217,17 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
                         .from_key(&action)
                         .or_insert_with(|| (action.clone(), HashMap::default()))
                         .1
-                        .insert(id.clone(), axis_pair.xy());
+                        .insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
                     let value = action_state.value(action.clone());
-                    action_diffs.send(if value == 1. {
+                    diffs.push(if value == 1. {
                         ActionDiff::Pressed {
                             action: action.clone(),
-                            id: id.clone(),
                         }
                     } else {
                         ActionDiff::ValueChanged {
                             action: action.clone(),
-                            id: id.clone(),
                             value,
                         }
                     });
@@ -230,7 +236,7 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
                         .from_key(&action)
                         .or_insert_with(|| (action.clone(), HashMap::default()))
                         .1
-                        .insert(id.clone(), value);
+                        .insert(maybe_entity, value);
                 }
             }
         }
@@ -242,112 +248,50 @@ pub fn generate_action_diffs<A: Actionlike, ID: Eq + Clone + Component + Hash>(
                 Some(axis_pair) => {
                     let previous_axis_pairs = previous_axis_pairs.get_mut(&action).unwrap();
 
-                    if let Some(previous_axis_pair) = previous_axis_pairs.get(&id.clone()) {
+                    if let Some(previous_axis_pair) = previous_axis_pairs.get(&maybe_entity) {
                         if *previous_axis_pair == axis_pair.xy() {
                             continue;
                         }
                     }
-                    action_diffs.send(ActionDiff::AxisPairChanged {
+                    diffs.push(ActionDiff::AxisPairChanged {
                         action: action.clone(),
-                        id: id.clone(),
                         axis_pair: axis_pair.into(),
                     });
-                    previous_axis_pairs.insert(id.clone(), axis_pair.xy());
+                    previous_axis_pairs.insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
                     let value = action_state.value(action.clone());
                     let previous_values = previous_values.get_mut(&action).unwrap();
 
-                    if let Some(previous_value) = previous_values.get(&id.clone()) {
+                    if let Some(previous_value) = previous_values.get(&maybe_entity) {
                         if *previous_value == value {
                             continue;
                         }
                     }
-                    action_diffs.send(ActionDiff::ValueChanged {
+                    diffs.push(ActionDiff::ValueChanged {
                         action: action.clone(),
-                        id: id.clone(),
                         value,
                     });
-                    previous_values.insert(id.clone(), value);
+                    previous_values.insert(maybe_entity, value);
                 }
             }
         }
         for action in action_state.get_just_released() {
-            action_diffs.send(ActionDiff::Released {
+            diffs.push(ActionDiff::Released {
                 action: action.clone(),
-                id: id.clone(),
             });
             if let Some(previous_axes) = previous_axis_pairs.get_mut(&action) {
-                previous_axes.remove(&id.clone());
+                previous_axes.remove(&maybe_entity);
             }
             if let Some(previous_values) = previous_values.get_mut(&action) {
-                previous_values.remove(&id.clone());
+                previous_values.remove(&maybe_entity);
             }
         }
-    }
-}
-
-/// Generates an [`Events`] stream of [`ActionDiff`] from [`ActionState`]
-///
-/// The `ID` generic type should be a stable entity identifier,
-/// suitable to be sent across a network.
-///
-/// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
-pub fn process_action_diffs<A: Actionlike, ID: Eq + Component + Clone>(
-    mut action_state_query: Query<(&mut ActionState<A>, &ID)>,
-    mut action_diffs: EventReader<ActionDiff<A, ID>>,
-) {
-    // PERF: This would probably be faster with an index, but is much more fussy
-    for action_diff in action_diffs.read() {
-        for (mut action_state, id) in action_state_query.iter_mut() {
-            match action_diff {
-                ActionDiff::Pressed {
-                    action,
-                    id: event_id,
-                } => {
-                    if event_id == id {
-                        action_state.press(action.clone());
-                        action_state.action_data_mut(action.clone()).value = 1.;
-                        continue;
-                    }
-                }
-                ActionDiff::Released {
-                    action,
-                    id: event_id,
-                } => {
-                    if event_id == id {
-                        action_state.release(action.clone());
-                        let action_data = action_state.action_data_mut(action.clone());
-                        action_data.value = 0.;
-                        action_data.axis_pair = None;
-                        continue;
-                    }
-                }
-                ActionDiff::ValueChanged {
-                    action,
-                    id: event_id,
-                    value,
-                } => {
-                    if event_id == id {
-                        action_state.press(action.clone());
-                        action_state.action_data_mut(action.clone()).value = *value;
-                        continue;
-                    }
-                }
-                ActionDiff::AxisPairChanged {
-                    action,
-                    id: event_id,
-                    axis_pair,
-                } => {
-                    if event_id == id {
-                        action_state.press(action.clone());
-                        let action_data = action_state.action_data_mut(action.clone());
-                        action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
-                        action_data.value = axis_pair.length();
-                        continue;
-                    }
-                }
-            };
+        if !diffs.is_empty() {
+            action_diffs.send(ActionDiffEvent {
+                owner: maybe_entity,
+                action_diffs: diffs,
+            });
         }
     }
 }

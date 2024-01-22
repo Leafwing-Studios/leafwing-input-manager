@@ -218,7 +218,22 @@ fn game_pad_single_axis() {
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(&AxislikeTestAction::Y));
+    assert!(!action_state.pressed(AxislikeTestAction::Y));
+
+    // Scaled value
+    let input = SingleAxis {
+        axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
+        value: Some(0.2),
+        positive_low: 0.1,
+        negative_low: 0.1,
+        inverted: false,
+        sensitivity: 1.0,
+    };
+    app.send_input(input);
+    app.update();
+    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    assert!(action_state.pressed(AxislikeTestAction::X));
+    assert!(action_state.value(AxislikeTestAction::X) == 0.11111112);
 }
 
 #[test]
@@ -302,20 +317,18 @@ fn game_pad_dual_axis_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
-            rect_1_width: 0.1,
-            rect_1_height: 0.05,
-            rect_2_width: 0.05,
-            rect_2_height: 0.1,
+            horizontal_width: 0.1,
+            vertical_width: 0.1,
         }),
         AxislikeTestAction::XY,
     )]));
 
-    // Test that an input inside the cross deadzone is filtered out
+    // Test that an input inside the cross deadzone is filtered out.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
         0.04,
-        0.04,
+        0.1,
     ));
 
     app.update();
@@ -328,70 +341,40 @@ fn game_pad_dual_axis_cross() {
         DualAxisData::new(0.0, 0.0)
     );
 
-    // Test that an input outside the cross deadzone is not filtered out
+    // Test that an input outside the cross deadzone is not filtered out.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
-        0.1,
-        0.05,
+        1.0,
+        0.2,
     ));
 
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.111803405);
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 1.0061539);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.1, 0.05)
-    );
-}
-
-#[test]
-fn game_pad_dual_axis_rect() {
-    let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        DualAxis::left_stick().with_deadzone(DeadZoneShape::Rect {
-            width: 0.1,
-            height: 0.1,
-        }),
-        AxislikeTestAction::XY,
-    )]));
-
-    // Test that an input inside the rect deadzone is filtered out, assuming values of 0.1
-    app.send_input(DualAxis::from_value(
-        GamepadAxisType::LeftStickX,
-        GamepadAxisType::LeftStickY,
-        0.05,
-        0.05,
-    ));
-
-    app.update();
-
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.released(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
-    assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(1.0, 0.11111112)
     );
 
-    // Test that an input outside the rect deadzone is not filtered out, assuming values of 0.1
+    // Test that each axis of the cross deadzone is filtered independently.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
-        0.1,
+        0.8,
         0.1,
     ));
 
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.14142136);
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.7777778);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.1, 0.1)
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(0.7777778, 0.0)
     );
 }
 
@@ -428,35 +411,33 @@ fn game_pad_dual_axis_ellipse() {
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
-        0.1,
+        0.2,
         0.0,
     ));
 
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.1);
+    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.11111112);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.1, 0.0)
+        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        DualAxisData::new(0.11111112, 0.0)
     );
 }
 
 #[test]
-fn test_zero_volume_cross() {
+fn test_zero_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
-            rect_1_width: 0.0,
-            rect_1_height: 0.0,
-            rect_2_width: 0.0,
-            rect_2_height: 0.0,
+            horizontal_width: 0.0,
+            vertical_width: 0.0,
         }),
         AxislikeTestAction::XY,
     )]));
 
-    // Test any input, even (0, 0), will count as input
+    // Test that an input of zero will be `None` even with no deadzone.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -467,8 +448,8 @@ fn test_zero_volume_cross() {
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
+    assert!(action_state.released(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(0.0, 0.0)
@@ -476,37 +457,7 @@ fn test_zero_volume_cross() {
 }
 
 #[test]
-fn test_zero_volume_rect() {
-    let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        DualAxis::left_stick().with_deadzone(DeadZoneShape::Rect {
-            width: 0.0,
-            height: 0.0,
-        }),
-        AxislikeTestAction::XY,
-    )]));
-
-    // Test any input, even (0, 0), will count as input
-    app.send_input(DualAxis::from_value(
-        GamepadAxisType::LeftStickX,
-        GamepadAxisType::LeftStickY,
-        0.0,
-        0.0,
-    ));
-
-    app.update();
-
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
-    assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
-    );
-}
-
-#[test]
-fn test_zero_volume_ellipse() {
+fn test_zero_ellipse() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Ellipse {
@@ -516,7 +467,7 @@ fn test_zero_volume_ellipse() {
         AxislikeTestAction::XY,
     )]));
 
-    // Test any input, even (0, 0), will count as input
+    // Test that an input of zero will be `None` even with no deadzone.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -527,8 +478,8 @@ fn test_zero_volume_ellipse() {
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
+    assert!(action_state.released(AxislikeTestAction::XY));
+    assert_eq!(action_state.value(AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(0.0, 0.0)

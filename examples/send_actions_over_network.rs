@@ -9,9 +9,9 @@
 use bevy::ecs::event::{Events, ManualEventReader};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::action_state::ActionDiff;
+use leafwing_input_manager::action_state::ActionDiffEvent;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::systems::{generate_action_diffs, process_action_diffs};
+use leafwing_input_manager::systems::generate_action_diffs;
 
 use std::fmt::Debug;
 
@@ -27,6 +27,25 @@ enum FpsAction {
 #[derive(Component, Clone, PartialEq, Eq, Hash, Debug)]
 struct StableId(u64);
 
+/// Processes an [`Events`] stream of [`ActionDiff`] to update an [`ActionState`]
+///
+/// In a real scenario, you would have to map the entities between the server and client world.
+/// In this case, we will just use the fact that there is only a single entity.
+fn process_action_diffs<A: Actionlike>(
+    mut action_state_query: Query<&mut ActionState<A>>,
+    mut action_diff_events: EventReader<ActionDiffEvent<A>>,
+) {
+    for action_diff_event in action_diff_events.read() {
+        if action_diff_event.owner.is_some() {
+            let mut action_state = action_state_query.get_single_mut().unwrap();
+            action_diff_event
+                .action_diffs
+                .iter()
+                .for_each(|diff| action_state.apply_diff(diff));
+        }
+    }
+}
+
 fn main() {
     // In a real use case, these apps would be running on separate devices.
     let mut client_app = App::new();
@@ -36,17 +55,17 @@ fn main() {
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<FpsAction>::default())
         // Creates an event stream of `ActionDiffs` to send to the server
-        .add_systems(PostUpdate, generate_action_diffs::<FpsAction, StableId>)
-        .add_event::<ActionDiff<FpsAction, StableId>>()
+        .add_systems(PostUpdate, generate_action_diffs::<FpsAction>)
+        .add_event::<ActionDiffEvent<FpsAction>>()
         .add_systems(Startup, spawn_player);
 
     let mut server_app = App::new();
     server_app
         .add_plugins(MinimalPlugins)
         .add_plugins(InputManagerPlugin::<FpsAction>::server())
-        .add_event::<ActionDiff<FpsAction, StableId>>()
+        .add_event::<ActionDiffEvent<FpsAction>>()
         // Reads in the event stream of `ActionDiffs` to update the `ActionState`
-        .add_systems(PreUpdate, process_action_diffs::<FpsAction, StableId>)
+        .add_systems(PreUpdate, process_action_diffs::<FpsAction>)
         // Typically, the rest of this information would synchronized as well
         .add_systems(Startup, spawn_player);
 
@@ -67,7 +86,7 @@ fn main() {
 
     // These events are transferred to the server
     let event_reader =
-        send_events::<ActionDiff<FpsAction, StableId>>(&client_app, &mut server_app, None);
+        send_events::<ActionDiffEvent<FpsAction>>(&client_app, &mut server_app, None);
 
     // The server processes the event stream
     server_app.update();
@@ -88,11 +107,8 @@ fn main() {
 
     // Sending over the new `ActionDiff` event stream,
     // we can see that the actions are now released on the server too
-    let _event_reader = send_events::<ActionDiff<FpsAction, StableId>>(
-        &client_app,
-        &mut server_app,
-        Some(event_reader),
-    );
+    let _event_reader =
+        send_events::<ActionDiffEvent<FpsAction>>(&client_app, &mut server_app, Some(event_reader));
 
     server_app.update();
 
@@ -116,9 +132,6 @@ fn spawn_player(mut commands: Commands) {
                 .build(),
             ..default()
         })
-        // This identifier must match on both the client and server
-        // and be unique between players
-        .insert(StableId(76))
         .insert(Player);
 }
 

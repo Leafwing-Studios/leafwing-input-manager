@@ -29,7 +29,7 @@ use bevy::ui::UiSystem;
 /// Each variant represents a "virtual button" whose state is stored in an [`ActionState`] struct.
 ///
 /// Each [`InputManagerBundle`](crate::InputManagerBundle) contains:
-///  - an [`InputMap`](crate::input_map::InputMap) component, which stores an entity-specific mapping between the assorted input streams and an internal representation of "actions"
+///  - an [`InputMap`] component, which stores an entity-specific mapping between the assorted input streams and an internal representation of "actions"
 ///  - an [`ActionState`] component, which stores the current input state for that entity in an source-agnostic fashion
 ///
 /// If you have more than one distinct type of action (e.g. menu actions, camera actions and player actions), consider creating multiple `Actionlike` enums
@@ -185,7 +185,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
     }
 }
 
-/// Controls whether or not the [`ActionState`] / [`InputMap`](crate::input_map::InputMap) pairs of type `A` are active
+/// Controls whether or not the [`ActionState`] / [`InputMap`] pairs of type `A` are active
 ///
 /// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
 #[derive(Resource)]

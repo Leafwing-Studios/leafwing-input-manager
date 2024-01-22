@@ -103,11 +103,12 @@ impl<A: Actionlike> InputMap<A> {
     pub(crate) fn possible_clashes(&self) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
-        for action_a in self.keys() {
-            for action_b in self.keys() {
-                if let Some(clash) = self.possible_clash(action_a, action_b) {
-                    clashes.push(clash);
-                }
+        for action_pair in A::variants().combinations(2) {
+            let action_a = action_pair.first().unwrap().clone();
+            let action_b = action_pair.get(1).unwrap().clone();
+
+            if let Some(clash) = self.possible_clash(action_a, action_b) {
+                clashes.push(clash);
             }
         }
         clashes
