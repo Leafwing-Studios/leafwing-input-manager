@@ -482,8 +482,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Is this `action` currently consumed?
     #[inline]
     #[must_use]
-    pub fn consumed(&self, action: A) -> bool {
-        self.action_data[action.index()].consumed
+    pub fn consumed(&self, action: &A) -> bool {
+        self.action_data(action).consumed
     }
 
     /// Is this `action` currently pressed?
@@ -629,22 +629,22 @@ impl<A: Actionlike> ActionState<A> {
     pub fn apply_diff(&mut self, action_diff: &ActionDiff<A>) {
         match action_diff {
             ActionDiff::Pressed { action } => {
-                self.press(action.clone());
-                self.action_data_mut(action.clone()).value = 1.;
+                self.press(action);
+                self.action_data_mut(action).value = 1.;
             }
             ActionDiff::Released { action } => {
-                self.release(action.clone());
-                let action_data = self.action_data_mut(action.clone());
+                self.release(action);
+                let action_data = self.action_data_mut(action);
                 action_data.value = 0.;
                 action_data.axis_pair = None;
             }
             ActionDiff::ValueChanged { action, value } => {
-                self.press(action.clone());
-                self.action_data_mut(action.clone()).value = *value;
+                self.press(action);
+                self.action_data_mut(action).value = *value;
             }
             ActionDiff::AxisPairChanged { action, axis_pair } => {
-                self.press(action.clone());
-                let action_data = self.action_data_mut(action.clone());
+                self.press(action);
+                let action_data = self.action_data_mut(action);
                 action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
                 action_data.value = axis_pair.length();
             }
