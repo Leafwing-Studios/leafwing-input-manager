@@ -422,8 +422,8 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Returns a reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get(&self, action: A) -> Option<&Vec<UserInput>> {
-        self.map.get(&action)
+    pub fn get(&self, action: &A) -> Option<&Vec<UserInput>> {
+        self.map.get(action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`

@@ -7,7 +7,6 @@ use crate::axislike::{
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
-use crate::dynamic_action::DynAction;
 use crate::input_map::InputMap;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
@@ -178,7 +177,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<ButtonState>()
             .register_type::<MouseWheelDirection>()
             .register_type::<MouseMotionDirection>()
-            .register_type::<DynAction>()
             // Resources
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();

@@ -206,7 +206,11 @@ pub fn generate_action_diffs<A: Actionlike>(
     for (maybe_entity, action_state) in action_state_iter {
         let mut diffs = vec![];
         for action in action_state.get_just_pressed() {
-            match action_state.action_data(action.clone()).axis_pair {
+            let Some(action_data) = action_state.action_data(&action) else {
+                continue;
+            };
+
+            match action_data.axis_pair {
                 Some(axis_pair) => {
                     diffs.push(ActionDiff::AxisPairChanged {
                         action: action.clone(),
@@ -220,7 +224,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                         .insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
-                    let value = action_state.value(action.clone());
+                    let value = action_state.value(&action);
                     diffs.push(if value == 1. {
                         ActionDiff::Pressed {
                             action: action.clone(),
@@ -241,10 +245,14 @@ pub fn generate_action_diffs<A: Actionlike>(
             }
         }
         for action in action_state.get_pressed() {
-            if action_state.just_pressed(action.clone()) {
+            if action_state.just_pressed(&action) {
                 continue;
             }
-            match action_state.action_data(action.clone()).axis_pair {
+            let Some(action_data) = action_state.action_data(&action) else {
+                continue;
+            };
+
+            match action_data.axis_pair {
                 Some(axis_pair) => {
                     let previous_axis_pairs = previous_axis_pairs.get_mut(&action).unwrap();
 
@@ -260,7 +268,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                     previous_axis_pairs.insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
-                    let value = action_state.value(action.clone());
+                    let value = action_state.value(&action);
                     let previous_values = previous_values.get_mut(&action).unwrap();
 
                     if let Some(previous_value) = previous_values.get(&maybe_entity) {

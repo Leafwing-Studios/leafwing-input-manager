@@ -82,8 +82,9 @@ pub mod prelude {
 /// }
 /// ```
 pub trait Actionlike:
-    Eq + Hash + Send + Sync + Clone + Hash + Reflect + FromReflect + 'static
-{ }
+    Eq + Hash + Send + Sync + Clone + Hash + Reflect + FromReflect + TypePath + 'static
+{
+}
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
 ///

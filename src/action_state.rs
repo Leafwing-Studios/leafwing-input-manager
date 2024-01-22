@@ -483,7 +483,10 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn consumed(&self, action: &A) -> bool {
-        self.action_data(action).consumed
+        match self.action_data(action) {
+            Some(data) => data.consumed,
+            None => false,
+        }
     }
 
     /// Is this `action` currently pressed?
@@ -630,23 +633,29 @@ impl<A: Actionlike> ActionState<A> {
         match action_diff {
             ActionDiff::Pressed { action } => {
                 self.press(action);
-                self.action_data_mut(action).value = 1.;
+                if let Some(action_data) = self.action_data_mut(action) {
+                    action_data.value = 1.;
+                };
             }
             ActionDiff::Released { action } => {
                 self.release(action);
-                let action_data = self.action_data_mut(action);
-                action_data.value = 0.;
-                action_data.axis_pair = None;
+                if let Some(action_data) = self.action_data_mut(action) {
+                    action_data.value = 0.;
+                    action_data.axis_pair = None;
+                };
             }
             ActionDiff::ValueChanged { action, value } => {
                 self.press(action);
-                self.action_data_mut(action).value = *value;
+                if let Some(action_data) = self.action_data_mut(action) {
+                    action_data.value = *value;
+                };
             }
             ActionDiff::AxisPairChanged { action, axis_pair } => {
                 self.press(action);
-                let action_data = self.action_data_mut(action);
-                action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
-                action_data.value = axis_pair.length();
+                if let Some(action_data) = self.action_data_mut(action) {
+                    action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
+                    action_data.value = axis_pair.length();
+                };
             }
         };
     }
