@@ -59,29 +59,29 @@ pub struct ActionData {
 ///
 /// // Typically, this is done automatically by the `InputManagerPlugin` from user inputs
 /// // using the `ActionState::update` method
-/// action_state.press(&action::Jump);
+/// action_state.press(&Action::Jump);
 ///
-/// assert!(action_state.pressed(&action::Jump));
-/// assert!(action_state.just_pressed(&action::Jump));
-/// assert!(action_state.released(Action::Left));
+/// assert!(action_state.pressed(&Action::Jump));
+/// assert!(action_state.just_pressed(&Action::Jump));
+/// assert!(action_state.released(&Action::Left));
 ///
 /// // Resets just_pressed and just_released
 /// let t0 = Instant::now();
 /// let t1 = Instant::now();
 ///
 ///  action_state.tick(t1, t0);
-/// assert!(action_state.pressed(&action::Jump));
-/// assert!(!action_state.just_pressed(&action::Jump));
+/// assert!(action_state.pressed(&Action::Jump));
+/// assert!(!action_state.just_pressed(&Action::Jump));
 ///
-/// action_state.release(&action::Jump);
-/// assert!(!action_state.pressed(&action::Jump));
-/// assert!(action_state.released(Action::Jump));
-/// assert!(action_state.just_released(Action::Jump));
+/// action_state.release(&Action::Jump);
+/// assert!(!action_state.pressed(&Action::Jump));
+/// assert!(action_state.released(&Action::Jump));
+/// assert!(action_state.just_released(&Action::Jump));
 ///
 /// let t2 = Instant::now();
 /// action_state.tick(t2, t1);
-/// assert!(action_state.released(Action::Jump));
-/// assert!(!action_state.just_released(Action::Jump));
+/// assert!(action_state.released(&Action::Jump));
+/// assert!(!action_state.just_released(&Action::Jump));
 /// ```
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
@@ -137,26 +137,26 @@ impl<A: Actionlike> ActionState<A> {
     /// let mut action_state = ActionState::<Action>::default();
     ///
     /// // Actions start released
-    /// assert!(action_state.released(Action::Jump));
-    /// assert!(!action_state.just_released(Action::Run));
+    /// assert!(action_state.released(&Action::Jump));
+    /// assert!(!action_state.just_released(&Action::Run));
     ///
     /// // Ticking time moves causes buttons that were just released to no longer be just released
     /// let t0 = Instant::now();
     /// let t1 = Instant::now();
     ///
     /// action_state.tick(t1, t0);
-    /// assert!(action_state.released(Action::Jump));
-    /// assert!(!action_state.just_released(Action::Jump));
+    /// assert!(action_state.released(&Action::Jump));
+    /// assert!(!action_state.just_released(&Action::Jump));
     ///
-    /// action_state.press(&action::Jump);
-    /// assert!(action_state.just_pressed(&action::Jump));
+    /// action_state.press(&Action::Jump);
+    /// assert!(action_state.just_pressed(&Action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just pressed to no longer be just pressed
     /// let t2 = Instant::now();
     ///
     /// action_state.tick(t2, t1);
-    /// assert!(action_state.pressed(&action::Jump));
-    /// assert!(!action_state.just_pressed(&action::Jump));
+    /// assert!(action_state.pressed(&Action::Jump));
+    /// assert!(!action_state.just_pressed(&Action::Jump));
     /// ```
     pub fn tick(&mut self, current_instant: Instant, previous_instant: Instant) {
         // Advanced the ButtonState
@@ -187,7 +187,7 @@ impl<A: Actionlike> ActionState<A> {
     ///     Jump,
     /// }
     /// let mut action_state = ActionState::<Action>::default();
-    /// let run_data = action_state.action_data(Action::Run);
+    /// let run_data = action_state.action_data(&Action::Run);
     ///
     /// dbg!(run_data);
     /// ```
@@ -213,7 +213,7 @@ impl<A: Actionlike> ActionState<A> {
     ///     Jump,
     /// }
     /// let mut action_state = ActionState::<Action>::default();
-    /// let mut run_data = action_state.action_data_mut(Action::Run);
+    /// let mut run_data = action_state.action_data_mut(&Action::Run);
     /// run_data.axis_pair = None;
     ///
     /// dbg!(run_data);
@@ -311,11 +311,11 @@ impl<A: Actionlike> ActionState<A> {
     /// let mut action_state = ActionState::<Action>::default();
     ///
     /// // Extract the state from the ability slot
-    /// let slot_1_state = ability_slot_state.action_data(AbilitySlot::Slot1);
+    /// let slot_1_state = ability_slot_state.action_data(&AbilitySlot::Slot1);
     ///
     /// // And transfer it to the actual ability that we care about
     /// // without losing timing information
-    /// action_state.set_action_data(Action::Run, slot_1_state.clone());
+    /// action_state.set_action_data(&Action::Run, slot_1_state.clone());
     /// ```
     #[inline]
     pub fn set_action_data(&mut self, action: &A, data: ActionData) {
@@ -381,21 +381,21 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// let mut action_state = ActionState::<Action>::default();
     ///
-    /// action_state.press(&action::Eat);
-    /// assert!(action_state.pressed(&action::Eat));
+    /// action_state.press(&Action::Eat);
+    /// assert!(action_state.pressed(&Action::Eat));
     ///
     /// // Consuming actions releases them
-    /// action_state.consume(Action::Eat);
-    /// assert!(action_state.released(Action::Eat));
+    /// action_state.consume(&Action::Eat);
+    /// assert!(action_state.released(&Action::Eat));
     ///
     /// // Doesn't work, as the action was consumed
-    /// action_state.press(&action::Eat);
-    /// assert!(action_state.released(Action::Eat));
+    /// action_state.press(&Action::Eat);
+    /// assert!(action_state.released(&Action::Eat));
     ///
     /// // Releasing consumed actions allows them to be pressed again
-    /// action_state.release(&action::Eat);
-    /// action_state.press(&action::Eat);
-    /// assert!(action_state.pressed(&action::Eat));
+    /// action_state.release(&Action::Eat);
+    /// action_state.press(&Action::Eat);
+    /// assert!(action_state.pressed(&Action::Eat));
     /// ```
     #[inline]
     pub fn consume(&mut self, action: &A) {

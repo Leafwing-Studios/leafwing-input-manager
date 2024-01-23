@@ -67,7 +67,7 @@ input_map.insert(MouseButton::Left, Action::Run)
            Action::Run);
 
 // Removal
-input_map.clear_action(Action::Hide);
+input_map.clear_action(&Action::Hide);
 ```
 **/
 #[derive(
