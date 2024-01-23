@@ -17,6 +17,8 @@
 
 ### Bugs
 
+- registered types in the reflection system
+- added `InputMap::clear`
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/430) related to incorrect axis data in `Chord` when not all buttons are pressed.
 
 ### Code quality
