@@ -51,20 +51,21 @@ let mut input_map = InputMap::new([
    // Note that the type of your iterators must be homogenous;
    // you can use `InputKind` or `UserInput` if needed
    // as unifying types
-  (GamepadButtonType::South, Action::Run),
-  (GamepadButtonType::LeftTrigger, Action::Hide),
-  (GamepadButtonType::RightTrigger, Action::Hide),
+  (Action::Run, GamepadButtonType::South),
+  (Action::Hide, GamepadButtonType::LeftTrigger),
+  (Action::Hide, GamepadButtonType::RightTrigger),
 ]);
 
 // Insertion
-input_map.insert(MouseButton::Left, Action::Run)
-.insert(KeyCode::ShiftLeft, Action::Run)
+input_map.insert(Action::Run, MouseButton::Left)
+.insert(Action::Run, KeyCode::ShiftLeft)
 // Chords
-.insert_modified(Modifier::Control, KeyCode::R, Action::Run)
-.insert_chord([InputKind::Keyboard(KeyCode::H),
+.insert_modified(Action::Run, Modifier::Control, KeyCode::R)
+.insert_chord(Action::Run,
+              [InputKind::Keyboard(KeyCode::H),
                InputKind::GamepadButton(GamepadButtonType::South),
                InputKind::Mouse(MouseButton::Middle)],
-           Action::Run);
+           );
 
 // Removal
 input_map.clear_action(&Action::Hide);
@@ -108,8 +109,8 @@ impl<A: Actionlike> InputMap<A> {
     /// }
     ///
     /// let input_map = InputMap::new([
-    ///     (KeyCode::ShiftLeft, Action::Run),
-    ///     (KeyCode::Space, Action::Jump),
+    ///     (Action::Run, KeyCode::ShiftLeft),
+    ///     (Action::Jump, KeyCode::Space),
     /// ]);
     ///
     /// assert_eq!(input_map.len(), 2);
@@ -146,7 +147,7 @@ impl<A: Actionlike> InputMap<A> {
     /// }
     ///
     /// let input_map: InputMap<Action> = InputMap::default()
-    ///   .insert(KeyCode::Space, Action::Jump).build();
+    ///   .insert(Action::Jump, KeyCode::Space).build();
     /// ```
     #[inline]
     #[must_use]
