@@ -99,6 +99,8 @@ impl<A: Actionlike> ActionState<A> {
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`](bevy::input::Input) resources.
     pub fn update(&mut self, action_data: Vec<ActionData>) {
+        assert_eq!(action_data.len(), A::n_variants());
+
         for (i, action) in A::variants().enumerate() {
             match action_data[i].state {
                 ButtonState::JustPressed => self.press(&action),
