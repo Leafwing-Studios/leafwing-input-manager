@@ -482,7 +482,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
 impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
     /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
     fn from_iter<T: IntoIterator<Item = (A, UserInput)>>(iter: T) -> Self {
-        InputMap::new(iter.into_iter())
+        InputMap::new(iter)
     }
 }
 
