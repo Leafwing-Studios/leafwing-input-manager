@@ -37,8 +37,8 @@ fn test_app() -> App {
 fn raw_mouse_motion_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        SingleAxis::from_value(AxisType::MouseMotion(MouseMotionAxisType::Y), 1.0),
         AxislikeTestAction::X,
+        SingleAxis::from_value(AxisType::MouseMotion(MouseMotionAxisType::Y), 1.0),
     )]));
 
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
@@ -118,10 +118,10 @@ fn mouse_motion_dual_axis_mocking() {
 fn mouse_motion_buttonlike() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (MouseMotionDirection::Up, ButtonlikeTestAction::Up),
-        (MouseMotionDirection::Down, ButtonlikeTestAction::Down),
-        (MouseMotionDirection::Left, ButtonlikeTestAction::Left),
-        (MouseMotionDirection::Right, ButtonlikeTestAction::Right),
+        (ButtonlikeTestAction::Up, MouseMotionDirection::Up),
+        (ButtonlikeTestAction::Down, MouseMotionDirection::Down),
+        (ButtonlikeTestAction::Left, MouseMotionDirection::Left),
+        (ButtonlikeTestAction::Right, MouseMotionDirection::Right),
     ]));
 
     for action in ButtonlikeTestAction::variants() {
@@ -141,10 +141,10 @@ fn mouse_motion_buttonlike() {
 fn mouse_motion_buttonlike_cancels() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (MouseMotionDirection::Up, ButtonlikeTestAction::Up),
-        (MouseMotionDirection::Down, ButtonlikeTestAction::Down),
-        (MouseMotionDirection::Left, ButtonlikeTestAction::Left),
-        (MouseMotionDirection::Right, ButtonlikeTestAction::Right),
+        (ButtonlikeTestAction::Up, MouseMotionDirection::Up),
+        (ButtonlikeTestAction::Down, MouseMotionDirection::Down),
+        (ButtonlikeTestAction::Left, MouseMotionDirection::Left),
+        (ButtonlikeTestAction::Right, MouseMotionDirection::Right),
     ]));
 
     app.send_input(MouseMotionDirection::Up);
@@ -163,8 +163,8 @@ fn mouse_motion_buttonlike_cancels() {
 fn mouse_motion_single_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (SingleAxis::mouse_motion_x(), AxislikeTestAction::X),
-        (SingleAxis::mouse_motion_y(), AxislikeTestAction::Y),
+        (AxislikeTestAction::X, SingleAxis::mouse_motion_x()),
+        (AxislikeTestAction::Y, SingleAxis::mouse_motion_y()),
     ]));
 
     // +X
@@ -257,8 +257,8 @@ fn mouse_motion_single_axis() {
 fn mouse_motion_dual_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        DualAxis::mouse_motion(),
         AxislikeTestAction::XY,
+        DualAxis::mouse_motion(),
     )]));
 
     app.send_input(DualAxis::from_value(
@@ -284,8 +284,8 @@ fn mouse_motion_dual_axis() {
 fn mouse_motion_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        VirtualDPad::mouse_motion(),
         AxislikeTestAction::XY,
+        VirtualDPad::mouse_motion(),
     )]));
 
     app.send_input(DualAxis::from_value(
@@ -315,11 +315,11 @@ fn mouse_drag() {
     let mut input_map = InputMap::default();
 
     input_map.insert_chord(
+        AxislikeTestAction::XY,
         [
             InputKind::from(DualAxis::mouse_motion()),
             InputKind::from(MouseButton::Right),
         ],
-        AxislikeTestAction::XY,
     );
 
     app.insert_resource(input_map);

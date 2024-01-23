@@ -30,8 +30,8 @@ impl PlayerAction {
     fn mkb_input_map() -> InputMap<PlayerAction> {
         use KeyCode::*;
         InputMap::new([
-            (UserInput::Single(InputKind::Keyboard(Space)), Self::Jump),
-            (UserInput::VirtualDPad(VirtualDPad::wasd()), Self::Move),
+            (Self::Jump, UserInput::Single(InputKind::Keyboard(Space))),
+            (Self::Move, UserInput::VirtualDPad(VirtualDPad::wasd())),
         ])
     }
 }

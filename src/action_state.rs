@@ -864,7 +864,7 @@ mod tests {
 
         // Input map
         let mut input_map = InputMap::default();
-        input_map.insert(KeyCode::R, Action::Run);
+        input_map.insert(Action::Run, KeyCode::R);
 
         // Starting state
         let input_streams = InputStreams::from_world(&app.world, None);

@@ -24,10 +24,10 @@ fn setup(mut commands: Commands) {
         .insert(InputManagerBundle::<CameraMovement> {
             input_map: InputMap::default()
                 // This will capture the total continuous value, for direct use.
-                .insert(SingleAxis::mouse_wheel_y(), CameraMovement::Zoom)
+                .insert(CameraMovement::Zoom, SingleAxis::mouse_wheel_y())
                 // This will return a binary button-like output.
-                .insert(MouseWheelDirection::Left, CameraMovement::PanLeft)
-                .insert(MouseWheelDirection::Right, CameraMovement::PanRight)
+                .insert(CameraMovement::PanLeft, MouseWheelDirection::Left)
+                .insert(CameraMovement::PanRight, MouseWheelDirection::Right)
                 // Alternatively, you could model this as a virtual Dpad,
                 // which is extremely useful when you want to model 4-directional buttonlike inputs using the mouse wheel
                 // .insert(VirtualDpad::mouse_wheel(), Pan)

@@ -48,8 +48,8 @@ fn join(
                     .spawn(InputManagerBundle::<Action> {
                         action_state: ActionState::default(),
                         input_map: InputMap::default()
-                            .insert(GamepadButtonType::South, Action::Jump)
-                            .insert(GamepadButtonType::Select, Action::Disconnect)
+                            .insert(Action::Jump, GamepadButtonType::South)
+                            .insert(Action::Disconnect, GamepadButtonType::Select)
                             // Make sure to set the gamepad or all gamepads will be used!
                             .set_gamepad(gamepad)
                             .build(),

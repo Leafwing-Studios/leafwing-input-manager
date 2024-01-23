@@ -35,8 +35,8 @@ fn test_app() -> App {
 fn raw_mouse_wheel_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        MouseWheelDirection::Up,
         ButtonlikeTestAction::Up,
+        MouseWheelDirection::Up,
     )]));
 
     let mut events = app.world.resource_mut::<Events<MouseWheel>>();
@@ -119,10 +119,10 @@ fn mouse_wheel_dual_axis_mocking() {
 fn mouse_wheel_buttonlike() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (MouseWheelDirection::Up, ButtonlikeTestAction::Up),
-        (MouseWheelDirection::Down, ButtonlikeTestAction::Down),
-        (MouseWheelDirection::Left, ButtonlikeTestAction::Left),
-        (MouseWheelDirection::Right, ButtonlikeTestAction::Right),
+        (ButtonlikeTestAction::Up, MouseWheelDirection::Up),
+        (ButtonlikeTestAction::Down, MouseWheelDirection::Down),
+        (ButtonlikeTestAction::Left, MouseWheelDirection::Left),
+        (ButtonlikeTestAction::Right, MouseWheelDirection::Right),
     ]));
 
     for action in ButtonlikeTestAction::variants() {
@@ -142,10 +142,10 @@ fn mouse_wheel_buttonlike() {
 fn mouse_wheel_buttonlike_cancels() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (MouseWheelDirection::Up, ButtonlikeTestAction::Up),
-        (MouseWheelDirection::Down, ButtonlikeTestAction::Down),
-        (MouseWheelDirection::Left, ButtonlikeTestAction::Left),
-        (MouseWheelDirection::Right, ButtonlikeTestAction::Right),
+        (ButtonlikeTestAction::Up, MouseWheelDirection::Up),
+        (ButtonlikeTestAction::Down, MouseWheelDirection::Down),
+        (ButtonlikeTestAction::Left, MouseWheelDirection::Left),
+        (ButtonlikeTestAction::Right, MouseWheelDirection::Right),
     ]));
 
     app.send_input(MouseWheelDirection::Up);
@@ -164,8 +164,8 @@ fn mouse_wheel_buttonlike_cancels() {
 fn mouse_wheel_single_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
-        (SingleAxis::mouse_wheel_x(), AxislikeTestAction::X),
-        (SingleAxis::mouse_wheel_y(), AxislikeTestAction::Y),
+        (AxislikeTestAction::X, SingleAxis::mouse_wheel_x()),
+        (AxislikeTestAction::Y, SingleAxis::mouse_wheel_y()),
     ]));
 
     // +X
@@ -258,8 +258,8 @@ fn mouse_wheel_single_axis() {
 fn mouse_wheel_dual_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        DualAxis::mouse_wheel(),
         AxislikeTestAction::XY,
+        DualAxis::mouse_wheel(),
     )]));
 
     app.send_input(DualAxis::from_value(
@@ -285,8 +285,8 @@ fn mouse_wheel_dual_axis() {
 fn mouse_wheel_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        VirtualDPad::mouse_wheel(),
         AxislikeTestAction::XY,
+        VirtualDPad::mouse_wheel(),
     )]));
 
     app.send_input(DualAxis::from_value(

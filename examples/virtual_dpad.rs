@@ -28,13 +28,13 @@ fn spawn_player(mut commands: Commands) {
             // Stores "which actions are currently activated"
             // Map some arbitrary keys into a virtual direction pad that triggers our move action
             input_map: InputMap::new([(
+                Action::Move,
                 VirtualDPad {
                     up: KeyCode::W.into(),
                     down: KeyCode::S.into(),
                     left: KeyCode::A.into(),
                     right: KeyCode::D.into(),
                 },
-                Action::Move,
             )])
             .build(),
             ..default()

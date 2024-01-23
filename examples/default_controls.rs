@@ -52,8 +52,8 @@ fn spawn_player(mut commands: Commands) {
     // Loop through each action in `PlayerAction` and get the default `UserInput`,
     // then insert each default input into input_map
     for action in PlayerAction::variants() {
-        input_map.insert(PlayerAction::default_keyboard_mouse_input(action), action);
-        input_map.insert(PlayerAction::default_gamepad_input(action), action);
+        input_map.insert(action, PlayerAction::default_keyboard_mouse_input(action));
+        input_map.insert(action, PlayerAction::default_gamepad_input(action));
     }
 
     // Spawn the player with the populated input_map
