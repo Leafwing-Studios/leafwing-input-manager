@@ -56,13 +56,13 @@ fn report_menus(main_menu: Res<MainMenu>, submenu: Res<SubMenu>) {
 }
 
 fn open_main_menu(action_state: Res<ActionState<MenuAction>>, mut menu_state: ResMut<MainMenu>) {
-    if action_state.just_pressed(MenuAction::OpenMainMenu) && !menu_state.is_open() {
+    if action_state.just_pressed(&MenuAction::OpenMainMenu) && !menu_state.is_open() {
         menu_state.open();
     }
 }
 
 fn open_sub_menu(action_state: Res<ActionState<MenuAction>>, mut menu_state: ResMut<SubMenu>) {
-    if action_state.just_pressed(MenuAction::OpenSubMenu) && !menu_state.is_open() {
+    if action_state.just_pressed(&MenuAction::OpenSubMenu) && !menu_state.is_open() {
         menu_state.open();
     }
 }
@@ -74,12 +74,12 @@ fn close_menu<M: Resource + Menu>(
     mut action_state: ResMut<ActionState<MenuAction>>,
     mut menu_status: ResMut<M>,
 ) {
-    if action_state.pressed(MenuAction::CloseWindow) && menu_status.is_open() {
+    if action_state.pressed(&MenuAction::CloseWindow) && menu_status.is_open() {
         println!("Closing the top window, as requested.");
         menu_status.close();
         // Because the action is consumed, further systems won't see this action as pressed
         // and it cannot be pressed again until after the next time it would be released.
-        action_state.consume(MenuAction::CloseWindow);
+        action_state.consume(&MenuAction::CloseWindow);
     }
 }
 

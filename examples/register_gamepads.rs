@@ -68,7 +68,7 @@ fn join(
 fn jump(action_query: Query<(&ActionState<Action>, &Player)>) {
     // Iterate through each player to see if they jumped
     for (action_state, player) in action_query.iter() {
-        if action_state.just_pressed(Action::Jump) {
+        if action_state.just_pressed(&Action::Jump) {
             println!("Player {} jumped!", player.gamepad.id);
         }
     }
@@ -80,7 +80,7 @@ fn disconnect(
     mut joined_players: ResMut<JoinedPlayers>,
 ) {
     for (action_state, player) in action_query.iter() {
-        if action_state.pressed(Action::Disconnect) {
+        if action_state.pressed(&Action::Disconnect) {
             let player_entity = *joined_players.0.get(&player.gamepad).unwrap();
 
             // Despawn the disconnected player and remove them from the joined player list

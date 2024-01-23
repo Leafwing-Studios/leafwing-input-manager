@@ -22,19 +22,19 @@ enum TestAction {
 }
 
 fn pressed(action_state: &ActionState<TestAction>) -> bool {
-    action_state.pressed(TestAction::A)
+    action_state.pressed(&TestAction::A)
 }
 
 fn just_pressed(action_state: &ActionState<TestAction>) -> bool {
-    action_state.just_pressed(TestAction::A)
+    action_state.just_pressed(&TestAction::A)
 }
 
 fn released(action_state: &ActionState<TestAction>) -> bool {
-    action_state.released(TestAction::A)
+    action_state.released(&TestAction::A)
 }
 
 fn just_released(action_state: &ActionState<TestAction>) -> bool {
-    action_state.just_released(TestAction::A)
+    action_state.just_released(&TestAction::A)
 }
 
 fn update(mut action_state: ActionState<TestAction>, action_data: Vec<ActionData>) {

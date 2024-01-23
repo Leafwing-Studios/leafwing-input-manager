@@ -321,7 +321,7 @@ to update multiple entities if needed.
 - simplified `VirtualButtonState` into a trivial enum `ButtonState`
   - other metadata (e.g. timing information and reasons pressed) is stored in the `ActionData` struct
   - users can now access the `ActionData` struct directly for each action in a `ActionState` struct, allowing full manual control for unusual needs
-- removed a layer of indirection for fetching timing information: simply call `action_state.current_duration(Action::Jump)`, rather than `action_state.button_state(Action::Jump).current_duration()`
+- removed a layer of indirection for fetching timing information: simply call `action_state.current_duration(&Action::Jump)`, rather than `action_state.button_state(Action::Jump).current_duration()`
 - fleshed out `ButtonState` API for better parity with `ActionState`
 - removed `UserInput::Null`: this was never helpful and bloated match statements
   - insert this resource when you want to suppress input collection, and remove it when you're done

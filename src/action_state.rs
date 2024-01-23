@@ -59,10 +59,10 @@ pub struct ActionData {
 ///
 /// // Typically, this is done automatically by the `InputManagerPlugin` from user inputs
 /// // using the `ActionState::update` method
-/// action_state.press(Action::Jump);
+/// action_state.press(&action::Jump);
 ///
-/// assert!(action_state.pressed(Action::Jump));
-/// assert!(action_state.just_pressed(Action::Jump));
+/// assert!(action_state.pressed(&action::Jump));
+/// assert!(action_state.just_pressed(&action::Jump));
 /// assert!(action_state.released(Action::Left));
 ///
 /// // Resets just_pressed and just_released
@@ -70,11 +70,11 @@ pub struct ActionData {
 /// let t1 = Instant::now();
 ///
 ///  action_state.tick(t1, t0);
-/// assert!(action_state.pressed(Action::Jump));
-/// assert!(!action_state.just_pressed(Action::Jump));
+/// assert!(action_state.pressed(&action::Jump));
+/// assert!(!action_state.just_pressed(&action::Jump));
 ///
-/// action_state.release(Action::Jump);
-/// assert!(!action_state.pressed(Action::Jump));
+/// action_state.release(&action::Jump);
+/// assert!(!action_state.pressed(&action::Jump));
 /// assert!(action_state.released(Action::Jump));
 /// assert!(action_state.just_released(Action::Jump));
 ///
@@ -103,10 +103,10 @@ impl<A: Actionlike> ActionState<A> {
 
         for (i, action) in A::variants().enumerate() {
             match action_data[i].state {
-                ButtonState::JustPressed => self.press(action),
-                ButtonState::Pressed => self.press(action),
-                ButtonState::JustReleased => self.release(action),
-                ButtonState::Released => self.release(action),
+                ButtonState::JustPressed => self.press(&action),
+                ButtonState::Pressed => self.press(&action),
+                ButtonState::JustReleased => self.release(&action),
+                ButtonState::Released => self.release(&action),
             }
 
             self.action_data[i].axis_pair = action_data[i].axis_pair;
@@ -148,15 +148,15 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(action_state.released(Action::Jump));
     /// assert!(!action_state.just_released(Action::Jump));
     ///
-    /// action_state.press(Action::Jump);
-    /// assert!(action_state.just_pressed(Action::Jump));
+    /// action_state.press(&action::Jump);
+    /// assert!(action_state.just_pressed(&action::Jump));
     ///
     /// // Ticking time moves causes buttons that were just pressed to no longer be just pressed
     /// let t2 = Instant::now();
     ///
     /// action_state.tick(t2, t1);
-    /// assert!(action_state.pressed(Action::Jump));
-    /// assert!(!action_state.just_pressed(Action::Jump));
+    /// assert!(action_state.pressed(&action::Jump));
+    /// assert!(!action_state.just_pressed(&action::Jump));
     /// ```
     pub fn tick(&mut self, current_instant: Instant, previous_instant: Instant) {
         // Advanced the ButtonState
@@ -193,7 +193,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn action_data(&self, action: A) -> &ActionData {
+    pub fn action_data(&self, action: &A) -> &ActionData {
         &self.action_data[action.index()]
     }
 
@@ -220,7 +220,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     #[must_use]
-    pub fn action_data_mut(&mut self, action: A) -> &mut ActionData {
+    pub fn action_data_mut(&mut self, action: &A) -> &mut ActionData {
         &mut self.action_data[action.index()]
     }
 
@@ -248,12 +248,12 @@ impl<A: Actionlike> ActionState<A> {
     /// This value may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_value`](Self::clamped_value) method instead.
-    pub fn value(&self, action: A) -> f32 {
-        self.action_data(action).value
+    pub fn value(&self, action: &A) -> f32 {
+        self.action_data(&action).value
     }
 
     /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
-    pub fn clamped_value(&self, action: A) -> f32 {
+    pub fn clamped_value(&self, action: &A) -> f32 {
         self.value(action).clamp(-1., 1.)
     }
 
@@ -273,13 +273,13 @@ impl<A: Actionlike> ActionState<A> {
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
-    pub fn axis_pair(&self, action: A) -> Option<DualAxisData> {
-        self.action_data(action).axis_pair
+    pub fn axis_pair(&self, action: &A) -> Option<DualAxisData> {
+        self.action_data(&action).axis_pair
     }
 
     /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
-    pub fn clamped_axis_pair(&self, action: A) -> Option<DualAxisData> {
-        self.axis_pair(action)
+    pub fn clamped_axis_pair(&self, action: &A) -> Option<DualAxisData> {
+        self.axis_pair(&action)
             .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
     }
 
@@ -318,7 +318,7 @@ impl<A: Actionlike> ActionState<A> {
     /// action_state.set_action_data(Action::Run, slot_1_state.clone());
     /// ```
     #[inline]
-    pub fn set_action_data(&mut self, action: A, data: ActionData) {
+    pub fn set_action_data(&mut self, action: &A, data: ActionData) {
         self.action_data[action.index()] = data;
     }
 
@@ -327,7 +327,7 @@ impl<A: Actionlike> ActionState<A> {
     /// No initial instant or reasons why the button was pressed will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
-    pub fn press(&mut self, action: A) {
+    pub fn press(&mut self, action: &A) {
         let index = action.index();
         // Consumed actions cannot be pressed until they are released
         if self.action_data[index].consumed {
@@ -346,12 +346,12 @@ impl<A: Actionlike> ActionState<A> {
     /// No initial instant will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
-    pub fn release(&mut self, action: A) {
+    pub fn release(&mut self, action: &A) {
         let index = action.index();
         // Once released, consumed actions can be pressed again
         self.action_data[index].consumed = false;
 
-        if self.pressed(action) {
+        if self.pressed(&action) {
             self.action_data[index].timing.flip();
         }
 
@@ -381,26 +381,26 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// let mut action_state = ActionState::<Action>::default();
     ///
-    /// action_state.press(Action::Eat);
-    /// assert!(action_state.pressed(Action::Eat));
+    /// action_state.press(&action::Eat);
+    /// assert!(action_state.pressed(&action::Eat));
     ///
     /// // Consuming actions releases them
     /// action_state.consume(Action::Eat);
     /// assert!(action_state.released(Action::Eat));
     ///
     /// // Doesn't work, as the action was consumed
-    /// action_state.press(Action::Eat);
+    /// action_state.press(&action::Eat);
     /// assert!(action_state.released(Action::Eat));
     ///
     /// // Releasing consumed actions allows them to be pressed again
-    /// action_state.release(Action::Eat);
-    /// action_state.press(Action::Eat);
-    /// assert!(action_state.pressed(Action::Eat));
+    /// action_state.release(&action::Eat);
+    /// action_state.press(&action::Eat);
+    /// assert!(action_state.pressed(&action::Eat));
     /// ```
     #[inline]
-    pub fn consume(&mut self, action: A) {
+    pub fn consume(&mut self, action: &A) {
         let index = action.index();
-        // This is the only difference from action_state.release(action)
+        // This is the only difference from action_state.release(&action)
         self.action_data[index].consumed = true;
         self.action_data[index].state.release();
         self.action_data[index].timing.flip();
@@ -410,35 +410,35 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     pub fn consume_all(&mut self) {
         for action in A::variants() {
-            self.consume(action);
+            self.consume(&action);
         }
     }
 
     /// Releases all actions
     pub fn release_all(&mut self) {
         for action in A::variants() {
-            self.release(action);
+            self.release(&action);
         }
     }
 
     /// Is this `action` currently consumed?
     #[inline]
     #[must_use]
-    pub fn consumed(&self, action: A) -> bool {
+    pub fn consumed(&self, action: &A) -> bool {
         self.action_data[action.index()].consumed
     }
 
     /// Is this `action` currently pressed?
     #[inline]
     #[must_use]
-    pub fn pressed(&self, action: A) -> bool {
+    pub fn pressed(&self, action: &A) -> bool {
         self.action_data[action.index()].state.pressed()
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
-    pub fn just_pressed(&self, action: A) -> bool {
+    pub fn just_pressed(&self, action: &A) -> bool {
         self.action_data[action.index()].state.just_pressed()
     }
 
@@ -447,43 +447,39 @@ impl<A: Actionlike> ActionState<A> {
     /// This is always the logical negation of [pressed](ActionState::pressed)
     #[inline]
     #[must_use]
-    pub fn released(&self, action: A) -> bool {
+    pub fn released(&self, action: &A) -> bool {
         self.action_data[action.index()].state.released()
     }
 
     /// Was this `action` released since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
-    pub fn just_released(&self, action: A) -> bool {
+    pub fn just_released(&self, action: &A) -> bool {
         self.action_data[action.index()].state.just_released()
     }
 
     #[must_use]
     /// Which actions are currently pressed?
     pub fn get_pressed(&self) -> Vec<A> {
-        A::variants().filter(|a| self.pressed(a.clone())).collect()
+        A::variants().filter(|a| self.pressed(a)).collect()
     }
 
     #[must_use]
     /// Which actions were just pressed?
     pub fn get_just_pressed(&self) -> Vec<A> {
-        A::variants()
-            .filter(|a| self.just_pressed(a.clone()))
-            .collect()
+        A::variants().filter(|a| self.just_pressed(a)).collect()
     }
 
     #[must_use]
     /// Which actions are currently released?
     pub fn get_released(&self) -> Vec<A> {
-        A::variants().filter(|a| self.released(a.clone())).collect()
+        A::variants().filter(|a| self.released(a)).collect()
     }
 
     #[must_use]
     /// Which actions were just released?
     pub fn get_just_released(&self) -> Vec<A> {
-        A::variants()
-            .filter(|a| self.just_released(a.clone()))
-            .collect()
+        A::variants().filter(|a| self.just_released(a)).collect()
     }
 
     /// The [`Instant`] that the action was last pressed or released
@@ -492,12 +488,12 @@ impl<A: Actionlike> ActionState<A> {
     /// the value will be [`None`].
     /// This ensures that all of our actions are assigned a timing and duration
     /// that corresponds exactly to the start of a frame, rather than relying on idiosyncratic timing.
-    pub fn instant_started(&self, action: A) -> Option<Instant> {
+    pub fn instant_started(&self, action: &A) -> Option<Instant> {
         self.action_data[action.index()].timing.instant_started
     }
 
     /// The [`Duration`] for which the action has been held or released
-    pub fn current_duration(&self, action: A) -> Duration {
+    pub fn current_duration(&self, action: &A) -> Duration {
         self.action_data[action.index()].timing.current_duration
     }
 
@@ -505,7 +501,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This is a snapshot of the [`ActionState::current_duration`] state at the time
     /// the action was last pressed or released.
-    pub fn previous_duration(&self, action: A) -> Duration {
+    pub fn previous_duration(&self, action: &A) -> Duration {
         self.action_data[action.index()].timing.previous_duration
     }
 
@@ -515,22 +511,22 @@ impl<A: Actionlike> ActionState<A> {
     pub fn apply_diff(&mut self, action_diff: &ActionDiff<A>) {
         match action_diff {
             ActionDiff::Pressed { action } => {
-                self.press(action.clone());
-                self.action_data_mut(action.clone()).value = 1.;
+                self.press(&action.clone());
+                self.action_data_mut(action).value = 1.;
             }
             ActionDiff::Released { action } => {
-                self.release(action.clone());
-                let action_data = self.action_data_mut(action.clone());
+                self.release(&action.clone());
+                let action_data = self.action_data_mut(action);
                 action_data.value = 0.;
                 action_data.axis_pair = None;
             }
             ActionDiff::ValueChanged { action, value } => {
-                self.press(action.clone());
-                self.action_data_mut(action.clone()).value = *value;
+                self.press(&action.clone());
+                self.action_data_mut(action).value = *value;
             }
             ActionDiff::AxisPairChanged { action, axis_pair } => {
-                self.press(action.clone());
-                let action_data = self.action_data_mut(action.clone());
+                self.press(&action.clone());
+                let action_data = self.action_data_mut(&action);
                 action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
                 action_data.value = axis_pair.length();
             }
@@ -874,10 +870,10 @@ mod tests {
         let input_streams = InputStreams::from_world(&app.world, None);
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
-        assert!(!action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Run));
+        assert!(!action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Run));
 
         // Pressing
         app.send_input(KeyCode::R);
@@ -887,19 +883,19 @@ mod tests {
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
-        assert!(action_state.pressed(Action::Run));
-        assert!(action_state.just_pressed(Action::Run));
-        assert!(!action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Run));
+        assert!(action_state.pressed(&Action::Run));
+        assert!(action_state.just_pressed(&Action::Run));
+        assert!(!action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Run));
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
-        assert!(action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(!action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Run));
+        assert!(action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(!action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Run));
 
         // Releasing
         app.release_input(KeyCode::R);
@@ -908,19 +904,19 @@ mod tests {
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
-        assert!(!action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(action_state.released(Action::Run));
-        assert!(action_state.just_released(Action::Run));
+        assert!(!action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(action_state.released(&Action::Run));
+        assert!(action_state.just_released(&Action::Run));
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
-        assert!(!action_state.pressed(Action::Run));
-        assert!(!action_state.just_pressed(Action::Run));
-        assert!(action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Run));
+        assert!(!action_state.pressed(&Action::Run));
+        assert!(!action_state.just_pressed(&Action::Run));
+        assert!(action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Run));
     }
 
     #[test]
@@ -931,20 +927,20 @@ mod tests {
         let mut action_state = ActionState::<Action>::default();
 
         // Actions start released (but not just released)
-        assert!(action_state.released(Action::Run));
-        assert!(!action_state.just_released(Action::Jump));
+        assert!(action_state.released(&Action::Run));
+        assert!(!action_state.just_released(&Action::Jump));
 
         // Ticking causes buttons that were just released to no longer be just released
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        assert!(action_state.released(Action::Jump));
-        assert!(!action_state.just_released(Action::Jump));
-        action_state.press(Action::Jump);
-        assert!(action_state.just_pressed(Action::Jump));
+        assert!(action_state.released(&Action::Jump));
+        assert!(!action_state.just_released(&Action::Jump));
+        action_state.press(&Action::Jump);
+        assert!(action_state.just_pressed(&Action::Jump));
 
         // Ticking causes buttons that were just pressed to no longer be just pressed
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        assert!(action_state.pressed(Action::Jump));
-        assert!(!action_state.just_pressed(Action::Jump));
+        assert!(action_state.pressed(&Action::Jump));
+        assert!(!action_state.just_pressed(&Action::Jump));
     }
 
     #[test]
@@ -955,41 +951,53 @@ mod tests {
         let mut action_state = ActionState::<Action>::default();
 
         // Actions start released
-        assert!(action_state.released(Action::Jump));
-        assert_eq!(action_state.instant_started(Action::Jump), None,);
-        assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
-        assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
+        assert!(action_state.released(&Action::Jump));
+        assert_eq!(action_state.instant_started(&Action::Jump), None,);
+        assert_eq!(action_state.current_duration(&Action::Jump), Duration::ZERO);
+        assert_eq!(
+            action_state.previous_duration(&Action::Jump),
+            Duration::ZERO
+        );
 
         // Pressing a button swaps the state
-        action_state.press(Action::Jump);
-        assert!(action_state.pressed(Action::Jump));
-        assert_eq!(action_state.instant_started(Action::Jump), None);
-        assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
-        assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
+        action_state.press(&Action::Jump);
+        assert!(action_state.pressed(&Action::Jump));
+        assert_eq!(action_state.instant_started(&Action::Jump), None);
+        assert_eq!(action_state.current_duration(&Action::Jump), Duration::ZERO);
+        assert_eq!(
+            action_state.previous_duration(&Action::Jump),
+            Duration::ZERO
+        );
 
         // Ticking time sets the instant for the new state
         let t0 = Instant::now();
         let t1 = t0 + Duration::new(1, 0);
 
         action_state.tick(t1, t0);
-        assert_eq!(action_state.instant_started(Action::Jump), Some(t0));
-        assert_eq!(action_state.current_duration(Action::Jump), t1 - t0);
-        assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
+        assert_eq!(action_state.instant_started(&Action::Jump), Some(t0));
+        assert_eq!(action_state.current_duration(&Action::Jump), t1 - t0);
+        assert_eq!(
+            action_state.previous_duration(&Action::Jump),
+            Duration::ZERO
+        );
 
         // Time passes
         let t2 = t1 + Duration::new(5, 0);
 
         // The duration is updated
         action_state.tick(t2, t1);
-        assert_eq!(action_state.instant_started(Action::Jump), Some(t0));
-        assert_eq!(action_state.current_duration(Action::Jump), t2 - t0);
-        assert_eq!(action_state.previous_duration(Action::Jump), Duration::ZERO);
+        assert_eq!(action_state.instant_started(&Action::Jump), Some(t0));
+        assert_eq!(action_state.current_duration(&Action::Jump), t2 - t0);
+        assert_eq!(
+            action_state.previous_duration(&Action::Jump),
+            Duration::ZERO
+        );
 
         // Releasing again, swapping the current duration to the previous one
-        action_state.release(Action::Jump);
-        assert_eq!(action_state.instant_started(Action::Jump), None);
-        assert_eq!(action_state.current_duration(Action::Jump), Duration::ZERO);
-        assert_eq!(action_state.previous_duration(Action::Jump), t2 - t0);
+        action_state.release(&Action::Jump);
+        assert_eq!(action_state.instant_started(&Action::Jump), None);
+        assert_eq!(action_state.current_duration(&Action::Jump), Duration::ZERO);
+        assert_eq!(action_state.previous_duration(&Action::Jump), t2 - t0);
     }
 
     #[test]
