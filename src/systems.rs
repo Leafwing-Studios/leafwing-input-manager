@@ -8,7 +8,6 @@ use crate::{
     input_map::InputMap,
     input_streams::InputStreams,
     plugin::ToggleActions,
-    press_scheduler::PressScheduler,
     Actionlike,
 };
 
@@ -83,12 +82,7 @@ pub fn update_action_state<A: Actionlike>(
     #[cfg(feature = "egui")] mut maybe_egui: Query<(Entity, &'static mut EguiContext)>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
-    press_scheduler: Option<ResMut<PressScheduler<A>>>,
-    mut query: Query<(
-        &mut ActionState<A>,
-        &InputMap<A>,
-        Option<&mut PressScheduler<A>>,
-    )>,
+    mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
     let gamepad_buttons = gamepad_buttons.into_inner();
     let gamepad_button_axes = gamepad_button_axes.into_inner();
@@ -136,15 +130,9 @@ pub fn update_action_state<A: Actionlike>(
 
     let resources = input_map
         .zip(action_state)
-        .map(|(input_map, action_state)| {
-            (
-                Mut::from(action_state),
-                input_map.into_inner(),
-                press_scheduler.map(Mut::from),
-            )
-        });
+        .map(|(input_map, action_state)| (Mut::from(action_state), input_map.into_inner()));
 
-    for (mut action_state, input_map, press_scheduler) in query.iter_mut().chain(resources) {
+    for (mut action_state, input_map) in query.iter_mut().chain(resources) {
         let input_streams = InputStreams {
             gamepad_buttons,
             gamepad_button_axes,
@@ -159,9 +147,6 @@ pub fn update_action_state<A: Actionlike>(
         };
 
         action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
-        if let Some(mut press_scheduler) = press_scheduler {
-            press_scheduler.apply(&mut action_state);
-        }
     }
 }
 
