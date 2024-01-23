@@ -84,9 +84,6 @@ pub mod prelude {
 pub trait Actionlike:
     Eq + Hash + Send + Sync + Clone + Hash + Reflect + TypePath + FromReflect + 'static
 {
-    /// The number of variants of this action type
-    fn n_variants() -> usize;
-
     /// Iterates over the possible actions in the order they were defined
     fn variants() -> ActionIter<Self> {
         ActionIter::default()
@@ -125,7 +122,7 @@ impl<A: Actionlike> Iterator for ActionIter<A> {
 
 impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {
     fn len(&self) -> usize {
-        A::n_variants()
+        A::variants().count()
     }
 }
 
