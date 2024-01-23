@@ -191,22 +191,6 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
-    ///
-    /// # Example
-    /// ```rust
-    /// use bevy::prelude::Reflect;
-    /// use leafwing_input_manager::prelude::*;
-    ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
-    /// enum Action {
-    ///     Run,
-    ///     Jump,
-    /// }
-    /// let mut action_state = ActionState::<Action>::default();
-    /// let run_data = action_state.action_data(&Action::Run);
-    ///
-    /// dbg!(run_data);
-    /// ```
     #[inline]
     #[must_use]
     pub fn action_data(&self, action: &A) -> Option<&ActionData> {
@@ -217,23 +201,6 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
-    ///
-    /// # Example
-    /// ```rust
-    /// use bevy::prelude::Reflect;
-    /// use leafwing_input_manager::prelude::*;
-    ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
-    /// enum Action {
-    ///     Run,
-    ///     Jump,
-    /// }
-    /// let mut action_state = ActionState::<Action>::default();
-    /// let mut run_data = action_state.action_data_mut(&Action::Run);
-    /// run_data.axis_pair = None;
-    ///
-    /// dbg!(run_data);
-    /// ```
     #[inline]
     #[must_use]
     pub fn action_data_mut(&mut self, action: &A) -> Option<&mut ActionData> {
