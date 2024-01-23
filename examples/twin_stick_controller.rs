@@ -157,7 +157,9 @@ fn player_mouse_look(
             // Press the look action, so we can check that it is active
             action_state.press(&PlayerAction::Look);
             // Modify the action data to set the axis
-            let action_data = action_state.action_data_mut(&PlayerAction::Look);
+            let Some(action_data) = action_state.action_data_mut(&PlayerAction::Look) else {
+                return;
+            };
             // Flipping y sign here to be consistent with gamepad input. We could also invert the gamepad y axis
             action_data.axis_pair = Some(DualAxisData::from_xy(Vec2::new(diff.x, -diff.y)));
         }

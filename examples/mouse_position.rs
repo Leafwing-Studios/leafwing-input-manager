@@ -59,8 +59,10 @@ fn update_cursor_state_from_window(
                 .expect("Entity does not exist, or does not have an `ActionState` component");
 
             if let Some(val) = window.cursor_position() {
-                action_state.action_data_mut(&driver.action).axis_pair =
-                    Some(DualAxisData::from_xy(val));
+                action_state
+                    .action_data_mut(&driver.action)
+                    .unwrap()
+                    .axis_pair = Some(DualAxisData::from_xy(val));
             }
         }
     }

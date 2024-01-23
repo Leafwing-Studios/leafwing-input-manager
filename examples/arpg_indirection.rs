@@ -112,8 +112,10 @@ fn copy_action_state(
             if let Some(matching_ability) = ability_slot_map.get(&slot) {
                 // This copies the `ActionData` between the ActionStates,
                 // including information about how long the buttons have been pressed or released
-                ability_state
-                    .set_action_data(matching_ability, slot_state.action_data(&slot).clone());
+                ability_state.set_action_data(
+                    matching_ability.clone(),
+                    slot_state.action_data(&slot).unwrap().clone(),
+                );
             }
         }
     }
