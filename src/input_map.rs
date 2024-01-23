@@ -319,7 +319,11 @@ impl<A: Actionlike> InputMap<A> {
         clash_strategy: ClashStrategy,
     ) -> bool {
         let action_data = self.which_pressed(input_streams, clash_strategy);
-        action_data[action.index()].state.pressed()
+        let Some(action_datum) = action_data.get(action) else {
+            return false;
+        };
+
+        action_datum.state.pressed()
     }
 
     /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
@@ -331,36 +335,29 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> Vec<ActionData> {
-        let mut action_data = vec![ActionData::default(); A::n_variants()];
+    ) -> HashMap<A, ActionData> {
+        let mut action_data = HashMap::new();
 
         // Generate the raw action presses
         for (action, input_vec) in self.iter() {
             let mut inputs = Vec::new();
+            let mut action_datum = ActionData::default();
 
             for input in input_vec {
-                let action = &mut action_data[action.index()];
-
-                // Merge axis pair into action data
-                let axis_pair = input_streams.input_axis_pair(input);
-                if let Some(axis_pair) = axis_pair {
-                    if let Some(current_axis_pair) = &mut action.axis_pair {
-                        *current_axis_pair = current_axis_pair.merged_with(axis_pair);
-                    } else {
-                        action.axis_pair = Some(axis_pair);
-                    }
-                }
+                action_datum.axis_pair = input_streams.input_axis_pair(input);
 
                 if input_streams.input_pressed(input) {
                     inputs.push(input.clone());
 
-                    action.value += input_streams.input_value(input, true);
+                    action_datum.value += input_streams.input_value(input, true);
                 }
             }
 
             if !inputs.is_empty() {
-                action_data[action.index()].state = ButtonState::JustPressed;
+                action_datum.state = ButtonState::JustPressed;
             }
+
+            action_data.insert(action.clone(), action_datum);
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list

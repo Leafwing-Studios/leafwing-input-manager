@@ -8,10 +8,10 @@ use crate::user_input::{InputKind, UserInput};
 use crate::Actionlike;
 
 use bevy::prelude::Resource;
+use bevy::utils::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
-use std::marker::PhantomData;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
@@ -36,11 +36,6 @@ pub enum ClashStrategy {
     /// This is the default strategy.
     #[default]
     PrioritizeLongest,
-    /// Use the order in which actions are defined in the enum to resolve clashing inputs
-    ///
-    /// Uses the iteration order returned by [`Actionlike::variants()`],
-    /// which is generated in order of the enum items by the `#[derive(Actionlike)]` macro.
-    UseActionOrder,
 }
 
 impl ClashStrategy {
@@ -48,7 +43,7 @@ impl ClashStrategy {
     pub fn variants() -> &'static [ClashStrategy] {
         use ClashStrategy::*;
 
-        &[PressAll, PrioritizeLongest, UseActionOrder]
+        &[PressAll, PrioritizeLongest]
     }
 }
 
@@ -93,14 +88,14 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        action_data: &mut [ActionData],
+        action_data: &mut HashMap<A, ActionData>,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
         for clash in self.get_clashes(action_data, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
-                action_data[culled_action.index()] = ActionData::default();
+                action_data.remove(&culled_action);
             }
         }
     }
@@ -126,18 +121,24 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        action_data: &[ActionData],
+        action_data: &HashMap<A, ActionData>,
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
         // We can limit our search to the cached set of possibly clashing actions
         for clash in self.possible_clashes() {
+            let Some(data_a) = action_data.get(&clash.action_a) else {
+                continue;
+            };
+
+            let Some(data_b) = action_data.get(&clash.action_b) else {
+                continue;
+            };
+
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
-            if action_data[clash.index_a].state.pressed()
-                && action_data[clash.index_b].state.pressed()
-            {
+            if data_a.state.pressed() && data_b.state.pressed() {
                 // Check if the potential clash occurred based on the pressed inputs
                 if let Some(clash) = check_clash(&clash, input_streams) {
                     clashes.push(clash)
@@ -175,12 +176,11 @@ impl<A: Actionlike> InputMap<A> {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub(crate) struct Clash<A: Actionlike> {
     /// The `Actionlike::index` value corresponding to `action_a`
-    index_a: usize,
+    action_a: A,
     /// The `Actionlike::index` value corresponding to `action_b`
-    index_b: usize,
+    action_b: A,
     inputs_a: Vec<UserInput>,
     inputs_b: Vec<UserInput>,
-    _phantom: PhantomData<A>,
 }
 
 impl<A: Actionlike> Clash<A> {
@@ -188,23 +188,10 @@ impl<A: Actionlike> Clash<A> {
     #[must_use]
     fn new(action_a: A, action_b: A) -> Self {
         Self {
-            index_a: action_a.index(),
-            index_b: action_b.index(),
+            action_a: action_a,
+            action_b: action_b,
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Creates a new clash between the two actions based on their `Actionlike::index` indexes
-    #[must_use]
-    fn from_indexes(index_a: usize, index_b: usize) -> Self {
-        Self {
-            index_a,
-            index_b,
-            inputs_a: Vec::default(),
-            inputs_b: Vec::default(),
-            _phantom: PhantomData,
         }
     }
 }
@@ -319,7 +306,7 @@ fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
 #[must_use]
 fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
-    let mut actual_clash: Clash<A> = Clash::from_indexes(clash.index_a, clash.index_b);
+    let mut actual_clash: Clash<A> = clash.clone();
 
     // For all inputs that were actually pressed that match action A
     for input_a in clash
@@ -398,16 +385,11 @@ fn resolve_clash<A: Actionlike>(
                 .unwrap_or_default();
 
             match longest_a.cmp(&longest_b) {
-                Ordering::Greater => Some(A::get_at(clash.index_b).unwrap()),
-                Ordering::Less => Some(A::get_at(clash.index_a).unwrap()),
+                Ordering::Greater => Some(clash.action_b.clone()),
+                Ordering::Less => Some(clash.action_a.clone()),
                 Ordering::Equal => None,
             }
-        } // Remove the clashing action that comes later in the action enum
-        ClashStrategy::UseActionOrder => match clash.index_a.cmp(&clash.index_b) {
-            Ordering::Greater => Some(A::get_at(clash.index_a).unwrap()),
-            Ordering::Less => Some(A::get_at(clash.index_b).unwrap()),
-            Ordering::Equal => None,
-        },
+        }
     }
 }
 
@@ -463,7 +445,6 @@ mod tests {
 
     mod basic_functionality {
         use crate::axislike::VirtualDPad;
-        use crate::buttonlike::ButtonState;
         use crate::input_mocking::MockInput;
         use bevy::input::InputPlugin;
         use Action::*;
@@ -520,11 +501,10 @@ mod tests {
 
             let observed_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
             let correct_clash = Clash {
-                index_a: One.index(),
-                index_b: OneAndTwo.index(),
+                action_a: One,
+                action_b: OneAndTwo,
                 inputs_a: vec![Key1.into()],
                 inputs_b: vec![UserInput::chord([Key1, Key2])],
-                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -538,11 +518,10 @@ mod tests {
                 .possible_clash(OneAndTwoAndThree, OneAndTwo)
                 .unwrap();
             let correct_clash = Clash {
-                index_a: OneAndTwoAndThree.index(),
-                index_b: OneAndTwo.index(),
+                action_a: OneAndTwoAndThree,
+                action_b: OneAndTwo,
                 inputs_a: vec![UserInput::chord([Key1, Key2, Key3])],
                 inputs_b: vec![UserInput::chord([Key1, Key2])],
-                _phantom: PhantomData,
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -627,35 +606,6 @@ mod tests {
         }
 
         #[test]
-        fn resolve_use_action_order() {
-            let mut app = App::new();
-            app.add_plugins(InputPlugin);
-
-            let input_map = test_input_map();
-            let simple_clash = input_map.possible_clash(One, CtrlOne).unwrap();
-            let reversed_clash = input_map.possible_clash(CtrlOne, One).unwrap();
-            app.send_input(Key1);
-            app.send_input(ControlLeft);
-            app.update();
-
-            let input_streams = InputStreams::from_world(&app.world, None);
-
-            assert_eq!(
-                resolve_clash(&simple_clash, ClashStrategy::UseActionOrder, &input_streams,),
-                Some(CtrlOne)
-            );
-
-            assert_eq!(
-                resolve_clash(
-                    &reversed_clash,
-                    ClashStrategy::UseActionOrder,
-                    &input_streams,
-                ),
-                Some(CtrlOne)
-            );
-        }
-
-        #[test]
         fn handle_clashes() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
@@ -665,10 +615,13 @@ mod tests {
             app.send_input(Key2);
             app.update();
 
-            let mut action_data = vec![ActionData::default(); Action::n_variants()];
-            action_data[One.index()].state = ButtonState::JustPressed;
-            action_data[Two.index()].state = ButtonState::JustPressed;
-            action_data[OneAndTwo.index()].state = ButtonState::JustPressed;
+            let mut action_data = HashMap::new();
+            let mut action_datum = ActionData::default();
+            action_datum.state.press();
+
+            action_data.insert(One, action_datum.clone());
+            action_data.insert(Two, action_datum.clone());
+            action_data.insert(OneAndTwo, action_datum.clone());
 
             input_map.handle_clashes(
                 &mut action_data,
@@ -676,8 +629,8 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![ActionData::default(); Action::n_variants()];
-            expected[OneAndTwo.index()].state = ButtonState::JustPressed;
+            let mut expected = HashMap::new();
+            expected.insert(OneAndTwo, action_datum.clone());
 
             assert_eq!(action_data, expected);
         }
@@ -693,9 +646,11 @@ mod tests {
             app.send_input(Up);
             app.update();
 
-            let mut action_data = vec![ActionData::default(); Action::n_variants()];
-            action_data[MoveDPad.index()].state = ButtonState::JustPressed;
-            action_data[CtrlUp.index()].state = ButtonState::JustPressed;
+            let mut action_data = HashMap::new();
+            let mut action_datum = ActionData::default();
+            action_datum.state.press();
+            action_data.insert(CtrlUp, action_datum.clone());
+            action_data.insert(MoveDPad, action_datum.clone());
 
             input_map.handle_clashes(
                 &mut action_data,
@@ -703,8 +658,8 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = vec![ActionData::default(); Action::n_variants()];
-            expected[CtrlUp.index()].state = ButtonState::JustPressed;
+            let mut expected = HashMap::new();
+            expected.insert(CtrlUp, action_datum);
 
             assert_eq!(action_data, expected);
         }
@@ -725,8 +680,8 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            for (i, action_data) in action_data.iter().enumerate() {
-                if i == CtrlOne.index() || i == OneAndTwo.index() {
+            for (action, action_data) in action_data.iter() {
+                if *action == CtrlOne || *action == OneAndTwo {
                     assert!(action_data.state.pressed());
                 } else {
                     assert!(action_data.state.released());

@@ -105,26 +105,24 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`](bevy::input::Input) resources.
-    pub fn update(&mut self, action_data: Vec<ActionData>) {
-        assert_eq!(action_data.len(), A::n_variants());
-
-        for (i, action) in A::variants().enumerate() {
+    pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
+        for (action, action_datum) in action_data {
             match self.action_data.entry(action) {
                 Entry::Occupied(occupied_entry) => {
                     let entry = occupied_entry.into_mut();
 
-                    match action_data[i].state {
+                    match action_datum.state {
                         ButtonState::JustPressed => entry.state.press(),
                         ButtonState::Pressed => entry.state.press(),
                         ButtonState::JustReleased => entry.state.release(),
                         ButtonState::Released => entry.state.release(),
                     }
 
-                    entry.axis_pair = action_data[i].axis_pair;
-                    entry.value = action_data[i].value;
+                    entry.axis_pair = action_datum.axis_pair;
+                    entry.value = action_datum.value;
                 }
                 Entry::Vacant(empty_entry) => {
-                    empty_entry.insert(action_data[i].clone());
+                    empty_entry.insert(action_datum.clone());
                 }
             }
         }
