@@ -83,10 +83,6 @@ pub mod prelude {
 pub trait Actionlike:
     Eq + Hash + Send + Sync + Clone + Hash + Reflect + TypePath + FromReflect + 'static
 {
-    /// Returns the default value for the action stored at the provided index if it exists
-    ///
-    /// This is mostly used internally, to enable space-efficient iteration.
-    fn get_at(index: usize) -> Option<Self>;
 }
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
