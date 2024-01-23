@@ -2,19 +2,26 @@
 
 ## Unreleased
 
-- Removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`.
-- Register types in the reflection system.
-- added support in `ActionDiff` for value and axis_pair changes
-- Added `InputMap::Clear`.
-- Fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/430) related to incorrect axis data in `Chord` when not all buttons are pressed.
-
 ### Enhancements
 
-- Improved deadzone handling for both `DualAxis` and `SingleAxis` deadzones 
-  - All deadzones now scale the input so that it is continuous.
-  - `DeadZoneShape::Cross` handles each axis seperately, making a per-axis "snapping" effect.
-  - An input that falls on the exact boundary of a deadzone is now considered inside it.
+- improved deadzone handling for both `DualAxis` and `SingleAxis` deadzones
+  - all deadzones now scale the input so that it is continuous.
+  - `DeadZoneShape::Cross` handles each axis seperately, making a per-axis "snapping" effect
+  - an input that falls on the exact boundary of a deadzone is now considered inside it
+- added support in `ActionDiff` for value and axis_pair changes
 
+### Usability
+
+- registered types in the reflection system
+- added `InputMap::clear`
+
+### Bugs
+
+- fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/430) related to incorrect axis data in `Chord` when not all buttons are pressed.
+
+### Code quality
+
+- removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`
 
 ## Version 0.11.2
 
@@ -28,20 +35,9 @@
 ### Bugs
 
 - A disabled `ToggleActions` of one `Action` now does not release other `Action`'s inputs.
-
-## Version 0.11.1
-
 - `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
 
 ## Version 0.11
-
-### Known issues
-
-- `bevy_egui` integration and the `egui` feature flag have been temporarily removed to ensure a timely release
-- gamepad input mocking is not completely functional due to upstream changes: see [#407](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407)
-  - additional experiments and information would be helpful!
-
-### Bugs
 
 ### Known issues
 
