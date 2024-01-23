@@ -245,32 +245,16 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
     pub fn merge(&mut self, other: &InputMap<A>) -> &mut Self {
-        let associated_gamepad = if self.associated_gamepad == other.associated_gamepad {
-            self.associated_gamepad
-        } else {
-            None
-        };
+        if self.associated_gamepad != other.associated_gamepad {
+            self.associated_gamepad = None;
+        }
 
-        let mut new_map = InputMap {
-            associated_gamepad,
-            ..Default::default()
-        };
-
-        for action in A::variants() {
-            if let Some(input_vec) = self.get(&action) {
-                for input in input_vec {
-                    new_map.insert(action.clone(), input.clone());
-                }
-            }
-
-            if let Some(input_vec) = other.get(&action) {
-                for input in input_vec {
-                    new_map.insert(action.clone(), input.clone());
-                }
+        for other_action in other.map.iter() {
+            for input in other_action.1.iter() {
+                self.insert(other_action.0.clone(), input.clone());
             }
         }
 
-        *self = new_map;
         self
     }
 }
@@ -388,11 +372,8 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn len(&self) -> usize {
         let mut i = 0;
-        for action in A::variants() {
-            i += match self.get(&action) {
-                Some(input_vec) => input_vec.len(),
-                None => 0,
-            };
+        for inputs in self.map.values() {
+            i += inputs.len();
         }
         i
     }

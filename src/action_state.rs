@@ -425,14 +425,14 @@ impl<A: Actionlike> ActionState<A> {
     /// Consumes all actions
     #[inline]
     pub fn consume_all(&mut self) {
-        for action in A::variants() {
+        for action in self.keys() {
             self.consume(&action);
         }
     }
 
     /// Releases all actions
     pub fn release_all(&mut self) {
-        for action in A::variants() {
+        for action in self.keys() {
             self.release(&action);
         }
     }
@@ -492,25 +492,41 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     /// Which actions are currently pressed?
     pub fn get_pressed(&self) -> Vec<A> {
-        A::variants().filter(|a| self.pressed(a)).collect()
+        self.action_data
+            .iter()
+            .filter(|(_action, data)| data.state.pressed())
+            .map(|(action, _data)| action.clone())
+            .collect()
     }
 
     #[must_use]
     /// Which actions were just pressed?
     pub fn get_just_pressed(&self) -> Vec<A> {
-        A::variants().filter(|a| self.just_pressed(a)).collect()
+        self.action_data
+            .iter()
+            .filter(|(_action, data)| data.state.just_pressed())
+            .map(|(action, _data)| action.clone())
+            .collect()
     }
 
     #[must_use]
     /// Which actions are currently released?
     pub fn get_released(&self) -> Vec<A> {
-        A::variants().filter(|a| self.released(a)).collect()
+        self.action_data
+            .iter()
+            .filter(|(_action, data)| data.state.released())
+            .map(|(action, _data)| action.clone())
+            .collect()
     }
 
     #[must_use]
     /// Which actions were just released?
     pub fn get_just_released(&self) -> Vec<A> {
-        A::variants().filter(|a| self.just_released(a)).collect()
+        self.action_data
+            .iter()
+            .filter(|(_action, data)| data.state.just_released())
+            .map(|(action, _data)| action.clone())
+            .collect()
     }
 
     /// The [`Instant`] that the action was last pressed or released
@@ -581,6 +597,13 @@ impl<A: Actionlike> ActionState<A> {
                 action_data.value = axis_pair.length();
             }
         };
+    }
+
+    /// Returns an owned list of the [`Actionlike`] keys in this [`ActionState`].
+    #[inline]
+    #[must_use]
+    pub fn keys(&self) -> Vec<A> {
+        self.action_data.keys().cloned().collect()
     }
 }
 

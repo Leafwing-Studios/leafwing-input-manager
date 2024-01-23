@@ -21,6 +21,13 @@ enum TestAction {
     J,
 }
 
+impl TestAction {
+    fn variants() -> impl Iterator<Item = TestAction> {
+        use TestAction::*;
+        [A, B, C, D, E, F, G, H, I, J].iter().copied()
+    }
+}
+
 fn pressed(action_state: &ActionState<TestAction>) -> bool {
     action_state.pressed(&TestAction::A)
 }
