@@ -188,8 +188,8 @@ impl<A: Actionlike> Clash<A> {
     #[must_use]
     fn new(action_a: A, action_b: A) -> Self {
         Self {
-            action_a: action_a,
-            action_b: action_b,
+            action_a,
+            action_b,
             inputs_a: Vec::default(),
             inputs_b: Vec::default(),
         }
