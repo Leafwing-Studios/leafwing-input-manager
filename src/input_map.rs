@@ -329,7 +329,6 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`].
-    /// The position in each vector corresponds to `Actionlike::index()`.
     #[must_use]
     pub fn which_pressed(
         &self,

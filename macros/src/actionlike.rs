@@ -102,13 +102,6 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
                     _ => None,
                 }
             }
-
-            fn index(&self) -> usize {
-                match self {
-                    #(#index_match_items)*
-                    _ => unreachable!()
-                }
-            }
         }
     }
 }

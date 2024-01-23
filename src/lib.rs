@@ -93,9 +93,6 @@ pub trait Actionlike:
     ///
     /// This is mostly used internally, to enable space-efficient iteration.
     fn get_at(index: usize) -> Option<Self>;
-
-    /// Returns the position in the defining enum of the given action
-    fn index(&self) -> usize;
 }
 
 /// An iterator of [`Actionlike`] actions
