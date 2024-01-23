@@ -47,10 +47,10 @@ fn spawn_player(mut commands: Commands) {
             // However, the _position_ of the keys will be the same, regardless of layout.
             // This way, every player can use the classic triangle shaped key arrangement.
             input_map: InputMap::new([
-                (QwertyScanCode::W, Action::Forward),
-                (QwertyScanCode::A, Action::Left),
-                (QwertyScanCode::S, Action::Backward),
-                (QwertyScanCode::D, Action::Right),
+                (Action::Forward, QwertyScanCode::W),
+                (Action::Left, QwertyScanCode::A),
+                (Action::Backward, QwertyScanCode::S),
+                (Action::Right, QwertyScanCode::D),
             ]),
         })
         .insert(Player);

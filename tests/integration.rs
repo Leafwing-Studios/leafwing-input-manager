@@ -44,7 +44,7 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     commands
         .spawn(InputManagerBundle::<Action> {
-            input_map: InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]),
+            input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
             ..Default::default()
         })
         .insert(Player);
@@ -62,7 +62,7 @@ fn do_nothing() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]));
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]));
 
     app.update();
     let action_state = app.world.resource::<ActionState<Action>>();
@@ -105,7 +105,7 @@ fn disable_input() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
         .init_resource::<Respect>()
         .add_systems(Update, pay_respects)
         .add_systems(PreUpdate, respect_fades);
@@ -144,7 +144,7 @@ fn release_when_input_map_removed() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
         .init_resource::<Respect>()
         .add_systems(Update, (pay_respects, remove_input_map))
         .add_systems(PreUpdate, respect_fades);
@@ -186,7 +186,7 @@ fn action_state_driver() {
     fn setup(mut commands: Commands) {
         let player_entity = commands
             .spawn(InputManagerBundle::<Action> {
-                input_map: InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]),
+                input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
                 ..Default::default()
             })
             .insert(Player)
@@ -269,7 +269,7 @@ fn duration() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
         .init_resource::<Respect>()
         .add_systems(Update, hold_f_to_pay_respects);
 
@@ -300,7 +300,7 @@ fn schedule_presses() {
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<Action>::default())
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(KeyCode::F, Action::PayRespects)]))
+        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
         .init_resource::<PressScheduler<Action>>();
 
     // Initializing

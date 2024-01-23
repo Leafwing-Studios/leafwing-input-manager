@@ -86,13 +86,13 @@ fn spawn_player(mut commands: Commands) {
     commands.spawn(PlayerBundle {
         player: Player,
         slot_input_map: InputMap::new([
-            (Q, Slot::Ability1),
-            (W, Slot::Ability2),
-            (E, Slot::Ability3),
-            (R, Slot::Ability4),
+            (Slot::Ability1, Q),
+            (Slot::Ability2, W),
+            (Slot::Ability3, E),
+            (Slot::Ability4, R),
         ])
-        .insert(MouseButton::Left, Slot::Primary)
-        .insert(MouseButton::Right, Slot::Secondary)
+        .insert(Slot::Primary, MouseButton::Left)
+        .insert(Slot::Secondary, MouseButton::Right)
         .build(),
         slot_action_state: ActionState::default(),
         ability_action_state: ActionState::default(),

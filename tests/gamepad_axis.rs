@@ -52,8 +52,8 @@ fn test_app() -> App {
 fn raw_gamepad_axis_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
         ButtonlikeTestAction::Up,
+        SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
     )]));
 
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -126,12 +126,12 @@ fn game_pad_single_axis() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
         (
-            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1),
             AxislikeTestAction::X,
+            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1),
         ),
         (
-            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1),
             AxislikeTestAction::Y,
+            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1),
         ),
     ]));
 
@@ -241,12 +241,12 @@ fn game_pad_single_axis_inverted() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
         (
-            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1).inverted(),
             AxislikeTestAction::X,
+            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1).inverted(),
         ),
         (
-            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1).inverted(),
             AxislikeTestAction::Y,
+            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1).inverted(),
         ),
     ]));
 
@@ -316,11 +316,11 @@ fn game_pad_single_axis_inverted() {
 fn game_pad_dual_axis_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
+        AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
             horizontal_width: 0.1,
             vertical_width: 0.1,
         }),
-        AxislikeTestAction::XY,
     )]));
 
     // Test that an input inside the cross deadzone is filtered out.
@@ -382,11 +382,11 @@ fn game_pad_dual_axis_cross() {
 fn game_pad_dual_axis_ellipse() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
+        AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Ellipse {
             radius_x: 0.1,
             radius_y: 0.1,
         }),
-        AxislikeTestAction::XY,
     )]));
 
     // Test that an input inside the ellipse deadzone is filtered out, assuming values of 0.1
@@ -430,11 +430,11 @@ fn game_pad_dual_axis_ellipse() {
 fn test_zero_cross() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
+        AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Cross {
             horizontal_width: 0.0,
             vertical_width: 0.0,
         }),
-        AxislikeTestAction::XY,
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.
@@ -460,11 +460,11 @@ fn test_zero_cross() {
 fn test_zero_ellipse() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
+        AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(DeadZoneShape::Ellipse {
             radius_x: 0.0,
             radius_y: 0.0,
         }),
-        AxislikeTestAction::XY,
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.
@@ -491,8 +491,8 @@ fn test_zero_ellipse() {
 fn game_pad_virtualdpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
-        VirtualDPad::dpad(),
         AxislikeTestAction::XY,
+        VirtualDPad::dpad(),
     )]));
 
     app.send_input(GamepadButtonType::DPadLeft);

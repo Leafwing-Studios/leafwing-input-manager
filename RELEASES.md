@@ -12,6 +12,7 @@
 
 ### Usability
 
+- `InputMap`s are now constructed with `(Action, Input)` pairs, rather than `(Input, Action)` pairs, which directly matches the underlying data model
 - registered types in the reflection system
 - added `InputMap::clear`
 
@@ -23,9 +24,9 @@
 
 ### Code quality
 
+- all non-insertion methods now take `&A: Actionlike` rather than `A: Actionlike` to avoid pointless cloning
 - removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`
 - removed widely unused and untested dynamic actions functionality: this should be more feasible to implement directly with the changed architecture
-- all non-insertion methods now take `&A: Actionlike` rather than `A: Actionlike` to avoid pointless cloning
   
 ## Version 0.11.2
 

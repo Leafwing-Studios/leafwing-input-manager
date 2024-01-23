@@ -22,7 +22,7 @@ fn setup(mut commands: Commands) {
             input_map: InputMap::default()
                 // This will capture the total continuous value, for direct use.
                 // Note that you can also use discrete gesture-like motion, via the `MouseMotionDirection` enum.
-                .insert(DualAxis::mouse_motion(), CameraMovement::Pan)
+                .insert(CameraMovement::Pan, DualAxis::mouse_motion())
                 .build(),
             ..default()
         });

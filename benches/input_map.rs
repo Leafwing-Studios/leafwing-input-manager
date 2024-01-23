@@ -27,32 +27,32 @@ enum TestAction {
 
 fn construct_input_map_from_iter() -> InputMap<TestAction> {
     black_box(InputMap::new([
-        (KeyCode::A, TestAction::A),
-        (KeyCode::B, TestAction::B),
-        (KeyCode::C, TestAction::C),
-        (KeyCode::D, TestAction::D),
-        (KeyCode::E, TestAction::E),
-        (KeyCode::F, TestAction::F),
-        (KeyCode::G, TestAction::G),
-        (KeyCode::H, TestAction::H),
-        (KeyCode::I, TestAction::I),
-        (KeyCode::J, TestAction::J),
+        (TestAction::A, KeyCode::A),
+        (TestAction::B, KeyCode::B),
+        (TestAction::C, KeyCode::C),
+        (TestAction::D, KeyCode::D),
+        (TestAction::E, KeyCode::E),
+        (TestAction::F, KeyCode::F),
+        (TestAction::G, KeyCode::G),
+        (TestAction::H, KeyCode::H),
+        (TestAction::I, KeyCode::I),
+        (TestAction::J, KeyCode::J),
     ]))
 }
 
 fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
     black_box(
         InputMap::default()
-            .insert(KeyCode::A, TestAction::A)
-            .insert(KeyCode::B, TestAction::B)
-            .insert(KeyCode::C, TestAction::C)
-            .insert(KeyCode::D, TestAction::D)
-            .insert(KeyCode::E, TestAction::E)
-            .insert(KeyCode::F, TestAction::F)
-            .insert(KeyCode::G, TestAction::G)
-            .insert(KeyCode::H, TestAction::H)
-            .insert(KeyCode::I, TestAction::I)
-            .insert(KeyCode::J, TestAction::J)
+            .insert(TestAction::A, KeyCode::A)
+            .insert(TestAction::B, KeyCode::B)
+            .insert(TestAction::C, KeyCode::C)
+            .insert(TestAction::D, KeyCode::D)
+            .insert(TestAction::E, KeyCode::E)
+            .insert(TestAction::F, KeyCode::F)
+            .insert(TestAction::G, KeyCode::G)
+            .insert(TestAction::H, KeyCode::H)
+            .insert(TestAction::I, KeyCode::I)
+            .insert(TestAction::J, KeyCode::J)
             .build(),
     )
 }

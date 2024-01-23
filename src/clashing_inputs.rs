@@ -439,24 +439,24 @@ mod tests {
 
         let mut input_map = InputMap::default();
 
-        input_map.insert(Key1, One);
-        input_map.insert(Key2, Two);
-        input_map.insert_chord([Key1, Key2], OneAndTwo);
-        input_map.insert_chord([Key2, Key3], TwoAndThree);
-        input_map.insert_chord([Key1, Key2, Key3], OneAndTwoAndThree);
-        input_map.insert_chord([ControlLeft, Key1], CtrlOne);
-        input_map.insert_chord([AltLeft, Key1], AltOne);
-        input_map.insert_chord([ControlLeft, AltLeft, Key1], CtrlAltOne);
+        input_map.insert(One, Key1);
+        input_map.insert(Two, Key2);
+        input_map.insert_chord(OneAndTwo, [Key1, Key2]);
+        input_map.insert_chord(TwoAndThree, [Key2, Key3]);
+        input_map.insert_chord(OneAndTwoAndThree, [Key1, Key2, Key3]);
+        input_map.insert_chord(CtrlOne, [ControlLeft, Key1]);
+        input_map.insert_chord(AltOne, [AltLeft, Key1]);
+        input_map.insert_chord(CtrlAltOne, [ControlLeft, AltLeft, Key1]);
         input_map.insert(
+            MoveDPad,
             VirtualDPad {
                 up: Up.into(),
                 down: Down.into(),
                 left: Left.into(),
                 right: Right.into(),
             },
-            MoveDPad,
         );
-        input_map.insert_chord([ControlLeft, Up], CtrlUp);
+        input_map.insert_chord(CtrlUp, [ControlLeft, Up]);
 
         input_map
     }
@@ -568,7 +568,7 @@ mod tests {
             assert_eq!(input_map.possible_clashes().len(), 13);
 
             // Possible clashes are cached upon binding insertion
-            input_map.insert(UserInput::chord([ControlLeft, AltLeft, Key1]), Action::Two);
+            input_map.insert(Action::Two, UserInput::chord([ControlLeft, AltLeft, Key1]));
             assert_eq!(input_map.possible_clashes().len(), 16);
 
             // Possible clashes are cached upon binding removal
