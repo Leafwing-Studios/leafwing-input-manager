@@ -27,6 +27,11 @@
 - all non-insertion methods now take `&A: Actionlike` rather than `A: Actionlike` to avoid pointless cloning
 - removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`
 - removed widely unused and untested dynamic actions functionality: this should be more feasible to implement directly with the changed architecture
+- `ActionState` now stores a `HashMap` internally
+  - `ActionState::update` now takes a `HashMap<A, ActionState>` rather than relying on ordering
+  - `InputMap::which_pressed` now returns a `HashMap<A, ActionState>`
+  - `handle_clashes` now takes a `HashMap<A, ActionState>`
+  - `ClashStrategy::UseActionOrder` has been removed
   
 ## Version 0.11.2
 

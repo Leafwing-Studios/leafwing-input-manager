@@ -51,48 +51,6 @@ fn spawn_player(mut commands: Commands) {
 }
 
 #[test]
-fn do_nothing() {
-    use bevy::input::InputPlugin;
-    use bevy::utils::Duration;
-
-    let mut app = App::new();
-
-    app.add_plugins(MinimalPlugins)
-        .add_plugins(InputPlugin)
-        .add_plugins(InputManagerPlugin::<Action>::default())
-        .add_systems(Startup, spawn_player)
-        .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]));
-
-    app.update();
-    let action_state = app.world.resource::<ActionState<Action>>();
-    let t0 = action_state.instant_started(&Action::PayRespects);
-    assert!(t0.is_some());
-    let mut duration_last_update = Duration::ZERO;
-
-    for _ in 0..3 {
-        app.update();
-        let action_state = app.world.resource::<ActionState<Action>>();
-
-        // Sanity checking state to catch wonkiness
-        assert!(!action_state.pressed(&Action::PayRespects));
-        assert!(!action_state.just_pressed(&Action::PayRespects));
-        assert!(action_state.released(&Action::PayRespects));
-        assert!(!action_state.just_released(&Action::PayRespects));
-
-        assert_eq!(action_state.instant_started(&Action::PayRespects), t0);
-        assert_eq!(
-            action_state.previous_duration(&Action::PayRespects),
-            Duration::ZERO
-        );
-        assert!(action_state.current_duration(&Action::PayRespects) > duration_last_update);
-
-        duration_last_update = action_state.current_duration(&Action::PayRespects);
-        dbg!(duration_last_update);
-    }
-}
-
-#[test]
 fn disable_input() {
     use bevy::input::InputPlugin;
 

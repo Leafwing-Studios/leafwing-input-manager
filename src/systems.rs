@@ -20,6 +20,7 @@ use bevy::{
         mouse::{MouseButton, MouseMotion, MouseWheel},
         Axis, Input,
     },
+    log::warn,
     math::Vec2,
     time::{Real, Time},
     utils::{HashMap, Instant},
@@ -206,7 +207,12 @@ pub fn generate_action_diffs<A: Actionlike>(
     for (maybe_entity, action_state) in action_state_iter {
         let mut diffs = vec![];
         for action in action_state.get_just_pressed() {
-            match action_state.action_data(&action).axis_pair {
+            let Some(action_data) = action_state.action_data(&action) else {
+                warn!("Action in ActionDiff has no data: was it generated correctly?");
+                continue;
+            };
+
+            match action_data.axis_pair {
                 Some(axis_pair) => {
                     diffs.push(ActionDiff::AxisPairChanged {
                         action: action.clone(),
@@ -220,7 +226,8 @@ pub fn generate_action_diffs<A: Actionlike>(
                         .insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
-                    let value = action_state.value(&action);
+                    let value = action_data.value;
+
                     diffs.push(if value == 1. {
                         ActionDiff::Pressed {
                             action: action.clone(),
@@ -244,7 +251,13 @@ pub fn generate_action_diffs<A: Actionlike>(
             if action_state.just_pressed(&action) {
                 continue;
             }
-            match action_state.action_data(&action).axis_pair {
+
+            let Some(action_data) = action_state.action_data(&action) else {
+                warn!("Action in ActionState has no data: was it generated correctly?");
+                continue;
+            };
+
+            match action_data.axis_pair {
                 Some(axis_pair) => {
                     let previous_axis_pairs = previous_axis_pairs.get_mut(&action).unwrap();
 
@@ -260,7 +273,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                     previous_axis_pairs.insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
-                    let value = action_state.value(&action);
+                    let value = action_data.value;
                     let previous_values = previous_values.get_mut(&action).unwrap();
 
                     if let Some(previous_value) = previous_values.get(&maybe_entity) {

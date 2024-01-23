@@ -1,4 +1,4 @@
-use bevy::prelude::Reflect;
+use bevy::{prelude::Reflect, utils::HashMap};
 use criterion::{criterion_group, criterion_main, Criterion};
 use leafwing_input_manager::{
     action_state::{ActionData, Timing},
@@ -37,7 +37,7 @@ fn just_released(action_state: &ActionState<TestAction>) -> bool {
     action_state.just_released(&TestAction::A)
 }
 
-fn update(mut action_state: ActionState<TestAction>, action_data: Vec<ActionData>) {
+fn update(mut action_state: ActionState<TestAction>, action_data: HashMap<TestAction, ActionData>) {
     action_state.update(action_data);
 }
 
@@ -52,13 +52,18 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("released", |b| b.iter(|| released(&action_state)));
     c.bench_function("just_released", |b| b.iter(|| just_released(&action_state)));
 
-    let action_data: Vec<ActionData> = TestAction::variants()
-        .map(|_action| ActionData {
-            state: ButtonState::JustPressed,
-            value: 0.0,
-            axis_pair: None,
-            timing: Timing::default(),
-            consumed: false,
+    let action_data: HashMap<TestAction, ActionData> = TestAction::variants()
+        .map(|action| {
+            (
+                action,
+                ActionData {
+                    state: ButtonState::JustPressed,
+                    value: 0.0,
+                    axis_pair: None,
+                    timing: Timing::default(),
+                    consumed: false,
+                },
+            )
         })
         .collect();
 

@@ -139,7 +139,10 @@ fn generate_binary_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(|mut action_state| {
-            action_state.action_data_mut(&Action::PayTheBills).value = 1.;
+            action_state
+                .action_data_mut(&Action::PayTheBills)
+                .unwrap()
+                .value = 1.;
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>);
@@ -201,7 +204,10 @@ fn generate_value_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {
-            action_state.action_data_mut(&Action::PayTheBills).value = input_value;
+            action_state
+                .action_data_mut(&Action::PayTheBills)
+                .unwrap()
+                .value = input_value;
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)
@@ -266,8 +272,10 @@ fn generate_axis_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {
-            action_state.action_data_mut(&Action::PayTheBills).axis_pair =
-                Some(DualAxisData::from_xy(input_axis_pair));
+            action_state
+                .action_data_mut(&Action::PayTheBills)
+                .unwrap()
+                .axis_pair = Some(DualAxisData::from_xy(input_axis_pair));
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)
