@@ -17,8 +17,8 @@ fn spawn_da_bills(mut commands: Commands) {
 }
 
 fn pay_da_bills(
-    mutation: impl Fn(Mut<ActionState<Action>>) -> (),
-) -> impl Fn(Query<&mut ActionState<Action>>, Local<Counter>) -> () {
+    mutation: impl Fn(Mut<ActionState<Action>>),
+) -> impl Fn(Query<&mut ActionState<Action>>, Local<Counter>) {
     move |mut action_state_query: Query<&mut ActionState<Action>>, mut counter: Local<Counter>| {
         if let Ok(mut action_state) = action_state_query.get_single_mut() {
             if !action_state.pressed(&Action::PayTheBills) {

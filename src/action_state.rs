@@ -249,7 +249,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_value`](Self::clamped_value) method instead.
     pub fn value(&self, action: &A) -> f32 {
-        self.action_data(&action).value
+        self.action_data(action).value
     }
 
     /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
@@ -274,12 +274,12 @@ impl<A: Actionlike> ActionState<A> {
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
     pub fn axis_pair(&self, action: &A) -> Option<DualAxisData> {
-        self.action_data(&action).axis_pair
+        self.action_data(action).axis_pair
     }
 
     /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
     pub fn clamped_axis_pair(&self, action: &A) -> Option<DualAxisData> {
-        self.axis_pair(&action)
+        self.axis_pair(action)
             .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
     }
 
@@ -351,7 +351,7 @@ impl<A: Actionlike> ActionState<A> {
         // Once released, consumed actions can be pressed again
         self.action_data[index].consumed = false;
 
-        if self.pressed(&action) {
+        if self.pressed(action) {
             self.action_data[index].timing.flip();
         }
 
@@ -526,7 +526,7 @@ impl<A: Actionlike> ActionState<A> {
             }
             ActionDiff::AxisPairChanged { action, axis_pair } => {
                 self.press(&action.clone());
-                let action_data = self.action_data_mut(&action);
+                let action_data = self.action_data_mut(action);
                 action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
                 action_data.value = axis_pair.length();
             }

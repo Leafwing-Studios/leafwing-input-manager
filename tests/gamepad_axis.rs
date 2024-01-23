@@ -353,7 +353,7 @@ fn game_pad_dual_axis_cross() {
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0061539);
+    assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.006_154);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(1.0, 0.11111112)

@@ -64,7 +64,7 @@ impl PlayerAction {
         let mut input_map = InputMap::default();
 
         for variant in PlayerAction::variants() {
-            input_map.insert(variant.default_mkb_binding(), variant.clone());
+            input_map.insert(variant.default_mkb_binding(), variant);
             input_map.insert(variant.default_gamepad_binding(), variant);
         }
         input_map

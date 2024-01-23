@@ -211,7 +211,7 @@ impl<A: Actionlike> Clash<A> {
 
 // Does the `button` clash with the `chord`?
 #[must_use]
-fn button_chord_clash(button: &InputKind, chord: &Vec<InputKind>) -> bool {
+fn button_chord_clash(button: &InputKind, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -221,7 +221,7 @@ fn button_chord_clash(button: &InputKind, chord: &Vec<InputKind>) -> bool {
 
 // Does the `dpad` clash with the `chord`?
 #[must_use]
-fn dpad_chord_clash(dpad: &VirtualDPad, chord: &Vec<InputKind>) -> bool {
+fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -274,7 +274,7 @@ fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
 }
 
 #[must_use]
-fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &Vec<InputKind>) -> bool {
+fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
