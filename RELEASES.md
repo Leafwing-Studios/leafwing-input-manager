@@ -27,6 +27,7 @@
 - all non-insertion methods now take `&A: Actionlike` rather than `A: Actionlike` to avoid pointless cloning
 - removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`
 - removed widely unused and untested dynamic actions functionality: this should be more feasible to implement directly with the changed architecture
+- `ActionState` now stores a `HashMap` internally
   
 ## Version 0.11.2
 
