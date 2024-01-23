@@ -22,6 +22,7 @@
 ### Code quality
 
 - removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`
+- removed widely unused and untested dynamic actions functionality: this should be more feasible to implement directly with the changed architecture
 
 ## Version 0.11.2
 
