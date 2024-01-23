@@ -61,13 +61,13 @@ fn jump(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
 
     // Each action has a button-like state of its own that you can check
-    if action_state.just_pressed(Action::Forward) {
+    if action_state.just_pressed(&Action::Forward) {
         println!("Going forward!");
-    } else if action_state.just_pressed(Action::Left) {
+    } else if action_state.just_pressed(&Action::Left) {
         println!("Going left!");
-    } else if action_state.just_pressed(Action::Backward) {
+    } else if action_state.just_pressed(&Action::Backward) {
         println!("Going backward!");
-    } else if action_state.just_pressed(Action::Right) {
+    } else if action_state.just_pressed(&Action::Right) {
         println!("Going right!");
     }
 }

@@ -69,23 +69,23 @@ fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
     let action_state = query.single();
 
     // When the default input for `PlayerAction::Run` is pressed, print the clamped direction of the axis
-    if action_state.pressed(PlayerAction::Run) {
+    if action_state.pressed(&PlayerAction::Run) {
         println!(
             "Moving in direction {}",
             action_state
-                .clamped_axis_pair(PlayerAction::Run)
+                .clamped_axis_pair(&PlayerAction::Run)
                 .unwrap()
                 .xy()
         );
     }
 
     // When the default input for `PlayerAction::Jump` is pressed, print "Jump!"
-    if action_state.just_pressed(PlayerAction::Jump) {
+    if action_state.just_pressed(&PlayerAction::Jump) {
         println!("Jumped!");
     }
 
     // When the default input for `PlayerAction::UseItem` is pressed, print "Used an Item!"
-    if action_state.just_pressed(PlayerAction::UseItem) {
+    if action_state.just_pressed(&PlayerAction::UseItem) {
         println!("Used an Item!");
     }
 }

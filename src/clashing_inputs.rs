@@ -153,8 +153,8 @@ impl<A: Actionlike> InputMap<A> {
     fn possible_clash(&self, action_a: A, action_b: A) -> Option<Clash<A>> {
         let mut clash = Clash::new(action_a.clone(), action_b.clone());
 
-        for input_a in self.get(action_a)? {
-            for input_b in self.get(action_b.clone())? {
+        for input_a in self.get(&action_a)? {
+            for input_b in self.get(&action_b)? {
                 if input_a.clashes(input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
@@ -211,7 +211,7 @@ impl<A: Actionlike> Clash<A> {
 
 // Does the `button` clash with the `chord`?
 #[must_use]
-fn button_chord_clash(button: &InputKind, chord: &Vec<InputKind>) -> bool {
+fn button_chord_clash(button: &InputKind, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -221,7 +221,7 @@ fn button_chord_clash(button: &InputKind, chord: &Vec<InputKind>) -> bool {
 
 // Does the `dpad` clash with the `chord`?
 #[must_use]
-fn dpad_chord_clash(dpad: &VirtualDPad, chord: &Vec<InputKind>) -> bool {
+fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -274,7 +274,7 @@ fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
 }
 
 #[must_use]
-fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &Vec<InputKind>) -> bool {
+fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
@@ -572,7 +572,7 @@ mod tests {
             assert_eq!(input_map.possible_clashes().len(), 16);
 
             // Possible clashes are cached upon binding removal
-            input_map.clear_action(Action::One);
+            input_map.clear_action(&Action::One);
             assert_eq!(input_map.possible_clashes().len(), 10);
         }
 

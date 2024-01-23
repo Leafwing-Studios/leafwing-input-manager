@@ -17,15 +17,15 @@ fn spawn_da_bills(mut commands: Commands) {
 }
 
 fn pay_da_bills(
-    mutation: impl Fn(Mut<ActionState<Action>>) -> (),
-) -> impl Fn(Query<&mut ActionState<Action>>, Local<Counter>) -> () {
+    mutation: impl Fn(Mut<ActionState<Action>>),
+) -> impl Fn(Query<&mut ActionState<Action>>, Local<Counter>) {
     move |mut action_state_query: Query<&mut ActionState<Action>>, mut counter: Local<Counter>| {
         if let Ok(mut action_state) = action_state_query.get_single_mut() {
-            if !action_state.pressed(Action::PayTheBills) {
-                action_state.press(Action::PayTheBills);
+            if !action_state.pressed(&Action::PayTheBills) {
+                action_state.press(&Action::PayTheBills);
                 mutation(action_state);
             } else if counter.0 > 1 {
-                action_state.release(Action::PayTheBills);
+                action_state.release(&Action::PayTheBills);
             }
             counter.0 += 1;
         }
@@ -104,24 +104,24 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
     assert_eq!(action_diff_event.action_diffs.len(), 1);
     match action_diff_event.action_diffs.first().unwrap().clone() {
         ActionDiff::Pressed { action } => {
-            assert!(action_state.pressed(action));
-            assert!(action_state.value(action) == 1.);
+            assert!(action_state.pressed(&action));
+            assert!(action_state.value(&action) == 1.);
         }
         ActionDiff::Released { action } => {
-            assert!(action_state.released(action));
-            assert!(action_state.value(action) == 0.);
-            assert!(action_state.axis_pair(action).is_none());
+            assert!(action_state.released(&action));
+            assert!(action_state.value(&action) == 0.);
+            assert!(action_state.axis_pair(&action).is_none());
         }
         ActionDiff::ValueChanged { action, value } => {
-            assert!(action_state.pressed(action));
-            assert!(action_state.value(action) == value);
+            assert!(action_state.pressed(&action));
+            assert!(action_state.value(&action) == value);
         }
         ActionDiff::AxisPairChanged { action, axis_pair } => {
-            assert!(action_state.pressed(action));
-            match action_state.axis_pair(action) {
+            assert!(action_state.pressed(&action));
+            match action_state.axis_pair(&action) {
                 Some(axis_pair_data) => {
                     assert!(axis_pair_data.xy() == axis_pair);
-                    assert!(action_state.value(action) == axis_pair_data.xy().length());
+                    assert!(action_state.value(&action) == axis_pair_data.xy().length());
                 }
                 None => panic!("Expected an `AxisPair` variant. Received none."),
             }
@@ -139,7 +139,7 @@ fn generate_binary_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(|mut action_state| {
-            action_state.action_data_mut(Action::PayTheBills).value = 1.;
+            action_state.action_data_mut(&Action::PayTheBills).value = 1.;
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>);
@@ -201,7 +201,7 @@ fn generate_value_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {
-            action_state.action_data_mut(Action::PayTheBills).value = input_value;
+            action_state.action_data_mut(&Action::PayTheBills).value = input_value;
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)
@@ -266,7 +266,7 @@ fn generate_axis_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {
-            action_state.action_data_mut(Action::PayTheBills).axis_pair =
+            action_state.action_data_mut(&Action::PayTheBills).axis_pair =
                 Some(DualAxisData::from_xy(input_axis_pair));
         }),
     )

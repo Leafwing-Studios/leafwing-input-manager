@@ -81,8 +81,8 @@ fn main() {
 
     let mut player_state_query = client_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&client_app.world).next().unwrap();
-    assert!(player_state.pressed(FpsAction::Jump));
-    assert!(player_state.pressed(FpsAction::Shoot));
+    assert!(player_state.pressed(&FpsAction::Jump));
+    assert!(player_state.pressed(&FpsAction::Shoot));
 
     // These events are transferred to the server
     let event_reader =
@@ -94,16 +94,16 @@ fn main() {
     // And the actions are pressed on the server!
     let mut player_state_query = server_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&server_app.world).next().unwrap();
-    assert!(player_state.pressed(FpsAction::Jump));
-    assert!(player_state.pressed(FpsAction::Shoot));
+    assert!(player_state.pressed(&FpsAction::Jump));
+    assert!(player_state.pressed(&FpsAction::Shoot));
 
     // If we wait a tick, the buttons will be released
     client_app.reset_inputs();
     client_app.update();
     let mut player_state_query = client_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&client_app.world).next().unwrap();
-    assert!(player_state.released(FpsAction::Jump));
-    assert!(player_state.released(FpsAction::Shoot));
+    assert!(player_state.released(&FpsAction::Jump));
+    assert!(player_state.released(&FpsAction::Shoot));
 
     // Sending over the new `ActionDiff` event stream,
     // we can see that the actions are now released on the server too
@@ -114,8 +114,8 @@ fn main() {
 
     let mut player_state_query = server_app.world.query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(&server_app.world).next().unwrap();
-    assert!(player_state.released(FpsAction::Jump));
-    assert!(player_state.released(FpsAction::Shoot));
+    assert!(player_state.released(&FpsAction::Jump));
+    assert!(player_state.released(&FpsAction::Shoot));
 }
 
 #[derive(Component)]

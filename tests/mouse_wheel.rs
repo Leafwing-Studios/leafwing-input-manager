@@ -49,7 +49,7 @@ fn raw_mouse_wheel_events() {
 
     app.update();
     let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
-    assert!(action_state.pressed(ButtonlikeTestAction::Up));
+    assert!(action_state.pressed(&ButtonlikeTestAction::Up));
 }
 
 #[test]
@@ -128,13 +128,13 @@ fn mouse_wheel_buttonlike() {
     for action in ButtonlikeTestAction::variants() {
         let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
-        let input = input_map.get(action).unwrap().first().unwrap().clone();
+        let input = input_map.get(&action).unwrap().first().unwrap().clone();
 
         app.send_input(input.clone());
         app.update();
 
         let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
-        assert!(action_state.pressed(action), "failed for {input:?}");
+        assert!(action_state.pressed(&action), "failed for {input:?}");
     }
 }
 
@@ -156,8 +156,8 @@ fn mouse_wheel_buttonlike_cancels() {
 
     let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
 
-    assert!(!action_state.pressed(ButtonlikeTestAction::Up));
-    assert!(!action_state.pressed(ButtonlikeTestAction::Down));
+    assert!(!action_state.pressed(&ButtonlikeTestAction::Up));
+    assert!(!action_state.pressed(&ButtonlikeTestAction::Down));
 }
 
 #[test]
@@ -180,7 +180,7 @@ fn mouse_wheel_single_axis() {
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(AxislikeTestAction::X));
+    assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // -X
     let input = SingleAxis {
@@ -194,7 +194,7 @@ fn mouse_wheel_single_axis() {
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(AxislikeTestAction::X));
+    assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // +Y
     let input = SingleAxis {
@@ -208,7 +208,7 @@ fn mouse_wheel_single_axis() {
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(AxislikeTestAction::Y));
+    assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // -Y
     let input = SingleAxis {
@@ -222,7 +222,7 @@ fn mouse_wheel_single_axis() {
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(AxislikeTestAction::Y));
+    assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
     let input = SingleAxis {
@@ -237,7 +237,7 @@ fn mouse_wheel_single_axis() {
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(AxislikeTestAction::Y));
+    assert!(!action_state.pressed(&AxislikeTestAction::Y));
 
     // None
     let input = SingleAxis {
@@ -251,7 +251,7 @@ fn mouse_wheel_single_axis() {
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(AxislikeTestAction::Y));
+    assert!(!action_state.pressed(&AxislikeTestAction::Y));
 }
 
 #[test]
@@ -273,10 +273,10 @@ fn mouse_wheel_dual_axis() {
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(AxislikeTestAction::XY));
-    assert_eq!(action_state.value(AxislikeTestAction::XY), 5.0);
+    assert!(action_state.pressed(&AxislikeTestAction::XY));
+    assert_eq!(action_state.value(&AxislikeTestAction::XY), 5.0);
     assert_eq!(
-        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
         DualAxisData::new(5.0, 0.0)
     );
 }
@@ -299,11 +299,11 @@ fn mouse_wheel_virtualdpad() {
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(AxislikeTestAction::XY));
+    assert!(action_state.pressed(&AxislikeTestAction::XY));
     // This should be unit length, because we're working with a VirtualDpad
-    assert_eq!(action_state.value(AxislikeTestAction::XY), 1.0);
+    assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
-        action_state.axis_pair(AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
         // This should be unit length, because we're working with a VirtualDpad
         DualAxisData::new(0.0, -1.0)
     );

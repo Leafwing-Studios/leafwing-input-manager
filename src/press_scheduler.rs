@@ -31,14 +31,14 @@ impl<A: Actionlike> Default for PressScheduler<A> {
 impl<A: Actionlike> PressScheduler<A> {
     /// Schedule a press for this action for the next frame
     /// The action will be pressed the next time [`crate::systems::update_action_state`] runs.
-    pub fn schedule_press(&mut self, action: A) {
+    pub fn schedule_press(&mut self, action: &A) {
         self.bitset.set(action.index(), true);
     }
 
     /// Applies the scheduled presses to the given [`ActionState`]
     pub fn apply(&mut self, action_state: &mut ActionState<A>) {
         for i in self.bitset.ones() {
-            action_state.press(A::get_at(i).unwrap())
+            action_state.press(&A::get_at(i).unwrap())
         }
         self.bitset.clear();
     }

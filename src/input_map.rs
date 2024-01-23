@@ -67,7 +67,7 @@ input_map.insert(MouseButton::Left, Action::Run)
            Action::Run);
 
 // Removal
-input_map.clear_action(Action::Hide);
+input_map.clear_action(&Action::Hide);
 ```
 **/
 #[derive(
@@ -289,13 +289,13 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         for action in A::variants() {
-            if let Some(input_vec) = self.get(action.clone()) {
+            if let Some(input_vec) = self.get(&action) {
                 for input in input_vec {
                     new_map.insert(input.clone(), action.clone());
                 }
             }
 
-            if let Some(input_vec) = other.get(action.clone()) {
+            if let Some(input_vec) = other.get(&action) {
                 for input in input_vec {
                     new_map.insert(input.clone(), action.clone());
                 }
@@ -346,7 +346,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn pressed(
         &self,
-        action: A,
+        action: &A,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
@@ -410,14 +410,14 @@ impl<A: Actionlike> InputMap<A> {
     }
     /// Returns a reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get(&self, action: A) -> Option<&Vec<UserInput>> {
-        self.map.get(&action)
+    pub fn get(&self, action: &A) -> Option<&Vec<UserInput>> {
+        self.map.get(action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get_mut(&mut self, action: A) -> Option<&mut Vec<UserInput>> {
-        self.map.get_mut(&action)
+    pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<UserInput>> {
+        self.map.get_mut(action)
     }
 
     /// How many input bindings are registered total?
@@ -425,7 +425,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn len(&self) -> usize {
         let mut i = 0;
         for action in A::variants() {
-            i += match self.get(action) {
+            i += match self.get(&action) {
                 Some(input_vec) => input_vec.len(),
                 None => 0,
             };
@@ -451,15 +451,15 @@ impl<A: Actionlike> InputMap<A> {
 // Removing
 impl<A: Actionlike> InputMap<A> {
     /// Clears all inputs registered for the `action`
-    pub fn clear_action(&mut self, action: A) {
-        self.map.remove(&action);
+    pub fn clear_action(&mut self, action: &A) {
+        self.map.remove(action);
     }
 
     /// Removes the input for the `action` at the provided index
     ///
     /// Returns `Some(input)` if found.
-    pub fn remove_at(&mut self, action: A, index: usize) -> Option<UserInput> {
-        let input_vec = self.map.get_mut(&action)?;
+    pub fn remove_at(&mut self, action: &A, index: usize) -> Option<UserInput> {
+        let input_vec = self.map.get_mut(action)?;
         if input_vec.len() <= index {
             None
         } else {
@@ -470,8 +470,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action`, if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: A, input: impl Into<UserInput>) -> Option<usize> {
-        let input_vec = self.map.get_mut(&action)?;
+    pub fn remove(&mut self, action: &A, input: impl Into<UserInput>) -> Option<usize> {
+        let input_vec = self.map.get_mut(action)?;
         let user_input = input.into();
         let index = input_vec.iter().position(|i| i == &user_input)?;
         input_vec.remove(index);
@@ -553,14 +553,14 @@ mod tests {
         input_map.insert(KeyCode::Space, Action::Run);
 
         assert_eq!(
-            input_map.get(Action::Run),
+            input_map.get(&Action::Run),
             Some(&vec![KeyCode::Space.into()])
         );
 
         // Duplicate insertions should not change anything
         input_map.insert(KeyCode::Space, Action::Run);
         assert_eq!(
-            input_map.get(Action::Run),
+            input_map.get(&Action::Run),
             Some(&vec![KeyCode::Space.into()])
         );
     }
@@ -574,7 +574,7 @@ mod tests {
         input_map_1.insert(KeyCode::Return, Action::Run);
 
         assert_eq!(
-            input_map_1.get(Action::Run),
+            input_map_1.get(&Action::Run),
             Some(&vec![KeyCode::Space.into(), KeyCode::Return.into()])
         );
 
@@ -609,20 +609,20 @@ mod tests {
         input_map.insert(KeyCode::Space, Action::Run);
 
         // Clearing action
-        input_map.clear_action(Action::Run);
+        input_map.clear_action(&Action::Run);
         assert_eq!(input_map, InputMap::default());
 
         // Remove input at existing index
         input_map.insert(KeyCode::Space, Action::Run);
         input_map.insert(KeyCode::ShiftLeft, Action::Run);
-        assert!(input_map.remove_at(Action::Run, 1).is_some());
+        assert!(input_map.remove_at(&Action::Run, 1).is_some());
         assert!(
-            input_map.remove_at(Action::Run, 1).is_none(),
+            input_map.remove_at(&Action::Run, 1).is_none(),
             "Should return None on second removal at the same index"
         );
-        assert!(input_map.remove_at(Action::Run, 0).is_some());
+        assert!(input_map.remove_at(&Action::Run, 0).is_some());
         assert!(
-            input_map.remove_at(Action::Run, 0).is_none(),
+            input_map.remove_at(&Action::Run, 0).is_none(),
             "Should return None on second removal at the same index"
         );
     }

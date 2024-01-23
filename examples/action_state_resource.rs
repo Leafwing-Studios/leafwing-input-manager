@@ -40,13 +40,13 @@ fn move_player(
     // action_state is stored as a resource
     action_state: Res<ActionState<PlayerAction>>,
 ) {
-    if action_state.pressed(PlayerAction::Move) {
+    if action_state.pressed(&PlayerAction::Move) {
         // We're working with gamepads, so we want to defensively ensure that we're using the clamped values
-        let axis_pair = action_state.clamped_axis_pair(PlayerAction::Move).unwrap();
+        let axis_pair = action_state.clamped_axis_pair(&PlayerAction::Move).unwrap();
         println!("Move: ({}, {})", axis_pair.x(), axis_pair.y());
     }
 
-    if action_state.pressed(PlayerAction::Jump) {
+    if action_state.pressed(&PlayerAction::Jump) {
         println!("Jumping!");
     }
 }
