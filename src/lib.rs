@@ -16,7 +16,6 @@ pub mod buttonlike;
 pub mod clashing_inputs;
 pub mod common_conditions;
 mod display_impl;
-pub mod dynamic_action;
 pub mod errors;
 pub mod input_map;
 pub mod input_mocking;
