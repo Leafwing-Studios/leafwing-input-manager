@@ -308,7 +308,9 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// // And transfer it to the actual ability that we care about
     /// // without losing timing information
-    /// action_state.set_action_data(&Action::Run, slot_1_state.clone());
+    /// if let Some(state) = slot_1_state {
+    ///    action_state.set_action_data(Action::Run, state.clone());
+    /// }
     /// ```
     #[inline]
     pub fn set_action_data(&mut self, action: A, data: ActionData) {
