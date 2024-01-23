@@ -314,7 +314,7 @@ fn schedule_presses() {
     assert!(app
         .world
         .resource::<ActionState<Action>>()
-        .released((&Action::PayRespects)));
+        .released(&Action::PayRespects));
 
     // Check
     app.update();
@@ -327,5 +327,5 @@ fn schedule_presses() {
     assert!(app
         .world
         .resource::<ActionState<Action>>()
-        .just_released((&Action::PayRespects)));
+        .just_released(&Action::PayRespects));
 }
