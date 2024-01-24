@@ -1,5 +1,7 @@
 //! Information about when an action was pressed or released.
 
+#[allow(unused_imports)] // For the documentation
+use crate::action_state::ActionState;
 use bevy::{
     reflect::Reflect,
     utils::{Duration, Instant},

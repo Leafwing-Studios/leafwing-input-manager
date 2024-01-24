@@ -1,5 +1,8 @@
 //! Tools to control the [`ActionState`] of other entities automatically from other entities.
 
+#[allow(unused_imports)] // For the documentation
+use crate::action_state::ActionState;
+
 use bevy::utils::hashbrown::hash_set::Iter;
 use std::iter::Once;
 
