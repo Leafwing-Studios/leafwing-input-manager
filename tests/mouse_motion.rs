@@ -14,6 +14,17 @@ enum ButtonlikeTestAction {
     Right,
 }
 
+impl ButtonlikeTestAction {
+    fn variants() -> &'static [ButtonlikeTestAction] {
+        &[
+            ButtonlikeTestAction::Up,
+            ButtonlikeTestAction::Down,
+            ButtonlikeTestAction::Left,
+            ButtonlikeTestAction::Right,
+        ]
+    }
+}
+
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum AxislikeTestAction {
     X,

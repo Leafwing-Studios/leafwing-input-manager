@@ -19,20 +19,27 @@ enum PlayerAction {
     UseItem,
 }
 
+impl PlayerAction {
+    // The `strum` crate provides a deriveable trait for this!
+    fn variants() -> &'static [PlayerAction] {
+        &[Self::Run, Self::Jump, Self::UseItem]
+    }
+}
+
 // Exhaustively match `PlayerAction` and define the default binding to the input
 impl PlayerAction {
-    fn default_keyboard_mouse_input(action: PlayerAction) -> UserInput {
+    fn default_keyboard_mouse_input(&self) -> UserInput {
         // Match against the provided action to get the correct default keyboard-mouse input
-        match action {
+        match self {
             Self::Run => UserInput::VirtualDPad(VirtualDPad::wasd()),
             Self::Jump => UserInput::Single(InputKind::Keyboard(KeyCode::Space)),
             Self::UseItem => UserInput::Single(InputKind::Mouse(MouseButton::Left)),
         }
     }
 
-    fn default_gamepad_input(action: PlayerAction) -> UserInput {
+    fn default_gamepad_input(&self) -> UserInput {
         // Match against the provided action to get the correct default gamepad input
-        match action {
+        match self {
             Self::Run => UserInput::Single(InputKind::DualAxis(DualAxis::left_stick())),
             Self::Jump => UserInput::Single(InputKind::GamepadButton(GamepadButtonType::South)),
             Self::UseItem => {
@@ -52,8 +59,8 @@ fn spawn_player(mut commands: Commands) {
     // Loop through each action in `PlayerAction` and get the default `UserInput`,
     // then insert each default input into input_map
     for action in PlayerAction::variants() {
-        input_map.insert(action, PlayerAction::default_keyboard_mouse_input(action));
-        input_map.insert(action, PlayerAction::default_gamepad_input(action));
+        input_map.insert(*action, PlayerAction::default_keyboard_mouse_input(action));
+        input_map.insert(*action, PlayerAction::default_gamepad_input(action));
     }
 
     // Spawn the player with the populated input_map

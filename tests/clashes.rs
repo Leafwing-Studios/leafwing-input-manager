@@ -27,6 +27,21 @@ enum Action {
     CtrlAltOne,
 }
 
+impl Action {
+    fn variants() -> &'static [Action] {
+        &[
+            Self::One,
+            Self::Two,
+            Self::OneAndTwo,
+            Self::TwoAndThree,
+            Self::OneAndTwoAndThree,
+            Self::CtrlOne,
+            Self::AltOne,
+            Self::CtrlAltOne,
+        ]
+    }
+}
+
 fn spawn_input_map(mut commands: Commands) {
     use Action::*;
     use KeyCode::*;
@@ -73,7 +88,7 @@ impl ClashTestExt for App {
         let keyboard_input = self.world.resource::<Input<KeyCode>>();
 
         for action in Action::variants() {
-            if pressed_actions.contains(&action) {
+            if pressed_actions.contains(action) {
                 assert!(
                     input_map.pressed(&action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
