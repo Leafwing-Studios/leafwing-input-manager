@@ -9,6 +9,8 @@ use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
 
+pub mod action_diff;
+pub mod action_driver;
 pub mod action_state;
 pub mod axislike;
 pub mod buttonlike;
@@ -23,6 +25,7 @@ pub mod orientation;
 pub mod plugin;
 pub mod scan_codes;
 pub mod systems;
+pub mod timing;
 pub mod user_input;
 
 // Importing the derive macro
@@ -30,7 +33,8 @@ pub use leafwing_input_manager_macros::Actionlike;
 
 /// Everything you need to get started
 pub mod prelude {
-    pub use crate::action_state::{ActionState, ActionStateDriver};
+    pub use crate::action_driver::ActionStateDriver;
+    pub use crate::action_state::ActionState;
     pub use crate::axislike::{
         DeadZoneShape, DualAxis, MouseWheelAxisType, SingleAxis, VirtualDPad,
     };

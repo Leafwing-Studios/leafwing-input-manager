@@ -1,14 +1,10 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
 #[cfg(feature = "ui")]
-use crate::action_state::ActionStateDriver;
+use crate::action_driver::ActionStateDriver;
 use crate::{
-    action_state::{ActionDiff, ActionState},
-    clashing_inputs::ClashStrategy,
-    input_map::InputMap,
-    input_streams::InputStreams,
-    plugin::ToggleActions,
-    Actionlike,
+    action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
+    input_streams::InputStreams, plugin::ToggleActions, Actionlike,
 };
 
 use bevy::{ecs::prelude::*, prelude::ScanCode};
@@ -25,7 +21,8 @@ use bevy::{
     utils::{HashMap, Instant},
 };
 
-use crate::action_state::ActionDiffEvent;
+use crate::action_diff::{ActionDiff, ActionDiffEvent};
+
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
