@@ -123,7 +123,7 @@ fn copy_action_state(
                 // This copies the `ActionData` between the ActionStates,
                 // including information about how long the buttons have been pressed or released
                 ability_state.set_action_data(
-                    matching_ability.clone(),
+                    *matching_ability,
                     slot_state.action_data(&slot).unwrap().clone(),
                 );
             }

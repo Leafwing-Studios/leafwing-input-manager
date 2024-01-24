@@ -90,12 +90,12 @@ impl ClashTestExt for App {
         for action in Action::variants() {
             if pressed_actions.contains(action) {
                 assert!(
-                    input_map.pressed(&action, &InputStreams::from_world(&self.world, None), clash_strategy),
+                    input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(&action, &InputStreams::from_world(&self.world, None), clash_strategy),
+                    !input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }
