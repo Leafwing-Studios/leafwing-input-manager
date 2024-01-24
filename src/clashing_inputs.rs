@@ -174,9 +174,7 @@ impl<A: Actionlike> InputMap<A> {
 /// as well as the corresponding user inputs
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub(crate) struct Clash<A: Actionlike> {
-    /// The `Actionlike::index` value corresponding to `action_a`
     action_a: A,
-    /// The `Actionlike::index` value corresponding to `action_b`
     action_b: A,
     inputs_a: Vec<UserInput>,
     inputs_b: Vec<UserInput>,

@@ -85,8 +85,6 @@ pub struct ActionData {
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
-    ///
-    /// The position in this vector corresponds to [`Actionlike::index`].
     action_data: HashMap<A, ActionData>,
 }
 
