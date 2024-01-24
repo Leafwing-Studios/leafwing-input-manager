@@ -1,9 +1,7 @@
 use bevy::{prelude::Reflect, utils::HashMap};
 use criterion::{criterion_group, criterion_main, Criterion};
 use leafwing_input_manager::{
-    action_state::{ActionData, Timing},
-    buttonlike::ButtonState,
-    prelude::ActionState,
+    action_state::ActionData, buttonlike::ButtonState, prelude::ActionState, timing::Timing,
     Actionlike,
 };
 

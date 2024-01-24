@@ -16,6 +16,7 @@
 - registered types in the reflection system
 - added `InputMap::clear`
 - added `ActionState::keys`
+- timing-related code now lives in its own `timing` module, rather than `action_state`
 
 ### Bugs
 
