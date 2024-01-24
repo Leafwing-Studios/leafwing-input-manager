@@ -12,6 +12,12 @@ enum ButtonlikeTestAction {
     Right,
 }
 
+impl ButtonlikeTestAction {
+    fn variants() -> &'static [ButtonlikeTestAction] {
+        &[Self::Up, Self::Down, Self::Left, Self::Right]
+    }
+}
+
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum AxislikeTestAction {
     X,
@@ -128,13 +134,13 @@ fn mouse_wheel_buttonlike() {
     for action in ButtonlikeTestAction::variants() {
         let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
-        let input = input_map.get(&action).unwrap().first().unwrap().clone();
+        let input = input_map.get(action).unwrap().first().unwrap().clone();
 
         app.send_input(input.clone());
         app.update();
 
         let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
-        assert!(action_state.pressed(&action), "failed for {input:?}");
+        assert!(action_state.pressed(action), "failed for {input:?}");
     }
 }
 

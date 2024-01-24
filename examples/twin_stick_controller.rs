@@ -38,6 +38,13 @@ pub enum PlayerAction {
     Shoot,
 }
 
+impl PlayerAction {
+    // The `strum` crate provides a deriveable trait for this!
+    fn variants() -> &'static [PlayerAction] {
+        &[Self::Move, Self::Look, Self::Shoot]
+    }
+}
+
 // Exhaustively match `PlayerAction` and define the default binding to the input
 impl PlayerAction {
     fn default_gamepad_binding(&self) -> UserInput {
@@ -51,7 +58,7 @@ impl PlayerAction {
         }
     }
 
-    fn default_mkb_binding(&self) -> UserInput {
+    fn default_kbm_binding(&self) -> UserInput {
         // Match against the provided action to get the correct default gamepad input
         match self {
             Self::Move => UserInput::VirtualDPad(VirtualDPad::wasd()),
@@ -64,8 +71,8 @@ impl PlayerAction {
         let mut input_map = InputMap::default();
 
         for variant in PlayerAction::variants() {
-            input_map.insert(variant, variant.default_mkb_binding());
-            input_map.insert(variant, variant.default_gamepad_binding());
+            input_map.insert(*variant, variant.default_kbm_binding());
+            input_map.insert(*variant, variant.default_gamepad_binding());
         }
         input_map
     }

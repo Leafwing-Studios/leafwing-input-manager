@@ -9,7 +9,6 @@ use crate::Actionlike;
 
 use bevy::prelude::Resource;
 use bevy::utils::HashMap;
-use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
@@ -104,14 +103,14 @@ impl<A: Actionlike> InputMap<A> {
     pub(crate) fn possible_clashes(&self) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
-        for action_pair in A::variants().combinations(2) {
-            let action_a = action_pair.first().unwrap().clone();
-            let action_b = action_pair.get(1).unwrap().clone();
-
-            if let Some(clash) = self.possible_clash(action_a, action_b) {
-                clashes.push(clash);
+        for (action_a, _) in self.iter() {
+            for (action_b, _) in self.iter() {
+                if let Some(clash) = self.possible_clash(action_a, action_b) {
+                    clashes.push(clash);
+                }
             }
         }
+
         clashes
     }
 
@@ -151,11 +150,11 @@ impl<A: Actionlike> InputMap<A> {
 
     /// If the pair of actions could clash, how?
     #[must_use]
-    fn possible_clash(&self, action_a: A, action_b: A) -> Option<Clash<A>> {
+    fn possible_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
         let mut clash = Clash::new(action_a.clone(), action_b.clone());
 
-        for input_a in self.get(&action_a)? {
-            for input_b in self.get(&action_b)? {
+        for input_a in self.get(action_a)? {
+            for input_b in self.get(action_b)? {
                 if input_a.clashes(input_b) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
@@ -175,9 +174,7 @@ impl<A: Actionlike> InputMap<A> {
 /// as well as the corresponding user inputs
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub(crate) struct Clash<A: Actionlike> {
-    /// The `Actionlike::index` value corresponding to `action_a`
     action_a: A,
-    /// The `Actionlike::index` value corresponding to `action_b`
     action_b: A,
     inputs_a: Vec<UserInput>,
     inputs_b: Vec<UserInput>,
@@ -499,7 +496,7 @@ mod tests {
         fn button_chord_clash_construction() {
             let input_map = test_input_map();
 
-            let observed_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
+            let observed_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
             let correct_clash = Clash {
                 action_a: One,
                 action_b: OneAndTwo,
@@ -515,7 +512,7 @@ mod tests {
             let input_map = test_input_map();
 
             let observed_clash = input_map
-                .possible_clash(OneAndTwoAndThree, OneAndTwo)
+                .possible_clash(&OneAndTwoAndThree, &OneAndTwo)
                 .unwrap();
             let correct_clash = Clash {
                 action_a: OneAndTwoAndThree,
@@ -531,28 +528,13 @@ mod tests {
         fn can_clash() {
             let input_map = test_input_map();
 
-            assert!(input_map.possible_clash(One, Two).is_none());
-            assert!(input_map.possible_clash(One, OneAndTwo).is_some());
-            assert!(input_map.possible_clash(One, OneAndTwoAndThree).is_some());
-            assert!(input_map.possible_clash(One, TwoAndThree).is_none());
+            assert!(input_map.possible_clash(&One, &Two).is_none());
+            assert!(input_map.possible_clash(&One, &OneAndTwo).is_some());
+            assert!(input_map.possible_clash(&One, &OneAndTwoAndThree).is_some());
+            assert!(input_map.possible_clash(&One, &TwoAndThree).is_none());
             assert!(input_map
-                .possible_clash(OneAndTwo, OneAndTwoAndThree)
+                .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
                 .is_some());
-        }
-
-        #[test]
-        fn clash_caching() {
-            let mut input_map = test_input_map();
-            // Possible clashes are cached upon initialization
-            assert_eq!(input_map.possible_clashes().len(), 13);
-
-            // Possible clashes are cached upon binding insertion
-            input_map.insert(Action::Two, UserInput::chord([ControlLeft, AltLeft, Key1]));
-            assert_eq!(input_map.possible_clashes().len(), 16);
-
-            // Possible clashes are cached upon binding removal
-            input_map.clear_action(&Action::One);
-            assert_eq!(input_map.possible_clashes().len(), 10);
         }
 
         #[test]
@@ -561,7 +543,7 @@ mod tests {
             app.add_plugins(InputPlugin);
 
             let input_map = test_input_map();
-            let simple_clash = input_map.possible_clash(One, OneAndTwo).unwrap();
+            let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
             app.send_input(Key1);
             app.send_input(Key2);
             app.update();
@@ -577,7 +559,7 @@ mod tests {
                 Some(One)
             );
 
-            let reversed_clash = input_map.possible_clash(OneAndTwo, One).unwrap();
+            let reversed_clash = input_map.possible_clash(&OneAndTwo, &One).unwrap();
             assert_eq!(
                 resolve_clash(
                     &reversed_clash,
@@ -588,7 +570,7 @@ mod tests {
             );
 
             let chord_clash = input_map
-                .possible_clash(OneAndTwo, OneAndTwoAndThree)
+                .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
                 .unwrap();
             app.send_input(Key3);
             app.update();

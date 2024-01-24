@@ -8,7 +8,6 @@ use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
-use std::marker::PhantomData;
 
 pub mod action_state;
 pub mod axislike;
@@ -84,59 +83,6 @@ pub mod prelude {
 pub trait Actionlike:
     Eq + Hash + Send + Sync + Clone + Hash + Reflect + TypePath + FromReflect + 'static
 {
-    /// The number of variants of this action type
-    fn n_variants() -> usize;
-
-    /// Iterates over the possible actions in the order they were defined
-    fn variants() -> ActionIter<Self> {
-        ActionIter::default()
-    }
-
-    /// Returns the default value for the action stored at the provided index if it exists
-    ///
-    /// This is mostly used internally, to enable space-efficient iteration.
-    fn get_at(index: usize) -> Option<Self>;
-
-    /// Returns the position in the defining enum of the given action
-    fn index(&self) -> usize;
-}
-
-/// An iterator of [`Actionlike`] actions
-///
-/// Created by calling [`Actionlike::variants()`].
-#[derive(Debug, Clone)]
-pub struct ActionIter<A: Actionlike> {
-    index: usize,
-    _phantom: PhantomData<A>,
-}
-
-impl<A: Actionlike> Iterator for ActionIter<A> {
-    type Item = A;
-
-    fn next(&mut self) -> Option<A> {
-        let item = A::get_at(self.index);
-        if item.is_some() {
-            self.index += 1;
-        }
-
-        item
-    }
-}
-
-impl<A: Actionlike> ExactSizeIterator for ActionIter<A> {
-    fn len(&self) -> usize {
-        A::n_variants()
-    }
-}
-
-// We can't derive this, because otherwise it won't work when A is not default
-impl<A: Actionlike> Default for ActionIter<A> {
-    fn default() -> Self {
-        ActionIter {
-            index: 0,
-            _phantom: PhantomData,
-        }
-    }
 }
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources

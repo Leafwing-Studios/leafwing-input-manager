@@ -15,6 +15,7 @@
 - `InputMap`s are now constructed with `(Action, Input)` pairs, rather than `(Input, Action)` pairs, which directly matches the underlying data model
 - registered types in the reflection system
 - added `InputMap::clear`
+- added `ActionState::keys`
 
 ### Bugs
 

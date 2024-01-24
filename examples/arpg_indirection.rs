@@ -38,6 +38,16 @@ enum Slot {
     Ability4,
 }
 
+impl Slot {
+    /// You could use the `strum` crate to derive this automatically!
+    fn variants() -> impl Iterator<Item = Slot> {
+        use Slot::*;
+        [Primary, Secondary, Ability1, Ability2, Ability3, Ability4]
+            .iter()
+            .copied()
+    }
+}
+
 // The list of possible abilities is typically longer than the list of slots
 #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Debug, Copy, Reflect)]
 enum Ability {
@@ -113,7 +123,7 @@ fn copy_action_state(
                 // This copies the `ActionData` between the ActionStates,
                 // including information about how long the buttons have been pressed or released
                 ability_state.set_action_data(
-                    matching_ability.clone(),
+                    *matching_ability,
                     slot_state.action_data(&slot).unwrap().clone(),
                 );
             }
