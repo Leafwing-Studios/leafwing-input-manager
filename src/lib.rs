@@ -9,6 +9,7 @@ use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
 
+pub mod action_diff;
 pub mod action_driver;
 pub mod action_state;
 pub mod axislike;

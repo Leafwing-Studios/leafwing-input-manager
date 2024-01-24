@@ -18,6 +18,7 @@
 - added `ActionState::keys`
 - timing-related code now lives in its own `timing` module, rather than `action_state`
 - `ActionStateDriver` code now lives in its own `action_driver` module, rather than `action_state`
+- `ActionDiff`-related code now lives in its own `action_diff` module, rather than `action_state`
 
 ### Bugs
 

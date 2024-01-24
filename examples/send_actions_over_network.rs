@@ -9,7 +9,7 @@
 use bevy::ecs::event::{Events, ManualEventReader};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::action_state::ActionDiffEvent;
+use leafwing_input_manager::action_diff::ActionDiffEvent;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::systems::generate_action_diffs;
 

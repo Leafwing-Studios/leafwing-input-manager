@@ -1,12 +1,12 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
+use crate::action_diff::ActionDiff;
 use crate::timing::Timing;
 use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
-use bevy::ecs::{component::Component, entity::Entity};
-use bevy::math::Vec2;
-use bevy::prelude::{Event, Resource};
+use bevy::ecs::component::Component;
+use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
 use bevy::utils::{Duration, Entry, HashMap, Instant};
 use serde::{Deserialize, Serialize};
@@ -602,53 +602,6 @@ impl<A: Actionlike> ActionState<A> {
     pub fn keys(&self) -> Vec<A> {
         self.action_data.keys().cloned().collect()
     }
-}
-
-/// Will store an `ActionDiff` as well as what generated it (either an Entity, or nothing if the
-/// input actions are represented by a `Resource`)
-///
-/// These are typically accessed using the `Events<ActionDiffEvent>` resource.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Event)]
-pub struct ActionDiffEvent<A: Actionlike> {
-    /// If some: the entity that has the `ActionState<A>` component
-    /// If none: `ActionState<A>` is a Resource, not a component
-    pub owner: Option<Entity>,
-    /// The `ActionDiff` that was generated
-    pub action_diffs: Vec<ActionDiff<A>>,
-}
-
-/// Stores presses and releases of buttons without timing information
-///
-/// These are typically accessed using the `Events<ActionDiffEvent>` resource.
-/// Uses a minimal storage format, in order to facilitate transport over the network.
-///
-/// An `ActionState` can be fully reconstructed from a stream of `ActionDiff`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum ActionDiff<A: Actionlike> {
-    /// The action was pressed
-    Pressed {
-        /// The value of the action
-        action: A,
-    },
-    /// The action was released
-    Released {
-        /// The value of the action
-        action: A,
-    },
-    /// The value of the action changed
-    ValueChanged {
-        /// The value of the action
-        action: A,
-        /// The new value of the action
-        value: f32,
-    },
-    /// The axis pair of the action changed
-    AxisPairChanged {
-        /// The value of the action
-        action: A,
-        /// The new value of the axis
-        axis_pair: Vec2,
-    },
 }
 
 #[cfg(test)]
