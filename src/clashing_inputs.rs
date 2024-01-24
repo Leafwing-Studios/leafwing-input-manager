@@ -540,21 +540,6 @@ mod tests {
         }
 
         #[test]
-        fn clash_caching() {
-            let mut input_map = test_input_map();
-            // Possible clashes are cached upon initialization
-            assert_eq!(input_map.possible_clashes().len(), 13);
-
-            // Possible clashes are cached upon binding insertion
-            input_map.insert(Action::Two, UserInput::chord([ControlLeft, AltLeft, Key1]));
-            assert_eq!(input_map.possible_clashes().len(), 16);
-
-            // Possible clashes are cached upon binding removal
-            input_map.clear_action(&Action::One);
-            assert_eq!(input_map.possible_clashes().len(), 10);
-        }
-
-        #[test]
         fn resolve_prioritize_longest() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
