@@ -16,9 +16,6 @@
 - registered types in the reflection system
 - added `InputMap::clear`
 - added `ActionState::keys`
-- timing-related code now lives in its own `timing` module, rather than `action_state`
-- `ActionStateDriver` code now lives in its own `action_driver` module, rather than `action_state`
-- `ActionDiff`-related code now lives in its own `action_diff` module, rather than `action_state`
 
 ### Bugs
 
@@ -26,7 +23,7 @@
 - added `InputMap::clear`
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/430) related to incorrect axis data in `Chord` when not all buttons are pressed.
 
-### Code quality
+### Code Quality
 
 - all non-insertion methods now take `&A: Actionlike` rather than `A: Actionlike` to avoid pointless cloning
 - removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`
@@ -37,7 +34,11 @@
   - `InputMap::which_pressed` now returns a `HashMap<A, ActionState>`
   - `handle_clashes` now takes a `HashMap<A, ActionState>`
   - `ClashStrategy::UseActionOrder` has been removed
-  
+- the `action_state` module has been pared down to something more reasonable in scope:
+  - timing-related code now lives in its own `timing` module
+  - `ActionStateDriver` code now lives in its own `action_driver` module
+  - `ActionDiff`-related code now lives in its own `action_diff` module
+
 ## Version 0.11.2
 
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/285) with mouse motion and mouse wheel events being improperly counted
@@ -54,7 +55,7 @@
 
 ## Version 0.11
 
-### Known issues
+### Known Issues
 
 - `bevy_egui` integration and the `egui` feature flag have been temporarily removed to ensure a timely release
 - gamepad input mocking is not completely functional due to upstream changes: see [#407](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407)
