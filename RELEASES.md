@@ -17,6 +17,7 @@
 - added `InputMap::clear`
 - added `ActionState::keys`
 - timing-related code now lives in its own `timing` module, rather than `action_state`
+- `ActionStateDriver` code now lives in its own `action_driver` module, rather than `action_state`
 
 ### Bugs
 

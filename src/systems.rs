@@ -1,7 +1,7 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
 #[cfg(feature = "ui")]
-use crate::action_state::ActionStateDriver;
+use crate::action_driver::ActionStateDriver;
 use crate::{
     action_state::{ActionDiff, ActionState},
     clashing_inputs::ClashStrategy,
