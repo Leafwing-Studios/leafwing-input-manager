@@ -30,3 +30,12 @@ enum NamedFieldVariantsAction {
     Run { x: usize, y: usize },
     Jump,
 }
+
+#[derive(Actionlike, Debug, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
+struct StructAction {
+    x: usize,
+    y: usize,
+}
+
+#[derive(Actionlike, Debug, Hash, PartialEq, Eq, Clone, Copy, Reflect)]
+struct TupleAction(usize, usize);
