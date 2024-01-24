@@ -50,7 +50,7 @@ use bevy::ui::UiSystem;
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
 /// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`]
 /// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
-///    - powers the [`ActionStateDriver`](crate::action_state::ActionStateDriver) component based on an [`Interaction`](bevy::ui::Interaction) component
+///    - powers the [`ActionStateDriver`](crate::action_driver::ActionStateDriver) component based on an [`Interaction`](bevy::ui::Interaction) component
 /// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
@@ -72,7 +72,7 @@ impl<A: Actionlike> InputManagerPlugin<A> {
     ///
     /// Inputs will not be processed; instead, [`ActionState`]
     /// should be copied directly from the state provided by the client,
-    /// or constructed from [`ActionDiff`](crate::action_state::ActionDiff) event streams.
+    /// or constructed from [`ActionDiff`](crate::action_diff::ActionDiff) event streams.
     #[must_use]
     pub fn server() -> Self {
         Self {

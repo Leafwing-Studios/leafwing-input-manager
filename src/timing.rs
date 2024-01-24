@@ -1,7 +1,5 @@
 //! Information about when an action was pressed or released.
 
-#[allow(unused_imports)] // For the documentation
-use crate::action_state::ActionState;
 use bevy::{
     reflect::Reflect,
     utils::{Duration, Instant},
@@ -10,8 +8,8 @@ use serde::{Deserialize, Serialize};
 
 /// Stores information about when an action was pressed or released
 ///
-/// This struct is principally used as a field on [`ActionData`],
-/// which itself lives inside an [`ActionState`].
+/// This struct is principally used as a field on [`ActionData`](crate::action_state::ActionData),
+/// which itself lives inside an [`ActionState`](crate::action_state::ActionState).
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Reflect)]
 pub struct Timing {
     /// The [`Instant`] at which the button was pressed or released
