@@ -19,7 +19,7 @@ pub struct Timing {
     pub instant_started: Option<Instant>,
     /// The [`Duration`] for which the button has been pressed or released.
     ///
-    /// This begins at [`Duration::ZERO`] when [`ActionState::update`] is called.
+    /// This begins at [`Duration::ZERO`] when [`ActionState::update`](crate::action_state::ActionState::update) is called.
     pub current_duration: Duration,
     /// The [`Duration`] for which the button was pressed or released before the state last changed.
     pub previous_duration: Duration,
