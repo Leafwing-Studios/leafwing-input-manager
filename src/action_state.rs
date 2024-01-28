@@ -113,6 +113,7 @@ impl<A: Actionlike> ActionState<A> {
                         ButtonState::Pressed => entry.state.press(),
                         ButtonState::JustReleased => entry.state.release(),
                         ButtonState::Released => entry.state.release(),
+                        ButtonState::PressedWhenDisabling => {}
                     }
 
                     entry.axis_pair = action_datum.axis_pair;
@@ -364,6 +365,32 @@ impl<A: Actionlike> ActionState<A> {
         action_data.state.release();
     }
 
+    /// Used to release the `action` when disabling the [`ToggleActions<A>`](crate::plugin::ToggleActions) resource.
+    /// If the `action` is pressed, sets its [`ButtonState`] to [`ButtonState::PressedWhenDisabling`].
+    ///
+    /// No initial instant will be recorded
+    /// Instead, this is set through [`ActionState::tick()`]
+    #[inline]
+    pub(crate) fn release_when_disabling(&mut self, action: &A) {
+        let action_data = match self.action_data_mut(action) {
+            Some(action_data) => action_data,
+            None => {
+                self.set_action_data(action.clone(), ActionData::default());
+                self.action_data_mut(action).unwrap()
+            }
+        };
+
+        // Once released, consumed actions can be pressed again
+        action_data.consumed = false;
+
+        if action_data.state.pressed() {
+            action_data.timing.flip();
+            action_data.state = ButtonState::PressedWhenDisabling;
+        } else {
+            action_data.state.release();
+        }
+    }
+
     /// Consumes the `action`
     ///
     /// The action will be released, and will not be able to be pressed again
@@ -431,6 +458,13 @@ impl<A: Actionlike> ActionState<A> {
     pub fn release_all(&mut self) {
         for action in self.keys() {
             self.release(&action);
+        }
+    }
+
+    /// Used to release all actions when disabling the [`ToggleActions<A>`](crate::plugin::ToggleActions) resource.
+    pub(crate) fn release_all_when_disabling(&mut self) {
+        for action in self.keys() {
+            self.release_when_disabling(&action);
         }
     }
 

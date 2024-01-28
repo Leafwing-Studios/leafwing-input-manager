@@ -299,10 +299,10 @@ pub fn release_on_disable<A: Actionlike>(
 ) {
     if toggle_actions.is_changed() && !toggle_actions.enabled {
         for mut action_state in query.iter_mut() {
-            action_state.release_all();
+            action_state.release_all_when_disabling();
         }
         if let Some(mut action_state) = resource {
-            action_state.release_all();
+            action_state.release_all_when_disabling();
         }
     }
 }
