@@ -69,6 +69,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     #[cfg(feature = "timing")]
                     timing: Timing::default(),
                     consumed: false,
+                    disabled: false,
                 },
             )
         })
