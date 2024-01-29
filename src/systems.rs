@@ -297,12 +297,12 @@ pub fn release_on_disable<A: Actionlike>(
     resource: Option<ResMut<ActionState<A>>>,
     toggle_actions: Res<ToggleActions<A>>,
 ) {
-    if toggle_actions.is_changed() && !toggle_actions.enabled {
+    if toggle_actions.is_changed() {
         for mut action_state in query.iter_mut() {
-            action_state.release_all_when_disabling();
+            action_state.toggle_actions(&toggle_actions);
         }
         if let Some(mut action_state) = resource {
-            action_state.release_all_when_disabling();
+            action_state.toggle_actions(&toggle_actions);
         }
     }
 }

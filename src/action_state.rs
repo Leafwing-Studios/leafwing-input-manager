@@ -1,6 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::action_diff::ActionDiff;
+use crate::plugin::ToggleActions;
 use crate::timing::Timing;
 use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
@@ -109,11 +110,13 @@ impl<A: Actionlike> ActionState<A> {
                     let entry = occupied_entry.into_mut();
 
                     match action_datum.state {
-                        ButtonState::JustPressed => entry.state.press(),
+                        ButtonState::JustPressed if entry.state != ButtonState::Disabled => {
+                            entry.state.press()
+                        }
                         ButtonState::Pressed => entry.state.press(),
                         ButtonState::JustReleased => entry.state.release(),
                         ButtonState::Released => entry.state.release(),
-                        ButtonState::PressedWhenDisabling => {}
+                        _ => {}
                     }
 
                     entry.axis_pair = action_datum.axis_pair;
@@ -365,13 +368,13 @@ impl<A: Actionlike> ActionState<A> {
         action_data.state.release();
     }
 
-    /// Used to release the `action` when disabling the [`ToggleActions<A>`](crate::plugin::ToggleActions) resource.
+    /// Disable the `action`.
     /// If the `action` is pressed, sets its [`ButtonState`] to [`ButtonState::PressedWhenDisabling`].
     ///
     /// No initial instant will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
-    pub(crate) fn release_when_disabling(&mut self, action: &A) {
+    pub(crate) fn disable(&mut self, action: &A) {
         let action_data = match self.action_data_mut(action) {
             Some(action_data) => action_data,
             None => {
@@ -387,7 +390,7 @@ impl<A: Actionlike> ActionState<A> {
             action_data.timing.flip();
             action_data.state = ButtonState::PressedWhenDisabling;
         } else {
-            action_data.state.release();
+            action_data.state = ButtonState::Disabled;
         }
     }
 
@@ -461,10 +464,24 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Used to release all actions when disabling the [`ToggleActions<A>`](crate::plugin::ToggleActions) resource.
-    pub(crate) fn release_all_when_disabling(&mut self) {
-        for action in self.keys() {
-            self.release_when_disabling(&action);
+    /// Synchronizes the state of all actions with the given [`ToggleActions`] resource.
+    ///
+    /// If the resource is re-enabled, release all previously disabled actions.
+    /// If the resource is disabled, disable all actions.
+    pub(crate) fn toggle_actions(&mut self, state: &ToggleActions<A>) {
+        if state.enabled {
+            // Release all previously disabled actions if the resource is re-enabled
+            for action in self.keys() {
+                if let Some(action_data) = self.action_data_mut(&action) {
+                    if action_data.state == ButtonState::Disabled {
+                        action_data.state.release();
+                    }
+                }
+            }
+        } else {
+            for action in self.keys() {
+                self.disable(&action);
+            }
         }
     }
 

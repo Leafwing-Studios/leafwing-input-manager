@@ -18,17 +18,19 @@ pub enum ButtonState {
     /// This button is currently released (and was released before the most recent tick)
     #[default]
     Released,
-    /// This button was pressed before disabling the [`ToggleActions<A>`](crate::plugin::ToggleActions) resource,
+    /// This button was pressed when disabling the [`ToggleActions<A>`](crate::plugin::ToggleActions) resource,
     /// used for restoring the pressed state on re-enabling the resource.
     PressedWhenDisabling,
+    /// This button is disabled because the [`ToggleActions<A>`](crate::plugin::ToggleActions) resource is disabled.
+    Disabled,
 }
 
 impl ButtonState {
     /// Causes [`just_pressed`](ButtonState::just_pressed) and [`just_released`](ButtonState::just_released) to become false
     ///
     /// [`JustPressed`](ButtonState::JustPressed) becomes [`Pressed`](ButtonState::Pressed),
-    /// [`PressedWhenDisabling`](ButtonState::PressedWhenDisabling) becomes [`Pressed`](ButtonState::Pressed), and
-    /// [`JustReleased`](ButtonState::JustReleased) becomes [`Released`](ButtonState::Released)
+    /// [`JustReleased`](ButtonState::JustReleased) becomes [`Released`](ButtonState::Released), and
+    /// [`PressedWhenDisabling`](ButtonState::PressedWhenDisabling) becomes [`Pressed`](ButtonState::Pressed)
     pub fn tick(&mut self) {
         use ButtonState::*;
         *self = match self {
@@ -37,6 +39,7 @@ impl ButtonState {
             JustReleased => Released,
             Released => Released,
             PressedWhenDisabling => Pressed,
+            Disabled => Disabled,
         }
     }
 
