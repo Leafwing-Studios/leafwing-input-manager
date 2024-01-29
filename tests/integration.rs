@@ -76,9 +76,21 @@ fn disable_input() {
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
-    // Disable the input
-    let mut toggle_actions = app.world.resource_mut::<ToggleActions<Action>>();
-    toggle_actions.enabled = false;
+    // Disable the global input
+    let mut action_state = app.world.resource_mut::<ActionState<Action>>();
+    action_state.disable_all();
+
+    // But the player is still paying respects
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(true));
+
+    // Disable the player's input too
+    let mut action_state = app
+        .world
+        .query_filtered::<&mut ActionState<Action>, With<Player>>()
+        .single_mut(&mut app.world);
+    action_state.disable_all();
 
     // Now, all respect has faded
     app.update();
@@ -90,6 +102,15 @@ fn disable_input() {
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
+
+    // Re-enable the global input
+    let mut action_state = app.world.resource_mut::<ActionState<Action>>();
+    action_state.enable_all();
+
+    // And it will start paying respects again
+    app.update();
+    let respect = app.world.resource::<Respect>();
+    assert_eq!(*respect, Respect(true));
 }
 
 #[test]
