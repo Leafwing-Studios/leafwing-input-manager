@@ -328,7 +328,7 @@ impl<A: Actionlike> InputMap<A> {
             for input in input_vec {
                 if let Some(new_axis_pair) = input_streams.input_axis_pair(input) {
                     let current_axis_pair = action_datum.axis_pair.unwrap_or_default();
-                    action_datum.axis_pair = Some(new_axis_pair.merged_with(current_axis_pair));
+                    action_datum.axis_pair = Some(current_axis_pair.merged_with(new_axis_pair));
                 }
 
                 if input_streams.input_pressed(input) {
