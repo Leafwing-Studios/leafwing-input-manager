@@ -326,9 +326,10 @@ impl<A: Actionlike> InputMap<A> {
             let mut action_datum = ActionData::default();
 
             for input in input_vec {
-                action_datum.axis_pair = input_streams.input_axis_pair(input).map(|new_data| {
-                    new_data.merged_with(action_datum.axis_pair.unwrap_or_default())
-                });
+                if let Some(new_data) = input_streams.input_axis_pair(input) {
+                    let current_data = action_datum.axis_pair.unwrap_or_default();
+                    action_datum.axis_pair = Some(new_data.merged_with(current_data));
+                }
 
                 if input_streams.input_pressed(input) {
                     action_datum.state = ButtonState::JustPressed;
