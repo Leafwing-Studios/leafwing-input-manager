@@ -323,21 +323,17 @@ impl<A: Actionlike> InputMap<A> {
 
         // Generate the raw action presses
         for (action, input_vec) in self.iter() {
-            let mut pressed = false;
             let mut action_datum = ActionData::default();
 
             for input in input_vec {
-                action_datum.axis_pair = input_streams.input_axis_pair(input);
+                action_datum.axis_pair = input_streams.input_axis_pair(input).map(|new_data| {
+                    new_data.merged_with(action_datum.axis_pair.unwrap_or_default())
+                });
 
                 if input_streams.input_pressed(input) {
-                    pressed = true;
-
+                    action_datum.state = ButtonState::JustPressed;
                     action_datum.value += input_streams.input_value(input, true);
                 }
-            }
-
-            if pressed {
-                action_datum.state = ButtonState::JustPressed;
             }
 
             action_data.insert(action.clone(), action_datum);
