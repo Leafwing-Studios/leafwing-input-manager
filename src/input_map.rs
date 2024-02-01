@@ -332,7 +332,7 @@ impl<A: Actionlike> InputMap<A> {
                         .axis_pair
                         .map_or(Some(axis_pair), |current_axis_pair| {
                             Some(current_axis_pair.merged_with(axis_pair))
-                        })
+                        });
                 }
 
                 if input_streams.input_pressed(input) {
