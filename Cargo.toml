@@ -24,7 +24,7 @@ default = ['ui', 'block_ui_interactions']
 # - `MockUIInteraction` for `bevy::ui` input mocking.
 # - `update_action_state_from_interaction` system,
 #   which automatically processes clicks on `bevy::ui` buttons attached to `Actionlike`s,
-#   triggering corresponding actions in its `ActionState`.
+#   triggering corresponding actions in their `ActionState`.
 ui = ['bevy/bevy_ui']
 
 # If this feature is enabled, `bevy::ui` will take priority over actions when processing inputs for the `ActionState`.
