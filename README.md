@@ -81,7 +81,7 @@ fn spawn_player(mut commands: Commands) {
             // Stores "which actions are currently pressed"
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
-            input_map: InputMap::new([(KeyCode::Space, Action::Jump)]),
+            input_map: InputMap::new([(Action::Jump, KeyCode::Space)]),
         })
         .insert(Player);
 }
@@ -97,3 +97,18 @@ fn jump(query: Query<&ActionState<Action>, With<Player>>) {
 ```
 
 This snippet is the `minimal.rs` example from the [`examples`](./examples) folder: check there for more in-depth learning materials!
+
+## Crate Feature Flags
+
+The following crate feature flags are available. They are configured in your `Cargo.toml`.
+
+- `ui` (enabled by default, implicitly enables `bevy/bevy_ui`)
+  - Supports `bevy::ui` input mocking for testing purposes via the `MockUIInteraction`.
+  - Enables processing clicks on `bevy::ui` buttons attached to `Actionlike`s,
+    triggering corresponding actions in its `ActionState` via the `update_action_state_from_interaction` system.
+
+- `block_ui_interaction` (enabled by default)
+  - Enables `bevy::ui` to take priority over actions when processing inputs for the `ActionState`.
+
+- `egui` (optional, implicitly enables the `bevy_egui` dependency)
+  - Enables `egui` to take priority over actions when processing inputs for the `ActionState`.
