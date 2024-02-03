@@ -19,6 +19,7 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
+use bevy::input::keyboard::Key;
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
@@ -164,7 +165,7 @@ impl MockInput for MutableInputStreams<'_> {
         // Keyboard buttons
         for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
-                logical_key: todo!("No idea"),
+                logical_key: Key::Character("Mocking".into()),
                 key_code: button,
                 state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
@@ -317,7 +318,7 @@ impl MockInput for MutableInputStreams<'_> {
 
         for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
-                logical_key: todo!("No idea"),
+                logical_key: Key::Character("Mocking".into()),
                 key_code: button,
                 state: ButtonState::Released,
                 window: Entity::PLACEHOLDER,
