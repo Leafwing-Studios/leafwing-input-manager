@@ -150,11 +150,11 @@ impl UserInput {
 
         match self {
             UserInput::Single(button) => {
-                raw_inputs.merge_input_kind(button);
+                raw_inputs.merge_input_data(button);
             }
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
-                    raw_inputs.merge_input_kind(button);
+                    raw_inputs.merge_input_data(button);
                 }
             }
             UserInput::VirtualDPad(VirtualDPad {
@@ -164,12 +164,12 @@ impl UserInput {
                 right,
             }) => {
                 for button in [up, down, left, right] {
-                    raw_inputs.merge_input_kind(button);
+                    raw_inputs.merge_input_data(button);
                 }
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                raw_inputs.merge_input_kind(negative);
-                raw_inputs.merge_input_kind(positive);
+                raw_inputs.merge_input_data(negative);
+                raw_inputs.merge_input_data(positive);
             }
         };
 
@@ -375,8 +375,8 @@ pub struct RawInputs {
 }
 
 impl RawInputs {
-    /// Merges the given `input_kind` into `self`.
-    fn merge_input_kind(&mut self, input_kind: &InputKind) {
+    /// Merges the data from the given `input_kind` into `self`.
+    fn merge_input_data(&mut self, input_kind: &InputKind) {
         match *input_kind {
             InputKind::DualAxis(dual_axis) => {
                 self.axis_data
