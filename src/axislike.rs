@@ -466,7 +466,7 @@ pub struct VirtualAxis {
 
 impl VirtualAxis {
     /// Helper function for generating a [`VirtualAxis`] from arbitrary keycodes, shorthand for
-    /// wrapping each key in [`InputKind::Keyboard`]
+    /// wrapping each key in [`InputKind::KeyLocation`]
     pub fn from_keys(negative: KeyCode, positive: KeyCode) -> VirtualAxis {
         VirtualAxis {
             negative: InputKind::KeyLocation(negative),
