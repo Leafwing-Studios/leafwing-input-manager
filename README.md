@@ -100,15 +100,5 @@ This snippet is the `minimal.rs` example from the [`examples`](./examples) folde
 
 ## Crate Feature Flags
 
-The following crate feature flags are available. They are configured in your `Cargo.toml`.
-
-- `ui` (enabled by default, implicitly enables `bevy/bevy_ui`)
-  - Supports `bevy::ui` input mocking for testing purposes via the `MockUIInteraction`.
-  - Enables processing clicks on `bevy::ui` buttons attached to `Actionlike`s,
-    triggering corresponding actions in their `ActionState` via the `update_action_state_from_interaction` system.
-
-- `block_ui_interaction` (enabled by default)
-  - Enables `bevy::ui` to take priority over actions when processing inputs for the `ActionState`.
-
-- `egui` (optional, implicitly enables the `bevy_egui` dependency)
-  - Enables `egui` to take priority over actions when processing inputs for the `ActionState`.
+This crate has three feature flags: `ui`, `block_ui_interactions`, and `egui`.
+Please refer to the `[features]` section in the [`Cargo.toml`](./Cargo.toml) for detailed information about their configurations.
