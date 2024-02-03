@@ -48,14 +48,14 @@ fn spawn_input_map(mut commands: Commands) {
 
     let mut input_map = InputMap::default();
 
-    input_map.insert(One, Key1);
-    input_map.insert(Two, Key2);
-    input_map.insert_chord(OneAndTwo, [Key1, Key2]);
-    input_map.insert_chord(TwoAndThree, [Key2, Key3]);
-    input_map.insert_chord(OneAndTwoAndThree, [Key1, Key2, Key3]);
-    input_map.insert_chord(CtrlOne, [ControlLeft, Key1]);
-    input_map.insert_chord(AltOne, [AltLeft, Key1]);
-    input_map.insert_chord(CtrlAltOne, [ControlLeft, AltLeft, Key1]);
+    input_map.insert(One, Digit1);
+    input_map.insert(Two, Digit2);
+    input_map.insert_chord(OneAndTwo, [Digit1, Digit2]);
+    input_map.insert_chord(TwoAndThree, [Digit2, Digit3]);
+    input_map.insert_chord(OneAndTwoAndThree, [Digit1, Digit2, Digit3]);
+    input_map.insert_chord(CtrlOne, [ControlLeft, Digit1]);
+    input_map.insert_chord(AltOne, [AltLeft, Digit1]);
+    input_map.insert_chord(CtrlAltOne, [ControlLeft, AltLeft, Digit1]);
 
     commands.spawn(input_map);
 }
@@ -85,7 +85,7 @@ impl ClashTestExt for App {
         let input_map_query = input_system_state.get(&self.world);
 
         let input_map = input_map_query.single();
-        let keyboard_input = self.world.resource::<Input<KeyCode>>();
+        let keyboard_input = self.world.resource::<ButtonInput<KeyCode>>();
 
         for action in Action::variants() {
             if pressed_actions.contains(action) {
@@ -111,8 +111,8 @@ fn two_inputs_clash_handling() {
     let mut app = test_app();
 
     // Two inputs
-    app.send_input(Key1);
-    app.send_input(Key2);
+    app.send_input(Digit1);
+    app.send_input(Digit2);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
@@ -128,9 +128,9 @@ fn three_inputs_clash_handling() {
 
     // Three inputs
     app.reset_inputs();
-    app.send_input(Key1);
-    app.send_input(Key2);
-    app.send_input(Key3);
+    app.send_input(Digit1);
+    app.send_input(Digit2);
+    app.send_input(Digit3);
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -149,9 +149,9 @@ fn modifier_clash_handling() {
 
     // Modifier
     app.reset_inputs();
-    app.send_input(Key1);
-    app.send_input(Key2);
-    app.send_input(Key3);
+    app.send_input(Digit1);
+    app.send_input(Digit2);
+    app.send_input(Digit3);
     app.send_input(ControlLeft);
     app.update();
 
@@ -174,7 +174,7 @@ fn multiple_modifiers_clash_handling() {
 
     // Multiple modifiers
     app.reset_inputs();
-    app.send_input(Key1);
+    app.send_input(Digit1);
     app.send_input(ControlLeft);
     app.send_input(AltLeft);
     app.update();
@@ -192,8 +192,8 @@ fn action_order_clash_handling() {
 
     // Action order
     app.reset_inputs();
-    app.send_input(Key3);
-    app.send_input(Key2);
+    app.send_input(Digit3);
+    app.send_input(Digit2);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [Two, TwoAndThree]);

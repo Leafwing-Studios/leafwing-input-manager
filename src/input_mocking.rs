@@ -26,7 +26,7 @@ use bevy::input::{
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
-    Input,
+    ButtonInput,
 };
 use bevy::math::Vec2;
 use bevy::prelude::Entity;
@@ -165,7 +165,7 @@ impl MockInput for MutableInputStreams<'_> {
         for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
                 scan_code: u32::MAX,
-                key_code: Some(button),
+                key_code: button,
                 state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
             });
@@ -314,7 +314,7 @@ impl MockInput for MutableInputStreams<'_> {
         for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
                 scan_code: u32::MAX,
-                key_code: Some(button),
+                key_code: button,
                 state: ButtonState::Released,
                 window: Entity::PLACEHOLDER,
             });
@@ -393,9 +393,9 @@ impl MockInput for World {
         }
 
         let mut input_system_state: SystemState<(
-            Option<ResMut<Input<GamepadButton>>>,
-            Option<ResMut<Input<KeyCode>>>,
-            Option<ResMut<Input<MouseButton>>>,
+            Option<ResMut<ButtonInput<GamepadButton>>>,
+            Option<ResMut<ButtonInput<KeyCode>>>,
+            Option<ResMut<ButtonInput<MouseButton>>>,
         )> = SystemState::new(self);
 
         let (maybe_gamepad, maybe_keyboard, maybe_mouse) = input_system_state.get_mut(self);
@@ -525,7 +525,7 @@ mod test {
         app.update();
 
         // Verify that checking the resource value directly works
-        let keyboard_input: &Input<KeyCode> = app.world.resource();
+        let keyboard_input: &ButtonInput<KeyCode> = app.world.resource();
         assert!(keyboard_input.pressed(KeyCode::Space));
 
         // Test the convenient .pressed API
@@ -564,7 +564,7 @@ mod test {
 
         // Checking the old-fashioned way
         // FIXME: put this in a gamepad_button.rs integration test.
-        let gamepad_input = app.world.resource::<Input<GamepadButton>>();
+        let gamepad_input = app.world.resource::<ButtonInput<GamepadButton>>();
         assert!(gamepad_input.pressed(GamepadButton {
             gamepad,
             button_type: GamepadButtonType::North,

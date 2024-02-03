@@ -353,7 +353,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Commonly stored in the [`UserInput`] enum.
 ///
-/// Unfortunately we cannot use a trait object here, as the types used by `Input`
+/// Unfortunately we cannot use a trait object here, as the types used by `ButtonInput`
 /// require traits that are not object-safe.
 ///
 /// Please contact the maintainers if you need support for another type!
@@ -647,7 +647,7 @@ mod raw_input_tests {
         fn keyboard_button() {
             use bevy::input::keyboard::KeyCode;
 
-            let button = KeyCode::A;
+            let button = KeyCode::KeyA;
             let expected = RawInputs::from_keycode(button);
             let raw = UserInput::from(button).raw_inputs();
             assert_eq!(expected, raw);
@@ -658,9 +658,9 @@ mod raw_input_tests {
             use crate::user_input::Modifier;
             use bevy::input::keyboard::KeyCode;
 
-            let input = UserInput::modified(Modifier::Control, KeyCode::S);
+            let input = UserInput::modified(Modifier::Control, KeyCode::KeyS);
             let expected = RawInputs {
-                keycodes: vec![KeyCode::ControlLeft, KeyCode::ControlRight, KeyCode::S],
+                keycodes: vec![KeyCode::ControlLeft, KeyCode::ControlRight, KeyCode::KeyS],
                 ..Default::default()
             };
             let raw = input.raw_inputs();

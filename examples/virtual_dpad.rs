@@ -30,10 +30,10 @@ fn spawn_player(mut commands: Commands) {
             input_map: InputMap::new([(
                 Action::Move,
                 VirtualDPad {
-                    up: KeyCode::W.into(),
-                    down: KeyCode::S.into(),
-                    left: KeyCode::A.into(),
-                    right: KeyCode::D.into(),
+                    up: KeyCode::KeyW.into(),
+                    down: KeyCode::KeyS.into(),
+                    left: KeyCode::KeyA.into(),
+                    right: KeyCode::KeyD.into(),
                 },
             )])
             .build(),

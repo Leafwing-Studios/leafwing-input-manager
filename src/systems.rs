@@ -13,7 +13,7 @@ use bevy::{
         gamepad::{GamepadAxis, GamepadButton, Gamepads},
         keyboard::KeyCode,
         mouse::{MouseButton, MouseMotion, MouseWheel},
-        Axis, Input,
+        Axis, ButtonInput,
     },
     log::warn,
     math::Vec2,
@@ -63,13 +63,13 @@ pub fn tick_action_state<A: Actionlike>(
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
 #[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
-    gamepad_buttons: Res<Input<GamepadButton>>,
+    gamepad_buttons: Res<ButtonInput<GamepadButton>>,
     gamepad_button_axes: Res<Axis<GamepadButton>>,
     gamepad_axes: Res<Axis<GamepadAxis>>,
     gamepads: Res<Gamepads>,
-    keycodes: Option<Res<Input<KeyCode>>>,
-    scan_codes: Option<Res<Input<ScanCode>>>,
-    mouse_buttons: Option<Res<Input<MouseButton>>>,
+    keycodes: Option<Res<ButtonInput<KeyCode>>>,
+    scan_codes: Option<Res<ButtonInput<ScanCode>>>,
+    mouse_buttons: Option<Res<ButtonInput<MouseButton>>>,
     mut mouse_wheel: EventReader<MouseWheel>,
     mut mouse_motion: EventReader<MouseMotion>,
     clash_strategy: Res<ClashStrategy>,

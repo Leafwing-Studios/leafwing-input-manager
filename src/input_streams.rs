@@ -6,7 +6,7 @@ use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput, ScanCode},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
-    Axis, Input,
+    Axis, ButtonInput,
 };
 use bevy::utils::HashSet;
 
@@ -23,20 +23,20 @@ use crate::user_input::{InputKind, UserInput};
 /// These are typically collected via a system from the [`World`] as resources.
 #[derive(Debug, Clone)]
 pub struct InputStreams<'a> {
-    /// A [`GamepadButton`] [`Input`] stream
-    pub gamepad_buttons: &'a Input<GamepadButton>,
+    /// A [`GamepadButton`] [`Input`](ButtonInput) stream
+    pub gamepad_buttons: &'a ButtonInput<GamepadButton>,
     /// A [`GamepadButton`] [`Axis`] stream
     pub gamepad_button_axes: &'a Axis<GamepadButton>,
     /// A [`GamepadAxis`] [`Axis`] stream
     pub gamepad_axes: &'a Axis<GamepadAxis>,
     /// A list of registered gamepads
     pub gamepads: &'a Gamepads,
-    /// A [`KeyCode`] [`Input`] stream
-    pub keycodes: Option<&'a Input<KeyCode>>,
-    /// A [`ScanCode`] [`Input`] stream
-    pub scan_codes: Option<&'a Input<ScanCode>>,
-    /// A [`MouseButton`] [`Input`] stream
-    pub mouse_buttons: Option<&'a Input<MouseButton>>,
+    /// A [`KeyCode`] [`ButtonInput`] stream
+    pub keycodes: Option<&'a ButtonInput<KeyCode>>,
+    /// A [`ScanCode`] [`ButtonInput`] stream
+    pub scan_codes: Option<&'a ButtonInput<ScanCode>>,
+    /// A [`MouseButton`] [`Input`](ButtonInput) stream
+    pub mouse_buttons: Option<&'a ButtonInput<MouseButton>>,
     /// A [`MouseWheel`] event stream
     pub mouse_wheel: Option<Vec<MouseWheel>>,
     /// A [`MouseMotion`] event stream
@@ -49,13 +49,13 @@ pub struct InputStreams<'a> {
 impl<'a> InputStreams<'a> {
     /// Construct an [`InputStreams`] from a [`World`]
     pub fn from_world(world: &'a World, gamepad: Option<Gamepad>) -> Self {
-        let gamepad_buttons = world.resource::<Input<GamepadButton>>();
+        let gamepad_buttons = world.resource::<ButtonInput<GamepadButton>>();
         let gamepad_button_axes = world.resource::<Axis<GamepadButton>>();
         let gamepad_axes = world.resource::<Axis<GamepadAxis>>();
         let gamepads = world.resource::<Gamepads>();
-        let keycodes = world.get_resource::<Input<KeyCode>>();
-        let scan_codes = world.get_resource::<Input<ScanCode>>();
-        let mouse_buttons = world.get_resource::<Input<MouseButton>>();
+        let keycodes = world.get_resource::<ButtonInput<KeyCode>>();
+        let scan_codes = world.get_resource::<ButtonInput<ScanCode>>();
+        let mouse_buttons = world.get_resource::<ButtonInput<MouseButton>>();
         let mouse_wheel = world.resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
 
@@ -486,8 +486,8 @@ impl<'a> InputStreams<'a> {
 // WARNING: If you update the fields of this type, you must also remember to update `InputMocking::reset_inputs`.
 #[derive(Debug)]
 pub struct MutableInputStreams<'a> {
-    /// A [`GamepadButton`] [`Input`] stream
-    pub gamepad_buttons: &'a mut Input<GamepadButton>,
+    /// A [`GamepadButton`] [`Input`](ButtonInput) stream
+    pub gamepad_buttons: &'a mut ButtonInput<GamepadButton>,
     /// A [`GamepadButton`] [`Axis`] stream
     pub gamepad_button_axes: &'a mut Axis<GamepadButton>,
     /// A [`GamepadAxis`] [`Axis`] stream
@@ -497,15 +497,15 @@ pub struct MutableInputStreams<'a> {
     /// Events used for mocking gamepad-related inputs
     pub gamepad_events: &'a mut Events<GamepadEvent>,
 
-    /// A [`KeyCode`] [`Input`] stream
-    pub keycodes: &'a mut Input<KeyCode>,
-    /// A [`ScanCode`] [`Input`] stream
-    pub scan_codes: &'a mut Input<ScanCode>,
+    /// A [`KeyCode`] [`ButtonInput`] stream
+    pub keycodes: &'a mut ButtonInput<KeyCode>,
+    /// A [`ScanCode`] [`ButtonInput`] stream
+    pub scan_codes: &'a mut ButtonInput<ScanCode>,
     /// Events used for mocking keyboard-related inputs
     pub keyboard_events: &'a mut Events<KeyboardInput>,
 
-    /// A [`MouseButton`] [`Input`] stream
-    pub mouse_buttons: &'a mut Input<MouseButton>,
+    /// A [`MouseButton`] [`Input`](ButtonInput) stream
+    pub mouse_buttons: &'a mut ButtonInput<MouseButton>,
     /// Events used for mocking [`MouseButton`] inputs
     pub mouse_button_events: &'a mut Events<MouseButtonInput>,
     /// A [`MouseWheel`] event stream
@@ -521,15 +521,15 @@ impl<'a> MutableInputStreams<'a> {
     /// Construct a [`MutableInputStreams`] from the [`World`]
     pub fn from_world(world: &'a mut World, gamepad: Option<Gamepad>) -> Self {
         let mut input_system_state: SystemState<(
-            ResMut<Input<GamepadButton>>,
+            ResMut<ButtonInput<GamepadButton>>,
             ResMut<Axis<GamepadButton>>,
             ResMut<Axis<GamepadAxis>>,
             ResMut<Gamepads>,
             ResMut<Events<GamepadEvent>>,
-            ResMut<Input<KeyCode>>,
-            ResMut<Input<ScanCode>>,
+            ResMut<ButtonInput<KeyCode>>,
+            ResMut<ButtonInput<ScanCode>>,
             ResMut<Events<KeyboardInput>>,
-            ResMut<Input<MouseButton>>,
+            ResMut<ButtonInput<MouseButton>>,
             ResMut<Events<MouseButtonInput>>,
             ResMut<Events<MouseWheel>>,
             ResMut<Events<MouseMotion>>,

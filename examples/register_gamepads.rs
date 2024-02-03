@@ -32,7 +32,7 @@ fn join(
     mut commands: Commands,
     mut joined_players: ResMut<JoinedPlayers>,
     gamepads: Res<Gamepads>,
-    button_inputs: Res<Input<GamepadButton>>,
+    button_inputs: Res<ButtonInput<GamepadButton>>,
 ) {
     for gamepad in gamepads.iter() {
         // Join the game when both bumpers (L+R) on the controller are pressed
