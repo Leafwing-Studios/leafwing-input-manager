@@ -83,8 +83,8 @@ pub struct InputModeManagerPlugin;
 
 impl Plugin for InputModeManagerPlugin {
     fn build(&self, app: &mut App) {
-        // Add a state to record the current active input
-        app.add_state::<ActiveInput>()
+        // Init a state to record the current active input
+        app.init_state::<ActiveInput>()
             // System to switch to gamepad as active input
             .add_systems(
                 Update,

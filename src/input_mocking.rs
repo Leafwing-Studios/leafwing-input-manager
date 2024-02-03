@@ -19,7 +19,6 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
-use bevy::input::keyboard::Key;
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
