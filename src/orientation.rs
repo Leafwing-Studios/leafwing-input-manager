@@ -652,7 +652,7 @@ mod conversions {
             // approximate value and both `atan2` above and `from_radians` below magnify the
             // imprecision. So, we cheat.
             const APPROX_SOUTH: f32 = -std::f32::consts::FRAC_PI_2;
-            const APPROX_NORTHWEST: f32 = -1.5 * std::f32::consts::FRAC_PI_2;
+            const APPROX_NORTHWEST: f32 = 1.5 * std::f32::consts::FRAC_PI_2;
             if radians == APPROX_NORTHWEST {
                 Rotation::from_degrees_int(135)
             } else if radians == APPROX_SOUTH {
