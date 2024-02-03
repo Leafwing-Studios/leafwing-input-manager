@@ -85,6 +85,7 @@ impl ClashTestExt for App {
         let input_map_query = input_system_state.get(&self.world);
 
         let input_map = input_map_query.single();
+        let keyboard_input = self.world.resource::<ButtonInput<KeyCode>>();
 
         for action in Action::variants() {
             if pressed_actions.contains(action) {
