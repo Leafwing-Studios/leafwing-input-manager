@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- Logical key bindings have been removed, you could still use `KeyCode`s but now they are used for physical key bindings.
+- Logical key bindings are no longer supported, you could still use `KeyCode`s but now they are used for physical key bindings.
 - `ScanCode` and `QwertyScanCode` have been removed; please use `KeyCode` instead.
 - `InputKind::Keyboard` is no longer in use; replace it with `InputKind::KeyLocation`.
 - `InputKind::KeyLocation` now stores a `KeyCode` rather than a `ScanCode`.
