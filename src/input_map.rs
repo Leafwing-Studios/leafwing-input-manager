@@ -60,9 +60,9 @@ let mut input_map = InputMap::new([
 input_map.insert(Action::Run, MouseButton::Left)
 .insert(Action::Run, KeyCode::ShiftLeft)
 // Chords
-.insert_modified(Action::Run, Modifier::Control, KeyCode::R)
+.insert_modified(Action::Run, Modifier::Control, KeyCode::KeyR)
 .insert_chord(Action::Run,
-              [InputKind::Keyboard(KeyCode::H),
+              [InputKind::KeyLocation(KeyCode::KeyH),
                InputKind::GamepadButton(GamepadButtonType::South),
                InputKind::Mouse(MouseButton::Middle)],
            );

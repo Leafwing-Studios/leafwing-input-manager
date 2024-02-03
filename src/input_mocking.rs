@@ -19,6 +19,7 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
+use bevy::input::keyboard::Key;
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
@@ -50,7 +51,7 @@ use bevy::window::CursorMoved;
 /// app.add_plugins(InputPlugin);
 ///
 /// // Pay respects!
-/// app.send_input(KeyCode::F);
+/// app.send_input(KeyCode::KeyF);
 /// app.update();
 /// ```
 ///
@@ -63,7 +64,7 @@ use bevy::window::CursorMoved;
 /// app.add_plugins(InputPlugin);
 ///
 /// // Send inputs one at a time
-/// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
+/// let B_E_V_Y = [KeyCode::KeyB, KeyCode::KeyE, KeyCode::KeyV, KeyCode::KeyY];
 ///
 /// for letter in B_E_V_Y {
 ///     app.send_input(letter);
@@ -164,7 +165,7 @@ impl MockInput for MutableInputStreams<'_> {
         // Keyboard buttons
         for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
-                scan_code: u32::MAX,
+                logical_key: todo!("No idea"),
                 key_code: button,
                 state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
@@ -207,7 +208,7 @@ impl MockInput for MutableInputStreams<'_> {
                     y: -1.0,
                     window: Entity::PLACEHOLDER,
                 }),
-            }
+            };
         }
 
         // Discrete mouse motion event
@@ -225,7 +226,7 @@ impl MockInput for MutableInputStreams<'_> {
                 MouseMotionDirection::Left => self.mouse_motion.send(MouseMotion {
                     delta: Vec2 { x: -1.0, y: 0.0 },
                 }),
-            }
+            };
         }
 
         // Gamepad buttons
@@ -269,21 +270,25 @@ impl MockInput for MutableInputStreams<'_> {
                                 y: position_data,
                                 window: Entity::PLACEHOLDER,
                             }),
-                        }
+                        };
                     }
                     AxisType::MouseMotion(axis_type) => match axis_type {
-                        MouseMotionAxisType::X => self.mouse_motion.send(MouseMotion {
-                            delta: Vec2 {
-                                x: position_data,
-                                y: 0.0,
-                            },
-                        }),
-                        MouseMotionAxisType::Y => self.mouse_motion.send(MouseMotion {
-                            delta: Vec2 {
-                                x: 0.0,
-                                y: position_data,
-                            },
-                        }),
+                        MouseMotionAxisType::X => {
+                            self.mouse_motion.send(MouseMotion {
+                                delta: Vec2 {
+                                    x: position_data,
+                                    y: 0.0,
+                                },
+                            });
+                        }
+                        MouseMotionAxisType::Y => {
+                            self.mouse_motion.send(MouseMotion {
+                                delta: Vec2 {
+                                    x: 0.0,
+                                    y: position_data,
+                                },
+                            });
+                        }
                     },
                 }
             }
@@ -313,7 +318,7 @@ impl MockInput for MutableInputStreams<'_> {
 
         for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
-                scan_code: u32::MAX,
+                logical_key: todo!("No idea"),
                 key_code: button,
                 state: ButtonState::Released,
                 window: Entity::PLACEHOLDER,
