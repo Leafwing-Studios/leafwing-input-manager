@@ -101,7 +101,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
-    /// which reads from the assorted [`Input`](bevy::input::Input) resources.
+    /// which reads from the assorted [`Input`](bevy::input::ButtonInput) resources.
     pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
         for (action, action_datum) in action_data {
             match self.action_data.entry(action) {

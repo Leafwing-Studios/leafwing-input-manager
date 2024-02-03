@@ -58,7 +58,7 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
-/// Fetches all of the relevant [`Input`] resources to update [`ActionState`] according to the [`InputMap`].
+/// Fetches all of the relevant [`ButtonInput`] resources to update [`ActionState`] according to the [`InputMap`].
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
 #[allow(clippy::too_many_arguments)]

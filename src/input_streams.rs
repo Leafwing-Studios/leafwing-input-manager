@@ -18,7 +18,7 @@ use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
 use crate::user_input::{InputKind, UserInput};
 
-/// A collection of [`Input`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
+/// A collection of [`ButtonInput`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
 /// These are typically collected via a system from the [`World`] as resources.
 #[derive(Debug, Clone)]
@@ -473,7 +473,7 @@ impl<'a> InputStreams<'a> {
     }
 }
 
-/// A mutable collection of [`Input`] structs, which can be used for mocking user inputs.
+/// A mutable collection of [`ButtonInput`] structs, which can be used for mocking user inputs.
 ///
 /// These are typically collected via a system from the [`World`] as resources.
 // WARNING: If you update the fields of this type, you must also remember to update `InputMocking::reset_inputs`.

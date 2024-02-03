@@ -77,7 +77,7 @@ use bevy::window::CursorMoved;
 pub trait MockInput {
     /// Send the specified `user_input` directly
     ///
-    /// These are sent as the raw input events, and do not set the value of [`Input`] or [`Axis`](bevy::input::Axis) directly.
+    /// These are sent as the raw input events, and do not set the value of [`ButtonInput`] or [`Axis`](bevy::input::Axis) directly.
     /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
     /// To send specific values for axislike inputs, set their `value` field.
@@ -89,7 +89,7 @@ pub trait MockInput {
     ///
     /// You *must* call `app.update()` at least once after sending input
     /// with `InputPlugin` included in your plugin set
-    /// for the raw input events to be processed into [`Input`] and [`Axis`](bevy::input::Axis) data.
+    /// for the raw input events to be processed into [`ButtonInput`] and [`Axis`](bevy::input::Axis) data.
     fn send_input(&mut self, input: impl Into<UserInput>);
 
     /// Send the specified `user_input` directly, using the specified gamepad
@@ -112,7 +112,7 @@ pub trait MockInput {
 
     /// Clears all user input streams, resetting them to their default state
     ///
-    /// All buttons are released, and `just_pressed` and `just_released` information on the [`Input`] type are lost.
+    /// All buttons are released, and `just_pressed` and `just_released` information on the [`ButtonInput`] type are lost.
     /// `just_pressed` and `just_released` on the [`ActionState`](crate::action_state::ActionState) will be kept.
     ///
     /// This will clear all [`KeyCode`], [`GamepadButton`] and [`MouseButton`] input streams,
@@ -120,20 +120,20 @@ pub trait MockInput {
     fn reset_inputs(&mut self);
 }
 
-/// Query [`Input`] state directly for testing purposes.
+/// Query [`ButtonInput`] state directly for testing purposes.
 ///
 /// In game code, you should (almost) always be using [`ActionState`](crate::action_state::ActionState)
 /// methods instead.
 pub trait QueryInput {
     /// Is the provided `user_input` pressed?
     ///
-    /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
+    /// This method is intended as a convenience for testing; check the [`ButtonInput`] resource directly,
     /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn pressed(&self, input: impl Into<UserInput>) -> bool;
 
     /// Is the provided `user_input` pressed for the provided [`Gamepad`]?
     ///
-    /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
+    /// This method is intended as a convenience for testing; check the [`ButtonInput`] resource directly,
     /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool;
 }
