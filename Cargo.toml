@@ -27,7 +27,7 @@ default = ['ui', 'block_ui_interactions']
 #   triggering corresponding actions in their `ActionState`.
 ui = ['bevy/bevy_ui']
 
-# If this feature is enabled, `bevy::ui` will take priority over actions when processing inputs for the `ActionState`.
+# If both this feature and `ui` are enabled, `bevy::ui` will take priority over actions when processing inputs for the `ActionState`.
 block_ui_interactions = []
 
 # If this feature is enabled, `egui` will take priority over actions when processing inputs for the `ActionState`.
