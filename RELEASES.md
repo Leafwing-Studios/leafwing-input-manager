@@ -31,6 +31,7 @@
 - registered types in the reflection system
 - added `InputMap::clear`
 - added `ActionState::keys`
+- exported `VirtualAxis` in `prelude` module
 
 ### Bugs
 

@@ -81,7 +81,7 @@ fn spawn_player(mut commands: Commands) {
             // Stores "which actions are currently pressed"
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
-            input_map: InputMap::new([(KeyCode::Space, Action::Jump)]),
+            input_map: InputMap::new([(Action::Jump, KeyCode::Space)]),
         })
         .insert(Player);
 }
@@ -97,3 +97,8 @@ fn jump(query: Query<&ActionState<Action>, With<Player>>) {
 ```
 
 This snippet is the `minimal.rs` example from the [`examples`](./examples) folder: check there for more in-depth learning materials!
+
+## Crate Feature Flags
+
+This crate has three feature flags: `ui`, `block_ui_interactions`, and `egui`.
+Please refer to the `[features]` section in the [`Cargo.toml`](./Cargo.toml) for detailed information about their configurations.
