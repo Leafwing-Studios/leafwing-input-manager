@@ -229,7 +229,7 @@ impl From<GamepadButtonType> for UserInput {
 
 impl From<String> for UserInput {
     fn from(input: String) -> Self {
-        UserInput::Single(InputKind::LogicalKey(Key::Character(input.into())))
+        UserInput::character(input)
     }
 }
 
