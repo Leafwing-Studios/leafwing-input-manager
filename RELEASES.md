@@ -4,16 +4,26 @@
 
 ### Breaking Changes
 
-- Logical key bindings are no longer supported, you could still use `KeyCode`s but now they are used for physical key bindings.
-- `ScanCode` and `QwertyScanCode` have been removed; please use `KeyCode` instead.
-- `InputKind::Keyboard` is no longer in use; replace it with `InputKind::KeyLocation`.
-- `InputKind::KeyLocation` now stores a `KeyCode` rather than a `ScanCode`.
-- Renaming of some `KeyCode` variants:
-  - All letter keys now follow the format `KeyCode::Key<Letter>`, e.g., `KeyCode::K` is now `KeyCode::KeyK`.
-  - All number keys over letters now follow the format `KeyCode::Digit<Number>`, e.g., `KeyCode::Key1` is now `KeyCode::Digit1`.
-  - All arrow keys now follow the format `KeyCode::Arrow<Direction>`, e.g., `KeyCode::Up` is now `KeyCode::ArrowUp`.
-  - `KeyCode::Back` is now `KeyCode::Backspace`.
-  - `KeyCode::Return` is now `KeyCode::Enter`.
+- `KeyCode`-based logical keybindings are no longer supported; please migrate to:
+  - Logical keybindings is now optional, enabled by default, and you could disable it in your Cargo.toml
+  - `InputKind::Keyboard` have been removed; please use `InputKind::LogicalKey` instead.
+  - Renaming of all your all occurrences of `KeyCode` variants with `Key` or `UserInput::character()`:
+    - All physical keys now trigger the corresponding logical keys that type the same character,
+      e.g., `KeyCode::NumpadEnter` now triggers `Key::Enter`, similar to `KeyCode::Return`
+      and `KeyCode::Numpad8` now triggers `UserInput::character("8")`, similar to `KeyCode::Key8`.
+    - All logical number and letter keys now follow the format `UserInput::character(<character>)`,
+      e.g., `KeyCode::Key8` is now `KeyCode::Digit8` and `KeyCode::K` is now `KeyCode::KeyK`.
+    - All logical arrow keys now follow the format `Key::Arrow<Direction>`, e.g., `KeyCode::Up` is now `Key::ArrowUp`.
+    - `KeyCode::Back` is now `Key::Backspace`.
+    - `KeyCode::Return` is now `Key::Enter`.
+
+- `ScanCode`-based physical keybindings are no longer supported; please migrate to:
+  - `ScanCode` and `QwertyScanCode` have been removed; please use `KeyCode` instead.
+  - `InputKind::KeyLocation` have been removed; please use `InputKind::PhysicalKey` instead.
+  - Renaming of all your all occurrences of `ScanCode` and `QwertyScanCode` variants with `KeyCode`:
+    - All letter keys now follow the format `KeyCode::Key<Letter>`, e.g., `ScanCode::K` is now `KeyCode::KeyK`.
+    - All number keys over letters now follow the format `KeyCode::Digit<Number>`, e.g., `ScanCode::Key1` is now `KeyCode::Digit1`.
+    - All arrow keys now follow the format `KeyCode::Arrow<Direction>`, e.g., `ScanCode::Up` is now `KeyCode::ArrowUp`.
 
 ### Enhancements
 
