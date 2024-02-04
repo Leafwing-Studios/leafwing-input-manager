@@ -5,7 +5,6 @@
 ### Breaking Changes
 
 - `KeyCode`-based logical keybindings are no longer supported; please migrate to:
-  - Logical keybindings is now optional, enabled by default, and you could disable it in your Cargo.toml
   - `InputKind::Keyboard` have been removed; please use `InputKind::LogicalKey` instead.
   - Renaming of all your all occurrences of `KeyCode` variants with `Key` or `UserInput::character()`:
     - All physical keys now trigger the corresponding logical keys that type the same character,

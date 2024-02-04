@@ -1,12 +1,10 @@
 //! Helpful abstractions over user inputs of all sorts
 
-#[cfg(feature = "logical_key_bindings")]
 use bevy::input::keyboard::Key;
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
 use serde::{Deserialize, Serialize};
-#[cfg(feature = "logical_key_bindings")]
 use smol_str::SmolStr;
 
 use crate::axislike::VirtualAxis;
@@ -44,7 +42,6 @@ impl UserInput {
     /// representing the actual character typed by the user,
     /// taking into account the user’s current locale setting,
     /// and any system-level keyboard mapping overrides that are in effect.
-    #[cfg(feature = "logical_key_bindings")]
     pub fn character(character: impl AsRef<str>) -> UserInput {
         UserInput::Single(InputKind::LogicalKey(Key::Character(SmolStr::new(
             character,
@@ -230,14 +227,12 @@ impl From<GamepadButtonType> for UserInput {
     }
 }
 
-#[cfg(feature = "logical_key_bindings")]
 impl From<String> for UserInput {
     fn from(input: String) -> Self {
         UserInput::Single(InputKind::LogicalKey(Key::Character(input.into())))
     }
 }
 
-#[cfg(feature = "logical_key_bindings")]
 impl From<Key> for UserInput {
     fn from(input: Key) -> Self {
         UserInput::Single(InputKind::LogicalKey(input))
@@ -299,7 +294,6 @@ pub enum InputKind {
     /// The actual (physical) key that has to be pressed depends on the keyboard layout.
     /// If you care about the position of the key rather than what it stands for,
     /// use [`InputKind::PhysicalKey`] instead.
-    #[cfg(feature = "logical_key_bindings")]
     LogicalKey(Key),
     /// The physical location of a key on the keyboard.
     ///
@@ -335,14 +329,12 @@ impl From<GamepadButtonType> for InputKind {
     }
 }
 
-#[cfg(feature = "logical_key_bindings")]
 impl From<String> for InputKind {
     fn from(input: String) -> Self {
         InputKind::LogicalKey(Key::Character(input.into()))
     }
 }
 
-#[cfg(feature = "logical_key_bindings")]
 impl From<Key> for InputKind {
     fn from(input: Key) -> Self {
         InputKind::LogicalKey(input)
@@ -416,7 +408,6 @@ impl Modifier {
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct RawInputs {
     /// Logical keyboard keys.
-    #[cfg(feature = "logical_key_bindings")]
     pub keys: Vec<Key>,
     /// Physical key locations.
     pub keycodes: Vec<KeyCode>,
@@ -448,7 +439,6 @@ impl RawInputs {
                 .axis_data
                 .push((single_axis.axis_type, single_axis.value)),
             InputKind::GamepadButton(button) => self.gamepad_buttons.push(button),
-            #[cfg(feature = "logical_key_bindings")]
             InputKind::LogicalKey(key) => self.keys.push(key),
             InputKind::PhysicalKey(key_code) => self.keycodes.push(key_code),
             InputKind::Modifier(modifier) => {

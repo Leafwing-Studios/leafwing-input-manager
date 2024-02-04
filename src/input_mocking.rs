@@ -19,9 +19,7 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
-use bevy::input::keyboard::Key;
-#[cfg(feature = "logical_key_bindings")]
-use bevy::input::keyboard::{NativeKey, NativeKeyCode};
+use bevy::input::keyboard::{Key, NativeKey, NativeKeyCode};
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
@@ -36,7 +34,6 @@ use bevy::prelude::Entity;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 use bevy::window::CursorMoved;
-#[cfg(feature = "logical_key_bindings")]
 use itertools::{EitherOrBoth, Itertools};
 
 /// Send fake input events for testing purposes
@@ -166,38 +163,25 @@ impl MockInput for MutableInputStreams<'_> {
         // Extract the raw inputs
         let raw_inputs = input_to_send.raw_inputs();
 
-        #[cfg(not(feature = "logical_key_bindings"))]
-        for key_code in raw_inputs.keycodes {
+        let keys = raw_inputs.keys.into_iter();
+        let keycodes = raw_inputs.keycodes.into_iter();
+        for zipped in keys.zip_longest(keycodes) {
+            let (logical_key, key_code) = match zipped {
+                EitherOrBoth::Both(logical_key, key_code) => (logical_key, key_code),
+                EitherOrBoth::Left(logical_key) => (
+                    logical_key,
+                    KeyCode::Unidentified(NativeKeyCode::Unidentified),
+                ),
+                EitherOrBoth::Right(key_code) => {
+                    (Key::Unidentified(NativeKey::Unidentified), key_code)
+                }
+            };
             self.keyboard_events.send(KeyboardInput {
-                logical_key: Key::Character("Mocking".into()),
+                logical_key,
                 key_code,
                 state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
             });
-        }
-
-        #[cfg(feature = "logical_key_bindings")]
-        {
-            let keys = raw_inputs.keys.into_iter();
-            let keycodes = raw_inputs.keycodes.into_iter();
-            for zipped in keys.zip_longest(keycodes) {
-                let (logical_key, key_code) = match zipped {
-                    EitherOrBoth::Both(logical_key, key_code) => (logical_key, key_code),
-                    EitherOrBoth::Left(logical_key) => (
-                        logical_key,
-                        KeyCode::Unidentified(NativeKeyCode::Unidentified),
-                    ),
-                    EitherOrBoth::Right(key_code) => {
-                        (Key::Unidentified(NativeKey::Unidentified), key_code)
-                    }
-                };
-                self.keyboard_events.send(KeyboardInput {
-                    logical_key,
-                    key_code,
-                    state: ButtonState::Pressed,
-                    window: Entity::PLACEHOLDER,
-                });
-            }
         }
 
         // Mouse buttons
@@ -344,38 +328,25 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
-        #[cfg(not(feature = "logical_key_bindings"))]
-        for key_code in raw_inputs.keycodes {
+        let keys = raw_inputs.keys.into_iter();
+        let keycodes = raw_inputs.keycodes.into_iter();
+        for zipped in keys.zip_longest(keycodes) {
+            let (logical_key, key_code) = match zipped {
+                EitherOrBoth::Both(logical_key, key_code) => (logical_key, key_code),
+                EitherOrBoth::Left(logical_key) => (
+                    logical_key,
+                    KeyCode::Unidentified(NativeKeyCode::Unidentified),
+                ),
+                EitherOrBoth::Right(key_code) => {
+                    (Key::Unidentified(NativeKey::Unidentified), key_code)
+                }
+            };
             self.keyboard_events.send(KeyboardInput {
-                logical_key: Key::Character("Mocking".into()),
+                logical_key,
                 key_code,
                 state: ButtonState::Released,
                 window: Entity::PLACEHOLDER,
             });
-        }
-
-        #[cfg(feature = "logical_key_bindings")]
-        {
-            let keys = raw_inputs.keys.into_iter();
-            let keycodes = raw_inputs.keycodes.into_iter();
-            for zipped in keys.zip_longest(keycodes) {
-                let (logical_key, key_code) = match zipped {
-                    EitherOrBoth::Both(logical_key, key_code) => (logical_key, key_code),
-                    EitherOrBoth::Left(logical_key) => (
-                        logical_key,
-                        KeyCode::Unidentified(NativeKeyCode::Unidentified),
-                    ),
-                    EitherOrBoth::Right(key_code) => {
-                        (Key::Unidentified(NativeKey::Unidentified), key_code)
-                    }
-                };
-                self.keyboard_events.send(KeyboardInput {
-                    logical_key,
-                    key_code,
-                    state: ButtonState::Released,
-                    window: Entity::PLACEHOLDER,
-                });
-            }
         }
 
         for button in raw_inputs.mouse_buttons {

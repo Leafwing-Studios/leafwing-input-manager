@@ -2,11 +2,9 @@
 
 use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
-#[cfg(feature = "logical_key_bindings")]
-use bevy::input::keyboard::Key;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
-    keyboard::{KeyCode, KeyboardInput},
+    keyboard::{Key, KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     Axis, ButtonInput,
 };
@@ -37,7 +35,6 @@ pub struct InputStreams<'a> {
     /// A [`KeyCode`] [`ButtonInput`] stream
     pub keycodes: Option<&'a ButtonInput<KeyCode>>,
     /// A [`KeyboardInput`] event stream
-    #[cfg(feature = "logical_key_bindings")]
     pub keyboard_events: Option<Vec<KeyboardInput>>,
     /// A [`MouseButton`] [`Input`](ButtonInput) stream
     pub mouse_buttons: Option<&'a ButtonInput<MouseButton>>,
@@ -58,13 +55,11 @@ impl<'a> InputStreams<'a> {
         let gamepad_axes = world.resource::<Axis<GamepadAxis>>();
         let gamepads = world.resource::<Gamepads>();
         let keycodes = world.get_resource::<ButtonInput<KeyCode>>();
-        #[cfg(feature = "logical_key_bindings")]
         let keyboard_events = world.resource::<Events<KeyboardInput>>();
         let mouse_buttons = world.get_resource::<ButtonInput<MouseButton>>();
         let mouse_wheel = world.resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
 
-        #[cfg(feature = "logical_key_bindings")]
         let keyboard_events: Vec<KeyboardInput> = keyboard_events
             .get_reader()
             .read(keyboard_events)
@@ -87,7 +82,6 @@ impl<'a> InputStreams<'a> {
             gamepad_axes,
             gamepads,
             keycodes,
-            #[cfg(feature = "logical_key_bindings")]
             keyboard_events: Some(keyboard_events),
             mouse_buttons,
             mouse_wheel: Some(mouse_wheel),
@@ -158,7 +152,6 @@ impl<'a> InputStreams<'a> {
                     })
                 }
             }
-            #[cfg(feature = "logical_key_bindings")]
             InputKind::LogicalKey(key_specified) => self
                 .keyboard_events
                 .clone()
@@ -595,7 +588,6 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
-            #[cfg(feature = "logical_key_bindings")]
             keyboard_events: Some(
                 mutable_streams
                     .keyboard_events
@@ -632,7 +624,6 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
-            #[cfg(feature = "logical_key_bindings")]
             keyboard_events: Some(
                 mutable_streams
                     .keyboard_events

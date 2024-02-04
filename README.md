@@ -100,5 +100,5 @@ This snippet is the `minimal.rs` example from the [`examples`](./examples) folde
 
 ## Crate Feature Flags
 
-This crate has four feature flags: `logical_key_bindings`, `ui`, `block_ui_interactions`, and `egui`.
+This crate has three feature flags: `ui`, `block_ui_interactions`, and `egui`.
 Please refer to the `[features]` section in the [`Cargo.toml`](./Cargo.toml) for detailed information about their configurations.
