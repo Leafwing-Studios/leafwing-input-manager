@@ -1,5 +1,7 @@
 //! Helpful abstractions over user inputs of all sorts
 
+#[cfg(feature = "logical_key_bindings")]
+use bevy::input::keyboard::Key;
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
@@ -58,7 +60,7 @@ impl UserInput {
         }
 
         match length {
-            1 => UserInput::Single(*vec.first().unwrap()),
+            1 => UserInput::Single(vec.first().unwrap().clone()),
             _ => UserInput::Chord(vec),
         }
     }
@@ -213,6 +215,13 @@ impl From<GamepadButtonType> for UserInput {
     }
 }
 
+#[cfg(feature = "logical_key_bindings")]
+impl From<String> for UserInput {
+    fn from(input: String) -> Self {
+        UserInput::Single(InputKind::Keyboard(Key::Character(input.into())))
+    }
+}
+
 impl From<KeyCode> for UserInput {
     fn from(input: KeyCode) -> Self {
         UserInput::Single(InputKind::KeyLocation(input))
@@ -252,7 +261,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
@@ -260,9 +269,18 @@ pub enum InputKind {
     SingleAxis(SingleAxis),
     /// Two paired axes of continuous motion
     DualAxis(DualAxis),
+    /// A logical key on the keyboard.
+    ///
+    /// The actual (physical) key that has to be pressed depends on the keyboard layout.
+    /// If you care about the position of the key rather than what it stands for,
+    /// use [`InputKind::KeyLocation`] instead.
+    #[cfg(feature = "logical_key_bindings")]
+    Keyboard(Key),
     /// The physical location of a key on the keyboard.
     ///
     /// The logical key which is emitted by this key depends on the keyboard layout.
+    /// If you care about the output of the key rather than where it is positioned,
+    /// use [`InputKind::Keyboard`] instead.
     KeyLocation(KeyCode),
     /// A keyboard modifier, like `Ctrl` or `Alt`, which doesn't care about which side it's on.
     Modifier(Modifier),
@@ -289,6 +307,13 @@ impl From<SingleAxis> for InputKind {
 impl From<GamepadButtonType> for InputKind {
     fn from(input: GamepadButtonType) -> Self {
         InputKind::GamepadButton(input)
+    }
+}
+
+#[cfg(feature = "logical_key_bindings")]
+impl From<String> for InputKind {
+    fn from(input: String) -> Self {
+        InputKind::Keyboard(Key::Character(input.into()))
     }
 }
 
@@ -358,7 +383,10 @@ impl Modifier {
 /// Obtained by calling [`UserInput::raw_inputs()`].
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct RawInputs {
-    /// Physical keyboard keys.
+    /// Logical keyboard keys.
+    #[cfg(feature = "logical_key_bindings")]
+    pub keys: Vec<Key>,
+    /// Physical key locations.
     pub keycodes: Vec<KeyCode>,
     /// Mouse buttons
     pub mouse_buttons: Vec<MouseButton>,
@@ -377,7 +405,7 @@ pub struct RawInputs {
 impl RawInputs {
     /// Merges the data from the given `input_kind` into `self`.
     fn merge_input_data(&mut self, input_kind: &InputKind) {
-        match *input_kind {
+        match input_kind.clone() {
             InputKind::DualAxis(dual_axis) => {
                 self.axis_data
                     .push((dual_axis.x.axis_type, dual_axis.x.value));
@@ -388,6 +416,8 @@ impl RawInputs {
                 .axis_data
                 .push((single_axis.axis_type, single_axis.value)),
             InputKind::GamepadButton(button) => self.gamepad_buttons.push(button),
+            #[cfg(feature = "logical_key_bindings")]
+            InputKind::Keyboard(key) => self.keys.push(key),
             InputKind::KeyLocation(key_code) => self.keycodes.push(key_code),
             InputKind::Modifier(modifier) => {
                 let key_codes = modifier.key_codes();

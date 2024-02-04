@@ -8,6 +8,8 @@ use crate::{
 };
 
 use bevy::ecs::prelude::*;
+#[cfg(feature = "logical_key_bindings")]
+use bevy::input::keyboard::KeyboardInput;
 use bevy::{
     input::{
         gamepad::{GamepadAxis, GamepadButton, Gamepads},
@@ -68,6 +70,7 @@ pub fn update_action_state<A: Actionlike>(
     gamepad_axes: Res<Axis<GamepadAxis>>,
     gamepads: Res<Gamepads>,
     keycodes: Option<Res<ButtonInput<KeyCode>>>,
+    #[cfg(feature = "logical_key_bindings")] mut keyboard_events: EventReader<KeyboardInput>,
     mouse_buttons: Option<Res<ButtonInput<MouseButton>>>,
     mut mouse_wheel: EventReader<MouseWheel>,
     mut mouse_motion: EventReader<MouseMotion>,
@@ -85,6 +88,8 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
+    #[cfg(feature = "logical_key_bindings")]
+    let keyboard_events: Vec<KeyboardInput> = keyboard_events.read().cloned().collect();
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
 
     let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
@@ -102,12 +107,21 @@ pub fn update_action_state<A: Actionlike>(
     };
 
     // If egui wants to own inputs, don't also apply them to the game state
-    #[cfg(feature = "egui")]
+    #[cfg(all(feature = "egui", not(feature = "logical_key_bindings")))]
     let keycodes = maybe_egui
         .iter_mut()
         .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
         .then_some(keycodes)
         .flatten();
+    #[cfg(all(feature = "egui", feature = "logical_key_bindings"))]
+    let (keycodes, keyboard_events) = if maybe_egui
+        .iter_mut()
+        .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
+    {
+        (None, None)
+    } else {
+        (keycodes, Some(keyboard_events))
+    };
 
     // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
     // so `is_pointer_over_area` is also needed.
@@ -131,6 +145,8 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_axes,
             gamepads,
             keycodes,
+            #[cfg(feature = "logical_key_bindings")]
+            keyboard_events: keyboard_events.clone(),
             mouse_buttons,
             mouse_wheel: mouse_wheel.clone(),
             mouse_motion: mouse_motion.clone(),

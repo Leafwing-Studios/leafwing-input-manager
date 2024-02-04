@@ -44,6 +44,8 @@ pub mod prelude {
     pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
     pub use crate::user_input::{Modifier, UserInput};
+    #[cfg(feature = "logical_key_bindings")]
+    pub use bevy::input::keyboard::Key;
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
