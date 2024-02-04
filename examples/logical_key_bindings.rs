@@ -1,7 +1,5 @@
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::Key;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
 
 fn main() {
     App::new()
@@ -39,12 +37,12 @@ fn spawn_player(mut commands: Commands) {
             // taking into account the user’s current locale setting,
             // and any system-level keyboard mapping overrides that are in effect.
             input_map: InputMap::new([
-                (Action::Forward, Key::Character("w".into()).into()),
+                (Action::Forward, UserInput::character("w")),
                 // If you wish to associate the Action::Forward with an UPPERCASE 'W' key typed by the user.
-                (Action::Forward, Key::Character("W".into()).into()),
-                (Action::Left, Key::Character("a".into()).into()),
-                (Action::Backward, Key::Character("s".into()).into()),
-                (Action::Right, Key::Character("d".into()).into()),
+                (Action::Forward, UserInput::character("W")),
+                (Action::Left, UserInput::character("a")),
+                (Action::Backward, UserInput::character("s")),
+                (Action::Right, UserInput::character("d")),
             ]),
         })
         .insert(Player);
