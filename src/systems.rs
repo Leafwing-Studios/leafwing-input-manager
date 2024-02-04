@@ -108,7 +108,7 @@ pub fn update_action_state<A: Actionlike>(
     info!("KeyboardEvents: {keyboard_events:?}");
 
     // If egui wants to own inputs, don't also apply them to the game state
-    #[cfg(all(feature = "egui"))]
+    #[cfg(feature = "egui")]
     let (keycodes, keyboard_events) = if maybe_egui
         .iter_mut()
         .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
