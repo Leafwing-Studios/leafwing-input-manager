@@ -1,5 +1,8 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
+#[cfg(all(feature = "egui", not(feature = "logical_key_bindings")))]
+use std::ops::Not;
+
 #[cfg(feature = "ui")]
 use crate::action_driver::ActionStateDriver;
 use crate::{
@@ -112,6 +115,7 @@ pub fn update_action_state<A: Actionlike>(
     let keycodes = maybe_egui
         .iter_mut()
         .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
+        .not()
         .then_some(keycodes)
         .flatten();
     #[cfg(all(feature = "egui", feature = "logical_key_bindings"))]
