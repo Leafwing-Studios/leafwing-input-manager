@@ -13,6 +13,7 @@ use crate::{
 use bevy::ecs::prelude::*;
 #[cfg(feature = "logical_key_bindings")]
 use bevy::input::keyboard::KeyboardInput;
+use bevy::log::info;
 use bevy::{
     input::{
         gamepad::{GamepadAxis, GamepadButton, Gamepads},
@@ -109,6 +110,8 @@ pub fn update_action_state<A: Actionlike>(
     } else {
         (mouse_buttons, mouse_wheel)
     };
+
+    info!("KeyboardEvents: {keyboard_events:?}");
 
     // If egui wants to own inputs, don't also apply them to the game state
     #[cfg(all(feature = "egui", not(feature = "logical_key_bindings")))]

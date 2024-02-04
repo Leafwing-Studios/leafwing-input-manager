@@ -10,6 +10,7 @@ use bevy::input::{
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     Axis, ButtonInput,
 };
+use bevy::log::info;
 use bevy::utils::HashSet;
 
 use crate::axislike::{
@@ -160,20 +161,26 @@ impl<'a> InputStreams<'a> {
             #[cfg(feature = "logical_key_bindings")]
             InputKind::Keyboard(key_specified) => self
                 .keyboard_events
-                .iter()
+                .clone()
                 .map(|events| {
                     events.iter().any(|kb_input| {
                         let key_input = &kb_input.logical_key;
                         match (key_specified.clone(), key_input.clone()) {
                             (Key::Character(text_specified), Key::Character(text_input)) => {
-                                text_specified.eq_ignore_ascii_case(&text_input)
+                                let ret = text_specified == text_input;
+
+                                // TODO: for testing
+                                info!(
+                                    "Logical Key: specified {}, input {}, eq {}",
+                                    text_specified, text_input, ret
+                                );
+                                ret
                             }
                             (_, logical_key) => key_specified == logical_key,
                         }
                     })
                 })
-                .next()
-                .is_some(),
+                .unwrap_or_default(),
             InputKind::KeyLocation(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
             }

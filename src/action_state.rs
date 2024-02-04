@@ -420,30 +420,21 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn consumed(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.consumed,
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.consumed)
     }
 
     /// Is this `action` currently pressed?
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.pressed(),
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.state.pressed())
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.just_pressed(),
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.state.just_pressed())
     }
 
     /// Is this `action` currently released?
@@ -452,20 +443,15 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.released(),
-            None => true,
-        }
+        self.action_data(action)
+            .map_or(true, |action_data| action_data.state.released())
     }
 
     /// Was this `action` released since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.just_released(),
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.state.just_released())
     }
 
     #[must_use]
