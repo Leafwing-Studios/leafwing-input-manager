@@ -209,25 +209,21 @@ fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
-    let dpad = dpad.clone();
-    [dpad.up, dpad.down, dpad.left, dpad.right]
-        .into_iter()
-        .any(|button| chord.contains(&button))
+    [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
+        .iter()
+        .any(|button| chord.contains(button))
 }
 
 fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
-    let dpad = dpad.clone();
-    [dpad.up, dpad.down, dpad.left, dpad.right]
-        .into_iter()
-        .any(|dpad_button| *button == dpad_button)
+    [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
+        .iter()
+        .any(|dpad_button| *button == **dpad_button)
 }
 
 fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
-    let dpad1 = dpad1.clone();
-    let dpad2 = dpad2.clone();
-    let iter1 = [dpad1.up, dpad1.down, dpad1.left, dpad1.right].into_iter();
-    let iter2 = [dpad2.up, dpad2.down, dpad2.left, dpad2.right].into_iter();
-    iter1.zip(iter2).any(|(left, right)| left == right)
+    let iter1 = [&dpad1.up, &dpad1.down, &dpad1.left, &dpad1.right].into_iter();
+    let iter2 = [&dpad2.up, &dpad2.down, &dpad2.left, &dpad2.right].into_iter();
+    iter1.zip(iter2).any(|(left, right)| *left == *right)
 }
 
 #[must_use]
@@ -237,10 +233,9 @@ fn virtual_axis_button_clash(axis: &VirtualAxis, button: &InputKind) -> bool {
 
 #[must_use]
 fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
-    let dpad = dpad.clone();
-    [dpad.up, dpad.down, dpad.left, dpad.right]
-        .into_iter()
-        .any(|button| button == axis.negative || button == axis.positive)
+    [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
+        .iter()
+        .any(|button| **button == axis.negative || **button == axis.positive)
 }
 
 #[must_use]

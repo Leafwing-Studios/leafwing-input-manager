@@ -63,7 +63,7 @@ input_map.insert(Action::Run, MouseButton::Left)
 // Chords
 .insert_modified(Action::Run, Modifier::Control, KeyCode::KeyR)
 .insert_chord(Action::Run,
-              [InputKind::Keyboard(KeyCode::KeyH),
+              [InputKind::PhysicalKey(KeyCode::KeyH),
                InputKind::GamepadButton(GamepadButtonType::South),
                InputKind::Mouse(MouseButton::Middle)],
            );

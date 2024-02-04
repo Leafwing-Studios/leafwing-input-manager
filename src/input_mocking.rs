@@ -166,17 +166,17 @@ impl MockInput for MutableInputStreams<'_> {
         self.send_keyboard_input(ButtonState::Pressed, &raw_inputs);
 
         // Mouse buttons
-        for button in raw_inputs.mouse_buttons {
+        for button in raw_inputs.mouse_buttons.iter() {
             self.mouse_button_events.send(MouseButtonInput {
-                button,
+                button: button.clone(),
                 state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
             });
         }
 
         // Discrete mouse wheel events
-        for mouse_wheel_direction in raw_inputs.mouse_wheel {
-            match mouse_wheel_direction {
+        for mouse_wheel_direction in raw_inputs.mouse_wheel.iter() {
+            match *mouse_wheel_direction {
                 MouseWheelDirection::Left => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: -1.0,
@@ -205,8 +205,8 @@ impl MockInput for MutableInputStreams<'_> {
         }
 
         // Discrete mouse motion event
-        for mouse_motion_direction in raw_inputs.mouse_motion {
-            match mouse_motion_direction {
+        for mouse_motion_direction in raw_inputs.mouse_motion.iter() {
+            match *mouse_motion_direction {
                 MouseMotionDirection::Up => self.mouse_motion.send(MouseMotion {
                     delta: Vec2 { x: 0.0, y: 1.0 },
                 }),
@@ -225,7 +225,7 @@ impl MockInput for MutableInputStreams<'_> {
         self.send_gamepad_button_changed(gamepad, &raw_inputs);
 
         // Axis data
-        for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data {
+        for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data.iter() {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
@@ -233,8 +233,8 @@ impl MockInput for MutableInputStreams<'_> {
                             self.gamepad_events
                                 .send(GamepadEvent::Axis(GamepadAxisChangedEvent {
                                     gamepad,
-                                    axis_type,
-                                    value: position_data,
+                                    axis_type: axis_type.clone(),
+                                    value: position_data.clone(),
                                 }));
                         }
                     }
@@ -243,14 +243,14 @@ impl MockInput for MutableInputStreams<'_> {
                             // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
                             MouseWheelAxisType::X => self.mouse_wheel.send(MouseWheel {
                                 unit: MouseScrollUnit::Pixel,
-                                x: position_data,
+                                x: position_data.clone(),
                                 y: 0.0,
                                 window: Entity::PLACEHOLDER,
                             }),
                             MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
                                 unit: MouseScrollUnit::Pixel,
                                 x: 0.0,
-                                y: position_data,
+                                y: position_data.clone(),
                                 window: Entity::PLACEHOLDER,
                             }),
                         };
@@ -259,7 +259,7 @@ impl MockInput for MutableInputStreams<'_> {
                         MouseMotionAxisType::X => {
                             self.mouse_motion.send(MouseMotion {
                                 delta: Vec2 {
-                                    x: position_data,
+                                    x: position_data.clone(),
                                     y: 0.0,
                                 },
                             });
@@ -268,7 +268,7 @@ impl MockInput for MutableInputStreams<'_> {
                             self.mouse_motion.send(MouseMotion {
                                 delta: Vec2 {
                                     x: 0.0,
-                                    y: position_data,
+                                    y: position_data.clone(),
                                 },
                             });
                         }
@@ -316,17 +316,19 @@ impl MockInput for MutableInputStreams<'_> {
 
 impl MutableInputStreams<'_> {
     fn send_keyboard_input(&mut self, button_state: ButtonState, raw_inputs: &RawInputs) {
-        let keys = raw_inputs.keys.into_iter();
-        let keycodes = raw_inputs.keycodes.into_iter();
+        let keys = raw_inputs.keys.iter();
+        let keycodes = raw_inputs.keycodes.iter();
         for zipped in keys.zip_longest(keycodes) {
             let (logical_key, key_code) = match zipped {
-                EitherOrBoth::Both(logical_key, key_code) => (logical_key, key_code),
+                EitherOrBoth::Both(logical_key, key_code) => {
+                    (logical_key.clone(), key_code.clone())
+                }
                 EitherOrBoth::Left(logical_key) => (
-                    logical_key,
+                    logical_key.clone(),
                     KeyCode::Unidentified(NativeKeyCode::Unidentified),
                 ),
                 EitherOrBoth::Right(key_code) => {
-                    (Key::Unidentified(NativeKey::Unidentified), key_code)
+                    (Key::Unidentified(NativeKey::Unidentified), key_code.clone())
                 }
             };
             self.keyboard_events.send(KeyboardInput {
@@ -339,12 +341,12 @@ impl MutableInputStreams<'_> {
     }
 
     fn send_gamepad_button_changed(&mut self, gamepad: Option<Gamepad>, raw_inputs: &RawInputs) {
-        for button_type in raw_inputs.gamepad_buttons {
+        for button_type in raw_inputs.gamepad_buttons.iter() {
             if let Some(gamepad) = gamepad {
                 self.gamepad_events
                     .send(GamepadEvent::Button(GamepadButtonChangedEvent {
                         gamepad,
-                        button_type,
+                        button_type: button_type.clone(),
                         value: 1.0,
                     }));
             }
