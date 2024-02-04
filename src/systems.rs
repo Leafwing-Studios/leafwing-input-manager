@@ -8,22 +8,22 @@ use crate::{
 };
 
 use bevy::ecs::prelude::*;
-use bevy::log::info;
 use bevy::{
     input::{
         gamepad::{GamepadAxis, GamepadButton, Gamepads},
-        keyboard::{KeyCode, KeyboardInput},
+        keyboard::{Key, KeyCode, KeyboardInput},
         mouse::{MouseButton, MouseMotion, MouseWheel},
         Axis, ButtonInput,
     },
     log::warn,
     math::Vec2,
     time::{Real, Time},
-    utils::{HashMap, Instant},
+    utils::{HashMap, HashSet, Instant},
 };
 
 use crate::action_diff::{ActionDiff, ActionDiffEvent};
 
+use crate::input_streams::read_logical_key_changes;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
@@ -70,6 +70,7 @@ pub fn update_action_state<A: Actionlike>(
     gamepads: Res<Gamepads>,
     keycodes: Option<Res<ButtonInput<KeyCode>>>,
     mut keyboard_events: EventReader<KeyboardInput>,
+    mut cached_holding_logical_keys: Local<HashSet<Key>>,
     mouse_buttons: Option<Res<ButtonInput<MouseButton>>>,
     mut mouse_wheel: EventReader<MouseWheel>,
     mut mouse_motion: EventReader<MouseMotion>,
@@ -87,12 +88,17 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
-    let keyboard_events: Option<Vec<KeyboardInput>> =
-        Some(keyboard_events.read().cloned().collect());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
 
     let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
     let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
+
+    // Cache the holding logical keys
+    read_logical_key_changes(
+        &mut keyboard_events.read(),
+        &mut cached_holding_logical_keys,
+    );
+    let holding_logical_keys = Some(cached_holding_logical_keys.clone());
 
     // If use clicks on a button, do not apply them to the game state
     #[cfg(all(feature = "ui", feature = "block_ui_interactions"))]
@@ -105,17 +111,15 @@ pub fn update_action_state<A: Actionlike>(
         (mouse_buttons, mouse_wheel)
     };
 
-    info!("KeyboardEvents: {keyboard_events:?}");
-
     // If egui wants to own inputs, don't also apply them to the game state
     #[cfg(feature = "egui")]
-    let (keycodes, keyboard_events) = if maybe_egui
+    let (keycodes, holding_logical_keys) = if maybe_egui
         .iter_mut()
         .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
     {
         (None, None)
     } else {
-        (keycodes, keyboard_events)
+        (keycodes, holding_logical_keys)
     };
 
     // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
@@ -140,7 +144,7 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_axes,
             gamepads,
             keycodes,
-            keyboard_events: keyboard_events.clone(),
+            holding_logical_keys: holding_logical_keys.clone(),
             mouse_buttons,
             mouse_wheel: mouse_wheel.clone(),
             mouse_motion: mouse_motion.clone(),

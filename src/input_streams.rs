@@ -6,9 +6,8 @@ use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{Key, KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
-    Axis, ButtonInput,
+    Axis, ButtonInput, ButtonState,
 };
-use bevy::log::info;
 use bevy::utils::HashSet;
 
 use crate::axislike::{
@@ -18,6 +17,22 @@ use crate::axislike::{
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
 use crate::user_input::{InputKind, UserInput};
+
+/// Records the changes of logical keys from [`KeyboardInput`] into the given `caches`.
+pub(crate) fn read_logical_key_changes<'a>(
+    keyboard_events: &mut impl Iterator<Item = &'a KeyboardInput>,
+    caches: &mut HashSet<Key>,
+) {
+    for kb_event in keyboard_events.by_ref() {
+        let logical_key = &kb_event.logical_key;
+        let state = kb_event.state;
+        if state == ButtonState::Pressed {
+            caches.insert(logical_key.clone());
+        } else {
+            caches.remove(logical_key);
+        }
+    }
+}
 
 /// A collection of [`ButtonInput`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
@@ -34,8 +49,8 @@ pub struct InputStreams<'a> {
     pub gamepads: &'a Gamepads,
     /// A [`KeyCode`] [`ButtonInput`] stream
     pub keycodes: Option<&'a ButtonInput<KeyCode>>,
-    /// A [`KeyboardInput`] event stream
-    pub keyboard_events: Option<Vec<KeyboardInput>>,
+    /// A set of currently holding `Key`
+    pub holding_logical_keys: Option<HashSet<Key>>,
     /// A [`MouseButton`] [`Input`](ButtonInput) stream
     pub mouse_buttons: Option<&'a ButtonInput<MouseButton>>,
     /// A [`MouseWheel`] event stream
@@ -60,11 +75,10 @@ impl<'a> InputStreams<'a> {
         let mouse_wheel = world.resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
 
-        let keyboard_events: Vec<KeyboardInput> = keyboard_events
-            .get_reader()
-            .read(keyboard_events)
-            .cloned()
-            .collect();
+        let mut holding_logical_keys = HashSet::new();
+        let mut kb_event_reader = keyboard_events.get_reader();
+        let mut kb_input_reader = kb_event_reader.read(keyboard_events);
+        read_logical_key_changes(&mut kb_input_reader, &mut holding_logical_keys);
         let mouse_wheel: Vec<MouseWheel> = mouse_wheel
             .get_reader()
             .read(mouse_wheel)
@@ -82,7 +96,7 @@ impl<'a> InputStreams<'a> {
             gamepad_axes,
             gamepads,
             keycodes,
-            keyboard_events: Some(keyboard_events),
+            holding_logical_keys: Some(holding_logical_keys),
             mouse_buttons,
             mouse_wheel: Some(mouse_wheel),
             mouse_motion,
@@ -153,26 +167,9 @@ impl<'a> InputStreams<'a> {
                 }
             }
             InputKind::LogicalKey(key_specified) => self
-                .keyboard_events
-                .clone()
-                .map(|events| {
-                    events.iter().any(|kb_input| {
-                        let key_input = &kb_input.logical_key;
-                        match (key_specified.clone(), key_input.clone()) {
-                            (Key::Character(text_specified), Key::Character(text_input)) => {
-                                let ret = text_specified == text_input;
-
-                                // TODO: for testing
-                                info!(
-                                    "Logical Key: specified {}, input {}, eq {}",
-                                    text_specified, text_input, ret
-                                );
-                                ret
-                            }
-                            (_, logical_key) => key_specified == logical_key,
-                        }
-                    })
-                })
+                .holding_logical_keys
+                .as_ref()
+                .map(|cache| cache.contains(&key_specified))
                 .unwrap_or_default(),
             InputKind::PhysicalKey(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
@@ -582,20 +579,17 @@ impl<'a> MutableInputStreams<'a> {
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
+        let mut holding_logical_keys = HashSet::new();
+        let mut kb_event_reader = mutable_streams.keyboard_events.get_reader();
+        let mut kb_reader = kb_event_reader.read(mutable_streams.keyboard_events);
+        read_logical_key_changes(&mut kb_reader, &mut holding_logical_keys);
         InputStreams {
             gamepad_buttons: mutable_streams.gamepad_buttons,
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
-            keyboard_events: Some(
-                mutable_streams
-                    .keyboard_events
-                    .get_reader()
-                    .read(mutable_streams.keyboard_events)
-                    .cloned()
-                    .collect(),
-            ),
+            holding_logical_keys: Some(holding_logical_keys),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(
                 mutable_streams
@@ -618,20 +612,17 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
 
 impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: &'a MutableInputStreams<'a>) -> Self {
+        let mut holding_logical_keys = HashSet::new();
+        let mut kb_event_reader = mutable_streams.keyboard_events.get_reader();
+        let mut kb_reader = kb_event_reader.read(mutable_streams.keyboard_events);
+        read_logical_key_changes(&mut kb_reader, &mut holding_logical_keys);
         InputStreams {
             gamepad_buttons: mutable_streams.gamepad_buttons,
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
-            keyboard_events: Some(
-                mutable_streams
-                    .keyboard_events
-                    .get_reader()
-                    .read(mutable_streams.keyboard_events)
-                    .cloned()
-                    .collect(),
-            ),
+            holding_logical_keys: Some(holding_logical_keys),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(
                 mutable_streams

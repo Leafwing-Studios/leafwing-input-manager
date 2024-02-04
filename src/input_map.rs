@@ -15,7 +15,6 @@ use bevy::reflect::Reflect;
 use bevy::utils::{Entry, HashMap};
 use serde::{Deserialize, Serialize};
 
-use bevy::log::info;
 use core::fmt::Debug;
 
 /**
@@ -336,11 +335,7 @@ impl<A: Actionlike> InputMap<A> {
                         });
                 }
 
-                let pressed = input_streams.input_pressed(input);
-
-                // TODO: for testing
-                info!("Is action_datum pressed? {pressed}");
-                if pressed {
+                if input_streams.input_pressed(input) {
                     action_datum.state = ButtonState::JustPressed;
                     action_datum.value += input_streams.input_value(input, true);
                 }
