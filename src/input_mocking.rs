@@ -19,8 +19,9 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
+use bevy::input::keyboard::Key;
 #[cfg(feature = "logical_key_bindings")]
-use bevy::input::keyboard::{Key, NativeKey, NativeKeyCode};
+use bevy::input::keyboard::{NativeKey, NativeKeyCode};
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{

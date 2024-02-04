@@ -120,13 +120,7 @@ impl<'a> InputStreams<'a> {
     /// Is at least one of the `inputs` pressed?
     #[must_use]
     pub fn any_pressed(&self, inputs: &HashSet<UserInput>) -> bool {
-        for input in inputs.iter() {
-            if self.input_pressed(input) {
-                return true;
-            }
-        }
-        // If none of the inputs matched, return false
-        false
+        inputs.iter().any(|input| self.input_pressed(input))
     }
 
     /// Is the `button` pressed?

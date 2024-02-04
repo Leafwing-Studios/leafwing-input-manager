@@ -18,12 +18,12 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ['ui', 'block_ui_interactions']
+default = ['logical_key_bindings', 'ui', 'block_ui_interactions']
 
 # Provide functionality refer to new logical key bindings:
 # - Allows the use of `InputKind::Keyboard(Key)`.
 # - Enables to collect the `bevy::KeyboardInput` event stream for updating the `Key`s.
-logical_key_bindings = ["dep:smol_str"]
+logical_key_bindings = ['dep:smol_str']
 
 # Provide functionality refer to `bevy::ui`:
 # - `MockUIInteraction` for `bevy::ui` input mocking.
