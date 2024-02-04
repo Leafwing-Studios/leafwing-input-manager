@@ -6,6 +6,8 @@ use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseBut
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
 use serde::{Deserialize, Serialize};
+#[cfg(feature = "logical_key_bindings")]
+use smol_str::SmolStr;
 
 use crate::axislike::VirtualAxis;
 use crate::{
@@ -36,6 +38,19 @@ pub enum UserInput {
 }
 
 impl UserInput {
+    /// Creates a single logical key to represent the given `character`.
+    ///
+    /// Notice: The `character` is case-sensitive,
+    /// representing the actual character typed by the user,
+    /// taking into account the user’s current locale setting,
+    /// and any system-level keyboard mapping overrides that are in effect.
+    #[cfg(feature = "logical_key_bindings")]
+    pub fn character(character: impl AsRef<str>) -> UserInput {
+        UserInput::Single(InputKind::LogicalKey(Key::Character(SmolStr::new(
+            character,
+        ))))
+    }
+
     /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` that can be converted into an [`InputKind`]
     ///
     /// When working with keyboard modifiers, should be preferred over manually specifying both the left and right variant.
@@ -218,20 +233,20 @@ impl From<GamepadButtonType> for UserInput {
 #[cfg(feature = "logical_key_bindings")]
 impl From<String> for UserInput {
     fn from(input: String) -> Self {
-        UserInput::Single(InputKind::Keyboard(Key::Character(input.into())))
+        UserInput::Single(InputKind::LogicalKey(Key::Character(input.into())))
     }
 }
 
 #[cfg(feature = "logical_key_bindings")]
 impl From<Key> for UserInput {
     fn from(input: Key) -> Self {
-        UserInput::Single(InputKind::Keyboard(input))
+        UserInput::Single(InputKind::LogicalKey(input))
     }
 }
 
 impl From<KeyCode> for UserInput {
     fn from(input: KeyCode) -> Self {
-        UserInput::Single(InputKind::KeyLocation(input))
+        UserInput::Single(InputKind::PhysicalKey(input))
     }
 }
 
@@ -277,18 +292,21 @@ pub enum InputKind {
     /// Two paired axes of continuous motion
     DualAxis(DualAxis),
     /// A logical key on the keyboard.
+    /// It will represent the actual character typed by the user,
+    /// taking into account the user’s current locale setting,
+    /// and any system-level keyboard mapping overrides that are in effect.
     ///
     /// The actual (physical) key that has to be pressed depends on the keyboard layout.
     /// If you care about the position of the key rather than what it stands for,
-    /// use [`InputKind::KeyLocation`] instead.
+    /// use [`InputKind::PhysicalKey`] instead.
     #[cfg(feature = "logical_key_bindings")]
-    Keyboard(Key),
+    LogicalKey(Key),
     /// The physical location of a key on the keyboard.
     ///
     /// The logical key which is emitted by this key depends on the keyboard layout.
     /// If you care about the output of the key rather than where it is positioned,
-    /// use [`InputKind::Keyboard`] instead.
-    KeyLocation(KeyCode),
+    /// use [`InputKind::LogicalKey`] instead.
+    PhysicalKey(KeyCode),
     /// A keyboard modifier, like `Ctrl` or `Alt`, which doesn't care about which side it's on.
     Modifier(Modifier),
     /// A button on a mouse
@@ -320,20 +338,20 @@ impl From<GamepadButtonType> for InputKind {
 #[cfg(feature = "logical_key_bindings")]
 impl From<String> for InputKind {
     fn from(input: String) -> Self {
-        InputKind::Keyboard(Key::Character(input.into()))
+        InputKind::LogicalKey(Key::Character(input.into()))
     }
 }
 
 #[cfg(feature = "logical_key_bindings")]
 impl From<Key> for InputKind {
     fn from(input: Key) -> Self {
-        InputKind::Keyboard(input)
+        InputKind::LogicalKey(input)
     }
 }
 
 impl From<KeyCode> for InputKind {
     fn from(input: KeyCode) -> Self {
-        InputKind::KeyLocation(input)
+        InputKind::PhysicalKey(input)
     }
 }
 
@@ -431,8 +449,8 @@ impl RawInputs {
                 .push((single_axis.axis_type, single_axis.value)),
             InputKind::GamepadButton(button) => self.gamepad_buttons.push(button),
             #[cfg(feature = "logical_key_bindings")]
-            InputKind::Keyboard(key) => self.keys.push(key),
-            InputKind::KeyLocation(key_code) => self.keycodes.push(key_code),
+            InputKind::LogicalKey(key) => self.keys.push(key),
+            InputKind::PhysicalKey(key_code) => self.keycodes.push(key_code),
             InputKind::Modifier(modifier) => {
                 let key_codes = modifier.key_codes();
                 self.keycodes.push(key_codes[0]);

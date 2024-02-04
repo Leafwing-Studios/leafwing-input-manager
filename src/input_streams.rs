@@ -159,7 +159,7 @@ impl<'a> InputStreams<'a> {
                 }
             }
             #[cfg(feature = "logical_key_bindings")]
-            InputKind::Keyboard(key_specified) => self
+            InputKind::LogicalKey(key_specified) => self
                 .keyboard_events
                 .clone()
                 .map(|events| {
@@ -181,7 +181,7 @@ impl<'a> InputStreams<'a> {
                     })
                 })
                 .unwrap_or_default(),
-            InputKind::KeyLocation(keycode) => {
+            InputKind::PhysicalKey(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
             }
             InputKind::Modifier(modifier) => {

@@ -46,9 +46,9 @@ impl Display for InputKind {
             InputKind::MouseWheel(button) => write!(f, "{button:?}"),
             InputKind::MouseMotion(button) => write!(f, "{button:?}"),
             #[cfg(feature = "logical_key_bindings")]
-            InputKind::Keyboard(button) => write!(f, "{button:?}"),
+            InputKind::LogicalKey(button) => write!(f, "{button:?}"),
             // TODO: We probably want to display the key on the currently active layout
-            InputKind::KeyLocation(key_code) => write!(f, "{key_code:?}"),
+            InputKind::PhysicalKey(key_code) => write!(f, "{key_code:?}"),
             InputKind::Modifier(button) => write!(f, "{button:?}"),
         }
     }

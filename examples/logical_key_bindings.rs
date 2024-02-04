@@ -27,20 +27,24 @@ enum Action {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
-    let key: InputKind = Key::Character("W".into()).into();
     commands
         .spawn(InputManagerBundle::<Action> {
             // Stores "which actions are currently pressed"
             action_state: ActionState::default(),
-            // We can define a case-insensitive character for the logical keys.
-            // If the user inputs a corresponding character, the keys will be pressed.
-            // For example, a "w" input triggers both the lowercase and uppercase logical "W" keys.
+            // We can define a character for the logical keys,
+            // representing the actual character typed by the user.
+            // If the user inputs the specified character, the corresponding keys will be pressed.
+            //
+            // Notice: The `character` is case-sensitive,
+            // taking into account the user’s current locale setting,
+            // and any system-level keyboard mapping overrides that are in effect.
             input_map: InputMap::new([
-                (Action::Forward, key),
-                (Action::Forward, KeyCode::KeyW.into()),
-                (Action::Left, Key::Character("A".into()).into()),
-                (Action::Backward, Key::Character("S".into()).into()),
-                (Action::Right, Key::Character("D".into()).into()),
+                (Action::Forward, Key::Character("w".into()).into()),
+                // If you wish to associate the Action::Forward with an UPPERCASE 'W' key typed by the user.
+                (Action::Forward, Key::Character("W".into()).into()),
+                (Action::Left, Key::Character("a".into()).into()),
+                (Action::Backward, Key::Character("s".into()).into()),
+                (Action::Right, Key::Character("d".into()).into()),
             ]),
         })
         .insert(Player);

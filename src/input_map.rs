@@ -35,42 +35,42 @@ to configure this behavior.
 
 # Example
 ```rust
-use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
-
-// You can Run!
-// But you can't Hide :(
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
-enum Action {
-    Run,
-    Hide,
-}
-
-// Construction
-let mut input_map = InputMap::new([
-   // Note that the type of your iterators must be homogenous;
-   // you can use `InputKind` or `UserInput` if needed
-   // as unifying types
-  (Action::Run, GamepadButtonType::South),
-  (Action::Hide, GamepadButtonType::LeftTrigger),
-  (Action::Hide, GamepadButtonType::RightTrigger),
-]);
-
-// Insertion
-input_map.insert(Action::Run, MouseButton::Left)
-.insert(Action::Run, KeyCode::ShiftLeft)
-// Chords
-.insert_modified(Action::Run, Modifier::Control, KeyCode::KeyR)
-.insert_chord(Action::Run,
-              [InputKind::KeyLocation(KeyCode::KeyH),
-               InputKind::GamepadButton(GamepadButtonType::South),
-               InputKind::Mouse(MouseButton::Middle)],
-           );
-
-// Removal
-input_map.clear_action(&Action::Hide);
-```
+* use bevy::prelude::*;
+* use leafwing_input_manager::prelude::*;
+* use leafwing_input_manager::user_input::InputKind;
+*
+* // You can Run!
+* // But you can't Hide :(
+* #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+* enum Action {
+*     Run,
+*     Hide,
+* }
+*
+* // Construction
+* let mut input_map = InputMap::new([
+*    // Note that the type of your iterators must be homogenous;
+*    // you can use `InputKind` or `UserInput` if needed
+*    // as unifying types
+*   (Action::Run, GamepadButtonType::South),
+*   (Action::Hide, GamepadButtonType::LeftTrigger),
+*   (Action::Hide, GamepadButtonType::RightTrigger),
+* ]);
+*
+* // Insertion
+* input_map.insert(Action::Run, MouseButton::Left)
+* .insert(Action::Run, KeyCode::ShiftLeft)
+* // Chords
+* .insert_modified(Action::Run, Modifier::Control, KeyCode::KeyR)
+* .insert_chord(Action::Run,
+*               [InputKind::PhysicalKey(KeyCode::KeyH),
+*                InputKind::GamepadButton(GamepadButtonType::South),
+*                InputKind::Mouse(MouseButton::Middle)],
+*            );
+*
+* // Removal
+* input_map.clear_action(&Action::Hide);
+* ```
 **/
 #[derive(
     Resource, Component, Debug, Clone, PartialEq, Eq, Asset, Reflect, Serialize, Deserialize,

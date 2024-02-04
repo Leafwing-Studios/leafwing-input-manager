@@ -365,10 +365,10 @@ impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
     pub fn arrow_keys() -> VirtualDPad {
         VirtualDPad {
-            up: InputKind::KeyLocation(KeyCode::ArrowUp),
-            down: InputKind::KeyLocation(KeyCode::ArrowDown),
-            left: InputKind::KeyLocation(KeyCode::ArrowLeft),
-            right: InputKind::KeyLocation(KeyCode::ArrowRight),
+            up: InputKind::PhysicalKey(KeyCode::ArrowUp),
+            down: InputKind::PhysicalKey(KeyCode::ArrowDown),
+            left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
+            right: InputKind::PhysicalKey(KeyCode::ArrowRight),
         }
     }
 
@@ -380,10 +380,10 @@ impl VirtualDPad {
     /// which enables comfortable movement controls.
     pub fn wasd() -> VirtualDPad {
         VirtualDPad {
-            up: InputKind::KeyLocation(KeyCode::KeyW),
-            down: InputKind::KeyLocation(KeyCode::KeyS),
-            left: InputKind::KeyLocation(KeyCode::KeyA),
-            right: InputKind::KeyLocation(KeyCode::KeyD),
+            up: InputKind::PhysicalKey(KeyCode::KeyW),
+            down: InputKind::PhysicalKey(KeyCode::KeyS),
+            left: InputKind::PhysicalKey(KeyCode::KeyA),
+            right: InputKind::PhysicalKey(KeyCode::KeyD),
         }
     }
 
@@ -466,11 +466,11 @@ pub struct VirtualAxis {
 
 impl VirtualAxis {
     /// Helper function for generating a [`VirtualAxis`] from arbitrary keycodes, shorthand for
-    /// wrapping each key in [`InputKind::KeyLocation`]
+    /// wrapping each key in [`InputKind::PhysicalKey`]
     pub fn from_keys(negative: KeyCode, positive: KeyCode) -> VirtualAxis {
         VirtualAxis {
-            negative: InputKind::KeyLocation(negative),
-            positive: InputKind::KeyLocation(positive),
+            negative: InputKind::PhysicalKey(negative),
+            positive: InputKind::PhysicalKey(positive),
         }
     }
 
