@@ -271,8 +271,10 @@ fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool
         return false;
     }
 
+    // Since Chords typically have a few elements,
+    // making slice-based checks more efficient than set-based ones.
     fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
-        !slice_a.iter().any(|a| !slice_b.contains(a))
+        slice_a.iter().all(|a| slice_b.contains(a))
     }
 
     is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a)

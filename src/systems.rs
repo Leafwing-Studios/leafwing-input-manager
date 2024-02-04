@@ -89,7 +89,8 @@ pub fn update_action_state<A: Actionlike>(
     let gamepads = gamepads.into_inner();
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
     #[cfg(feature = "logical_key_bindings")]
-    let keyboard_events: Vec<KeyboardInput> = keyboard_events.read().cloned().collect();
+    let keyboard_events: Option<Vec<KeyboardInput>> =
+        Some(keyboard_events.read().cloned().collect());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
 
     let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
@@ -120,7 +121,7 @@ pub fn update_action_state<A: Actionlike>(
     {
         (None, None)
     } else {
-        (keycodes, Some(keyboard_events))
+        (keycodes, keyboard_events)
     };
 
     // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,

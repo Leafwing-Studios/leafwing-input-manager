@@ -249,14 +249,9 @@ impl<'a> InputStreams<'a> {
     /// Are all of the `buttons` pressed?
     #[must_use]
     pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
-        for button in buttons.iter() {
-            // If any of the appropriate inputs failed to match, the action is considered pressed
-            if !self.button_pressed(button.clone()) {
-                return false;
-            }
-        }
-        // If none of the inputs failed to match, return true
-        true
+        buttons
+            .iter()
+            .all(|button| self.button_pressed(button.clone()))
     }
 
     /// Get the "value" of the input.

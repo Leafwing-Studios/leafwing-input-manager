@@ -222,6 +222,13 @@ impl From<String> for UserInput {
     }
 }
 
+#[cfg(feature = "logical_key_bindings")]
+impl From<Key> for UserInput {
+    fn from(input: Key) -> Self {
+        UserInput::Single(InputKind::Keyboard(input))
+    }
+}
+
 impl From<KeyCode> for UserInput {
     fn from(input: KeyCode) -> Self {
         UserInput::Single(InputKind::KeyLocation(input))
@@ -314,6 +321,13 @@ impl From<GamepadButtonType> for InputKind {
 impl From<String> for InputKind {
     fn from(input: String) -> Self {
         InputKind::Keyboard(Key::Character(input.into()))
+    }
+}
+
+#[cfg(feature = "logical_key_bindings")]
+impl From<Key> for InputKind {
+    fn from(input: Key) -> Self {
+        InputKind::Keyboard(input)
     }
 }
 
