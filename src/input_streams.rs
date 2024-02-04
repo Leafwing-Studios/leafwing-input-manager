@@ -30,6 +30,14 @@ pub(crate) fn read_logical_key_changes<'a>(
             caches.insert(logical_key.clone());
         } else {
             caches.remove(logical_key);
+
+            // TODO: These magic numbers are just intuitive guesses, not tested or validated.
+            // Avoid memory leaking
+            let len = caches.len();
+            let capacity = caches.capacity();
+            if capacity > 8 * len {
+                caches.shrink_to(2 * len);
+            }
         }
     }
 }
