@@ -4,25 +4,14 @@
 
 ### Breaking Changes
 
-- `KeyCode`-based logical keybindings are no longer supported; please migrate to:
-  - `InputKind::Keyboard` have been removed; please use `InputKind::LogicalKey` instead.
-  - Renaming of all your all occurrences of `KeyCode` variants with `Key` or `UserInput::character()`:
-    - All physical keys now trigger the corresponding logical keys that type the same character,
-      e.g., `KeyCode::NumpadEnter` now triggers `Key::Enter`, similar to `KeyCode::Return`
-      and `KeyCode::Numpad8` now triggers `UserInput::character("8")`, similar to `KeyCode::Key8`.
-    - All logical number and letter keys now follow the format `UserInput::character(<character>)`,
-      e.g., `KeyCode::Key8` is now `KeyCode::Digit8` and `KeyCode::K` is now `KeyCode::KeyK`.
-    - All logical arrow keys now follow the format `Key::Arrow<Direction>`, e.g., `KeyCode::Up` is now `Key::ArrowUp`.
-    - `KeyCode::Back` is now `Key::Backspace`.
-    - `KeyCode::Return` is now `Key::Enter`.
-
-- `ScanCode`-based physical keybindings are no longer supported; please migrate to:
-  - `ScanCode` and `QwertyScanCode` have been removed; please use `KeyCode` instead.
+- both `KeyCode`-based logical keybindings and `ScanCode`-based physical keybindings are no longer supported;
+- please migrate to:
+  - `KeyCode` is now representing physical keybindings. 
   - `InputKind::KeyLocation` have been removed; please use `InputKind::PhysicalKey` instead.
-  - Renaming of all your all occurrences of `ScanCode` and `QwertyScanCode` variants with `KeyCode`:
-    - All letter keys now follow the format `KeyCode::Key<Letter>`, e.g., `ScanCode::K` is now `KeyCode::KeyK`.
-    - All number keys over letters now follow the format `KeyCode::Digit<Number>`, e.g., `ScanCode::Key1` is now `KeyCode::Digit1`.
-    - All arrow keys now follow the format `KeyCode::Arrow<Direction>`, e.g., `ScanCode::Up` is now `KeyCode::ArrowUp`.
+  - `ScanCode` and `QwertyScanCode` have been removed; please use `KeyCode` instead:
+    - all letter keys now follow the format `KeyCode::Key<Letter>`, e.g., `ScanCode::K` is now `KeyCode::KeyK`.
+    - all number keys over letters now follow the format `KeyCode::Digit<Number>`, e.g., `ScanCode::Key1` is now `KeyCode::Digit1`.
+    - all arrow keys now follow the format `KeyCode::Arrow<Direction>`, e.g., `ScanCode::Up` is now `KeyCode::ArrowUp`.
 
 ### Enhancements
 

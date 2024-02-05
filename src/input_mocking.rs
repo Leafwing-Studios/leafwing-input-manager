@@ -19,7 +19,7 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
-use bevy::input::keyboard::{Key, NativeKey, NativeKeyCode};
+use bevy::input::keyboard::{Key, NativeKey};
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
@@ -34,7 +34,6 @@ use bevy::prelude::Entity;
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 use bevy::window::CursorMoved;
-use itertools::{EitherOrBoth, Itertools};
 
 /// Send fake input events for testing purposes
 ///
@@ -163,40 +162,29 @@ impl MockInput for MutableInputStreams<'_> {
         // Extract the raw inputs
         let raw_inputs = input_to_send.raw_inputs();
 
-        let button_state = ButtonState::Pressed;
-        let keys = raw_inputs.keys.iter();
-        let keycodes = raw_inputs.keycodes.iter();
-        for zipped in keys.zip_longest(keycodes) {
-            let (logical_key, key_code) = match zipped {
-                EitherOrBoth::Both(logical_key, key_code) => (logical_key.clone(), *key_code),
-                EitherOrBoth::Left(logical_key) => (
-                    logical_key.clone(),
-                    KeyCode::Unidentified(NativeKeyCode::Unidentified),
-                ),
-                EitherOrBoth::Right(key_code) => {
-                    (Key::Unidentified(NativeKey::Unidentified), *key_code)
-                }
-            };
+        // Keyboard buttons
+        for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
-                logical_key,
-                key_code,
-                state: button_state,
+                // Send a "Unidentified" since we cannot the actual logical key.
+                logical_key: Key::Unidentified(NativeKey::Unidentified),
+                key_code: button,
+                state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
             });
         }
 
         // Mouse buttons
-        for button in raw_inputs.mouse_buttons.iter() {
+        for button in raw_inputs.mouse_buttons {
             self.mouse_button_events.send(MouseButtonInput {
-                button: *button,
+                button,
                 state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
             });
         }
 
         // Discrete mouse wheel events
-        for mouse_wheel_direction in raw_inputs.mouse_wheel.iter() {
-            match *mouse_wheel_direction {
+        for mouse_wheel_direction in raw_inputs.mouse_wheel {
+            match mouse_wheel_direction {
                 MouseWheelDirection::Left => self.mouse_wheel.send(MouseWheel {
                     unit: MouseScrollUnit::Pixel,
                     x: -1.0,
@@ -225,8 +213,8 @@ impl MockInput for MutableInputStreams<'_> {
         }
 
         // Discrete mouse motion event
-        for mouse_motion_direction in raw_inputs.mouse_motion.iter() {
-            match *mouse_motion_direction {
+        for mouse_motion_direction in raw_inputs.mouse_motion {
+            match mouse_motion_direction {
                 MouseMotionDirection::Up => self.mouse_motion.send(MouseMotion {
                     delta: Vec2 { x: 0.0, y: 1.0 },
                 }),
@@ -255,7 +243,7 @@ impl MockInput for MutableInputStreams<'_> {
         }
 
         // Axis data
-        for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data.iter() {
+        for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data {
             if let Some(position_data) = maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
@@ -263,8 +251,8 @@ impl MockInput for MutableInputStreams<'_> {
                             self.gamepad_events
                                 .send(GamepadEvent::Axis(GamepadAxisChangedEvent {
                                     gamepad,
-                                    axis_type: *axis_type,
-                                    value: *position_data,
+                                    axis_type,
+                                    value: position_data,
                                 }));
                         }
                     }
@@ -273,14 +261,14 @@ impl MockInput for MutableInputStreams<'_> {
                             // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
                             MouseWheelAxisType::X => self.mouse_wheel.send(MouseWheel {
                                 unit: MouseScrollUnit::Pixel,
-                                x: *position_data,
+                                x: position_data,
                                 y: 0.0,
                                 window: Entity::PLACEHOLDER,
                             }),
                             MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
                                 unit: MouseScrollUnit::Pixel,
                                 x: 0.0,
-                                y: *position_data,
+                                y: position_data,
                                 window: Entity::PLACEHOLDER,
                             }),
                         };
@@ -289,7 +277,7 @@ impl MockInput for MutableInputStreams<'_> {
                         MouseMotionAxisType::X => {
                             self.mouse_motion.send(MouseMotion {
                                 delta: Vec2 {
-                                    x: *position_data,
+                                    x: position_data,
                                     y: 0.0,
                                 },
                             });
@@ -298,7 +286,7 @@ impl MockInput for MutableInputStreams<'_> {
                             self.mouse_motion.send(MouseMotion {
                                 delta: Vec2 {
                                     x: 0.0,
-                                    y: *position_data,
+                                    y: position_data,
                                 },
                             });
                         }
@@ -329,24 +317,12 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
-        let button_state = ButtonState::Released;
-        let keys = raw_inputs.keys.iter();
-        let keycodes = raw_inputs.keycodes.iter();
-        for zipped in keys.zip_longest(keycodes) {
-            let (logical_key, key_code) = match zipped {
-                EitherOrBoth::Both(logical_key, key_code) => (logical_key.clone(), *key_code),
-                EitherOrBoth::Left(logical_key) => (
-                    logical_key.clone(),
-                    KeyCode::Unidentified(NativeKeyCode::Unidentified),
-                ),
-                EitherOrBoth::Right(key_code) => {
-                    (Key::Unidentified(NativeKey::Unidentified), *key_code)
-                }
-            };
+        for button in raw_inputs.keycodes {
             self.keyboard_events.send(KeyboardInput {
-                logical_key,
-                key_code,
-                state: button_state,
+                // Send a "Unidentified" since we cannot the actual logical key.
+                logical_key: Key::Unidentified(NativeKey::Unidentified),
+                key_code: button,
+                state: ButtonState::Released,
                 window: Entity::PLACEHOLDER,
             });
         }

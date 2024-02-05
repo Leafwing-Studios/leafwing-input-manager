@@ -210,7 +210,7 @@ fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
         return false;
     }
 
-    for button in [&dpad.up, &dpad.down, &dpad.left, &dpad.right] {
+    for button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
         if chord.contains(button) {
             return true;
         }
@@ -220,7 +220,7 @@ fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
 }
 
 fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
-    for dpad_button in [&dpad.up, &dpad.down, &dpad.left, &dpad.right] {
+    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
         if button == dpad_button {
             return true;
         }
@@ -230,8 +230,8 @@ fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
 }
 
 fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
-    for button1 in [&dpad1.up, &dpad1.down, &dpad1.left, &dpad1.right] {
-        for button2 in [&dpad2.up, &dpad2.down, &dpad2.left, &dpad2.right] {
+    for button1 in &[dpad1.up, dpad1.down, dpad1.left, dpad1.right] {
+        for button2 in &[dpad2.up, dpad2.down, dpad2.left, dpad2.right] {
             if button1 == button2 {
                 return true;
             }
@@ -248,7 +248,7 @@ fn virtual_axis_button_clash(axis: &VirtualAxis, button: &InputKind) -> bool {
 
 #[must_use]
 fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
-    for dpad_button in [&dpad.up, &dpad.down, &dpad.left, &dpad.right] {
+    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
         if dpad_button == &axis.negative || dpad_button == &axis.positive {
             return true;
         }

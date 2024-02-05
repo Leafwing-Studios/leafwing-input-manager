@@ -1,11 +1,9 @@
 //! Helpful abstractions over user inputs of all sorts
 
-use bevy::input::keyboard::Key;
 use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode, mouse::MouseButton};
 use bevy::reflect::Reflect;
 use bevy::utils::HashSet;
 use serde::{Deserialize, Serialize};
-use smol_str::SmolStr;
 
 use crate::axislike::VirtualAxis;
 use crate::{
@@ -36,18 +34,6 @@ pub enum UserInput {
 }
 
 impl UserInput {
-    /// Creates a single logical key to represent the given `character`.
-    ///
-    /// Notice: The `character` is case-sensitive,
-    /// representing the actual character typed by the user,
-    /// taking into account the user’s current locale setting,
-    /// and any system-level keyboard mapping overrides that are in effect.
-    pub fn character(character: impl AsRef<str>) -> UserInput {
-        UserInput::Single(InputKind::LogicalKey(Key::Character(SmolStr::new(
-            character,
-        ))))
-    }
-
     /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` that can be converted into an [`InputKind`]
     ///
     /// When working with keyboard modifiers, should be preferred over manually specifying both the left and right variant.
@@ -72,7 +58,7 @@ impl UserInput {
         }
 
         match length {
-            1 => UserInput::Single(vec.first().unwrap().clone()),
+            1 => UserInput::Single(*vec.first().unwrap()),
             _ => UserInput::Chord(vec),
         }
     }
@@ -163,7 +149,7 @@ impl UserInput {
         let mut raw_inputs = RawInputs::default();
 
         match self {
-            UserInput::Single(button) => match button {
+            UserInput::Single(button) => match *button {
                 InputKind::DualAxis(dual_axis) => {
                     raw_inputs
                         .axis_data
@@ -175,21 +161,20 @@ impl UserInput {
                 InputKind::SingleAxis(single_axis) => raw_inputs
                     .axis_data
                     .push((single_axis.axis_type, single_axis.value)),
-                InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(*button),
-                InputKind::LogicalKey(key) => raw_inputs.keys.push(key.clone()),
-                InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(*button),
+                InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
+                InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(button),
                 InputKind::Modifier(modifier) => {
                     let key_codes = modifier.key_codes();
                     raw_inputs.keycodes.push(key_codes[0]);
                     raw_inputs.keycodes.push(key_codes[1]);
                 }
-                InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(*button),
-                InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(*button),
-                InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(*button),
+                InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
+                InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
+                InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
             },
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
-                    match button {
+                    match *button {
                         InputKind::DualAxis(dual_axis) => {
                             raw_inputs
                                 .axis_data
@@ -201,19 +186,16 @@ impl UserInput {
                         InputKind::SingleAxis(single_axis) => raw_inputs
                             .axis_data
                             .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => {
-                            raw_inputs.gamepad_buttons.push(*button)
-                        }
-                        InputKind::LogicalKey(key) => raw_inputs.keys.push(key.clone()),
-                        InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(*button),
+                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
+                        InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(button),
                         InputKind::Modifier(modifier) => {
                             let key_codes = modifier.key_codes();
                             raw_inputs.keycodes.push(key_codes[0]);
                             raw_inputs.keycodes.push(key_codes[1]);
                         }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(*button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(*button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(*button),
+                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
+                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
+                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
                     }
                 }
             }
@@ -224,7 +206,7 @@ impl UserInput {
                 right,
             }) => {
                 for button in [up, down, left, right] {
-                    match button {
+                    match *button {
                         InputKind::DualAxis(dual_axis) => {
                             raw_inputs
                                 .axis_data
@@ -236,26 +218,23 @@ impl UserInput {
                         InputKind::SingleAxis(single_axis) => raw_inputs
                             .axis_data
                             .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => {
-                            raw_inputs.gamepad_buttons.push(*button)
-                        }
-                        InputKind::LogicalKey(key) => raw_inputs.keys.push(key.clone()),
-                        InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(*button),
+                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
+                        InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(button),
                         InputKind::Modifier(modifier) => {
                             let key_codes = modifier.key_codes();
                             raw_inputs.keycodes.push(key_codes[0]);
                             raw_inputs.keycodes.push(key_codes[1]);
                         }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(*button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(*button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(*button),
+                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
+                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
+                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
                     }
                 }
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
                 for button in [negative, positive] {
                     // todo: dedup with VirtualDPad?
-                    match button {
+                    match *button {
                         InputKind::DualAxis(dual_axis) => {
                             raw_inputs
                                 .axis_data
@@ -267,19 +246,16 @@ impl UserInput {
                         InputKind::SingleAxis(single_axis) => raw_inputs
                             .axis_data
                             .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => {
-                            raw_inputs.gamepad_buttons.push(*button)
-                        }
-                        InputKind::LogicalKey(key) => raw_inputs.keys.push(key.clone()),
-                        InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(*button),
+                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
+                        InputKind::PhysicalKey(button) => raw_inputs.keycodes.push(button),
                         InputKind::Modifier(modifier) => {
                             let key_codes = modifier.key_codes();
                             raw_inputs.keycodes.push(key_codes[0]);
                             raw_inputs.keycodes.push(key_codes[1]);
                         }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(*button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(*button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(*button),
+                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
+                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
+                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
                     }
                 }
             }
@@ -331,18 +307,6 @@ impl From<KeyCode> for UserInput {
     }
 }
 
-impl From<String> for UserInput {
-    fn from(input: String) -> Self {
-        UserInput::character(input)
-    }
-}
-
-impl From<Key> for UserInput {
-    fn from(input: Key) -> Self {
-        UserInput::Single(InputKind::LogicalKey(input))
-    }
-}
-
 impl From<MouseButton> for UserInput {
     fn from(input: MouseButton) -> Self {
         UserInput::Single(InputKind::Mouse(input))
@@ -376,7 +340,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
@@ -384,20 +348,7 @@ pub enum InputKind {
     SingleAxis(SingleAxis),
     /// Two paired axes of continuous motion
     DualAxis(DualAxis),
-    /// A logical key on the keyboard.
-    /// It will represent the actual character typed by the user,
-    /// taking into account the user’s current locale setting,
-    /// and any system-level keyboard mapping overrides that are in effect.
-    ///
-    /// The actual (physical) key that has to be pressed depends on the keyboard layout.
-    /// If you care about the position of the key rather than what it stands for,
-    /// use [`InputKind::PhysicalKey`] instead.
-    LogicalKey(Key),
     /// The physical location of a key on the keyboard.
-    ///
-    /// The logical key which is emitted by this key depends on the keyboard layout.
-    /// If you care about the output of the key rather than where it is positioned,
-    /// use [`InputKind::LogicalKey`] instead.
     PhysicalKey(KeyCode),
     /// A keyboard modifier, like `Ctrl` or `Alt`, which doesn't care about which side it's on.
     Modifier(Modifier),
@@ -430,18 +381,6 @@ impl From<GamepadButtonType> for InputKind {
 impl From<KeyCode> for InputKind {
     fn from(input: KeyCode) -> Self {
         InputKind::PhysicalKey(input)
-    }
-}
-
-impl From<String> for InputKind {
-    fn from(input: String) -> Self {
-        InputKind::LogicalKey(Key::Character(input.into()))
-    }
-}
-
-impl From<Key> for InputKind {
-    fn from(input: Key) -> Self {
-        InputKind::LogicalKey(input)
     }
 }
 
@@ -505,8 +444,6 @@ impl Modifier {
 /// Obtained by calling [`UserInput::raw_inputs()`].
 #[derive(Default, Debug, Clone, PartialEq)]
 pub struct RawInputs {
-    /// Logical keyboard keys.
-    pub keys: Vec<Key>,
     /// Physical key locations.
     pub keycodes: Vec<KeyCode>,
     /// Mouse buttons

@@ -4,9 +4,9 @@ use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
-    keyboard::{Key, KeyCode, KeyboardInput},
+    keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
-    Axis, ButtonInput, ButtonState,
+    Axis, ButtonInput,
 };
 use bevy::utils::HashSet;
 
@@ -17,30 +17,6 @@ use crate::axislike::{
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
 use crate::user_input::{InputKind, UserInput};
-
-/// Records the changes of logical keys from [`KeyboardInput`] into the given `caches`.
-pub(crate) fn read_logical_key_changes<'a>(
-    keyboard_events: &mut impl Iterator<Item = &'a KeyboardInput>,
-    caches: &mut HashSet<Key>,
-) {
-    for kb_event in keyboard_events.by_ref() {
-        let logical_key = &kb_event.logical_key;
-        let state = kb_event.state;
-        if state == ButtonState::Pressed {
-            caches.insert(logical_key.clone());
-        } else {
-            caches.remove(logical_key);
-
-            // TODO: These magic numbers are just intuitive guesses, not tested or validated.
-            // Avoid memory leaking
-            let len = caches.len();
-            let capacity = caches.capacity();
-            if capacity > 8 * len {
-                caches.shrink_to(2 * len);
-            }
-        }
-    }
-}
 
 /// A collection of [`ButtonInput`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
@@ -57,8 +33,6 @@ pub struct InputStreams<'a> {
     pub gamepads: &'a Gamepads,
     /// A [`KeyCode`] [`ButtonInput`] stream
     pub keycodes: Option<&'a ButtonInput<KeyCode>>,
-    /// A set of currently holding `Key`
-    pub holding_logical_keys: Option<HashSet<Key>>,
     /// A [`MouseButton`] [`Input`](ButtonInput) stream
     pub mouse_buttons: Option<&'a ButtonInput<MouseButton>>,
     /// A [`MouseWheel`] event stream
@@ -78,15 +52,10 @@ impl<'a> InputStreams<'a> {
         let gamepad_axes = world.resource::<Axis<GamepadAxis>>();
         let gamepads = world.resource::<Gamepads>();
         let keycodes = world.get_resource::<ButtonInput<KeyCode>>();
-        let keyboard_events = world.resource::<Events<KeyboardInput>>();
         let mouse_buttons = world.get_resource::<ButtonInput<MouseButton>>();
         let mouse_wheel = world.resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
 
-        let mut holding_logical_keys = HashSet::new();
-        let mut kb_event_reader = keyboard_events.get_reader();
-        let mut kb_input_reader = kb_event_reader.read(keyboard_events);
-        read_logical_key_changes(&mut kb_input_reader, &mut holding_logical_keys);
         let mouse_wheel: Vec<MouseWheel> = mouse_wheel
             .get_reader()
             .read(mouse_wheel)
@@ -104,7 +73,6 @@ impl<'a> InputStreams<'a> {
             gamepad_axes,
             gamepads,
             keycodes,
-            holding_logical_keys: Some(holding_logical_keys),
             mouse_buttons,
             mouse_wheel: Some(mouse_wheel),
             mouse_motion,
@@ -118,7 +86,7 @@ impl<'a> InputStreams<'a> {
     /// Is the `input` matched by the [`InputStreams`]?
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
-            UserInput::Single(button) => self.button_pressed(button.clone()),
+            UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
             UserInput::VirtualDPad(VirtualDPad {
                 up,
@@ -127,14 +95,14 @@ impl<'a> InputStreams<'a> {
                 right,
             }) => {
                 for button in [up, down, left, right] {
-                    if self.button_pressed(button.clone()) {
+                    if self.button_pressed(*button) {
                         return true;
                     }
                 }
                 false
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.button_pressed(negative.clone()) || self.button_pressed(positive.clone())
+                self.button_pressed(*negative) || self.button_pressed(*positive)
             }
         }
     }
@@ -170,17 +138,17 @@ impl<'a> InputStreams<'a> {
 
                 value < axis.negative_low || value > axis.positive_low
             }
-            InputKind::GamepadButton(button_type) => {
+            InputKind::GamepadButton(gamepad_button) => {
                 if let Some(gamepad) = self.associated_gamepad {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
-                        button_type,
+                        button_type: gamepad_button,
                     })
                 } else {
                     for gamepad in self.gamepads.iter() {
                         if self.gamepad_buttons.pressed(GamepadButton {
                             gamepad,
-                            button_type,
+                            button_type: gamepad_button,
                         }) {
                             // Return early if *any* gamepad is pressing this button
                             return true;
@@ -191,11 +159,6 @@ impl<'a> InputStreams<'a> {
                     false
                 }
             }
-            InputKind::LogicalKey(key_specified) => self
-                .holding_logical_keys
-                .as_ref()
-                .map(|cache| cache.contains(&key_specified))
-                .unwrap_or_default(),
             InputKind::PhysicalKey(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
             }
@@ -265,9 +228,9 @@ impl<'a> InputStreams<'a> {
     /// Are all of the `buttons` pressed?
     #[must_use]
     pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
-        for button in buttons.iter() {
+        for &button in buttons.iter() {
             // If any of the appropriate inputs failed to match, the action is considered pressed
-            if !self.button_pressed(button.clone()) {
+            if !self.button_pressed(button) {
                 return false;
             }
         }
@@ -376,11 +339,8 @@ impl<'a> InputStreams<'a> {
                 }
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.input_value(&UserInput::Single(positive.clone()), true)
-                    .abs()
-                    - self
-                        .input_value(&UserInput::Single(negative.clone()), true)
-                        .abs()
+                self.input_value(&UserInput::Single(*positive), true).abs()
+                    - self.input_value(&UserInput::Single(*negative), true).abs()
             }
             UserInput::Single(InputKind::DualAxis(_)) => {
                 self.input_axis_pair(input).unwrap_or_default().length()
@@ -469,7 +429,7 @@ impl<'a> InputStreams<'a> {
             UserInput::Chord(inputs) => {
                 for input_kind in inputs.iter() {
                     // Exclude chord combining both button-like and axis-like inputs unless all buttons are pressed.
-                    if !self.button_pressed(input_kind.clone()) {
+                    if !self.button_pressed(*input_kind) {
                         return None;
                     }
 
@@ -489,11 +449,10 @@ impl<'a> InputStreams<'a> {
                 left,
                 right,
             }) => {
-                use UserInput::Single;
-                let x = self.input_value(&Single(right.clone()), true).abs()
-                    - self.input_value(&Single(left.clone()), true).abs();
-                let y = self.input_value(&Single(up.clone()), true).abs()
-                    - self.input_value(&Single(down.clone()), true).abs();
+                let x = self.input_value(&UserInput::Single(*right), true).abs()
+                    - self.input_value(&UserInput::Single(*left), true).abs();
+                let y = self.input_value(&UserInput::Single(*up), true).abs()
+                    - self.input_value(&UserInput::Single(*down), true).abs();
                 Some(DualAxisData::new(x, y))
             }
             _ => None,
@@ -610,17 +569,12 @@ impl<'a> MutableInputStreams<'a> {
 
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
-        let mut holding_logical_keys = HashSet::new();
-        let mut kb_event_reader = mutable_streams.keyboard_events.get_reader();
-        let mut kb_reader = kb_event_reader.read(mutable_streams.keyboard_events);
-        read_logical_key_changes(&mut kb_reader, &mut holding_logical_keys);
         InputStreams {
             gamepad_buttons: mutable_streams.gamepad_buttons,
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
-            holding_logical_keys: Some(holding_logical_keys),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(
                 mutable_streams
@@ -643,17 +597,12 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
 
 impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: &'a MutableInputStreams<'a>) -> Self {
-        let mut holding_logical_keys = HashSet::new();
-        let mut kb_event_reader = mutable_streams.keyboard_events.get_reader();
-        let mut kb_reader = kb_event_reader.read(mutable_streams.keyboard_events);
-        read_logical_key_changes(&mut kb_reader, &mut holding_logical_keys);
         InputStreams {
             gamepad_buttons: mutable_streams.gamepad_buttons,
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
-            holding_logical_keys: Some(holding_logical_keys),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(
                 mutable_streams
