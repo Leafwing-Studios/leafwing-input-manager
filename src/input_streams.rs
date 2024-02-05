@@ -8,6 +8,8 @@ use bevy::input::{
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     Axis, ButtonInput,
 };
+use bevy::math::Vec2;
+use bevy::prelude::Event;
 use bevy::utils::HashSet;
 
 use crate::axislike::{
@@ -56,16 +58,8 @@ impl<'a> InputStreams<'a> {
         let mouse_wheel = world.resource::<Events<MouseWheel>>();
         let mouse_motion = world.resource::<Events<MouseMotion>>();
 
-        let mouse_wheel: Vec<MouseWheel> = mouse_wheel
-            .get_reader()
-            .read(mouse_wheel)
-            .cloned()
-            .collect();
-        let mouse_motion: Vec<MouseMotion> = mouse_motion
-            .get_reader()
-            .read(mouse_motion)
-            .cloned()
-            .collect();
+        let mouse_wheel: Vec<MouseWheel> = collect_events_cloned(mouse_wheel);
+        let mouse_motion: Vec<MouseMotion> = collect_events_cloned(mouse_motion);
 
         InputStreams {
             gamepad_buttons,
@@ -158,51 +152,30 @@ impl<'a> InputStreams<'a> {
                     return false;
                 };
 
-                let mut total_mouse_wheel_movement = 0.0;
-
+                // The compiler will compile this into a direct f64 accumulation when opt-level >= 1.
+                //
                 // PERF: this summing is computed for every individual input
                 // This should probably be computed once, and then cached / read
                 // Fix upstream!
-                for mouse_wheel_event in mouse_wheel {
-                    total_mouse_wheel_movement += match mouse_wheel_direction {
-                        MouseWheelDirection::Up | MouseWheelDirection::Down => mouse_wheel_event.y,
-                        MouseWheelDirection::Left | MouseWheelDirection::Right => {
-                            mouse_wheel_event.x
-                        }
-                    }
-                }
-
+                let Vec2 { x, y } = mouse_wheel
+                    .iter()
+                    .map(|wheel| Vec2::new(wheel.x, wheel.y))
+                    .sum();
                 match mouse_wheel_direction {
-                    MouseWheelDirection::Up | MouseWheelDirection::Right => {
-                        total_mouse_wheel_movement > 0.0
-                    }
-                    MouseWheelDirection::Down | MouseWheelDirection::Left => {
-                        total_mouse_wheel_movement < 0.0
-                    }
+                    MouseWheelDirection::Up => y > 0.0,
+                    MouseWheelDirection::Down => y < 0.0,
+                    MouseWheelDirection::Left => x < 0.0,
+                    MouseWheelDirection::Right => x > 0.0,
                 }
             }
-            // CLEANUP: refactor to share code with MouseWheel
             InputKind::MouseMotion(mouse_motion_direction) => {
-                let mut total_mouse_movement = 0.0;
-
-                for mouse_motion_event in &self.mouse_motion {
-                    total_mouse_movement += match mouse_motion_direction {
-                        MouseMotionDirection::Up | MouseMotionDirection::Down => {
-                            mouse_motion_event.delta.y
-                        }
-                        MouseMotionDirection::Left | MouseMotionDirection::Right => {
-                            mouse_motion_event.delta.x
-                        }
-                    }
-                }
-
+                // The compiler will compile this into a direct f64 accumulation when opt-level >= 1.
+                let Vec2 { x, y } = self.mouse_motion.iter().map(|motion| motion.delta).sum();
                 match mouse_motion_direction {
-                    MouseMotionDirection::Up | MouseMotionDirection::Right => {
-                        total_mouse_movement > 0.0
-                    }
-                    MouseMotionDirection::Down | MouseMotionDirection::Left => {
-                        total_mouse_movement < 0.0
-                    }
+                    MouseMotionDirection::Up => y > 0.0,
+                    MouseMotionDirection::Down => y < 0.0,
+                    MouseMotionDirection::Left => x < 0.0,
+                    MouseMotionDirection::Right => x > 0.0,
                 }
             }
         }
@@ -263,56 +236,45 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::SingleAxis(single_axis)) => {
                 match single_axis.axis_type {
                     AxisType::Gamepad(axis_type) => {
-                        if let Some(gamepad) = self.associated_gamepad {
-                            let value = self
-                                .gamepad_axes
+                        let get_gamepad_value = |gamepad: Gamepad| -> f32 {
+                            self.gamepad_axes
                                 .get(GamepadAxis { gamepad, axis_type })
-                                .unwrap_or_default();
-
-                            value_in_axis_range(single_axis, value)
-                        } else {
-                            for gamepad in self.gamepads.iter() {
-                                let value = self
-                                    .gamepad_axes
-                                    .get(GamepadAxis { gamepad, axis_type })
-                                    .unwrap_or_default();
-
-                                // Return early if *any* gamepad is pressing this axis
-                                if value != 0.0 {
-                                    return value_in_axis_range(single_axis, value);
-                                }
-                            }
-
-                            // If we don't have the required data, fall back to 0.0
-                            0.0
-                        }
+                                .unwrap_or_default()
+                        };
+                        self.associated_gamepad
+                            .map(get_gamepad_value)
+                            .or_else(|| {
+                                self.gamepads
+                                    .iter()
+                                    .map(get_gamepad_value)
+                                    .find(|value| *value != 0.0)
+                            })
+                            .map_or(0.0, |value| value_in_axis_range(single_axis, value))
                     }
                     AxisType::MouseWheel(axis_type) => {
                         let Some(mouse_wheel) = &self.mouse_wheel else {
                             return 0.0;
                         };
 
-                        let mut total_mouse_wheel_movement = 0.0;
-
-                        for mouse_wheel_event in mouse_wheel {
-                            total_mouse_wheel_movement += match axis_type {
-                                MouseWheelAxisType::X => mouse_wheel_event.x,
-                                MouseWheelAxisType::Y => mouse_wheel_event.y,
-                            }
-                        }
-                        value_in_axis_range(single_axis, total_mouse_wheel_movement)
+                        // The compiler will compile this into a direct f64 accumulation when opt-level >= 1.
+                        let Vec2 { x, y } = mouse_wheel
+                            .iter()
+                            .map(|wheel| Vec2::new(wheel.x, wheel.y))
+                            .sum();
+                        let movement: f32 = match axis_type {
+                            MouseWheelAxisType::X => x,
+                            MouseWheelAxisType::Y => y,
+                        };
+                        value_in_axis_range(single_axis, movement)
                     }
-                    // CLEANUP: deduplicate code with MouseWheel
                     AxisType::MouseMotion(axis_type) => {
-                        let mut total_mouse_motion_movement = 0.0;
-
-                        for mouse_wheel_event in &self.mouse_motion {
-                            total_mouse_motion_movement += match axis_type {
-                                MouseMotionAxisType::X => mouse_wheel_event.delta.x,
-                                MouseMotionAxisType::Y => mouse_wheel_event.delta.y,
-                            }
-                        }
-                        value_in_axis_range(single_axis, total_mouse_motion_movement)
+                        // The compiler will compile this into a direct f64 accumulation when opt-level >= 1.
+                        let Vec2 { x, y } = self.mouse_motion.iter().map(|e| e.delta).sum();
+                        let movement = match axis_type {
+                            MouseMotionAxisType::X => x,
+                            MouseMotionAxisType::Y => y,
+                        };
+                        value_in_axis_range(single_axis, movement)
                     }
                 }
             }
@@ -335,18 +297,15 @@ impl<'a> InputStreams<'a> {
                     value += match input {
                         InputKind::SingleAxis(axis) => {
                             has_axis = true;
-                            self.input_value(&UserInput::Single(InputKind::SingleAxis(*axis)), true)
+                            self.input_value(&InputKind::SingleAxis(*axis).into(), true)
                         }
                         InputKind::MouseWheel(axis) => {
                             has_axis = true;
-                            self.input_value(&UserInput::Single(InputKind::MouseWheel(*axis)), true)
+                            self.input_value(&InputKind::MouseWheel(*axis).into(), true)
                         }
                         InputKind::MouseMotion(axis) => {
                             has_axis = true;
-                            self.input_value(
-                                &UserInput::Single(InputKind::MouseMotion(*axis)),
-                                true,
-                            )
+                            self.input_value(&InputKind::MouseMotion(*axis).into(), true)
                         }
                         _ => 0.0,
                     }
@@ -360,32 +319,22 @@ impl<'a> InputStreams<'a> {
             }
             // This is required because upstream bevy::input still waffles about whether triggers are buttons or axes
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
-                if let Some(gamepad) = self.associated_gamepad {
-                    // Get the value from the registered gamepad
+                let get_gamepad_value = |gamepad: Gamepad| -> f32 {
                     self.gamepad_button_axes
                         .get(GamepadButton {
                             gamepad,
                             button_type: *button_type,
                         })
                         .unwrap_or_else(use_button_value)
+                };
+                if let Some(gamepad) = self.associated_gamepad {
+                    get_gamepad_value(gamepad)
                 } else {
-                    for gamepad in self.gamepads.iter() {
-                        let value = self
-                            .gamepad_button_axes
-                            .get(GamepadButton {
-                                gamepad,
-                                button_type: *button_type,
-                            })
-                            .unwrap_or_else(use_button_value);
-
-                        // Return early if *any* gamepad is pressing this button
-                        if value != 0.0 {
-                            return value;
-                        }
-                    }
-
-                    // If we don't have the required data, fall back to 0.0
-                    0.0
+                    self.gamepads
+                        .iter()
+                        .map(get_gamepad_value)
+                        .find(|value| *value != 0.0)
+                        .unwrap_or_default()
                 }
             }
             _ => use_button_value(),
@@ -449,6 +398,12 @@ impl<'a> InputStreams<'a> {
 
         dual_axis.deadzone.deadzone_input_value(x, y)
     }
+}
+
+// Clones and collects the received events into a `Vec`.
+#[inline]
+fn collect_events_cloned<T: Event + Clone>(events: &Events<T>) -> Vec<T> {
+    events.get_reader().read(events).cloned().collect()
 }
 
 /// A mutable collection of [`ButtonInput`] structs, which can be used for mocking user inputs.
@@ -554,20 +509,8 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(
-                mutable_streams
-                    .mouse_wheel
-                    .get_reader()
-                    .read(mutable_streams.mouse_wheel)
-                    .cloned()
-                    .collect(),
-            ),
-            mouse_motion: mutable_streams
-                .mouse_motion
-                .get_reader()
-                .read(mutable_streams.mouse_motion)
-                .cloned()
-                .collect(),
+            mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),
+            mouse_motion: collect_events_cloned(mutable_streams.mouse_motion),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
@@ -582,20 +525,8 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(
-                mutable_streams
-                    .mouse_wheel
-                    .get_reader()
-                    .read(mutable_streams.mouse_wheel)
-                    .cloned()
-                    .collect(),
-            ),
-            mouse_motion: mutable_streams
-                .mouse_motion
-                .get_reader()
-                .read(mutable_streams.mouse_motion)
-                .cloned()
-                .collect(),
+            mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),
+            mouse_motion: collect_events_cloned(mutable_streams.mouse_motion),
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
