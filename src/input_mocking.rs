@@ -498,7 +498,7 @@ impl MockUIInteraction for App {
 
 #[cfg(test)]
 mod test {
-    use crate::input_mocking::{MockInput, MockUIInteraction, QueryInput};
+    use crate::input_mocking::{MockInput, QueryInput};
     use bevy::{
         input::{
             gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo},
@@ -612,6 +612,7 @@ mod test {
     #[test]
     #[cfg(feature = "ui")]
     fn ui_inputs() {
+        use crate::input_mocking::MockUIInteraction;
         use bevy::ecs::prelude::*;
         use bevy::ui::Interaction;
 
