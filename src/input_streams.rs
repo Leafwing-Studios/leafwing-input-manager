@@ -89,7 +89,7 @@ impl<'a> InputStreams<'a> {
                 right,
             }) => [up, down, left, right]
                 .into_iter()
-                .any(|button| self.button_pressed(button.clone())),
+                .any(|button| self.button_pressed(*button)),
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
                 self.button_pressed(*negative) || self.button_pressed(*positive)
             }
@@ -184,9 +184,7 @@ impl<'a> InputStreams<'a> {
     /// Are all of the `buttons` pressed?
     #[must_use]
     pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
-        buttons
-            .iter()
-            .all(|button| self.button_pressed(button.clone()))
+        buttons.iter().all(|button| self.button_pressed(*button))
     }
 
     /// Get the "value" of the input.

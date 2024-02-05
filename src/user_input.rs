@@ -375,7 +375,7 @@ pub struct RawInputs {
 impl RawInputs {
     /// Merges the data from the given `input_kind` into `self`.
     fn merge_input_data(&mut self, input_kind: &InputKind) {
-        match input_kind.clone() {
+        match *input_kind {
             InputKind::DualAxis(dual_axis) => {
                 self.axis_data
                     .push((dual_axis.x.axis_type, dual_axis.x.value));

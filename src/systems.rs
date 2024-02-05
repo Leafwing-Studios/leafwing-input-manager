@@ -200,7 +200,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                     });
                     previous_axis_pairs
                         .entry(action)
-                        .or_insert_with(|| HashMap::default())
+                        .or_insert_with(HashMap::default)
                         .insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
@@ -218,7 +218,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                     });
                     previous_values
                         .entry(action)
-                        .or_insert_with(|| HashMap::default())
+                        .or_insert_with(HashMap::default)
                         .insert(maybe_entity, value);
                 }
             }
