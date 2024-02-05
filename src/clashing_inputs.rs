@@ -209,36 +209,21 @@ fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
     if chord.len() <= 1 {
         return false;
     }
-
-    for button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
-        if chord.contains(button) {
-            return true;
-        }
-    }
-
-    false
+    [dpad.up, dpad.down, dpad.left, dpad.right]
+        .iter()
+        .any(|button| chord.contains(button))
 }
 
 fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
-    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
-        if button == dpad_button {
-            return true;
-        }
-    }
-
-    false
+    [dpad.up, dpad.down, dpad.left, dpad.right]
+        .iter()
+        .any(|dpad_button| button == dpad_button)
 }
 
 fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
-    for button1 in &[dpad1.up, dpad1.down, dpad1.left, dpad1.right] {
-        for button2 in &[dpad2.up, dpad2.down, dpad2.left, dpad2.right] {
-            if button1 == button2 {
-                return true;
-            }
-        }
-    }
-
-    false
+    let iter1 = [&dpad1.up, &dpad1.down, &dpad1.left, &dpad1.right].into_iter();
+    let iter2 = [&dpad2.up, &dpad2.down, &dpad2.left, &dpad2.right].into_iter();
+    iter1.zip(iter2).any(|(left, right)| *left == *right)
 }
 
 #[must_use]
@@ -248,13 +233,9 @@ fn virtual_axis_button_clash(axis: &VirtualAxis, button: &InputKind) -> bool {
 
 #[must_use]
 fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
-    for dpad_button in &[dpad.up, dpad.down, dpad.left, dpad.right] {
-        if dpad_button == &axis.negative || dpad_button == &axis.positive {
-            return true;
-        }
-    }
-
-    false
+    [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
+        .iter()
+        .any(|button| **button == axis.negative || **button == axis.positive)
 }
 
 #[must_use]
@@ -285,17 +266,13 @@ fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool
         return false;
     }
 
-    is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a)
-}
-
-fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
-    for a in slice_a {
-        if !slice_b.contains(a) {
-            return false;
-        }
+    // Since Chords typically have a few elements,
+    // making slice-based checks more efficient than set-based ones.
+    fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
+        slice_a.iter().all(|a| slice_b.contains(a))
     }
 
-    true
+    is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a)
 }
 
 /// Given the `input_streams`, does the provided clash actually occur?
@@ -325,11 +302,8 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
         }
     }
 
-    if !clash.inputs_a.is_empty() {
-        Some(actual_clash)
-    } else {
-        None
-    }
+    let not_empty = !clash.inputs_a.is_empty();
+    not_empty.then_some(actual_clash)
 }
 
 /// Which (if any) of the actions in the [`Clash`] should be discarded?

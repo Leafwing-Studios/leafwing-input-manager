@@ -93,14 +93,9 @@ impl<'a> InputStreams<'a> {
                 down,
                 left,
                 right,
-            }) => {
-                for button in [up, down, left, right] {
-                    if self.button_pressed(*button) {
-                        return true;
-                    }
-                }
-                false
-            }
+            }) => [up, down, left, right]
+                .into_iter()
+                .any(|button| self.button_pressed(button.clone())),
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
                 self.button_pressed(*negative) || self.button_pressed(*positive)
             }
@@ -110,13 +105,7 @@ impl<'a> InputStreams<'a> {
     /// Is at least one of the `inputs` pressed?
     #[must_use]
     pub fn any_pressed(&self, inputs: &HashSet<UserInput>) -> bool {
-        for input in inputs.iter() {
-            if self.input_pressed(input) {
-                return true;
-            }
-        }
-        // If none of the inputs matched, return false
-        false
+        inputs.iter().any(|input| self.input_pressed(input))
     }
 
     /// Is the `button` pressed?
@@ -138,25 +127,19 @@ impl<'a> InputStreams<'a> {
 
                 value < axis.negative_low || value > axis.positive_low
             }
-            InputKind::GamepadButton(gamepad_button) => {
+            InputKind::GamepadButton(button_type) => {
                 if let Some(gamepad) = self.associated_gamepad {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
-                        button_type: gamepad_button,
+                        button_type,
                     })
                 } else {
-                    for gamepad in self.gamepads.iter() {
-                        if self.gamepad_buttons.pressed(GamepadButton {
+                    self.gamepads.iter().any(|gamepad| {
+                        self.gamepad_buttons.pressed(GamepadButton {
                             gamepad,
-                            button_type: gamepad_button,
-                        }) {
-                            // Return early if *any* gamepad is pressing this button
-                            return true;
-                        }
-                    }
-
-                    // If we don't have the required data, fall back to false
-                    false
+                            button_type,
+                        })
+                    })
                 }
             }
             InputKind::PhysicalKey(keycode) => {
@@ -228,14 +211,9 @@ impl<'a> InputStreams<'a> {
     /// Are all of the `buttons` pressed?
     #[must_use]
     pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
-        for &button in buttons.iter() {
-            // If any of the appropriate inputs failed to match, the action is considered pressed
-            if !self.button_pressed(button) {
-                return false;
-            }
-        }
-        // If none of the inputs failed to match, return true
-        true
+        buttons
+            .iter()
+            .all(|button| self.button_pressed(button.clone()))
     }
 
     /// Get the "value" of the input.

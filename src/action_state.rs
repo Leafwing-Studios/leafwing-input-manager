@@ -320,13 +320,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: &A) {
-        let action_data = match self.action_data_mut(action) {
-            Some(action_data) => action_data,
-            None => {
-                self.set_action_data(action.clone(), ActionData::default());
-                self.action_data_mut(action).unwrap()
-            }
-        };
+        let action_data = self.action_data.entry(action.clone()).or_default();
 
         // Consumed actions cannot be pressed until they are released
         if action_data.consumed {
@@ -346,13 +340,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: &A) {
-        let action_data = match self.action_data_mut(action) {
-            Some(action_data) => action_data,
-            None => {
-                self.set_action_data(action.clone(), ActionData::default());
-                self.action_data_mut(action).unwrap()
-            }
-        };
+        let action_data = self.action_data.entry(action.clone()).or_default();
 
         // Once released, consumed actions can be pressed again
         action_data.consumed = false;
@@ -405,13 +393,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn consume(&mut self, action: &A) {
-        let action_data = match self.action_data_mut(action) {
-            Some(action_data) => action_data,
-            None => {
-                self.set_action_data(action.clone(), ActionData::default());
-                self.action_data_mut(action).unwrap()
-            }
-        };
+        let action_data = self.action_data.entry(action.clone()).or_default();
 
         // This is the only difference from action_state.release(&action)
         action_data.consumed = true;
@@ -438,30 +420,21 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn consumed(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.consumed,
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.consumed)
     }
 
     /// Is this `action` currently pressed?
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.pressed(),
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.state.pressed())
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.just_pressed(),
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.state.just_pressed())
     }
 
     /// Is this `action` currently released?
@@ -470,20 +443,15 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.released(),
-            None => true,
-        }
+        self.action_data(action)
+            .map_or(true, |action_data| action_data.state.released())
     }
 
     /// Was this `action` released since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
-        match self.action_data(action) {
-            Some(action_data) => action_data.state.just_released(),
-            None => false,
-        }
+        matches!(self.action_data(action), Some(action_data) if action_data.state.just_released())
     }
 
     #[must_use]
