@@ -14,7 +14,6 @@ use bevy::utils::HashSet;
 
 use crate::axislike::{
     AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
-    VirtualDPad,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
@@ -82,12 +81,7 @@ impl<'a> InputStreams<'a> {
         match input {
             UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => [up, down, left, right]
+            UserInput::VirtualDPad(dpad) => [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
                 .into_iter()
                 .any(|button| self.button_pressed(*button)),
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
@@ -106,18 +100,9 @@ impl<'a> InputStreams<'a> {
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputKind::DualAxis(axis) => {
-                let x_value =
-                    self.input_value(&UserInput::Single(InputKind::SingleAxis(axis.x)), false);
-                let y_value =
-                    self.input_value(&UserInput::Single(InputKind::SingleAxis(axis.y)), false);
-
-                axis.deadzone
-                    .deadzone_input_value(x_value, y_value)
-                    .is_some()
-            }
+            InputKind::DualAxis(axis) => self.extract_dual_axis_data(&axis).is_some(),
             InputKind::SingleAxis(axis) => {
-                let value = self.input_value(&UserInput::Single(button), false);
+                let value = self.input_value(&button.into(), false);
 
                 value < axis.negative_low || value > axis.positive_low
             }
@@ -239,15 +224,16 @@ impl<'a> InputStreams<'a> {
                                 .get(GamepadAxis { gamepad, axis_type })
                                 .unwrap_or_default()
                         };
-                        self.associated_gamepad
-                            .map(get_gamepad_value)
-                            .or_else(|| {
-                                self.gamepads
-                                    .iter()
-                                    .map(get_gamepad_value)
-                                    .find(|value| *value != 0.0)
-                            })
-                            .map_or(0.0, |value| value_in_axis_range(single_axis, value))
+                        if let Some(gamepad) = self.associated_gamepad {
+                            let value = get_gamepad_value(gamepad);
+                            value_in_axis_range(single_axis, value)
+                        } else {
+                            self.gamepads
+                                .iter()
+                                .map(get_gamepad_value)
+                                .find(|value| *value != 0.0)
+                                .map_or(0.0, |value| value_in_axis_range(single_axis, value))
+                        }
                     }
                     AxisType::MouseWheel(axis_type) => {
                         let Some(mouse_wheel) = &self.mouse_wheel else {
@@ -276,9 +262,8 @@ impl<'a> InputStreams<'a> {
                     }
                 }
             }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.input_value(&UserInput::Single(*positive), true).abs()
-                    - self.input_value(&UserInput::Single(*negative), true).abs()
+            UserInput::VirtualAxis(axis) => {
+                self.extract_single_axis_data(&axis.positive, &axis.negative)
             }
             UserInput::Single(InputKind::DualAxis(_)) => {
                 self.input_axis_pair(input).unwrap_or_default().length()
@@ -343,7 +328,7 @@ impl<'a> InputStreams<'a> {
     ///
     /// If `input` is a chord, returns result of the first dual axis in the chord.
 
-    /// If `input` is not a [`DualAxis`] or [`VirtualDPad`], returns [`None`].
+    /// If `input` is not a [`DualAxis`] or [`VirtualDPad`](crate::axislike::VirtualDPad), returns [`None`].
     ///
     /// # Warning
     ///
@@ -368,31 +353,24 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::DualAxis(dual_axis)) => {
                 Some(self.extract_dual_axis_data(dual_axis).unwrap_or_default())
             }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                let x = self.input_value(&UserInput::Single(*right), true).abs()
-                    - self.input_value(&UserInput::Single(*left), true).abs();
-                let y = self.input_value(&UserInput::Single(*up), true).abs()
-                    - self.input_value(&UserInput::Single(*down), true).abs();
+            UserInput::VirtualDPad(dpad) => {
+                let x = self.extract_single_axis_data(&dpad.right, &dpad.left);
+                let y = self.extract_single_axis_data(&dpad.up, &dpad.down);
                 Some(DualAxisData::new(x, y))
             }
             _ => None,
         }
     }
 
+    fn extract_single_axis_data(&self, positive: &InputKind, negative: &InputKind) -> f32 {
+        let positive = self.input_value(&UserInput::Single(*positive), true);
+        let negative = self.input_value(&UserInput::Single(*negative), true);
+        positive.abs() - negative.abs()
+    }
+
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> Option<DualAxisData> {
-        let x = self.input_value(
-            &UserInput::Single(InputKind::SingleAxis(dual_axis.x)),
-            false,
-        );
-        let y = self.input_value(
-            &UserInput::Single(InputKind::SingleAxis(dual_axis.y)),
-            false,
-        );
+        let x = self.input_value(&dual_axis.x.into(), false);
+        let y = self.input_value(&dual_axis.y.into(), false);
 
         dual_axis.deadzone.deadzone_input_value(x, y)
     }
