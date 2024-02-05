@@ -10,7 +10,7 @@
 use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType};
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::input_streams::{InputStreams, MutableInputStreams};
-use crate::user_input::{RawInputs, UserInput};
+use crate::user_input::UserInput;
 
 use bevy::app::App;
 use bevy::ecs::event::Events;
@@ -163,7 +163,27 @@ impl MockInput for MutableInputStreams<'_> {
         // Extract the raw inputs
         let raw_inputs = input_to_send.raw_inputs();
 
-        self.send_keyboard_input(ButtonState::Pressed, &raw_inputs);
+        let button_state = ButtonState::Pressed;
+        let keys = raw_inputs.keys.iter();
+        let keycodes = raw_inputs.keycodes.iter();
+        for zipped in keys.zip_longest(keycodes) {
+            let (logical_key, key_code) = match zipped {
+                EitherOrBoth::Both(logical_key, key_code) => (logical_key.clone(), *key_code),
+                EitherOrBoth::Left(logical_key) => (
+                    logical_key.clone(),
+                    KeyCode::Unidentified(NativeKeyCode::Unidentified),
+                ),
+                EitherOrBoth::Right(key_code) => {
+                    (Key::Unidentified(NativeKey::Unidentified), *key_code)
+                }
+            };
+            self.keyboard_events.send(KeyboardInput {
+                logical_key,
+                key_code,
+                state: button_state,
+                window: Entity::PLACEHOLDER,
+            });
+        }
 
         // Mouse buttons
         for button in raw_inputs.mouse_buttons.iter() {
@@ -222,7 +242,17 @@ impl MockInput for MutableInputStreams<'_> {
             };
         }
 
-        self.send_gamepad_button_changed(gamepad, &raw_inputs);
+        // Gamepad buttons
+        for button_type in raw_inputs.gamepad_buttons {
+            if let Some(gamepad) = gamepad {
+                self.gamepad_events
+                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
+                        gamepad,
+                        button_type,
+                        value: 1.0,
+                    }));
+            }
+        }
 
         // Axis data
         for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data.iter() {
@@ -288,34 +318,18 @@ impl MockInput for MutableInputStreams<'_> {
         let input_to_release: UserInput = input.into();
         let raw_inputs = input_to_release.raw_inputs();
 
-        self.send_gamepad_button_changed(gamepad, &raw_inputs);
-
-        self.send_keyboard_input(ButtonState::Released, &raw_inputs);
-
-        for button in raw_inputs.mouse_buttons {
-            self.mouse_button_events.send(MouseButtonInput {
-                button,
-                state: ButtonState::Released,
-                window: Entity::PLACEHOLDER,
-            });
+        for button_type in raw_inputs.gamepad_buttons {
+            if let Some(gamepad) = gamepad {
+                self.gamepad_events
+                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
+                        gamepad,
+                        button_type,
+                        value: 1.0,
+                    }));
+            }
         }
-    }
 
-    fn reset_inputs(&mut self) {
-        // WARNING: this *must* be updated when MutableInputStreams's fields change
-        // Note that we deliberately are not resetting either Gamepads or associated_gamepad
-        // as they are not actually input data
-        *self.gamepad_buttons = Default::default();
-        *self.gamepad_axes = Default::default();
-        *self.keycodes = Default::default();
-        *self.mouse_buttons = Default::default();
-        *self.mouse_wheel = Default::default();
-        *self.mouse_motion = Default::default();
-    }
-}
-
-impl MutableInputStreams<'_> {
-    fn send_keyboard_input(&mut self, button_state: ButtonState, raw_inputs: &RawInputs) {
+        let button_state = ButtonState::Released;
         let keys = raw_inputs.keys.iter();
         let keycodes = raw_inputs.keycodes.iter();
         for zipped in keys.zip_longest(keycodes) {
@@ -336,19 +350,26 @@ impl MutableInputStreams<'_> {
                 window: Entity::PLACEHOLDER,
             });
         }
+
+        for button in raw_inputs.mouse_buttons {
+            self.mouse_button_events.send(MouseButtonInput {
+                button,
+                state: ButtonState::Released,
+                window: Entity::PLACEHOLDER,
+            });
+        }
     }
 
-    fn send_gamepad_button_changed(&mut self, gamepad: Option<Gamepad>, raw_inputs: &RawInputs) {
-        for button_type in raw_inputs.gamepad_buttons.iter() {
-            if let Some(gamepad) = gamepad {
-                self.gamepad_events
-                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
-                        gamepad,
-                        button_type: *button_type,
-                        value: 1.0,
-                    }));
-            }
-        }
+    fn reset_inputs(&mut self) {
+        // WARNING: this *must* be updated when MutableInputStreams's fields change
+        // Note that we deliberately are not resetting either Gamepads or associated_gamepad
+        // as they are not actually input data
+        *self.gamepad_buttons = Default::default();
+        *self.gamepad_axes = Default::default();
+        *self.keycodes = Default::default();
+        *self.mouse_buttons = Default::default();
+        *self.mouse_wheel = Default::default();
+        *self.mouse_motion = Default::default();
     }
 }
 

@@ -125,9 +125,14 @@ impl<'a> InputStreams<'a> {
                 down,
                 left,
                 right,
-            }) => [up, down, left, right]
-                .into_iter()
-                .any(|button| self.button_pressed(button.clone())),
+            }) => {
+                for button in [up, down, left, right] {
+                    if self.button_pressed(button.clone()) {
+                        return true;
+                    }
+                }
+                false
+            }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
                 self.button_pressed(negative.clone()) || self.button_pressed(positive.clone())
             }
@@ -137,7 +142,13 @@ impl<'a> InputStreams<'a> {
     /// Is at least one of the `inputs` pressed?
     #[must_use]
     pub fn any_pressed(&self, inputs: &HashSet<UserInput>) -> bool {
-        inputs.iter().any(|input| self.input_pressed(input))
+        for input in inputs.iter() {
+            if self.input_pressed(input) {
+                return true;
+            }
+        }
+        // If none of the inputs matched, return false
+        false
     }
 
     /// Is the `button` pressed?
@@ -166,12 +177,18 @@ impl<'a> InputStreams<'a> {
                         button_type,
                     })
                 } else {
-                    self.gamepads.iter().any(|gamepad| {
-                        self.gamepad_buttons.pressed(GamepadButton {
+                    for gamepad in self.gamepads.iter() {
+                        if self.gamepad_buttons.pressed(GamepadButton {
                             gamepad,
                             button_type,
-                        })
-                    })
+                        }) {
+                            // Return early if *any* gamepad is pressing this button
+                            return true;
+                        }
+                    }
+
+                    // If we don't have the required data, fall back to false
+                    false
                 }
             }
             InputKind::LogicalKey(key_specified) => self
@@ -248,9 +265,14 @@ impl<'a> InputStreams<'a> {
     /// Are all of the `buttons` pressed?
     #[must_use]
     pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
-        buttons
-            .iter()
-            .all(|button| self.button_pressed(button.clone()))
+        for button in buttons.iter() {
+            // If any of the appropriate inputs failed to match, the action is considered pressed
+            if !self.button_pressed(button.clone()) {
+                return false;
+            }
+        }
+        // If none of the inputs failed to match, return true
+        true
     }
 
     /// Get the "value" of the input.
@@ -354,10 +376,11 @@ impl<'a> InputStreams<'a> {
                 }
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                let negative = negative.clone();
-                let positive = positive.clone();
-                self.input_value(&UserInput::Single(positive), true).abs()
-                    - self.input_value(&UserInput::Single(negative), true).abs()
+                self.input_value(&UserInput::Single(positive.clone()), true)
+                    .abs()
+                    - self
+                        .input_value(&UserInput::Single(negative.clone()), true)
+                        .abs()
             }
             UserInput::Single(InputKind::DualAxis(_)) => {
                 self.input_axis_pair(input).unwrap_or_default().length()
