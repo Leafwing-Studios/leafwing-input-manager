@@ -68,12 +68,11 @@ impl UserInput {
     /// - A [`Single`][UserInput::Single] input returns 1
     /// - A [`Chord`][UserInput::Chord] returns the number of buttons in the chord
     /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
+    /// - A [`VirtualAxis`][UserInput::VirtualAxis] returns 1
     pub fn len(&self) -> usize {
         match self {
-            UserInput::Single(_) => 1,
             UserInput::Chord(button_set) => button_set.len(),
-            UserInput::VirtualDPad { .. } => 1,
-            UserInput::VirtualAxis { .. } => 1,
+            _ => 1,
         }
     }
 
@@ -102,44 +101,23 @@ impl UserInput {
     pub fn n_matching(&self, buttons: &HashSet<InputKind>) -> usize {
         match self {
             UserInput::Single(button) => usize::from(buttons.contains(button)),
-            UserInput::Chord(chord_buttons) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    if chord_buttons.contains(button) {
-                        n_matching += 1;
-                    }
-                }
-
-                n_matching
-            }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    for dpad_button in [up, down, left, right] {
-                        if button == dpad_button {
-                            n_matching += 1;
-                        }
-                    }
-                }
-
-                n_matching
+            UserInput::Chord(chord_buttons) => buttons
+                .iter()
+                .filter(|button| chord_buttons.contains(button))
+                .count(),
+            UserInput::VirtualDPad(dpad) => {
+                let dpad_buttons = [dpad.up, dpad.down, dpad.left, dpad.right];
+                buttons
+                    .iter()
+                    .filter(|button| dpad_buttons.contains(button))
+                    .count()
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    for dpad_button in [negative, positive] {
-                        if button == dpad_button {
-                            n_matching += 1;
-                        }
-                    }
-                }
-
-                n_matching
+                let axis_buttons = [negative, positive];
+                buttons
+                    .iter()
+                    .filter(|button| axis_buttons.contains(button))
+                    .count()
             }
         }
     }
@@ -157,14 +135,9 @@ impl UserInput {
                     raw_inputs.merge_input_data(button);
                 }
             }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                for button in [up, down, left, right] {
-                    raw_inputs.merge_input_data(button);
+            UserInput::VirtualDPad(dpad) => {
+                for button in [dpad.up, dpad.down, dpad.left, dpad.right] {
+                    raw_inputs.merge_input_data(&button);
                 }
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {

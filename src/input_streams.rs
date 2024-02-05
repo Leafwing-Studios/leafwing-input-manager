@@ -245,7 +245,7 @@ impl<'a> InputStreams<'a> {
                             .iter()
                             .map(|wheel| Vec2::new(wheel.x, wheel.y))
                             .sum();
-                        let movement: f32 = match axis_type {
+                        let movement = match axis_type {
                             MouseWheelAxisType::X => x,
                             MouseWheelAxisType::Y => y,
                         };
@@ -327,7 +327,6 @@ impl<'a> InputStreams<'a> {
     /// Get the axis pair associated to the user input.
     ///
     /// If `input` is a chord, returns result of the first dual axis in the chord.
-
     /// If `input` is not a [`DualAxis`] or [`VirtualDPad`](crate::axislike::VirtualDPad), returns [`None`].
     ///
     /// # Warning
