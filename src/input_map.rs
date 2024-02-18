@@ -7,6 +7,7 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
 
+#[cfg(feature = "asset")]
 use bevy::asset::Asset;
 use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
@@ -71,9 +72,8 @@ input_map.insert(Action::Run, MouseButton::Left)
 input_map.clear_action(&Action::Hide);
 ```
 **/
-#[derive(
-    Resource, Component, Debug, Clone, PartialEq, Eq, Asset, Reflect, Serialize, Deserialize,
-)]
+#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[cfg_attr(feature = "asset", derive(Asset))]
 pub struct InputMap<A: Actionlike> {
     /// The usize stored here is the index of the input in the Actionlike iterator
     map: HashMap<A, Vec<UserInput>>,
