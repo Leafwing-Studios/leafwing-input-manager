@@ -162,7 +162,8 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        (!clash.inputs_a.is_empty()).then_some(clash)
+        let not_empty = !clash.inputs_a.is_empty();
+        not_empty.then_some(clash)
     }
 }
 

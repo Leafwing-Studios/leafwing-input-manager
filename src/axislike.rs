@@ -820,9 +820,9 @@ impl DeadZoneShape {
         radius_x: f32,
         radius_y: f32,
     ) -> Option<DualAxisData> {
-        let normalized_x = x / radius_x.max(f32::EPSILON);
-        let normalized_y = y / radius_y.max(f32::EPSILON);
-        let is_outside_deadzone = normalized_x.powi(2) + normalized_y.powi(2) >= 1.0;
+        let x_ratio = x / radius_x.max(f32::EPSILON);
+        let y_ratio = y / radius_y.max(f32::EPSILON);
+        let is_outside_deadzone = x_ratio.powi(2) + y_ratio.powi(2) >= 1.0;
         is_outside_deadzone.then(|| {
             let new_x = deadzone_axis_value(x, radius_x);
             let new_y = deadzone_axis_value(y, radius_y);
