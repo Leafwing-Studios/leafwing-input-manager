@@ -37,6 +37,7 @@ egui = ['dep:bevy_egui']
 leafwing_input_manager_macros = { path = "macros", version = "0.11" }
 bevy = { version = "0.13", default-features = false, features = [
   "serialize",
+  "bevy_asset",
   "bevy_gilrs",
 ] }
 # TODO(clean): Existing PR repo for update `bevy_egui` to bevy 0.13
