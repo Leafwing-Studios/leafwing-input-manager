@@ -101,7 +101,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
-    /// which reads from the assorted [`Input`](bevy::input::ButtonInput) resources.
+    /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
     pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
         for (action, action_datum) in action_data {
             match self.action_data.entry(action) {
@@ -263,8 +263,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
     pub fn axis_pair(&self, action: &A) -> Option<DualAxisData> {
-        let action_data = self.action_data(action)?;
-        action_data.axis_pair
+        self.action_data(action)?.axis_pair
     }
 
     /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
@@ -443,8 +442,10 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
-        self.action_data(action)
-            .map_or(true, |action_data| action_data.state.released())
+        match self.action_data(action) {
+            Some(action_data) => action_data.state.released(),
+            None => true,
+        }
     }
 
     /// Was this `action` released since the last time [tick](ActionState::tick) was called?
@@ -505,8 +506,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will also be [`None`] if the action was never pressed or released.
     pub fn instant_started(&self, action: &A) -> Option<Instant> {
-        let action_data = self.action_data(action)?;
-        action_data.timing.instant_started
+        self.action_data(action)?.timing.instant_started
     }
 
     /// The [`Duration`] for which the action has been held or released

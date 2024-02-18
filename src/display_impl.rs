@@ -2,6 +2,7 @@
 
 use crate::axislike::{VirtualAxis, VirtualDPad};
 use crate::user_input::{InputKind, UserInput};
+use itertools::Itertools;
 use std::fmt::Display;
 
 impl Display for UserInput {
@@ -10,14 +11,7 @@ impl Display for UserInput {
             // The representation of the button
             UserInput::Single(button) => write!(f, "{button}"),
             // The representation of each button, separated by "+"
-            UserInput::Chord(button_set) => {
-                let mut string = String::default();
-                for button in button_set.iter() {
-                    string.push('+');
-                    string.push_str(&button.to_string());
-                }
-                write!(f, "{string}")
-            }
+            UserInput::Chord(button_set) => f.write_str(&button_set.iter().join("+")),
             UserInput::VirtualDPad(VirtualDPad {
                 up,
                 down,

@@ -103,8 +103,8 @@ impl<A: Actionlike> InputMap<A> {
     pub(crate) fn possible_clashes(&self) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
-        for (action_a, _) in self.iter() {
-            for (action_b, _) in self.iter() {
+        for action_a in self.actions() {
+            for action_b in self.actions() {
                 if let Some(clash) = self.possible_clash(action_a, action_b) {
                     clashes.push(clash);
                 }
@@ -162,11 +162,7 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        if !clash.inputs_a.is_empty() {
-            Some(clash)
-        } else {
-            None
-        }
+        (!clash.inputs_a.is_empty()).then_some(clash)
     }
 }
 
@@ -196,22 +192,13 @@ impl<A: Actionlike> Clash<A> {
 // Does the `button` clash with the `chord`?
 #[must_use]
 fn button_chord_clash(button: &InputKind, chord: &[InputKind]) -> bool {
-    if chord.len() <= 1 {
-        return false;
-    }
-
-    chord.contains(button)
+    chord.len() > 1 && chord.contains(button)
 }
 
 // Does the `dpad` clash with the `chord`?
 #[must_use]
 fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
-    if chord.len() <= 1 {
-        return false;
-    }
-    [dpad.up, dpad.down, dpad.left, dpad.right]
-        .iter()
-        .any(|button| chord.contains(button))
+    chord.len() > 1 && chord.iter().any(|button| dpad_button_clash(dpad, button))
 }
 
 fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
@@ -223,7 +210,7 @@ fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
 fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
     let iter1 = [&dpad1.up, &dpad1.down, &dpad1.left, &dpad1.right].into_iter();
     let iter2 = [&dpad2.up, &dpad2.down, &dpad2.left, &dpad2.right].into_iter();
-    iter1.zip(iter2).any(|(left, right)| *left == *right)
+    iter1.zip(iter2).any(|(left, right)| left == right)
 }
 
 #[must_use]
@@ -235,24 +222,21 @@ fn virtual_axis_button_clash(axis: &VirtualAxis, button: &InputKind) -> bool {
 fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
     [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
         .iter()
-        .any(|button| **button == axis.negative || **button == axis.positive)
+        .any(|button| virtual_axis_button_clash(axis, button))
 }
 
 #[must_use]
 fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &[InputKind]) -> bool {
-    if chord.len() <= 1 {
-        return false;
-    }
-
-    chord.contains(&axis.negative) || chord.contains(&axis.positive)
+    chord.len() > 1
+        && chord
+            .iter()
+            .any(|button| virtual_axis_button_clash(axis, button))
 }
 
 #[must_use]
 fn virtual_axis_virtual_axis_clash(axis1: &VirtualAxis, axis2: &VirtualAxis) -> bool {
-    axis1.negative == axis2.negative
-        || axis1.negative == axis2.positive
-        || axis1.positive == axis2.negative
-        || axis1.positive == axis2.positive
+    virtual_axis_button_clash(axis1, &axis2.negative)
+        || virtual_axis_button_clash(axis1, &axis2.positive)
 }
 
 /// Does the `chord_a` clash with `chord_b`?
@@ -266,8 +250,6 @@ fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool
         return false;
     }
 
-    // Since Chords typically have a few elements,
-    // making slice-based checks more efficient than set-based ones.
     fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
         slice_a.iter().all(|a| slice_b.contains(a))
     }

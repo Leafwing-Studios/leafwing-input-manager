@@ -1,8 +1,5 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
-#[cfg(feature = "egui")]
-use std::ops::Not;
-
 #[cfg(feature = "ui")]
 use crate::action_driver::ActionStateDriver;
 use crate::{
@@ -108,8 +105,7 @@ pub fn update_action_state<A: Actionlike>(
     #[cfg(feature = "egui")]
     let keycodes = maybe_egui
         .iter_mut()
-        .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
-        .not()
+        .all(|(_, mut ctx)| !ctx.get_mut().wants_keyboard_input())
         .then_some(keycodes)
         .flatten();
 

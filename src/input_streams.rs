@@ -1,6 +1,6 @@
 //! Unified input streams for working with [`bevy::input`] data.
 
-use bevy::ecs::prelude::{Events, ResMut, World};
+use bevy::ecs::prelude::{Event, Events, ResMut, World};
 use bevy::ecs::system::SystemState;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
@@ -9,11 +9,11 @@ use bevy::input::{
     Axis, ButtonInput,
 };
 use bevy::math::Vec2;
-use bevy::prelude::Event;
 use bevy::utils::HashSet;
 
 use crate::axislike::{
-    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis, VirtualAxis,
+    deadzone_axis_value, AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
+    SingleAxis, VirtualAxis,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
@@ -106,21 +106,16 @@ impl<'a> InputStreams<'a> {
 
                 value < axis.negative_low || value > axis.positive_low
             }
-            InputKind::GamepadButton(button_type) => {
-                if let Some(gamepad) = self.associated_gamepad {
+            InputKind::GamepadButton(button_type) => self
+                .associated_gamepad
+                .into_iter()
+                .chain(self.gamepads.iter())
+                .any(|gamepad| {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
                         button_type,
                     })
-                } else {
-                    self.gamepads.iter().any(|gamepad| {
-                        self.gamepad_buttons.pressed(GamepadButton {
-                            gamepad,
-                            button_type,
-                        })
-                    })
-                }
-            }
+                }),
             InputKind::PhysicalKey(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
             }
@@ -185,13 +180,7 @@ impl<'a> InputStreams<'a> {
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
     /// be sure to clamp the returned data.
     pub fn input_value(&self, input: &UserInput, include_deadzone: bool) -> f32 {
-        let use_button_value = || -> f32 {
-            if self.input_pressed(input) {
-                1.0
-            } else {
-                0.0
-            }
-        };
+        let use_button_value = || -> f32 { f32::from(self.input_pressed(input)) };
 
         // Helper that takes the value returned by an axis and returns 0.0 if it is not within the
         // triggering range.
@@ -201,12 +190,12 @@ impl<'a> InputStreams<'a> {
                     return 0.0;
                 }
 
-                let width = if value.is_sign_positive() {
+                let deadzone = if value.is_sign_positive() {
                     axis.positive_low.abs()
                 } else {
                     axis.negative_low.abs()
                 };
-                value = value.signum() * (value.abs() - width).max(0.0) / (1.0 - width);
+                value = deadzone_axis_value(value, deadzone);
             }
             if axis.inverted {
                 value *= -1.0;
@@ -364,6 +353,7 @@ impl<'a> InputStreams<'a> {
     fn extract_single_axis_data(&self, positive: &InputKind, negative: &InputKind) -> f32 {
         let positive = self.input_value(&UserInput::Single(*positive), true);
         let negative = self.input_value(&UserInput::Single(*negative), true);
+
         positive.abs() - negative.abs()
     }
 

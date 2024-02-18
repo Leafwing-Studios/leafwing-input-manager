@@ -175,57 +175,36 @@ impl MockInput for MutableInputStreams<'_> {
 
         // Discrete mouse wheel events
         for mouse_wheel_direction in raw_inputs.mouse_wheel.iter() {
-            match *mouse_wheel_direction {
-                MouseWheelDirection::Left => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: -1.0,
-                    y: 0.0,
-                    window: Entity::PLACEHOLDER,
-                }),
-                MouseWheelDirection::Right => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: 1.0,
-                    y: 0.0,
-                    window: Entity::PLACEHOLDER,
-                }),
-                MouseWheelDirection::Up => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: 0.0,
-                    y: 1.0,
-                    window: Entity::PLACEHOLDER,
-                }),
-                MouseWheelDirection::Down => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: 0.0,
-                    y: -1.0,
-                    window: Entity::PLACEHOLDER,
-                }),
+            let (x, y) = match *mouse_wheel_direction {
+                MouseWheelDirection::Left => (-1.0, 0.0),
+                MouseWheelDirection::Right => (1.0, 0.0),
+                MouseWheelDirection::Up => (0.0, 1.0),
+                MouseWheelDirection::Down => (0.0, -1.0),
             };
+            self.mouse_wheel.send(MouseWheel {
+                unit: MouseScrollUnit::Pixel,
+                x,
+                y,
+                window: Entity::PLACEHOLDER,
+            });
         }
 
         // Discrete mouse motion event
         for mouse_motion_direction in raw_inputs.mouse_motion.iter() {
-            match *mouse_motion_direction {
-                MouseMotionDirection::Up => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: 0.0, y: 1.0 },
-                }),
-                MouseMotionDirection::Down => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: 0.0, y: -1.0 },
-                }),
-                MouseMotionDirection::Right => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: 1.0, y: 0.0 },
-                }),
-                MouseMotionDirection::Left => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: -1.0, y: 0.0 },
-                }),
+            let delta = match *mouse_motion_direction {
+                MouseMotionDirection::Up => Vec2::new(0.0, 1.0),
+                MouseMotionDirection::Down => Vec2::new(0.0, -1.0),
+                MouseMotionDirection::Right => Vec2::new(1.0, 0.0),
+                MouseMotionDirection::Left => Vec2::new(-1.0, 0.0),
             };
+            self.mouse_motion.send(MouseMotion { delta });
         }
 
         self.send_gamepad_button_changed(gamepad, &raw_inputs);
 
         // Axis data
         for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data.iter() {
-            if let Some(position_data) = maybe_position_data {
+            if let Some(position_data) = *maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
                         if let Some(gamepad) = gamepad {
@@ -233,45 +212,30 @@ impl MockInput for MutableInputStreams<'_> {
                                 .send(GamepadEvent::Axis(GamepadAxisChangedEvent {
                                     gamepad,
                                     axis_type: *axis_type,
-                                    value: *position_data,
+                                    value: position_data,
                                 }));
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
-                        match axis_type {
-                            // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-                            MouseWheelAxisType::X => self.mouse_wheel.send(MouseWheel {
-                                unit: MouseScrollUnit::Pixel,
-                                x: *position_data,
-                                y: 0.0,
-                                window: Entity::PLACEHOLDER,
-                            }),
-                            MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
-                                unit: MouseScrollUnit::Pixel,
-                                x: 0.0,
-                                y: *position_data,
-                                window: Entity::PLACEHOLDER,
-                            }),
+                        let (x, y) = match *axis_type {
+                            MouseWheelAxisType::X => (position_data, 0.0),
+                            MouseWheelAxisType::Y => (0.0, position_data),
                         };
+                        // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
+                        self.mouse_wheel.send(MouseWheel {
+                            unit: MouseScrollUnit::Pixel,
+                            x,
+                            y,
+                            window: Entity::PLACEHOLDER,
+                        });
                     }
-                    AxisType::MouseMotion(axis_type) => match axis_type {
-                        MouseMotionAxisType::X => {
-                            self.mouse_motion.send(MouseMotion {
-                                delta: Vec2 {
-                                    x: *position_data,
-                                    y: 0.0,
-                                },
-                            });
-                        }
-                        MouseMotionAxisType::Y => {
-                            self.mouse_motion.send(MouseMotion {
-                                delta: Vec2 {
-                                    x: 0.0,
-                                    y: *position_data,
-                                },
-                            });
-                        }
-                    },
+                    AxisType::MouseMotion(axis_type) => {
+                        let delta = match *axis_type {
+                            MouseMotionAxisType::X => Vec2::new(position_data, 0.0),
+                            MouseMotionAxisType::Y => Vec2::new(0.0, position_data),
+                        };
+                        self.mouse_motion.send(MouseMotion { delta });
+                    }
                 }
             }
         }

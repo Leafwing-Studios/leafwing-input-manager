@@ -48,17 +48,10 @@ impl UserInput {
     ///
     /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
     pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
-        // We can't just check the length unless we add an ExactSizeIterator bound :(
-        let mut length: u8 = 0;
+        let vec: Vec<InputKind> = inputs.into_iter().map(|input| input.into()).collect();
 
-        let mut vec: Vec<InputKind> = Vec::default();
-        for button in inputs {
-            length += 1;
-            vec.push(button.into());
-        }
-
-        match length {
-            1 => UserInput::Single(*vec.first().unwrap()),
+        match vec.len() {
+            1 => UserInput::Single(vec[0]),
             _ => UserInput::Chord(vec),
         }
     }
@@ -361,9 +354,7 @@ impl RawInputs {
             InputKind::GamepadButton(button) => self.gamepad_buttons.push(button),
             InputKind::PhysicalKey(key_code) => self.keycodes.push(key_code),
             InputKind::Modifier(modifier) => {
-                let key_codes = modifier.key_codes();
-                self.keycodes.push(key_codes[0]);
-                self.keycodes.push(key_codes[1]);
+                self.keycodes.extend_from_slice(&modifier.key_codes());
             }
             InputKind::Mouse(button) => self.mouse_buttons.push(button),
             InputKind::MouseWheel(button) => self.mouse_wheel.push(button),
