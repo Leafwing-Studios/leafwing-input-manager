@@ -740,20 +740,20 @@ impl From<DualAxisData> for Vec2 {
 /// The shape of the deadzone for a [`DualAxis`] input.
 ///
 /// Input values that are on the boundary of the shape are counted as inside.
-/// If a size of a shape is 0.0, then all input values are read, except for 0.0.
+/// If the size of a shape is 0.0, then all input values are read, except for 0.0.
 ///
 /// All inputs are scaled to be continuous.
-/// So with a ellipse deadzone of a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
+/// So with an ellipse deadzone of a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
 pub enum DeadZoneShape {
     /// Deadzone with the shape of a cross.
     ///
-    /// The cross is represented by horizonal and vertical rectangles.
-    /// Each axis is handled seperately which creates a per-axis "snapping" effect.
+    /// The cross is represented by horizontal and vertical rectangles.
+    /// Each axis is handled separately which creates a per-axis "snapping" effect.
     Cross {
-        /// The width of the horizonal axis.
+        /// The width of the horizontal axis.
         ///
         /// Affects the snapping of the y-axis.
         horizontal_width: f32,
