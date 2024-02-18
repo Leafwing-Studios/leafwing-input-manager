@@ -175,29 +175,22 @@ impl MockInput for MutableInputStreams<'_> {
 
         // Discrete mouse wheel events
         for mouse_wheel_direction in raw_inputs.mouse_wheel.iter() {
-            let (x, y) = match *mouse_wheel_direction {
-                MouseWheelDirection::Left => (-1.0, 0.0),
-                MouseWheelDirection::Right => (1.0, 0.0),
-                MouseWheelDirection::Up => (0.0, 1.0),
-                MouseWheelDirection::Down => (0.0, -1.0),
+            match *mouse_wheel_direction {
+                MouseWheelDirection::Left => self.send_mouse_wheel(-1.0, 0.0),
+                MouseWheelDirection::Right => self.send_mouse_wheel(1.0, 0.0),
+                MouseWheelDirection::Up => self.send_mouse_wheel(0.0, 1.0),
+                MouseWheelDirection::Down => self.send_mouse_wheel(0.0, -1.0),
             };
-            self.mouse_wheel.send(MouseWheel {
-                unit: MouseScrollUnit::Pixel,
-                x,
-                y,
-                window: Entity::PLACEHOLDER,
-            });
         }
 
         // Discrete mouse motion event
         for mouse_motion_direction in raw_inputs.mouse_motion.iter() {
-            let delta = match *mouse_motion_direction {
-                MouseMotionDirection::Up => Vec2::new(0.0, 1.0),
-                MouseMotionDirection::Down => Vec2::new(0.0, -1.0),
-                MouseMotionDirection::Right => Vec2::new(1.0, 0.0),
-                MouseMotionDirection::Left => Vec2::new(-1.0, 0.0),
+            match *mouse_motion_direction {
+                MouseMotionDirection::Up => self.send_mouse_motion(0.0, 1.0),
+                MouseMotionDirection::Down => self.send_mouse_motion(0.0, -1.0),
+                MouseMotionDirection::Right => self.send_mouse_motion(1.0, 0.0),
+                MouseMotionDirection::Left => self.send_mouse_motion(-1.0, 0.0),
             };
-            self.mouse_motion.send(MouseMotion { delta });
         }
 
         self.send_gamepad_button_changed(gamepad, &raw_inputs);
@@ -216,26 +209,14 @@ impl MockInput for MutableInputStreams<'_> {
                                 }));
                         }
                     }
-                    AxisType::MouseWheel(axis_type) => {
-                        let (x, y) = match *axis_type {
-                            MouseWheelAxisType::X => (position_data, 0.0),
-                            MouseWheelAxisType::Y => (0.0, position_data),
-                        };
-                        // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-                        self.mouse_wheel.send(MouseWheel {
-                            unit: MouseScrollUnit::Pixel,
-                            x,
-                            y,
-                            window: Entity::PLACEHOLDER,
-                        });
-                    }
-                    AxisType::MouseMotion(axis_type) => {
-                        let delta = match *axis_type {
-                            MouseMotionAxisType::X => Vec2::new(position_data, 0.0),
-                            MouseMotionAxisType::Y => Vec2::new(0.0, position_data),
-                        };
-                        self.mouse_motion.send(MouseMotion { delta });
-                    }
+                    AxisType::MouseWheel(axis_type) => match *axis_type {
+                        MouseWheelAxisType::X => self.send_mouse_wheel(position_data, 0.0),
+                        MouseWheelAxisType::Y => self.send_mouse_wheel(0.0, position_data),
+                    },
+                    AxisType::MouseMotion(axis_type) => match *axis_type {
+                        MouseMotionAxisType::X => self.send_mouse_motion(position_data, 0.0),
+                        MouseMotionAxisType::Y => self.send_mouse_motion(0.0, position_data),
+                    },
                 }
             }
         }
@@ -287,6 +268,18 @@ impl MutableInputStreams<'_> {
                 window: Entity::PLACEHOLDER,
             });
         }
+    }
+
+    fn send_mouse_wheel(&mut self, x: f32, y: f32) {
+        // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
+        let unit = MouseScrollUnit::Pixel;
+        let window = Entity::PLACEHOLDER;
+        self.mouse_wheel.send(MouseWheel { unit, x, y, window });
+    }
+
+    fn send_mouse_motion(&mut self, x: f32, y: f32) {
+        let delta = Vec2::new(x, y);
+        self.mouse_motion.send(MouseMotion { delta });
     }
 
     fn send_gamepad_button_changed(&mut self, gamepad: Option<Gamepad>, raw_inputs: &RawInputs) {
