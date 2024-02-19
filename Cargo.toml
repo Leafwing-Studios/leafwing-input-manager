@@ -18,7 +18,10 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ['ui', 'block_ui_interactions']
+default = ['asset', 'ui', 'block_ui_interactions']
+
+# Allow you to use the `InputMap` as `bevy::asset::Asset`.
+asset = ['bevy/bevy_asset']
 
 # Provide functionality refer to `bevy::ui`:
 # - `MockUIInteraction` for `bevy::ui` input mocking.
