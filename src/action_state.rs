@@ -590,29 +590,27 @@ impl<A: Actionlike> ActionState<A> {
 #[cfg(test)]
 mod tests {
     use crate as leafwing_input_manager;
+    use crate::action_state::ActionState;
+    use crate::clashing_inputs::ClashStrategy;
+    use crate::input_map::InputMap;
     use crate::input_mocking::MockInput;
-    use bevy::prelude::Reflect;
+    use crate::input_streams::InputStreams;
+    use bevy::input::InputPlugin;
+    use bevy::prelude::*;
+    use bevy::utils::{Duration, Instant};
     use leafwing_input_manager_macros::Actionlike;
-
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
-    enum Action {
-        Run,
-        Jump,
-        Hide,
-    }
 
     #[test]
     fn press_lifecycle() {
-        use crate::action_state::ActionState;
-        use crate::clashing_inputs::ClashStrategy;
-        use crate::input_map::InputMap;
-        use crate::input_streams::InputStreams;
-        use bevy::input::InputPlugin;
-        use bevy::prelude::*;
-        use bevy::utils::{Duration, Instant};
-
         let mut app = App::new();
         app.add_plugins(InputPlugin);
+
+        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, bevy::prelude::Reflect)]
+        enum Action {
+            Run,
+            Jump,
+            Hide,
+        }
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
@@ -672,5 +670,80 @@ mod tests {
         assert!(!action_state.just_pressed(&Action::Run));
         assert!(action_state.released(&Action::Run));
         assert!(!action_state.just_released(&Action::Run));
+    }
+
+    #[test]
+    fn update_with_clashes_prioritizing_longest() {
+        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+        enum Action {
+            One,
+            Two,
+            OneAndTwo,
+        }
+
+        // Input map
+        use bevy::prelude::KeyCode::*;
+        let mut input_map = InputMap::default();
+        input_map.insert(Action::One, Key1);
+        input_map.insert(Action::Two, Key2);
+        input_map.insert_chord(Action::OneAndTwo, [Key1, Key2]);
+
+        let mut app = App::new();
+        app.add_plugins(InputPlugin);
+
+        // Action state
+        let mut action_state = ActionState::<Action>::default();
+
+        // Starting state
+        let input_streams = InputStreams::from_world(&app.world, None);
+        action_state
+            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+        assert!(action_state.released(&Action::One));
+        assert!(action_state.released(&Action::Two));
+        assert!(action_state.released(&Action::OneAndTwo));
+
+        // Pressing One
+        app.send_input(Key1);
+        app.update();
+        let input_streams = InputStreams::from_world(&app.world, None);
+
+        action_state
+            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+
+        assert!(action_state.pressed(&Action::One));
+        assert!(action_state.released(&Action::Two));
+        assert!(action_state.released(&Action::OneAndTwo));
+
+        // Waiting
+        action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
+        action_state
+            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+
+        assert!(action_state.pressed(&Action::One));
+        assert!(action_state.released(&Action::Two));
+        assert!(action_state.released(&Action::OneAndTwo));
+
+        // Pressing Two
+        app.send_input(Key2);
+        app.update();
+        let input_streams = InputStreams::from_world(&app.world, None);
+
+        action_state
+            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+
+        // Now only the longest OneAndTwo has been pressed,
+        // while both One and Two have been released
+        assert!(action_state.released(&Action::One));
+        assert!(action_state.released(&Action::Two));
+        assert!(action_state.pressed(&Action::OneAndTwo));
+
+        // Waiting
+        action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
+        action_state
+            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+
+        assert!(action_state.released(&Action::One));
+        assert!(action_state.released(&Action::Two));
+        assert!(action_state.pressed(&Action::OneAndTwo));
     }
 }
