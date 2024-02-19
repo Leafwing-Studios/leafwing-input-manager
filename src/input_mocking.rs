@@ -282,8 +282,8 @@ impl MutableInputStreams<'_> {
     }
 
     fn send_gamepad_button_changed(&mut self, gamepad: Option<Gamepad>, raw_inputs: &RawInputs) {
-        for button_type in raw_inputs.gamepad_buttons.iter() {
-            if let Some(gamepad) = gamepad {
+        if let Some(gamepad) = gamepad {
+            for button_type in raw_inputs.gamepad_buttons.iter() {
                 self.gamepad_events
                     .send(GamepadEvent::Button(GamepadButtonChangedEvent {
                         gamepad,
