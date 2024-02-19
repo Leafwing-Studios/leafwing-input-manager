@@ -10,6 +10,7 @@
 ### Bugs
 
 - fixed compilation issues with no-default-features
+- fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/471) related to incorrect updating of `ActionState`.
 
 ## Version 0.12
 

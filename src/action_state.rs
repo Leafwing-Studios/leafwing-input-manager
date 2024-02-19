@@ -103,6 +103,11 @@ impl<A: Actionlike> ActionState<A> {
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`Input`](bevy::input::Input) resources.
     pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
+        for (action, action_datum) in self.action_data.iter_mut() {
+            if !action_data.contains_key(action) {
+                action_datum.state.release();
+            }
+        }
         for (action, action_datum) in action_data {
             match self.action_data.entry(action) {
                 Entry::Occupied(occupied_entry) => {
