@@ -686,10 +686,7 @@ impl DualAxisData {
     #[inline]
     pub fn direction(&self) -> Option<Direction> {
         // TODO: replace this quick-n-dirty hack once Direction::new no longer panics
-        if self.xy.length() > 0.00001 {
-            return Some(Direction::new(self.xy));
-        }
-        None
+        (self.xy.length() > 0.00001).then(|| Direction::new(self.xy))
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
@@ -698,10 +695,7 @@ impl DualAxisData {
     #[must_use]
     #[inline]
     pub fn rotation(&self) -> Option<Rotation> {
-        match Rotation::from_xy(self.xy) {
-            Ok(rotation) => Some(rotation),
-            Err(_) => None,
-        }
+        Rotation::from_xy(self.xy).ok()
     }
 
     /// How far from the origin is this axis's position?
@@ -741,20 +735,20 @@ impl From<DualAxisData> for Vec2 {
 /// The shape of the deadzone for a [`DualAxis`] input.
 ///
 /// Input values that are on the boundary of the shape are counted as inside.
-/// If a size of a shape is 0.0, then all input values are read, except for 0.0.
+/// If the size of a shape is 0.0, then all input values are read, except for 0.0.
 ///
 /// All inputs are scaled to be continuous.
-/// So with a ellipse deadzone of a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
+/// So with an ellipse deadzone of a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
 pub enum DeadZoneShape {
     /// Deadzone with the shape of a cross.
     ///
-    /// The cross is represented by horizonal and vertical rectangles.
-    /// Each axis is handled seperately which creates a per-axis "snapping" effect.
+    /// The cross is represented by horizontal and vertical rectangles.
+    /// Each axis is handled separately which creates a per-axis "snapping" effect.
     Cross {
-        /// The width of the horizonal axis.
+        /// The width of the horizontal axis.
         ///
         /// Affects the snapping of the y-axis.
         horizontal_width: f32,
@@ -794,15 +788,13 @@ impl std::hash::Hash for DeadZoneShape {
 impl DeadZoneShape {
     /// Computes the input value based on the deadzone.
     pub fn deadzone_input_value(&self, x: f32, y: f32) -> Option<DualAxisData> {
-        let value = Vec2::new(x, y);
-
         match self {
             DeadZoneShape::Cross {
                 horizontal_width,
                 vertical_width,
-            } => self.cross_deadzone_value(value, *horizontal_width, *vertical_width),
+            } => self.cross_deadzone_value(x, y, *horizontal_width, *vertical_width),
             DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                self.ellipse_deadzone_value(value, *radius_x, *radius_y)
+                self.ellipse_deadzone_value(x, y, *radius_x, *radius_y)
             }
         }
     }
@@ -810,41 +802,45 @@ impl DeadZoneShape {
     /// Computes the input value based on the cross deadzone.
     fn cross_deadzone_value(
         &self,
-        value: Vec2,
+        x: f32,
+        y: f32,
         horizontal_width: f32,
         vertical_width: f32,
     ) -> Option<DualAxisData> {
-        let new_x = f32::from(value.x.abs() > vertical_width) * value.x;
-        let new_y = f32::from(value.y.abs() > horizontal_width) * value.y;
-        let new_value = Vec2::new(new_x, new_y);
-
-        if new_value == Vec2::ZERO {
-            None
-        } else {
-            let scaled_value =
-                Self::scale_value(new_value, Vec2::new(vertical_width, horizontal_width));
-            Some(DualAxisData::from_xy(scaled_value))
-        }
+        let new_x = deadzone_axis_value(x, vertical_width);
+        let new_y = deadzone_axis_value(y, horizontal_width);
+        let is_outside_deadzone = new_x != 0.0 || new_y != 0.0;
+        is_outside_deadzone.then(|| DualAxisData::new(new_x, new_y))
     }
 
     /// Computes the input value based on the ellipse deadzone.
     fn ellipse_deadzone_value(
         &self,
-        value: Vec2,
+        x: f32,
+        y: f32,
         radius_x: f32,
         radius_y: f32,
     ) -> Option<DualAxisData> {
-        let clamped_radius_x = radius_x.max(f32::EPSILON);
-        let clamped_radius_y = radius_y.max(f32::EPSILON);
-        if (value.x / clamped_radius_x).powi(2) + (value.y / clamped_radius_y).powi(2) < 1.0 {
-            return None;
-        }
-
-        let scaled_value = Self::scale_value(value, Vec2::new(radius_x, radius_y));
-        Some(DualAxisData::from_xy(scaled_value))
+        let x_ratio = x / radius_x.max(f32::EPSILON);
+        let y_ratio = y / radius_y.max(f32::EPSILON);
+        let is_outside_deadzone = x_ratio.powi(2) + y_ratio.powi(2) >= 1.0;
+        is_outside_deadzone.then(|| {
+            let new_x = deadzone_axis_value(x, radius_x);
+            let new_y = deadzone_axis_value(y, radius_y);
+            DualAxisData::new(new_x, new_y)
+        })
     }
+}
 
-    fn scale_value(value: Vec2, deadzone_size: Vec2) -> Vec2 {
-        value.signum() * (value.abs() - deadzone_size).max(Vec2::ZERO) / (1.0 - deadzone_size)
+/// Applies the given deadzone to the axis value.
+///
+/// Returns 0.0 if the axis value is within the deadzone.
+/// Otherwise, returns the normalized axis value between -1.0 and 1.0.
+pub(crate) fn deadzone_axis_value(axis_value: f32, deadzone: f32) -> f32 {
+    let abs_axis_value = axis_value.abs();
+    if abs_axis_value <= deadzone {
+        0.0
+    } else {
+        axis_value.signum() * (abs_axis_value - deadzone) / (1.0 - deadzone)
     }
 }

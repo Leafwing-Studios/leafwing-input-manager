@@ -51,16 +51,10 @@ impl UserInput {
     /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
     pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
         // We can't just check the length unless we add an ExactSizeIterator bound :(
-        let mut length: u8 = 0;
+        let vec: Vec<InputKind> = inputs.into_iter().map(|input| input.into()).collect();
 
-        let mut vec: Vec<InputKind> = Vec::default();
-        for button in inputs {
-            length += 1;
-            vec.push(button.into());
-        }
-
-        match length {
-            1 => UserInput::Single(*vec.first().unwrap()),
+        match vec.len() {
+            1 => UserInput::Single(vec[0]),
             _ => UserInput::Chord(vec),
         }
     }
@@ -70,12 +64,11 @@ impl UserInput {
     /// - A [`Single`][UserInput::Single] input returns 1
     /// - A [`Chord`][UserInput::Chord] returns the number of buttons in the chord
     /// - A [`VirtualDPad`][UserInput::VirtualDPad] returns 1
+    /// - A [`VirtualAxis`][UserInput::VirtualAxis] returns 1
     pub fn len(&self) -> usize {
         match self {
-            UserInput::Single(_) => 1,
             UserInput::Chord(button_set) => button_set.len(),
-            UserInput::VirtualDPad { .. } => 1,
-            UserInput::VirtualAxis { .. } => 1,
+            _ => 1,
         }
     }
 
@@ -104,45 +97,18 @@ impl UserInput {
     pub fn n_matching(&self, buttons: &HashSet<InputKind>) -> usize {
         match self {
             UserInput::Single(button) => usize::from(buttons.contains(button)),
-            UserInput::Chord(chord_buttons) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    if chord_buttons.contains(button) {
-                        n_matching += 1;
-                    }
-                }
-
-                n_matching
-            }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    for dpad_button in [up, down, left, right] {
-                        if button == dpad_button {
-                            n_matching += 1;
-                        }
-                    }
-                }
-
-                n_matching
-            }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                let mut n_matching = 0;
-                for button in buttons.iter() {
-                    for dpad_button in [negative, positive] {
-                        if button == dpad_button {
-                            n_matching += 1;
-                        }
-                    }
-                }
-
-                n_matching
-            }
+            UserInput::Chord(chord_buttons) => buttons
+                .iter()
+                .filter(|button| chord_buttons.contains(button))
+                .count(),
+            UserInput::VirtualDPad(dpad) => buttons
+                .iter()
+                .filter(|button| [dpad.up, dpad.down, dpad.left, dpad.right].contains(button))
+                .count(),
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => buttons
+                .iter()
+                .filter(|button| [negative, positive].contains(button))
+                .count(),
         }
     }
 
@@ -151,119 +117,22 @@ impl UserInput {
         let mut raw_inputs = RawInputs::default();
 
         match self {
-            UserInput::Single(button) => match *button {
-                InputKind::DualAxis(dual_axis) => {
-                    raw_inputs
-                        .axis_data
-                        .push((dual_axis.x.axis_type, dual_axis.x.value));
-                    raw_inputs
-                        .axis_data
-                        .push((dual_axis.y.axis_type, dual_axis.y.value));
-                }
-                InputKind::SingleAxis(single_axis) => raw_inputs
-                    .axis_data
-                    .push((single_axis.axis_type, single_axis.value)),
-                InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                InputKind::Modifier(modifier) => {
-                    let key_codes = modifier.key_codes();
-                    raw_inputs.keycodes.push(key_codes[0]);
-                    raw_inputs.keycodes.push(key_codes[1]);
-                }
-                InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-            },
+            UserInput::Single(button) => {
+                raw_inputs.merge_input_data(button);
+            }
             UserInput::Chord(button_set) => {
                 for button in button_set.iter() {
-                    match *button {
-                        InputKind::DualAxis(dual_axis) => {
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.x.axis_type, dual_axis.x.value));
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.y.axis_type, dual_axis.y.value));
-                        }
-                        InputKind::SingleAxis(single_axis) => raw_inputs
-                            .axis_data
-                            .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                        InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                        InputKind::Modifier(modifier) => {
-                            let key_codes = modifier.key_codes();
-                            raw_inputs.keycodes.push(key_codes[0]);
-                            raw_inputs.keycodes.push(key_codes[1]);
-                        }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-                    }
+                    raw_inputs.merge_input_data(button);
                 }
             }
-            UserInput::VirtualDPad(VirtualDPad {
-                up,
-                down,
-                left,
-                right,
-            }) => {
-                for button in [up, down, left, right] {
-                    match *button {
-                        InputKind::DualAxis(dual_axis) => {
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.x.axis_type, dual_axis.x.value));
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.y.axis_type, dual_axis.y.value));
-                        }
-                        InputKind::SingleAxis(single_axis) => raw_inputs
-                            .axis_data
-                            .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                        InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                        InputKind::Modifier(modifier) => {
-                            let key_codes = modifier.key_codes();
-                            raw_inputs.keycodes.push(key_codes[0]);
-                            raw_inputs.keycodes.push(key_codes[1]);
-                        }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-                    }
+            UserInput::VirtualDPad(dpad) => {
+                for button in [dpad.up, dpad.down, dpad.left, dpad.right] {
+                    raw_inputs.merge_input_data(&button);
                 }
             }
             UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                for button in [negative, positive] {
-                    // todo: dedup with VirtualDPad?
-                    match *button {
-                        InputKind::DualAxis(dual_axis) => {
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.x.axis_type, dual_axis.x.value));
-                            raw_inputs
-                                .axis_data
-                                .push((dual_axis.y.axis_type, dual_axis.y.value));
-                        }
-                        InputKind::SingleAxis(single_axis) => raw_inputs
-                            .axis_data
-                            .push((single_axis.axis_type, single_axis.value)),
-                        InputKind::GamepadButton(button) => raw_inputs.gamepad_buttons.push(button),
-                        InputKind::Keyboard(button) => raw_inputs.keycodes.push(button),
-                        InputKind::KeyLocation(scan_code) => raw_inputs.scan_codes.push(scan_code),
-                        InputKind::Modifier(modifier) => {
-                            let key_codes = modifier.key_codes();
-                            raw_inputs.keycodes.push(key_codes[0]);
-                            raw_inputs.keycodes.push(key_codes[1]);
-                        }
-                        InputKind::Mouse(button) => raw_inputs.mouse_buttons.push(button),
-                        InputKind::MouseWheel(button) => raw_inputs.mouse_wheel.push(button),
-                        InputKind::MouseMotion(button) => raw_inputs.mouse_motion.push(button),
-                    }
-                }
+                raw_inputs.merge_input_data(negative);
+                raw_inputs.merge_input_data(positive);
             }
         };
 
@@ -500,6 +369,30 @@ pub struct RawInputs {
     ///
     /// The `f32` stores the magnitude of the axis motion, and is only used for input mocking.
     pub axis_data: Vec<(AxisType, Option<f32>)>,
+}
+
+impl RawInputs {
+    /// Merges the data from the given `input_kind` into `self`.
+    fn merge_input_data(&mut self, input_kind: &InputKind) {
+        match *input_kind {
+            InputKind::DualAxis(DualAxis { x, y, .. }) => {
+                self.axis_data.push((x.axis_type, x.value));
+                self.axis_data.push((y.axis_type, y.value));
+            }
+            InputKind::SingleAxis(single_axis) => self
+                .axis_data
+                .push((single_axis.axis_type, single_axis.value)),
+            InputKind::GamepadButton(button) => self.gamepad_buttons.push(button),
+            InputKind::Keyboard(button) => self.keycodes.push(button),
+            InputKind::KeyLocation(scan_code) => self.scan_codes.push(scan_code),
+            InputKind::Modifier(modifier) => {
+                self.keycodes.extend_from_slice(&modifier.key_codes());
+            }
+            InputKind::Mouse(button) => self.mouse_buttons.push(button),
+            InputKind::MouseWheel(button) => self.mouse_wheel.push(button),
+            InputKind::MouseMotion(button) => self.mouse_motion.push(button),
+        }
+    }
 }
 
 #[cfg(test)]
