@@ -836,7 +836,6 @@ impl DeadZoneShape {
 ///
 /// Returns 0.0 if the axis value is within the deadzone.
 /// Otherwise, returns the normalized axis value between -1.0 and 1.0.
-#[inline(always)]
 pub(crate) fn deadzone_axis_value(axis_value: f32, deadzone: f32) -> f32 {
     let abs_axis_value = axis_value.abs();
     if abs_axis_value <= deadzone {
