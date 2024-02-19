@@ -1,7 +1,7 @@
 [package]
 name = "leafwing-input-manager"
 description = "A powerfully direct stateful input manager for the Bevy game engine."
-version = "0.11.2"
+version = "0.12.0"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
 repository = "https://github.com/leafwing-studios/leafwing-input-manager"
@@ -18,14 +18,26 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ['ui', 'block_ui_interactions']
+default = ['asset', 'ui', 'block_ui_interactions']
+
+# Allow you to use the `InputMap` as `bevy::asset::Asset`.
+asset = ['bevy/bevy_asset']
+
+# Provide functionality refer to `bevy::ui`:
+# - `MockUIInteraction` for `bevy::ui` input mocking.
+# - `update_action_state_from_interaction` system,
+#   which automatically processes clicks on `bevy::ui` buttons attached to `Actionlike`s,
+#   triggering corresponding actions in their `ActionState`.
 ui = ['bevy/bevy_ui']
+
+# If both this feature and `ui` are enabled, `bevy::ui` will take priority over actions when processing inputs for the `ActionState`.
 block_ui_interactions = []
-# If this feature is enabled, egui will have priority over actions when processing inputs
+
+# If this feature is enabled, `egui` will take priority over actions when processing inputs for the `ActionState`.
 egui = ['dep:bevy_egui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.11" }
+leafwing_input_manager_macros = { path = "macros", version = "0.12" }
 bevy = { version = "0.12", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
@@ -38,8 +50,6 @@ derive_more = { version = "0.99", default-features = false, features = [
 ] }
 itertools = "0.12"
 serde = { version = "1.0", features = ["derive"] }
-fixedbitset = "0.4.2"
-once_cell = "1.17.1"
 
 [dev-dependencies]
 bevy = { version = "0.12", default-features = false, features = [

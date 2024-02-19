@@ -12,6 +12,16 @@ The mapping between inputs and actions is many-to-many, and easily configured an
 A single action can be triggered by multiple inputs (or set directly by UI elements or gameplay logic),
 and a single input can result in multiple actions being triggered, which can be handled contextually.
 
+## Supported Bevy Versions
+
+| Bevy | leafwing-input-manager |
+|------|------------------------|
+| 0.13 | 0.13 (Unreleased)      |
+| 0.12 | 0.11..0.12             |
+| 0.11 | 0.10                   |
+| 0.10 | 0.9                    |
+| 0.9  | 0.7..0.8               |
+
 ## Features
 
 - Full keyboard, mouse and joystick support for button-like and axis inputs
@@ -82,7 +92,7 @@ fn spawn_player(mut commands: Commands) {
             // Stores "which actions are currently pressed"
             action_state: ActionState::default(),
             // Describes how to convert from player inputs into those actions
-            input_map: InputMap::new([(KeyCode::Space, Action::Jump)]),
+            input_map: InputMap::new([(Action::Jump, KeyCode::Space)]),
         })
         .insert(Player);
 }
@@ -98,3 +108,8 @@ fn jump(query: Query<&ActionState<Action>, With<Player>>) {
 ```
 
 This snippet is the `minimal.rs` example from the [`examples`](./examples) folder: check there for more in-depth learning materials!
+
+## Crate Feature Flags
+
+This crate has four feature flags: `asset`, `ui`, `block_ui_interactions`, and `egui`.
+Please refer to the `[features]` section in the [`Cargo.toml`](./Cargo.toml) for detailed information about their configurations.

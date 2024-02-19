@@ -7,6 +7,7 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
 
+#[cfg(feature = "asset")]
 use bevy::asset::Asset;
 use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
@@ -71,9 +72,8 @@ input_map.insert(Action::Run, MouseButton::Left)
 input_map.clear_action(&Action::Hide);
 ```
 **/
-#[derive(
-    Resource, Component, Debug, Clone, PartialEq, Eq, Asset, Reflect, Serialize, Deserialize,
-)]
+#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[cfg_attr(feature = "asset", derive(Asset))]
 pub struct InputMap<A: Actionlike> {
     /// The usize stored here is the index of the input in the Actionlike iterator
     map: HashMap<A, Vec<UserInput>>,
@@ -323,21 +323,22 @@ impl<A: Actionlike> InputMap<A> {
 
         // Generate the raw action presses
         for (action, input_vec) in self.iter() {
-            let mut pressed = false;
             let mut action_datum = ActionData::default();
 
             for input in input_vec {
-                action_datum.axis_pair = input_streams.input_axis_pair(input);
+                // Merge axis pair into action datum
+                if let Some(axis_pair) = input_streams.input_axis_pair(input) {
+                    action_datum.axis_pair = action_datum
+                        .axis_pair
+                        .map_or(Some(axis_pair), |current_axis_pair| {
+                            Some(current_axis_pair.merged_with(axis_pair))
+                        });
+                }
 
                 if input_streams.input_pressed(input) {
-                    pressed = true;
-
+                    action_datum.state = ButtonState::JustPressed;
                     action_datum.value += input_streams.input_value(input, true);
                 }
-            }
-
-            if pressed {
-                action_datum.state = ButtonState::JustPressed;
             }
 
             action_data.insert(action.clone(), action_datum);

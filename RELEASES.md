@@ -1,6 +1,17 @@
 # Release Notes
 
-## Unreleased
+## Version 0.12.1
+
+### Usability
+
+- added a table detailing supported Bevy versions in the README.md
+- added a feature flag `asset` allowing optional `bevy::asset::Asset` derive for the `InputMap`
+
+### Bugs
+
+- fixed compilation issues with no-default-features
+
+## Version 0.12
 
 ### Enhancements
 
@@ -16,6 +27,7 @@
 - registered types in the reflection system
 - added `InputMap::clear`
 - added `ActionState::keys`
+- exported `VirtualAxis` in `prelude` module
 
 ### Bugs
 
