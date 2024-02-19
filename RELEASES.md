@@ -6,7 +6,7 @@
 
 - added a table detailing supported Bevy versions in the README.md
 - added a feature flag `asset` allowing optional `bevy::asset::Asset` derive for the `InputMap`
-- exposed `InputKind` in `prelude` module
+- exported `InputKind` in `prelude` module
 
 ### Bugs
 
