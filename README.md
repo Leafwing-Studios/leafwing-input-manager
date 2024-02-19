@@ -11,6 +11,16 @@ The mapping between inputs and actions is many-to-many, and easily configured an
 A single action can be triggered by multiple inputs (or set directly by UI elements or gameplay logic),
 and a single input can result in multiple actions being triggered, which can be handled contextually.
 
+## Supported Bevy Versions
+
+| Bevy | leafwing-input-manager |
+|------|------------------------|
+| 0.13 | 0.13                   |
+| 0.12 | 0.11..0.12             |
+| 0.11 | 0.10                   |
+| 0.10 | 0.9                    |
+| 0.9  | 0.7..0.8               |
+
 ## Features
 
 - Full keyboard, mouse and joystick support for button-like and axis inputs
