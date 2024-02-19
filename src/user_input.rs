@@ -101,20 +101,14 @@ impl UserInput {
                 .iter()
                 .filter(|button| chord_buttons.contains(button))
                 .count(),
-            UserInput::VirtualDPad(dpad) => {
-                let dpad_buttons = [dpad.up, dpad.down, dpad.left, dpad.right];
-                buttons
-                    .iter()
-                    .filter(|button| dpad_buttons.contains(button))
-                    .count()
-            }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                let axis_buttons = [negative, positive];
-                buttons
-                    .iter()
-                    .filter(|button| axis_buttons.contains(button))
-                    .count()
-            }
+            UserInput::VirtualDPad(dpad) => buttons
+                .iter()
+                .filter(|button| [dpad.up, dpad.down, dpad.left, dpad.right].contains(button))
+                .count(),
+            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => buttons
+                .iter()
+                .filter(|button| [negative, positive].contains(button))
+                .count(),
         }
     }
 
