@@ -233,7 +233,7 @@ fn game_pad_single_axis() {
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::X));
-    assert!(action_state.value(&AxislikeTestAction::X) == 0.11111112);
+    assert_eq!(action_state.value(&AxislikeTestAction::X), 0.11111112);
 }
 
 #[test]
@@ -264,7 +264,7 @@ fn game_pad_single_axis_inverted() {
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::X));
-    assert!(action_state.value(&AxislikeTestAction::X) == -1.0);
+    assert_eq!(action_state.value(&AxislikeTestAction::X), -1.0);
 
     // -X
     let input = SingleAxis {
@@ -279,7 +279,7 @@ fn game_pad_single_axis_inverted() {
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::X));
-    assert!(action_state.value(&AxislikeTestAction::X) == 1.0);
+    assert_eq!(action_state.value(&AxislikeTestAction::X), 1.0);
 
     // +Y
     let input = SingleAxis {
@@ -294,7 +294,7 @@ fn game_pad_single_axis_inverted() {
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::Y));
-    assert!(action_state.value(&AxislikeTestAction::Y) == -1.0);
+    assert_eq!(action_state.value(&AxislikeTestAction::Y), -1.0);
 
     // -Y
     let input = SingleAxis {
@@ -309,7 +309,7 @@ fn game_pad_single_axis_inverted() {
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::Y));
-    assert!(action_state.value(&AxislikeTestAction::Y) == 1.0);
+    assert_eq!(action_state.value(&AxislikeTestAction::Y), 1.0);
 }
 
 #[test]

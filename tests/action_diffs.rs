@@ -73,12 +73,11 @@ fn send_action_diff(app: &mut App, action_diff: ActionDiffEvent<Action>) {
 fn assert_has_no_action_diffs(app: &mut App) {
     let action_diff_events = get_events::<ActionDiffEvent<Action>>(app);
     let action_diff_event_reader = &mut action_diff_events.get_reader();
-    match action_diff_event_reader.read(action_diff_events).next() {
-        Some(action_diff) => panic!(
+    if let Some(action_diff) = action_diff_event_reader.read(action_diff_events).next() {
+        panic!(
             "Expected no `ActionDiff` variants. Received: {:?}",
             action_diff
-        ),
-        None => {}
+        )
     }
 }
 
@@ -103,23 +102,23 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
     match action_diff_event.action_diffs.first().unwrap().clone() {
         ActionDiff::Pressed { action } => {
             assert!(action_state.pressed(&action));
-            assert!(action_state.value(&action) == 1.);
+            assert_eq!(action_state.value(&action), 1.);
         }
         ActionDiff::Released { action } => {
             assert!(action_state.released(&action));
-            assert!(action_state.value(&action) == 0.);
+            assert_eq!(action_state.value(&action), 0.);
             assert!(action_state.axis_pair(&action).is_none());
         }
         ActionDiff::ValueChanged { action, value } => {
             assert!(action_state.pressed(&action));
-            assert!(action_state.value(&action) == value);
+            assert_eq!(action_state.value(&action), value);
         }
         ActionDiff::AxisPairChanged { action, axis_pair } => {
             assert!(action_state.pressed(&action));
             match action_state.axis_pair(&action) {
                 Some(axis_pair_data) => {
-                    assert!(axis_pair_data.xy() == axis_pair);
-                    assert!(action_state.value(&action) == axis_pair_data.xy().length());
+                    assert_eq!(axis_pair_data.xy(), axis_pair);
+                    assert_eq!(action_state.value(&action), axis_pair_data.xy().length());
                 }
                 None => panic!("Expected an `AxisPair` variant. Received none."),
             }
