@@ -199,19 +199,20 @@ fn button_chord_clash(button: &InputKind, chord: &[InputKind]) -> bool {
 // Does the `dpad` clash with the `chord`?
 #[must_use]
 fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
-    chord.len() > 1 && chord.iter().any(|button| dpad_button_clash(dpad, button))
+    chord.len() > 1
+        && chord
+            .iter()
+            .any(|button| [dpad.up, dpad.down, dpad.left, dpad.right].contains(button))
 }
 
 fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
-    [dpad.up, dpad.down, dpad.left, dpad.right]
-        .iter()
-        .any(|dpad_button| button == dpad_button)
+    [dpad.up, dpad.down, dpad.left, dpad.right].contains(button)
 }
 
 fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
-    let iter1 = [&dpad1.up, &dpad1.down, &dpad1.left, &dpad1.right].into_iter();
-    let iter2 = [&dpad2.up, &dpad2.down, &dpad2.left, &dpad2.right].into_iter();
-    iter1.zip(iter2).any(|(left, right)| left == right)
+    [dpad1.up, dpad1.down, dpad1.left, dpad1.right]
+        .into_iter()
+        .any(|button| [dpad2.up, dpad2.down, dpad2.left, dpad2.right].contains(&button))
 }
 
 #[must_use]
