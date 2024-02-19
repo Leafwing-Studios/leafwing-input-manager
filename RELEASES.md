@@ -24,10 +24,12 @@
 
 - added a table detailing supported Bevy versions in the README.md
 - added a feature flag `asset` allowing optional `bevy::asset::Asset` derive for the `InputMap`
+- exported `InputKind` in `prelude` module
 
 ### Bugs
 
 - fixed compilation issues with no-default-features
+- fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/471) related to incorrect updating of `ActionState`.
 
 ## Version 0.12
 

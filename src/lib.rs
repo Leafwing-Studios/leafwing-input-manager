@@ -43,7 +43,7 @@ pub mod prelude {
     #[cfg(feature = "ui")]
     pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
-    pub use crate::user_input::{Modifier, UserInput};
+    pub use crate::user_input::{InputKind, Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
