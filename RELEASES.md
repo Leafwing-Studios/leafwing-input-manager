@@ -1,5 +1,11 @@
 # Release Notes
 
+## Unreleased
+
+### Breaking Changes
+
+- `Modifier::Win` has been renamed to `Modifier::Super`, consistent with `KeyCode::SuperLeft` and `KeyCode::SuperRight`.
+
 ## Version 0.12.1
 
 ### Usability
