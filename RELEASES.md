@@ -4,11 +4,11 @@
 
 ### Breaking Changes
 
-- both `KeyCode`-based logical keybindings and `ScanCode`-based physical keybindings are no longer supported;
-- please migrate to:
-  - `KeyCode` is now representing physical keybindings.
-  - `InputKind::KeyLocation` have been removed; please use `InputKind::PhysicalKey` instead.
-  - `ScanCode` and `QwertyScanCode` have been removed; please use `KeyCode` instead:
+- both `KeyCode`-based logical keybindings and `ScanCode`-based physical keybindings are no longer supported; please migrate to:
+  - `KeyCode`s are now representing physical keybindings.
+  - `InputKind::Keyboard` has been removed.
+  - `InputKind::KeyLocation` has been removed; please use `InputKind::PhysicalKey` instead.
+  - All `ScanCode`s and `QwertyScanCode`s have been removed; please use `KeyCode` instead:
     - all letter keys now follow the format `KeyCode::Key<Letter>`, e.g., `ScanCode::K` is now `KeyCode::KeyK`.
     - all number keys over letters now follow the format `KeyCode::Digit<Number>`, e.g., `ScanCode::Key1` is now `KeyCode::Digit1`.
     - all arrow keys now follow the format `KeyCode::Arrow<Direction>`, e.g., `ScanCode::Up` is now `KeyCode::ArrowUp`.
