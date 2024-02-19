@@ -25,8 +25,8 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     let mut input_map = InputMap::default();
-    input_map.insert(Action::Left, KeyCode::Left);
-    input_map.insert(Action::Right, KeyCode::Right);
+    input_map.insert(Action::Left, KeyCode::ArrowLeft);
+    input_map.insert(Action::Right, KeyCode::ArrowRight);
 
     commands
         .spawn(SpriteBundle {

@@ -38,11 +38,12 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.12" }
-bevy = { version = "0.12", default-features = false, features = [
+bevy = { version = "0.13", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.24", optional = true }
+# TODO(clean): Existing PR repo for update `bevy_egui` to bevy 0.13
+bevy_egui = { git = "https://github.com/Shute052/bevy_egui.git", branch = "Bevy-0.13-and-Egui-0.26", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
@@ -52,7 +53,7 @@ itertools = "0.12"
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-bevy = { version = "0.12", default-features = false, features = [
+bevy = { version = "0.13", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
@@ -61,7 +62,8 @@ bevy = { version = "0.12", default-features = false, features = [
   "bevy_core_pipeline",
   "x11",
 ] }
-bevy_egui = { version = "0.24" }
+# TODO(clean): Existing PR repo for update `bevy_egui` to bevy 0.13
+bevy_egui = { git = "https://github.com/Shute052/bevy_egui.git", branch = "Bevy-0.13-and-Egui-0.26" }
 serde_test = "1.0"
 criterion = "0.5"
 

@@ -96,10 +96,10 @@ fn spawn_player(mut commands: Commands) {
     commands.spawn(PlayerBundle {
         player: Player,
         slot_input_map: InputMap::new([
-            (Slot::Ability1, Q),
-            (Slot::Ability2, W),
-            (Slot::Ability3, E),
-            (Slot::Ability4, R),
+            (Slot::Ability1, KeyQ),
+            (Slot::Ability2, KeyW),
+            (Slot::Ability3, KeyE),
+            (Slot::Ability4, KeyR),
         ])
         .insert(Slot::Primary, MouseButton::Left)
         .insert(Slot::Secondary, MouseButton::Right)

@@ -23,7 +23,7 @@ use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
-/// A [`Plugin`] that collects [`Input`](bevy::input::Input) from disparate sources, producing an [`ActionState`] that can be conveniently checked
+/// A [`Plugin`] that collects [`ButtonInput`](bevy::input::ButtonInput) from disparate sources, producing an [`ActionState`] that can be conveniently checked
 ///
 /// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game.
 /// Each variant represents a "virtual button" whose state is stored in an [`ActionState`] struct.
@@ -48,7 +48,7 @@ use bevy::ui::UiSystem;
 /// Complete list:
 ///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
-/// - [`update_action_state`](crate::systems::update_action_state), which collects [`Input`](bevy::input::Input) resources to update the [`ActionState`]
+/// - [`update_action_state`](crate::systems::update_action_state), which collects [`ButtonInput`](bevy::input::ButtonInput) resources to update the [`ActionState`]
 /// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_driver::ActionStateDriver) component based on an [`Interaction`](bevy::ui::Interaction) component
 /// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.

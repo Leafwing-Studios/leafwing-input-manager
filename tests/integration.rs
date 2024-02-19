@@ -43,7 +43,7 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     commands
         .spawn(InputManagerBundle::<Action> {
-            input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
+            input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::KeyF)]),
             ..Default::default()
         })
         .insert(Player);
@@ -62,13 +62,16 @@ fn disable_input() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
+        .insert_resource(InputMap::<Action>::new([(
+            Action::PayRespects,
+            KeyCode::KeyF,
+        )]))
         .init_resource::<Respect>()
         .add_systems(Update, pay_respects)
         .add_systems(PreUpdate, respect_fades);
 
     // Press F to pay respects
-    app.send_input(KeyCode::F);
+    app.send_input(KeyCode::KeyF);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
@@ -83,7 +86,7 @@ fn disable_input() {
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
-    app.send_input(KeyCode::F);
+    app.send_input(KeyCode::KeyF);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
@@ -101,13 +104,16 @@ fn release_when_input_map_removed() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
+        .insert_resource(InputMap::<Action>::new([(
+            Action::PayRespects,
+            KeyCode::KeyF,
+        )]))
         .init_resource::<Respect>()
         .add_systems(Update, (pay_respects, remove_input_map))
         .add_systems(PreUpdate, respect_fades);
 
     // Press F to pay respects
-    app.send_input(KeyCode::F);
+    app.send_input(KeyCode::KeyF);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(true));
@@ -123,7 +129,7 @@ fn release_when_input_map_removed() {
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
-    app.send_input(KeyCode::F);
+    app.send_input(KeyCode::KeyF);
     app.update();
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
@@ -143,7 +149,7 @@ fn action_state_driver() {
     fn setup(mut commands: Commands) {
         let player_entity = commands
             .spawn(InputManagerBundle::<Action> {
-                input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]),
+                input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::KeyF)]),
                 ..Default::default()
             })
             .insert(Player)
@@ -226,7 +232,10 @@ fn duration() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
         .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(Action::PayRespects, KeyCode::F)]))
+        .insert_resource(InputMap::<Action>::new([(
+            Action::PayRespects,
+            KeyCode::KeyF,
+        )]))
         .init_resource::<Respect>()
         .add_systems(Update, hold_f_to_pay_respects);
 
@@ -234,7 +243,7 @@ fn duration() {
     app.update();
 
     // Press
-    app.send_input(KeyCode::F);
+    app.send_input(KeyCode::KeyF);
 
     // Hold
     std::thread::sleep(2 * RESPECTFUL_DURATION);

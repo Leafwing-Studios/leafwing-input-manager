@@ -23,7 +23,6 @@ pub mod input_mocking;
 pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
-pub mod scan_codes;
 pub mod systems;
 pub mod timing;
 pub mod user_input;
@@ -44,7 +43,6 @@ pub mod prelude {
     #[cfg(feature = "ui")]
     pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
-    pub use crate::scan_codes::QwertyScanCode;
     pub use crate::user_input::{Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;

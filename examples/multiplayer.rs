@@ -32,9 +32,9 @@ impl PlayerBundle {
     fn input_map(player: Player) -> InputMap<Action> {
         let mut input_map = match player {
             Player::One => InputMap::new([
-                (Action::Left, KeyCode::A),
-                (Action::Right, KeyCode::D),
-                (Action::Jump, KeyCode::W),
+                (Action::Left, KeyCode::KeyA),
+                (Action::Right, KeyCode::KeyD),
+                (Action::Jump, KeyCode::KeyW),
             ])
             // This is a quick and hacky solution:
             // you should coordinate with the `Gamepads` resource to determine the correct gamepad for each player
@@ -44,9 +44,9 @@ impl PlayerBundle {
             .set_gamepad(Gamepad { id: 0 })
             .build(),
             Player::Two => InputMap::new([
-                (Action::Left, KeyCode::Left),
-                (Action::Right, KeyCode::Right),
-                (Action::Jump, KeyCode::Up),
+                (Action::Left, KeyCode::ArrowLeft),
+                (Action::Right, KeyCode::ArrowRight),
+                (Action::Jump, KeyCode::ArrowUp),
             ])
             .set_gamepad(Gamepad { id: 1 })
             .build(),

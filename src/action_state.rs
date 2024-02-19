@@ -101,7 +101,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
-    /// which reads from the assorted [`Input`](bevy::input::Input) resources.
+    /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
     pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
         for (action, action_datum) in action_data {
             match self.action_data.entry(action) {
@@ -614,7 +614,7 @@ mod tests {
 
         // Input map
         let mut input_map = InputMap::default();
-        input_map.insert(Action::Run, KeyCode::R);
+        input_map.insert(Action::Run, KeyCode::KeyR);
 
         // Starting state
         let input_streams = InputStreams::from_world(&app.world, None);
@@ -626,7 +626,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Pressing
-        app.send_input(KeyCode::R);
+        app.send_input(KeyCode::KeyR);
         // Process the input events into Input<KeyCode> data
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
@@ -648,7 +648,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Releasing
-        app.release_input(KeyCode::R);
+        app.release_input(KeyCode::KeyR);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
