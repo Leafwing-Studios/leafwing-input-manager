@@ -314,13 +314,20 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.insert(action, data);
     }
 
+    fn action_data_mut_or_default(&mut self, action: &A) -> &mut ActionData {
+        if !self.action_data.contains_key(action) {
+            self.set_action_data(action.clone(), ActionData::default());
+        }
+        self.action_data_mut(action).unwrap()
+    }
+
     /// Press the `action`
     ///
     /// No initial instant or reasons why the button was pressed will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: &A) {
-        let action_data = self.action_data.entry(action.clone()).or_default();
+        let action_data = self.action_data_mut_or_default(action);
 
         // Consumed actions cannot be pressed until they are released
         if action_data.consumed {
@@ -340,7 +347,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: &A) {
-        let action_data = self.action_data.entry(action.clone()).or_default();
+        let action_data = self.action_data_mut_or_default(action);
 
         // Once released, consumed actions can be pressed again
         action_data.consumed = false;
@@ -393,7 +400,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn consume(&mut self, action: &A) {
-        let action_data = self.action_data.entry(action.clone()).or_default();
+        let action_data = self.action_data_mut_or_default(action);
 
         // This is the only difference from action_state.release(&action)
         action_data.consumed = true;
