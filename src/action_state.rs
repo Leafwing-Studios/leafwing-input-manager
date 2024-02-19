@@ -682,9 +682,9 @@ mod tests {
         // Input map
         use bevy::prelude::KeyCode::*;
         let mut input_map = InputMap::default();
-        input_map.insert(Action::One, Key1);
-        input_map.insert(Action::Two, Key2);
-        input_map.insert_chord(Action::OneAndTwo, [Key1, Key2]);
+        input_map.insert(Action::One, Digit1);
+        input_map.insert(Action::Two, Digit2);
+        input_map.insert_chord(Action::OneAndTwo, [Digit1, Digit2]);
 
         let mut app = App::new();
         app.add_plugins(InputPlugin);
@@ -701,7 +701,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing One
-        app.send_input(Key1);
+        app.send_input(Digit1);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
@@ -722,7 +722,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing Two
-        app.send_input(Key2);
+        app.send_input(Digit2);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
