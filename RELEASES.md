@@ -6,12 +6,19 @@
 
 - both `KeyCode`-based logical keybindings and `ScanCode`-based physical keybindings are no longer supported;
 - please migrate to:
-  - `KeyCode` is now representing physical keybindings. 
+  - `KeyCode` is now representing physical keybindings.
   - `InputKind::KeyLocation` have been removed; please use `InputKind::PhysicalKey` instead.
   - `ScanCode` and `QwertyScanCode` have been removed; please use `KeyCode` instead:
     - all letter keys now follow the format `KeyCode::Key<Letter>`, e.g., `ScanCode::K` is now `KeyCode::KeyK`.
     - all number keys over letters now follow the format `KeyCode::Digit<Number>`, e.g., `ScanCode::Key1` is now `KeyCode::Digit1`.
     - all arrow keys now follow the format `KeyCode::Arrow<Direction>`, e.g., `ScanCode::Up` is now `KeyCode::ArrowUp`.
+
+### Usability
+
+- `bevy` dependency has been bumped from 0.12 to 0.13.
+- `bevy_egui` dependency has been bumped from 0.24 to 0.25.
+
+## Version 0.12
 
 ### Enhancements
 
@@ -23,8 +30,6 @@
 
 ### Usability
 
-- `bevy` dependency has been bumped from 0.12 to 0.13.
-- `bevy_egui` dependency has been bumped from 0.24 to 0.25.
 - `InputMap`s are now constructed with `(Action, Input)` pairs, rather than `(Input, Action)` pairs, which directly matches the underlying data model
 - registered types in the reflection system
 - added `InputMap::clear`
