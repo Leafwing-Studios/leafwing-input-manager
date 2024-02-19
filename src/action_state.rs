@@ -176,12 +176,10 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     pub fn tick(&mut self, current_instant: Instant, previous_instant: Instant) {
         // Advanced the ButtonState
-        self.action_data
-            .iter_mut()
-            .for_each(|(_, ad)| ad.state.tick());
+        self.action_data.values_mut().for_each(|ad| ad.state.tick());
 
         // Advance the Timings
-        self.action_data.iter_mut().for_each(|(_, ad)| {
+        self.action_data.values_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
                 ad.timing.tick(current_instant, previous_instant);
