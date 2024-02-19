@@ -315,10 +315,11 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     fn action_data_mut_or_default(&mut self, action: &A) -> &mut ActionData {
-        if !self.action_data.contains_key(action) {
-            self.set_action_data(action.clone(), ActionData::default());
-        }
-        self.action_data_mut(action).unwrap()
+        self.action_data
+            .raw_entry_mut()
+            .from_key(action)
+            .or_insert_with(|| (action.clone(), ActionData::default()))
+            .1
     }
 
     /// Press the `action`
