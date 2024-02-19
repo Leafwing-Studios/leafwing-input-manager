@@ -357,6 +357,10 @@ impl<A: Actionlike> InputMap<A> {
     pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<UserInput>)> {
         self.map.iter()
     }
+    /// Returns an iterator over actions
+    pub(crate) fn actions(&self) -> impl Iterator<Item = &A> {
+        self.map.keys()
+    }
     /// Returns a reference to the inputs mapped to `action`
     #[must_use]
     pub fn get(&self, action: &A) -> Option<&Vec<UserInput>> {
@@ -372,11 +376,7 @@ impl<A: Actionlike> InputMap<A> {
     /// How many input bindings are registered total?
     #[must_use]
     pub fn len(&self) -> usize {
-        let mut i = 0;
-        for inputs in self.map.values() {
-            i += inputs.len();
-        }
-        i
+        self.map.values().map(|inputs| inputs.len()).sum()
     }
 
     /// Are any input bindings registered at all?
@@ -406,11 +406,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns `Some(input)` if found.
     pub fn remove_at(&mut self, action: &A, index: usize) -> Option<UserInput> {
         let input_vec = self.map.get_mut(action)?;
-        if input_vec.len() <= index {
-            None
-        } else {
-            Some(input_vec.remove(index))
-        }
+        (input_vec.len() > index).then(|| input_vec.remove(index))
     }
 
     /// Removes the input for the `action`, if it exists

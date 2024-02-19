@@ -201,10 +201,8 @@ pub fn generate_action_diffs<A: Actionlike>(
                         axis_pair: axis_pair.into(),
                     });
                     previous_axis_pairs
-                        .raw_entry_mut()
-                        .from_key(&action)
-                        .or_insert_with(|| (action.clone(), HashMap::default()))
-                        .1
+                        .entry(action)
+                        .or_insert_with(HashMap::default)
                         .insert(maybe_entity, axis_pair.xy());
                 }
                 None => {
@@ -221,10 +219,8 @@ pub fn generate_action_diffs<A: Actionlike>(
                         }
                     });
                     previous_values
-                        .raw_entry_mut()
-                        .from_key(&action)
-                        .or_insert_with(|| (action.clone(), HashMap::default()))
-                        .1
+                        .entry(action)
+                        .or_insert_with(HashMap::default)
                         .insert(maybe_entity, value);
                 }
             }

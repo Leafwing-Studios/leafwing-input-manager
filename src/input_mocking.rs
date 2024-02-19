@@ -10,7 +10,7 @@
 use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType};
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::input_streams::{InputStreams, MutableInputStreams};
-use crate::user_input::UserInput;
+use crate::user_input::{RawInputs, UserInput};
 
 use bevy::app::App;
 use bevy::ecs::event::Events;
@@ -161,129 +161,60 @@ impl MockInput for MutableInputStreams<'_> {
         // Extract the raw inputs
         let raw_inputs = input_to_send.raw_inputs();
 
-        // Keyboard buttons
-        for button in raw_inputs.keycodes {
-            self.keyboard_events.send(KeyboardInput {
-                scan_code: u32::MAX,
-                key_code: Some(button),
-                state: ButtonState::Pressed,
-                window: Entity::PLACEHOLDER,
-            });
-        }
+        self.send_keyboard_input(ButtonState::Pressed, &raw_inputs);
 
         // Mouse buttons
-        for button in raw_inputs.mouse_buttons {
+        for button in raw_inputs.mouse_buttons.iter() {
             self.mouse_button_events.send(MouseButtonInput {
-                button,
+                button: *button,
                 state: ButtonState::Pressed,
                 window: Entity::PLACEHOLDER,
             });
         }
 
         // Discrete mouse wheel events
-        for mouse_wheel_direction in raw_inputs.mouse_wheel {
-            match mouse_wheel_direction {
-                MouseWheelDirection::Left => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: -1.0,
-                    y: 0.0,
-                    window: Entity::PLACEHOLDER,
-                }),
-                MouseWheelDirection::Right => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: 1.0,
-                    y: 0.0,
-                    window: Entity::PLACEHOLDER,
-                }),
-                MouseWheelDirection::Up => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: 0.0,
-                    y: 1.0,
-                    window: Entity::PLACEHOLDER,
-                }),
-                MouseWheelDirection::Down => self.mouse_wheel.send(MouseWheel {
-                    unit: MouseScrollUnit::Pixel,
-                    x: 0.0,
-                    y: -1.0,
-                    window: Entity::PLACEHOLDER,
-                }),
-            }
+        for mouse_wheel_direction in raw_inputs.mouse_wheel.iter() {
+            match *mouse_wheel_direction {
+                MouseWheelDirection::Left => self.send_mouse_wheel(-1.0, 0.0),
+                MouseWheelDirection::Right => self.send_mouse_wheel(1.0, 0.0),
+                MouseWheelDirection::Up => self.send_mouse_wheel(0.0, 1.0),
+                MouseWheelDirection::Down => self.send_mouse_wheel(0.0, -1.0),
+            };
         }
 
         // Discrete mouse motion event
-        for mouse_motion_direction in raw_inputs.mouse_motion {
-            match mouse_motion_direction {
-                MouseMotionDirection::Up => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: 0.0, y: 1.0 },
-                }),
-                MouseMotionDirection::Down => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: 0.0, y: -1.0 },
-                }),
-                MouseMotionDirection::Right => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: 1.0, y: 0.0 },
-                }),
-                MouseMotionDirection::Left => self.mouse_motion.send(MouseMotion {
-                    delta: Vec2 { x: -1.0, y: 0.0 },
-                }),
-            }
+        for mouse_motion_direction in raw_inputs.mouse_motion.iter() {
+            match *mouse_motion_direction {
+                MouseMotionDirection::Up => self.send_mouse_motion(0.0, 1.0),
+                MouseMotionDirection::Down => self.send_mouse_motion(0.0, -1.0),
+                MouseMotionDirection::Right => self.send_mouse_motion(1.0, 0.0),
+                MouseMotionDirection::Left => self.send_mouse_motion(-1.0, 0.0),
+            };
         }
 
-        // Gamepad buttons
-        for button_type in raw_inputs.gamepad_buttons {
-            if let Some(gamepad) = gamepad {
-                self.gamepad_events
-                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
-                        gamepad,
-                        button_type,
-                        value: 1.0,
-                    }));
-            }
-        }
+        self.send_gamepad_button_changed(gamepad, &raw_inputs);
 
         // Axis data
-        for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data {
-            if let Some(position_data) = maybe_position_data {
+        for (outer_axis_type, maybe_position_data) in raw_inputs.axis_data.iter() {
+            if let Some(position_data) = *maybe_position_data {
                 match outer_axis_type {
                     AxisType::Gamepad(axis_type) => {
                         if let Some(gamepad) = gamepad {
                             self.gamepad_events
                                 .send(GamepadEvent::Axis(GamepadAxisChangedEvent {
                                     gamepad,
-                                    axis_type,
+                                    axis_type: *axis_type,
                                     value: position_data,
                                 }));
                         }
                     }
-                    AxisType::MouseWheel(axis_type) => {
-                        match axis_type {
-                            // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-                            MouseWheelAxisType::X => self.mouse_wheel.send(MouseWheel {
-                                unit: MouseScrollUnit::Pixel,
-                                x: position_data,
-                                y: 0.0,
-                                window: Entity::PLACEHOLDER,
-                            }),
-                            MouseWheelAxisType::Y => self.mouse_wheel.send(MouseWheel {
-                                unit: MouseScrollUnit::Pixel,
-                                x: 0.0,
-                                y: position_data,
-                                window: Entity::PLACEHOLDER,
-                            }),
-                        }
-                    }
-                    AxisType::MouseMotion(axis_type) => match axis_type {
-                        MouseMotionAxisType::X => self.mouse_motion.send(MouseMotion {
-                            delta: Vec2 {
-                                x: position_data,
-                                y: 0.0,
-                            },
-                        }),
-                        MouseMotionAxisType::Y => self.mouse_motion.send(MouseMotion {
-                            delta: Vec2 {
-                                x: 0.0,
-                                y: position_data,
-                            },
-                        }),
+                    AxisType::MouseWheel(axis_type) => match *axis_type {
+                        MouseWheelAxisType::X => self.send_mouse_wheel(position_data, 0.0),
+                        MouseWheelAxisType::Y => self.send_mouse_wheel(0.0, position_data),
+                    },
+                    AxisType::MouseMotion(axis_type) => match *axis_type {
+                        MouseMotionAxisType::X => self.send_mouse_motion(position_data, 0.0),
+                        MouseMotionAxisType::Y => self.send_mouse_motion(0.0, position_data),
                     },
                 }
             }
@@ -300,25 +231,9 @@ impl MockInput for MutableInputStreams<'_> {
         let input_to_release: UserInput = input.into();
         let raw_inputs = input_to_release.raw_inputs();
 
-        for button_type in raw_inputs.gamepad_buttons {
-            if let Some(gamepad) = gamepad {
-                self.gamepad_events
-                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
-                        gamepad,
-                        button_type,
-                        value: 1.0,
-                    }));
-            }
-        }
+        self.send_gamepad_button_changed(gamepad, &raw_inputs);
 
-        for button in raw_inputs.keycodes {
-            self.keyboard_events.send(KeyboardInput {
-                scan_code: u32::MAX,
-                key_code: Some(button),
-                state: ButtonState::Released,
-                window: Entity::PLACEHOLDER,
-            });
-        }
+        self.send_keyboard_input(ButtonState::Released, &raw_inputs);
 
         for button in raw_inputs.mouse_buttons {
             self.mouse_button_events.send(MouseButtonInput {
@@ -339,6 +254,44 @@ impl MockInput for MutableInputStreams<'_> {
         *self.mouse_buttons = Default::default();
         *self.mouse_wheel = Default::default();
         *self.mouse_motion = Default::default();
+    }
+}
+
+impl MutableInputStreams<'_> {
+    fn send_keyboard_input(&mut self, button_state: ButtonState, raw_inputs: &RawInputs) {
+        for button in raw_inputs.keycodes.iter() {
+            self.keyboard_events.send(KeyboardInput {
+                scan_code: u32::MAX,
+                key_code: Some(*button),
+                state: button_state,
+                window: Entity::PLACEHOLDER,
+            });
+        }
+    }
+
+    fn send_mouse_wheel(&mut self, x: f32, y: f32) {
+        // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
+        let unit = MouseScrollUnit::Pixel;
+        let window = Entity::PLACEHOLDER;
+        self.mouse_wheel.send(MouseWheel { unit, x, y, window });
+    }
+
+    fn send_mouse_motion(&mut self, x: f32, y: f32) {
+        let delta = Vec2::new(x, y);
+        self.mouse_motion.send(MouseMotion { delta });
+    }
+
+    fn send_gamepad_button_changed(&mut self, gamepad: Option<Gamepad>, raw_inputs: &RawInputs) {
+        for button_type in raw_inputs.gamepad_buttons.iter() {
+            if let Some(gamepad) = gamepad {
+                self.gamepad_events
+                    .send(GamepadEvent::Button(GamepadButtonChangedEvent {
+                        gamepad,
+                        button_type: *button_type,
+                        value: 1.0,
+                    }));
+            }
+        }
     }
 }
 
