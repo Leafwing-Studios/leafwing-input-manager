@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## Version 0.12
 
 ### Enhancements
 

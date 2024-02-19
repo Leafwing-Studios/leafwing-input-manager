@@ -25,7 +25,7 @@ block_ui_interactions = []
 egui = ['dep:bevy_egui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.11" }
+leafwing_input_manager_macros = { path = "macros", version = "0.12" }
 bevy = { version = "0.12", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
