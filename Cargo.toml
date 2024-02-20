@@ -28,8 +28,7 @@ asset = ['bevy/bevy_asset']
 # - Provide `MockUIInteraction` for 'bevy::ui' input mocking.
 ui = ['bevy/bevy_ui']
 
-# If both this feature and 'ui' are enabled,
-# 'bevy::ui' will take priority over actions when processing inputs.
+# Allow 'bevy::ui' to take priority over actions when processing inputs.
 block_ui_interactions = []
 
 # Add support for 'egui' integration:
