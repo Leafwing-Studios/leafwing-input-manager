@@ -25,13 +25,13 @@ use crate::user_input::{InputKind, UserInput};
 #[derive(Debug, Clone)]
 pub struct InputStreams<'a> {
     /// A [`GamepadButton`] [`Input`](ButtonInput) stream
-    pub gamepad_buttons: &'a ButtonInput<GamepadButton>,
+    pub gamepad_buttons: Option<&'a ButtonInput<GamepadButton>>,
     /// A [`GamepadButton`] [`Axis`] stream
-    pub gamepad_button_axes: &'a Axis<GamepadButton>,
+    pub gamepad_button_axes: Option<&'a Axis<GamepadButton>>,
     /// A [`GamepadAxis`] [`Axis`] stream
-    pub gamepad_axes: &'a Axis<GamepadAxis>,
+    pub gamepad_axes: Option<&'a Axis<GamepadAxis>>,
     /// A list of registered gamepads
-    pub gamepads: &'a Gamepads,
+    pub gamepads: Option<&'a Gamepads>,
     /// A [`KeyCode`] [`ButtonInput`] stream
     pub keycodes: Option<&'a ButtonInput<KeyCode>>,
     /// A [`MouseButton`] [`Input`](ButtonInput) stream
@@ -61,10 +61,10 @@ impl<'a> InputStreams<'a> {
         let mouse_motion: Vec<MouseMotion> = collect_events_cloned(mouse_motion);
 
         InputStreams {
-            gamepad_buttons,
-            gamepad_button_axes,
-            gamepad_axes,
-            gamepads,
+            gamepad_buttons: Some(gamepad_buttons),
+            gamepad_button_axes: Some(gamepad_button_axes),
+            gamepad_axes: Some(gamepad_axes),
+            gamepads: Some(gamepads),
             keycodes,
             mouse_buttons,
             mouse_wheel: Some(mouse_wheel),
@@ -109,11 +109,13 @@ impl<'a> InputStreams<'a> {
             InputKind::GamepadButton(button_type) => self
                 .associated_gamepad
                 .into_iter()
-                .chain(self.gamepads.iter())
+                .chain(self.gamepads.iter().flat_map(|gamepads| gamepads.iter()))
                 .any(|gamepad| {
-                    self.gamepad_buttons.pressed(GamepadButton {
-                        gamepad,
-                        button_type,
+                    self.gamepad_buttons.is_some_and(|buttons| {
+                        buttons.pressed(GamepadButton {
+                            gamepad,
+                            button_type,
+                        })
                     })
                 }),
             InputKind::PhysicalKey(keycode) => {
@@ -210,7 +212,7 @@ impl<'a> InputStreams<'a> {
                     AxisType::Gamepad(axis_type) => {
                         let get_gamepad_value = |gamepad: Gamepad| -> f32 {
                             self.gamepad_axes
-                                .get(GamepadAxis { gamepad, axis_type })
+                                .and_then(|axes| axes.get(GamepadAxis { gamepad, axis_type }))
                                 .unwrap_or_default()
                         };
                         if let Some(gamepad) = self.associated_gamepad {
@@ -219,6 +221,7 @@ impl<'a> InputStreams<'a> {
                         } else {
                             self.gamepads
                                 .iter()
+                                .flat_map(|gamepads| gamepads.iter())
                                 .map(get_gamepad_value)
                                 .find(|value| *value != 0.0)
                                 .map_or(0.0, |value| value_in_axis_range(single_axis, value))
@@ -293,9 +296,11 @@ impl<'a> InputStreams<'a> {
             UserInput::Single(InputKind::GamepadButton(button_type)) => {
                 let get_gamepad_value = |gamepad: Gamepad| -> f32 {
                     self.gamepad_button_axes
-                        .get(GamepadButton {
-                            gamepad,
-                            button_type: *button_type,
+                        .and_then(|axes| {
+                            axes.get(GamepadButton {
+                                gamepad,
+                                button_type: *button_type,
+                            })
                         })
                         .unwrap_or_else(use_button_value)
                 };
@@ -304,6 +309,7 @@ impl<'a> InputStreams<'a> {
                 } else {
                     self.gamepads
                         .iter()
+                        .flat_map(|gamepads| gamepads.iter())
                         .map(get_gamepad_value)
                         .find(|value| *value != 0.0)
                         .unwrap_or_default()
@@ -468,10 +474,10 @@ impl<'a> MutableInputStreams<'a> {
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
         InputStreams {
-            gamepad_buttons: mutable_streams.gamepad_buttons,
-            gamepad_button_axes: mutable_streams.gamepad_button_axes,
-            gamepad_axes: mutable_streams.gamepad_axes,
-            gamepads: mutable_streams.gamepads,
+            gamepad_buttons: Some(mutable_streams.gamepad_buttons),
+            gamepad_button_axes: Some(mutable_streams.gamepad_button_axes),
+            gamepad_axes: Some(mutable_streams.gamepad_axes),
+            gamepads: Some(mutable_streams.gamepads),
             keycodes: Some(mutable_streams.keycodes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),
@@ -484,10 +490,10 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
 impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: &'a MutableInputStreams<'a>) -> Self {
         InputStreams {
-            gamepad_buttons: mutable_streams.gamepad_buttons,
-            gamepad_button_axes: mutable_streams.gamepad_button_axes,
-            gamepad_axes: mutable_streams.gamepad_axes,
-            gamepads: mutable_streams.gamepads,
+            gamepad_buttons: Some(mutable_streams.gamepad_buttons),
+            gamepad_button_axes: Some(mutable_streams.gamepad_button_axes),
+            gamepad_axes: Some(mutable_streams.gamepad_axes),
+            gamepads: Some(mutable_streams.gamepads),
             keycodes: Some(mutable_streams.keycodes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),

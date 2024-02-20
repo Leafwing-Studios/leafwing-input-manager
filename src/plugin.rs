@@ -99,6 +99,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                     tick_action_state::<A>
                         .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Tick)
+                        .after(InputManagerSystem::PreUpdate)
                         .before(InputManagerSystem::Update),
                 )
                 .add_systems(
@@ -111,9 +112,21 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
 
                 app.add_systems(
                     PreUpdate,
-                    update_action_state::<A>
+                    (
+                        #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
+                        prioritize_ui_inputs,
+                        #[cfg(feature = "egui")]
+                        prioritize_egui_inputs,
+                        update_action_state::<A>,
+                    )
+                        .chain()
                         .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Update),
+                );
+
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::PreUpdate.before(InputManagerSystem::Update),
                 );
 
                 app.configure_sets(PreUpdate, InputManagerSystem::Update.after(InputSystem));
@@ -179,6 +192,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<MouseWheelDirection>()
             .register_type::<MouseMotionDirection>()
             // Resources
+            .init_resource::<TrackingInputType>()
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();
     }
@@ -225,6 +239,8 @@ impl<A: Actionlike> Default for ToggleActions<A> {
 /// `Reset` must occur before `Update`
 #[derive(SystemSet, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
+    /// Performs actions before [`InputManagerSystem::Update`]
+    PreUpdate,
     /// Advances action timers.
     ///
     /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
