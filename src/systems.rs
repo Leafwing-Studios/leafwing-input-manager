@@ -7,13 +7,13 @@ use crate::{
     input_streams::InputStreams, plugin::ToggleActions, Actionlike,
 };
 
-use bevy::{ecs::prelude::*, prelude::ScanCode};
+use bevy::ecs::prelude::*;
 use bevy::{
     input::{
         gamepad::{GamepadAxis, GamepadButton, Gamepads},
         keyboard::KeyCode,
         mouse::{MouseButton, MouseMotion, MouseWheel},
-        Axis, Input,
+        Axis, ButtonInput,
     },
     log::warn,
     math::Vec2,
@@ -58,18 +58,17 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
-/// Fetches all of the relevant [`Input`] resources to update [`ActionState`] according to the [`InputMap`].
+/// Fetches all of the relevant [`ButtonInput`] resources to update [`ActionState`] according to the [`InputMap`].
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
 #[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
-    gamepad_buttons: Res<Input<GamepadButton>>,
+    gamepad_buttons: Res<ButtonInput<GamepadButton>>,
     gamepad_button_axes: Res<Axis<GamepadButton>>,
     gamepad_axes: Res<Axis<GamepadAxis>>,
     gamepads: Res<Gamepads>,
-    keycodes: Option<Res<Input<KeyCode>>>,
-    scan_codes: Option<Res<Input<ScanCode>>>,
-    mouse_buttons: Option<Res<Input<MouseButton>>>,
+    keycodes: Option<Res<ButtonInput<KeyCode>>>,
+    mouse_buttons: Option<Res<ButtonInput<MouseButton>>>,
     mut mouse_wheel: EventReader<MouseWheel>,
     mut mouse_motion: EventReader<MouseMotion>,
     clash_strategy: Res<ClashStrategy>,
@@ -86,7 +85,6 @@ pub fn update_action_state<A: Actionlike>(
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
-    let scan_codes = scan_codes.map(|scan_codes| scan_codes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
 
     let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
@@ -105,14 +103,11 @@ pub fn update_action_state<A: Actionlike>(
 
     // If egui wants to own inputs, don't also apply them to the game state
     #[cfg(feature = "egui")]
-    let (keycodes, scan_codes) = if maybe_egui
+    let keycodes = maybe_egui
         .iter_mut()
-        .any(|(_, mut ctx)| ctx.get_mut().wants_keyboard_input())
-    {
-        (None, None)
-    } else {
-        (keycodes, scan_codes)
-    };
+        .all(|(_, mut ctx)| !ctx.get_mut().wants_keyboard_input())
+        .then_some(keycodes)
+        .flatten();
 
     // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
     // so `is_pointer_over_area` is also needed.
@@ -136,7 +131,6 @@ pub fn update_action_state<A: Actionlike>(
             gamepad_axes,
             gamepads,
             keycodes,
-            scan_codes,
             mouse_buttons,
             mouse_wheel: mouse_wheel.clone(),
             mouse_motion: mouse_motion.clone(),

@@ -83,8 +83,8 @@ pub struct InputModeManagerPlugin;
 
 impl Plugin for InputModeManagerPlugin {
     fn build(&self, app: &mut App) {
-        // Add a state to record the current active input
-        app.add_state::<ActiveInput>()
+        // Init a state to record the current active input
+        app.init_state::<ActiveInput>()
             // System to switch to gamepad as active input
             .add_systems(
                 Update,
@@ -156,7 +156,9 @@ fn player_mouse_look(
     if let Some(p) = window
         .cursor_position()
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .and_then(|ray| Some(ray).zip(ray.intersect_plane(player_transform.translation, Vec3::Y)))
+        .and_then(|ray| {
+            Some(ray).zip(ray.intersect_plane(player_transform.translation, Plane3d::new(Vec3::Y)))
+        })
         .map(|(ray, p)| ray.get_point(p))
     {
         let diff = (p - player_transform.translation).xz();

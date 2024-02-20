@@ -376,24 +376,24 @@ mod tests {
 
         let mut input_map = InputMap::default();
 
-        input_map.insert(One, Key1);
-        input_map.insert(Two, Key2);
-        input_map.insert_chord(OneAndTwo, [Key1, Key2]);
-        input_map.insert_chord(TwoAndThree, [Key2, Key3]);
-        input_map.insert_chord(OneAndTwoAndThree, [Key1, Key2, Key3]);
-        input_map.insert_chord(CtrlOne, [ControlLeft, Key1]);
-        input_map.insert_chord(AltOne, [AltLeft, Key1]);
-        input_map.insert_chord(CtrlAltOne, [ControlLeft, AltLeft, Key1]);
+        input_map.insert(One, Digit1);
+        input_map.insert(Two, Digit2);
+        input_map.insert_chord(OneAndTwo, [Digit1, Digit2]);
+        input_map.insert_chord(TwoAndThree, [Digit2, Digit3]);
+        input_map.insert_chord(OneAndTwoAndThree, [Digit1, Digit2, Digit3]);
+        input_map.insert_chord(CtrlOne, [ControlLeft, Digit1]);
+        input_map.insert_chord(AltOne, [AltLeft, Digit1]);
+        input_map.insert_chord(CtrlAltOne, [ControlLeft, AltLeft, Digit1]);
         input_map.insert(
             MoveDPad,
             VirtualDPad {
-                up: Up.into(),
-                down: Down.into(),
-                left: Left.into(),
-                right: Right.into(),
+                up: ArrowUp.into(),
+                down: ArrowDown.into(),
+                left: ArrowLeft.into(),
+                right: ArrowRight.into(),
             },
         );
-        input_map.insert_chord(CtrlUp, [ControlLeft, Up]);
+        input_map.insert_chord(CtrlUp, [ControlLeft, ArrowUp]);
 
         input_map
     }
@@ -408,33 +408,33 @@ mod tests {
 
         #[test]
         fn clash_detection() {
-            let a: UserInput = A.into();
-            let b: UserInput = B.into();
-            let c: UserInput = C.into();
-            let ab = UserInput::chord([A, B]);
-            let bc = UserInput::chord([B, C]);
-            let abc = UserInput::chord([A, B, C]);
+            let a: UserInput = KeyA.into();
+            let b: UserInput = KeyB.into();
+            let c: UserInput = KeyC.into();
+            let ab = UserInput::chord([KeyA, KeyB]);
+            let bc = UserInput::chord([KeyB, KeyC]);
+            let abc = UserInput::chord([KeyA, KeyB, KeyC]);
             let axyz_dpad: UserInput = VirtualDPad {
-                up: A.into(),
-                down: X.into(),
-                left: Y.into(),
-                right: Z.into(),
+                up: KeyA.into(),
+                down: KeyX.into(),
+                left: KeyY.into(),
+                right: KeyZ.into(),
             }
             .into();
             let abcd_dpad: UserInput = VirtualDPad {
-                up: A.into(),
-                down: B.into(),
-                left: C.into(),
-                right: D.into(),
+                up: KeyA.into(),
+                down: KeyB.into(),
+                left: KeyC.into(),
+                right: KeyD.into(),
             }
             .into();
 
-            let ctrl_up: UserInput = UserInput::chord([Up, ControlLeft]);
+            let ctrl_up: UserInput = UserInput::chord([ArrowUp, ControlLeft]);
             let directions_dpad: UserInput = VirtualDPad {
-                up: Up.into(),
-                down: Down.into(),
-                left: Left.into(),
-                right: Right.into(),
+                up: ArrowUp.into(),
+                down: ArrowDown.into(),
+                left: ArrowLeft.into(),
+                right: ArrowRight.into(),
             }
             .into();
 
@@ -458,8 +458,8 @@ mod tests {
             let correct_clash = Clash {
                 action_a: One,
                 action_b: OneAndTwo,
-                inputs_a: vec![Key1.into()],
-                inputs_b: vec![UserInput::chord([Key1, Key2])],
+                inputs_a: vec![Digit1.into()],
+                inputs_b: vec![UserInput::chord([Digit1, Digit2])],
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -475,8 +475,8 @@ mod tests {
             let correct_clash = Clash {
                 action_a: OneAndTwoAndThree,
                 action_b: OneAndTwo,
-                inputs_a: vec![UserInput::chord([Key1, Key2, Key3])],
-                inputs_b: vec![UserInput::chord([Key1, Key2])],
+                inputs_a: vec![UserInput::chord([Digit1, Digit2, Digit3])],
+                inputs_b: vec![UserInput::chord([Digit1, Digit2])],
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -502,8 +502,8 @@ mod tests {
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
-            app.send_input(Key1);
-            app.send_input(Key2);
+            app.send_input(Digit1);
+            app.send_input(Digit2);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world, None);
@@ -530,7 +530,7 @@ mod tests {
             let chord_clash = input_map
                 .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
                 .unwrap();
-            app.send_input(Key3);
+            app.send_input(Digit3);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world, None);
@@ -551,8 +551,8 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(Key1);
-            app.send_input(Key2);
+            app.send_input(Digit1);
+            app.send_input(Digit2);
             app.update();
 
             let mut action_data = HashMap::new();
@@ -583,7 +583,7 @@ mod tests {
             let input_map = test_input_map();
 
             app.send_input(ControlLeft);
-            app.send_input(Up);
+            app.send_input(ArrowUp);
             app.update();
 
             let mut action_data = HashMap::new();
@@ -610,8 +610,8 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(Key1);
-            app.send_input(Key2);
+            app.send_input(Digit1);
+            app.send_input(Digit2);
             app.send_input(ControlLeft);
             app.update();
 

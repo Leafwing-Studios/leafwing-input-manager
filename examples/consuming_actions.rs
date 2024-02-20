@@ -13,8 +13,8 @@ fn main() {
         .init_resource::<ActionState<MenuAction>>()
         .insert_resource(InputMap::<MenuAction>::new([
             (MenuAction::CloseWindow, KeyCode::Escape),
-            (MenuAction::OpenMainMenu, KeyCode::M),
-            (MenuAction::OpenSubMenu, KeyCode::S),
+            (MenuAction::OpenMainMenu, KeyCode::KeyM),
+            (MenuAction::OpenSubMenu, KeyCode::KeyS),
         ]))
         .init_resource::<MainMenu>()
         .init_resource::<SubMenu>()

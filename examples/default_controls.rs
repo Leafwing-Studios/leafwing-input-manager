@@ -32,7 +32,7 @@ impl PlayerAction {
         // Match against the provided action to get the correct default keyboard-mouse input
         match self {
             Self::Run => UserInput::VirtualDPad(VirtualDPad::wasd()),
-            Self::Jump => UserInput::Single(InputKind::Keyboard(KeyCode::Space)),
+            Self::Jump => UserInput::Single(InputKind::PhysicalKey(KeyCode::Space)),
             Self::UseItem => UserInput::Single(InputKind::Mouse(MouseButton::Left)),
         }
     }

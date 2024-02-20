@@ -19,6 +19,7 @@ use bevy::ecs::world::World;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
+use bevy::input::keyboard::{Key, NativeKey};
 use bevy::input::mouse::MouseScrollUnit;
 use bevy::input::ButtonState;
 use bevy::input::{
@@ -26,7 +27,7 @@ use bevy::input::{
     keyboard::{KeyCode, KeyboardInput},
     mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
     touch::{TouchInput, Touches},
-    Input,
+    ButtonInput,
 };
 use bevy::math::Vec2;
 use bevy::prelude::Entity;
@@ -50,7 +51,7 @@ use bevy::window::CursorMoved;
 /// app.add_plugins(InputPlugin);
 ///
 /// // Pay respects!
-/// app.send_input(KeyCode::F);
+/// app.send_input(KeyCode::KeyF);
 /// app.update();
 /// ```
 ///
@@ -63,7 +64,7 @@ use bevy::window::CursorMoved;
 /// app.add_plugins(InputPlugin);
 ///
 /// // Send inputs one at a time
-/// let B_E_V_Y = [KeyCode::B, KeyCode::E, KeyCode::V, KeyCode::Y];
+/// let B_E_V_Y = [KeyCode::KeyB, KeyCode::KeyE, KeyCode::KeyV, KeyCode::KeyY];
 ///
 /// for letter in B_E_V_Y {
 ///     app.send_input(letter);
@@ -76,7 +77,7 @@ use bevy::window::CursorMoved;
 pub trait MockInput {
     /// Send the specified `user_input` directly
     ///
-    /// These are sent as the raw input events, and do not set the value of [`Input`] or [`Axis`](bevy::input::Axis) directly.
+    /// These are sent as the raw input events, and do not set the value of [`ButtonInput`] or [`Axis`](bevy::input::Axis) directly.
     /// Note that inputs will continue to be pressed until explicitly released or [`MockInput::reset_inputs`] is called.
     ///
     /// To send specific values for axislike inputs, set their `value` field.
@@ -88,7 +89,7 @@ pub trait MockInput {
     ///
     /// You *must* call `app.update()` at least once after sending input
     /// with `InputPlugin` included in your plugin set
-    /// for the raw input events to be processed into [`Input`] and [`Axis`](bevy::input::Axis) data.
+    /// for the raw input events to be processed into [`ButtonInput`] and [`Axis`](bevy::input::Axis) data.
     fn send_input(&mut self, input: impl Into<UserInput>);
 
     /// Send the specified `user_input` directly, using the specified gamepad
@@ -111,7 +112,7 @@ pub trait MockInput {
 
     /// Clears all user input streams, resetting them to their default state
     ///
-    /// All buttons are released, and `just_pressed` and `just_released` information on the [`Input`] type are lost.
+    /// All buttons are released, and `just_pressed` and `just_released` information on the [`ButtonInput`] type are lost.
     /// `just_pressed` and `just_released` on the [`ActionState`](crate::action_state::ActionState) will be kept.
     ///
     /// This will clear all [`KeyCode`], [`GamepadButton`] and [`MouseButton`] input streams,
@@ -119,20 +120,20 @@ pub trait MockInput {
     fn reset_inputs(&mut self);
 }
 
-/// Query [`Input`] state directly for testing purposes.
+/// Query [`ButtonInput`] state directly for testing purposes.
 ///
 /// In game code, you should (almost) always be using [`ActionState`](crate::action_state::ActionState)
 /// methods instead.
 pub trait QueryInput {
     /// Is the provided `user_input` pressed?
     ///
-    /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
+    /// This method is intended as a convenience for testing; check the [`ButtonInput`] resource directly,
     /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn pressed(&self, input: impl Into<UserInput>) -> bool;
 
     /// Is the provided `user_input` pressed for the provided [`Gamepad`]?
     ///
-    /// This method is intended as a convenience for testing; check the [`Input`] resource directly,
+    /// This method is intended as a convenience for testing; check the [`ButtonInput`] resource directly,
     /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool;
 }
@@ -259,10 +260,10 @@ impl MockInput for MutableInputStreams<'_> {
 
 impl MutableInputStreams<'_> {
     fn send_keyboard_input(&mut self, button_state: ButtonState, raw_inputs: &RawInputs) {
-        for button in raw_inputs.keycodes.iter() {
+        for key_code in raw_inputs.keycodes.iter() {
             self.keyboard_events.send(KeyboardInput {
-                scan_code: u32::MAX,
-                key_code: Some(*button),
+                logical_key: Key::Unidentified(NativeKey::Unidentified),
+                key_code: *key_code,
                 state: button_state,
                 window: Entity::PLACEHOLDER,
             });
@@ -346,9 +347,9 @@ impl MockInput for World {
         }
 
         let mut input_system_state: SystemState<(
-            Option<ResMut<Input<GamepadButton>>>,
-            Option<ResMut<Input<KeyCode>>>,
-            Option<ResMut<Input<MouseButton>>>,
+            Option<ResMut<ButtonInput<GamepadButton>>>,
+            Option<ResMut<ButtonInput<KeyCode>>>,
+            Option<ResMut<ButtonInput<MouseButton>>>,
         )> = SystemState::new(self);
 
         let (maybe_gamepad, maybe_keyboard, maybe_mouse) = input_system_state.get_mut(self);
@@ -478,7 +479,7 @@ mod test {
         app.update();
 
         // Verify that checking the resource value directly works
-        let keyboard_input: &Input<KeyCode> = app.world.resource();
+        let keyboard_input: &ButtonInput<KeyCode> = app.world.resource();
         assert!(keyboard_input.pressed(KeyCode::Space));
 
         // Test the convenient .pressed API
@@ -517,7 +518,7 @@ mod test {
 
         // Checking the old-fashioned way
         // FIXME: put this in a gamepad_button.rs integration test.
-        let gamepad_input = app.world.resource::<Input<GamepadButton>>();
+        let gamepad_input = app.world.resource::<ButtonInput<GamepadButton>>();
         assert!(gamepad_input.pressed(GamepadButton {
             gamepad,
             button_type: GamepadButtonType::North,

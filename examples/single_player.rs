@@ -74,34 +74,34 @@ impl PlayerBundle {
         let mut input_map = InputMap::default();
 
         // Movement
-        input_map.insert(Up, KeyCode::Up);
+        input_map.insert(Up, KeyCode::ArrowUp);
         input_map.insert(Up, GamepadButtonType::DPadUp);
 
-        input_map.insert(Down, KeyCode::Down);
+        input_map.insert(Down, KeyCode::ArrowDown);
         input_map.insert(Down, GamepadButtonType::DPadDown);
 
-        input_map.insert(Left, KeyCode::Left);
+        input_map.insert(Left, KeyCode::ArrowLeft);
         input_map.insert(Left, GamepadButtonType::DPadLeft);
 
-        input_map.insert(Right, KeyCode::Right);
+        input_map.insert(Right, KeyCode::ArrowRight);
         input_map.insert(Right, GamepadButtonType::DPadRight);
 
         // Abilities
-        input_map.insert(Ability1, KeyCode::Q);
+        input_map.insert(Ability1, KeyCode::KeyQ);
         input_map.insert(Ability1, GamepadButtonType::West);
         input_map.insert(Ability1, MouseButton::Left);
 
-        input_map.insert(Ability2, KeyCode::W);
+        input_map.insert(Ability2, KeyCode::KeyW);
         input_map.insert(Ability2, GamepadButtonType::North);
         input_map.insert(Ability2, MouseButton::Right);
 
-        input_map.insert(Ability3, KeyCode::E);
+        input_map.insert(Ability3, KeyCode::KeyE);
         input_map.insert(Ability3, GamepadButtonType::East);
 
         input_map.insert(Ability4, KeyCode::Space);
         input_map.insert(Ability4, GamepadButtonType::South);
 
-        input_map.insert(Ultimate, KeyCode::R);
+        input_map.insert(Ultimate, KeyCode::KeyR);
         input_map.insert(Ultimate, GamepadButtonType::LeftTrigger2);
 
         input_map

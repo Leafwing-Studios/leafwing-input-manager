@@ -28,32 +28,32 @@ enum TestAction {
 
 fn construct_input_map_from_iter() -> InputMap<TestAction> {
     black_box(InputMap::new([
-        (TestAction::A, KeyCode::A),
-        (TestAction::B, KeyCode::B),
-        (TestAction::C, KeyCode::C),
-        (TestAction::D, KeyCode::D),
-        (TestAction::E, KeyCode::E),
-        (TestAction::F, KeyCode::F),
-        (TestAction::G, KeyCode::G),
-        (TestAction::H, KeyCode::H),
-        (TestAction::I, KeyCode::I),
-        (TestAction::J, KeyCode::J),
+        (TestAction::A, KeyCode::KeyA),
+        (TestAction::B, KeyCode::KeyB),
+        (TestAction::C, KeyCode::KeyC),
+        (TestAction::D, KeyCode::KeyD),
+        (TestAction::E, KeyCode::KeyE),
+        (TestAction::F, KeyCode::KeyF),
+        (TestAction::G, KeyCode::KeyG),
+        (TestAction::H, KeyCode::KeyH),
+        (TestAction::I, KeyCode::KeyI),
+        (TestAction::J, KeyCode::KeyJ),
     ]))
 }
 
 fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
     black_box(
         InputMap::default()
-            .insert(TestAction::A, KeyCode::A)
-            .insert(TestAction::B, KeyCode::B)
-            .insert(TestAction::C, KeyCode::C)
-            .insert(TestAction::D, KeyCode::D)
-            .insert(TestAction::E, KeyCode::E)
-            .insert(TestAction::F, KeyCode::F)
-            .insert(TestAction::G, KeyCode::G)
-            .insert(TestAction::H, KeyCode::H)
-            .insert(TestAction::I, KeyCode::I)
-            .insert(TestAction::J, KeyCode::J)
+            .insert(TestAction::A, KeyCode::KeyA)
+            .insert(TestAction::B, KeyCode::KeyB)
+            .insert(TestAction::C, KeyCode::KeyC)
+            .insert(TestAction::D, KeyCode::KeyD)
+            .insert(TestAction::E, KeyCode::KeyE)
+            .insert(TestAction::F, KeyCode::KeyF)
+            .insert(TestAction::G, KeyCode::KeyG)
+            .insert(TestAction::H, KeyCode::KeyH)
+            .insert(TestAction::I, KeyCode::KeyI)
+            .insert(TestAction::J, KeyCode::KeyJ)
             .build(),
     )
 }
@@ -78,8 +78,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     // Constructing our test app / input stream outside of the timed benchmark
     let mut app = App::new();
     app.add_plugins(InputPlugin);
-    app.send_input(KeyCode::A);
-    app.send_input(KeyCode::B);
+    app.send_input(KeyCode::KeyA);
+    app.send_input(KeyCode::KeyB);
     app.update();
 
     let input_streams = InputStreams::from_world(&app.world, None);

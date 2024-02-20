@@ -101,7 +101,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
-    /// which reads from the assorted [`Input`](bevy::input::Input) resources.
+    /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
     pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
         for (action, action_datum) in self.action_data.iter_mut() {
             if !action_data.contains_key(action) {
@@ -615,7 +615,7 @@ mod tests {
 
         // Input map
         let mut input_map = InputMap::default();
-        input_map.insert(Action::Run, KeyCode::R);
+        input_map.insert(Action::Run, KeyCode::KeyR);
 
         // Starting state
         let input_streams = InputStreams::from_world(&app.world, None);
@@ -627,7 +627,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Pressing
-        app.send_input(KeyCode::R);
+        app.send_input(KeyCode::KeyR);
         // Process the input events into Input<KeyCode> data
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
@@ -649,7 +649,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Releasing
-        app.release_input(KeyCode::R);
+        app.release_input(KeyCode::KeyR);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
@@ -682,9 +682,9 @@ mod tests {
         // Input map
         use bevy::prelude::KeyCode::*;
         let mut input_map = InputMap::default();
-        input_map.insert(Action::One, Key1);
-        input_map.insert(Action::Two, Key2);
-        input_map.insert_chord(Action::OneAndTwo, [Key1, Key2]);
+        input_map.insert(Action::One, Digit1);
+        input_map.insert(Action::Two, Digit2);
+        input_map.insert_chord(Action::OneAndTwo, [Digit1, Digit2]);
 
         let mut app = App::new();
         app.add_plugins(InputPlugin);
@@ -701,7 +701,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing One
-        app.send_input(Key1);
+        app.send_input(Digit1);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
@@ -722,7 +722,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing Two
-        app.send_input(Key2);
+        app.send_input(Digit2);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 

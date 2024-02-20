@@ -61,9 +61,9 @@ let mut input_map = InputMap::new([
 input_map.insert(Action::Run, MouseButton::Left)
 .insert(Action::Run, KeyCode::ShiftLeft)
 // Chords
-.insert_modified(Action::Run, Modifier::Control, KeyCode::R)
+.insert_modified(Action::Run, Modifier::Control, KeyCode::KeyR)
 .insert_chord(Action::Run,
-              [InputKind::Keyboard(KeyCode::H),
+              [InputKind::PhysicalKey(KeyCode::KeyH),
                InputKind::GamepadButton(GamepadButtonType::South),
                InputKind::Mouse(MouseButton::Middle)],
            );
@@ -513,17 +513,15 @@ mod tests {
 
         let mut input_map_1 = InputMap::<Action>::default();
         input_map_1.insert(Action::Run, KeyCode::Space);
-        input_map_1.insert(Action::Run, KeyCode::Return);
+        input_map_1.insert(Action::Run, KeyCode::Enter);
 
         assert_eq!(
             input_map_1.get(&Action::Run),
-            Some(&vec![KeyCode::Space.into(), KeyCode::Return.into()])
+            Some(&vec![KeyCode::Space.into(), KeyCode::Enter.into()])
         );
 
-        let input_map_2 = InputMap::<Action>::new([
-            (Action::Run, KeyCode::Space),
-            (Action::Run, KeyCode::Return),
-        ]);
+        let input_map_2 =
+            InputMap::<Action>::new([(Action::Run, KeyCode::Space), (Action::Run, KeyCode::Enter)]);
 
         assert_eq!(input_map_1, input_map_2);
     }
@@ -576,7 +574,7 @@ mod tests {
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
         default_keyboard_map.insert(Action::Run, KeyCode::ShiftLeft);
-        default_keyboard_map.insert_chord(Action::Hide, [KeyCode::ControlLeft, KeyCode::H]);
+        default_keyboard_map.insert_chord(Action::Hide, [KeyCode::ControlLeft, KeyCode::KeyH]);
         let mut default_gamepad_map = InputMap::default();
         default_gamepad_map.insert(Action::Run, GamepadButtonType::South);
         default_gamepad_map.insert(Action::Hide, GamepadButtonType::East);

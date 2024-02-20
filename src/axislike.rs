@@ -2,7 +2,6 @@
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::orientation::{Direction, Rotation};
-use crate::prelude::QwertyScanCode;
 use crate::user_input::InputKind;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
@@ -366,10 +365,10 @@ impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
     pub fn arrow_keys() -> VirtualDPad {
         VirtualDPad {
-            up: InputKind::Keyboard(KeyCode::Up),
-            down: InputKind::Keyboard(KeyCode::Down),
-            left: InputKind::Keyboard(KeyCode::Left),
-            right: InputKind::Keyboard(KeyCode::Right),
+            up: InputKind::PhysicalKey(KeyCode::ArrowUp),
+            down: InputKind::PhysicalKey(KeyCode::ArrowDown),
+            left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
+            right: InputKind::PhysicalKey(KeyCode::ArrowRight),
         }
     }
 
@@ -381,10 +380,10 @@ impl VirtualDPad {
     /// which enables comfortable movement controls.
     pub fn wasd() -> VirtualDPad {
         VirtualDPad {
-            up: InputKind::KeyLocation(QwertyScanCode::W.into()),
-            down: InputKind::KeyLocation(QwertyScanCode::S.into()),
-            left: InputKind::KeyLocation(QwertyScanCode::A.into()),
-            right: InputKind::KeyLocation(QwertyScanCode::D.into()),
+            up: InputKind::PhysicalKey(KeyCode::KeyW),
+            down: InputKind::PhysicalKey(KeyCode::KeyS),
+            left: InputKind::PhysicalKey(KeyCode::KeyA),
+            right: InputKind::PhysicalKey(KeyCode::KeyD),
         }
     }
 
@@ -467,32 +466,32 @@ pub struct VirtualAxis {
 
 impl VirtualAxis {
     /// Helper function for generating a [`VirtualAxis`] from arbitrary keycodes, shorthand for
-    /// wrapping each key in [`InputKind::Keyboard`]
+    /// wrapping each key in [`InputKind::PhysicalKey`]
     pub fn from_keys(negative: KeyCode, positive: KeyCode) -> VirtualAxis {
         VirtualAxis {
-            negative: InputKind::Keyboard(negative),
-            positive: InputKind::Keyboard(positive),
+            negative: InputKind::PhysicalKey(negative),
+            positive: InputKind::PhysicalKey(positive),
         }
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
     pub fn horizontal_arrow_keys() -> VirtualAxis {
-        VirtualAxis::from_keys(KeyCode::Left, KeyCode::Right)
+        VirtualAxis::from_keys(KeyCode::ArrowLeft, KeyCode::ArrowRight)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
     pub fn vertical_arrow_keys() -> VirtualAxis {
-        VirtualAxis::from_keys(KeyCode::Down, KeyCode::Up)
+        VirtualAxis::from_keys(KeyCode::ArrowDown, KeyCode::ArrowUp)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the `AD` keyboard keycodes.
     pub fn ad() -> VirtualAxis {
-        VirtualAxis::from_keys(KeyCode::A, KeyCode::D)
+        VirtualAxis::from_keys(KeyCode::KeyA, KeyCode::KeyD)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the `WS` keyboard keycodes.
     pub fn ws() -> VirtualAxis {
-        VirtualAxis::from_keys(KeyCode::S, KeyCode::W)
+        VirtualAxis::from_keys(KeyCode::KeyS, KeyCode::KeyW)
     }
 
     #[allow(clippy::doc_markdown)]

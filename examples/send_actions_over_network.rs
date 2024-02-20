@@ -127,7 +127,7 @@ fn spawn_player(mut commands: Commands) {
 
     commands
         .spawn(InputManagerBundle {
-            input_map: InputMap::new([(MoveLeft, W), (MoveRight, D), (Jump, Space)])
+            input_map: InputMap::new([(MoveLeft, KeyW), (MoveRight, KeyD), (Jump, Space)])
                 .insert(Shoot, MouseButton::Left)
                 .build(),
             ..default()
