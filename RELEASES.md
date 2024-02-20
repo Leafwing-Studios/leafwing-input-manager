@@ -1,5 +1,13 @@
 # Release Notes
 
+## Unreleased
+
+### Breaking Changes
+
+- removed `block_ui_interactions`:
+  - by default, this library will prioritize `bevy::ui`, thus you could simply remove the `block_ui_interactions` feature from your `Cargo.toml`.
+  - if you want to disable this priority, add the `no_ui_priority` feature to your configuration.
+
 ## Version 0.13.0
 
 ### Breaking Changes
