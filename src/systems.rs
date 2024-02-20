@@ -107,6 +107,7 @@ pub fn prioritize_ui_inputs(
     mut tracking_input: ResMut<TrackingInputType>,
 ) {
     for interaction in query_interactions.iter() {
+        // If use clicks on a button, do not apply them to the game state
         if *interaction != Interaction::None {
             tracking_input.mouse = false;
         }
@@ -121,9 +122,14 @@ pub fn prioritize_egui_inputs(
 ) {
     for (_, mut egui_context) in query_egui_context.iter_mut() {
         let context = egui_context.get_mut();
+
+        // If egui wants to own inputs, don't also apply them to the game state
         if context.wants_keyboard_input() {
             tracking_input.keyboard = false;
         }
+
+        // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
+        // so `is_pointer_over_area` is also needed.
         if context.is_pointer_over_area() || context.wants_pointer_input() {
             tracking_input.mouse = false;
         }
