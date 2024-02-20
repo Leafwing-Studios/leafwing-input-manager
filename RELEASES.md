@@ -1,5 +1,13 @@
 # Release Notes
 
+## Unreleased
+
+### Breaking Changes
+
+- removed the `block_ui_interactions` feature:
+  - by default, this library will prioritize `bevy::ui`.
+  - if you want to disable this priority, add the newly added `no_ui_priority` feature to your configuration.
+
 ## Version 0.13.0
 
 ### Breaking Changes
