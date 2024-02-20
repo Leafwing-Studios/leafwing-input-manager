@@ -66,10 +66,11 @@ fn main() {
             .expect("Please run 'cargo fmt --all' to format your code.");
     }
 
+    // The features the lib offers
     let lib_features = ["asset", "ui", "block_ui_interactions", "egui"];
 
-    // Generate the powerset of lib features
-    // and convert its subset into '--features=<FEATURE_A,FEATURE_B,...>'
+    // Generate all possible combinations of lib features
+    // and convert them into '--features=<FEATURE_A,FEATURE_B,...>'
     let lib_features_options = (1..lib_features.len())
         .flat_map(|combination_length| lib_features.iter().combinations(combination_length))
         .map(|combination| String::from("--features=") + &combination.iter().join(","));
