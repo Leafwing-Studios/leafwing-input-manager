@@ -12,6 +12,7 @@ use bevy_egui::EguiContext;
 /// # Examples
 ///
 /// ```
+/// use bevy::input::InputSystem;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
@@ -27,7 +28,9 @@ use bevy_egui::EguiContext;
 /// pub fn temporarily_ignore_keyboard(mut tracking_input: ResMut<TrackingInputType>) {
 ///     tracking_input.keyboard = TrackingState::IgnoredOnce;
 /// }
-/// app.add_systems(PreUpdate, temporarily_ignore_keyboard);
+/// // Remember to add your system into the `InputSystem` set
+/// // Otherwise it does not work
+/// app.add_systems(PreUpdate, temporarily_ignore_keyboard.in_set(InputSystem));
 /// ```
 #[derive(Resource, Default)]
 pub struct TrackingInputType {
