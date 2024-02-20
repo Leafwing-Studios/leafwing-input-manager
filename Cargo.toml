@@ -25,7 +25,7 @@ asset = ['bevy/bevy_asset']
 
 # Add support for 'bevy::ui' integration:
 # - Automatic process clicks on 'bevy::ui' buttons that attached `ActionStateDriver` to drive corresponding actions.
-# - Provide `MockUIInteraction` for 'bevy::ui' input mocking.
+# - Allow using `MockUIInteraction` for 'bevy::ui' input mocking.
 ui = ['bevy/bevy_ui']
 
 # Allow 'bevy::ui' to take priority over actions when processing inputs.
