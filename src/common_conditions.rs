@@ -1,7 +1,7 @@
 //! Run conditions for actions.
 
 use crate::{
-    prelude::{ActionState, TrackingInputType},
+    prelude::{ActionState, TrackingInputType, TrackingState},
     Actionlike,
 };
 use bevy::prelude::Res;
@@ -44,15 +44,15 @@ where
 
 /// Run condition that is active if [`TrackingInputType`] is enabled for gamepad.
 pub fn tracking_gamepad_input(tracking_input: Res<TrackingInputType>) -> bool {
-    tracking_input.gamepad
+    tracking_input.gamepad == TrackingState::Enabled
 }
 
 /// Run condition that is active if [`TrackingInputType`] is enabled for keyboard.
 pub fn tracking_keyboard_input(tracking_input: Res<TrackingInputType>) -> bool {
-    tracking_input.keyboard
+    tracking_input.keyboard == TrackingState::Enabled
 }
 
 /// Run condition that is active if [`TrackingInputType`] is enabled for mouse.
 pub fn tracking_mouse_input(tracking_input: Res<TrackingInputType>) -> bool {
-    tracking_input.mouse
+    tracking_input.mouse == TrackingState::Enabled
 }

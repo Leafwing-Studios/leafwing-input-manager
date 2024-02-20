@@ -15,33 +15,65 @@ use bevy_egui::EguiContext;
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
-/// pub fn disable_keyboard(mut tracking_input: ResMut<TrackingInputType>) {
-///     tracking_input.keyboard = false;
-/// }
-///
 /// let mut app = App::new();
 ///
-/// app.add_systems(PreUpdate, disable_keyboard);
+/// // Always disable the gamepad input tracking
+/// pub fn disable_gamepad(mut tracking_input: ResMut<TrackingInputType>) {
+///     tracking_input.gamepad = TrackingState::Disabled;
+/// }
+/// app.add_systems(Startup, disable_gamepad);
+///
+/// // Ignore the tracked keyboard input until next tick
+/// pub fn temporarily_ignore_keyboard(mut tracking_input: ResMut<TrackingInputType>) {
+///     tracking_input.keyboard = TrackingState::IgnoredOnce;
+/// }
+/// app.add_systems(PreUpdate, temporarily_ignore_keyboard);
 /// ```
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct TrackingInputType {
     /// Is tracking gamepad input?
-    pub gamepad: bool,
+    pub gamepad: TrackingState,
 
     /// Is tracking keyboard input?
-    pub keyboard: bool,
+    pub keyboard: TrackingState,
 
     /// Is tracking mouse input?
-    pub mouse: bool,
+    pub mouse: TrackingState,
 }
 
-impl Default for TrackingInputType {
-    fn default() -> Self {
-        Self {
-            gamepad: true,
-            keyboard: true,
-            mouse: true,
+impl TrackingInputType {
+    /// Causes all [`TrackingState::IgnoredOnce`] fields becomes [`TrackingState::Enabled`]
+    pub(crate) fn tick(&mut self) {
+        self.gamepad.tick();
+        self.keyboard.tick();
+        self.mouse.tick();
+    }
+}
+
+/// The current state for input tracking.
+#[derive(Default, Copy, Clone, Eq, PartialEq)]
+pub enum TrackingState {
+    /// Tracking enabled
+    #[default]
+    Enabled,
+    /// Tracking disabled
+    Disabled,
+    /// Ignore the tracked inputs temporarily until the next tick.
+    IgnoredOnce,
+}
+
+impl TrackingState {
+    /// Causes [`TrackingState::IgnoredOnce`] becomes [`TrackingState::Enabled`]
+    pub(crate) fn tick(&mut self) {
+        if *self == Self::IgnoredOnce {
+            *self = Self::Enabled
         }
+    }
+
+    /// Returns `Some(f())` if the state is [`TrackingState::Enabled`],
+    /// or `None` otherwise.
+    pub fn then<T, F: FnOnce() -> T>(&self, f: F) -> Option<T> {
+        (*self == Self::Enabled).then(f)
     }
 }
 
@@ -54,7 +86,7 @@ pub fn prioritize_ui_inputs(
     for interaction in query_interactions.iter() {
         // If use clicks on a button, do not apply them to the game state
         if *interaction != Interaction::None {
-            tracking_input.mouse = false;
+            tracking_input.mouse = TrackingState::IgnoredOnce;
             return;
         }
     }
@@ -71,17 +103,21 @@ pub fn prioritize_egui_inputs(
 
         // If egui wants to own inputs, don't also apply them to the game state
         if context.wants_keyboard_input() {
-            tracking_input.keyboard = false;
+            tracking_input.keyboard = TrackingState::IgnoredOnce;
+
+            if tracking_input.mouse != TrackingState::Enabled {
+                return;
+            }
         }
 
         // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
         // so `is_pointer_over_area` is also needed.
         if context.is_pointer_over_area() || context.wants_pointer_input() {
-            tracking_input.mouse = false;
-        }
+            tracking_input.mouse = TrackingState::IgnoredOnce;
 
-        if !tracking_input.keyboard && !tracking_input.mouse {
-            return;
+            if tracking_input.keyboard != TrackingState::Enabled {
+                return;
+            }
         }
     }
 }

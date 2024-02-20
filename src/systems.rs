@@ -23,7 +23,6 @@ use bevy::{
 };
 
 use crate::action_diff::{ActionDiff, ActionDiffEvent};
-
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 
@@ -99,8 +98,8 @@ pub fn update_action_state<A: Actionlike>(
         .then(|| mouse_motion.read().cloned().collect())
         .unwrap_or_default();
 
-    // Ensure the inputs will be tracked by default
-    *tracking_input = Default::default();
+    // Ensure the conflicted inputs will be tracked next time
+    tracking_input.tick();
 
     let resources = input_map
         .zip(action_state)

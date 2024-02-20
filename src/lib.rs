@@ -46,7 +46,7 @@ pub mod prelude {
     pub use crate::input_mocking::{MockInput, QueryInput};
     pub use crate::user_input::{InputKind, Modifier, UserInput};
 
-    pub use crate::conflicting_inputs::TrackingInputType;
+    pub use crate::conflicting_inputs::{TrackingInputType, TrackingState};
     pub use crate::plugin::ToggleActions;
     pub use crate::plugin::{InputManagerPlugin, InputManagerSystem};
     pub use crate::{Actionlike, InputManagerBundle};

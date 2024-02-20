@@ -10,7 +10,7 @@
 
 ### Usability
 
-- allowed disabling of specific input type tracking via `TrackingInputType` resource
+- allowed setting `TrackingState` of specific input type tracking via `TrackingInputType` resource
 - added run conditions that are active when the `TrackingInputType` resource is enabled for specific input types
 
 ## Version 0.13.0
