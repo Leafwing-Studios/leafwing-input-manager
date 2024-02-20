@@ -60,7 +60,9 @@ pub fn tick_action_state<A: Actionlike>(
 
 /// Flags to enable specific input type tracking.
 ///
-/// They can be temporarily disabled by setting their fields to `false`.
+/// They can be temporarily disabled by setting their fields to `false`
+/// and will be re-enabled after handling all conflicting inputs.
+///
 /// If you are dealing with conflicting input from other crates, this might be useful.
 ///
 /// # Examples
@@ -107,6 +109,7 @@ pub fn prioritize_ui_inputs(
     mut tracking_input: ResMut<TrackingInputType>,
 ) {
     for interaction in query_interactions.iter() {
+        // If use clicks on a button, do not apply them to the game state
         if *interaction != Interaction::None {
             tracking_input.mouse = false;
         }
@@ -121,9 +124,14 @@ pub fn prioritize_egui_inputs(
 ) {
     for (_, mut egui_context) in query_egui_context.iter_mut() {
         let context = egui_context.get_mut();
+
+        // If egui wants to own inputs, don't also apply them to the game state
         if context.wants_keyboard_input() {
             tracking_input.keyboard = false;
         }
+
+        // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
+        // so `is_pointer_over_area` is also needed.
         if context.is_pointer_over_area() || context.wants_pointer_input() {
             tracking_input.mouse = false;
         }
