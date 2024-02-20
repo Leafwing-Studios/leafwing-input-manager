@@ -1,8 +1,8 @@
 //! Modified from [Bevy's CI runner](https://github.com/bevyengine/bevy/tree/main/tools/ci/src)
 
-use xshell::{cmd, Shell};
-
 use bitflags::bitflags;
+use itertools::Itertools;
+use xshell::{cmd, Shell};
 
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -66,29 +66,6 @@ fn main() {
             .expect("Please run 'cargo fmt --all' to format your code.");
     }
 
-    if what_to_run.contains(Check::CLIPPY) {
-        // See if clippy has any complaints.
-        // --all-targets --all-features was removed because Emergence currently has no special
-        // targets or features; please add them back as necessary
-        cmd!(sh, "cargo clippy --workspace -- {CLIPPY_FLAGS...}")
-            .run()
-            .expect("Please fix clippy errors in output above.");
-    }
-
-    if what_to_run.contains(Check::TEST) {
-        // Run tests (except doc tests and without building examples)
-        cmd!(sh, "cargo test --workspace --lib --bins --tests --benches")
-            .run()
-            .expect("Please fix failing tests in output above.");
-    }
-
-    if what_to_run.contains(Check::DOC_TEST) {
-        // Run doc tests
-        cmd!(sh, "cargo test --workspace --doc")
-            .run()
-            .expect("Please fix failing doc-tests in output above.");
-    }
-
     if what_to_run.contains(Check::DOC_CHECK) {
         // Check that building docs work and does not emit warnings
         std::env::set_var("RUSTDOCFLAGS", "-D warnings");
@@ -100,9 +77,56 @@ fn main() {
         .expect("Please fix doc warnings in output above.");
     }
 
-    if what_to_run.contains(Check::COMPILE_CHECK) {
-        cmd!(sh, "cargo check --workspace")
+    // The features the lib offers
+    let lib_features = ["asset", "ui", "block_ui_interactions", "egui"];
+
+    // Generate all possible combinations of lib features
+    // and convert them into '--features=<FEATURE_A,FEATURE_B,...>'
+    let lib_features_options = (1..lib_features.len())
+        .flat_map(|combination_length| lib_features.iter().combinations(combination_length))
+        .map(|combination| String::from("--features=") + &combination.iter().join(","));
+
+    let default_feature_options = ["--no-default-features", "--all-features"];
+    let all_features_options = default_feature_options
+        .iter()
+        .map(|str| str.to_string())
+        .chain(lib_features_options)
+        .collect::<Vec<_>>();
+
+    for feature_option in all_features_options {
+        if what_to_run.contains(Check::CLIPPY) {
+            // See if clippy has any complaints.
+            // --all-targets was removed because Emergence currently has no special targets;
+            // please add them back as necessary
+            cmd!(
+                sh,
+                "cargo clippy --workspace {feature_option} -- {CLIPPY_FLAGS...}"
+            )
             .run()
-            .expect("Please fix compiler errors in above output.");
+            .expect("Please fix clippy errors in output above.");
+        }
+
+        if what_to_run.contains(Check::TEST) {
+            // Run tests (except doc tests and without building examples)
+            cmd!(
+                sh,
+                "cargo test --workspace {feature_option} --lib --bins --tests --benches"
+            )
+            .run()
+            .expect("Please fix failing tests in output above.");
+        }
+
+        if what_to_run.contains(Check::DOC_TEST) {
+            // Run doc tests
+            cmd!(sh, "cargo test --workspace {feature_option} --doc")
+                .run()
+                .expect("Please fix failing doc-tests in output above.");
+        }
+
+        if what_to_run.contains(Check::COMPILE_CHECK) {
+            cmd!(sh, "cargo check --workspace {feature_option}")
+                .run()
+                .expect("Please fix compiler errors in above output.");
+        }
     }
 }
