@@ -18,20 +18,21 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ['asset', 'ui', 'block_ui_interactions']
+default = ['asset', 'ui']
 
 # Allow you to use the `InputMap` as `bevy::asset::Asset`.
 asset = ['bevy/bevy_asset']
 
 # Provide functionality refer to `bevy::ui`:
+# - `bevy::ui` will take priority over actions when processing inputs for the `ActionState`.
 # - `MockUIInteraction` for `bevy::ui` input mocking.
 # - `update_action_state_from_interaction` system,
 #   which automatically processes clicks on `bevy::ui` buttons attached to `Actionlike`s,
 #   triggering corresponding actions in their `ActionState`.
 ui = ['bevy/bevy_ui']
 
-# If both this feature and `ui` are enabled, `bevy::ui` will take priority over actions when processing inputs for the `ActionState`.
-block_ui_interactions = []
+# Disable the priority of `bevy::ui` when processing inputs for the `ActionState`.
+no_ui_priority = []
 
 # If this feature is enabled, `egui` will take priority over actions when processing inputs for the `ActionState`.
 egui = ['dep:bevy_egui']

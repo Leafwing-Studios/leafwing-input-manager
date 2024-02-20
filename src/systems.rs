@@ -72,9 +72,7 @@ pub fn update_action_state<A: Actionlike>(
     mut mouse_wheel: EventReader<MouseWheel>,
     mut mouse_motion: EventReader<MouseMotion>,
     clash_strategy: Res<ClashStrategy>,
-    #[cfg(all(feature = "ui", feature = "block_ui_interactions"))] interactions: Query<
-        &Interaction,
-    >,
+    #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))] interactions: Query<&Interaction>,
     #[cfg(feature = "egui")] mut maybe_egui: Query<(Entity, &'static mut EguiContext)>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
@@ -91,7 +89,7 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
 
     // If use clicks on a button, do not apply them to the game state
-    #[cfg(all(feature = "ui", feature = "block_ui_interactions"))]
+    #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
     let (mouse_buttons, mouse_wheel) = if interactions
         .iter()
         .any(|&interaction| interaction != Interaction::None)
