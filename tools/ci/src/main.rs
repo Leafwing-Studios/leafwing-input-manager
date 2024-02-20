@@ -96,8 +96,8 @@ fn main() {
     for feature_option in all_features_options {
         if what_to_run.contains(Check::CLIPPY) {
             // See if clippy has any complaints.
-            // --all-targets --all-features was removed because Emergence currently has no special
-            // targets or features; please add them back as necessary
+            // --all-targets was removed because Emergence currently has no special targets;
+            // please add them back as necessary
             cmd!(
                 sh,
                 "cargo clippy --workspace {feature_option} -- {CLIPPY_FLAGS...}"
