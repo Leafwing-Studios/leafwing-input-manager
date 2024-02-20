@@ -294,7 +294,7 @@ pub enum Modifier {
     /// The key that makes letters capitalized, corresponding to [`KeyCode::ShiftLeft`] and [`KeyCode::ShiftRight`]
     Shift,
     /// The OS or "Windows" key, corresponding to [`KeyCode::SuperLeft`] and [`KeyCode::SuperRight`].
-    Win,
+    Super,
 }
 
 impl Modifier {
@@ -307,7 +307,7 @@ impl Modifier {
             Modifier::Alt => [KeyCode::AltLeft, KeyCode::AltRight],
             Modifier::Control => [KeyCode::ControlLeft, KeyCode::ControlRight],
             Modifier::Shift => [KeyCode::ShiftLeft, KeyCode::ShiftRight],
-            Modifier::Win => [KeyCode::SuperLeft, KeyCode::SuperRight],
+            Modifier::Super => [KeyCode::SuperLeft, KeyCode::SuperRight],
         }
     }
 }
