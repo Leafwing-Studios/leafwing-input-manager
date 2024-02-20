@@ -23,11 +23,8 @@ use bevy::{
 };
 
 use crate::action_diff::{ActionDiff, ActionDiffEvent};
-
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
-#[cfg(feature = "egui")]
-use bevy_egui::EguiContext;
 
 /// Advances actions timer.
 ///
