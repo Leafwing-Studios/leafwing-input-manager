@@ -23,16 +23,17 @@ default = ['asset', 'ui', 'block_ui_interactions']
 # Allow using the `InputMap` as `bevy::asset::Asset`.
 asset = ['bevy/bevy_asset']
 
-# Functionalities refer to `bevy::ui`:
-# - Provide `MockUIInteraction` for `bevy::ui` input mocking.
-# - Automatic process clicks on `bevy::ui` buttons that attached `ActionStateDriver` to drive corresponding actions.
+# Add support for 'bevy::ui' integration:
+# - Automatic process clicks on 'bevy::ui' buttons that attached `ActionStateDriver` to drive corresponding actions.
+# - Provide `MockUIInteraction` for 'bevy::ui' input mocking.
 ui = ['bevy/bevy_ui']
 
-# If both this feature and `ui` are enabled,
-# `bevy::ui` will take priority over actions when processing inputs.
+# If both this feature and 'ui' are enabled,
+# 'bevy::ui' will take priority over actions when processing inputs.
 block_ui_interactions = []
 
-# Allow `egui` to take priority over actions when processing inputs.
+# Add support for 'egui' integration:
+# - Allow 'egui' to take priority over actions when processing inputs.
 egui = ['dep:bevy_egui']
 
 [dependencies]
