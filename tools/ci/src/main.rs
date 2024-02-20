@@ -66,6 +66,17 @@ fn main() {
             .expect("Please run 'cargo fmt --all' to format your code.");
     }
 
+    if what_to_run.contains(Check::DOC_CHECK) {
+        // Check that building docs work and does not emit warnings
+        std::env::set_var("RUSTDOCFLAGS", "-D warnings");
+        cmd!(
+            sh,
+            "cargo doc --workspace --all-features --no-deps --document-private-items"
+        )
+        .run()
+        .expect("Please fix doc warnings in output above.");
+    }
+
     // The features the lib offers
     let lib_features = ["asset", "ui", "block_ui_interactions", "egui"];
 
@@ -110,17 +121,6 @@ fn main() {
             cmd!(sh, "cargo test --workspace {feature_option} --doc")
                 .run()
                 .expect("Please fix failing doc-tests in output above.");
-        }
-
-        if what_to_run.contains(Check::DOC_CHECK) {
-            // Check that building docs work and does not emit warnings
-            std::env::set_var("RUSTDOCFLAGS", "-D warnings");
-            cmd!(
-                sh,
-                "cargo doc --workspace {feature_option} --no-deps --document-private-items"
-            )
-            .run()
-            .expect("Please fix doc warnings in output above.");
         }
 
         if what_to_run.contains(Check::COMPILE_CHECK) {
