@@ -207,6 +207,20 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.get_mut(action)
     }
 
+    /// A mutable reference of the [`ActionData`] of the corresponding `action`.
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    #[inline]
+    #[must_use]
+    pub fn action_data_mut_or_default(&mut self, action: &A) -> &mut ActionData {
+        self.action_data
+            .raw_entry_mut()
+            .from_key(action)
+            .or_insert_with(|| (action.clone(), ActionData::default()))
+            .1
+    }
+
     /// Get the value associated with the corresponding `action` if present.
     ///
     /// Different kinds of bindings have different ways of calculating the value:
@@ -315,14 +329,6 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     pub fn set_action_data(&mut self, action: A, data: ActionData) {
         self.action_data.insert(action, data);
-    }
-
-    fn action_data_mut_or_default(&mut self, action: &A) -> &mut ActionData {
-        self.action_data
-            .raw_entry_mut()
-            .from_key(action)
-            .or_insert_with(|| (action.clone(), ActionData::default()))
-            .1
     }
 
     /// Press the `action`
