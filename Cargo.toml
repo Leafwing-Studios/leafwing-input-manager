@@ -42,8 +42,7 @@ bevy = { version = "0.13", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-# TODO(clean): Existing PR repo for update `bevy_egui` to bevy 0.13
-bevy_egui = { git = "https://github.com/Shute052/bevy_egui.git", branch = "Bevy-0.13-and-Egui-0.26", optional = true }
+bevy_egui = { version = "0.25", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
@@ -62,8 +61,7 @@ bevy = { version = "0.13", default-features = false, features = [
   "bevy_core_pipeline",
   "x11",
 ] }
-# TODO(clean): Existing PR repo for update `bevy_egui` to bevy 0.13
-bevy_egui = { git = "https://github.com/Shute052/bevy_egui.git", branch = "Bevy-0.13-and-Egui-0.26" }
+bevy_egui = "0.25"
 serde_test = "1.0"
 criterion = "0.5"
 
