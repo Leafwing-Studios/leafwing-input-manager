@@ -10,7 +10,8 @@
 
 ### Usability
 
-- allowed temporarily disabling of specific input type tracking via `TrackingInputType` resource in `InputManagerSystem::PreUpdate` system set
+- allowed disabling of specific input type tracking via `TrackingInputType` resource
+- added run conditions that is active if `TrackingInputType` resource is enabled for specific input types
 
 ## Version 0.13.0
 

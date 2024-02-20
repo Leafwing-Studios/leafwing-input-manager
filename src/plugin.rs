@@ -8,6 +8,10 @@ use crate::axislike::{
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
 #[cfg(feature = "egui")]
+use crate::common_conditions::tracking_keyboard_input;
+#[cfg(any(all(feature = "ui", not(feature = "no_ui_priority")), feature = "egui"))]
+use crate::common_conditions::tracking_mouse_input;
+#[cfg(feature = "egui")]
 use crate::conflicting_inputs::prioritize_egui_inputs;
 #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
 use crate::conflicting_inputs::prioritize_ui_inputs;
@@ -117,16 +121,25 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
 
                 app.add_systems(
                     PreUpdate,
-                    (
-                        #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
-                        prioritize_ui_inputs,
-                        #[cfg(feature = "egui")]
-                        prioritize_egui_inputs,
-                        update_action_state::<A>,
-                    )
-                        .chain()
+                    update_action_state::<A>
                         .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Update),
+                );
+
+                #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
+                app.add_systems(
+                    PreUpdate,
+                    prioritize_ui_inputs
+                        .run_if(tracking_mouse_input)
+                        .in_set(InputManagerSystem::PreUpdate),
+                );
+
+                #[cfg(feature = "egui")]
+                app.add_systems(
+                    PreUpdate,
+                    prioritize_egui_inputs
+                        .run_if(tracking_keyboard_input.or_else(tracking_mouse_input))
+                        .in_set(InputManagerSystem::PreUpdate),
                 );
 
                 app.configure_sets(
@@ -245,6 +258,9 @@ impl<A: Actionlike> Default for ToggleActions<A> {
 #[derive(SystemSet, Clone, Hash, Debug, PartialEq, Eq)]
 pub enum InputManagerSystem {
     /// Performs actions before [`InputManagerSystem::Update`]
+    ///
+    /// This is useful for temporarily disabling [`TrackingInputType`],
+    /// and it will be re-enabled after handling all conflicting inputs
     PreUpdate,
     /// Advances action timers.
     ///

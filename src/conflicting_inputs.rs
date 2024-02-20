@@ -6,9 +6,7 @@ use bevy_egui::EguiContext;
 
 /// Flags to enable specific input type tracking.
 ///
-/// They can be temporarily disabled by setting their fields to `false`
-/// and will be re-enabled after handling all conflicting inputs.
-///
+/// They can be disabled by setting their fields to `false`.
 /// If you are dealing with conflicting input from other crates, this might be useful.
 ///
 /// # Examples
@@ -23,8 +21,7 @@ use bevy_egui::EguiContext;
 ///
 /// let mut app = App::new();
 ///
-/// // Remember to set
-/// app.add_systems(PreUpdate, disable_keyboard.in_set(InputManagerSystem::PreUpdate));
+/// app.add_systems(PreUpdate, disable_keyboard);
 /// ```
 #[derive(Resource)]
 pub struct TrackingInputType {

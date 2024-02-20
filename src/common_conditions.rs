@@ -1,6 +1,9 @@
 //! Run conditions for actions.
 
-use crate::{prelude::ActionState, Actionlike};
+use crate::{
+    prelude::{ActionState, TrackingInputType},
+    Actionlike,
+};
 use bevy::prelude::Res;
 
 /// Stateful run condition that can be toggled via an action press using [`ActionState::just_pressed`].
@@ -37,4 +40,19 @@ where
     A: Actionlike + Clone,
 {
     move |action_state: Res<ActionState<A>>| action_state.just_released(&action)
+}
+
+/// Run condition that is active if [`TrackingInputType`] is enabled for gamepad.
+pub fn tracking_gamepad_input(tracking_input: Res<TrackingInputType>) -> bool {
+    tracking_input.gamepad
+}
+
+/// Run condition that is active if [`TrackingInputType`] is enabled for keyboard.
+pub fn tracking_keyboard_input(tracking_input: Res<TrackingInputType>) -> bool {
+    tracking_input.keyboard
+}
+
+/// Run condition that is active if [`TrackingInputType`] is enabled for mouse.
+pub fn tracking_mouse_input(tracking_input: Res<TrackingInputType>) -> bool {
+    tracking_input.mouse
 }
