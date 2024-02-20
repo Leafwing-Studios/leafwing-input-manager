@@ -2,6 +2,7 @@
 
 #[cfg(feature = "ui")]
 use crate::action_driver::ActionStateDriver;
+use crate::conflicting_inputs::TrackingInputType;
 use crate::{
     action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
     input_streams::InputStreams, plugin::ToggleActions, Actionlike,
@@ -58,86 +59,6 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
-/// Flags to enable specific input type tracking.
-///
-/// They can be temporarily disabled by setting their fields to `false`
-/// and will be re-enabled after handling all conflicting inputs.
-///
-/// If you are dealing with conflicting input from other crates, this might be useful.
-///
-/// # Examples
-///
-/// ```
-/// use bevy::prelude::*;
-/// use leafwing_input_manager::prelude::*;
-///
-/// pub fn disable_keyboard(mut tracking_input: ResMut<TrackingInputType>) {
-///     tracking_input.keyboard = false;
-/// }
-///
-/// let mut app = App::new();
-///
-/// // Remember to set
-/// app.add_systems(PreUpdate, disable_keyboard.in_set(InputManagerSystem::PreUpdate));
-/// ```
-#[derive(Resource)]
-pub struct TrackingInputType {
-    /// Is tracking gamepad input?
-    pub gamepad: bool,
-
-    /// Is tracking keyboard input?
-    pub keyboard: bool,
-
-    /// Is tracking mouse input?
-    pub mouse: bool,
-}
-
-impl Default for TrackingInputType {
-    fn default() -> Self {
-        Self {
-            gamepad: true,
-            keyboard: true,
-            mouse: true,
-        }
-    }
-}
-
-/// Allow `bevy::ui` to take priority over actions when processing inputs.
-#[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
-pub fn prioritize_ui_inputs(
-    query_interactions: Query<&Interaction>,
-    mut tracking_input: ResMut<TrackingInputType>,
-) {
-    for interaction in query_interactions.iter() {
-        // If use clicks on a button, do not apply them to the game state
-        if *interaction != Interaction::None {
-            tracking_input.mouse = false;
-        }
-    }
-}
-
-/// Allow `egui` to take priority over actions when processing inputs.
-#[cfg(feature = "egui")]
-pub fn prioritize_egui_inputs(
-    mut query_egui_context: Query<(Entity, &'static mut EguiContext)>,
-    mut tracking_input: ResMut<TrackingInputType>,
-) {
-    for (_, mut egui_context) in query_egui_context.iter_mut() {
-        let context = egui_context.get_mut();
-
-        // If egui wants to own inputs, don't also apply them to the game state
-        if context.wants_keyboard_input() {
-            tracking_input.keyboard = false;
-        }
-
-        // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
-        // so `is_pointer_over_area` is also needed.
-        if context.is_pointer_over_area() || context.wants_pointer_input() {
-            tracking_input.mouse = false;
-        }
-    }
-}
-
 /// Fetches all of the relevant [`ButtonInput`] resources to update [`ActionState`] according to the [`InputMap`].
 ///
 /// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
@@ -157,14 +78,13 @@ pub fn update_action_state<A: Actionlike>(
     input_map: Option<Res<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
+    // Track these inputs only when the corresponding flags are enabled
     let gamepad_buttons = tracking_input.gamepad.then(|| gamepad_buttons.into_inner());
     let gamepad_button_axes = tracking_input
         .gamepad
         .then(|| gamepad_button_axes.into_inner());
     let gamepad_axes = tracking_input.gamepad.then(|| gamepad_axes.into_inner());
     let gamepads = tracking_input.gamepad.then(|| gamepads.into_inner());
-
-    // Track these inputs only when the corresponding flags are enabled
     let keycodes: Option<&ButtonInput<KeyCode>> = tracking_input
         .keyboard
         .then(|| keycodes.map(|keycodes| keycodes.into_inner()))

@@ -7,6 +7,11 @@ use crate::axislike::{
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
+#[cfg(feature = "egui")]
+use crate::conflicting_inputs::prioritize_egui_inputs;
+#[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
+use crate::conflicting_inputs::prioritize_ui_inputs;
+use crate::conflicting_inputs::TrackingInputType;
 use crate::input_map::InputMap;
 use crate::timing::Timing;
 use crate::user_input::{InputKind, Modifier, UserInput};
