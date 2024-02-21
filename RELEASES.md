@@ -27,6 +27,12 @@
 - `bevy` dependency has been bumped from 0.12 to 0.13.
 - `bevy_egui` dependency has been bumped from 0.24 to 0.25.
 
+## Version 0.12.2
+
+### Bugs
+
+- fixed a bug related to missing handling for `ActionState::consumed`
+
 ## Version 0.12.1
 
 ### Usability
