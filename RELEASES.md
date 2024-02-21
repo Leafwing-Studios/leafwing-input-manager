@@ -8,6 +8,12 @@
   - by default, this library will prioritize `bevy::ui`.
   - if you want to disable this priority, add the newly added `no_ui_priority` feature to your configuration.
 
+## Version 0.13.1
+
+### Bugs
+
+- fixed a bug related to missing handling for `ActionState::consumed`
+
 ## Version 0.13.0
 
 ### Breaking Changes
@@ -26,12 +32,6 @@
 
 - `bevy` dependency has been bumped from 0.12 to 0.13.
 - `bevy_egui` dependency has been bumped from 0.24 to 0.25.
-
-## Version 0.12.2
-
-### Bugs
-
-- fixed a bug related to missing handling for `ActionState::consumed`
 
 ## Version 0.12.1
 
