@@ -529,10 +529,9 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     pub fn current_duration(&self, action: &A) -> Duration {
-        let Some(action_data) = self.action_data(action) else {
-            return Duration::ZERO;
-        };
-        action_data.timing.current_duration
+        self.action_data(action)
+            .map(|data| data.timing.current_duration)
+            .unwrap_or_default()
     }
 
     /// The [`Duration`] for which the action was last held or released
@@ -542,10 +541,9 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     pub fn previous_duration(&self, action: &A) -> Duration {
-        let Some(action_data) = self.action_data(action) else {
-            return Duration::ZERO;
-        };
-        action_data.timing.previous_duration
+        self.action_data(action)
+            .map(|data| data.timing.previous_duration)
+            .unwrap_or_default()
     }
 
     /// Applies an [`ActionDiff`] (usually received over the network) to the [`ActionState`].

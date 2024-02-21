@@ -302,12 +302,10 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let action_data = self.which_pressed(input_streams, clash_strategy);
-        let Some(action_datum) = action_data.get(action) else {
-            return false;
-        };
-
-        action_datum.state.pressed()
+        self.which_pressed(input_streams, clash_strategy)
+            .get(action)
+            .map(|datum| datum.state.pressed())
+            .unwrap_or_default()
     }
 
     /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
