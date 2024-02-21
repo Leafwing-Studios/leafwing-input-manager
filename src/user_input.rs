@@ -93,48 +93,63 @@ impl UserInput {
     /// assert_eq!(ctrl_alt_a.n_matching(&buttons), 2);
     /// ```
     pub fn n_matching(&self, buttons: &HashSet<InputKind>) -> usize {
-        match self {
-            UserInput::Single(button) => usize::from(buttons.contains(button)),
-            UserInput::Chord(chord_buttons) => buttons
-                .iter()
-                .filter(|button| chord_buttons.contains(button))
-                .count(),
-            UserInput::VirtualDPad(dpad) => buttons
-                .iter()
-                .filter(|button| [dpad.up, dpad.down, dpad.left, dpad.right].contains(button))
-                .count(),
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => buttons
-                .iter()
-                .filter(|button| [negative, positive].contains(button))
-                .count(),
-        }
+        self.iter()
+            .filter(|button| buttons.contains(button))
+            .count()
     }
 
     /// Returns the raw inputs that make up this [`UserInput`]
     pub fn raw_inputs(&self) -> RawInputs {
-        let mut raw_inputs = RawInputs::default();
+        self.iter()
+            .fold(RawInputs::default(), |mut raw_inputs, input| {
+                raw_inputs.merge_input_data(&input);
+                raw_inputs
+            })
+    }
 
+    pub(crate) fn iter(&self) -> UserInputIter {
         match self {
-            UserInput::Single(button) => {
-                raw_inputs.merge_input_data(button);
+            UserInput::Single(button) => UserInputIter::Single(Some(*button)),
+            UserInput::Chord(buttons) => UserInputIter::Chord(buttons.iter()),
+            UserInput::VirtualDPad(dpad) => UserInputIter::VirtualDpad(
+                Some(dpad.up),
+                Some(dpad.down),
+                Some(dpad.left),
+                Some(dpad.right),
+            ),
+            UserInput::VirtualAxis(axis) => {
+                UserInputIter::VirtualAxis(Some(axis.negative), Some(axis.positive))
             }
-            UserInput::Chord(button_set) => {
-                for button in button_set.iter() {
-                    raw_inputs.merge_input_data(button);
-                }
-            }
-            UserInput::VirtualDPad(dpad) => {
-                for button in [dpad.up, dpad.down, dpad.left, dpad.right] {
-                    raw_inputs.merge_input_data(&button);
-                }
-            }
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                raw_inputs.merge_input_data(negative);
-                raw_inputs.merge_input_data(positive);
-            }
-        };
+        }
+    }
+}
 
-        raw_inputs
+pub(crate) enum UserInputIter<'a> {
+    Single(Option<InputKind>),
+    Chord(std::slice::Iter<'a, InputKind>),
+    VirtualDpad(
+        Option<InputKind>,
+        Option<InputKind>,
+        Option<InputKind>,
+        Option<InputKind>,
+    ),
+    VirtualAxis(Option<InputKind>, Option<InputKind>),
+}
+
+impl<'a> Iterator for UserInputIter<'a> {
+    type Item = InputKind;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self {
+            Self::Single(ref mut input) => input.take(),
+            Self::Chord(ref mut iter) => iter.next().copied(),
+            Self::VirtualDpad(ref mut up, ref mut down, ref mut left, ref mut right) => up
+                .take()
+                .or_else(|| down.take().or_else(|| left.take().or_else(|| right.take()))),
+            Self::VirtualAxis(ref mut negative, ref mut positive) => {
+                negative.take().or_else(|| positive.take())
+            }
+        }
     }
 }
 

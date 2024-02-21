@@ -13,7 +13,7 @@ use bevy::utils::HashSet;
 
 use crate::axislike::{
     deadzone_axis_value, AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
-    SingleAxis, VirtualAxis,
+    SingleAxis,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
@@ -79,14 +79,8 @@ impl<'a> InputStreams<'a> {
     /// Is the `input` matched by the [`InputStreams`]?
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
-            UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            UserInput::VirtualDPad(dpad) => [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
-                .into_iter()
-                .any(|button| self.button_pressed(*button)),
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.button_pressed(*negative) || self.button_pressed(*positive)
-            }
+            _ => input.iter().any(|button| self.button_pressed(button)),
         }
     }
 
