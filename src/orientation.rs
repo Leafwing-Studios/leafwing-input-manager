@@ -95,42 +95,26 @@ mod orientation_trait {
         #[inline]
         fn rotate_towards(&mut self, target_orientation: Self, max_rotation: Option<Rotation>) {
             if let Some(max_rotation) = max_rotation {
-                if self.distance(target_orientation) <= max_rotation {
-                    *self = target_orientation;
-                } else {
-                    let delta_rotation = match self.rotation_direction(target_orientation) {
-                        RotationDirection::CounterClockwise => max_rotation,
-                        RotationDirection::Clockwise => -max_rotation,
-                    };
+                if self.distance(target_orientation) > max_rotation {
+                    let sign = self.rotation_direction(target_orientation).sign() as f32;
+                    let delta_rotation = sign * max_rotation;
                     let current_rotation: Rotation = (*self).into();
                     let new_rotation: Rotation = current_rotation + delta_rotation;
 
                     *self = new_rotation.into();
                 }
-            } else {
-                *self = target_orientation;
+                return;
             }
+            *self = target_orientation;
         }
     }
 
     impl Orientation for Rotation {
         #[inline]
         fn distance(&self, other: Rotation) -> Rotation {
-            let initial_distance = if self.micro_degrees >= other.micro_degrees {
-                self.micro_degrees - other.micro_degrees
-            } else {
-                other.micro_degrees - self.micro_degrees
-            };
-
-            if initial_distance <= Rotation::FULL_CIRCLE / 2 {
-                Rotation {
-                    micro_degrees: initial_distance,
-                }
-            } else {
-                Rotation {
-                    micro_degrees: Rotation::FULL_CIRCLE - initial_distance,
-                }
-            }
+            let difference = self.micro_degrees_difference(other);
+            let micro_degrees = difference.min(Rotation::neg_micro_degrees(difference));
+            Rotation { micro_degrees }
         }
     }
 
@@ -390,6 +374,32 @@ mod rotation {
         pub fn into_degrees(self) -> f32 {
             self.micro_degrees as f32 / Rotation::DEGREE as f32
         }
+
+        /// Calculates the difference in micro-degrees between `self` and `rhs`.
+        #[inline]
+        #[must_use]
+        pub(crate) fn micro_degrees_difference(&self, rhs: Self) -> u32 {
+            (self.micro_degrees as i32 - rhs.micro_degrees as i32).unsigned_abs()
+        }
+
+        /// Returns the negation of the given micro-degrees.
+        #[inline]
+        #[must_use]
+        pub(crate) fn neg_micro_degrees(micro_degrees: u32) -> u32 {
+            Rotation::FULL_CIRCLE - micro_degrees
+        }
+
+        /// Calculates the micro-degrees from `self` subtracted by `rhs`.
+        #[inline]
+        #[must_use]
+        pub(crate) fn micro_degrees_sub_by(&self, rhs: Self) -> u32 {
+            let difference = self.micro_degrees_difference(rhs);
+            if self.micro_degrees >= rhs.micro_degrees {
+                difference
+            } else {
+                Rotation::neg_micro_degrees(difference)
+            }
+        }
     }
 
     impl Add for Rotation {
@@ -402,11 +412,7 @@ mod rotation {
     impl Sub for Rotation {
         type Output = Rotation;
         fn sub(self, rhs: Self) -> Rotation {
-            if self.micro_degrees >= rhs.micro_degrees {
-                Rotation::new(self.micro_degrees - rhs.micro_degrees)
-            } else {
-                Rotation::new(self.micro_degrees + Rotation::FULL_CIRCLE - rhs.micro_degrees)
-            }
+            Rotation::new(self.micro_degrees_sub_by(rhs))
         }
     }
 
@@ -418,13 +424,7 @@ mod rotation {
 
     impl SubAssign for Rotation {
         fn sub_assign(&mut self, rhs: Self) {
-            // Be sure to avoid overflow when subtracting
-            if self.micro_degrees >= rhs.micro_degrees {
-                self.micro_degrees = self.micro_degrees - rhs.micro_degrees;
-            } else {
-                self.micro_degrees =
-                    Rotation::FULL_CIRCLE - (rhs.micro_degrees - self.micro_degrees);
-            }
+            self.micro_degrees = self.micro_degrees_sub_by(rhs);
         }
     }
 
@@ -432,7 +432,7 @@ mod rotation {
         type Output = Rotation;
         fn neg(self) -> Rotation {
             Rotation {
-                micro_degrees: Rotation::FULL_CIRCLE - self.micro_degrees,
+                micro_degrees: Rotation::neg_micro_degrees(self.micro_degrees),
             }
         }
     }
@@ -682,10 +682,9 @@ mod conversions {
         type Error = NearlySingularConversion;
 
         fn try_from(vec2: Vec2) -> Result<Direction, NearlySingularConversion> {
-            match vec2.try_normalize() {
-                Some(unit_vector) => Ok(Direction { unit_vector }),
-                None => Err(NearlySingularConversion),
-            }
+            vec2.try_normalize()
+                .map(|unit_vector| Direction { unit_vector })
+                .ok_or(NearlySingularConversion)
         }
     }
 
@@ -710,10 +709,7 @@ mod conversions {
 
     impl From<Quat> for Direction {
         fn from(quaternion: Quat) -> Self {
-            match quaternion.mul_vec3(Vec3::X).truncate().try_normalize() {
-                Some(unit_vector) => Direction { unit_vector },
-                None => Default::default(),
-            }
+            quaternion.mul_vec3(Vec3::X).truncate().try_into().unwrap()
         }
     }
 

@@ -186,35 +186,32 @@ pub fn generate_action_diffs<A: Actionlike>(
                 continue;
             };
 
-            match action_data.axis_pair {
-                Some(axis_pair) => {
-                    diffs.push(ActionDiff::AxisPairChanged {
-                        action: action.clone(),
-                        axis_pair: axis_pair.into(),
-                    });
-                    previous_axis_pairs
-                        .entry(action)
-                        .or_default()
-                        .insert(maybe_entity, axis_pair.xy());
-                }
-                None => {
-                    let value = action_data.value;
+            if let Some(axis_pair) = action_data.axis_pair {
+                diffs.push(ActionDiff::AxisPairChanged {
+                    action: action.clone(),
+                    axis_pair: axis_pair.into(),
+                });
+                previous_axis_pairs
+                    .entry(action)
+                    .or_default()
+                    .insert(maybe_entity, axis_pair.xy());
+            } else {
+                let value = action_data.value;
 
-                    diffs.push(if value == 1. {
-                        ActionDiff::Pressed {
-                            action: action.clone(),
-                        }
-                    } else {
-                        ActionDiff::ValueChanged {
-                            action: action.clone(),
-                            value,
-                        }
-                    });
-                    previous_values
-                        .entry(action)
-                        .or_default()
-                        .insert(maybe_entity, value);
-                }
+                diffs.push(if value == 1. {
+                    ActionDiff::Pressed {
+                        action: action.clone(),
+                    }
+                } else {
+                    ActionDiff::ValueChanged {
+                        action: action.clone(),
+                        value,
+                    }
+                });
+                previous_values
+                    .entry(action)
+                    .or_default()
+                    .insert(maybe_entity, value);
             }
         }
         for action in action_state.get_pressed() {
@@ -227,35 +224,28 @@ pub fn generate_action_diffs<A: Actionlike>(
                 continue;
             };
 
-            match action_data.axis_pair {
-                Some(axis_pair) => {
-                    let previous_axis_pairs = previous_axis_pairs.get_mut(&action).unwrap();
+            if let Some(axis_pair) = action_data.axis_pair {
+                let current_value = axis_pair.xy();
+                let values = previous_axis_pairs.get_mut(&action).unwrap();
 
-                    if let Some(previous_axis_pair) = previous_axis_pairs.get(&maybe_entity) {
-                        if *previous_axis_pair == axis_pair.xy() {
-                            continue;
-                        }
-                    }
+                let existing_value = values.get(&maybe_entity);
+                if !matches!(existing_value, Some(value) if *value == current_value) {
                     diffs.push(ActionDiff::AxisPairChanged {
                         action: action.clone(),
                         axis_pair: axis_pair.into(),
                     });
-                    previous_axis_pairs.insert(maybe_entity, axis_pair.xy());
+                    values.insert(maybe_entity, current_value);
                 }
-                None => {
-                    let value = action_data.value;
-                    let previous_values = previous_values.get_mut(&action).unwrap();
+            } else {
+                let current_value = action_data.value;
+                let values = previous_values.get_mut(&action).unwrap();
 
-                    if let Some(previous_value) = previous_values.get(&maybe_entity) {
-                        if *previous_value == value {
-                            continue;
-                        }
-                    }
+                if !matches!(values.get(&maybe_entity), Some(value) if *value == current_value) {
                     diffs.push(ActionDiff::ValueChanged {
                         action: action.clone(),
-                        value,
+                        value: current_value,
                     });
-                    previous_values.insert(maybe_entity, value);
+                    values.insert(maybe_entity, current_value);
                 }
             }
         }

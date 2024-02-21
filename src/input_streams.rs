@@ -13,7 +13,7 @@ use bevy::utils::HashSet;
 
 use crate::axislike::{
     deadzone_axis_value, AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
-    SingleAxis, VirtualAxis,
+    SingleAxis,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
@@ -79,14 +79,8 @@ impl<'a> InputStreams<'a> {
     /// Is the `input` matched by the [`InputStreams`]?
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
-            UserInput::Single(button) => self.button_pressed(*button),
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            UserInput::VirtualDPad(dpad) => [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
-                .into_iter()
-                .any(|button| self.button_pressed(*button)),
-            UserInput::VirtualAxis(VirtualAxis { negative, positive }) => {
-                self.button_pressed(*negative) || self.button_pressed(*positive)
-            }
+            _ => input.iter().any(|button| self.button_pressed(button)),
         }
     }
 
@@ -325,15 +319,13 @@ impl<'a> InputStreams<'a> {
     pub fn input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
         match input {
             UserInput::Chord(inputs) => {
-                for input_kind in inputs.iter() {
-                    // Exclude chord combining both button-like and axis-like inputs unless all buttons are pressed.
-                    if !self.button_pressed(*input_kind) {
-                        return None;
-                    }
-
-                    // Return result of the first dual axis in the chord.
-                    if let InputKind::DualAxis(dual_axis) = input_kind {
-                        return Some(self.extract_dual_axis_data(dual_axis).unwrap_or_default());
+                if self.all_buttons_pressed(inputs) {
+                    for input_kind in inputs.iter() {
+                        // Return result of the first dual axis in the chord.
+                        if let InputKind::DualAxis(dual_axis) = input_kind {
+                            let data = self.extract_dual_axis_data(dual_axis).unwrap_or_default();
+                            return Some(data);
+                        }
                     }
                 }
                 None
@@ -458,10 +450,8 @@ impl<'a> MutableInputStreams<'a> {
     /// If an associated gamepad is set, use that.
     /// Otherwise use the first registered gamepad, if any.
     pub fn guess_gamepad(&self) -> Option<Gamepad> {
-        match self.associated_gamepad {
-            Some(gamepad) => Some(gamepad),
-            None => self.gamepads.iter().next(),
-        }
+        self.associated_gamepad
+            .or_else(|| self.gamepads.iter().next())
     }
 }
 

@@ -42,17 +42,27 @@ pub struct SingleAxis {
 }
 
 impl SingleAxis {
-    /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
+    /// Creates a [`SingleAxis`] with the given `positive_low` and `negative_low` thresholds.
     #[must_use]
-    pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+    pub const fn with_threshold(
+        axis_type: AxisType,
+        negative_low: f32,
+        positive_low: f32,
+    ) -> SingleAxis {
         SingleAxis {
-            axis_type: axis_type.into(),
-            positive_low: threshold,
-            negative_low: -threshold,
+            axis_type,
+            positive_low,
+            negative_low,
             inverted: false,
             sensitivity: 1.0,
             value: None,
         }
+    }
+
+    /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
+    #[must_use]
+    pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        Self::with_threshold(axis_type.into(), -threshold, threshold)
     }
 
     /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
@@ -74,81 +84,43 @@ impl SingleAxis {
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
     pub const fn mouse_wheel_x() -> SingleAxis {
-        SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            positive_low: 0.,
-            negative_low: 0.,
-            inverted: false,
-            sensitivity: 1.0,
-            value: None,
-        }
+        let axis_type = AxisType::MouseWheel(MouseWheelAxisType::X);
+        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
     pub const fn mouse_wheel_y() -> SingleAxis {
-        SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            positive_low: 0.,
-            negative_low: 0.,
-            inverted: false,
-            sensitivity: 1.0,
-            value: None,
-        }
+        let axis_type = AxisType::MouseWheel(MouseWheelAxisType::Y);
+        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
     pub const fn mouse_motion_x() -> SingleAxis {
-        SingleAxis {
-            axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-            positive_low: 0.,
-            negative_low: 0.,
-            inverted: false,
-            sensitivity: 1.0,
-            value: None,
-        }
+        let axis_type = AxisType::MouseMotion(MouseMotionAxisType::X);
+        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
     pub const fn mouse_motion_y() -> SingleAxis {
-        SingleAxis {
-            axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            positive_low: 0.,
-            negative_low: 0.,
-            inverted: false,
-            sensitivity: 1.0,
-            value: None,
-        }
+        let axis_type = AxisType::MouseMotion(MouseMotionAxisType::Y);
+        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
     }
 
     /// Creates a [`SingleAxis`] with the `axis_type` and `negative_low` set to `threshold`.
     ///
     /// Positive values will not trigger the input.
     pub fn negative_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        SingleAxis {
-            axis_type: axis_type.into(),
-            negative_low: threshold,
-            positive_low: f32::MAX,
-            inverted: false,
-            sensitivity: 1.0,
-            value: None,
-        }
+        SingleAxis::with_threshold(axis_type.into(), threshold, f32::MAX)
     }
 
     /// Creates a [`SingleAxis`] with the `axis_type` and `positive_low` set to `threshold`.
     ///
     /// Negative values will not trigger the input.
     pub fn positive_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        SingleAxis {
-            axis_type: axis_type.into(),
-            negative_low: f32::MIN,
-            positive_low: threshold,
-            inverted: false,
-            sensitivity: 1.0,
-            value: None,
-        }
+        SingleAxis::with_threshold(axis_type.into(), f32::MIN, threshold)
     }
 
     /// Returns this [`SingleAxis`] with the deadzone set to the specified value
@@ -268,22 +240,26 @@ impl DualAxis {
 
     /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
     #[must_use]
-    pub fn left_stick() -> DualAxis {
-        DualAxis::symmetric(
-            GamepadAxisType::LeftStickX,
-            GamepadAxisType::LeftStickY,
-            Self::DEFAULT_DEADZONE_SHAPE,
-        )
+    pub const fn left_stick() -> DualAxis {
+        let axis_x = AxisType::Gamepad(GamepadAxisType::LeftStickX);
+        let axis_y = AxisType::Gamepad(GamepadAxisType::LeftStickY);
+        DualAxis {
+            x: SingleAxis::with_threshold(axis_x, 0.0, 0.0),
+            y: SingleAxis::with_threshold(axis_y, 0.0, 0.0),
+            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+        }
     }
 
     /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
     #[must_use]
-    pub fn right_stick() -> DualAxis {
-        DualAxis::symmetric(
-            GamepadAxisType::RightStickX,
-            GamepadAxisType::RightStickY,
-            Self::DEFAULT_DEADZONE_SHAPE,
-        )
+    pub const fn right_stick() -> DualAxis {
+        let axis_x = AxisType::Gamepad(GamepadAxisType::RightStickX);
+        let axis_y = AxisType::Gamepad(GamepadAxisType::RightStickY);
+        DualAxis {
+            x: SingleAxis::with_threshold(axis_x, 0.0, 0.0),
+            y: SingleAxis::with_threshold(axis_y, 0.0, 0.0),
+            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+        }
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
@@ -363,7 +339,7 @@ pub struct VirtualDPad {
 
 impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
-    pub fn arrow_keys() -> VirtualDPad {
+    pub const fn arrow_keys() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::ArrowUp),
             down: InputKind::PhysicalKey(KeyCode::ArrowDown),
@@ -378,7 +354,7 @@ impl VirtualDPad {
     /// The _location_ of the keys is the same on all keyboard layouts.
     /// This ensures that the classic triangular shape is retained on all layouts,
     /// which enables comfortable movement controls.
-    pub fn wasd() -> VirtualDPad {
+    pub const fn wasd() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::KeyW),
             down: InputKind::PhysicalKey(KeyCode::KeyS),
@@ -389,7 +365,7 @@ impl VirtualDPad {
 
     #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
     /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
-    pub fn dpad() -> VirtualDPad {
+    pub const fn dpad() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
@@ -401,7 +377,7 @@ impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the face buttons on a gamepad
     ///
     /// North corresponds to up, west corresponds to left, east corresponds to right, south corresponds to down
-    pub fn gamepad_face_buttons() -> VirtualDPad {
+    pub const fn gamepad_face_buttons() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::North),
             down: InputKind::GamepadButton(GamepadButtonType::South),
@@ -411,7 +387,7 @@ impl VirtualDPad {
     }
 
     /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
-    pub fn mouse_wheel() -> VirtualDPad {
+    pub const fn mouse_wheel() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::MouseWheel(MouseWheelDirection::Up),
             down: InputKind::MouseWheel(MouseWheelDirection::Down),
@@ -421,7 +397,7 @@ impl VirtualDPad {
     }
 
     /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
-    pub fn mouse_motion() -> VirtualDPad {
+    pub const fn mouse_motion() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::MouseMotion(MouseMotionDirection::Up),
             down: InputKind::MouseMotion(MouseMotionDirection::Down),
@@ -467,7 +443,7 @@ pub struct VirtualAxis {
 impl VirtualAxis {
     /// Helper function for generating a [`VirtualAxis`] from arbitrary keycodes, shorthand for
     /// wrapping each key in [`InputKind::PhysicalKey`]
-    pub fn from_keys(negative: KeyCode, positive: KeyCode) -> VirtualAxis {
+    pub const fn from_keys(negative: KeyCode, positive: KeyCode) -> VirtualAxis {
         VirtualAxis {
             negative: InputKind::PhysicalKey(negative),
             positive: InputKind::PhysicalKey(positive),
@@ -475,28 +451,28 @@ impl VirtualAxis {
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
-    pub fn horizontal_arrow_keys() -> VirtualAxis {
+    pub const fn horizontal_arrow_keys() -> VirtualAxis {
         VirtualAxis::from_keys(KeyCode::ArrowLeft, KeyCode::ArrowRight)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the horizontal arrow keyboard keycodes
-    pub fn vertical_arrow_keys() -> VirtualAxis {
+    pub const fn vertical_arrow_keys() -> VirtualAxis {
         VirtualAxis::from_keys(KeyCode::ArrowDown, KeyCode::ArrowUp)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the `AD` keyboard keycodes.
-    pub fn ad() -> VirtualAxis {
+    pub const fn ad() -> VirtualAxis {
         VirtualAxis::from_keys(KeyCode::KeyA, KeyCode::KeyD)
     }
 
     /// Generates a [`VirtualAxis`] corresponding to the `WS` keyboard keycodes.
-    pub fn ws() -> VirtualAxis {
+    pub const fn ws() -> VirtualAxis {
         VirtualAxis::from_keys(KeyCode::KeyS, KeyCode::KeyW)
     }
 
     #[allow(clippy::doc_markdown)]
     /// Generates a [`VirtualAxis`] corresponding to the horizontal DPad buttons on a gamepad.
-    pub fn horizontal_dpad() -> VirtualAxis {
+    pub const fn horizontal_dpad() -> VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadRight),
@@ -505,10 +481,28 @@ impl VirtualAxis {
 
     #[allow(clippy::doc_markdown)]
     /// Generates a [`VirtualAxis`] corresponding to the vertical DPad buttons on a gamepad.
-    pub fn vertical_dpad() -> VirtualAxis {
+    pub const fn vertical_dpad() -> VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
+        }
+    }
+
+    #[allow(clippy::doc_markdown)]
+    /// Generates a [`VirtualAxis`] corresponding to the horizontal gamepad face buttons.
+    pub const fn horizontal_gamepad_face_buttons() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::GamepadButton(GamepadButtonType::West),
+            positive: InputKind::GamepadButton(GamepadButtonType::East),
+        }
+    }
+
+    #[allow(clippy::doc_markdown)]
+    /// Generates a [`VirtualAxis`] corresponding to the vertical gamepad face buttons.
+    pub const fn vertical_gamepad_face_buttons() -> VirtualAxis {
+        VirtualAxis {
+            negative: InputKind::GamepadButton(GamepadButtonType::South),
+            positive: InputKind::GamepadButton(GamepadButtonType::North),
         }
     }
 

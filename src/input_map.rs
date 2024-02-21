@@ -13,7 +13,7 @@ use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::Reflect;
-use bevy::utils::{Entry, HashMap};
+use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
 use core::fmt::Debug;
@@ -163,20 +163,9 @@ impl<A: Actionlike> InputMap<A> {
         let input = input.into();
 
         // Check for existing copies of the input: insertion should be idempotent
-        if let Some(vec) = self.map.get(&action) {
-            if vec.contains(&input) {
-                return self;
-            }
+        if !matches!(self.map.get(&action), Some(vec) if vec.contains(&input)) {
+            self.map.entry(action).or_default().push(input);
         }
-
-        match self.map.entry(action) {
-            Entry::Occupied(mut entry) => {
-                entry.get_mut().push(input);
-            }
-            Entry::Vacant(entry) => {
-                entry.insert(vec![input]);
-            }
-        };
 
         self
     }
@@ -302,12 +291,10 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let action_data = self.which_pressed(input_streams, clash_strategy);
-        let Some(action_datum) = action_data.get(action) else {
-            return false;
-        };
-
-        action_datum.state.pressed()
+        self.which_pressed(input_streams, clash_strategy)
+            .get(action)
+            .map(|datum| datum.state.pressed())
+            .unwrap_or_default()
     }
 
     /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
