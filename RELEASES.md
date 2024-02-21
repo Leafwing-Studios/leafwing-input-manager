@@ -8,6 +8,11 @@
   - by default, this library will prioritize `bevy::ui`.
   - if you want to disable this priority, add the newly added `no_ui_priority` feature to your configuration.
 
+### Usability
+
+- allowed setting `TrackingState` of specific input type tracking via `TrackingInputType` resource
+- added run conditions that are active when the `TrackingInputType` resource is enabled for specific input types
+
 ## Version 0.13.0
 
 ### Breaking Changes

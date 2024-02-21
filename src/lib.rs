@@ -16,6 +16,7 @@ pub mod axislike;
 pub mod buttonlike;
 pub mod clashing_inputs;
 pub mod common_conditions;
+pub mod conflicting_inputs;
 mod display_impl;
 pub mod errors;
 pub mod input_map;
@@ -45,6 +46,7 @@ pub mod prelude {
     pub use crate::input_mocking::{MockInput, QueryInput};
     pub use crate::user_input::{InputKind, Modifier, UserInput};
 
+    pub use crate::conflicting_inputs::{TrackingInputType, TrackingState};
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};

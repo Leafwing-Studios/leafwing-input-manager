@@ -7,6 +7,11 @@ use crate::axislike::{
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
+#[cfg(feature = "egui")]
+use crate::conflicting_inputs::prioritize_egui_inputs;
+#[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
+use crate::conflicting_inputs::prioritize_ui_inputs;
+use crate::conflicting_inputs::TrackingInputType;
 use crate::input_map::InputMap;
 use crate::timing::Timing;
 use crate::user_input::{InputKind, Modifier, UserInput};
@@ -111,7 +116,14 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
 
                 app.add_systems(
                     PreUpdate,
-                    update_action_state::<A>
+                    (
+                        #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
+                        prioritize_ui_inputs,
+                        #[cfg(feature = "egui")]
+                        prioritize_egui_inputs,
+                        update_action_state::<A>,
+                    )
+                        .chain()
                         .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Update),
                 );
@@ -179,6 +191,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<MouseWheelDirection>()
             .register_type::<MouseMotionDirection>()
             // Resources
+            .init_resource::<TrackingInputType>()
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();
     }
