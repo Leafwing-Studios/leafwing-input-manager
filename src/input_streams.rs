@@ -319,15 +319,13 @@ impl<'a> InputStreams<'a> {
     pub fn input_axis_pair(&self, input: &UserInput) -> Option<DualAxisData> {
         match input {
             UserInput::Chord(inputs) => {
-                for input_kind in inputs.iter() {
-                    // Exclude chord combining both button-like and axis-like inputs unless all buttons are pressed.
-                    if !self.button_pressed(*input_kind) {
-                        return None;
-                    }
-
-                    // Return result of the first dual axis in the chord.
-                    if let InputKind::DualAxis(dual_axis) = input_kind {
-                        return Some(self.extract_dual_axis_data(dual_axis).unwrap_or_default());
+                if self.all_buttons_pressed(inputs) {
+                    for input_kind in inputs.iter() {
+                        // Return result of the first dual axis in the chord.
+                        if let InputKind::DualAxis(dual_axis) = input_kind {
+                            let data = self.extract_dual_axis_data(dual_axis).unwrap_or_default();
+                            return Some(data);
+                        }
                     }
                 }
                 None
