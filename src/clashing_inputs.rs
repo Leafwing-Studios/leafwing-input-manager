@@ -9,6 +9,7 @@ use crate::Actionlike;
 
 use bevy::prelude::Resource;
 use bevy::utils::HashMap;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 
@@ -52,31 +53,30 @@ impl UserInput {
     fn clashes(&self, other: &UserInput) -> bool {
         use UserInput::*;
 
-        match self {
-            Single(self_button) => match other {
-                Single(_) => false,
-                Chord(other_chord) => button_chord_clash(self_button, other_chord),
-                VirtualDPad(other_dpad) => dpad_button_clash(other_dpad, self_button),
-                VirtualAxis(other_axis) => virtual_axis_button_clash(other_axis, self_button),
-            },
-            Chord(self_chord) => match other {
-                Single(other_button) => button_chord_clash(other_button, self_chord),
-                Chord(other_chord) => chord_chord_clash(self_chord, other_chord),
-                VirtualDPad(other_dpad) => dpad_chord_clash(other_dpad, self_chord),
-                VirtualAxis(other_axis) => virtual_axis_chord_clash(other_axis, self_chord),
-            },
-            VirtualDPad(self_dpad) => match other {
-                Single(other_button) => dpad_button_clash(self_dpad, other_button),
-                Chord(other_chord) => dpad_chord_clash(self_dpad, other_chord),
-                VirtualDPad(other_dpad) => dpad_dpad_clash(self_dpad, other_dpad),
-                VirtualAxis(other_axis) => virtual_axis_dpad_clash(other_axis, self_dpad),
-            },
-            VirtualAxis(self_axis) => match other {
-                Single(other_button) => virtual_axis_button_clash(self_axis, other_button),
-                Chord(other_chord) => virtual_axis_chord_clash(self_axis, other_chord),
-                VirtualDPad(other_dpad) => virtual_axis_dpad_clash(self_axis, other_dpad),
-                VirtualAxis(other_axis) => virtual_axis_virtual_axis_clash(self_axis, other_axis),
-            },
+        match (self, other) {
+            (Single(_), Single(_)) => false,
+            (Chord(self_chord), Chord(other_chord)) => chord_chord_clash(self_chord, other_chord),
+            (Single(self_button), Chord(other_chord)) => {
+                button_chord_clash(self_button, other_chord)
+            }
+            (Chord(self_chord), Single(other_button)) => {
+                button_chord_clash(other_button, self_chord)
+            }
+            (VirtualDPad(self_dpad), Chord(other_chord)) => {
+                dpad_chord_clash(self_dpad, other_chord)
+            }
+            (Chord(self_chord), VirtualDPad(other_dpad)) => {
+                dpad_chord_clash(other_dpad, self_chord)
+            }
+            (VirtualAxis(self_axis), Chord(other_chord)) => {
+                virtual_axis_chord_clash(self_axis, other_chord)
+            }
+            (Chord(self_chord), VirtualAxis(other_axis)) => {
+                virtual_axis_chord_clash(other_axis, self_chord)
+            }
+            _ => self
+                .iter()
+                .any(|self_input| other.iter().contains(&self_input)),
         }
     }
 }
@@ -158,8 +158,8 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        let not_empty = !clash.inputs_a.is_empty();
-        not_empty.then_some(clash)
+        let clashed = !clash.inputs_a.is_empty();
+        clashed.then_some(clash)
     }
 }
 
@@ -201,40 +201,12 @@ fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
             .any(|button| [dpad.up, dpad.down, dpad.left, dpad.right].contains(button))
 }
 
-fn dpad_button_clash(dpad: &VirtualDPad, button: &InputKind) -> bool {
-    [dpad.up, dpad.down, dpad.left, dpad.right].contains(button)
-}
-
-fn dpad_dpad_clash(dpad1: &VirtualDPad, dpad2: &VirtualDPad) -> bool {
-    [dpad1.up, dpad1.down, dpad1.left, dpad1.right]
-        .into_iter()
-        .any(|button| [dpad2.up, dpad2.down, dpad2.left, dpad2.right].contains(&button))
-}
-
-#[must_use]
-fn virtual_axis_button_clash(axis: &VirtualAxis, button: &InputKind) -> bool {
-    button == &axis.negative || button == &axis.positive
-}
-
-#[must_use]
-fn virtual_axis_dpad_clash(axis: &VirtualAxis, dpad: &VirtualDPad) -> bool {
-    [&dpad.up, &dpad.down, &dpad.left, &dpad.right]
-        .iter()
-        .any(|button| virtual_axis_button_clash(axis, button))
-}
-
 #[must_use]
 fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &[InputKind]) -> bool {
     chord.len() > 1
         && chord
             .iter()
-            .any(|button| virtual_axis_button_clash(axis, button))
-}
-
-#[must_use]
-fn virtual_axis_virtual_axis_clash(axis1: &VirtualAxis, axis2: &VirtualAxis) -> bool {
-    virtual_axis_button_clash(axis1, &axis2.negative)
-        || virtual_axis_button_clash(axis1, &axis2.positive)
+            .any(|button| *button == axis.negative || *button == axis.positive)
 }
 
 /// Does the `chord_a` clash with `chord_b`?
@@ -282,8 +254,8 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
         }
     }
 
-    let not_empty = !clash.inputs_a.is_empty();
-    not_empty.then_some(actual_clash)
+    let clashed = !clash.inputs_a.is_empty();
+    clashed.then_some(actual_clash)
 }
 
 /// Which (if any) of the actions in the [`Clash`] should be discarded?
