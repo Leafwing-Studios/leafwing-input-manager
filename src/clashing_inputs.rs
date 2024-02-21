@@ -127,17 +127,13 @@ impl<A: Actionlike> InputMap<A> {
 
         // We can limit our search to the cached set of possibly clashing actions
         for clash in self.possible_clashes() {
-            let Some(data_a) = action_data.get(&clash.action_a) else {
-                continue;
-            };
-
-            let Some(data_b) = action_data.get(&clash.action_b) else {
-                continue;
+            let pressed = |action: &A| -> bool {
+                matches!(action_data.get(action), Some(data) if data.state.pressed())
             };
 
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
-            if data_a.state.pressed() && data_b.state.pressed() {
+            if pressed(&clash.action_a) && pressed(&clash.action_b) {
                 // Check if the potential clash occurred based on the pressed inputs
                 if let Some(clash) = check_clash(&clash, input_streams) {
                     clashes.push(clash)
