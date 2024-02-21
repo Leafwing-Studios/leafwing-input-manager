@@ -118,10 +118,9 @@ impl<A: Actionlike> ActionState<A> {
                     ButtonState::Released => self.release(&action),
                 }
 
-                if let Some(current_data) = self.action_data.get_mut(&action) {
-                    current_data.axis_pair = action_datum.axis_pair;
-                    current_data.value = action_datum.value;
-                }
+                let current_data = self.action_data.get_mut(&action).unwrap();
+                current_data.axis_pair = action_datum.axis_pair;
+                current_data.value = action_datum.value;
             } else {
                 self.action_data.insert(action, action_datum.clone());
             }
