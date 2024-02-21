@@ -458,10 +458,8 @@ impl<'a> MutableInputStreams<'a> {
     /// If an associated gamepad is set, use that.
     /// Otherwise use the first registered gamepad, if any.
     pub fn guess_gamepad(&self) -> Option<Gamepad> {
-        match self.associated_gamepad {
-            Some(gamepad) => Some(gamepad),
-            None => self.gamepads.iter().next(),
-        }
+        self.associated_gamepad
+            .or_else(|| self.gamepads.iter().next())
     }
 }
 
