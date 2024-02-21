@@ -8,6 +8,16 @@
   - by default, this library will prioritize `bevy::ui`.
   - if you want to disable this priority, add the newly added `no_ui_priority` feature to your configuration.
 
+## Version 0.13.1
+
+### Bugs
+
+- fixed a bug related to missing handling for `ActionState::consumed`
+
+### Usability
+
+- exported `ActionState::action_data_mut_or_default()`
+
 ## Version 0.13.0
 
 ### Breaking Changes

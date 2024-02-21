@@ -8,7 +8,7 @@ use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 use bevy::ecs::component::Component;
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
-use bevy::utils::{Duration, Entry, HashMap, Instant};
+use bevy::utils::{Duration, HashMap, Instant};
 use serde::{Deserialize, Serialize};
 
 /// Metadata about an [`Actionlike`] action
@@ -109,23 +109,20 @@ impl<A: Actionlike> ActionState<A> {
             }
         }
         for (action, action_datum) in action_data {
-            match self.action_data.entry(action) {
-                Entry::Occupied(occupied_entry) => {
-                    let entry = occupied_entry.into_mut();
-
-                    match action_datum.state {
-                        ButtonState::JustPressed => entry.state.press(),
-                        ButtonState::Pressed => entry.state.press(),
-                        ButtonState::JustReleased => entry.state.release(),
-                        ButtonState::Released => entry.state.release(),
-                    }
-
-                    entry.axis_pair = action_datum.axis_pair;
-                    entry.value = action_datum.value;
+            // Avoid multiple mut borrows, make the compiler happy
+            if self.action_data.contains_key(&action) {
+                match action_datum.state {
+                    ButtonState::JustPressed => self.press(&action),
+                    ButtonState::Pressed => self.press(&action),
+                    ButtonState::JustReleased => self.release(&action),
+                    ButtonState::Released => self.release(&action),
                 }
-                Entry::Vacant(empty_entry) => {
-                    empty_entry.insert(action_datum.clone());
-                }
+
+                let current_data = self.action_data.get_mut(&action).unwrap();
+                current_data.axis_pair = action_datum.axis_pair;
+                current_data.value = action_datum.value;
+            } else {
+                self.action_data.insert(action, action_datum.clone());
             }
         }
     }
