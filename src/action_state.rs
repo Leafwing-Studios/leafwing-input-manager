@@ -109,7 +109,7 @@ impl<A: Actionlike> ActionState<A> {
             }
         }
         for (action, action_datum) in action_data {
-            // Avoid multiple mut borrow, make the compiler happy
+            // Avoid multiple mut borrows, make the compiler happy
             if self.action_data.contains_key(&action) {
                 match action_datum.state {
                     ButtonState::JustPressed => self.press(&action),
