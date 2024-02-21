@@ -95,9 +95,7 @@ mod orientation_trait {
         #[inline]
         fn rotate_towards(&mut self, target_orientation: Self, max_rotation: Option<Rotation>) {
             if let Some(max_rotation) = max_rotation {
-                if self.distance(target_orientation) <= max_rotation {
-                    *self = target_orientation;
-                } else {
+                if self.distance(target_orientation) > max_rotation {
                     let delta_rotation = match self.rotation_direction(target_orientation) {
                         RotationDirection::CounterClockwise => max_rotation,
                         RotationDirection::Clockwise => -max_rotation,
@@ -107,9 +105,9 @@ mod orientation_trait {
 
                     *self = new_rotation.into();
                 }
-            } else {
-                *self = target_orientation;
+                return;
             }
+            *self = target_orientation;
         }
     }
 

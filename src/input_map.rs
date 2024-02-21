@@ -13,7 +13,7 @@ use bevy::ecs::component::Component;
 use bevy::ecs::system::Resource;
 use bevy::input::gamepad::Gamepad;
 use bevy::reflect::Reflect;
-use bevy::utils::{Entry, HashMap};
+use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
 use core::fmt::Debug;
@@ -163,20 +163,9 @@ impl<A: Actionlike> InputMap<A> {
         let input = input.into();
 
         // Check for existing copies of the input: insertion should be idempotent
-        if let Some(vec) = self.map.get(&action) {
-            if vec.contains(&input) {
-                return self;
-            }
+        if !matches!(self.map.get(&action), Some(vec) if vec.contains(&input)) {
+            self.map.entry(action).or_default().push(input);
         }
-
-        match self.map.entry(action) {
-            Entry::Occupied(mut entry) => {
-                entry.get_mut().push(input);
-            }
-            Entry::Vacant(entry) => {
-                entry.insert(vec![input]);
-            }
-        };
 
         self
     }
