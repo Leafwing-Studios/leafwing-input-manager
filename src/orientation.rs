@@ -113,11 +113,7 @@ mod orientation_trait {
         #[inline]
         fn distance(&self, other: Rotation) -> Rotation {
             let difference = self.micro_degrees_difference(other);
-            let micro_degrees = if difference <= Rotation::HALF_CIRCLE {
-                difference
-            } else {
-                Rotation::neg_micro_degrees(difference)
-            };
+            let micro_degrees = difference.min(Rotation::neg_micro_degrees(difference));
             Rotation { micro_degrees }
         }
     }
