@@ -212,19 +212,12 @@ fn virtual_axis_chord_clash(axis: &VirtualAxis, chord: &[InputKind]) -> bool {
 /// Does the `chord_a` clash with `chord_b`?
 #[must_use]
 fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool {
-    if chord_a.len() <= 1 || chord_b.len() <= 1 {
-        return false;
-    }
-
-    if chord_a == chord_b {
-        return false;
-    }
-
     fn is_subset(slice_a: &[InputKind], slice_b: &[InputKind]) -> bool {
         slice_a.iter().all(|a| slice_b.contains(a))
     }
 
-    is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a)
+    let prerequisite = chord_a.len() > 1 && chord_b.len() > 1 && chord_a != chord_b;
+    prerequisite && (is_subset(chord_a, chord_b) || is_subset(chord_b, chord_a))
 }
 
 /// Given the `input_streams`, does the provided clash actually occur?
