@@ -35,7 +35,7 @@ fn spawn_player(mut commands: Commands) {
                 .insert(Action::Move, DualAxis::left_stick())
                 // Let's bind the right gamepad trigger to the throttle action
                 .insert(Action::Throttle, GamepadButtonType::RightTrigger2)
-                // And we'll use the right stick's x axis as a rudder control
+                // And we'll use the right stick's x-axis as a rudder control
                 .insert(
                     // This will trigger if the axis is moved 10% or more in either direction.
                     Action::Rudder,

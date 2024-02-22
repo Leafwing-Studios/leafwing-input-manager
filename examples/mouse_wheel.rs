@@ -28,8 +28,8 @@ fn setup(mut commands: Commands) {
                 // This will return a binary button-like output.
                 .insert(CameraMovement::PanLeft, MouseWheelDirection::Left)
                 .insert(CameraMovement::PanRight, MouseWheelDirection::Right)
-                // Alternatively, you could model this as a virtual Dpad,
-                // which is extremely useful when you want to model 4-directional buttonlike inputs using the mouse wheel
+                // Alternatively, you could model this as a virtual Dpad.
+                // It's extremely useful for modeling 4-directional button-like inputs with the mouse wheel
                 // .insert(VirtualDpad::mouse_wheel(), Pan)
                 // Or even a continuous `DualAxis`!
                 // .insert(DualAxis::mouse_wheel(), Pan)
@@ -53,9 +53,9 @@ fn zoom_camera(
     // Up and right axis movements are always positive by default
     let zoom_delta = action_state.value(&CameraMovement::Zoom);
 
-    // We want to zoom in when we use mouse wheel up
+    // We want to zoom in when we use mouse wheel up,
     // so we increase the scale proportionally
-    // Note that the projections scale should always be positive (or our images will flip)
+    // Note that the projection's scale should always be positive (or our images will flip)
     camera_projection.scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE;
 }
 

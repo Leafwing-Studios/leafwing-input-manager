@@ -55,7 +55,7 @@ fn disable_input() {
 
     let mut app = App::new();
 
-    // Here we spawn a player and creating a global action state to check if [`DisableInput`]
+    // Here we spawn a player and create a global action state to check if [`DisableInput`]
     // releases correctly both
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
@@ -178,7 +178,7 @@ fn action_state_driver() {
     let respect = app.world.resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
-    // Click button to pay respects
+    // Click the button to pay respects
     app.click_button::<ButtonMarker>();
 
     // Verify that the button was in fact clicked

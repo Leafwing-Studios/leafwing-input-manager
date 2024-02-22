@@ -40,7 +40,7 @@ fn join(
         if button_inputs.pressed(GamepadButton::new(gamepad, GamepadButtonType::LeftTrigger))
             && button_inputs.pressed(GamepadButton::new(gamepad, GamepadButtonType::RightTrigger))
         {
-            // Make sure a player can not join twice
+            // Make sure a player cannot join twice
             if !joined_players.0.contains_key(&gamepad) {
                 println!("Player {} has joined the game!", gamepad.id);
 

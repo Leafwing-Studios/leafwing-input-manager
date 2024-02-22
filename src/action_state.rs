@@ -153,7 +153,7 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(action_state.released(&Action::Jump));
     /// assert!(!action_state.just_released(&Action::Run));
     ///
-    /// // Ticking time moves causes buttons that were just released to no longer be just released
+    /// // Ticking time moves causes buttons just released to no longer be just released
     /// let t0 = Instant::now();
     /// let t1 = Instant::now();
     ///
@@ -164,7 +164,7 @@ impl<A: Actionlike> ActionState<A> {
     /// action_state.press(&Action::Jump);
     /// assert!(action_state.just_pressed(&Action::Jump));
     ///
-    /// // Ticking time moves causes buttons that were just pressed to no longer be just pressed
+    /// // Ticking time moves causes buttons just pressed to no longer be just pressed
     /// let t2 = Instant::now();
     ///
     /// action_state.tick(t2, t1);
@@ -184,7 +184,7 @@ impl<A: Actionlike> ActionState<A> {
         });
     }
 
-    /// A reference to the [`ActionData`] of the corresponding `action` if populated.
+    /// A reference of the [`ActionData`] corresponding to the `action` if populated.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
@@ -194,7 +194,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.get(action)
     }
 
-    /// A mutable reference of the [`ActionData`] of the corresponding `action` if populated.
+    /// A mutable reference of the [`ActionData`] corresponding to the `action` if populated.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
@@ -204,7 +204,7 @@ impl<A: Actionlike> ActionState<A> {
         self.action_data.get_mut(action)
     }
 
-    /// A mutable reference of the [`ActionData`] of the corresponding `action`.
+    /// A mutable reference of the [`ActionData`] corresponding to the `action`.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
@@ -516,7 +516,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// If the action was pressed or released since the last time [`ActionState::tick`] was called
     /// the value will be [`None`].
-    /// This ensures that all of our actions are assigned a timing and duration
+    /// This ensures that all our actions are assigned a timing and duration
     /// that corresponds exactly to the start of a frame, rather than relying on idiosyncratic timing.
     ///
     /// This will also be [`None`] if the action was never pressed or released.

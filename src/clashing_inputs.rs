@@ -16,7 +16,7 @@ use std::cmp::Ordering;
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
 /// Inputs "clash" if and only if one [`UserInput`] is a strict subset of the other.
-/// By example:
+/// For example:
 ///
 /// - `S` and `W`: does not clash
 /// - `ControlLeft + S` and `S`: clashes
@@ -227,13 +227,13 @@ fn chord_chord_clash(chord_a: &Vec<InputKind>, chord_b: &Vec<InputKind>) -> bool
 fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = clash.clone();
 
-    // For all inputs that were actually pressed that match action A
+    // For all inputs actually pressed that match action A
     for input_a in clash
         .inputs_a
         .iter()
         .filter(|&input| input_streams.input_pressed(input))
     {
-        // For all inputs that were actually pressed that match action B
+        // For all inputs actually pressed that match action B
         for input_b in clash
             .inputs_b
             .iter()

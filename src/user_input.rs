@@ -34,9 +34,10 @@ pub enum UserInput {
 }
 
 impl UserInput {
-    /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` that can be converted into an [`InputKind`]
+    /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` which can be converted into an [`InputKind`]
     ///
-    /// When working with keyboard modifiers, should be preferred over manually specifying both the left and right variant.
+    /// When working with keyboard modifiers,
+    /// should be preferred to manually specifying both the left and right variant.
     pub fn modified(modifier: Modifier, input: impl Into<InputKind>) -> UserInput {
         let modifier: InputKind = modifier.into();
         let input: InputKind = input.into();
@@ -44,7 +45,7 @@ impl UserInput {
         UserInput::chord(vec![modifier, input])
     }
 
-    /// Creates a [`UserInput::Chord`] from an iterator of inputs of the same type that can be converted into an [`InputKind`]s
+    /// Creates a [`UserInput::Chord`] from an iterator over inputs of the same type convertible into an [`InputKind`]s
     ///
     /// If `inputs` has a length of 1, a [`UserInput::Single`] variant will be returned instead.
     pub fn chord(inputs: impl IntoIterator<Item = impl Into<InputKind>>) -> Self {
@@ -223,7 +224,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Commonly stored in the [`UserInput`] enum.
 ///
-/// Unfortunately we cannot use a trait object here, as the types used by `ButtonInput`
+/// Unfortunately, we cannot use a trait object here, as the types used by `ButtonInput`
 /// require traits that are not object-safe.
 ///
 /// Please contact the maintainers if you need support for another type!
@@ -298,7 +299,7 @@ impl From<Modifier> for InputKind {
 
 /// A keyboard modifier that combines two [`KeyCode`] values into one representation.
 ///
-/// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons are pressed.
+/// This buttonlike input is stored in [`InputKind`], and will be triggered whenever either of these buttons is pressed.
 /// This will be decomposed into both values when converted into [`RawInputs`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum Modifier {

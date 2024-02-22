@@ -11,7 +11,7 @@ mod orientation_trait {
     use bevy::transform::components::{GlobalTransform, Transform};
     use core::fmt::Debug;
 
-    /// A type that can represent a orientation in 2D space
+    /// A type that can represent an orientation in 2D space
     pub trait Orientation: Sized + Debug + From<Rotation> + Into<Rotation> + Copy {
         /// Returns the absolute distance between `self` and `other` as a [`Rotation`]
         ///
@@ -30,6 +30,7 @@ mod orientation_trait {
         /// Asserts that `self` is approximately equal to `other`
         ///
         /// # Panics
+        ///
         /// Panics if the distance between `self` and `other` is greater than a hundredth of a degree.
         #[track_caller]
         fn assert_approx_eq(self, other: impl Orientation) {
@@ -271,7 +272,7 @@ mod rotation {
         /// The number of micro-degrees in one degree
         pub const DEGREE: u32 = 1_000_000;
 
-        /// The number of micro-degrees that make up a half circle
+        /// The number of micro-degrees that make up a half-circle
         pub const HALF_CIRCLE: u32 = 180 * Rotation::DEGREE;
 
         /// The number of micro-degrees that make up a full circle
@@ -330,7 +331,7 @@ mod rotation {
         }
 
         /// Construct a [`Direction`](crate::orientation::Direction) from radians,
-        /// measured counterclockwise from the positive x axis
+        /// measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
         pub fn from_radians(radians: impl Into<f32>) -> Rotation {
@@ -341,14 +342,14 @@ mod rotation {
             }
         }
 
-        /// Converts this direction into radians, measured counterclockwise from the positive x axis
+        /// Converts this direction into radians, measured counterclockwise from the positive x-axis
         #[inline]
         #[must_use]
         pub fn into_radians(self) -> f32 {
             self.micro_degrees as f32 * (TAU / Rotation::FULL_CIRCLE as f32)
         }
 
-        /// Construct a [`Direction`](crate::orientation::Direction) from degrees, measured counterclockwise from the positive x axis
+        /// Construct a [`Direction`](crate::orientation::Direction) from degrees, measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
         pub fn from_degrees(degrees: impl Into<f32>) -> Rotation {
@@ -359,7 +360,7 @@ mod rotation {
             }
         }
 
-        /// Construct a [`Direction`](crate::orientation::Direction) from a whole number of degrees, measured counterclockwise from the positive x axis
+        /// Construct a [`Direction`](crate::orientation::Direction) from a whole number of degrees, measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
         pub const fn from_degrees_int(degrees: u32) -> Rotation {
@@ -368,7 +369,7 @@ mod rotation {
             }
         }
 
-        /// Converts this direction into degrees, measured counterclockwise from the positive x axis
+        /// Converts this direction into degrees, measured counterclockwise from the positive x-axis
         #[inline]
         #[must_use]
         pub fn into_degrees(self) -> f32 {

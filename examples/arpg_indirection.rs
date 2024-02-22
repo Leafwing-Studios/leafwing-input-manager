@@ -23,7 +23,7 @@ fn main() {
             PreUpdate,
             copy_action_state.after(InputManagerSystem::ManualControl),
         )
-        // Try it out, using QWER / left click / right click!
+        // Try it out, using QWER / left-click / right-click!
         .add_systems(Update, report_abilities_used)
         .run();
 }

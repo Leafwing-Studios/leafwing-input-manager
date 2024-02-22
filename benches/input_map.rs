@@ -75,7 +75,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     });
     let mut which_pressed_group = c.benchmark_group("which_pressed");
 
-    // Constructing our test app / input stream outside of the timed benchmark
+    // Constructing our test app / input stream outside the timed benchmark
     let mut app = App::new();
     app.add_plugins(InputPlugin);
     app.send_input(KeyCode::KeyA);

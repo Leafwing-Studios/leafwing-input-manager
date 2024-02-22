@@ -26,7 +26,7 @@ and each input can be mapped to multiple actions.
 
 The provided input types must be able to be converted into a [`UserInput`].
 
-By default, if two actions would be triggered by a combination of buttons,
+By default, if two actions are triggered by a combination of buttons,
 and one combination is a strict subset of the other, only the larger input is registered.
 For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
 but not enter the letters `s`.
@@ -71,7 +71,7 @@ input_map.insert(Action::Run, MouseButton::Left)
 // Removal
 input_map.clear_action(&Action::Hide);
 ```
-**/
+ **/
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 pub struct InputMap<A: Actionlike> {
@@ -187,7 +187,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// This method creates multiple distinct bindings.
     /// If you want to require multiple buttons to be pressed at once, use [`insert_chord`](Self::insert_chord).
-    /// Any iterator that can be converted into a [`UserInput`] can be supplied.
+    /// Any iterator convertible into a [`UserInput`] can be supplied.
     pub fn insert_multiple(
         &mut self,
         input_action_pairs: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
@@ -201,8 +201,9 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
     ///
-    /// Any iterator that can be converted into a [`InputKind`] can be supplied, but will be converted into a [`HashSet`](bevy::utils::HashSet) for storage and use.
-    /// Chords can also be added with the [insert](Self::insert) method, if the [`UserInput::Chord`] variant is constructed explicitly.
+    /// Any iterator convertible into a [`InputKind`] can be supplied,
+    /// but will be converted into a [`HashSet`](bevy::utils::HashSet) for storage and use.
+    /// Chords can also be added with the [insert](Self::insert) method if the [`UserInput::Chord`] variant is constructed explicitly.
     ///
     /// When working with keyboard modifier keys, consider using the `insert_modified` method instead.
     pub fn insert_chord(
@@ -313,7 +314,7 @@ impl<A: Actionlike> InputMap<A> {
             let mut action_datum = ActionData::default();
 
             for input in input_vec {
-                // Merge axis pair into action datum
+                // Merge the axis pair into action datum
                 if let Some(axis_pair) = input_streams.input_axis_pair(input) {
                     action_datum.axis_pair = action_datum
                         .axis_pair
@@ -396,7 +397,7 @@ impl<A: Actionlike> InputMap<A> {
         (input_vec.len() > index).then(|| input_vec.remove(index))
     }
 
-    /// Removes the input for the `action`, if it exists
+    /// Removes the input for the `action` if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
     pub fn remove(&mut self, action: &A, input: impl Into<UserInput>) -> Option<usize> {
@@ -441,7 +442,7 @@ impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
 }
 
 impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
-    /// Create `InputMap<A>` from iterator with item type `(A, UserInput)`
+    /// Create `InputMap<A>` from iterator with the item type `(A, UserInput)`
     fn from_iter<T: IntoIterator<Item = (A, UserInput)>>(iter: T) -> Self {
         InputMap::new(iter)
     }

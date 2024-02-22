@@ -246,9 +246,9 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn reset_inputs(&mut self) {
-        // WARNING: this *must* be updated when MutableInputStreams's fields change
+        // WARNING: this *must* be updated when MutableInputStreams''s fields change
         // Note that we deliberately are not resetting either Gamepads or associated_gamepad
-        // as they are not actually input data
+        // as they are not actual input data
         *self.gamepad_buttons = Default::default();
         *self.gamepad_axes = Default::default();
         *self.keycodes = Default::default();
