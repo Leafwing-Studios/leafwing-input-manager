@@ -34,7 +34,7 @@ pub enum UserInput {
 }
 
 impl UserInput {
-    /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` convertible into an [`InputKind`]
+    /// Creates a [`UserInput::Chord`] from a [`Modifier`] and an `input` which can be converted into an [`InputKind`]
     ///
     /// When working with keyboard modifiers,
     /// should be preferred to manually specifying both the left and right variant.
