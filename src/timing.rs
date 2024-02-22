@@ -79,14 +79,14 @@ mod tests {
         assert!(action_state.released(&Action::Run));
         assert!(!action_state.just_released(&Action::Jump));
 
-        // Ticking causes buttons that were just released to no longer be just released
+        // Ticking causes buttons just released to no longer be just released
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         assert!(action_state.released(&Action::Jump));
         assert!(!action_state.just_released(&Action::Jump));
         action_state.press(&Action::Jump);
         assert!(action_state.just_pressed(&Action::Jump));
 
-        // Ticking causes buttons that were just pressed to no longer be just pressed
+        // Ticking causes buttons just pressed to no longer be just pressed
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         assert!(action_state.pressed(&Action::Jump));
         assert!(!action_state.just_pressed(&Action::Jump));

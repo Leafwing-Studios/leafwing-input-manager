@@ -1,5 +1,5 @@
-//! [`ActionDiff`] event streams are minimalistic representations
-//! of the action state, intended for serialization and networking
+//! [`ActionDiff`] event streams are minimalistic representations of the action state,
+//! intended for serialization and networking.
 //! While they are less convenient to work with than the complete [`ActionState`],
 //! they are much smaller, and can be created from and reconstructed into [`ActionState`]
 //!
@@ -66,7 +66,7 @@ fn main() {
         .add_event::<ActionDiffEvent<FpsAction>>()
         // Reads in the event stream of `ActionDiffs` to update the `ActionState`
         .add_systems(PreUpdate, process_action_diffs::<FpsAction>)
-        // Typically, the rest of this information would synchronized as well
+        // Typically, the rest of this information would synchronize as well
         .add_systems(Startup, spawn_player);
 
     // Starting up the game
@@ -140,7 +140,7 @@ fn spawn_player(mut commands: Commands) {
 /// The events are sent directly;
 /// in real applications they would be serialized to a networking protocol instead.
 ///
-/// The [`ManualEventReader`] returned must be reused in order to avoid double-sending events
+/// The [`ManualEventReader`] returned must be reused to avoid double-sending events
 #[must_use]
 fn send_events<A: Send + Sync + 'static + Debug + Clone + Event>(
     client_app: &App,

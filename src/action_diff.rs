@@ -1,7 +1,8 @@
 //! Serialization-friendly representation of changes to [`ActionState`](crate::action_state::ActionState).
 //!
-//! These are predominantly intended for use in networked games, where the server needs to know what the players are doing,
-//! and would like a compact, semantically-meaningful representation of the changes to the game state without needing to know
+//! These are predominantly intended for use in networked games,
+//! where the server needs to know what the players are doing.
+//! They would like a compact, semantically meaningful representation of the changes to the game state without needing to know
 //! about things like keybindings or input devices.
 
 use bevy::{
@@ -15,7 +16,7 @@ use crate::Actionlike;
 /// Stores presses and releases of buttons without timing information
 ///
 /// These are typically accessed using the `Events<ActionDiffEvent>` resource.
-/// Uses a minimal storage format, in order to facilitate transport over the network.
+/// Uses a minimal storage format to facilitate transport over the network.
 ///
 /// An `ActionState` can be fully reconstructed from a stream of `ActionDiff`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]

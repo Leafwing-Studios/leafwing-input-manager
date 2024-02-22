@@ -115,7 +115,7 @@ impl<'a> InputStreams<'a> {
             }
             InputKind::Modifier(modifier) => {
                 let key_codes = modifier.key_codes();
-                // Short circuiting is probably not worth the branch here
+                // Short-circuiting is probably not worth the branch here
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(key_codes[0]) | keycodes.pressed(key_codes[1]))
             }
             InputKind::Mouse(mouse_button) => {
@@ -155,7 +155,7 @@ impl<'a> InputStreams<'a> {
         }
     }
 
-    /// Are all of the `buttons` pressed?
+    /// Are all the `buttons` pressed?
     #[must_use]
     pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
         buttons.iter().all(|button| self.button_pressed(*button))
@@ -448,7 +448,7 @@ impl<'a> MutableInputStreams<'a> {
     /// Guess which registered [`Gamepad`] should be used.
     ///
     /// If an associated gamepad is set, use that.
-    /// Otherwise use the first registered gamepad, if any.
+    /// Otherwise, use the first registered gamepad, if any.
     pub fn guess_gamepad(&self) -> Option<Gamepad> {
         self.associated_gamepad
             .or_else(|| self.gamepads.iter().next())

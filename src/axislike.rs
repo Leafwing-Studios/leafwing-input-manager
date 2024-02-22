@@ -154,7 +154,9 @@ impl PartialEq for SingleAxis {
             && FloatOrd(self.sensitivity) == FloatOrd(other.sensitivity)
     }
 }
+
 impl Eq for SingleAxis {}
+
 impl std::hash::Hash for SingleAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.axis_type.hash(state);
@@ -318,7 +320,7 @@ impl DualAxis {
     }
 }
 
-#[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
+#[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an unquoted item
 /// A virtual DPad that you can get an [`DualAxis`] from.
 ///
 /// Typically, you don't want to store a [`DualAxis`] in this type,
@@ -363,7 +365,7 @@ impl VirtualDPad {
         }
     }
 
-    #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an un-quoted item
+    #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an unquoted item
     /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
     pub const fn dpad() -> VirtualDPad {
         VirtualDPad {
@@ -376,7 +378,8 @@ impl VirtualDPad {
 
     /// Generates a [`VirtualDPad`] corresponding to the face buttons on a gamepad
     ///
-    /// North corresponds to up, west corresponds to left, east corresponds to right, south corresponds to down
+    /// North corresponds to up, west corresponds to left,
+    /// east corresponds to right, and south corresponds to down
     pub const fn gamepad_face_buttons() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::North),
@@ -488,7 +491,6 @@ impl VirtualAxis {
         }
     }
 
-    #[allow(clippy::doc_markdown)]
     /// Generates a [`VirtualAxis`] corresponding to the horizontal gamepad face buttons.
     pub const fn horizontal_gamepad_face_buttons() -> VirtualAxis {
         VirtualAxis {
@@ -497,7 +499,6 @@ impl VirtualAxis {
         }
     }
 
-    #[allow(clippy::doc_markdown)]
     /// Generates a [`VirtualAxis`] corresponding to the vertical gamepad face buttons.
     pub const fn vertical_gamepad_face_buttons() -> VirtualAxis {
         VirtualAxis {
@@ -527,7 +528,7 @@ pub enum AxisType {
     MouseMotion(MouseMotionAxisType),
 }
 
-/// The direction of motion of the mouse wheel.
+/// The motion direction of the mouse wheel.
 ///
 /// Stored in the [`AxisType`] enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
@@ -542,7 +543,7 @@ pub enum MouseWheelAxisType {
     Y,
 }
 
-/// The direction of motion of the mouse.
+/// The motion direction of the mouse.
 ///
 /// Stored in the [`AxisType`] enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
@@ -731,7 +732,7 @@ impl From<DualAxisData> for Vec2 {
 /// If the size of a shape is 0.0, then all input values are read, except for 0.0.
 ///
 /// All inputs are scaled to be continuous.
-/// So with an ellipse deadzone of a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
+/// So with an ellipse deadzone with a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
 ///
 /// Deadzone values should be in the range `0.0..=1.0`.
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
@@ -760,6 +761,7 @@ pub enum DeadZoneShape {
 }
 
 impl Eq for DeadZoneShape {}
+
 impl std::hash::Hash for DeadZoneShape {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         match self {

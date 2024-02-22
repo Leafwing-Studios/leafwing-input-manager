@@ -21,7 +21,7 @@ fn main() {
         .add_systems(Update, report_menus)
         .add_systems(Update, open_main_menu)
         .add_systems(Update, open_sub_menu)
-        // We want to ensure that if both the main menu and submenu are open
+        // We want to ensure that if both the main menu and submenu are open,
         // only the submenu is closed if the user hits (or holds) Escape
         .add_systems(Update, close_menu::<SubMenu>.before(close_menu::<MainMenu>))
         // We can do this by ordering our systems and using `ActionState::consume`
@@ -67,8 +67,9 @@ fn open_sub_menu(action_state: Res<ActionState<MenuAction>>, mut menu_state: Res
     }
 }
 
-// We want to be sure that e.g. the submenu is closed in preference to the main menu if both are open
-// If you can, use a real focus system for this logic, but workarounds of this sort are necessary in bevy_egui
+// We want to ensure that, e.g., the submenu is closed in preference to the main menu if both are open.
+// If you can, use a real focus system for this logic.
+// However, workarounds of this sort are necessary in bevy_egui
 // as it is an immediate mode UI library
 fn close_menu<M: Resource + Menu>(
     mut action_state: ResMut<ActionState<MenuAction>>,
@@ -77,7 +78,7 @@ fn close_menu<M: Resource + Menu>(
     if action_state.pressed(&MenuAction::CloseWindow) && menu_status.is_open() {
         println!("Closing the top window, as requested.");
         menu_status.close();
-        // Because the action is consumed, further systems won't see this action as pressed
+        // Because the action is consumed, further systems won't see this action as pressed,
         // and it cannot be pressed again until after the next time it would be released.
         action_state.consume(&MenuAction::CloseWindow);
     }
@@ -86,6 +87,7 @@ fn close_menu<M: Resource + Menu>(
 // A quick mock of some UI behavior for demonstration purposes
 mod menu_mocking {
     use bevy::prelude::Resource;
+
     pub trait Menu {
         fn is_open(&self) -> bool;
 

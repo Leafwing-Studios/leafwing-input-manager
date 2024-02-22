@@ -31,7 +31,7 @@ use bevy_egui::EguiContext;
 /// Advances actions timer.
 ///
 /// Clears the just-pressed and just-released values of all [`ActionState`]s.
-/// Also resets the internal `pressed_this_tick` field, used to track whether or not to release an action.
+/// Also resets the internal `pressed_this_tick` field, used to track whether to release an action.
 pub fn tick_action_state<A: Actionlike>(
     mut query: Query<&mut ActionState<A>>,
     action_state: Option<ResMut<ActionState<A>>>,
@@ -58,9 +58,10 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
-/// Fetches all of the relevant [`ButtonInput`] resources to update [`ActionState`] according to the [`InputMap`].
+/// Fetches all the relevant [`ButtonInput`] resources
+/// to update [`ActionState`] according to the [`InputMap`].
 ///
-/// Missing resources will be ignored, and treated as if none of the corresponding inputs were pressed.
+/// Missing resources will be ignored and treated as if none of the corresponding inputs were pressed.
 #[allow(clippy::too_many_arguments)]
 pub fn update_action_state<A: Actionlike>(
     gamepad_buttons: Res<ButtonInput<GamepadButton>>,
@@ -88,7 +89,7 @@ pub fn update_action_state<A: Actionlike>(
     let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
     let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
 
-    // If use clicks on a button, do not apply them to the game state
+    // If the user clicks on a button, do not apply it to the game state
     #[cfg(all(feature = "ui", not(feature = "no_ui_priority")))]
     let (mouse_buttons, mouse_wheel) = if interactions
         .iter()
@@ -304,10 +305,11 @@ pub fn release_on_input_map_removed<A: Actionlike>(
 
     // Detect when an InputMap resource is removed.
     if input_map_resource.is_some() {
-        // Store if the resource existed so we know if it was removed later.
+        // Store if the resource existed, so we know if it was removed later.
         *input_map_resource_existed = true;
     } else if *input_map_resource_existed {
-        // The input map does not exist and our local is true so we know the input map was removed.
+        // The input map does not exist, and our local is true,
+        // so we know the input map was removed.
 
         if let Some(mut action_state) = action_state_resource {
             action_state.release_all();
@@ -318,7 +320,7 @@ pub fn release_on_input_map_removed<A: Actionlike>(
     }
 }
 
-/// Uses the value of [`ToggleActions<A>`] to determine if input manager systems of type `A` should run.
+/// Uses the value of [`ToggleActions<A>`] to determine if input manager systems of the type `A` should run.
 pub fn run_if_enabled<A: Actionlike>(toggle_actions: Res<ToggleActions<A>>) -> bool {
     toggle_actions.enabled
 }

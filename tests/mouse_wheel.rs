@@ -306,11 +306,11 @@ fn mouse_wheel_virtualdpad() {
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
 
     assert!(action_state.pressed(&AxislikeTestAction::XY));
-    // This should be unit length, because we're working with a VirtualDpad
+    // This should be a unit length, because we're working with a VirtualDpad
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        // This should be unit length, because we're working with a VirtualDpad
+        // This should be a unit length, because we're working with a VirtualDpad
         DualAxisData::new(0.0, -1.0)
     );
 }

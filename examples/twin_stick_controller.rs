@@ -1,9 +1,9 @@
 //! This is a fairly complete example that implements a twin stick controller.
 //!
-//! The controller supports both gamepad/MKB input and switches between them depending on
+//! The controller supports both gamepad/MKB inputs and switches between them depending on
 //! the most recent input.
 //!
-//! This example builds on top of several of the concepts introduced in other examples. In particular,
+//! This example builds on top of several concepts introduced in other examples. In particular,
 //! the `default_controls`. `mouse_position`, and `action_state_resource` examples.
 
 use bevy::{
@@ -150,7 +150,7 @@ fn player_mouse_look(
         .expect("Need a single primary window");
 
     // Many steps can fail here, so we'll wrap in an option pipeline
-    // First check if cursor is in window
+    // First check if the cursor is in window
     // Then check if the ray intersects the plane defined by the player
     // Then finally compute the point along the ray to look at
     if let Some(p) = window
@@ -169,7 +169,8 @@ fn player_mouse_look(
             let Some(action_data) = action_state.action_data_mut(&PlayerAction::Look) else {
                 return;
             };
-            // Flipping y sign here to be consistent with gamepad input. We could also invert the gamepad y axis
+            // Flipping y sign here to be consistent with gamepad input.
+            // We could also invert the gamepad y-axis
             action_data.axis_pair = Some(DualAxisData::from_xy(Vec2::new(diff.x, -diff.y)));
         }
     }

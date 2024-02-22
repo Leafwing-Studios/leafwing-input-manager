@@ -18,7 +18,7 @@ use crate::Actionlike;
 /// # Examples
 ///
 /// By default, [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction) uses this component
-/// in order to connect `bevy::ui` buttons to the corresponding `ActionState`.
+/// to connect `bevy::ui` buttons to the corresponding `ActionState`.
 ///
 /// ```rust
 /// use bevy::prelude::*;
