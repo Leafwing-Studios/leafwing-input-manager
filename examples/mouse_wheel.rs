@@ -55,7 +55,7 @@ fn zoom_camera(
 
     // We want to zoom in when we use mouse wheel up,
     // so we increase the scale proportionally
-    // Note that the projection scale should always be positive (or our images will flip)
+    // Note that the projection's scale should always be positive (or our images will flip)
     camera_projection.scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE;
 }
 
