@@ -20,9 +20,10 @@ mod orientation_trait {
         ///
         /// # Example
         /// ```rust
-        /// use leafwing_input_manager::orientation::{Orientation, Direction, Rotation};
+        /// use leafwing_input_manager::orientation::{Orientation, Rotation};
+        /// use bevy::math::primitives::Direction2d;
         ///
-        /// Direction::NORTH.distance(Direction::SOUTHWEST).assert_approx_eq(Rotation::from_degrees(135.));
+        /// Direction2d::Y.distance(Direction2d::from_xy(-1.0, -1.0).unwrap()).assert_approx_eq(Rotation::from_degrees(135.));
         /// ```
         #[must_use]
         fn distance(&self, other: Self) -> Rotation;
@@ -50,16 +51,17 @@ mod orientation_trait {
         ///
         /// # Example
         /// ```rust
-        /// use leafwing_input_manager::orientation::{Direction, Orientation, RotationDirection};
+        /// use leafwing_input_manager::orientation::{Orientation, RotationDirection};
+        /// use bevy::math::primitives::Direction2d;
         ///
-        /// assert_eq!(Direction::NORTH.rotation_direction(Direction::NORTH), RotationDirection::Clockwise);
-        /// assert_eq!(Direction::NORTH.rotation_direction(Direction::SOUTH), RotationDirection::Clockwise);
+        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::Y), RotationDirection::Clockwise);
+        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::NEG_Y), RotationDirection::Clockwise);
         ///
-        /// assert_eq!(Direction::NORTH.rotation_direction(Direction::EAST), RotationDirection::Clockwise);
-        /// assert_eq!(Direction::NORTH.rotation_direction(Direction::WEST), RotationDirection::CounterClockwise);
+        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::X), RotationDirection::Clockwise);
+        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::NEG_X), RotationDirection::CounterClockwise);
         ///
-        /// assert_eq!(Direction::WEST.rotation_direction(Direction::SOUTH), RotationDirection::CounterClockwise);
-        /// assert_eq!(Direction::SOUTH.rotation_direction(Direction::WEST), RotationDirection::Clockwise);
+        /// assert_eq!(Direction2d::NEG_X.rotation_direction(Direction2d::NEG_Y), RotationDirection::CounterClockwise);
+        /// assert_eq!(Direction2d::NEG_Y.rotation_direction(Direction2d::NEG_X), RotationDirection::Clockwise);
         /// ```
         #[inline]
         #[must_use]
@@ -215,7 +217,8 @@ mod rotation {
     ///
     /// # Example
     /// ```rust
-    /// use leafwing_input_manager::orientation::{Rotation, Direction, Orientation};
+    /// use leafwing_input_manager::orientation::{Rotation, Orientation};
+    /// use bevy::math::primitives::Direction2d;
     /// use core::f32::consts::{FRAC_PI_2, PI, TAU};
     ///
     /// let east = Rotation::from_radians(0.0);
@@ -233,7 +236,7 @@ mod rotation {
     ///
     /// north.assert_approx_eq(Rotation::NORTH);
     ///
-    /// Direction::from(west).assert_approx_eq(Direction::WEST);
+    /// Direction2d::from(west).assert_approx_eq(Direction2d::NEG_X);
     /// ```
     #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Default, Display)]
     pub struct Rotation {

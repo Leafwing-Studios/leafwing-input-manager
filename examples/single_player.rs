@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::{errors::NearlySingularConversion, orientation::Direction};
 
 fn main() {
     App::new()
@@ -44,12 +43,12 @@ impl ArpgAction {
         ArpgAction::Right,
     ];
 
-    fn direction(self) -> Option<Direction> {
+    fn direction(self) -> Option<Direction2d> {
         match self {
-            ArpgAction::Up => Some(Direction::NORTH),
-            ArpgAction::Down => Some(Direction::SOUTH),
-            ArpgAction::Left => Some(Direction::WEST),
-            ArpgAction::Right => Some(Direction::EAST),
+            ArpgAction::Up => Some(Direction2d::Y),
+            ArpgAction::Down => Some(Direction2d::NEG_Y),
+            ArpgAction::Left => Some(Direction2d::NEG_X),
+            ArpgAction::Right => Some(Direction2d::X),
             _ => None,
         }
     }
@@ -136,14 +135,13 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
             if action_state.pressed(&input_direction) {
                 if let Some(direction) = input_direction.direction() {
                     // Sum the directions as 2D vectors
-                    direction_vector += Vec2::from(direction);
+                    direction_vector += *direction;
                 }
             }
         }
 
         // Then reconvert at the end, normalizing the magnitude
-        let net_direction: Result<Direction, NearlySingularConversion> =
-            direction_vector.try_into();
+        let net_direction = Direction2d::new(direction_vector);
 
         if let Ok(direction) = net_direction {
             println!("Dashing in {direction:?}");
@@ -153,7 +151,7 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
 
 #[derive(Event)]
 pub struct PlayerWalk {
-    pub direction: Direction,
+    pub direction: Direction2d,
 }
 
 fn player_walks(
@@ -168,13 +166,13 @@ fn player_walks(
         if action_state.pressed(&input_direction) {
             if let Some(direction) = input_direction.direction() {
                 // Sum the directions as 2D vectors
-                direction_vector += Vec2::from(direction);
+                direction_vector += *direction;
             }
         }
     }
 
     // Then reconvert at the end, normalizing the magnitude
-    let net_direction: Result<Direction, NearlySingularConversion> = direction_vector.try_into();
+    let net_direction = Direction2d::new(direction_vector);
 
     if let Ok(direction) = net_direction {
         event_writer.send(PlayerWalk { direction });
