@@ -14,9 +14,9 @@
 
 ### Usability
 
-- Added `with_threshold()` for const `SingleAxis` creation.
-- Added `horizontal_gamepad_face_buttons()` and `vertical_gamepad_face_buttons()` for `VirtualAxis`, similar to  `VirtualDpad::gamepad_face_buttons()`.
-- Changed various creations of `DualAxis`, `VirtualAxis`, `VirtualDpad` into const functions as they should be:
+- added `with_threshold()` for const `SingleAxis` creation.
+- added `horizontal_gamepad_face_buttons()` and `vertical_gamepad_face_buttons()` for `VirtualAxis`, similar to `VirtualDpad::gamepad_face_buttons()`.
+- changed various creations of `DualAxis`, `VirtualAxis`, `VirtualDpad` into const functions as they should be:
   - `left_stick()`, `right_stick()` for `DualAxis`.
   - `from_keys()`, `horizontal_arrow_keys()`, `vertical_arrow_keys()`, `ad()`, `ws()`, `horizontal_dpad()`, `vertical_dpad()` for `VirtualAxis`.
   - `arrow_keys()`, `wasd()`, `dpad()`, `gamepad_face_buttons()`, `mouse_wheel()`, `mouse_motion()` for `VirtualDpad`.
