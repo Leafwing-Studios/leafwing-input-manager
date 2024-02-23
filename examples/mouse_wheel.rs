@@ -19,23 +19,21 @@ enum CameraMovement {
 }
 
 fn setup(mut commands: Commands) {
+    let input_map = InputMap::default()
+        // This will capture the total continuous value, for direct use.
+        .insert(CameraMovement::Zoom, SingleAxis::mouse_wheel_y())
+        // This will return a binary button-like output.
+        .insert(CameraMovement::PanLeft, MouseWheelDirection::Left)
+        .insert(CameraMovement::PanRight, MouseWheelDirection::Right)
+        // Alternatively, you could model this as a virtual Dpad.
+        // It's extremely useful for modeling 4-directional button-like inputs with the mouse wheel
+        // .insert(VirtualDpad::mouse_wheel(), Pan)
+        // Or even a continuous `DualAxis`!
+        // .insert(DualAxis::mouse_wheel(), Pan)
+        .build();
     commands
         .spawn(Camera2dBundle::default())
-        .insert(InputManagerBundle::<CameraMovement> {
-            input_map: InputMap::default()
-                // This will capture the total continuous value, for direct use.
-                .insert(CameraMovement::Zoom, SingleAxis::mouse_wheel_y())
-                // This will return a binary button-like output.
-                .insert(CameraMovement::PanLeft, MouseWheelDirection::Left)
-                .insert(CameraMovement::PanRight, MouseWheelDirection::Right)
-                // Alternatively, you could model this as a virtual Dpad.
-                // It's extremely useful for modeling 4-directional button-like inputs with the mouse wheel
-                // .insert(VirtualDpad::mouse_wheel(), Pan)
-                // Or even a continuous `DualAxis`!
-                // .insert(DualAxis::mouse_wheel(), Pan)
-                .build(),
-            ..default()
-        });
+        .insert(InputManagerBundle::with_map(input_map));
 
     commands.spawn(SpriteBundle {
         transform: Transform::from_scale(Vec3::new(100., 100., 1.)),

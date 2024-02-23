@@ -94,7 +94,9 @@ impl<'a> InputStreams<'a> {
     #[must_use]
     pub fn button_pressed(&self, button: InputKind) -> bool {
         match button {
-            InputKind::DualAxis(axis) => self.extract_dual_axis_data(&axis).is_some(),
+            InputKind::DualAxis(axis) => self
+                .extract_dual_axis_data(&axis)
+                .is_some_and(|data| data.xy() != Vec2::ZERO),
             InputKind::SingleAxis(axis) => {
                 let value = self.input_value(&button.into(), false);
 
@@ -323,8 +325,8 @@ impl<'a> InputStreams<'a> {
                     for input_kind in inputs.iter() {
                         // Return result of the first dual axis in the chord.
                         if let InputKind::DualAxis(dual_axis) = input_kind {
-                            let data = self.extract_dual_axis_data(dual_axis).unwrap_or_default();
-                            return Some(data);
+                            let data = self.extract_dual_axis_data(dual_axis);
+                            return Some(data.unwrap_or_default());
                         }
                     }
                 }

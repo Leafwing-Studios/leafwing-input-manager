@@ -16,16 +16,15 @@ enum CameraMovement {
 }
 
 fn setup(mut commands: Commands) {
+    let input_map = InputMap::new([
+        // This will capture the total continuous value, for direct use.
+        // Note that you can also use discrete gesture-like motion,
+        // via the `MouseMotionDirection` enum.
+        (CameraMovement::Pan, DualAxis::mouse_motion()),
+    ]);
     commands
         .spawn(Camera2dBundle::default())
-        .insert(InputManagerBundle::<CameraMovement> {
-            input_map: InputMap::default()
-                // This will capture the total continuous value, for direct use.
-                // Note that you can also use discrete gesture-like motion, via the `MouseMotionDirection` enum.
-                .insert(CameraMovement::Pan, DualAxis::mouse_motion())
-                .build(),
-            ..default()
-        });
+        .insert(InputManagerBundle::with_map(input_map));
 
     commands.spawn(SpriteBundle {
         transform: Transform::from_scale(Vec3::new(100., 100., 1.)),

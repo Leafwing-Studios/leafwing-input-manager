@@ -24,9 +24,10 @@ enum Action {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
-    let mut input_map = InputMap::default();
-    input_map.insert(Action::Left, KeyCode::ArrowLeft);
-    input_map.insert(Action::Right, KeyCode::ArrowRight);
+    let input_map = InputMap::new([
+        (Action::Left, KeyCode::ArrowLeft),
+        (Action::Right, KeyCode::ArrowRight),
+    ]);
 
     commands
         .spawn(SpriteBundle {
@@ -40,10 +41,7 @@ fn spawn_player(mut commands: Commands) {
             },
             ..Default::default()
         })
-        .insert(InputManagerBundle::<Action> {
-            input_map,
-            ..Default::default()
-        })
+        .insert(InputManagerBundle::with_map(input_map))
         .insert(Player);
 }
 

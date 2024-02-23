@@ -1,5 +1,15 @@
 # Release Notes
 
+## Version 0.13.3
+
+### Bugs
+
+- fixed a bug where `DualAxis` was being considered pressed even when its data was [0.0, 0.0].
+
+### Usability
+
+- added `InputManagerBundle::with_map(InputMap)` allowing you to create the bundle with the given `InputMap` and default `ActionState`.
+
 ## Version 0.13.2
 
 ### Usability
@@ -171,7 +181,7 @@
 ### Enhancements
 
 - Changed `entity` field of `ActionStateDriver` to `targets: ActionStateDriverTarget` with variants for 0, 1, or multiple targets, to allow for one driver
-to update multiple entities if needed.
+  to update multiple entities if needed.
 - Added builder-style functions to `SingleAxis`, `DualAxis`, and `VirtualDPad` that invert their output values, allowing, for example, binding inverted camera controls.
 
 ### Docs

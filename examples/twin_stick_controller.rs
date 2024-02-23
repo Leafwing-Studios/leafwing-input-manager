@@ -9,7 +9,7 @@
 use bevy::{
     input::gamepad::GamepadEvent, input::keyboard::KeyboardInput, prelude::*, window::PrimaryWindow,
 };
-use leafwing_input_manager::{axislike::DualAxisData, prelude::*, user_input::InputKind};
+use leafwing_input_manager::{axislike::DualAxisData, prelude::*};
 
 fn main() {
     App::new()
@@ -39,41 +39,19 @@ pub enum PlayerAction {
 }
 
 impl PlayerAction {
-    // The `strum` crate provides a deriveable trait for this!
-    fn variants() -> &'static [PlayerAction] {
-        &[Self::Move, Self::Look, Self::Shoot]
-    }
-}
-
-// Exhaustively match `PlayerAction` and define the default binding to the input
-impl PlayerAction {
-    fn default_gamepad_binding(&self) -> UserInput {
-        // Match against the provided action to get the correct default gamepad input
-        match self {
-            Self::Move => UserInput::Single(InputKind::DualAxis(DualAxis::left_stick())),
-            Self::Look => UserInput::Single(InputKind::DualAxis(DualAxis::right_stick())),
-            Self::Shoot => {
-                UserInput::Single(InputKind::GamepadButton(GamepadButtonType::RightTrigger))
-            }
-        }
-    }
-
-    fn default_kbm_binding(&self) -> UserInput {
-        // Match against the provided action to get the correct default gamepad input
-        match self {
-            Self::Move => UserInput::VirtualDPad(VirtualDPad::wasd()),
-            Self::Look => UserInput::VirtualDPad(VirtualDPad::arrow_keys()),
-            Self::Shoot => UserInput::Single(InputKind::Mouse(MouseButton::Left)),
-        }
-    }
-
-    fn default_input_map() -> InputMap<PlayerAction> {
+    fn default_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
 
-        for variant in PlayerAction::variants() {
-            input_map.insert(*variant, variant.default_kbm_binding());
-            input_map.insert(*variant, variant.default_gamepad_binding());
-        }
+        // Default gamepad input bindings
+        input_map.insert(Self::Move, DualAxis::left_stick());
+        input_map.insert(Self::Look, DualAxis::right_stick());
+        input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
+
+        // Default kbm input bindings
+        input_map.insert(Self::Move, VirtualDPad::wasd());
+        input_map.insert(Self::Look, VirtualDPad::arrow_keys());
+        input_map.insert(Self::Shoot, MouseButton::Left);
+
         input_map
     }
 }
@@ -132,17 +110,14 @@ fn activate_mkb(
 
 // ----------------------------- Mouse input handling-----------------------------
 
-/// Note that we handle the action_state mutation differently here than in the `mouse_position`
-/// example. Here we don't use an `ActionDriver`, but change the action data directly.
+/// Note that we handle the action state mutation differently here than in the `mouse_position` example.
+/// Here we don't use an `ActionStateDriver`, but change the action data directly.
 fn player_mouse_look(
     camera_query: Query<(&GlobalTransform, &Camera)>,
     player_query: Query<&Transform, With<Player>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut action_state: ResMut<ActionState<PlayerAction>>,
 ) {
-    // Update each actionstate with the mouse position from the window
-    // by using the referenced entities in ActionStateDriver and the stored action as
-    // a key into the action data
     let (camera_transform, camera) = camera_query.get_single().expect("Need a single camera");
     let player_transform = player_query.get_single().expect("Need a single player");
     let window = window_query
@@ -153,25 +128,24 @@ fn player_mouse_look(
     // First check if the cursor is in window
     // Then check if the ray intersects the plane defined by the player
     // Then finally compute the point along the ray to look at
+    let player_position = player_transform.translation;
     if let Some(p) = window
         .cursor_position()
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .and_then(|ray| {
-            Some(ray).zip(ray.intersect_plane(player_transform.translation, Plane3d::new(Vec3::Y)))
-        })
+        .and_then(|ray| Some(ray).zip(ray.intersect_plane(player_position, Plane3d::new(Vec3::Y))))
         .map(|(ray, p)| ray.get_point(p))
     {
-        let diff = (p - player_transform.translation).xz();
+        let diff = (p - player_position).xz();
         if diff.length_squared() > 1e-3f32 {
-            // Press the look action, so we can check that it is active
-            action_state.press(&PlayerAction::Look);
-            // Modify the action data to set the axis
-            let Some(action_data) = action_state.action_data_mut(&PlayerAction::Look) else {
-                return;
-            };
+            // Get the mutable action data to set the axis
+            let action_data = action_state.action_data_mut_or_default(&PlayerAction::Look);
+
             // Flipping y sign here to be consistent with gamepad input.
             // We could also invert the gamepad y-axis
-            action_data.axis_pair = Some(DualAxisData::from_xy(Vec2::new(diff.x, -diff.y)));
+            action_data.axis_pair = Some(DualAxisData::new(diff.x, -diff.y));
+
+            // Press the look action, so we can check that it is active
+            action_state.press(&PlayerAction::Look);
         }
     }
 }

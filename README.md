@@ -88,12 +88,8 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     commands
-        .spawn(InputManagerBundle::<Action> {
-            // Stores "which actions are currently pressed"
-            action_state: ActionState::default(),
-            // Describes how to convert from player inputs into those actions
-            input_map: InputMap::new([(Action::Jump, KeyCode::Space)]),
-        })
+        // Describes how to convert from player inputs into those actions
+        .spawn(InputManagerBundle::with_map(InputMap::new([(Action::Jump, KeyCode::Space)])))
         .insert(Player);
 }
 

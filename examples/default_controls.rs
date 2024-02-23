@@ -20,7 +20,7 @@ enum PlayerAction {
 }
 
 impl PlayerAction {
-    // The `strum` crate provides a deriveable trait for this!
+    // The `strum` crate provides a derivable trait for this!
     fn variants() -> &'static [PlayerAction] {
         &[Self::Run, Self::Jump, Self::UseItem]
     }
@@ -65,10 +65,7 @@ fn spawn_player(mut commands: Commands) {
 
     // Spawn the player with the populated input_map
     commands
-        .spawn(InputManagerBundle::<PlayerAction> {
-            input_map,
-            ..default()
-        })
+        .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player);
 }
 
