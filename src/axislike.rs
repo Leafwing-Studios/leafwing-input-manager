@@ -1,12 +1,13 @@
 //! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
-use crate::orientation::{Direction, Rotation};
+use crate::orientation::Rotation;
 use crate::user_input::InputKind;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
 };
+use bevy::math::primitives::Direction2d;
 use bevy::math::Vec2;
 use bevy::reflect::Reflect;
 use bevy::utils::FloatOrd;
@@ -673,14 +674,13 @@ impl DualAxisData {
         self.xy
     }
 
-    /// The [`Direction`] that this axis is pointing towards, if any
+    /// The [`Direction2d`] that this axis is pointing towards, if any
     ///
     /// If the axis is neutral (x,y) = (0,0), a (0, 0) `None` will be returned
     #[must_use]
     #[inline]
-    pub fn direction(&self) -> Option<Direction> {
-        // TODO: replace this quick-n-dirty hack once Direction::new no longer panics
-        (self.xy.length() > 0.00001).then(|| Direction::new(self.xy))
+    pub fn direction(&self) -> Option<Direction2d> {
+        Direction2d::new(self.xy).ok()
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
