@@ -110,10 +110,7 @@ impl PlayerBundle {
 fn spawn_player(mut commands: Commands) {
     commands.spawn(PlayerBundle {
         player: Player,
-        input_manager: InputManagerBundle {
-            input_map: PlayerBundle::default_input_map(),
-            ..default()
-        },
+        input_manager: InputManagerBundle::with_map(PlayerBundle::default_input_map()),
     });
 }
 

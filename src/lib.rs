@@ -107,3 +107,13 @@ impl<A: Actionlike> Default for InputManagerBundle<A> {
         }
     }
 }
+
+impl<A: Actionlike> InputManagerBundle<A> {
+    /// Creates a [`InputManagerBundle`] with the given [`InputMap`].
+    pub fn with_map(input_map: InputMap<A>) -> Self {
+        Self {
+            input_map,
+            action_state: ActionState::default(),
+        }
+    }
+}

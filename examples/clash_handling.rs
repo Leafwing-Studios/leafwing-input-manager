@@ -44,10 +44,7 @@ fn spawn_input_map(mut commands: Commands) {
 
     input_map.insert_chord(OneAndTwoAndThree, [Digit1, Digit2, Digit3]);
 
-    commands.spawn(InputManagerBundle {
-        input_map,
-        ..Default::default()
-    });
+    commands.spawn(InputManagerBundle::with_map(input_map));
 }
 
 fn report_pressed_actions(

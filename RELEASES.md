@@ -6,13 +6,23 @@
 
 - Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
 
+## Version 0.13.3
+
+### Bugs
+
+- fixed a bug where `DualAxis` was being considered pressed even when its data was [0.0, 0.0].
+
+### Usability
+
+- added `InputManagerBundle::with_map(InputMap)` allowing you to create the bundle with the given `InputMap` and default `ActionState`.
+
 ## Version 0.13.2
 
 ### Usability
 
-- Added `with_threshold()` for const `SingleAxis` creation.
-- Added `horizontal_gamepad_face_buttons()` and `vertical_gamepad_face_buttons()` for `VirtualAxis`, similar to `VirtualDpad::gamepad_face_buttons()`.
-- Changed various creations of `DualAxis`, `VirtualAxis`, `VirtualDpad` into const functions as they should be:
+- added `with_threshold()` for const `SingleAxis` creation.
+- added `horizontal_gamepad_face_buttons()` and `vertical_gamepad_face_buttons()` for `VirtualAxis`, similar to `VirtualDpad::gamepad_face_buttons()`.
+- changed various creations of `DualAxis`, `VirtualAxis`, `VirtualDpad` into const functions as they should be:
   - `left_stick()`, `right_stick()` for `DualAxis`.
   - `from_keys()`, `horizontal_arrow_keys()`, `vertical_arrow_keys()`, `ad()`, `ws()`, `horizontal_dpad()`, `vertical_dpad()` for `VirtualAxis`.
   - `arrow_keys()`, `wasd()`, `dpad()`, `gamepad_face_buttons()`, `mouse_wheel()`, `mouse_motion()` for `VirtualDpad`.

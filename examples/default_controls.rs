@@ -20,32 +20,21 @@ enum PlayerAction {
 }
 
 impl PlayerAction {
-    // The `strum` crate provides a deriveable trait for this!
-    fn variants() -> &'static [PlayerAction] {
-        &[Self::Run, Self::Jump, Self::UseItem]
-    }
-}
+    /// Define the default binding to the input
+    fn default_input_map() -> InputMap<Self> {
+        let mut input_map = InputMap::default();
 
-// Exhaustively match `PlayerAction` and define the default binding to the input
-impl PlayerAction {
-    fn default_keyboard_mouse_input(&self) -> UserInput {
-        // Match against the provided action to get the correct default keyboard-mouse input
-        match self {
-            Self::Run => UserInput::VirtualDPad(VirtualDPad::wasd()),
-            Self::Jump => UserInput::Single(InputKind::PhysicalKey(KeyCode::Space)),
-            Self::UseItem => UserInput::Single(InputKind::Mouse(MouseButton::Left)),
-        }
-    }
+        // Default gamepad input bindings
+        input_map.insert(Self::Run, DualAxis::left_stick());
+        input_map.insert(Self::Jump, GamepadButtonType::South);
+        input_map.insert(Self::UseItem, GamepadButtonType::RightTrigger2);
 
-    fn default_gamepad_input(&self) -> UserInput {
-        // Match against the provided action to get the correct default gamepad input
-        match self {
-            Self::Run => UserInput::Single(InputKind::DualAxis(DualAxis::left_stick())),
-            Self::Jump => UserInput::Single(InputKind::GamepadButton(GamepadButtonType::South)),
-            Self::UseItem => {
-                UserInput::Single(InputKind::GamepadButton(GamepadButtonType::RightTrigger2))
-            }
-        }
+        // Default kbm input bindings
+        input_map.insert(Self::Run, VirtualDPad::wasd());
+        input_map.insert(Self::Jump, KeyCode::Space);
+        input_map.insert(Self::UseItem, MouseButton::Left);
+
+        input_map
     }
 }
 
@@ -53,22 +42,11 @@ impl PlayerAction {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
-    // Create an `InputMap` to add default inputs to
-    let mut input_map = InputMap::default();
-
-    // Loop through each action in `PlayerAction` and get the default `UserInput`,
-    // then insert each default input into input_map
-    for action in PlayerAction::variants() {
-        input_map.insert(*action, PlayerAction::default_keyboard_mouse_input(action));
-        input_map.insert(*action, PlayerAction::default_gamepad_input(action));
-    }
-
-    // Spawn the player with the populated input_map
+    // Spawn the player with the default input_map
     commands
-        .spawn(InputManagerBundle::<PlayerAction> {
-            input_map,
-            ..default()
-        })
+        .spawn(InputManagerBundle::with_map(
+            PlayerAction::default_input_map(),
+        ))
         .insert(Player);
 }
 
