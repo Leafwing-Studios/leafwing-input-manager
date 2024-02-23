@@ -303,7 +303,7 @@ mod rotation {
 
     // Conversion methods
     impl Rotation {
-        /// Constructs a [`Rotation`](crate::orientation::Rotation) from an (x,y) Euclidean coordinate
+        /// Constructs a [`Rotation`] from an (x,y) Euclidean coordinate
         ///
         /// If both x and y are nearly 0 (the magnitude is less than [`EPSILON`](f32::EPSILON)),
         /// [`Err(NearlySingularConversion)`] will be returned instead.
@@ -333,7 +333,7 @@ mod rotation {
             Vec2::new(radians.cos(), radians.sin())
         }
 
-        /// Construct a [`Rotation`](crate::orientation::Rotation) from radians,
+        /// Construct a [`Rotation`] from radians,
         /// measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
@@ -352,7 +352,7 @@ mod rotation {
             self.micro_degrees as f32 * (TAU / Rotation::FULL_CIRCLE as f32)
         }
 
-        /// Construct a [`Rotation`](crate::orientation::Rotation) from degrees, measured counterclockwise from the positive x-axis
+        /// Construct a [`Rotation`] from degrees, measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
         pub fn from_degrees(degrees: impl Into<f32>) -> Rotation {
@@ -363,7 +363,7 @@ mod rotation {
             }
         }
 
-        /// Construct a [`Rotation`](crate::orientation::Rotation) from a whole number of degrees, measured counterclockwise from the positive x-axis
+        /// Construct a [`Rotation`] from a whole number of degrees, measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
         pub const fn from_degrees_int(degrees: u32) -> Rotation {
