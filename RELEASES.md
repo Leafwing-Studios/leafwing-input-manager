@@ -4,7 +4,7 @@
 
 ### Breaking Changes
 
-- Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
+- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
 
 ## Version 0.13.3
 

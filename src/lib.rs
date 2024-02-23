@@ -26,6 +26,7 @@ pub mod plugin;
 pub mod systems;
 pub mod timing;
 pub mod user_input;
+pub mod user_inputs;
 
 // Importing the derive macro
 pub use leafwing_input_manager_macros::Actionlike;
