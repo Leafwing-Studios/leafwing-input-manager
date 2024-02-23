@@ -303,7 +303,7 @@ mod rotation {
 
     // Conversion methods
     impl Rotation {
-        /// Constructs a [`Rotation`](crate::orientation::Direction) from an (x,y) Euclidean coordinate
+        /// Constructs a [`Rotation`](crate::orientation::Rotation) from an (x,y) Euclidean coordinate
         ///
         /// If both x and y are nearly 0 (the magnitude is less than [`EPSILON`](f32::EPSILON)),
         /// [`Err(NearlySingularConversion)`] will be returned instead.
@@ -325,7 +325,7 @@ mod rotation {
             }
         }
 
-        /// Converts this direction into an (x, y) pair with magnitude 1
+        /// Converts this rotation into an (x, y) pair with magnitude 1
         #[inline]
         #[must_use]
         pub fn into_xy(self) -> Vec2 {
@@ -333,7 +333,7 @@ mod rotation {
             Vec2::new(radians.cos(), radians.sin())
         }
 
-        /// Construct a [`Direction`](crate::orientation::Direction) from radians,
+        /// Construct a [`Rotation`](crate::orientation::Rotation) from radians,
         /// measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
@@ -345,14 +345,14 @@ mod rotation {
             }
         }
 
-        /// Converts this direction into radians, measured counterclockwise from the positive x-axis
+        /// Converts this rotation into radians, measured counterclockwise from the positive x-axis
         #[inline]
         #[must_use]
         pub fn into_radians(self) -> f32 {
             self.micro_degrees as f32 * (TAU / Rotation::FULL_CIRCLE as f32)
         }
 
-        /// Construct a [`Direction`](crate::orientation::Direction) from degrees, measured counterclockwise from the positive x-axis
+        /// Construct a [`Rotation`](crate::orientation::Rotation) from degrees, measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
         pub fn from_degrees(degrees: impl Into<f32>) -> Rotation {
@@ -363,7 +363,7 @@ mod rotation {
             }
         }
 
-        /// Construct a [`Direction`](crate::orientation::Direction) from a whole number of degrees, measured counterclockwise from the positive x-axis
+        /// Construct a [`Rotation`](crate::orientation::Rotation) from a whole number of degrees, measured counterclockwise from the positive x-axis
         #[must_use]
         #[inline]
         pub const fn from_degrees_int(degrees: u32) -> Rotation {
@@ -372,7 +372,7 @@ mod rotation {
             }
         }
 
-        /// Converts this direction into degrees, measured counterclockwise from the positive x-axis
+        /// Converts this rotation into degrees, measured counterclockwise from the positive x-axis
         #[inline]
         #[must_use]
         pub fn into_degrees(self) -> f32 {

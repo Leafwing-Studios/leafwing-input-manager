@@ -1,11 +1,17 @@
 # Release Notes
 
+## Version 0.13.3
+
+### Breaking Changes
+
+- Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
+
 ## Version 0.13.2
 
 ### Usability
 
 - Added `with_threshold()` for const `SingleAxis` creation.
-- Added `horizontal_gamepad_face_buttons()` and `vertical_gamepad_face_buttons()` for `VirtualAxis`, similar to  `VirtualDpad::gamepad_face_buttons()`.
+- Added `horizontal_gamepad_face_buttons()` and `vertical_gamepad_face_buttons()` for `VirtualAxis`, similar to `VirtualDpad::gamepad_face_buttons()`.
 - Changed various creations of `DualAxis`, `VirtualAxis`, `VirtualDpad` into const functions as they should be:
   - `left_stick()`, `right_stick()` for `DualAxis`.
   - `from_keys()`, `horizontal_arrow_keys()`, `vertical_arrow_keys()`, `ad()`, `ws()`, `horizontal_dpad()`, `vertical_dpad()` for `VirtualAxis`.
@@ -171,7 +177,7 @@
 ### Enhancements
 
 - Changed `entity` field of `ActionStateDriver` to `targets: ActionStateDriverTarget` with variants for 0, 1, or multiple targets, to allow for one driver
-to update multiple entities if needed.
+  to update multiple entities if needed.
 - Added builder-style functions to `SingleAxis`, `DualAxis`, and `VirtualDPad` that invert their output values, allowing, for example, binding inverted camera controls.
 
 ### Docs
