@@ -1,4 +1,4 @@
-//! Tools for working with directional axis-like user inputs (gamesticks, D-Pads and emulated equivalents)
+//! Tools for working with directional axis-like user inputs (game sticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::orientation::{Direction, Rotation};

@@ -67,17 +67,11 @@ impl PlayerBundle {
 fn spawn_players(mut commands: Commands) {
     commands.spawn(PlayerBundle {
         player: Player::One,
-        input_manager: InputManagerBundle {
-            input_map: PlayerBundle::input_map(Player::One),
-            ..Default::default()
-        },
+        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::One)),
     });
 
     commands.spawn(PlayerBundle {
         player: Player::Two,
-        input_manager: InputManagerBundle {
-            input_map: PlayerBundle::input_map(Player::Two),
-            ..Default::default()
-        },
+        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::Two)),
     });
 }

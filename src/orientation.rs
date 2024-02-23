@@ -113,7 +113,7 @@ mod orientation_trait {
     impl Orientation for Rotation {
         #[inline]
         fn distance(&self, other: Rotation) -> Rotation {
-            let difference = self.micro_degrees_difference(other);
+            let difference = self.micro_degrees_between(other);
             let micro_degrees = difference.min(Rotation::neg_micro_degrees(difference));
             Rotation { micro_degrees }
         }
@@ -379,7 +379,7 @@ mod rotation {
         /// Calculates the difference in micro-degrees between `self` and `rhs`.
         #[inline]
         #[must_use]
-        pub(crate) fn micro_degrees_difference(&self, rhs: Self) -> u32 {
+        pub(crate) fn micro_degrees_between(&self, rhs: Self) -> u32 {
             (self.micro_degrees as i32 - rhs.micro_degrees as i32).unsigned_abs()
         }
 
@@ -394,7 +394,7 @@ mod rotation {
         #[inline]
         #[must_use]
         pub(crate) fn micro_degrees_sub_by(&self, rhs: Self) -> u32 {
-            let difference = self.micro_degrees_difference(rhs);
+            let difference = self.micro_degrees_between(rhs);
             if self.micro_degrees >= rhs.micro_degrees {
                 difference
             } else {

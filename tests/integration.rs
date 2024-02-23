@@ -42,10 +42,10 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     commands
-        .spawn(InputManagerBundle::<Action> {
-            input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::KeyF)]),
-            ..Default::default()
-        })
+        .spawn(InputManagerBundle::with_map(InputMap::new([(
+            Action::PayRespects,
+            KeyCode::KeyF,
+        )])))
         .insert(Player);
 }
 
@@ -148,10 +148,10 @@ fn action_state_driver() {
 
     fn setup(mut commands: Commands) {
         let player_entity = commands
-            .spawn(InputManagerBundle::<Action> {
-                input_map: InputMap::<Action>::new([(Action::PayRespects, KeyCode::KeyF)]),
-                ..Default::default()
-            })
+            .spawn(InputManagerBundle::with_map(InputMap::new([(
+                Action::PayRespects,
+                KeyCode::KeyF,
+            )])))
             .insert(Player)
             .id();
 

@@ -59,10 +59,7 @@ fn spawn_player(mut commands: Commands) {
     commands.spawn(PlayerBundle {
         player: Player,
         velocity: Velocity { x: 0.0 },
-        input_manager: InputManagerBundle {
-            input_map: PlayerBundle::default_input_map(),
-            ..default()
-        },
+        input_manager: InputManagerBundle::with_map(PlayerBundle::default_input_map()),
         sprite: SpriteBundle {
             transform: Transform {
                 scale: Vec3::new(40.0, 80.0, 0.0),

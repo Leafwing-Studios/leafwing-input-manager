@@ -23,22 +23,19 @@ enum Action {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
+    // Stores "which actions are currently activated"
+    // Map some arbitrary keys into a virtual direction pad that triggers our move action
+    let input_map = InputMap::new([(
+        Action::Move,
+        VirtualDPad {
+            up: KeyCode::KeyW.into(),
+            down: KeyCode::KeyS.into(),
+            left: KeyCode::KeyA.into(),
+            right: KeyCode::KeyD.into(),
+        },
+    )]);
     commands
-        .spawn(InputManagerBundle::<Action> {
-            // Stores "which actions are currently activated"
-            // Map some arbitrary keys into a virtual direction pad that triggers our move action
-            input_map: InputMap::new([(
-                Action::Move,
-                VirtualDPad {
-                    up: KeyCode::KeyW.into(),
-                    down: KeyCode::KeyS.into(),
-                    left: KeyCode::KeyA.into(),
-                    right: KeyCode::KeyD.into(),
-                },
-            )])
-            .build(),
-            ..default()
-        })
+        .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player);
 }
 

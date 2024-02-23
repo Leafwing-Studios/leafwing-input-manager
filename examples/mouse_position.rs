@@ -49,7 +49,7 @@ fn update_cursor_state_from_window(
     window_query: Query<(&Window, &ActionStateDriver<BoxMovement>)>,
     mut action_state_query: Query<&mut ActionState<BoxMovement>>,
 ) {
-    // Update each actionstate with the mouse position from the window
+    // Update each action state with the mouse position from the window
     // by using the referenced entities in ActionStateDriver and the stored action as
     // a key into the action data
     for (window, driver) in window_query.iter() {

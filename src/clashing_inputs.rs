@@ -536,7 +536,7 @@ mod tests {
             assert_eq!(action_data, expected);
         }
 
-        // Checks that a clash between a VirtualDPad and a chord choses the chord
+        // Checks that a clash between a VirtualDPad and a chord chooses the chord
         #[test]
         fn handle_clashes_dpad_chord() {
             let mut app = App::new();

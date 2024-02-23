@@ -44,16 +44,15 @@ fn join(
             if !joined_players.0.contains_key(&gamepad) {
                 println!("Player {} has joined the game!", gamepad.id);
 
+                let input_map = InputMap::new([
+                    (Action::Jump, GamepadButtonType::South),
+                    (Action::Disconnect, GamepadButtonType::Select),
+                ])
+                // Make sure to set the gamepad or all gamepads will be used!
+                .set_gamepad(gamepad)
+                .build();
                 let player = commands
-                    .spawn(InputManagerBundle::<Action> {
-                        action_state: ActionState::default(),
-                        input_map: InputMap::default()
-                            .insert(Action::Jump, GamepadButtonType::South)
-                            .insert(Action::Disconnect, GamepadButtonType::Select)
-                            // Make sure to set the gamepad or all gamepads will be used!
-                            .set_gamepad(gamepad)
-                            .build(),
-                    })
+                    .spawn(InputManagerBundle::with_map(input_map))
                     .insert(Player { gamepad })
                     .id();
 
