@@ -87,9 +87,10 @@ enum Action {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
+    // Describes how to convert from player inputs into those actions
+    let input_map = InputMap::new([(Action::Jump, KeyCode::Space)]);
     commands
-        // Describes how to convert from player inputs into those actions
-        .spawn(InputManagerBundle::with_map(InputMap::new([(Action::Jump, KeyCode::Space)])))
+        .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player);
 }
 
