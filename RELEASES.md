@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.14.0 (Unreleased)
+
+### Breaking Changes
+
+- Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
+
 ## Version 0.13.3
 
 ### Bugs
