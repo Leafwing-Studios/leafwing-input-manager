@@ -49,7 +49,7 @@ enum Action {
 
 // Construction
 let mut input_map = InputMap::new([
-   // Note that the type of your iterators must be homogenous;
+   // Note that the type of your iterators must be homogeneous;
    // you can use `InputKind` or `UserInput` if needed
    // as unifying types
   (Action::Run, GamepadButtonType::South),
