@@ -20,6 +20,7 @@ mod display_impl;
 pub mod errors;
 pub mod input_map;
 pub mod input_mocking;
+pub mod input_settings;
 pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
@@ -43,6 +44,7 @@ pub mod prelude {
     #[cfg(feature = "ui")]
     pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
+    pub use crate::input_settings::*;
     pub use crate::user_input::{InputKind, Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
