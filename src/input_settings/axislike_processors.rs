@@ -599,7 +599,7 @@ impl DualAxisDeadzone {
     ) -> Vec2 {
         let Vec2 { x, y } = input_value;
 
-        // Calculate the xy values of the closest point on the circle to the `input_value`
+        // Calculate the real minimum bound for the xy values
         let angle = (x.abs() - min_x).atan2(y.abs() - min_y);
         let real_min_x = deadzone_min(min_x, angle.sin(), radius_x, y.abs() > min_y);
         let real_min_y = deadzone_min(min_y, angle.cos(), radius_y, x.abs() > min_x);

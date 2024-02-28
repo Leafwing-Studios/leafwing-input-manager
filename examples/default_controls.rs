@@ -20,7 +20,7 @@ enum PlayerAction {
 }
 
 impl PlayerAction {
-    /// Define the default binding to the input
+    /// Define the default bindings to the input
     fn default_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
 
