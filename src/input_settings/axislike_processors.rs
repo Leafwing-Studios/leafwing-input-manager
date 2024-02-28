@@ -19,10 +19,10 @@
 //!
 //! ## Deadzone Processors
 //!
-//! - The [`SingleAxisDeadzone`] enum provides deadzone for deadzones in single-axis inputs:
+//! - The [`SingleAxisDeadzone`] enum provides settings for deadzones in single-axis inputs:
 //!   - [`SingleAxisDeadzone::None`]: No deadzone is applied
 //!   - [`SingleAxisDeadzone::Symmetric`]: Deadzone with a symmetric bound
-//! - The [`DualAxisDeadzone`] enum provides deadzone for deadzones in dual-axis inputs:
+//! - The [`DualAxisDeadzone`] enum provides settings for deadzones in dual-axis inputs:
 //!   - [`DualAxisDeadzone::None`]: No deadzone is applied
 //!   - [`DualAxisDeadzone::Circle`]: Deadzone with a circular-shaped area
 //!   - [`DualAxisDeadzone::Square`]: Deadzone with a cross-shaped area
@@ -272,7 +272,7 @@ pub enum SingleAxisDeadzone {
         /// Values within the range `[-min, min]` are treated as `0.0`
         min: f32,
 
-        /// The cached width of the deadzone-excluded range `(min, 1.0)`.
+        /// The cached width of the deadzone-excluded range `(min, 1.0]`.
         livezone_width: f32,
 
         /// The cached reciprocal of the `livezone_width`,
@@ -563,19 +563,8 @@ impl DualAxisDeadzone {
         let closest_y = radius_y * angle.cos();
 
         // Normalize the xy values
-        let new_x = normalize_input(x, closest_x.abs());
-        let new_y = normalize_input(y, closest_y.abs());
-        fn normalize_input(input: f32, deadzone_width: f32) -> f32 {
-            let active_width = DEFAULT_LIVEZONE_MAX - deadzone_width;
-            let distance_to_deadzone = input.abs() - deadzone_width;
-            if distance_to_deadzone <= f32::EPSILON {
-                0.0
-            } else if active_width - distance_to_deadzone <= f32::EPSILON {
-                1.0 * input.signum()
-            } else {
-                distance_to_deadzone / active_width * input.signum()
-            }
-        }
+        let new_x = Self::normalize_input(x, closest_x.abs());
+        let new_y = Self::normalize_input(y, closest_y.abs());
 
         Vec2::new(new_x, new_y)
     }
@@ -612,21 +601,23 @@ impl DualAxisDeadzone {
         }
 
         // Normalize the xy values
-        let new_x = normalize_input(x, real_min_x);
-        let new_y = normalize_input(y, real_min_y);
-        fn normalize_input(input: f32, deadzone_min: f32) -> f32 {
-            let livezone_width = DEFAULT_LIVEZONE_MAX - deadzone_min;
-            let distance_to_min = input.abs() - deadzone_min;
-            if distance_to_min <= f32::EPSILON {
-                0.0
-            } else if livezone_width - distance_to_min <= f32::EPSILON {
-                1.0 * input.signum()
-            } else {
-                distance_to_min / livezone_width * input.signum()
-            }
-        }
+        let new_x = Self::normalize_input(x, real_min_x);
+        let new_y = Self::normalize_input(y, real_min_y);
 
         Vec2::new(new_x, new_y)
+    }
+
+    /// Normalizes the given `input` by the livezone range `(deadzone_min, 1.0]`
+    fn normalize_input(input: f32, deadzone_max: f32) -> f32 {
+        let livezone_width = DEFAULT_LIVEZONE_MAX - deadzone_max;
+        let distance_to_min = input.abs() - deadzone_max;
+        if distance_to_min <= f32::EPSILON {
+            0.0
+        } else if livezone_width - distance_to_min <= f32::EPSILON {
+            1.0 * input.signum()
+        } else {
+            distance_to_min / livezone_width * input.signum()
+        }
     }
 }
 
