@@ -988,6 +988,10 @@ mod tests {
             let livezone_0_3 = vec2(0.11152627, 0.06978308);
             assert_eq!(livezone_0_3, deadzone.value(Vec2::splat(0.3)));
             assert_eq!(-livezone_0_3, deadzone.value(Vec2::splat(-0.3)));
+
+            let livezone_0_25 = vec2(0.048063844, 0.0033389921);
+            assert_eq!(livezone_0_25, deadzone.value(Vec2::splat(0.25)));
+            assert_eq!(-livezone_0_25, deadzone.value(Vec2::splat(-0.25)));
         }
 
         #[test]
@@ -1046,6 +1050,10 @@ mod tests {
             let livezone_0_5 = vec2(0.33333334, 0.28571427);
             assert_eq!(livezone_0_5, deadzone.value(Vec2::splat(0.5)));
             assert_eq!(-livezone_0_5, deadzone.value(Vec2::splat(-0.5)));
+
+            let livezone_0_3 = vec2(0.066666685, 0.0);
+            assert_eq!(livezone_0_3, deadzone.value(Vec2::splat(0.3)));
+            assert_eq!(-livezone_0_3, deadzone.value(Vec2::splat(-0.3)));
         }
 
         #[test]
@@ -1075,9 +1083,9 @@ mod tests {
             assert_eq!(livezone_0_25, deadzone.value(Vec2::splat(0.25)));
             assert_eq!(-livezone_0_25, deadzone.value(Vec2::splat(-0.25)));
 
-            let livezone_0_25 = Vec2::splat(0.008298924);
-            assert_eq!(livezone_0_25, deadzone.value(Vec2::splat(0.125)));
-            assert_eq!(-livezone_0_25, deadzone.value(Vec2::splat(-0.125)));
+            let livezone_0_125 = Vec2::splat(0.008298924);
+            assert_eq!(livezone_0_125, deadzone.value(Vec2::splat(0.125)));
+            assert_eq!(-livezone_0_125, deadzone.value(Vec2::splat(-0.125)));
         }
 
         #[test]
@@ -1106,6 +1114,10 @@ mod tests {
             let livezone_0_25 = vec2(0.07730384, 0.06233839);
             assert_eq!(livezone_0_25, deadzone.value(Vec2::splat(0.25)));
             assert_eq!(-livezone_0_25, deadzone.value(Vec2::splat(-0.25)));
+
+            let livezone_0_2 = vec2(0.013510657, 0.0031379922);
+            assert_eq!(livezone_0_2, deadzone.value(Vec2::splat(0.2)));
+            assert_eq!(-livezone_0_2, deadzone.value(Vec2::splat(-0.2)));
         }
     }
 }
