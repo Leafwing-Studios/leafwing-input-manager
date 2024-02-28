@@ -2,12 +2,13 @@
 
 use crate::action_state::{ActionData, ActionState};
 use crate::axislike::{
-    AxisType, DeadZoneShape, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
-    SingleAxis, VirtualAxis, VirtualDPad,
+    AxisType, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
+    VirtualAxis, VirtualDPad,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
+use crate::input_settings::*;
 use crate::timing::Timing;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
@@ -176,10 +177,16 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<MouseWheelAxisType>()
             .register_type::<MouseMotionAxisType>()
             .register_type::<DualAxisData>()
-            .register_type::<DeadZoneShape>()
             .register_type::<ButtonState>()
             .register_type::<MouseWheelDirection>()
             .register_type::<MouseMotionDirection>()
+            // Input processors and settings
+            .register_type::<InputClamp>()
+            .register_type::<InputNormalizer>()
+            .register_type::<SingleAxisSettings>()
+            .register_type::<SingleAxisDeadzone>()
+            .register_type::<DualAxisSettings>()
+            .register_type::<DualAxisDeadzone>()
             // Resources
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();

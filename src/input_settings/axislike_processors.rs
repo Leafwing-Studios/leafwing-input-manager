@@ -194,7 +194,7 @@ impl InputNormalizer {
         }
     }
 
-    /// Normalizes the input value based on the configured input and output ranges.
+    /// Returns the normalized input value.
     ///
     /// # Examples
     ///
@@ -213,22 +213,22 @@ impl InputNormalizer {
     /// ```
     #[must_use]
     pub fn normalize(&self, input_value: f32) -> f32 {
-        let InputNormalizer::MinMax {
-            input_min,
-            input_range_width,
-            recip_input_range_width,
-            output_min,
-            output_range_width,
-        } = self
-        else {
-            return input_value;
-        };
-
-        // Using `clamp` here helps optimizations like `minss` and `maxss` when supported,
-        // potentially reducing branching logic
-        let clamped_value = (input_value - input_min).clamp(0.0, *input_range_width);
-        let scaled_value = clamped_value * recip_input_range_width;
-        scaled_value.mul_add(*output_range_width, *output_min)
+        match self {
+            InputNormalizer::None => input_value,
+            InputNormalizer::MinMax {
+                input_min,
+                input_range_width,
+                recip_input_range_width,
+                output_min,
+                output_range_width,
+            } => {
+                // Using `clamp` here helps optimizations like `minss` and `maxss` when supported,
+                // potentially reducing branching logic
+                let clamped_value = (input_value - input_min).clamp(0.0, *input_range_width);
+                let scaled_value = clamped_value * recip_input_range_width;
+                scaled_value.mul_add(*output_range_width, *output_min)
+            }
+        }
     }
 }
 
@@ -242,7 +242,7 @@ pub const DEFAULT_DEADZONE_MAX: f32 = 0.1;
 /// Default maximum limit for livezone.
 pub const DEFAULT_LIVEZONE_MAX: f32 = 1.0;
 
-/// deadzone for deadzones in single-axis inputs.
+/// Various deadzones in single-axis inputs.
 ///
 /// The input values are categorized into five ranges:
 /// - `[f32::MIN, -1.0]`: Treated as `-1.0`
@@ -251,49 +251,59 @@ pub const DEFAULT_LIVEZONE_MAX: f32 = 1.0;
 /// - `(min, 1.0)`: Normalized into the range `(0.0, 1.0)`
 /// - `[1.0, f32::MAX]`: Treated as `1.0`
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
-pub struct SingleAxisDeadzone {
-    /// The minimum limit for input values.
+pub enum SingleAxisDeadzone {
+    /// No deadzone is applied.
+    None,
+
+    /// The symmetric deadzone.
     ///
-    /// Values within the range `[-min, min]` are treated as `0.0`
-    min: f32,
+    /// The input values are categorized into five ranges:
+    /// - `[f32::MIN, -1.0]`: Treated as `-1.0`
+    /// - `(-1.0, -min)`: Normalized into the range `(-1.0, 0.0)`
+    /// - `[-min, min]`: Treated as `0.0`
+    /// - `(min, 1.0)`: Normalized into the range `(0.0, 1.0)`
+    /// - `[1.0, f32::MAX]`: Treated as `1.0`
+    Symmetric {
+        /// The minimum limit for input values.
+        ///
+        /// Values within the range `[-min, min]` are treated as `0.0`
+        min: f32,
 
-    /// The cached width of the deadzone-excluded range `(min, 1.0)`.
-    livezone_width: f32,
+        /// The cached width of the deadzone-excluded range `(min, 1.0)`.
+        livezone_width: f32,
 
-    /// The cached reciprocal of the `livezone_width`,
-    /// improving performance by eliminating the need for division during computation.
-    recip_livezone_width: f32,
+        /// The cached reciprocal of the `livezone_width`,
+        /// improving performance by eliminating the need for division during computation.
+        recip_livezone_width: f32,
+    },
 }
 
 impl SingleAxisDeadzone {
-    /// Deadzone that only excludes the zeroes.
-    ///
-    /// This deadzone doesn't filter out near-zero input values.
-    pub const NONE: Self = Self {
-        min: 0.0,
-        livezone_width: DEFAULT_LIVEZONE_MAX,
-        recip_livezone_width: DEFAULT_LIVEZONE_MAX,
-    };
-
     /// Default [`SingleAxisDeadzone`].
     ///
     /// This deadzone excludes near-zero input values within the range `[-0.1, 0.1]`.
-    pub const DEFAULT: Self = Self {
+    pub const DEFAULT: Self = Self::Symmetric {
         min: DEFAULT_DEADZONE_MAX,
         livezone_width: DEFAULT_LIVEZONE_MAX - DEFAULT_DEADZONE_MAX,
         recip_livezone_width: 1.0 / (DEFAULT_LIVEZONE_MAX - DEFAULT_DEADZONE_MAX),
     };
 
-    /// Creates a new [`SingleAxisDeadzone`] to filter input values within the range `[-min, min]`.
+    /// Creates a new [`SingleAxisDeadzone::Symmetric`] to filter input values within the range `[-min, min]`.
+    ///
+    /// If the `min` is less than or equal to `0.0`, returns the constant [`SingleAxisDeadzone::None`].
     ///
     /// # Arguments
     ///
     /// - `min`: The minimum limit for the absolute values, clamped to the range `[0.0, 1.0]`
     #[must_use]
-    pub fn new(min: f32) -> Self {
-        let min = min.clamp(0.0, DEFAULT_LIVEZONE_MAX);
+    pub fn symmetric(min: f32) -> Self {
+        if min <= 0.0 {
+            return Self::None;
+        }
+
+        let min = min.min(DEFAULT_LIVEZONE_MAX);
         let livezone_width = DEFAULT_LIVEZONE_MAX - min;
-        Self {
+        Self::Symmetric {
             min,
             livezone_width,
             recip_livezone_width: livezone_width.recip(),
@@ -301,6 +311,19 @@ impl SingleAxisDeadzone {
     }
 
     /// Returns the deadzone-adjusted `input_value`.
+    #[must_use]
+    pub fn value(&self, input_value: f32) -> f32 {
+        match self {
+            SingleAxisDeadzone::None => input_value,
+            SingleAxisDeadzone::Symmetric {
+                min,
+                livezone_width,
+                recip_livezone_width,
+            } => Self::value_symmetric(input_value, min, livezone_width, recip_livezone_width),
+        }
+    }
+
+    /// Returns the adjusted `input_value` after applying the [`SingleAxisDeadzone::Symmetric`].
     ///
     /// The `input_value` is categorized into five ranges:
     /// - `[f32::MIN, -1.0]`: Treated as `-1.0`
@@ -308,22 +331,29 @@ impl SingleAxisDeadzone {
     /// - `[-min, min]`: Treated as `0.0`
     /// - `(min, 1.0)`: Normalized into the range `(0.0, 1.0)`
     /// - `[1.0, f32::MAX]`: Treated as `1.0`
-    #[must_use]
-    pub fn value(&self, input_value: f32) -> f32 {
-        let distance_to_min = input_value.abs() - self.min;
+    fn value_symmetric(
+        input_value: f32,
+        min: &f32,
+        livezone_width: &f32,
+        recip_livezone_width: &f32,
+    ) -> f32 {
+        let distance_to_min = input_value.abs() - min;
         if distance_to_min <= f32::EPSILON {
             0.0
-        } else if self.livezone_width - distance_to_min <= f32::EPSILON {
+        } else if livezone_width - distance_to_min <= f32::EPSILON {
             DEFAULT_LIVEZONE_MAX * input_value.signum()
         } else {
-            distance_to_min * self.recip_livezone_width * input_value.signum()
+            distance_to_min * recip_livezone_width * input_value.signum()
         }
     }
 }
 
-/// deadzone for deadzones in dual-axis inputs.
+/// Various deadzones in dual-axis inputs.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum DualAxisDeadzone {
+    /// No deadzone is applied.
+    None,
+
     /// Deadzone with a circular-shaped area.
     ///
     /// This deadzone forms a circular area at the origin defined by its radii along each axis.
@@ -401,12 +431,6 @@ pub enum DualAxisDeadzone {
 }
 
 impl DualAxisDeadzone {
-    /// Deadzone that only excludes zero values.
-    pub const NONE: Self = Self::Square {
-        deadzone_x: SingleAxisDeadzone::NONE,
-        deadzone_y: SingleAxisDeadzone::NONE,
-    };
-
     /// Default [`DualAxisDeadzone::Circle`].
     ///
     /// This deadzone excludes near-zero input values within a distance of `0.1` from `Vec2::ZERO`.
@@ -437,12 +461,19 @@ impl DualAxisDeadzone {
 
     /// Creates a new [`DualAxisDeadzone::Circle`] with the given settings.
     ///
+    /// If both `radius_x` and `radius_y` are less than or equal to `0.0`,
+    /// returns the constant [`DualAxisDeadzone::None`].
+    ///
     /// # Arguments
     ///
     /// - `radius_x`: The radius along the x-axis for the deadzone, clamped into the range `[0.0, 1.0]`
     /// - `radius_y`: The radius along the y-axis for the deadzone, clamped into the range `[0.0, 1.0]`
     #[must_use]
     pub fn new_circle(radius_x: f32, radius_y: f32) -> Self {
+        if radius_x <= 0.0 && radius_y <= 0.0 {
+            return Self::None;
+        }
+
         Self::Circle {
             // Ensure all the radii are within the range `[0.0, MAX]`
             radius_x: radius_x.clamp(0.0, DEFAULT_LIVEZONE_MAX),
@@ -459,12 +490,15 @@ impl DualAxisDeadzone {
     #[must_use]
     pub fn new_square(min_x: f32, min_y: f32) -> Self {
         Self::Square {
-            deadzone_x: SingleAxisDeadzone::new(min_x),
-            deadzone_y: SingleAxisDeadzone::new(min_y),
+            deadzone_x: SingleAxisDeadzone::symmetric(min_x),
+            deadzone_y: SingleAxisDeadzone::symmetric(min_y),
         }
     }
 
     /// Creates a new [`DualAxisDeadzone::RoundedSquare`] with the given settings.
+    ///
+    /// If both `min_x` and `min_y` are less than or equal to `0.0`,
+    /// a [`DualAxisDeadzone::Circle`] with the radii will be created instead.
     ///
     /// # Arguments
     ///
@@ -474,6 +508,10 @@ impl DualAxisDeadzone {
     /// - `radius_x`: The radius along the y-axis for the rounded corners, clamped into the range `[0.0, 1.0]`
     #[must_use]
     pub fn new_rounded_square(min_x: f32, min_y: f32, radius_x: f32, radius_y: f32) -> Self {
+        if min_x <= 0.0 && min_y <= 0.0 {
+            return Self::new_circle(radius_x, radius_y);
+        }
+
         Self::RoundedSquare {
             // Ensure all the components are within the range `[0.0, MAX]`
             min_x: min_x.clamp(0.0, DEFAULT_LIVEZONE_MAX),
@@ -487,6 +525,7 @@ impl DualAxisDeadzone {
     #[must_use]
     pub fn value(&self, input_value: Vec2) -> Vec2 {
         match self {
+            Self::None => input_value,
             Self::Circle { radius_x, radius_y } => {
                 Self::value_circle(input_value, *radius_x, *radius_y)
             }
@@ -562,12 +601,11 @@ impl DualAxisDeadzone {
         let real_min_x = deadzone_min(min_x, angle.sin(), radius_x, y.abs() > min_y);
         let real_min_y = deadzone_min(min_y, angle.cos(), radius_y, x.abs() > min_x);
         fn deadzone_min(value_min: f32, angle: f32, radius: f32, nearer_corner: bool) -> f32 {
-            let closest_radius = if nearer_corner {
-                radius * angle.abs()
+            if nearer_corner {
+                radius.mul_add(angle.abs(), value_min)
             } else {
-                radius
-            };
-            value_min + closest_radius
+                radius + value_min
+            }
         }
 
         // Normalize the xy values
@@ -653,8 +691,21 @@ impl Eq for SingleAxisDeadzone {}
 
 impl Hash for SingleAxisDeadzone {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        FloatOrd(self.min).hash(state);
-        FloatOrd(self.recip_livezone_width).hash(state);
+        match self {
+            SingleAxisDeadzone::None => {
+                0.hash(state);
+            }
+            SingleAxisDeadzone::Symmetric {
+                min,
+                livezone_width,
+                recip_livezone_width,
+            } => {
+                1.hash(state);
+                FloatOrd(*min).hash(state);
+                FloatOrd(*livezone_width).hash(state);
+                FloatOrd(*recip_livezone_width).hash(state);
+            }
+        }
     }
 }
 
@@ -663,8 +714,11 @@ impl Eq for DualAxisDeadzone {}
 impl Hash for DualAxisDeadzone {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
-            DualAxisDeadzone::Circle { radius_x, radius_y } => {
+            DualAxisDeadzone::None => {
                 0.hash(state);
+            }
+            DualAxisDeadzone::Circle { radius_x, radius_y } => {
+                1.hash(state);
                 FloatOrd(*radius_x).hash(state);
                 FloatOrd(*radius_y).hash(state);
             }
@@ -672,7 +726,7 @@ impl Hash for DualAxisDeadzone {
                 deadzone_x,
                 deadzone_y,
             } => {
-                1.hash(state);
+                2.hash(state);
                 deadzone_x.hash(state);
                 deadzone_y.hash(state);
             }
@@ -682,7 +736,7 @@ impl Hash for DualAxisDeadzone {
                 radius_x,
                 radius_y,
             } => {
-                2.hash(state);
+                3.hash(state);
                 FloatOrd(*min_x).hash(state);
                 FloatOrd(*min_y).hash(state);
                 FloatOrd(*radius_x).hash(state);
@@ -786,16 +840,16 @@ mod tests {
 
         #[test]
         fn test_single_axis_deadzone_none() {
-            let deadzone = SingleAxisDeadzone::NONE;
+            let deadzone = SingleAxisDeadzone::None;
 
-            // No deadzone
-            assert_eq!(1.0, deadzone.value(5.0));
+            // No deadzone and livezone normalization
+            assert_eq!(5.0, deadzone.value(5.0));
             assert_eq!(1.0, deadzone.value(1.0));
             assert_eq!(0.5, deadzone.value(0.5));
             assert_eq!(0.0, deadzone.value(0.0));
             assert_eq!(-0.5, deadzone.value(-0.5));
             assert_eq!(-1.0, deadzone.value(-1.0));
-            assert_eq!(-1.0, deadzone.value(-5.0));
+            assert_eq!(-5.0, deadzone.value(-5.0));
         }
 
         #[test]
@@ -828,7 +882,7 @@ mod tests {
 
         #[test]
         fn test_single_axis_deadzone_custom() {
-            let deadzone = SingleAxisDeadzone::new(0.2);
+            let deadzone = SingleAxisDeadzone::symmetric(0.2);
 
             // Deadzone
             assert_eq!(0.0, deadzone.value(0.2));
@@ -863,10 +917,11 @@ mod tests {
 
         #[test]
         fn test_dual_axis_deadzone_none() {
-            let deadzone = DualAxisDeadzone::NONE;
+            let deadzone = DualAxisDeadzone::None;
 
-            // No deadzone
-            assert_eq!(Vec2::splat(0.75), deadzone.value(Vec2::splat(0.75)));
+            // No deadzone and livezone normalization
+            assert_eq!(Vec2::splat(5.0), deadzone.value(Vec2::splat(5.0)));
+            assert_eq!(Vec2::splat(1.0), deadzone.value(Vec2::splat(1.0)));
             assert_eq!(Vec2::splat(0.5), deadzone.value(Vec2::splat(0.5)));
             assert_eq!(Vec2::splat(0.25), deadzone.value(Vec2::splat(0.25)));
             assert_eq!(Vec2::splat(0.1), deadzone.value(Vec2::splat(0.1)));
@@ -875,7 +930,8 @@ mod tests {
             assert_eq!(Vec2::splat(-0.1), deadzone.value(Vec2::splat(-0.1)));
             assert_eq!(Vec2::splat(-0.25), deadzone.value(Vec2::splat(-0.25)));
             assert_eq!(Vec2::splat(-0.5), deadzone.value(Vec2::splat(-0.5)));
-            assert_eq!(Vec2::splat(-0.75), deadzone.value(Vec2::splat(-0.75)));
+            assert_eq!(Vec2::splat(-1.0), deadzone.value(Vec2::splat(-1.0)));
+            assert_eq!(Vec2::splat(-5.0), deadzone.value(Vec2::splat(-5.0)));
         }
 
         #[test]

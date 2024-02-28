@@ -105,13 +105,12 @@ impl SingleAxisSettings {
     };
 
     /// - Sensitivity: `1.0`
-    /// - Deadzone: Only excludes the zeroes
-    /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]`
+    /// - Deadzone: None
     pub const NO_DEADZONE: Self = Self {
         multiplier: 1.0,
         clamp_input: InputClamp::None,
         normalizer: InputNormalizer::None,
-        deadzone: SingleAxisDeadzone::NONE,
+        deadzone: SingleAxisDeadzone::None,
         scale_output: 1.0,
         clamp_output: InputClamp::None,
     };
@@ -121,20 +120,20 @@ impl SingleAxisSettings {
     /// If the given `sensitivity` value is negative,
     /// it'll be converted to its absolute value.
     #[must_use]
-    pub fn with_sensitivity(sensitivity: f32) -> Self {
+    pub fn with_sensitivity(&self, sensitivity: f32) -> Self {
         Self {
             multiplier: sensitivity.abs(),
-            clamp_input: InputClamp::None,
-            normalizer: InputNormalizer::None,
-            deadzone: SingleAxisDeadzone::NONE,
-            scale_output: 1.0,
-            clamp_output: InputClamp::None,
+            clamp_input: self.clamp_input,
+            normalizer: self.normalizer,
+            deadzone: self.deadzone,
+            scale_output: self.scale_output,
+            clamp_output: self.clamp_output,
         }
     }
 
     /// Returns a new [`SingleAxisSettings`] with inversion applied.
     #[must_use]
-    pub fn with_inverted(self) -> Self {
+    pub fn with_inverted(&self) -> Self {
         Self {
             multiplier: -self.multiplier,
             clamp_input: self.clamp_input,
@@ -171,14 +170,14 @@ impl SingleAxisSettings {
         }
     }
 
-    /// Creates a new [`SingleAxisSettings`] with the given `deadzone`.
+    /// Creates a new [`SingleAxisSettings`] with the given `threshold`.
     #[must_use]
-    pub fn with_deadzone(&self, deadzone: SingleAxisDeadzone) -> Self {
+    pub fn with_deadzone(&self, threshold: f32) -> Self {
         Self {
             multiplier: self.multiplier,
             clamp_input: self.clamp_input,
             normalizer: self.normalizer,
-            deadzone,
+            deadzone: SingleAxisDeadzone::symmetric(threshold),
             scale_output: self.scale_output,
             clamp_output: self.clamp_output,
         }
@@ -210,7 +209,7 @@ impl SingleAxisSettings {
         }
     }
 
-    /// Returns the adjusted input value after applying these settings.
+    /// Returns the adjusted `input_value` after applying these settings.
     #[must_use]
     pub fn value(&self, input_value: f32) -> f32 {
         let processed_value = self.multiplier * input_value;
@@ -313,13 +312,12 @@ impl DualAxisSettings {
     };
 
     /// - Sensitivity: `1.0` on both axes
-    /// - Deadzone: Only excludes the zeroes
-    /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]` on each axis
+    /// - Deadzone: None
     pub const NO_DEADZONE: DualAxisSettings = DualAxisSettings {
         multipliers: Vec2::ONE,
         clamps_input: [InputClamp::None, InputClamp::None],
         normalizers: [InputNormalizer::None, InputNormalizer::None],
-        deadzone: DualAxisDeadzone::NONE,
+        deadzone: DualAxisDeadzone::None,
         scales_output: Vec2::ONE,
         clamps_output: [InputClamp::None, InputClamp::None],
     };
@@ -329,20 +327,20 @@ impl DualAxisSettings {
     /// If the given `sensitivity` values are negative,
     /// they'll be converted to their absolute value.
     #[must_use]
-    pub fn with_sensitivity(sensitivity: Vec2) -> Self {
+    pub fn with_sensitivity(&self, sensitivity: Vec2) -> Self {
         Self {
             multipliers: sensitivity.abs(),
-            clamps_input: [InputClamp::None, InputClamp::None],
-            normalizers: [InputNormalizer::None, InputNormalizer::None],
-            deadzone: DualAxisDeadzone::NONE,
-            scales_output: Vec2::ONE,
-            clamps_output: [InputClamp::None, InputClamp::None],
+            clamps_input: self.clamps_input,
+            normalizers: self.normalizers,
+            deadzone: self.deadzone,
+            scales_output: self.scales_output,
+            clamps_output: self.clamps_output,
         }
     }
 
     /// Returns a new [`DualAxisSettings`] with inversion applied.
     #[must_use]
-    pub fn with_inverted(self) -> Self {
+    pub fn with_inverted(&self) -> Self {
         Self {
             multipliers: -self.multipliers,
             clamps_input: self.clamps_input,
@@ -355,7 +353,7 @@ impl DualAxisSettings {
 
     /// Returns a new [`DualAxisSettings`] with inversion applied on the x-axis.
     #[must_use]
-    pub fn with_inverted_x(self) -> Self {
+    pub fn with_inverted_x(&self) -> Self {
         Self {
             multipliers: Vec2::new(-self.multipliers.x, self.multipliers.y),
             clamps_input: self.clamps_input,
@@ -368,7 +366,7 @@ impl DualAxisSettings {
 
     /// Returns a new [`DualAxisSettings`] with inversion applied on the y-axis.
     #[must_use]
-    pub fn with_inverted_y(self) -> Self {
+    pub fn with_inverted_y(&self) -> Self {
         Self {
             multipliers: Vec2::new(self.multipliers.x, -self.multipliers.y),
             clamps_input: self.clamps_input,
@@ -621,9 +619,9 @@ mod tests {
         fn test_single_axis_settings_no_deadzone() {
             let settings = SingleAxisSettings::NO_DEADZONE;
 
-            // Output clamp
-            assert_eq!(1.0, settings.value(5.0));
-            assert_eq!(-1.0, settings.value(-5.0));
+            // No output clamp
+            assert_eq!(5.0, settings.value(5.0));
+            assert_eq!(-5.0, settings.value(-5.0));
 
             // No inversion
             assert_eq!(1.0, settings.value(1.0));
@@ -654,8 +652,8 @@ mod tests {
         #[test]
         fn test_single_axis_sensitivity() {
             let ratio = 0.5;
-            let custom = SingleAxisSettings::with_sensitivity(ratio);
-            let normal = SingleAxisSettings::with_sensitivity(1.0);
+            let custom = SingleAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = SingleAxisSettings::NO_DEADZONE.with_sensitivity(1.0);
 
             let normal_value = |value: f32| ratio * normal.value(value);
 
@@ -667,8 +665,8 @@ mod tests {
         #[test]
         fn test_single_axis_negative_sensitivity() {
             let ratio = -0.5;
-            let custom = SingleAxisSettings::with_sensitivity(ratio);
-            let normal = SingleAxisSettings::with_sensitivity(1.0);
+            let custom = SingleAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = SingleAxisSettings::NO_DEADZONE.with_sensitivity(1.0);
 
             let normal_value = |value: f32| ratio.abs() * normal.value(value);
 
@@ -679,7 +677,7 @@ mod tests {
 
         #[test]
         fn test_single_axis_zero_sensitivity() {
-            let settings = SingleAxisSettings::with_sensitivity(0.0);
+            let settings = SingleAxisSettings::NO_DEADZONE.with_sensitivity(0.0);
 
             assert_eq!(0.0, settings.value(1.0));
             assert_eq!(0.0, settings.value(0.0));
@@ -755,8 +753,7 @@ mod tests {
 
         #[test]
         fn test_single_axis_deadzone() {
-            let deadzone = SingleAxisDeadzone::new(0.2);
-            let settings = SingleAxisSettings::NO_DEADZONE.with_deadzone(deadzone);
+            let settings = SingleAxisSettings::NO_DEADZONE.with_deadzone(0.2);
 
             // Deadzone
             assert_eq!(0.0, settings.value(0.2));
@@ -950,9 +947,9 @@ mod tests {
         fn test_dual_axis_settings_no_deadzone() {
             let settings = DualAxisSettings::NO_DEADZONE;
 
-            // Output clamp
-            assert_eq!(settings.value(Vec2::splat(5.0)), Vec2::ONE);
-            assert_eq!(settings.value(Vec2::splat(-5.0)), Vec2::NEG_ONE);
+            // No output clamp
+            assert_eq!(settings.value(Vec2::splat(5.0)), Vec2::splat(5.0));
+            assert_eq!(settings.value(Vec2::splat(-5.0)), Vec2::splat(-5.0));
 
             // No inversion
             assert_eq!(settings.value(Vec2::ONE), Vec2::ONE);
@@ -981,8 +978,8 @@ mod tests {
         #[test]
         fn test_dual_axis_sensitivity() {
             let ratio = Vec2::splat(0.5);
-            let custom = DualAxisSettings::with_sensitivity(ratio);
-            let normal = DualAxisSettings::with_sensitivity(Vec2::ONE);
+            let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
 
             let normal_value = |value: Vec2| ratio * normal.value(value);
 
@@ -994,8 +991,8 @@ mod tests {
         #[test]
         fn test_dual_axis_sensitivity_x() {
             let ratio = vec2(0.5, 1.0);
-            let custom = DualAxisSettings::with_sensitivity(ratio);
-            let normal = DualAxisSettings::with_sensitivity(Vec2::ONE);
+            let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
 
             let normal_value = |value: Vec2| ratio * normal.value(value);
 
@@ -1007,8 +1004,8 @@ mod tests {
         #[test]
         fn test_dual_axis_sensitivity_y() {
             let ratio = vec2(1.0, 0.5);
-            let custom = DualAxisSettings::with_sensitivity(ratio);
-            let normal = DualAxisSettings::with_sensitivity(Vec2::ONE);
+            let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
 
             let normal_value = |value: Vec2| ratio * normal.value(value);
 
@@ -1020,8 +1017,8 @@ mod tests {
         #[test]
         fn test_dual_axis_negative_sensitivity() {
             let ratio = Vec2::splat(-0.5);
-            let custom = DualAxisSettings::with_sensitivity(ratio);
-            let normal = DualAxisSettings::with_sensitivity(Vec2::ONE);
+            let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
 
             let normal_value = |value: Vec2| ratio.abs() * normal.value(value);
 
@@ -1033,8 +1030,8 @@ mod tests {
         #[test]
         fn test_dual_axis_negative_sensitivity_x() {
             let ratio = vec2(-0.5, 1.0);
-            let custom = DualAxisSettings::with_sensitivity(ratio);
-            let normal = DualAxisSettings::with_sensitivity(Vec2::ONE);
+            let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
 
             let normal_value = |value: Vec2| ratio.abs() * normal.value(value);
 
@@ -1046,8 +1043,8 @@ mod tests {
         #[test]
         fn test_dual_axis_negative_sensitivity_y() {
             let ratio = vec2(1.0, -0.5);
-            let custom = DualAxisSettings::with_sensitivity(ratio);
-            let normal = DualAxisSettings::with_sensitivity(Vec2::ONE);
+            let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
+            let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
 
             let normal_value = |value: Vec2| ratio.abs() * normal.value(value);
 
@@ -1058,7 +1055,7 @@ mod tests {
 
         #[test]
         fn test_dual_axis_zero_sensitivity() {
-            let settings = DualAxisSettings::with_sensitivity(Vec2::ZERO);
+            let settings = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ZERO);
 
             assert_eq!(Vec2::ZERO, settings.value(Vec2::ONE));
             assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
@@ -1067,7 +1064,7 @@ mod tests {
 
         #[test]
         fn test_dual_axis_zero_sensitivity_x() {
-            let settings = DualAxisSettings::with_sensitivity(Vec2::Y);
+            let settings = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::Y);
 
             assert_eq!(Vec2::Y, settings.value(Vec2::ONE));
             assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
@@ -1076,7 +1073,7 @@ mod tests {
 
         #[test]
         fn test_dual_axis_zero_sensitivity_y() {
-            let settings = DualAxisSettings::with_sensitivity(Vec2::X);
+            let settings = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::X);
 
             assert_eq!(Vec2::X, settings.value(Vec2::ONE));
             assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));

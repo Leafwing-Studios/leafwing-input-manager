@@ -16,6 +16,7 @@ use crate::{
 /// For example, this may store mouse, keyboard or gamepad input, including cross-device chords!
 ///
 /// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum UserInput {
     /// A single button
@@ -125,6 +126,7 @@ impl UserInput {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub(crate) enum UserInputIter<'a> {
     Single(Option<InputKind>),
     Chord(std::slice::Iter<'a, InputKind>),
@@ -353,9 +355,14 @@ impl RawInputs {
     /// Merges the data from the given `input_kind` into `self`.
     fn merge_input_data(&mut self, input_kind: &InputKind) {
         match *input_kind {
-            InputKind::DualAxis(DualAxis { x, y, .. }) => {
-                self.axis_data.push((x.axis_type, x.value));
-                self.axis_data.push((y.axis_type, y.value));
+            InputKind::DualAxis(DualAxis {
+                x_axis_type,
+                y_axis_type,
+                value,
+                ..
+            }) => {
+                self.axis_data.push((x_axis_type, value.map(|v| v.x)));
+                self.axis_data.push((y_axis_type, value.map(|v| v.y)));
             }
             InputKind::SingleAxis(single_axis) => self
                 .axis_data
@@ -412,8 +419,8 @@ impl RawInputs {
     fn from_dual_axis(axis: DualAxis) -> RawInputs {
         RawInputs {
             axis_data: vec![
-                (axis.x.axis_type, axis.x.value),
-                (axis.y.axis_type, axis.y.value),
+                (axis.x_axis_type, axis.value.map(|v| v.x)),
+                (axis.y_axis_type, axis.value.map(|v| v.y)),
             ],
             ..Default::default()
         }

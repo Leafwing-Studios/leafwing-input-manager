@@ -325,7 +325,7 @@ impl<A: Actionlike> InputMap<A> {
 
                 if input_streams.input_pressed(input) {
                     action_datum.state = ButtonState::JustPressed;
-                    action_datum.value += input_streams.input_value(input, true);
+                    action_datum.value += input_streams.input_value(input);
                 }
             }
 

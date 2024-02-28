@@ -1,6 +1,9 @@
 //! Tools for working with directional axis-like user inputs (game sticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
+use crate::input_settings::{
+    DualAxisDeadzone, DualAxisSettings, InputClamp, SingleAxisSettings, DEFAULT_DEADZONE_MAX,
+};
 use crate::orientation::Rotation;
 use crate::user_input::InputKind;
 use bevy::input::{
@@ -10,7 +13,6 @@ use bevy::input::{
 use bevy::math::primitives::Direction2d;
 use bevy::math::Vec2;
 use bevy::reflect::Reflect;
-use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
 /// A single directional axis with a configurable trigger zone.
@@ -24,18 +26,10 @@ use serde::{Deserialize, Serialize};
 pub struct SingleAxis {
     /// The axis that is being checked.
     pub axis_type: AxisType,
-    /// Any axis value higher than this will trigger the input.
-    pub positive_low: f32,
-    /// Any axis value lower than this will trigger the input.
-    pub negative_low: f32,
-    /// Whether to invert output values from this axis.
-    pub inverted: bool,
-    /// How sensitive the axis is to input values.
-    ///
-    /// Since sensitivity is a multiplier, any value `>1.0` will increase sensitivity while any value `<1.0` will decrease sensitivity.
-    /// This value should always be strictly positive: a value of 0 will cause the axis to stop functioning,
-    /// while negative values will invert the direction.
-    pub sensitivity: f32,
+
+    /// The input settings.
+    pub settings: SingleAxisSettings,
+
     /// The target value for this input, used for input mocking.
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
@@ -43,27 +37,14 @@ pub struct SingleAxis {
 }
 
 impl SingleAxis {
-    /// Creates a [`SingleAxis`] with the given `positive_low` and `negative_low` thresholds.
-    #[must_use]
-    pub const fn with_threshold(
-        axis_type: AxisType,
-        negative_low: f32,
-        positive_low: f32,
-    ) -> SingleAxis {
-        SingleAxis {
-            axis_type,
-            positive_low,
-            negative_low,
-            inverted: false,
-            sensitivity: 1.0,
-            value: None,
-        }
-    }
-
     /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
     #[must_use]
     pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        Self::with_threshold(axis_type.into(), -threshold, threshold)
+        Self {
+            axis_type: axis_type.into(),
+            settings: SingleAxisSettings::NO_DEADZONE.with_deadzone(threshold),
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
@@ -74,10 +55,7 @@ impl SingleAxis {
     pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
         SingleAxis {
             axis_type: axis_type.into(),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            inverted: false,
-            sensitivity: 1.0,
+            settings: SingleAxisSettings::NO_DEADZONE,
             value: Some(value),
         }
     }
@@ -85,74 +63,92 @@ impl SingleAxis {
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
     pub const fn mouse_wheel_x() -> SingleAxis {
-        let axis_type = AxisType::MouseWheel(MouseWheelAxisType::X);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+        SingleAxis {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+            settings: SingleAxisSettings::NO_DEADZONE,
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
     pub const fn mouse_wheel_y() -> SingleAxis {
-        let axis_type = AxisType::MouseWheel(MouseWheelAxisType::Y);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+        SingleAxis {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+            settings: SingleAxisSettings::NO_DEADZONE,
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
     pub const fn mouse_motion_x() -> SingleAxis {
-        let axis_type = AxisType::MouseMotion(MouseMotionAxisType::X);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+        SingleAxis {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+            settings: SingleAxisSettings::NO_DEADZONE,
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
     pub const fn mouse_motion_y() -> SingleAxis {
-        let axis_type = AxisType::MouseMotion(MouseMotionAxisType::Y);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+        SingleAxis {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+            settings: SingleAxisSettings::NO_DEADZONE,
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] with the `axis_type` and `negative_low` set to `threshold`.
     ///
     /// Positive values will not trigger the input.
-    pub fn negative_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        SingleAxis::with_threshold(axis_type.into(), threshold, f32::MAX)
+    pub fn negative_only(axis_type: impl Into<AxisType>, negative_low: f32) -> SingleAxis {
+        let clamp = InputClamp::AtMost(negative_low);
+        Self {
+            axis_type: axis_type.into(),
+            settings: SingleAxisSettings::NO_DEADZONE.with_input_clamp(clamp),
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] with the `axis_type` and `positive_low` set to `threshold`.
     ///
     /// Negative values will not trigger the input.
-    pub fn positive_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        SingleAxis::with_threshold(axis_type.into(), f32::MIN, threshold)
+    pub fn positive_only(axis_type: impl Into<AxisType>, positive_low: f32) -> SingleAxis {
+        let clamp = InputClamp::AtLeast(positive_low);
+        Self {
+            axis_type: axis_type.into(),
+            settings: SingleAxisSettings::NO_DEADZONE.with_input_clamp(clamp),
+            value: None,
+        }
     }
 
     /// Returns this [`SingleAxis`] with the deadzone set to the specified value
     #[must_use]
-    pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
-        self.negative_low = -deadzone;
-        self.positive_low = deadzone;
+    pub fn with_deadzone(mut self, min: f32) -> SingleAxis {
+        self.settings = self.settings.with_deadzone(min);
         self
     }
 
     /// Returns this [`SingleAxis`] with the sensitivity set to the specified value
     #[must_use]
     pub fn with_sensitivity(mut self, sensitivity: f32) -> SingleAxis {
-        self.sensitivity = sensitivity;
+        self.settings = self.settings.with_sensitivity(sensitivity);
         self
     }
 
     /// Returns this [`SingleAxis`] inverted.
     #[must_use]
     pub fn inverted(mut self) -> Self {
-        self.inverted = !self.inverted;
+        self.settings = self.settings.with_inverted();
         self
     }
 }
 
 impl PartialEq for SingleAxis {
     fn eq(&self, other: &Self) -> bool {
-        self.axis_type == other.axis_type
-            && FloatOrd(self.positive_low) == FloatOrd(other.positive_low)
-            && FloatOrd(self.negative_low) == FloatOrd(other.negative_low)
-            && FloatOrd(self.sensitivity) == FloatOrd(other.sensitivity)
+        self.axis_type == other.axis_type && self.settings == other.settings
     }
 }
 
@@ -161,9 +157,7 @@ impl Eq for SingleAxis {}
 impl std::hash::Hash for SingleAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.axis_type.hash(state);
-        FloatOrd(self.positive_low).hash(state);
-        FloatOrd(self.negative_low).hash(state);
-        FloatOrd(self.sensitivity).hash(state);
+        self.settings.hash(state);
     }
 }
 
@@ -177,49 +171,51 @@ impl std::hash::Hash for SingleAxis {
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for both `x` and `y` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
 pub struct DualAxis {
-    /// The axis representing horizontal movement.
-    pub x: SingleAxis,
-    /// The axis representing vertical movement.
-    pub y: SingleAxis,
-    /// The shape of the deadzone
-    pub deadzone: DeadZoneShape,
+    /// The horizontal axis that is being checked.
+    pub x_axis_type: AxisType,
+
+    /// The vertical axis that is being checked.
+    pub y_axis_type: AxisType,
+
+    /// The input settings.
+    pub settings: DualAxisSettings,
+
+    /// The target value for this input, used for input mocking.
+    ///
+    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
+    pub value: Option<Vec2>,
 }
 
 impl DualAxis {
     /// The default size of the deadzone used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE: f32 = 0.1;
+    pub const DEFAULT_DEADZONE: f32 = DEFAULT_DEADZONE_MAX;
 
     /// The default shape of the deadzone used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Ellipse {
-        radius_x: Self::DEFAULT_DEADZONE,
-        radius_y: Self::DEFAULT_DEADZONE,
-    };
+    pub const DEFAULT_DEADZONE_SHAPE: DualAxisDeadzone = DualAxisDeadzone::CIRCLE_DEFAULT;
 
     /// A deadzone with a size of 0.0 used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const ZERO_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Ellipse {
-        radius_x: 0.0,
-        radius_y: 0.0,
-    };
+    pub const ZERO_DEADZONE_SHAPE: DualAxisDeadzone = DualAxisDeadzone::None;
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
     #[must_use]
     pub fn symmetric(
         x_axis_type: impl Into<AxisType>,
         y_axis_type: impl Into<AxisType>,
-        deadzone_shape: DeadZoneShape,
+        deadzone: DualAxisDeadzone,
     ) -> DualAxis {
         DualAxis {
-            x: SingleAxis::symmetric(x_axis_type, 0.0),
-            y: SingleAxis::symmetric(y_axis_type, 0.0),
-            deadzone: deadzone_shape,
+            x_axis_type: x_axis_type.into(),
+            y_axis_type: y_axis_type.into(),
+            settings: DualAxisSettings::NO_DEADZONE.with_deadzone(deadzone),
+            value: None,
         }
     }
 
@@ -235,89 +231,107 @@ impl DualAxis {
         y_value: f32,
     ) -> DualAxis {
         DualAxis {
-            x: SingleAxis::from_value(x_axis_type, x_value),
-            y: SingleAxis::from_value(y_axis_type, y_value),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+            x_axis_type: x_axis_type.into(),
+            y_axis_type: y_axis_type.into(),
+            settings: DualAxisSettings::CIRCLE_DEFAULT,
+            value: Some(Vec2::new(x_value, y_value)),
         }
     }
 
     /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
     #[must_use]
     pub const fn left_stick() -> DualAxis {
-        let axis_x = AxisType::Gamepad(GamepadAxisType::LeftStickX);
-        let axis_y = AxisType::Gamepad(GamepadAxisType::LeftStickY);
         DualAxis {
-            x: SingleAxis::with_threshold(axis_x, 0.0, 0.0),
-            y: SingleAxis::with_threshold(axis_y, 0.0, 0.0),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+            x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
+            y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
+            settings: DualAxisSettings::CIRCLE_DEFAULT,
+            value: None,
         }
     }
 
     /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
     #[must_use]
     pub const fn right_stick() -> DualAxis {
-        let axis_x = AxisType::Gamepad(GamepadAxisType::RightStickX);
-        let axis_y = AxisType::Gamepad(GamepadAxisType::RightStickY);
         DualAxis {
-            x: SingleAxis::with_threshold(axis_x, 0.0, 0.0),
-            y: SingleAxis::with_threshold(axis_y, 0.0, 0.0),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+            x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
+            y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
+            settings: DualAxisSettings::CIRCLE_DEFAULT,
+            value: None,
         }
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     pub const fn mouse_wheel() -> DualAxis {
         DualAxis {
-            x: SingleAxis::mouse_wheel_x(),
-            y: SingleAxis::mouse_wheel_y(),
-            deadzone: Self::ZERO_DEADZONE_SHAPE,
+            x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+            y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+            settings: DualAxisSettings::NO_DEADZONE,
+            value: None,
         }
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     pub const fn mouse_motion() -> DualAxis {
         DualAxis {
-            x: SingleAxis::mouse_motion_x(),
-            y: SingleAxis::mouse_motion_y(),
-            deadzone: Self::ZERO_DEADZONE_SHAPE,
+            x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+            y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+            settings: DualAxisSettings::NO_DEADZONE,
+            value: None,
         }
     }
 
     /// Returns this [`DualAxis`] with the deadzone set to the specified values and shape
     #[must_use]
-    pub fn with_deadzone(mut self, deadzone: DeadZoneShape) -> DualAxis {
-        self.deadzone = deadzone;
+    pub fn with_deadzone(mut self, deadzone: DualAxisDeadzone) -> DualAxis {
+        self.settings = self.settings.with_deadzone(deadzone);
         self
     }
 
     /// Returns this [`DualAxis`] with the sensitivity set to the specified values
     #[must_use]
     pub fn with_sensitivity(mut self, x_sensitivity: f32, y_sensitivity: f32) -> DualAxis {
-        self.x.sensitivity = x_sensitivity;
-        self.y.sensitivity = y_sensitivity;
+        let sensitivity = Vec2::new(x_sensitivity, y_sensitivity);
+        self.settings = self.settings.with_sensitivity(sensitivity);
         self
     }
 
     /// Returns this [`DualAxis`] with an inverted X-axis.
     #[must_use]
     pub fn inverted_x(mut self) -> DualAxis {
-        self.x = self.x.inverted();
+        self.settings = self.settings.with_inverted_x();
         self
     }
 
     /// Returns this [`DualAxis`] with an inverted Y-axis.
     #[must_use]
     pub fn inverted_y(mut self) -> DualAxis {
-        self.y = self.y.inverted();
+        self.settings = self.settings.with_inverted_y();
         self
     }
 
     /// Returns this [`DualAxis`] with both axes inverted.
     #[must_use]
     pub fn inverted(mut self) -> DualAxis {
-        self.x = self.x.inverted();
-        self.y = self.y.inverted();
+        self.settings = self.settings.with_inverted();
         self
+    }
+}
+
+impl PartialEq for DualAxis {
+    fn eq(&self, other: &Self) -> bool {
+        self.x_axis_type == other.x_axis_type
+            && self.y_axis_type == other.y_axis_type
+            && self.settings == other.settings
+    }
+}
+
+impl Eq for DualAxis {}
+
+impl std::hash::Hash for DualAxis {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x_axis_type.hash(state);
+        self.y_axis_type.hash(state);
+        self.settings.hash(state);
     }
 }
 
@@ -723,119 +737,5 @@ impl DualAxisData {
 impl From<DualAxisData> for Vec2 {
     fn from(data: DualAxisData) -> Vec2 {
         data.xy
-    }
-}
-
-/// The shape of the deadzone for a [`DualAxis`] input.
-///
-/// Input values that are on the boundary of the shape are counted as inside.
-/// If the size of a shape is 0.0, then all input values are read, except for 0.0.
-///
-/// All inputs are scaled to be continuous.
-/// So with an ellipse deadzone with a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
-///
-/// Deadzone values should be in the range `0.0..=1.0`.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
-pub enum DeadZoneShape {
-    /// Deadzone with the shape of a cross.
-    ///
-    /// The cross is represented by horizontal and vertical rectangles.
-    /// Each axis is handled separately which creates a per-axis "snapping" effect.
-    Cross {
-        /// The width of the horizontal axis.
-        ///
-        /// Affects the snapping of the y-axis.
-        horizontal_width: f32,
-        /// The width of the vertical axis.
-        ///
-        /// Affects the snapping of the x-axis.
-        vertical_width: f32,
-    },
-    /// Deadzone with the shape of an ellipse.
-    Ellipse {
-        /// The horizontal radius of the ellipse.
-        radius_x: f32,
-        /// The vertical radius of the ellipse.
-        radius_y: f32,
-    },
-}
-
-impl Eq for DeadZoneShape {}
-
-impl std::hash::Hash for DeadZoneShape {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        match self {
-            DeadZoneShape::Cross {
-                horizontal_width,
-                vertical_width,
-            } => {
-                FloatOrd(*horizontal_width).hash(state);
-                FloatOrd(*vertical_width).hash(state);
-            }
-            DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                FloatOrd(*radius_x).hash(state);
-                FloatOrd(*radius_y).hash(state);
-            }
-        }
-    }
-}
-
-impl DeadZoneShape {
-    /// Computes the input value based on the deadzone.
-    pub fn deadzone_input_value(&self, x: f32, y: f32) -> Option<DualAxisData> {
-        match self {
-            DeadZoneShape::Cross {
-                horizontal_width,
-                vertical_width,
-            } => self.cross_deadzone_value(x, y, *horizontal_width, *vertical_width),
-            DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                self.ellipse_deadzone_value(x, y, *radius_x, *radius_y)
-            }
-        }
-    }
-
-    /// Computes the input value based on the cross deadzone.
-    fn cross_deadzone_value(
-        &self,
-        x: f32,
-        y: f32,
-        horizontal_width: f32,
-        vertical_width: f32,
-    ) -> Option<DualAxisData> {
-        let new_x = deadzone_axis_value(x, vertical_width);
-        let new_y = deadzone_axis_value(y, horizontal_width);
-        let is_outside_deadzone = new_x != 0.0 || new_y != 0.0;
-        is_outside_deadzone.then(|| DualAxisData::new(new_x, new_y))
-    }
-
-    /// Computes the input value based on the ellipse deadzone.
-    fn ellipse_deadzone_value(
-        &self,
-        x: f32,
-        y: f32,
-        radius_x: f32,
-        radius_y: f32,
-    ) -> Option<DualAxisData> {
-        let x_ratio = x / radius_x.max(f32::EPSILON);
-        let y_ratio = y / radius_y.max(f32::EPSILON);
-        let is_outside_deadzone = x_ratio.powi(2) + y_ratio.powi(2) >= 1.0;
-        is_outside_deadzone.then(|| {
-            let new_x = deadzone_axis_value(x, radius_x);
-            let new_y = deadzone_axis_value(y, radius_y);
-            DualAxisData::new(new_x, new_y)
-        })
-    }
-}
-
-/// Applies the given deadzone to the axis value.
-///
-/// Returns 0.0 if the axis value is within the deadzone.
-/// Otherwise, returns the normalized axis value between -1.0 and 1.0.
-pub(crate) fn deadzone_axis_value(axis_value: f32, deadzone: f32) -> f32 {
-    let abs_axis_value = axis_value.abs();
-    if abs_axis_value <= deadzone {
-        0.0
-    } else {
-        axis_value.signum() * (abs_axis_value - deadzone) / (1.0 - deadzone)
     }
 }

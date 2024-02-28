@@ -12,8 +12,7 @@ use bevy::math::Vec2;
 use bevy::utils::HashSet;
 
 use crate::axislike::{
-    deadzone_axis_value, AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
-    SingleAxis,
+    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
@@ -97,10 +96,10 @@ impl<'a> InputStreams<'a> {
             InputKind::DualAxis(axis) => self
                 .extract_dual_axis_data(&axis)
                 .is_some_and(|data| data.xy() != Vec2::ZERO),
-            InputKind::SingleAxis(axis) => {
-                let value = self.input_value(&button.into(), false);
+            InputKind::SingleAxis(_) => {
+                let value = self.input_value(&button.into());
 
-                value < axis.negative_low || value > axis.positive_low
+                value != 0.0
             }
             InputKind::GamepadButton(button_type) => self
                 .associated_gamepad
@@ -175,30 +174,8 @@ impl<'a> InputStreams<'a> {
     ///
     /// If you need to ensure that this value is always in the range `[-1., 1.]`,
     /// be sure to clamp the returned data.
-    pub fn input_value(&self, input: &UserInput, include_deadzone: bool) -> f32 {
+    pub fn input_value(&self, input: &UserInput) -> f32 {
         let use_button_value = || -> f32 { f32::from(self.input_pressed(input)) };
-
-        // Helper that takes the value returned by an axis and returns 0.0 if it is not within the
-        // triggering range.
-        let value_in_axis_range = |axis: &SingleAxis, mut value: f32| -> f32 {
-            if include_deadzone {
-                if value >= axis.negative_low && value <= axis.positive_low {
-                    return 0.0;
-                }
-
-                let deadzone = if value.is_sign_positive() {
-                    axis.positive_low.abs()
-                } else {
-                    axis.negative_low.abs()
-                };
-                value = deadzone_axis_value(value, deadzone);
-            }
-            if axis.inverted {
-                value *= -1.0;
-            }
-
-            value * axis.sensitivity
-        };
 
         match input {
             UserInput::Single(InputKind::SingleAxis(single_axis)) => {
@@ -211,13 +188,13 @@ impl<'a> InputStreams<'a> {
                         };
                         if let Some(gamepad) = self.associated_gamepad {
                             let value = get_gamepad_value(gamepad);
-                            value_in_axis_range(single_axis, value)
+                            single_axis.settings.value(value)
                         } else {
                             self.gamepads
                                 .iter()
                                 .map(get_gamepad_value)
                                 .find(|value| *value != 0.0)
-                                .map_or(0.0, |value| value_in_axis_range(single_axis, value))
+                                .map_or(0.0, |value| single_axis.settings.value(value))
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
@@ -234,7 +211,7 @@ impl<'a> InputStreams<'a> {
                             MouseWheelAxisType::X => x,
                             MouseWheelAxisType::Y => y,
                         };
-                        value_in_axis_range(single_axis, movement)
+                        single_axis.settings.value(movement)
                     }
                     AxisType::MouseMotion(axis_type) => {
                         // The compiler will compile this into a direct f64 accumulation when opt-level >= 1.
@@ -243,7 +220,7 @@ impl<'a> InputStreams<'a> {
                             MouseMotionAxisType::X => x,
                             MouseMotionAxisType::Y => y,
                         };
-                        value_in_axis_range(single_axis, movement)
+                        single_axis.settings.value(movement)
                     }
                 }
             }
@@ -265,15 +242,15 @@ impl<'a> InputStreams<'a> {
                     value += match input {
                         InputKind::SingleAxis(axis) => {
                             has_axis = true;
-                            self.input_value(&InputKind::SingleAxis(*axis).into(), true)
+                            self.input_value(&InputKind::SingleAxis(*axis).into())
                         }
                         InputKind::MouseWheel(axis) => {
                             has_axis = true;
-                            self.input_value(&InputKind::MouseWheel(*axis).into(), true)
+                            self.input_value(&InputKind::MouseWheel(*axis).into())
                         }
                         InputKind::MouseMotion(axis) => {
                             has_axis = true;
-                            self.input_value(&InputKind::MouseMotion(*axis).into(), true)
+                            self.input_value(&InputKind::MouseMotion(*axis).into())
                         }
                         _ => 0.0,
                     }
@@ -345,17 +322,18 @@ impl<'a> InputStreams<'a> {
     }
 
     fn extract_single_axis_data(&self, positive: &InputKind, negative: &InputKind) -> f32 {
-        let positive = self.input_value(&UserInput::Single(*positive), true);
-        let negative = self.input_value(&UserInput::Single(*negative), true);
+        let positive = self.input_value(&UserInput::Single(*positive));
+        let negative = self.input_value(&UserInput::Single(*negative));
 
         positive.abs() - negative.abs()
     }
 
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> Option<DualAxisData> {
-        let x = self.input_value(&dual_axis.x.into(), false);
-        let y = self.input_value(&dual_axis.y.into(), false);
+        let x = self.input_value(&SingleAxis::symmetric(dual_axis.x_axis_type, 0.0).into());
+        let y = self.input_value(&SingleAxis::symmetric(dual_axis.y_axis_type, 0.0).into());
 
-        dual_axis.deadzone.deadzone_input_value(x, y)
+        let data = dual_axis.settings.value(Vec2::new(x, y));
+        Some(DualAxisData::from_xy(data))
     }
 }
 
