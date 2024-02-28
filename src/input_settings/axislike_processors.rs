@@ -607,7 +607,7 @@ impl DualAxisDeadzone {
         Vec2::new(new_x, new_y)
     }
 
-    /// Normalizes the given `input` by the livezone range `(deadzone_min, 1.0]`
+    /// Normalizes the given `input` into the livezone range `(deadzone_min, 1.0]`
     fn normalize_input(input: f32, deadzone_max: f32) -> f32 {
         let livezone_width = DEFAULT_LIVEZONE_MAX - deadzone_max;
         let distance_to_min = input.abs() - deadzone_max;
