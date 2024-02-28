@@ -19,8 +19,11 @@
 //!
 //! ## Deadzone Processors
 //!
-//! - The [`SingleAxisDeadzone`] struct provides deadzone for deadzones in single-axis inputs
-//! - The [`DualAxisDeadzone`] enum provides deadzone for deadzones in dual-axis inputs
+//! - The [`SingleAxisDeadzone`] enum provides deadzone for deadzones in single-axis inputs:
+//!   - [`SingleAxisDeadzone::None`]: No deadzone is applied
+//!   - [`SingleAxisDeadzone::Symmetric`]: Deadzone with a symmetric bound
+//! - The [`DualAxisDeadzone`] enum provides deadzone for deadzones in dual-axis inputs:
+//!   - [`DualAxisDeadzone::None`]: No deadzone is applied
 //!   - [`DualAxisDeadzone::Circle`]: Deadzone with a circular-shaped area
 //!   - [`DualAxisDeadzone::Square`]: Deadzone with a cross-shaped area
 //!   - [`DualAxisDeadzone::RoundedSquare`]: Deadzone with a cross-shaped area and four rounded corners
@@ -255,7 +258,7 @@ pub enum SingleAxisDeadzone {
     /// No deadzone is applied.
     None,
 
-    /// The symmetric deadzone.
+    /// Deadzone with a symmetric bound.
     ///
     /// The input values are categorized into five ranges:
     /// - `[f32::MIN, -1.0]`: Treated as `-1.0`
