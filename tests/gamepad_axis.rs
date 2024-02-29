@@ -205,11 +205,13 @@ fn game_pad_single_axis_inverted() {
     app.insert_resource(InputMap::new([
         (
             AxislikeTestAction::X,
-            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1).inverted(),
+            SingleAxis::symmetric(GamepadAxisType::LeftStickX, 0.1)
+                .with_settings(|settings| settings.with_inverted()),
         ),
         (
             AxislikeTestAction::Y,
-            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1).inverted(),
+            SingleAxis::symmetric(GamepadAxisType::LeftStickY, 0.1)
+                .with_settings(|settings| settings.with_inverted()),
         ),
     ]));
 
@@ -217,9 +219,8 @@ fn game_pad_single_axis_inverted() {
     let input = SingleAxis {
         axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
         value: Some(1.),
-        settings: SingleAxisSettings::NO_DEADZONE,
-    }
-    .inverted();
+        settings: SingleAxisSettings::NO_DEADZONE.with_inverted(),
+    };
     app.send_input(input);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -269,10 +270,10 @@ fn game_pad_dual_axis_square() {
     let deadzone = Deadzone2::new_square(0.1, 0.1);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_deadzone(deadzone),
+        DualAxis::left_stick().with_settings(|settings| settings.with_deadzone(deadzone)),
     )]));
 
-    // Test that an input inside the cross deadzone is filtered out.
+    // Test that an input inside the square deadzone is filtered out.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -290,7 +291,7 @@ fn game_pad_dual_axis_square() {
         DualAxisData::new(0.0, 0.0)
     );
 
-    // Test that an input outside the cross deadzone is not filtered out.
+    // Test that an input outside the square deadzone is not filtered out.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -308,7 +309,7 @@ fn game_pad_dual_axis_square() {
         DualAxisData::new(1.0, 0.11111112)
     );
 
-    // Test that each axis of the cross deadzone is filtered independently.
+    // Test that each axis of the square deadzone is filtered independently.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -333,10 +334,10 @@ fn game_pad_dual_axis_circle() {
     let deadzone = Deadzone2::new_circle(0.1, 0.1);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_deadzone(deadzone),
+        DualAxis::left_stick().with_settings(|settings| settings.with_deadzone(deadzone)),
     )]));
 
-    // Test that an input inside the ellipse deadzone is filtered out, assuming values of 0.1
+    // Test that an input inside the circle deadzone is filtered out, assuming values of 0.1
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -354,7 +355,7 @@ fn game_pad_dual_axis_circle() {
         DualAxisData::new(0.0, 0.0)
     );
 
-    // Test that an input outside the ellipse deadzone is not filtered out, assuming values of 0.1
+    // Test that an input outside the circle deadzone is not filtered out, assuming values of 0.1
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -379,7 +380,7 @@ fn test_zero_square() {
     let deadzone = Deadzone2::new_square(0.0, 0.0);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_deadzone(deadzone),
+        DualAxis::left_stick().with_settings(|settings| settings.with_deadzone(deadzone)),
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.
@@ -407,7 +408,7 @@ fn test_zero_circle() {
     let deadzone = Deadzone2::new_circle(0.0, 0.0);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_deadzone(deadzone),
+        DualAxis::left_stick().with_settings(|settings| settings.with_deadzone(deadzone)),
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.

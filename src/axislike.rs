@@ -124,24 +124,17 @@ impl SingleAxis {
         }
     }
 
-    /// Returns this [`SingleAxis`] with the deadzone set to the specified value
-    #[must_use]
-    pub fn with_deadzone(mut self, min: f32) -> SingleAxis {
-        self.settings = self.settings.with_symmetric_deadzone(min);
-        self
-    }
-
-    /// Returns this [`SingleAxis`] with the sensitivity set to the specified value
-    #[must_use]
-    pub fn with_sensitivity(mut self, sensitivity: f32) -> SingleAxis {
-        self.settings = self.settings.with_sensitivity(sensitivity);
-        self
-    }
-
-    /// Returns this [`SingleAxis`] inverted.
-    #[must_use]
-    pub fn inverted(mut self) -> Self {
-        self.settings = self.settings.with_inverted();
+    /// Replaces the internal settings of the [`SingleAxis`] using the given `settings_replacer`.
+    ///
+    /// # Arguments
+    ///
+    /// - `settings_replacer`: A closure that takes a mutable reference to [`SingleAxisSettings`] and replaces it.
+    #[inline]
+    pub fn with_settings<F>(mut self, mut settings_replacer: F) -> Self
+    where
+        F: FnMut(&mut SingleAxisSettings) -> SingleAxisSettings,
+    {
+        self.settings = settings_replacer(&mut self.settings);
         self
     }
 }
@@ -280,39 +273,17 @@ impl DualAxis {
         }
     }
 
-    /// Returns this [`DualAxis`] with the deadzone set to the specified values and shape
-    #[must_use]
-    pub fn with_deadzone(mut self, deadzone: Deadzone2) -> DualAxis {
-        self.settings = self.settings.with_deadzone(deadzone);
-        self
-    }
-
-    /// Returns this [`DualAxis`] with the sensitivity set to the specified values
-    #[must_use]
-    pub fn with_sensitivity(mut self, x_sensitivity: f32, y_sensitivity: f32) -> DualAxis {
-        let sensitivity = Vec2::new(x_sensitivity, y_sensitivity);
-        self.settings = self.settings.with_sensitivity(sensitivity);
-        self
-    }
-
-    /// Returns this [`DualAxis`] with an inverted X-axis.
-    #[must_use]
-    pub fn inverted_x(mut self) -> DualAxis {
-        self.settings = self.settings.with_inverted_x();
-        self
-    }
-
-    /// Returns this [`DualAxis`] with an inverted Y-axis.
-    #[must_use]
-    pub fn inverted_y(mut self) -> DualAxis {
-        self.settings = self.settings.with_inverted_y();
-        self
-    }
-
-    /// Returns this [`DualAxis`] with both axes inverted.
-    #[must_use]
-    pub fn inverted(mut self) -> DualAxis {
-        self.settings = self.settings.with_inverted();
+    /// Replaces the internal settings of the [`DualAxis`] using the given `settings_replacer`.
+    ///
+    /// # Arguments
+    ///
+    /// - `settings_replacer`: A closure that takes a mutable reference to [`DualAxisSettings`] and replaces it.
+    #[inline]
+    pub fn with_settings<F>(mut self, mut settings_replacer: F) -> Self
+    where
+        F: FnMut(&mut DualAxisSettings) -> DualAxisSettings,
+    {
+        self.settings = settings_replacer(&mut self.settings);
         self
     }
 }
