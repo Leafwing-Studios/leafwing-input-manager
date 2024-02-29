@@ -22,7 +22,6 @@ use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
-use std::ops::Neg;
 
 /// Default upper bound for the deadzone.
 pub const DEFAULT_DEADZONE_UPPER: f32 = 0.1;
@@ -565,8 +564,9 @@ mod tests {
     }
 
     mod two_dimensional {
-        use crate::prelude::Deadzone2;
         use bevy::math::{vec2, Vec2};
+
+        use crate::prelude::Deadzone2;
 
         #[test]
         fn test_deadzone2_none() {

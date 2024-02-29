@@ -21,7 +21,6 @@
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
 
-use bevy::math::Vec2;
 use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
