@@ -8,11 +8,11 @@
 - added input processors for axis-like inputs. Their processing procedure is as follows:
   1. Inversion: Determines whether the input direction is reversed.
   2. Sensitivity: Controls the responsiveness of the input.
-  3. Input Clamping: Limits the input values to a specified range.
+  3. Input Limiting: Limits the input values to a specified range.
   4. Input Normalization: Ensures that input values fall within a standardized range before further processing.
   5. Deadzone: Specifies the ranges where input values are considered neutral or ignored.
-  6. Scaling: Adjusts processed input values according to a specified scale factor.
-  7. Output Clamping: Limits the output values to a specified range.
+  6. Output Scaling: Adjusts processed input values according to a specified scale factor.
+  7. Output Limiting: Limits the output values to a specified range.
 - replaced `SingleAxis` and `DualAxis` with the newly added `SingleAxisSettings` and `DualAxisSettings`.
 - replaced `DualAxisShape` with the newly added `DualAxisDeadzone`
 

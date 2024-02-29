@@ -6,11 +6,14 @@
 //!
 //! # General Input Processors
 //!
-//! - [`axislike_processors`]: Utilities for processing axis-like inputs.
+//! - [`common_processors`]: Utilities for processing all kinds of inputs.
+//! - [`deadzone_processors`]: Utilities for deadzone handling in input processing.
 
-pub use axislike_processors::*;
-pub use axislike_settings::*;
+pub use self::axislike_settings::*;
+pub use self::common_processors::*;
+pub use self::deadzone_processors::*;
 
 pub mod axislike_settings;
 
-pub mod axislike_processors;
+pub mod common_processors;
+pub mod deadzone_processors;

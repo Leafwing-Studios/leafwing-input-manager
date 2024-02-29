@@ -266,7 +266,7 @@ fn game_pad_single_axis_inverted() {
 #[test]
 fn game_pad_dual_axis_square() {
     let mut app = test_app();
-    let deadzone = DualAxisDeadzone::new_square(0.1, 0.1);
+    let deadzone = Deadzone2::new_square(0.1, 0.1);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(deadzone),
@@ -330,7 +330,7 @@ fn game_pad_dual_axis_square() {
 #[test]
 fn game_pad_dual_axis_circle() {
     let mut app = test_app();
-    let deadzone = DualAxisDeadzone::new_circle(0.1, 0.1);
+    let deadzone = Deadzone2::new_circle(0.1, 0.1);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(deadzone),
@@ -376,7 +376,7 @@ fn game_pad_dual_axis_circle() {
 #[test]
 fn test_zero_square() {
     let mut app = test_app();
-    let deadzone = DualAxisDeadzone::new_square(0.0, 0.0);
+    let deadzone = Deadzone2::new_square(0.0, 0.0);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(deadzone),
@@ -404,7 +404,7 @@ fn test_zero_square() {
 #[test]
 fn test_zero_circle() {
     let mut app = test_app();
-    let deadzone = DualAxisDeadzone::new_circle(0.0, 0.0);
+    let deadzone = Deadzone2::new_circle(0.0, 0.0);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
         DualAxis::left_stick().with_deadzone(deadzone),

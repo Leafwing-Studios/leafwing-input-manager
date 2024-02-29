@@ -19,11 +19,11 @@
 //!
 //! 1. **Inversion**: Determines whether the input direction is reversed.
 //! 2. **Sensitivity**: Controls the responsiveness of the input.
-//! 3. **Input Clamping**: Limits the input values to a specified range.
-//! 4. **Input Normalization**: Ensures that input values fall within a standardized range before further processing.
+//! 3. **Input Limiting**: Limits the input values to a specified range before further processing.
+//! 4. **Normalization**: Ensures that input values fall within a standardized range before further processing.
 //! 5. **Deadzone**: Specifies the ranges where input values are considered neutral or ignored.
-//! 6. **Scaling**: Adjusts processed input values according to a specified scale factor.
-//! 7. **Output Clamping**: Limits the output values to a specified range.
+//! 6. **Output Scaling**: Adjusts processed input values according to a specified scale factor.
+//! 7. **Output Limiting**: Limits the output values to a specified range.
 //!
 //! Each of these steps can be configured using the respective settings
 //! provided by the [`SingleAxisSettings`] and [`DualAxisSettings`] structs.
@@ -35,28 +35,25 @@ use bevy::prelude::{Reflect, Vec2};
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
-use super::axislike_processors::*;
+use super::common_processors::*;
+use super::deadzone_processors::*;
 
-// region Axis Settings ------------------------
-
-/// Settings for single-axis inputs using various types of axis-like input processors.
+/// Settings for single-axis inputs using input processors.
 ///
 /// # Processing Procedure
 ///
-/// The procedure for processing single-axis inputs is as follows:
-///
 /// 1. **Inversion**: Determines whether the input direction is reversed.
 /// 2. **Sensitivity**: Controls the responsiveness of the input.
-///    - Sensitivity values must be non-negative:
-///      - `1.0`: No adjustment to the value
-///      - `0.0`: Disregards input changes
-///      - `(1.0, f32::MAX]`: Amplify input changes
-///      - `(0.0, 1.0)`: Reduce input changes
-/// 3. [`InputClamp`]: Limits the input values to a specified range.
-/// 4. [`InputNormalizer`]: Ensures that input values fall within a standardized range before further processing.
-/// 5. [`SingleAxisDeadzone`]: Specifies the ranges where input values are considered neutral or ignored.
+///    Sensitivity values must be non-negative:
+///    - `1.0`: No adjustment to the value
+///    - `0.0`: Disregards input changes
+///    - `(1.0, f32::MAX]`: Amplify input changes
+///    - `(0.0, 1.0)`: Reduce input changes
+/// 3. **Input [`ValueLimit`]**: Limits the input values to a specified range before further processing.
+/// 4. **[`ValueNormalizer`]**: Ensures that input values fall within a standardized range before further processing.
+/// 5. **[`Deadzone1`]**: Specifies the ranges where input values are considered neutral or ignored.
 /// 6. **Scaling**: Adjusts processed input values according to a specified scale factor.
-/// 7. **Output Clamp**: Similar to [`InputClamp`], but limits the output values to a specified range.
+/// 7. **Output [`ValueLimit`]**: Limits the processed input values to a specified range.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct SingleAxisSettings {
     /// The sensitivity and inversion of the input.
@@ -65,30 +62,30 @@ pub struct SingleAxisSettings {
     /// improves performance by eliminating the need for separate fields and branching logic.
     ///
     /// The absolution value determines the sensitivity of the input:
-    /// - `1.0` indicates no adjustment to the value
-    /// - `0.0` disregards input changes
-    /// - Values greater than `1.0` amplify input changes
-    /// - Values between `0.0` and `1.0` reduce input changes
+    /// - `1.0`: No adjustment to the value
+    /// - `0.0`: Disregards input changes
+    /// - `(1.0, f32::MAX]`: Amplify input changes
+    /// - `(0.0, 1.0)`: Reduce input changes
     ///
     /// The sign indicates the inversion:
     /// - Positive values indicate no inversion.
     /// - Negative values indicate inversion.
-    multiplier: f32,
+    input_multiplier: f32,
 
-    /// The input clamp limiting the input values to a specified range.
-    clamp_input: InputClamp,
+    /// The value limits for clamping the input values to a specified range before further processing.
+    input_limit: ValueLimit,
 
-    /// The input normalizer ensuring that input values fall within a specific range before further processing.
-    normalizer: InputNormalizer,
+    /// The normalizer ensuring that input values fall within a specific range before further processing.
+    normalizer: ValueNormalizer,
 
     /// The deadzone settings for the input.
-    deadzone: SingleAxisDeadzone,
+    deadzone: Deadzone1,
 
     /// The scale factor for adjusting processed input values.
-    scale_output: f32,
+    output_scale: f32,
 
-    /// The output clamp limiting the output values to a specified range.
-    clamp_output: InputClamp,
+    /// The value limits for clamping the processed input values to a specified range.
+    output_limit: ValueLimit,
 }
 
 impl SingleAxisSettings {
@@ -96,38 +93,38 @@ impl SingleAxisSettings {
     /// - Deadzone: Excludes near-zero input values within the range `[-0.1, 0.1]`
     /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]`
     pub const DEFAULT: Self = Self {
-        multiplier: 1.0,
-        clamp_input: InputClamp::None,
-        normalizer: InputNormalizer::None,
-        deadzone: SingleAxisDeadzone::DEFAULT,
-        scale_output: 1.0,
-        clamp_output: InputClamp::None,
+        input_multiplier: 1.0,
+        input_limit: ValueLimit::None,
+        normalizer: ValueNormalizer::None,
+        deadzone: Deadzone1::SYMMETRIC_DEFAULT,
+        output_scale: 1.0,
+        output_limit: ValueLimit::None,
     };
 
     /// - Sensitivity: `1.0`
     /// - Deadzone: None
     pub const NO_DEADZONE: Self = Self {
-        multiplier: 1.0,
-        clamp_input: InputClamp::None,
-        normalizer: InputNormalizer::None,
-        deadzone: SingleAxisDeadzone::None,
-        scale_output: 1.0,
-        clamp_output: InputClamp::None,
+        input_multiplier: 1.0,
+        input_limit: ValueLimit::None,
+        normalizer: ValueNormalizer::None,
+        deadzone: Deadzone1::None,
+        output_scale: 1.0,
+        output_limit: ValueLimit::None,
     };
 
-    /// Creates a new [`SingleAxisSettings`] only with the given `sensitivity`.
+    /// Creates a new [`SingleAxisSettings`] with the given `sensitivity`.
     ///
     /// If the given `sensitivity` value is negative,
     /// it'll be converted to its absolute value.
     #[must_use]
     pub fn with_sensitivity(&self, sensitivity: f32) -> Self {
         Self {
-            multiplier: sensitivity.abs(),
-            clamp_input: self.clamp_input,
+            input_multiplier: sensitivity.abs(),
+            input_limit: self.input_limit,
             normalizer: self.normalizer,
             deadzone: self.deadzone,
-            scale_output: self.scale_output,
-            clamp_output: self.clamp_output,
+            output_scale: self.output_scale,
+            output_limit: self.output_limit,
         }
     }
 
@@ -135,51 +132,51 @@ impl SingleAxisSettings {
     #[must_use]
     pub fn with_inverted(&self) -> Self {
         Self {
-            multiplier: -self.multiplier,
-            clamp_input: self.clamp_input,
+            input_multiplier: -self.input_multiplier,
+            input_limit: self.input_limit,
             normalizer: self.normalizer,
             deadzone: self.deadzone,
-            scale_output: self.scale_output,
-            clamp_output: self.clamp_output,
+            output_scale: self.output_scale,
+            output_limit: self.output_limit,
         }
     }
 
-    /// Creates a new [`SingleAxisSettings`] with the given `clamp` for input values before further processing.
+    /// Creates a new [`SingleAxisSettings`] with the given `limit` for input values before further processing.
     #[must_use]
-    pub fn with_input_clamp(&self, clamp: InputClamp) -> Self {
+    pub fn with_input_limit(&self, limit: ValueLimit) -> Self {
         Self {
-            multiplier: self.multiplier,
-            clamp_input: clamp,
+            input_multiplier: self.input_multiplier,
+            input_limit: limit,
             normalizer: self.normalizer,
             deadzone: self.deadzone,
-            scale_output: self.scale_output,
-            clamp_output: self.clamp_output,
+            output_scale: self.output_scale,
+            output_limit: self.output_limit,
         }
     }
 
-    /// Creates a new [`SingleAxisSettings`] with the given `normalizer` before further processing.
+    /// Creates a new [`SingleAxisSettings`] with the given `normalizer` for input values before further processing.
     #[must_use]
-    pub fn with_normalizer(&self, normalizer: InputNormalizer) -> Self {
+    pub fn with_normalizer(&self, normalizer: ValueNormalizer) -> Self {
         Self {
-            multiplier: self.multiplier,
-            clamp_input: self.clamp_input,
+            input_multiplier: self.input_multiplier,
+            input_limit: self.input_limit,
             normalizer,
             deadzone: self.deadzone,
-            scale_output: self.scale_output,
-            clamp_output: self.clamp_output,
+            output_scale: self.output_scale,
+            output_limit: self.output_limit,
         }
     }
 
-    /// Creates a new [`SingleAxisSettings`] with the given `threshold`.
+    /// Creates a new [`SingleAxisSettings`] with a deadzone having symmetric `threshold`s.
     #[must_use]
-    pub fn with_deadzone(&self, threshold: f32) -> Self {
+    pub fn with_symmetric_deadzone(&self, threshold: f32) -> Self {
         Self {
-            multiplier: self.multiplier,
-            clamp_input: self.clamp_input,
+            input_multiplier: self.input_multiplier,
+            input_limit: self.input_limit,
             normalizer: self.normalizer,
-            deadzone: SingleAxisDeadzone::symmetric(threshold),
-            scale_output: self.scale_output,
-            clamp_output: self.clamp_output,
+            deadzone: Deadzone1::symmetric(threshold),
+            output_scale: self.output_scale,
+            output_limit: self.output_limit,
         }
     }
 
@@ -187,58 +184,56 @@ impl SingleAxisSettings {
     #[must_use]
     pub fn with_output_scale(&self, scale: f32) -> Self {
         Self {
-            multiplier: self.multiplier,
-            clamp_input: self.clamp_input,
+            input_multiplier: self.input_multiplier,
+            input_limit: self.input_limit,
             normalizer: self.normalizer,
             deadzone: self.deadzone,
-            scale_output: scale,
-            clamp_output: self.clamp_output,
+            output_scale: scale,
+            output_limit: self.output_limit,
         }
     }
 
-    /// Creates a new [`SingleAxisSettings`] with the given `clamp` for output values.
+    /// Creates a new [`SingleAxisSettings`] with the given `limit` for output values.
     #[must_use]
-    pub fn with_output_clamp(&self, clamp: InputClamp) -> Self {
+    pub fn with_output_limit(&self, limit: ValueLimit) -> Self {
         Self {
-            multiplier: self.multiplier,
-            clamp_input: self.clamp_input,
+            input_multiplier: self.input_multiplier,
+            input_limit: self.input_limit,
             normalizer: self.normalizer,
             deadzone: self.deadzone,
-            scale_output: self.scale_output,
-            clamp_output: clamp,
+            output_scale: self.output_scale,
+            output_limit: limit,
         }
     }
 
     /// Returns the adjusted `input_value` after applying these settings.
     #[must_use]
     pub fn value(&self, input_value: f32) -> f32 {
-        let processed_value = self.multiplier * input_value;
-        let processed_value = self.clamp_input.clamp(processed_value);
+        let processed_value = self.input_multiplier * input_value;
+        let processed_value = self.input_limit.clamp(processed_value);
         let processed_value = self.normalizer.normalize(processed_value);
         let processed_value = self.deadzone.value(processed_value);
-        let processed_value = self.scale_output * processed_value;
-        self.clamp_output.clamp(processed_value)
+        let processed_value = self.output_scale * processed_value;
+        self.output_limit.clamp(processed_value)
     }
 }
 
-/// Settings for dual-axis inputs using various types of axis-like input processors.
+/// Settings for dual-axis inputs using input processors.
 ///
 /// # Processing Procedure
 ///
-/// The procedure for processing dual-axis inputs is as follows:
-///
 /// 1. **Inversion**: Determines whether the input direction is reversed on each axis.
 /// 2. **Sensitivity**: Controls the responsiveness of the input on each axis.
-///    - Sensitivity values must be non-negative:
-///      - `1.0`: No adjustment to the value
-///      - `0.0`: Disregards input changes
-///      - `(1.0, f32::MAX]`: Amplify input changes
-///      - `(0.0, 1.0)`: Reduce input changes
-/// 3. [`InputClamp`]: Limits the input values to a specified range on each axis.
-/// 4. [`InputNormalizer`]: Ensures that input values fall within a specific range on each axis before further processing.
-/// 5. [`DualAxisDeadzone`]: Specifies the shapes where input values are considered neutral or ignored on each axis.
-/// 6. **Scaling**: Adjusts processed input values on each axis according to a specified scale factor.
-/// 7. **Output Clamp**: Similar to [`InputClamp`], but limits the output values to a specified range on each axis.
+///    Sensitivity values must be non-negative:
+///    - `1.0`: No adjustment to the value
+///    - `0.0`: Disregards input changes
+///    - `(1.0, f32::MAX]`: Amplify input changes
+///    - `(0.0, 1.0)`: Reduce input changes
+/// 3. **Input [`ValueLimit`]**: Limits the input values to a specified range on each axis before further processing.
+/// 4. **[`ValueNormalizer`]**: Ensures that input values fall within a specific range on each axis before further processing.
+/// 5. **[`Deadzone2`]**: Specifies the shapes where input values are considered neutral or ignored on each axis.
+/// 6. **Scaling**: Adjusts processed input values according to a specified scale factor on each axis.
+/// 7. **Output [`ValueLimit`]**: Limits the output values to a specified range on each axis.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct DualAxisSettings {
     /// The sensitivity and inversion factor of the input.
@@ -247,10 +242,10 @@ pub struct DualAxisSettings {
     /// improves performance by eliminating the need for separate fields and branching logic.
     ///
     /// For each axis, the absolution value determines the sensitivity of the input:
-    /// - `1.0` indicates no adjustment to the value
-    /// - `0.0` disregards input changes
-    /// - Values greater than `1.0` amplify input changes
-    /// - Values between `0.0` and `1.0` reduce input changes
+    /// - `1.0`: No adjustment to the value
+    /// - `0.0`: Disregards input changes
+    /// - `(1.0, f32::MAX]`: Amplify input changes
+    /// - `(0.0, 1.0)`: Reduce input changes
     ///
     /// For each axis, the sign indicates the direction of inversion:
     /// - Positive values indicate no inversion.
@@ -258,19 +253,19 @@ pub struct DualAxisSettings {
     multipliers: Vec2,
 
     /// The input clamps limiting the input values to a specified range.
-    clamps_input: [InputClamp; 2],
+    clamps_input: [ValueLimit; 2],
 
     /// The input normalizers ensuring that input values fall within a standardized range before further processing.
-    normalizers: [InputNormalizer; 2],
+    normalizers: [ValueNormalizer; 2],
 
     /// The deadzone settings for the input.
-    deadzone: DualAxisDeadzone,
+    deadzone: Deadzone2,
 
     /// The scale factors for adjusting processed input values.
     scales_output: Vec2,
 
     /// The output clamps limiting the output values to a specified range.
-    clamps_output: [InputClamp; 2],
+    clamps_output: [ValueLimit; 2],
 }
 
 impl DualAxisSettings {
@@ -279,11 +274,11 @@ impl DualAxisSettings {
     /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]` on each axis
     pub const CIRCLE_DEFAULT: DualAxisSettings = DualAxisSettings {
         multipliers: Vec2::ONE,
-        clamps_input: [InputClamp::None, InputClamp::None],
-        normalizers: [InputNormalizer::None, InputNormalizer::None],
-        deadzone: DualAxisDeadzone::CIRCLE_DEFAULT,
+        clamps_input: [ValueLimit::None, ValueLimit::None],
+        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
+        deadzone: Deadzone2::CIRCLE_DEFAULT,
         scales_output: Vec2::ONE,
-        clamps_output: [InputClamp::None, InputClamp::None],
+        clamps_output: [ValueLimit::None, ValueLimit::None],
     };
 
     /// - Sensitivity: `1.0` on both axes
@@ -291,11 +286,11 @@ impl DualAxisSettings {
     /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]` on each axis
     pub const SQUARE_DEFAULT: DualAxisSettings = DualAxisSettings {
         multipliers: Vec2::ONE,
-        clamps_input: [InputClamp::None, InputClamp::None],
-        normalizers: [InputNormalizer::None, InputNormalizer::None],
-        deadzone: DualAxisDeadzone::SQUARE_DEFAULT,
+        clamps_input: [ValueLimit::None, ValueLimit::None],
+        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
+        deadzone: Deadzone2::SQUARE_DEFAULT,
         scales_output: Vec2::ONE,
-        clamps_output: [InputClamp::None, InputClamp::None],
+        clamps_output: [ValueLimit::None, ValueLimit::None],
     };
 
     /// - Sensitivity: `1.0` on both axes
@@ -304,22 +299,22 @@ impl DualAxisSettings {
     /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]` on each axis
     pub const ROUNDED_SQUARE_DEFAULT: DualAxisSettings = DualAxisSettings {
         multipliers: Vec2::ONE,
-        clamps_input: [InputClamp::None, InputClamp::None],
-        normalizers: [InputNormalizer::None, InputNormalizer::None],
-        deadzone: DualAxisDeadzone::ROUNDED_SQUARE_DEFAULT,
+        clamps_input: [ValueLimit::None, ValueLimit::None],
+        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
+        deadzone: Deadzone2::ROUNDED_SQUARE_DEFAULT,
         scales_output: Vec2::ONE,
-        clamps_output: [InputClamp::None, InputClamp::None],
+        clamps_output: [ValueLimit::None, ValueLimit::None],
     };
 
     /// - Sensitivity: `1.0` on both axes
     /// - Deadzone: None
     pub const NO_DEADZONE: DualAxisSettings = DualAxisSettings {
         multipliers: Vec2::ONE,
-        clamps_input: [InputClamp::None, InputClamp::None],
-        normalizers: [InputNormalizer::None, InputNormalizer::None],
-        deadzone: DualAxisDeadzone::None,
+        clamps_input: [ValueLimit::None, ValueLimit::None],
+        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
+        deadzone: Deadzone2::None,
         scales_output: Vec2::ONE,
-        clamps_output: [InputClamp::None, InputClamp::None],
+        clamps_output: [ValueLimit::None, ValueLimit::None],
     };
 
     /// Creates a new [`DualAxisSettings`] only with the given `sensitivity`.
@@ -379,7 +374,7 @@ impl DualAxisSettings {
 
     /// Creates a new [`DualAxisSettings`] with the given `clamp` for input values on the x-axis before further processing.
     #[must_use]
-    pub fn with_input_clamp_x(&self, clamp: InputClamp) -> Self {
+    pub fn with_input_clamp_x(&self, clamp: ValueLimit) -> Self {
         Self {
             multipliers: self.multipliers,
             clamps_input: [clamp, self.clamps_input[1]],
@@ -392,7 +387,7 @@ impl DualAxisSettings {
 
     /// Creates a new [`DualAxisSettings`] with the given `clamp` for input values on the y-axis before further processing.
     #[must_use]
-    pub fn with_input_clamp_y(&self, clamp: InputClamp) -> Self {
+    pub fn with_input_clamp_y(&self, clamp: ValueLimit) -> Self {
         Self {
             multipliers: self.multipliers,
             clamps_input: [self.clamps_input[0], clamp],
@@ -405,7 +400,7 @@ impl DualAxisSettings {
 
     /// Creates a new [`DualAxisSettings`] with the given `normalizer` on the x-axis before further processing.
     #[must_use]
-    pub fn with_normalizer_x(&self, normalizer: InputNormalizer) -> Self {
+    pub fn with_normalizer_x(&self, normalizer: ValueNormalizer) -> Self {
         Self {
             multipliers: self.multipliers,
             clamps_input: self.clamps_input,
@@ -418,7 +413,7 @@ impl DualAxisSettings {
 
     /// Creates a new [`DualAxisSettings`] with the given `normalizer` on the x-axis before further processing.
     #[must_use]
-    pub fn with_normalizer_y(&self, normalizer: InputNormalizer) -> Self {
+    pub fn with_normalizer_y(&self, normalizer: ValueNormalizer) -> Self {
         Self {
             multipliers: self.multipliers,
             clamps_input: self.clamps_input,
@@ -431,7 +426,7 @@ impl DualAxisSettings {
 
     /// Creates a new [`DualAxisSettings`] with the given `deadzone`.
     #[must_use]
-    pub fn with_deadzone(&self, deadzone: DualAxisDeadzone) -> Self {
+    pub fn with_deadzone(&self, deadzone: Deadzone2) -> Self {
         Self {
             multipliers: self.multipliers,
             clamps_input: self.clamps_input,
@@ -483,7 +478,7 @@ impl DualAxisSettings {
 
     /// Creates a new [`DualAxisSettings`] with the given `clamp` for output values on the x-axis.
     #[must_use]
-    pub fn with_output_clamp_x(&self, clamp: InputClamp) -> Self {
+    pub fn with_output_clamp_x(&self, clamp: ValueLimit) -> Self {
         Self {
             multipliers: self.multipliers,
             clamps_input: self.clamps_input,
@@ -496,7 +491,7 @@ impl DualAxisSettings {
 
     /// Creates a new [`DualAxisSettings`] with the given `clamp` for output values on the y-axis.
     #[must_use]
-    pub fn with_output_clamp_y(&self, clamp: InputClamp) -> Self {
+    pub fn with_output_clamp_y(&self, clamp: ValueLimit) -> Self {
         Self {
             multipliers: self.multipliers,
             clamps_input: self.clamps_input,
@@ -529,8 +524,6 @@ impl DualAxisSettings {
     }
 }
 
-// endregion Axis Settings ------------------------
-
 // -------------------------
 // Unfortunately, Rust doesn't let us automatically derive `Eq` and `Hash` for `f32`.
 // It's like teaching a fish to ride a bike – a bit nonsensical!
@@ -542,12 +535,12 @@ impl Eq for SingleAxisSettings {}
 
 impl Hash for SingleAxisSettings {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        FloatOrd(self.multiplier).hash(state);
-        self.clamp_input.hash(state);
+        FloatOrd(self.input_multiplier).hash(state);
+        self.input_limit.hash(state);
         self.normalizer.hash(state);
         self.deadzone.hash(state);
-        FloatOrd(self.scale_output).hash(state);
-        self.clamp_output.hash(state);
+        FloatOrd(self.output_scale).hash(state);
+        self.output_limit.hash(state);
     }
 }
 
@@ -722,7 +715,7 @@ mod tests {
         #[test]
         fn test_single_axis_input_clamp() {
             let settings =
-                SingleAxisSettings::NO_DEADZONE.with_input_clamp(InputClamp::AtLeast(0.5));
+                SingleAxisSettings::NO_DEADZONE.with_input_limit(ValueLimit::AtLeast(0.5));
 
             assert_eq!(1.0, settings.value(1.0));
             assert_eq!(0.5, settings.value(0.5));
@@ -738,7 +731,7 @@ mod tests {
         #[test]
         fn test_single_axis_normalization() {
             let settings = SingleAxisSettings::NO_DEADZONE
-                .with_normalizer(InputNormalizer::standard_min_max(0.0..1.0));
+                .with_normalizer(ValueNormalizer::standard_min_max(0.0..1.0));
 
             assert_eq!(1.0, settings.value(1.0));
             assert_eq!(0.5, settings.value(0.5));
@@ -753,7 +746,7 @@ mod tests {
 
         #[test]
         fn test_single_axis_deadzone() {
-            let settings = SingleAxisSettings::NO_DEADZONE.with_deadzone(0.2);
+            let settings = SingleAxisSettings::NO_DEADZONE.with_symmetric_deadzone(0.2);
 
             // Deadzone
             assert_eq!(0.0, settings.value(0.2));
@@ -804,7 +797,7 @@ mod tests {
         fn test_single_axis_output_clamp() {
             let settings = SingleAxisSettings::NO_DEADZONE
                 .with_output_scale(5.0)
-                .with_output_clamp(InputClamp::AtLeast(0.5));
+                .with_output_limit(ValueLimit::AtLeast(0.5));
 
             assert_eq!(5.0, settings.value(1.0));
             assert_eq!(2.5, settings.value(0.5));
@@ -1172,7 +1165,7 @@ mod tests {
         #[test]
         fn test_dual_axis_input_clamp_x() {
             let settings =
-                DualAxisSettings::NO_DEADZONE.with_input_clamp_x(InputClamp::AtLeast(0.5));
+                DualAxisSettings::NO_DEADZONE.with_input_clamp_x(ValueLimit::AtLeast(0.5));
 
             assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
             assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -1184,7 +1177,7 @@ mod tests {
         #[test]
         fn test_dual_axis_input_clamp_y() {
             let settings =
-                DualAxisSettings::NO_DEADZONE.with_input_clamp_y(InputClamp::AtLeast(0.5));
+                DualAxisSettings::NO_DEADZONE.with_input_clamp_y(ValueLimit::AtLeast(0.5));
 
             assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
             assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -1200,7 +1193,7 @@ mod tests {
         #[test]
         fn test_dual_axis_normalization_x() {
             let settings = DualAxisSettings::NO_DEADZONE
-                .with_normalizer_x(InputNormalizer::standard_min_max(0.0..1.0));
+                .with_normalizer_x(ValueNormalizer::standard_min_max(0.0..1.0));
 
             assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
             assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -1212,7 +1205,7 @@ mod tests {
         #[test]
         fn test_dual_axis_normalization_y() {
             let settings = DualAxisSettings::NO_DEADZONE
-                .with_normalizer_y(InputNormalizer::standard_min_max(0.0..1.0));
+                .with_normalizer_y(ValueNormalizer::standard_min_max(0.0..1.0));
 
             assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
             assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -1227,7 +1220,7 @@ mod tests {
 
         #[test]
         fn test_dual_axis_deadzone_circle() {
-            let deadzone = DualAxisDeadzone::new_circle(0.3, 0.35);
+            let deadzone = Deadzone2::new_circle(0.3, 0.35);
             let settings = DualAxisSettings::NO_DEADZONE.with_deadzone(deadzone);
 
             // Deadzone
@@ -1303,7 +1296,7 @@ mod tests {
         fn test_dual_axis_output_clamp_x() {
             let settings = DualAxisSettings::NO_DEADZONE
                 .with_output_scale_x(5.0)
-                .with_output_clamp_x(InputClamp::AtLeast(0.5));
+                .with_output_clamp_x(ValueLimit::AtLeast(0.5));
 
             assert_eq!(vec2(5.0, 1.0), settings.value(Vec2::ONE));
             assert_eq!(vec2(2.5, 0.5), settings.value(Vec2::splat(0.5)));
@@ -1316,7 +1309,7 @@ mod tests {
         fn test_dual_axis_output_clamp_y() {
             let settings = DualAxisSettings::NO_DEADZONE
                 .with_output_scale_y(5.0)
-                .with_output_clamp_y(InputClamp::AtLeast(0.5));
+                .with_output_clamp_y(ValueLimit::AtLeast(0.5));
 
             assert_eq!(vec2(1.0, 5.0), settings.value(Vec2::ONE));
             assert_eq!(vec2(0.5, 2.5), settings.value(Vec2::splat(0.5)));

@@ -2,7 +2,7 @@
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::input_settings::{
-    DualAxisDeadzone, DualAxisSettings, InputClamp, SingleAxisSettings, DEFAULT_DEADZONE_MAX,
+    Deadzone2, DualAxisSettings, SingleAxisSettings, ValueLimit, DEFAULT_DEADZONE_UPPER,
 };
 use crate::orientation::Rotation;
 use crate::user_input::InputKind;
@@ -42,7 +42,7 @@ impl SingleAxis {
     pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
         Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::NO_DEADZONE.with_deadzone(threshold),
+            settings: SingleAxisSettings::NO_DEADZONE.with_symmetric_deadzone(threshold),
             value: None,
         }
     }
@@ -104,10 +104,10 @@ impl SingleAxis {
     ///
     /// Positive values will not trigger the input.
     pub fn negative_only(axis_type: impl Into<AxisType>, negative_low: f32) -> SingleAxis {
-        let clamp = InputClamp::AtMost(negative_low);
+        let limit = ValueLimit::AtMost(negative_low);
         Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::NO_DEADZONE.with_input_clamp(clamp),
+            settings: SingleAxisSettings::NO_DEADZONE.with_input_limit(limit),
             value: None,
         }
     }
@@ -116,10 +116,10 @@ impl SingleAxis {
     ///
     /// Negative values will not trigger the input.
     pub fn positive_only(axis_type: impl Into<AxisType>, positive_low: f32) -> SingleAxis {
-        let clamp = InputClamp::AtLeast(positive_low);
+        let limit = ValueLimit::AtLeast(positive_low);
         Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::NO_DEADZONE.with_input_clamp(clamp),
+            settings: SingleAxisSettings::NO_DEADZONE.with_input_limit(limit),
             value: None,
         }
     }
@@ -127,7 +127,7 @@ impl SingleAxis {
     /// Returns this [`SingleAxis`] with the deadzone set to the specified value
     #[must_use]
     pub fn with_deadzone(mut self, min: f32) -> SingleAxis {
-        self.settings = self.settings.with_deadzone(min);
+        self.settings = self.settings.with_symmetric_deadzone(min);
         self
     }
 
@@ -192,24 +192,24 @@ impl DualAxis {
     /// The default size of the deadzone used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE: f32 = DEFAULT_DEADZONE_MAX;
+    pub const DEFAULT_DEADZONE: f32 = DEFAULT_DEADZONE_UPPER;
 
     /// The default shape of the deadzone used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE_SHAPE: DualAxisDeadzone = DualAxisDeadzone::CIRCLE_DEFAULT;
+    pub const DEFAULT_DEADZONE_SHAPE: Deadzone2 = Deadzone2::CIRCLE_DEFAULT;
 
     /// A deadzone with a size of 0.0 used by constructor methods.
     ///
     /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const ZERO_DEADZONE_SHAPE: DualAxisDeadzone = DualAxisDeadzone::None;
+    pub const ZERO_DEADZONE_SHAPE: Deadzone2 = Deadzone2::None;
 
     /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
     #[must_use]
     pub fn symmetric(
         x_axis_type: impl Into<AxisType>,
         y_axis_type: impl Into<AxisType>,
-        deadzone: DualAxisDeadzone,
+        deadzone: Deadzone2,
     ) -> DualAxis {
         DualAxis {
             x_axis_type: x_axis_type.into(),
@@ -282,7 +282,7 @@ impl DualAxis {
 
     /// Returns this [`DualAxis`] with the deadzone set to the specified values and shape
     #[must_use]
-    pub fn with_deadzone(mut self, deadzone: DualAxisDeadzone) -> DualAxis {
+    pub fn with_deadzone(mut self, deadzone: Deadzone2) -> DualAxis {
         self.settings = self.settings.with_deadzone(deadzone);
         self
     }
