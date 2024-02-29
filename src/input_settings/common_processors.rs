@@ -16,14 +16,14 @@
 //! - [`ValueNormalizer::None`]: No normalization is performed on the input values
 //! - [`ValueNormalizer::MinMax`]: Min-max normalization mapping input values to a specified output range
 
-// region Limit Processors ------------------------
-
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
 
 use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
+
+// region Limit Processors ------------------------
 
 /// Various strategies of input limiting.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
