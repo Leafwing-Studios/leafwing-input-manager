@@ -234,7 +234,7 @@ impl Deadzone2 {
 
     /// Creates a new [`Deadzone2::Circle`] instance with the given settings.
     ///
-    /// If both `radius_x` and `radius_y` are non-positive, returns the constant [`Deadzone2::None`].
+    /// If both `radius_x` and `radius_y` are non-positive, returns [`Deadzone2::None`].
     ///
     /// # Arguments
     ///
@@ -274,6 +274,9 @@ impl Deadzone2 {
     /// If both `threshold_x` and `threshold_y` are non-positive,
     /// a [`Deadzone2::Circle`] with the specified radii will be created instead.
     ///
+    /// If both `radius_x` and `radius_y` are non-positive,
+    /// a [`Deadzone2::Square`] with the specified radii will be created instead.
+    ///
     /// # Arguments
     ///
     /// - `threshold_x`: Threshold for the absolute value of input values along the x-axis,
@@ -291,6 +294,10 @@ impl Deadzone2 {
     ) -> Self {
         if threshold_x <= 0.0 && threshold_y <= 0.0 {
             return Self::circle(radius_x, radius_y);
+        }
+
+        if radius_x <= 0.0 && radius_y <= 0.0 {
+            return Self::square(threshold_x, threshold_y);
         }
 
         Self::RoundedSquare {
