@@ -1,20 +1,20 @@
-//! Utilities for processing all kinds of inputs.
+//! Utilities for various input processing methods.
 //!
-//! This module provides the functionality for processing all kinds of inputs in applications or games.
+//! This module offers tools for various input processing methods commonly used in applications and games.
 //!
-//! ## Limit Processors
+//! ## Limiting Input Values
 //!
 //! The [`ValueLimit`] enum defines various strategies of input limiting:
-//! - [`ValueLimit::None`]: No limiting operation is performed on the input values
+//! - [`ValueLimit::None`]: No limit applied
 //! - [`ValueLimit::AtLeast`]: Clamps the input values to be at least the specified minimum value
 //! - [`ValueLimit::AtMost`]: Clamps the input values to be at most the specified maximum value
 //! - [`ValueLimit::Range`]: Clamps the input values to be within the specified range
 //!
-//! ## Normalization Processors
+//! ## Normalizing Input Values
 //!
 //! The [`ValueNormalizer`] enum defines various strategies of input normalization:
-//! - [`ValueNormalizer::None`]: No normalization is performed on the input values
-//! - [`ValueNormalizer::MinMax`]: Min-max normalization mapping input values to a specified output range
+//! - [`ValueNormalizer::None`]: No normalization applied
+//! - [`ValueNormalizer::MinMax`]: Maps input values to a specified output range using min-max normalization
 
 use std::hash::{Hash, Hasher};
 use std::ops::Range;
@@ -25,10 +25,10 @@ use serde::{Deserialize, Serialize};
 
 // region Limit Processors ------------------------
 
-/// Various strategies of input limiting.
+/// Various strategies for limiting input values.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum ValueLimit {
-    /// No limiting operation is performed on the input values.
+    /// No limit applied.
     None,
 
     /// Clamps the input values to be at least the specified minimum value.
@@ -45,18 +45,18 @@ pub enum ValueLimit {
 }
 
 impl ValueLimit {
-    /// Clamps the `input_value` based on this limiting strategy.
+    /// Clamps the provided `input_value` based on the current limiting strategy.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```rust
     /// use leafwing_input_manager::prelude::ValueLimit;
     ///
     /// let limit = ValueLimit::AtMost(2.0);
     ///
-    /// assert_eq!(limit.clamp(5.0), 2.0);
-    /// assert_eq!(limit.clamp(0.0), 0.0);
-    /// assert_eq!(limit.clamp(-5.0), -5.0);
+    /// assert_eq!(2.0, limit.clamp(5.0));
+    /// assert_eq!(0.0, limit.clamp(0.0));
+    /// assert_eq!(-5.0, limit.clamp(-5.0));
     /// ```
     #[must_use]
     #[inline]
@@ -74,36 +74,44 @@ impl ValueLimit {
 
 // region Normalization Processors ------------------------
 
-/// Various strategies of input normalization.
+/// Various strategies for normalizing input values.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum ValueNormalizer {
-    /// No normalization is performed on the input values.
+    /// No normalization applied.
     None,
 
-    /// Min-max normalization mapping input values to a specified output range.
+    /// Maps input values to a specified output range using min-max normalization.
+    ///
+    /// Input values are categorized into the following ranges:
+    /// - `[-infinity, input_min)`: Treated as `output_min` (clamped to minimum output)
+    /// - `[input_min, input_max]`: Scaled linearly to the range `[output_min, output_max]`
+    /// - `(input_max, infinity]`: Treated as `output_max` (clamped to maximum output)
     MinMax {
-        /// The minimum value of the input range.
+        /// The minimum value of the input range where values are accepted.
         input_min: f32,
 
-        /// The width of the range `[input_min, input_max]`,
+        /// Pre-calculated width of the input range `[input_min, input_max]`
+        /// avoids redundant calculations during normalization.
         input_range_width: f32,
 
-        /// The reciprocal of the `input_range_width`,
-        /// pre-calculated to avoid division during computation.
+        /// Pre-calculated reciprocal of the `input_range_width`
+        /// avoids division during normalization.
         recip_input_range_width: f32,
 
-        /// The minimum value of the output range.
+        /// The minimum value of the output range where values are mapped.
         output_min: f32,
 
-        /// The width of the range `[output_min, output_max]`.
+        /// Pre-calculated width of the output range `[output_min, output_max]`
+        /// avoids redundant calculations during normalization.
         output_range_width: f32,
     },
 }
 
 impl ValueNormalizer {
-    /// Creates a new [`ValueNormalizer::MinMax`] with the output range of `[0.0, 1.0]` and the specified input range.
+    /// Creates a new [`ValueNormalizer::MinMax`] instance
+    /// with the output range of `[0.0, 1.0]` and the specified input range.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```rust
     /// use leafwing_input_manager::prelude::ValueNormalizer;
@@ -122,9 +130,10 @@ impl ValueNormalizer {
         Self::custom_min_max(input_range, 0.0..1.0)
     }
 
-    /// Creates a new [`ValueNormalizer::MinMax`] with the output range of `[-1.0, 1.0]` and the specified input range.
+    /// Creates a new [`ValueNormalizer::MinMax`] instance
+    /// with the output range of `[-1.0, 1.0]` and the specified input range.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```rust
     /// use leafwing_input_manager::prelude::ValueNormalizer;
@@ -143,9 +152,10 @@ impl ValueNormalizer {
         Self::custom_min_max(input_range, -1.0..1.0)
     }
 
-    /// Creates a new [`ValueNormalizer::MinMax`] with the specified input and output ranges.
+    /// Creates a new [`ValueNormalizer::MinMax`] instance
+    /// with the specified input and output ranges.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```rust
     /// use leafwing_input_manager::prelude::ValueNormalizer;
@@ -174,9 +184,9 @@ impl ValueNormalizer {
         }
     }
 
-    /// Normalizes the `input_value`.
+    /// Normalizes the provided `input_value` based on the current normalization strategy.
     ///
-    /// # Examples
+    /// # Example
     ///
     /// ```
     /// use leafwing_input_manager::prelude::ValueNormalizer;
@@ -201,25 +211,42 @@ impl ValueNormalizer {
                 recip_input_range_width,
                 output_min,
                 output_range_width,
-            } => {
-                // Using `clamp` here helps optimizations like `minss` and `maxss` when supported,
-                // potentially reducing branching logic
-                let clamped_value = (input_value - input_min).clamp(0.0, *input_range_width);
-                let scaled_value = clamped_value * recip_input_range_width;
-                scaled_value.mul_add(*output_range_width, *output_min)
-            }
+            } => Self::normalize_min_max(
+                input_value,
+                input_min,
+                input_range_width,
+                recip_input_range_width,
+                output_min,
+                output_range_width,
+            ),
         }
+    }
+
+    /// Normalizes the provided `input_value` based on the current [`ValueNormalizer::MinMax`].
+    ///
+    /// The `input_value` is categorized into the following ranges:
+    /// - `[-infinity, input_min)`: Treated as `output_min` (clamped to minimum output)
+    /// - `[input_min, input_max]`: Scaled linearly to the range `[output_min, output_max]`
+    /// - `(input_max, infinity]`: Treated as `output_max` (clamped to maximum output)
+    fn normalize_min_max(
+        input_value: f32,
+        input_min: &f32,
+        input_range_width: &f32,
+        recip_input_range_width: &f32,
+        output_min: &f32,
+        output_range_width: &f32,
+    ) -> f32 {
+        // Clamping helps optimizations like `minss` and `maxss`,
+        // potentially reducing branching logic
+        let clamped_value = (input_value - input_min).clamp(0.0, *input_range_width);
+
+        // Efficient scaling using pre-calculated values to avoid division
+        let scaled_value = clamped_value * recip_input_range_width;
+        scaled_value.mul_add(*output_range_width, *output_min)
     }
 }
 
 // endregion Normalization Processors ------------------------
-
-// -------------------------
-// Unfortunately, Rust doesn't let us automatically derive `Eq` and `Hash` for `f32`.
-// It's like teaching a fish to ride a bike – a bit nonsensical!
-// But if that fish really wants to pedal, we'll make it work.
-// So here we are, showing Rust who's boss!
-// -------------------------
 
 impl Eq for ValueLimit {}
 

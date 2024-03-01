@@ -6,24 +6,24 @@
 //!
 //! The input settings modules provide utilities for configuring various aspects of input behavior.
 //!
-//! - [`single_axis_settings`]: Utilities for configuring settings related to single-axis inputs.
-//! - [`dual_axis_settings`]: Utilities for configuring settings related to dual-axis inputs.
+//! - [`single_axis_settings`]: Settings for single-axis input.
+//! - [`dual_axis_settings`]: Settings for dual-axis input.
 //!
 //! # General Input Processors
 //!
 //! The input processors modules offer functionality for processing different types of inputs.
 //!
-//! - [`common_processors`]: Utilities for processing all kinds of inputs.
-//! - [`deadzone_processors`]: Utilities for deadzone handling in input processing.
+//! - [`common_processors`]: Utilities for various input processing methods.
+//! - [`deadzones`]: Utilities for various deadzone regions.
 
 pub use self::dual_axis_settings::*;
 pub use self::single_axis_settings::*;
 
 pub use self::common_processors::*;
-pub use self::deadzone_processors::*;
+pub use self::deadzones::*;
 
 pub mod dual_axis_settings;
 pub mod single_axis_settings;
 
 pub mod common_processors;
-pub mod deadzone_processors;
+pub mod deadzones;

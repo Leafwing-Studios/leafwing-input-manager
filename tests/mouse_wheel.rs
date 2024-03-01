@@ -79,7 +79,7 @@ fn mouse_wheel_single_axis_mocking() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(-1.),
-        settings: SingleAxisSettings::NO_DEADZONE,
+        settings: SingleAxisSettings::EMPTY,
     };
 
     app.send_input(input);
@@ -96,7 +96,7 @@ fn mouse_wheel_dual_axis_mocking() {
     let input = DualAxis {
         x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-        settings: DualAxisSettings::NO_DEADZONE,
+        settings: DualAxisSettings::EMPTY,
         value: Some(Vec2::X),
     };
     app.send_input(input);
@@ -162,7 +162,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(1.),
-        settings: SingleAxisSettings::NO_DEADZONE,
+        settings: SingleAxisSettings::EMPTY,
     };
     app.send_input(input);
     app.update();
@@ -173,7 +173,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(-1.),
-        settings: SingleAxisSettings::NO_DEADZONE,
+        settings: SingleAxisSettings::EMPTY,
     };
     app.send_input(input);
     app.update();
@@ -184,7 +184,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(1.),
-        settings: SingleAxisSettings::NO_DEADZONE,
+        settings: SingleAxisSettings::EMPTY,
     };
     app.send_input(input);
     app.update();
@@ -195,7 +195,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(-1.),
-        settings: SingleAxisSettings::NO_DEADZONE,
+        settings: SingleAxisSettings::EMPTY,
     };
     app.send_input(input);
     app.update();
@@ -218,7 +218,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: None,
-        settings: SingleAxisSettings::NO_DEADZONE,
+        settings: SingleAxisSettings::EMPTY,
     };
     app.send_input(input);
     app.update();

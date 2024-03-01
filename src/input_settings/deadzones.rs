@@ -1,18 +1,20 @@
-//! Utilities for deadzone handling in input processing.
+//! Utilities for various deadzone regions.
 //!
-//! This module provides functionality for defining deadzones in inputs.
-//! Deadzone is an area around the input's zero positions where the values are considered neutral or ignored.
+//! This module provides functionality to define deadzones in input processing.
+//!
+//! Deadzone is a region around the input's zero positions where the values are considered ignored,
+//! preventing unintended actions or jittery movements
 //!
 //! ## One-Dimensional Deadzones
 //!
-//! The [`Deadzone1`] enum provides settings for one-dimensional deadzones in single-axis inputs:
-//! - [`Deadzone1::None`]: No deadzone is performed on the input values
+//! The [`Deadzone1`] enum provides options for shaping one-dimensional deadzones in single-axis inputs:
+//! - [`Deadzone1::None`]: No deadzone applied
 //! - [`Deadzone1::Symmetric`]: Deadzone with symmetric bounds
 //!
 //! ## Two-Dimensional Deadzones
 //!
-//! The [`Deadzone2`] enum provides settings for two-dimensional deadzones in dual-axis inputs:
-//! - [`Deadzone2::None`]: No deadzone is performed on the input values
+//! The [`Deadzone2`] enum provides options for shaping two-dimensional deadzones in dual-axis inputs:
+//! - [`Deadzone2::None`]: No deadzone applied
 //! - [`Deadzone2::Circle`]: Deadzone with a circular-shaped area
 //! - [`Deadzone2::Square`]: Deadzone with a cross-shaped area
 //! - [`Deadzone2::RoundedSquare`]: Deadzone with a cross-shaped area and the rounded corners
@@ -29,32 +31,33 @@ pub const DEFAULT_DEADZONE_UPPER: f32 = 0.1;
 /// Default upper bound for the livezone.
 pub const DEFAULT_LIVEZONE_UPPER: f32 = 1.0;
 
-/// One-dimensional deadzones in single-axis inputs.
+/// One-dimensional deadzone configuration options for single-axis inputs.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum Deadzone1 {
-    /// No deadzone is applied.
+    /// No deadzone applied.
     None,
 
-    /// A deadzone with symmetric bounds.
+    /// Applies a deadzone centered at zero with symmetric bounds.
     ///
-    /// The input values are categorized into five ranges:
-    /// - `[f32::MIN, -1.0)`: Treated as `-1.0`
-    /// - `[-1.0, -threshold)`: Normalized into the range `[-1.0, 0.0)`
-    /// - `[-threshold, threshold]`: Treated as `0.0`
-    /// - `(threshold, 1.0]`: Normalized into the range `(0.0, 1.0]`
-    /// - `(1.0, f32::MAX]`: Treated as `1.0`
+    /// Input values are categorized into the following ranges:
+    /// - `[-infinity, -1.0)`: Treated as `-1.0` (clamped to minimum output)
+    /// - `[-1.0, -threshold)`: Scaled linearly to the range `[-1.0, 0.0)`
+    /// - `[-threshold, threshold]`: Treated as `0.0` (considered neutral)
+    /// - `(threshold, 1.0]`: Scaled linearly to the range `(0.0, 1.0]`
+    /// - `(1.0, infinity]`: Treated as `1.0` (clamped to maximum output)
     Symmetric {
-        /// The upper bound of the deadzone for the absolute value of input values.
+        /// The absolute value threshold for the deadzone.
+        /// Values within the range `[-threshold, threshold]` are treated as `0.0`.
         ///
         /// This value must be non-negative, and its negation represents the lower bound of the deadzone.
-        /// Values within the range `[-threshold, threshold]` are treated as `0.0`
         threshold: f32,
 
-        /// The cached width of the deadzone-excluded range `(threshold, 1.0]`.
+        /// Pre-calculated width of the livezone `(threshold, 1.0]`
+        /// avoids redundant calculations during deadzone computation.
         livezone_width: f32,
 
-        /// The cached reciprocal of the `livezone_width`,
-        /// improving performance by eliminating the need for division during computation.
+        /// Pre-calculated reciprocal of the `livezone_width`
+        /// avoids division during deadzone computation.
         recip_livezone_width: f32,
     },
 }
@@ -63,19 +66,20 @@ impl Deadzone1 {
     /// Default [`Deadzone1::Symmetric`].
     ///
     /// This deadzone excludes input values within the range `[-0.1, 0.1]`.
-    pub const SYMMETRIC_DEFAULT: Self = Self::Symmetric {
+    pub const DEFAULT_SYMMETRIC: Self = Self::Symmetric {
         threshold: DEFAULT_DEADZONE_UPPER,
         livezone_width: DEFAULT_LIVEZONE_UPPER - DEFAULT_DEADZONE_UPPER,
         recip_livezone_width: 1.0 / (DEFAULT_LIVEZONE_UPPER - DEFAULT_DEADZONE_UPPER),
     };
 
-    /// Creates a new [`Deadzone1::Symmetric`] to filter input values within the range `[-threshold, threshold]`.
+    /// Creates a new [`Deadzone1::Symmetric`] instance
+    /// to filter input values within the range `[-threshold, threshold]`.
     ///
-    /// If the `threshold` is less than or equal to `0.0`, returns the constant [`Deadzone1::None`].
+    /// If the `threshold` is non-positive, returns [`Deadzone1::None`].
     ///
     /// # Arguments
     ///
-    /// - `threshold`: Lower bound for the absolute value of input values, clamped to the range `[0.0, 1.0]`
+    /// - `threshold`: Absolute value threshold for the deadzone, clamped to the range `(0.0, 1.0]`
     #[must_use]
     pub fn symmetric(threshold: f32) -> Self {
         if threshold <= 0.0 {
@@ -91,7 +95,7 @@ impl Deadzone1 {
         }
     }
 
-    /// Returns the deadzone-adjusted `input_value`.
+    /// Applies the current deadzone to the `input_value` and returns the adjusted value.
     #[must_use]
     pub fn value(&self, input_value: f32) -> f32 {
         match self {
@@ -109,14 +113,14 @@ impl Deadzone1 {
         }
     }
 
-    /// Returns the adjusted `input_value` after applying the [`Deadzone1::Symmetric`].
+    /// Applies the current [`Deadzone1::Symmetric`] to the `input_value` and returns the adjusted value.
     ///
-    /// The `input_value` is categorized into five ranges:
-    /// - `[f32::MIN, -1.0)`: Treated as `-1.0`
-    /// - `[-1.0, -threshold)`: Normalized into the range `[-1.0, 0.0)`
-    /// - `[-threshold, threshold]`: Treated as `0.0`
-    /// - `(threshold, 1.0]`: Normalized into the range `(0.0, 1.0]`
-    /// - `(1.0, f32::MAX]`: Treated as `1.0`
+    /// The `input_value` is categorized into the following ranges:
+    /// - `[-infinity, -1.0)`: Treated as `-1.0` (clamped to minimum output)
+    /// - `[-1.0, -threshold)`: Scaled linearly to the range `[-1.0, 0.0)`
+    /// - `[-threshold, threshold]`: Treated as `0.0` (considered neutral)
+    /// - `(threshold, 1.0]`: Scaled linearly to the range `(0.0, 1.0]`
+    /// - `(1.0, infinity]`: Treated as `1.0` (clamped to maximum output)
     fn value_symmetric(
         input_value: f32,
         threshold: f32,
@@ -134,25 +138,18 @@ impl Deadzone1 {
     }
 }
 
-/// Two-dimensional deadzones in dual-axis inputs.
+/// Two-dimensional deadzone configuration options for dual-axis inputs.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum Deadzone2 {
-    /// No deadzone is applied.
+    /// No deadzone applied.
     None,
 
-    /// A deadzone with a circular-shaped area.
+    /// A circular deadzone centered at the origin.
     ///
-    /// This deadzone forms a circular area at the origin defined by its radii along each axis.
+    /// # Behaviors
     ///
-    /// Both xy values are categorized into two regions:
     /// - Values within the circle are treated as `Vec2::ZERO`
-    /// - Values outside the circle are normalized into the range `[-1.0, 1.0]` on each axis
-    ///
-    /// # Advantages
-    /// - Allows for smooth transitions into and out of the deadzone area
-    ///
-    /// # Disadvantages
-    /// - May not be suitable for all input devices or game mechanics
+    /// - Values outside the circle are scaled linearly to the range `[-1.0, 1.0]` on each axis
     Circle {
         /// Radius for the deadzone along the x-axis.
         radius_x: f32,
@@ -160,25 +157,16 @@ pub enum Deadzone2 {
         radius_y: f32,
     },
 
-    /// A deadzone with a cross-shaped area.
+    /// A cross-shaped deadzone consists of two [`Deadzone1`] zones centered at the origin, overlapping to form a central zone.
     ///
-    /// This deadzone consists of two [`Deadzone1`]s intersecting at their centers,
-    /// providing independent deadzone areas for each axis.
+    /// ## Behavior
     ///
-    /// Both xy values are categorized into four regions:
-    /// - Values within the center square are treated as `Vec2::ZERO`
-    /// - Values within the `deadzone_x` rectangle (excluding the rounded square)
-    ///     have their x value treated as `0.0`, and their y value is normalized into the range `[-1.0, 1.0]`
-    /// - Values within the `deadzone_y` rectangle (excluding the rounded square)
-    ///     have their y value treated as `0.0`, and their x value is normalized into the range `[-1.0, 1.0]`
-    /// - Values outside these shapes are normalized into the range `[-1.0, 1.0]` on each axis
-    ///
-    /// # Advantages
-    /// - Provides independent deadzone control for each axis
-    /// - Creates a "snapping" effect, which may be desirable for certain input devices or game mechanics
-    ///
-    /// # Disadvantages
-    /// - May result in less smooth transitions compared to [`Deadzone2::Circle`]
+    /// - Values within the central square are treated as `Vec2::ZERO`
+    /// - Values within the `deadzone_x` zone (excluding the central zone)
+    ///     have the x value treated as `0.0`, and the y value is scaled linearly to the range `[-1.0, 1.0]`
+    /// - Values within the `deadzone_y` zone (excluding the central zone)
+    ///     have the y value treated as `0.0`, and the x value is scaled linearly to the range `[-1.0, 1.0]`
+    /// - Values outside these shapes are scaled linearly to the range `[-1.0, 1.0]` on each axis
     Square {
         /// The deadzone along the x-axis.
         deadzone_x: Deadzone1,
@@ -186,18 +174,17 @@ pub enum Deadzone2 {
         deadzone_y: Deadzone1,
     },
 
-    /// A deadzone with a cross-shaped area and the rounded corners.
+    /// A cross-shaped deadzone consists of two [`Deadzone1`] zones centered at the origin,
+    /// overlapping to form a central square with four rounded corners.
     ///
-    /// This deadzone consists of a rounded square and two rectangles intersecting at their centers,
-    /// providing smooth transitions into and out of the deadzone area.
+    /// ## Behavior
     ///
-    /// Both xy values are categorized into four regions:
-    /// - Values within the rounded square are treated as `Vec2::ZERO`
-    /// - Values within the `[-min_x, min_x]` rectangle (excluding the rounded square)
-    ///     have their x value treated as `0.0`, and their y value is normalized into the range `[-1.0, 1.0]`
-    /// - Values within the `[-min_y, min_y]` rectangle (excluding the rounded square)
-    ///     have their y value treated as `0.0`, and their x value is normalized into the range `[-1.0, 1.0]`
-    /// - Values outside these shapes are normalized into the range `[-1.0, 1.0]` on each axis
+    /// - Values within the central zone are treated as `Vec2::ZERO`
+    /// - Values within the `deadzone_x` zone (excluding the central zone)
+    ///     have the x value treated as `0.0`, and the y value is scaled linearly to the range `[-1.0, 1.0]`
+    /// - Values within the `deadzone_y` zone (excluding the central zone)
+    ///     have the y value treated as `0.0`, and the x value is scaled linearly to the range `[-1.0, 1.0]`
+    /// - Values outside these shapes are scaled linearly to the range `[-1.0, 1.0]` on each axis
     ///
     /// # Advantages
     /// - Combines the advantages of [`Deadzone2::Circle`] and [`Deadzone2::Square`]
@@ -205,9 +192,9 @@ pub enum Deadzone2 {
     /// # Disadvantages
     /// - Requires computational resources similar to calculating both of them simultaneously
     RoundedSquare {
-        /// Lower bound for the absolute value of input values along the x-axis.
+        /// Threshold for the absolute value of input values along the x-axis.
         threshold_x: f32,
-        /// Lower bound for the absolute value of input values along the y-axis.
+        /// Threshold for the absolute value of input values along the y-axis.
         threshold_y: f32,
         /// Radius for the rounded corners along the x-axis.
         radius_x: f32,
@@ -229,8 +216,8 @@ impl Deadzone2 {
     ///
     /// This deadzone excludes input values within the range `[-0.1, 0.1]` on each axis.
     pub const SQUARE_DEFAULT: Self = Self::Square {
-        deadzone_x: Deadzone1::SYMMETRIC_DEFAULT,
-        deadzone_y: Deadzone1::SYMMETRIC_DEFAULT,
+        deadzone_x: Deadzone1::DEFAULT_SYMMETRIC,
+        deadzone_y: Deadzone1::DEFAULT_SYMMETRIC,
     };
 
     /// Default [`Deadzone2::RoundedSquare`].
@@ -245,17 +232,16 @@ impl Deadzone2 {
         radius_y: 0.25 * DEFAULT_DEADZONE_UPPER,
     };
 
-    /// Creates a new [`Deadzone2::Circle`] with the given settings.
+    /// Creates a new [`Deadzone2::Circle`] instance with the given settings.
     ///
-    /// If both `radius_x` and `radius_y` are less than or equal to `0.0`,
-    /// returns the constant [`Deadzone2::None`].
+    /// If both `radius_x` and `radius_y` are non-positive, returns the constant [`Deadzone2::None`].
     ///
     /// # Arguments
     ///
     /// - `radius_x`: Radius for the deadzone along the x-axis, clamped into the range `[0.0, 1.0]`
     /// - `radius_y`: Radius for the deadzone along the y-axis, clamped into the range `[0.0, 1.0]`
     #[must_use]
-    pub fn new_circle(radius_x: f32, radius_y: f32) -> Self {
+    pub fn circle(radius_x: f32, radius_y: f32) -> Self {
         if radius_x <= 0.0 && radius_y <= 0.0 {
             return Self::None;
         }
@@ -267,44 +253,44 @@ impl Deadzone2 {
         }
     }
 
-    /// Creates a new [`Deadzone2::Square`] with the given settings.
+    /// Creates a new [`Deadzone2::Square`] instance with the given settings.
     ///
     /// # Arguments
     ///
-    /// - `threshold_x`: Lower bound for the absolute value of input values on the x-axis,
+    /// - `threshold_x`: Threshold for the absolute value of input values on the x-axis,
     ///      clamped to the range `[0.0, 1.0]`
-    /// - `threshold_y`: Lower bound for the absolute value of input values on the y-axis,
+    /// - `threshold_y`: Threshold for the absolute value of input values on the y-axis,
     ///      clamped to the range `[0.0, 1.0]`
     #[must_use]
-    pub fn new_square(threshold_x: f32, threshold_y: f32) -> Self {
+    pub fn square(threshold_x: f32, threshold_y: f32) -> Self {
         Self::Square {
             deadzone_x: Deadzone1::symmetric(threshold_x),
             deadzone_y: Deadzone1::symmetric(threshold_y),
         }
     }
 
-    /// Creates a new [`Deadzone2::RoundedSquare`] with the given settings.
+    /// Creates a new [`Deadzone2::RoundedSquare`] instance with the given settings.
     ///
-    /// If both `threshold_x` and `threshold_y` are less than or equal to `0.0`,
+    /// If both `threshold_x` and `threshold_y` are non-positive,
     /// a [`Deadzone2::Circle`] with the specified radii will be created instead.
     ///
     /// # Arguments
     ///
-    /// - `threshold_x`: Lower bound for the absolute value of input values along the x-axis,
+    /// - `threshold_x`: Threshold for the absolute value of input values along the x-axis,
     ///      clamped to the range `[0.0, 1.0]`
-    /// - `threshold_y`: Lower bound for the absolute value of input values along the y-axis,
+    /// - `threshold_y`: Threshold for the absolute value of input values along the y-axis,
     ///      clamped to the range `[0.0, 1.0]`
     /// - `radius_x`: Radius for the rounded corners along the x-axis, clamped into the range `[0.0, 1.0]`
     /// - `radius_y`: Radius for the rounded corners along the y-axis, clamped into the range `[0.0, 1.0]`
     #[must_use]
-    pub fn new_rounded_square(
+    pub fn rounded_square(
         threshold_x: f32,
         threshold_y: f32,
         radius_x: f32,
         radius_y: f32,
     ) -> Self {
         if threshold_x <= 0.0 && threshold_y <= 0.0 {
-            return Self::new_circle(radius_x, radius_y);
+            return Self::circle(radius_x, radius_y);
         }
 
         Self::RoundedSquare {
@@ -316,7 +302,7 @@ impl Deadzone2 {
         }
     }
 
-    /// Returns the deadzone-adjusted `input_value`.
+    /// Applies the current deadzone to the `input_value` and returns the adjusted value.
     #[must_use]
     pub fn value(&self, input_value: Vec2) -> Vec2 {
         match self {
@@ -346,36 +332,41 @@ impl Deadzone2 {
         }
     }
 
-    /// Returns the adjusted `input_value` after applying the [`Deadzone2::Circle`].
+    /// Applies the current [`Deadzone2::Circle`] to the `input_value`
+    /// and returns the adjusted value.
     ///
-    /// Both xy values are categorized into two regions:
+    /// # Returns
+    ///
     /// - Values within the circle are treated as `Vec2::ZERO`
-    /// - Values outside the circle are normalized into the range `[-1.0, 1.0]`
+    /// - Values outside the circle are scaled linearly to the range `[-1.0, 1.0]` on each axis
     #[inline]
     fn value_circle(input_value: Vec2, radius_x: f32, radius_y: f32) -> Vec2 {
         let Vec2 { x, y } = input_value;
 
-        // Calculate the real threshold for the xy values
+        // Calculate the threshold for the xy values
+        // which is the distance from the closest point on the circle to the `input_value`
         let angle = x.atan2(y);
-        let threshold_x = radius_x * angle.sin().abs();
-        let threshold_y = radius_y * angle.cos().abs();
+        let closest_x = radius_x * angle.sin().abs();
+        let closest_y = radius_y * angle.cos().abs();
 
         // Normalize the xy values
-        let new_x = Self::normalize_input(x, threshold_x);
-        let new_y = Self::normalize_input(y, threshold_y);
+        let new_x = Self::normalize_input(x, closest_x);
+        let new_y = Self::normalize_input(y, closest_y);
 
         Vec2::new(new_x, new_y)
     }
 
-    /// Returns the adjusted `input_value` after applying the [`Deadzone2::RoundedSquare`].
+    /// Applies the current [`Deadzone2::RoundedSquare`] to the `input_value`
+    /// and returns the adjusted value.
     ///
-    /// Both xy values are categorized into four regions:
-    /// - Values within the rounded square are treated as `Vec2::ZERO`
-    /// - Values within the `[-threshold_x, threshold_x]` rectangle (excluding the rounded square)
-    ///     have their x value set to `0.0`, and their y value is normalized
-    /// - Values within the `[-threshold_y, threshold_y]` rectangle (excluding the rounded square)
-    ///     have their y value set to `0.0`, and their x value is normalized
-    /// - Values outside these shapes are normalized into the range `[-1.0, 1.0]`
+    /// # Returns
+    ///
+    /// - Values within the central zone are treated as `Vec2::ZERO`
+    /// - Values within the `deadzone_x` zone (excluding the central zone)
+    ///     have the x value treated as `0.0`, and the y value is scaled linearly to the range `[-1.0, 1.0]`
+    /// - Values within the `deadzone_y` zone (excluding the central zone)
+    ///     have the y value treated as `0.0`, and the x value is scaled linearly to the range `[-1.0, 1.0]`
+    /// - Values outside these shapes are scaled linearly to the range `[-1.0, 1.0]` on each axis
     #[inline]
     fn value_rounded_square(
         input_value: Vec2,
@@ -386,11 +377,12 @@ impl Deadzone2 {
     ) -> Vec2 {
         let Vec2 { x, y } = input_value;
 
-        // Calculate the real threshold for the xy values
+        // Calculate the actual threshold for the xy values
+        // which is the distance from the closest point on the square to the `input_value`
         let angle = (x.abs() - threshold_x).atan2(y.abs() - threshold_y);
-        let real_min_x = deadzone_min(threshold_x, angle.sin(), radius_x, y.abs() > threshold_y);
-        let real_min_y = deadzone_min(threshold_y, angle.cos(), radius_y, x.abs() > threshold_x);
-        fn deadzone_min(value_min: f32, angle: f32, radius: f32, nearer_corner: bool) -> f32 {
+        let closest_x = livezone_min(threshold_x, angle.sin(), radius_x, y.abs() > threshold_y);
+        let closest_y = livezone_min(threshold_y, angle.cos(), radius_y, x.abs() > threshold_x);
+        fn livezone_min(value_min: f32, angle: f32, radius: f32, nearer_corner: bool) -> f32 {
             if nearer_corner {
                 radius.mul_add(angle.abs(), value_min)
             } else {
@@ -399,13 +391,13 @@ impl Deadzone2 {
         }
 
         // Normalize the xy values
-        let new_x = Self::normalize_input(x, real_min_x);
-        let new_y = Self::normalize_input(y, real_min_y);
+        let new_x = Self::normalize_input(x, closest_x);
+        let new_y = Self::normalize_input(y, closest_y);
 
         Vec2::new(new_x, new_y)
     }
 
-    /// Normalizes the given `input_value` into the livezone range `(threshold, 1.0]`
+    /// Normalizes the provided `input_value` into the livezone range `[threshold, 1.0]`
     fn normalize_input(input_value: f32, threshold: f32) -> f32 {
         let livezone_width = DEFAULT_LIVEZONE_UPPER - threshold;
         let alive_value = input_value.abs() - threshold;
@@ -418,13 +410,6 @@ impl Deadzone2 {
         }
     }
 }
-
-// -------------------------
-// Unfortunately, Rust doesn't let us automatically derive `Eq` and `Hash` for `f32`.
-// It's like teaching a fish to ride a bike – a bit nonsensical!
-// But if that fish really wants to pedal, we'll make it work.
-// So here we are, showing Rust who's boss!
-// -------------------------
 
 impl Eq for Deadzone1 {}
 
@@ -506,7 +491,7 @@ mod tests {
 
         #[test]
         fn test_deadzone1_default() {
-            let deadzone = Deadzone1::SYMMETRIC_DEFAULT;
+            let deadzone = Deadzone1::DEFAULT_SYMMETRIC;
 
             // Deadzone
             assert_eq!(0.0, deadzone.value(0.1));
@@ -619,7 +604,7 @@ mod tests {
 
         #[test]
         fn test_deadzone2_circle_custom() {
-            let deadzone = Deadzone2::new_circle(0.3, 0.35);
+            let deadzone = Deadzone2::circle(0.3, 0.35);
 
             // Deadzone
             assert_eq!(Vec2::ZERO, deadzone.value(Vec2::splat(0.2)));
@@ -687,7 +672,7 @@ mod tests {
 
         #[test]
         fn test_deadzone2_square_custom() {
-            let deadzone = Deadzone2::new_square(0.25, 0.3);
+            let deadzone = Deadzone2::square(0.25, 0.3);
 
             // Deadzone
             assert_eq!(Vec2::ZERO, deadzone.value(Vec2::splat(0.25)));
@@ -749,7 +734,7 @@ mod tests {
 
         #[test]
         fn test_deadzone2_rounded_square_custom() {
-            let deadzone = Deadzone2::new_rounded_square(0.15, 0.16, 0.05, 0.06);
+            let deadzone = Deadzone2::rounded_square(0.15, 0.16, 0.05, 0.06);
 
             // Deadzone
             assert_eq!(Vec2::ZERO, deadzone.value(Vec2::splat(0.1)));

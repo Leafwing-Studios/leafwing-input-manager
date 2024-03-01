@@ -1,33 +1,12 @@
-//! Utilities for configuring settings related to dual-axis inputs.
+//! Settings for dual-axis input.
 //!
 //! Dual-axis inputs typically represent input values in two dimensions,
 //! such as joystick movements in both horizontal and vertical directions.
 //!
-//! # Settings
-//!
-//! The [`DualAxisSettings`] struct defines settings for processing dual-axis input values.
+//! This module provides the [`DualAxisSettings`] struct,
+//! which defines the processing pipeline and configuration for dual-axis inputs.
 //! It provides similar customization options as [`SingleAxisSettings`](crate::prelude::SingleAxisSettings)
 //! but separately for each axis, allowing more fine-grained control over input processing.
-//!
-//! # Processing Procedure
-//!
-//! The general processing procedure for dual-axis inputs involves several steps:
-//!
-//! 1. **Inversion**: Determines whether the input direction is reversed on each axis.
-//! 2. **Sensitivity**: Controls the responsiveness of the input on each axis.
-//!    Sensitivity values must be non-negative:
-//!    - `1.0`: No adjustment to the value
-//!    - `0.0`: Disregards input changes
-//!    - `(1.0, f32::MAX]`: Amplify input changes
-//!    - `(0.0, 1.0)`: Reduce input changes
-//! 3. **Input [`ValueLimit`]**: Limits the input values to a specified range on each axis before further processing.
-//! 4. **[`ValueNormalizer`]**: Ensures that input values fall within a specific range on each axis before further processing.
-//! 5. **[`Deadzone2`]**: Specifies the shapes where input values are considered neutral or ignored on each axis.
-//! 6. **Scaling**: Adjusts processed input values according to a specified scale factor on each axis.
-//! 7. **Output [`ValueLimit`]**: Limits the output values to a specified range on each axis.
-//!
-//! Each of these steps can be configured using the respective settings
-//! provided by the [`DualAxisSettings`] struct.
 
 use std::hash::{Hash, Hasher};
 
@@ -36,310 +15,679 @@ use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
 use super::common_processors::*;
-use super::deadzone_processors::*;
+use super::deadzones::*;
 
-/// Settings for dual-axis inputs using input processors.
+/// Defines the processing pipeline and configuration for dual-axis inputs.
 ///
-/// # Processing Procedure
+/// Dual-axis inputs are processed through a series of steps to achieve desired behavior.
+/// This structure defines these steps and their configuration.
 ///
-/// 1. **Inversion**: Determines whether the input direction is reversed on each axis.
-/// 2. **Sensitivity**: Controls the responsiveness of the input on each axis.
-///    Sensitivity values must be non-negative:
-///    - `1.0`: No adjustment to the value
-///    - `0.0`: Disregards input changes
-///    - `(1.0, f32::MAX]`: Amplify input changes
-///    - `(0.0, 1.0)`: Reduce input changes
-/// 3. **Input [`ValueLimit`]**: Limits the input values to a specified range on each axis before further processing.
-/// 4. **[`ValueNormalizer`]**: Ensures that input values fall within a specific range on each axis before further processing.
-/// 5. **[`Deadzone2`]**: Specifies the shapes where input values are considered neutral or ignored on each axis.
-/// 6. **Scaling**: Adjusts processed input values according to a specified scale factor on each axis.
-/// 7. **Output [`ValueLimit`]**: Limits the output values to a specified range on each axis.
+/// # Processing Steps
+///
+/// The processing pipeline transforms raw input values into usable output values
+/// through a series of configurable steps:
+///
+/// **Note**: Limiting and Normalization aren't used by default.
+///
+/// 1. **Raw Input Scaling**: Adjusts raw input values based on a specified scale factor on each axis.
+///    - Positive values scale input on each axis:
+///      - `0.0`: Disregards input changes (effectively disables the input)
+///      - `(0.0, 1.0)`: Reduces input influence
+///      - `1.0`: No adjustment (default)
+///      - `(1.0, infinity)`: Amplifies input influence
+///    - Negative values invert and scale input on each axis (magnitude follows the same rules as positive values)
+/// 2. **Raw Input Limiting (Optional)**: Clamps raw input values to a specified range on each axis.
+/// 3. **Normalization (Optional)**: Maps input values into a specified range on each axis.
+/// 4. **Deadzone (Optional)**: Defines regions where input values are considered neutral on each axis.
+/// 5. **Processed Input Scaling**: Adjusts processed input values based on a specified scale factor on each axis.
+///    It follows the same rules as raw input scaling.
+/// 6. **Processed Input Limiting (Optional)**: Clamps processed input values to a specified range on each axis.
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 pub struct DualAxisSettings {
-    /// The sensitivity and inversion factor of the input.
+    /// Scales raw input values on each axis.
     ///
     /// Using a `Vec2` here for both sensitivity and inversion
-    /// improves performance by eliminating the need for separate fields and branching logic.
+    /// avoids separate fields and branching logic.
     ///
-    /// For each axis, the absolution value determines the sensitivity of the input:
-    /// - `1.0`: No adjustment to the value
-    /// - `0.0`: Disregards input changes
-    /// - `(1.0, f32::MAX]`: Amplify input changes
-    /// - `(0.0, 1.0)`: Reduce input changes
-    ///
-    /// For each axis, the sign indicates the direction of inversion:
-    /// - Positive values indicate no inversion.
-    /// - Negative values indicate inversion.
-    input_multipliers: Vec2,
+    /// Combines sensitivity (absolute value) and inversion (sign):
+    /// - Positive values scale input on each axis:
+    ///   - `0.0`: Disregards input changes (effectively disables the input)
+    ///   - `(0.0, 1.0)`: Reduces input influence
+    ///   - `1.0`: No adjustment (default)
+    ///   - `(1.0, infinity)`: Amplifies input influence
+    /// - Negative values invert and scale input on each axis (magnitude follows the same rules as positive values)
+    raw_scales: Vec2,
 
-    /// The input clamps limiting the input values to a specified range.
-    input_limits: [ValueLimit; 2],
+    /// (Optional) Defines the range for clamping raw input values on each axis.
+    raw_limits: [ValueLimit; 2],
 
-    /// The input normalizers ensuring that input values fall within a standardized range before further processing.
+    /// (Optional) Maps input values into a specified range on each axis.
     normalizers: [ValueNormalizer; 2],
 
-    /// The deadzone settings for the input.
+    /// (Optional) Defines regions where input values are considered neutral on each axis.
     deadzone: Deadzone2,
 
-    /// The scale factors for adjusting processed input values.
-    output_scales: Vec2,
+    /// Scales processed input values on each axis.
+    ///
+    /// Using a `Vec2` here for both sensitivity and inversion
+    /// avoids separate fields and branching logic.
+    ///
+    /// Combines sensitivity (absolute value) and inversion (sign):
+    /// - Positive values scale input on each axis:
+    ///   - `0.0`: Disregards input changes (effectively disables the input)
+    ///   - `(0.0, 1.0)`: Reduces input influence
+    ///   - `1.0`: No adjustment (default)
+    ///   - `(1.0, infinity)`: Amplifies input influence
+    /// - Negative values invert and scale input on each axis (magnitude follows the same rules as positive values)
+    processed_scales: Vec2,
 
-    /// The output clamps limiting the output values to a specified range.
-    output_limits: [ValueLimit; 2],
+    /// (Optional) Defines the range for clamping processed input values on each axis.
+    processed_limits: [ValueLimit; 2],
 }
 
 impl DualAxisSettings {
-    /// - Sensitivity: `1.0` on both axes
-    /// - Deadzone: Excludes near-zero input values within a distance of `0.1` from `Vec2::ZERO`
-    /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]` on each axis
-    pub const CIRCLE_DEFAULT: DualAxisSettings = DualAxisSettings {
-        input_multipliers: Vec2::ONE,
-        input_limits: [ValueLimit::None, ValueLimit::None],
-        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
-        deadzone: Deadzone2::CIRCLE_DEFAULT,
-        output_scales: Vec2::ONE,
-        output_limits: [ValueLimit::None, ValueLimit::None],
-    };
-
-    /// - Sensitivity: `1.0` on both axes
-    /// - Deadzone: Excludes near-zero input values within the range `[-0.1, 0.1]` on each axis
-    /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]` on each axis
-    pub const SQUARE_DEFAULT: DualAxisSettings = DualAxisSettings {
-        input_multipliers: Vec2::ONE,
-        input_limits: [ValueLimit::None, ValueLimit::None],
-        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
-        deadzone: Deadzone2::SQUARE_DEFAULT,
-        output_scales: Vec2::ONE,
-        output_limits: [ValueLimit::None, ValueLimit::None],
-    };
-
-    /// - Sensitivity: `1.0` on both axes
-    /// - Deadzone: Excluding near-zero input values within the range `[-0.1, 0.1]` on each axis,
-    ///     and applying rounded corners with the radius of `0.025` along each axis
-    /// - Output: Livezone values are normalized into the range `[-1.0, 1.0]` on each axis
-    pub const ROUNDED_SQUARE_DEFAULT: DualAxisSettings = DualAxisSettings {
-        input_multipliers: Vec2::ONE,
-        input_limits: [ValueLimit::None, ValueLimit::None],
-        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
-        deadzone: Deadzone2::ROUNDED_SQUARE_DEFAULT,
-        output_scales: Vec2::ONE,
-        output_limits: [ValueLimit::None, ValueLimit::None],
-    };
-
-    /// - Sensitivity: `1.0` on both axes
-    /// - Deadzone: None
-    pub const NO_DEADZONE: DualAxisSettings = DualAxisSettings {
-        input_multipliers: Vec2::ONE,
-        input_limits: [ValueLimit::None, ValueLimit::None],
+    /// - Scaling: `1.0` on both axes (default)
+    /// - Deadzone: No deadzone is applied
+    pub const EMPTY: DualAxisSettings = DualAxisSettings {
+        raw_scales: Vec2::ONE,
+        raw_limits: [ValueLimit::None, ValueLimit::None],
         normalizers: [ValueNormalizer::None, ValueNormalizer::None],
         deadzone: Deadzone2::None,
-        output_scales: Vec2::ONE,
-        output_limits: [ValueLimit::None, ValueLimit::None],
+        processed_scales: Vec2::ONE,
+        processed_limits: [ValueLimit::None, ValueLimit::None],
     };
 
-    /// Creates a new [`DualAxisSettings`] only with the given `sensitivity`.
+    /// - Scaling: `1.0` on both axes (default)
+    /// - Deadzone: Excludes input values within a distance of `0.1` from `Vec2::ZERO`
+    /// - Output: Values within the livezone are normalized into the range `[-1.0, 1.0]` on each axis
+    pub const DEFAULT_CIRCLE_DEADZONE: DualAxisSettings = DualAxisSettings {
+        raw_scales: Vec2::ONE,
+        raw_limits: [ValueLimit::None, ValueLimit::None],
+        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
+        deadzone: Deadzone2::CIRCLE_DEFAULT,
+        processed_scales: Vec2::ONE,
+        processed_limits: [ValueLimit::None, ValueLimit::None],
+    };
+
+    /// - Scaling: `1.0` on both axes (default)
+    /// - Deadzone: Excludes input values within the range `[-0.1, 0.1]` on each axis
+    /// - Output: Values within the livezone are normalized into the range `[-1.0, 1.0]` on each axis
+    pub const DEFAULT_SQUARE_DEADZONE: DualAxisSettings = DualAxisSettings {
+        raw_scales: Vec2::ONE,
+        raw_limits: [ValueLimit::None, ValueLimit::None],
+        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
+        deadzone: Deadzone2::SQUARE_DEFAULT,
+        processed_scales: Vec2::ONE,
+        processed_limits: [ValueLimit::None, ValueLimit::None],
+    };
+
+    /// - Scaling: `1.0` on both axes (default)
+    /// - Deadzone: Excluding input values within the range `[-0.1, 0.1]` on each axis,
+    ///     and applying rounded corners with the radius of `0.025` along each axis
+    /// - Output: Values within the livezone are normalized into the range `[-1.0, 1.0]` on each axis
+    pub const DEFAULT_ROUNDED_SQUARE_DEADZONE: DualAxisSettings = DualAxisSettings {
+        raw_scales: Vec2::ONE,
+        raw_limits: [ValueLimit::None, ValueLimit::None],
+        normalizers: [ValueNormalizer::None, ValueNormalizer::None],
+        deadzone: Deadzone2::ROUNDED_SQUARE_DEFAULT,
+        processed_scales: Vec2::ONE,
+        processed_limits: [ValueLimit::None, ValueLimit::None],
+    };
+
+    /// Creates a new [`DualAxisSettings`] instance with the provided `scales` for raw input values on each axis.
     ///
-    /// If the given `sensitivity` values are negative,
-    /// they'll be converted to their absolute value.
+    /// # Arguments
+    ///
+    /// - `scale`: The scale factor to adjust raw input values on each axis:
+    ///   - Positive values scale the input:
+    ///     - `0.0`: Disregards input changes (effectively disables the input)
+    ///     - `(0.0, 1.0)`: Reduces input influence
+    ///     - `1.0`: No adjustment (default)
+    ///     - `(1.0, infinity)`: Amplifies input influence
+    ///   - Negative values invert and scale the input (magnitude follows the same rules as positive values)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bevy::math::Vec2;
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// // Create a new DualAxisSettings with scale 0.5 for raw input on each axis
+    /// let base = DualAxisSettings::EMPTY.with_raw_scales(Vec2::splat(0.5));
+    ///
+    /// // Increase the factors on each axis
+    /// let more_sensitive = base.with_raw_scales(Vec2::splat(2.0));
+    ///
+    /// // Further increase the factors on each axis
+    /// let ultra_sensitive = more_sensitive.with_raw_scale(Vec2::splat(100.0));
+    /// ```
     #[must_use]
-    pub fn with_sensitivity(&self, sensitivity: Vec2) -> Self {
+    pub const fn with_raw_scales(&self, scales: Vec2) -> Self {
         Self {
-            input_multipliers: sensitivity.abs(),
-            input_limits: self.input_limits,
+            raw_scales: scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Returns a new [`DualAxisSettings`] with inversion applied.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `scale` for raw input values on the x-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `scale`: The scale factor to adjust raw input values on the x-axis:
+    ///   - Positive values scale input:
+    ///     - `0.0`: Disregards input changes (effectively disables the input)
+    ///     - `(0.0, 1.0)`: Reduces input influence
+    ///     - `1.0`: No adjustment (default)
+    ///     - `(1.0, infinity)`: Amplifies input influence
+    ///   - Negative values invert and scale input (magnitude follows the same rules as positive values)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bevy::math::Vec2;
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// // Create a new DualAxisSettings with scale 0.5 for raw input on the x-axis
+    /// let settings = DualAxisSettings::EMPTY.with_raw_scale_x(0.5);
+    ///
+    /// // Increase the factor on the x-axis
+    /// let more_sensitive = settings.with_raw_scale_x(2.0);
+    ///
+    /// // Further increase the factor on the x-axis
+    /// let ultra_sensitive = more_sensitive.with_raw_scale_x(100.0);
+    /// ```
+    #[must_use]
+    pub const fn with_raw_scale_x(&self, scale: f32) -> Self {
+        Self {
+            raw_scales: Vec2::new(scale, self.raw_scales.y),
+            raw_limits: self.raw_limits,
+            normalizers: self.normalizers,
+            deadzone: self.deadzone,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
+        }
+    }
+
+    /// Creates a new [`DualAxisSettings`] instance with the provided `scale` for raw input values on the y-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `scale`: The scale factor to adjust raw input values on the y-axis.
+    ///   - Positive values scale input:
+    ///     - `0.0`: Disregards input changes (effectively disables the input)
+    ///     - `(0.0, 1.0)`: Reduces input influence
+    ///     - `1.0`: No adjustment (default)
+    ///     - `(1.0, infinity)`: Amplifies input influence
+    ///   - Negative values invert and scale input (magnitude follows the same rules as positive values)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bevy::math::Vec2;
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// // Create a new DualAxisSettings with scale 0.5 for raw input on the y-axis
+    /// let settings = DualAxisSettings::EMPTY.with_raw_scale_y(0.5);
+    ///
+    /// // Increase the factor on the y-axis
+    /// let more_sensitive = settings.with_raw_scale_y(2.0);
+    ///
+    /// // Further increase the factor on the y-axis
+    /// let ultra_sensitive = more_sensitive.with_raw_scale_y(100.0);
+    /// ```
+    #[must_use]
+    pub const fn with_raw_scale_y(&self, scale: f32) -> Self {
+        Self {
+            raw_scales: Vec2::new(self.raw_scales.x, scale),
+            raw_limits: self.raw_limits,
+            normalizers: self.normalizers,
+            deadzone: self.deadzone,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
+        }
+    }
+
+    /// Creates a new [`DualAxisSettings`] instance with inversion applied to raw input values on each axis.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// let original = DualAxisSettings::EMPTY;
+    ///
+    /// // Invert the input direction on each axis
+    /// let inverted = original.with_inverted();
+    ///
+    /// // Revert the settings to the original
+    /// let reverted = inverted.with_inverted();
+    /// ```
     #[must_use]
     pub fn with_inverted(&self) -> Self {
         Self {
-            input_multipliers: -self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: -self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Returns a new [`DualAxisSettings`] with inversion applied on the x-axis.
+    /// Creates a new [`DualAxisSettings`] instance with inversion applied to raw input values on the x-axis.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// let original = DualAxisSettings::EMPTY;
+    ///
+    /// // Invert the input direction on the x-axis
+    /// let inverted_x = original.with_inverted_x();
+    ///
+    /// // Revert the settings to the original
+    /// let reverted = inverted_x.with_inverted_x();
+    /// ```
     #[must_use]
     pub fn with_inverted_x(&self) -> Self {
         Self {
-            input_multipliers: Vec2::new(-self.input_multipliers.x, self.input_multipliers.y),
-            input_limits: self.input_limits,
+            raw_scales: Vec2::new(-self.raw_scales.x, self.raw_scales.y),
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Returns a new [`DualAxisSettings`] with inversion applied on the y-axis.
+    /// Creates a new [`DualAxisSettings`] instance with inversion applied to raw input values on the y-axis.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// let original = DualAxisSettings::EMPTY;
+    ///
+    /// // Invert the input direction on the y-axis
+    /// let inverted_y = original.with_inverted_y();
+    ///
+    /// // Revert the settings to the original
+    /// let reverted = inverted_y.with_inverted_y();
+    /// ```
     #[must_use]
     pub fn with_inverted_y(&self) -> Self {
         Self {
-            input_multipliers: Vec2::new(self.input_multipliers.x, -self.input_multipliers.y),
-            input_limits: self.input_limits,
+            raw_scales: Vec2::new(self.raw_scales.x, -self.raw_scales.y),
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `limit` for input values on the x-axis before further processing.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `limit` for raw input values on the x-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `limit`: The limit for raw input values on the x-axis.
+    ///
+    /// See [`ValueLimit`] documentation for available limit options.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::{DualAxisSettings, ValueLimit};
+    ///
+    /// // Create a new DualAxisSettings with a non-negative limit on the x-axis
+    /// let non_negative = DualAxisSettings::EMPTY.with_raw_limit_x(ValueLimit::AtLeast(0.0));
+    /// ```
     #[must_use]
-    pub fn with_input_limit_x(&self, limit: ValueLimit) -> Self {
+    pub fn with_raw_limit_x(&self, limit: ValueLimit) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: [limit, self.input_limits[1]],
+            raw_scales: self.raw_scales,
+            raw_limits: [limit, self.raw_limits[1]],
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `limit` for input values on the y-axis before further processing.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `limit` for raw input values on the y-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `limit`: The limit for raw input values on the y-axis.
+    ///
+    /// See [`ValueLimit`] documentation for available limit options.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::{DualAxisSettings, ValueLimit};
+    ///
+    /// // Create a new DualAxisSettings with a non-negative limit on the x-axis
+    /// let non_negative = DualAxisSettings::EMPTY.with_raw_limit_x(ValueLimit::AtLeast(0.0));
+    /// ```
     #[must_use]
-    pub fn with_input_limit_y(&self, limit: ValueLimit) -> Self {
+    pub fn with_raw_limit_y(&self, limit: ValueLimit) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: [self.input_limits[0], limit],
+            raw_scales: self.raw_scales,
+            raw_limits: [self.raw_limits[0], limit],
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `normalizer` on the x-axis before further processing.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `normalizer` on the x-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `normalizer`: The normalizer that maps input values on the x-axis into a specified range.
+    ///
+    /// See [`ValueNormalizer`] documentation for available normalization options.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::{DualAxisSettings, ValueNormalizer};
+    ///
+    /// // Create a new DualAxisSettings with a standard min-max normalizer on the x-axis
+    ///let standard_min_max_settings = DualAxisSettings::EMPTY
+    ///     .with_normalizer_x(ValueNormalizer::standard_min_max(-100.0..100.0));
+    /// ```
     #[must_use]
     pub fn with_normalizer_x(&self, normalizer: ValueNormalizer) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: [normalizer, self.normalizers[1]],
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `normalizer` on the y-axis before further processing.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `normalizer` on the y-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `normalizer`: The normalizer that maps input values on the y-axis into a specified range.
+    ///
+    /// See [`ValueNormalizer`] documentation for available normalization options.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::{DualAxisSettings, ValueNormalizer};
+    ///
+    /// // Create a new DualAxisSettings with a standard min-max normalizer on the y-axis
+    ///let standard_min_max_settings = DualAxisSettings::EMPTY
+    ///     .with_normalizer_y(ValueNormalizer::standard_min_max(-100.0..100.0));
+    /// ```
     #[must_use]
     pub fn with_normalizer_y(&self, normalizer: ValueNormalizer) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: [self.normalizers[0], normalizer],
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `deadzone`.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `deadzone`.
+    ///
+    /// # Arguments
+    ///
+    /// - `deadzone`: The deadzone that defines regions where input values are considered neutral.
+    ///
+    /// See [`Deadzone1`] documentation for available deadzone options.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::{Deadzone2, DualAxisSettings};
+    ///
+    /// // Create a new DualAxisSettings with a circular deadzone defined by radii 0.2 and 0.3
+    ///let settings = DualAxisSettings::EMPTY.with_deadzone(Deadzone2::new_circle(0.2, 0.3));
+    /// ```
     #[must_use]
     pub fn with_deadzone(&self, deadzone: Deadzone2) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone,
-            output_scales: self.output_scales,
-            output_limits: self.output_limits,
+            processed_scales: self.processed_scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `scales` for output values on both axes.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `scales` for processed input values on both axes.
+    ///
+    /// # Arguments
+    ///
+    /// - `scale`: The scale factor to adjust processed input values on each axis:
+    ///   - Positive values scale the input:
+    ///     - `0.0`: Disregards input changes (effectively disables the input)
+    ///     - `(0.0, 1.0)`: Reduces input influence
+    ///     - `1.0`: No adjustment (default)
+    ///     - `(1.0, infinity)`: Amplifies input influence
+    ///   - Negative values invert and scale the input (magnitude follows the same rules as positive values)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bevy::math::Vec2;
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// // Create a new DualAxisSettings with scale 0.5 for processed input on each axis
+    /// let base = DualAxisSettings::EMPTY.with_processed_scales(Vec2::splat(0.5));
+    ///
+    /// // Increase the factors on each axis
+    /// let more_sensitive = base.with_processed_scales(Vec2::splat(2.0));
+    ///
+    /// // Further increase the factors on each axis
+    /// let ultra_sensitive = more_sensitive.with_processed_scale(Vec2::splat(100.0));
+    /// ```
     #[must_use]
-    pub fn with_output_scales(&self, scales: Vec2) -> Self {
+    pub fn with_processed_scales(&self, scales: Vec2) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: scales,
-            output_limits: self.output_limits,
+            processed_scales: scales,
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `scale` for output values on the x-axis.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `scale` for processed input values on the x-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `scale`: The scale factor to adjust processed input values on the x-axis:
+    ///   - Positive values scale the input:
+    ///     - `0.0`: Disregards input changes (effectively disables the input)
+    ///     - `(0.0, 1.0)`: Reduces input influence
+    ///     - `1.0`: No adjustment (default)
+    ///     - `(1.0, infinity)`: Amplifies input influence
+    ///   - Negative values invert and scale the input (magnitude follows the same rules as positive values)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bevy::math::Vec2;
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// // Create a new DualAxisSettings with scale 0.5 for processed input on the x-axis
+    /// let settings = DualAxisSettings::EMPTY.with_processed_scale_x(0.5);
+    ///
+    /// // Increase the factor on the x-axis
+    /// let more_sensitive = settings.with_processed_scale_x(2.0);
+    ///
+    /// // Further increase the factor on the x-axis
+    /// let ultra_sensitive = more_sensitive.with_processed_scale_x(100.0);
+    /// ```
     #[must_use]
-    pub fn with_output_scale_x(&self, scale: f32) -> Self {
+    pub fn with_processed_scale_x(&self, scale: f32) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: Vec2::new(scale, self.output_scales.y),
-            output_limits: self.output_limits,
+            processed_scales: Vec2::new(scale, self.processed_scales.y),
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `scale` for output values on the y-axis.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `scale` for processed input values on the y-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `scale`: The scale factor to adjust processed input values on the y-axis.
+    ///   - Positive values scale input:
+    ///     - `0.0`: Disregards input changes (effectively disables the input)
+    ///     - `(0.0, 1.0)`: Reduces input influence
+    ///     - `1.0`: No adjustment (default)
+    ///     - `(1.0, infinity)`: Amplifies input influence
+    ///   - Negative values invert and scale input (magnitude follows the same rules as positive values)
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bevy::math::Vec2;
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// // Create a new DualAxisSettings with scale 0.5 for processed input on the y-axis
+    /// let settings = DualAxisSettings::EMPTY.with_raw_scale_y(0.5);
+    ///
+    /// // Increase the factor on the y-axis
+    /// let more_sensitive = settings.with_raw_scale_y(2.0);
+    ///
+    /// // Further increase the factor on the y-axis
+    /// let ultra_sensitive = more_sensitive.with_raw_scale_y(100.0);
+    /// ```
     #[must_use]
-    pub fn with_output_scale_y(&self, scale: f32) -> Self {
+    pub fn with_processed_scale_y(&self, scale: f32) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: Vec2::new(self.output_scales.x, scale),
-            output_limits: self.output_limits,
+            processed_scales: Vec2::new(self.processed_scales.x, scale),
+            processed_limits: self.processed_limits,
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `limit` for output values on the x-axis.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `limit` for processed input values on the x-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `limit`: The limit for processed input values on the x-axis.
+    ///
+    /// See [`ValueLimit`] documentation for available limit options.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::{DualAxisSettings, ValueLimit};
+    ///
+    /// // Create a new DualAxisSettings with a non-negative limit on the x-axis
+    /// let non_negative = DualAxisSettings::EMPTY.with_processed_limit_x(ValueLimit::AtLeast(0.0));
+    /// ```
     #[must_use]
-    pub fn with_output_limit_x(&self, clamp: ValueLimit) -> Self {
+    pub fn with_processed_limit_x(&self, clamp: ValueLimit) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: [clamp, self.output_limits[1]],
+            processed_scales: self.processed_scales,
+            processed_limits: [clamp, self.processed_limits[1]],
         }
     }
 
-    /// Creates a new [`DualAxisSettings`] with the given `limit` for output values on the y-axis.
+    /// Creates a new [`DualAxisSettings`] instance with the provided `limit` for processed input values on the y-axis.
+    ///
+    /// # Arguments
+    ///
+    /// - `limit`: The limit for processed input values on the y-axis.
+    ///
+    /// See [`ValueLimit`] documentation for available limit options.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::{DualAxisSettings, ValueLimit};
+    ///
+    /// // Create a new DualAxisSettings with a non-negative limit on the x-axis
+    /// let non_negative = DualAxisSettings::EMPTY.with_processed_limit_x(ValueLimit::AtLeast(0.0));
+    /// ```
     #[must_use]
-    pub fn with_output_limit_y(&self, clamp: ValueLimit) -> Self {
+    pub fn with_processed_limit_y(&self, clamp: ValueLimit) -> Self {
         Self {
-            input_multipliers: self.input_multipliers,
-            input_limits: self.input_limits,
+            raw_scales: self.raw_scales,
+            raw_limits: self.raw_limits,
             normalizers: self.normalizers,
             deadzone: self.deadzone,
-            output_scales: self.output_scales,
-            output_limits: [self.output_limits[0], clamp],
+            processed_scales: self.processed_scales,
+            processed_limits: [self.processed_limits[0], clamp],
         }
     }
 
-    /// Returns the adjusted `input_value` after applying these settings.
+    /// Computes and returns the final adjusted input value after applying the currently configured settings.
+    ///
+    /// # Arguments
+    ///
+    /// - `input_value`: The raw input value received from the input device.
+    ///
+    /// # Additional Notes
+    ///
+    /// This function doesn't modify the [`DualAxisSettings`] instance itself.
+    /// It only calculates the processed value based on the provided settings and raw input value.
+    ///
+    /// By default, not all settings such as limiting, normalization, or deadzone are applied.
+    /// They must be explicitly configured in the [`DualAxisSettings`] instance.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use bevy::math::Vec2;
+    /// use leafwing_input_manager::prelude::DualAxisSettings;
+    ///
+    /// let settings = DualAxisSettings::DEFAULT_CIRCLE_DEADZONE;
+    ///
+    /// let processed_value = settings.value(Vec2::splat(0.5));
+    ///
+    /// // Use the processed_value as you wish...
+    /// ```
     #[must_use]
     #[inline]
     pub fn value(&self, input_value: Vec2) -> Vec2 {
-        let processed_value = self.input_multipliers * input_value;
-        let processed_value = Vec2::new(
-            self.input_limits[0].clamp(processed_value.x),
-            self.input_limits[1].clamp(processed_value.y),
+        let Vec2 { x, y } = input_value;
+        let (x, y) = (x * self.raw_scales.x, y * self.raw_scales.y);
+        let (x, y) = (self.raw_limits[0].clamp(x), self.raw_limits[1].clamp(y));
+        let (x, y) = (
+            self.normalizers[0].normalize(x),
+            self.normalizers[1].normalize(y),
         );
-        let processed_value = Vec2::new(
-            self.normalizers[0].normalize(processed_value.x),
-            self.normalizers[1].normalize(processed_value.y),
-        );
-        let processed_value = self.deadzone.value(processed_value);
-        let processed_value = self.output_scales * processed_value;
+        let Vec2 { x, y } = self.deadzone.value(Vec2::new(x, y));
+        let (x, y) = (x * self.processed_scales.x, y * self.processed_scales.y);
         Vec2::new(
-            self.output_limits[0].clamp(processed_value.x),
-            self.output_limits[1].clamp(processed_value.y),
+            self.processed_limits[0].clamp(x),
+            self.processed_limits[1].clamp(y),
         )
     }
 }
@@ -348,17 +696,17 @@ impl Eq for DualAxisSettings {}
 
 impl Hash for DualAxisSettings {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        FloatOrd(self.input_multipliers.x).hash(state);
-        FloatOrd(self.input_multipliers.y).hash(state);
-        self.input_limits[0].hash(state);
-        self.input_limits[1].hash(state);
+        FloatOrd(self.raw_scales.x).hash(state);
+        FloatOrd(self.raw_scales.y).hash(state);
+        self.raw_limits[0].hash(state);
+        self.raw_limits[1].hash(state);
         self.normalizers[0].hash(state);
         self.normalizers[1].hash(state);
         self.deadzone.hash(state);
-        FloatOrd(self.output_scales.x).hash(state);
-        FloatOrd(self.output_scales.y).hash(state);
-        self.output_limits[0].hash(state);
-        self.output_limits[1].hash(state);
+        FloatOrd(self.processed_scales.x).hash(state);
+        FloatOrd(self.processed_scales.y).hash(state);
+        self.processed_limits[0].hash(state);
+        self.processed_limits[1].hash(state);
     }
 }
 
@@ -367,11 +715,39 @@ mod tests {
     use super::*;
     use bevy::math::{vec2, Vec2};
 
-    // region dual-axis setting consts -------------
+    // region consts -------------
 
     #[test]
-    fn test_dual_axis_settings_circle_default() {
-        let settings = DualAxisSettings::CIRCLE_DEFAULT;
+    fn test_dual_axis_settings_empty() {
+        let settings = DualAxisSettings::EMPTY;
+
+        // No output clamp
+        assert_eq!(settings.value(Vec2::splat(5.0)), Vec2::splat(5.0));
+        assert_eq!(settings.value(Vec2::splat(-5.0)), Vec2::splat(-5.0));
+
+        // No inversion
+        assert_eq!(settings.value(Vec2::ONE), Vec2::ONE);
+        assert_eq!(settings.value(Vec2::ZERO), Vec2::ZERO);
+        assert_eq!(settings.value(Vec2::NEG_ONE), Vec2::NEG_ONE);
+
+        // No deadzone
+        assert_eq!(Vec2::splat(0.1), settings.value(Vec2::splat(0.1)));
+        assert_eq!(Vec2::splat(0.01), settings.value(Vec2::splat(0.01)));
+        assert_eq!(Vec2::splat(-0.01), settings.value(Vec2::splat(-0.01)));
+        assert_eq!(Vec2::splat(-0.1), settings.value(Vec2::splat(-0.1)));
+
+        // No livezone normalization
+        assert_eq!(settings.value(Vec2::splat(0.75)), Vec2::splat(0.75));
+        assert_eq!(settings.value(Vec2::splat(0.5)), Vec2::splat(0.5));
+        assert_eq!(settings.value(Vec2::splat(0.11)), Vec2::splat(0.11));
+        assert_eq!(settings.value(Vec2::splat(-0.11)), Vec2::splat(-0.11));
+        assert_eq!(settings.value(Vec2::splat(-0.5)), Vec2::splat(-0.5));
+        assert_eq!(settings.value(Vec2::splat(-0.75)), Vec2::splat(-0.75));
+    }
+
+    #[test]
+    fn test_dual_axis_settings_default_circle_deadzone() {
+        let settings = DualAxisSettings::DEFAULT_CIRCLE_DEADZONE;
 
         // Output clamp
         assert_eq!(Vec2::ONE, settings.value(Vec2::splat(5.0)));
@@ -409,8 +785,8 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_settings_square_default() {
-        let settings = DualAxisSettings::SQUARE_DEFAULT;
+    fn test_dual_axis_settings_default_square_deadzone() {
+        let settings = DualAxisSettings::DEFAULT_SQUARE_DEADZONE;
 
         // Output clamp
         assert_eq!(Vec2::ONE, settings.value(Vec2::splat(5.0)));
@@ -450,8 +826,8 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_settings_rounded_square_default() {
-        let settings = DualAxisSettings::ROUNDED_SQUARE_DEFAULT;
+    fn test_dual_axis_settings_default_rounded_square_deadzone() {
+        let settings = DualAxisSettings::DEFAULT_ROUNDED_SQUARE_DEADZONE;
 
         // Output clamp
         assert_eq!(Vec2::ONE, settings.value(Vec2::splat(5.0)));
@@ -490,119 +866,91 @@ mod tests {
         assert_eq!(-livezone_0_25, settings.value(Vec2::splat(-0.125)));
     }
 
-    #[test]
-    fn test_dual_axis_settings_no_deadzone() {
-        let settings = DualAxisSettings::NO_DEADZONE;
+    // endregion consts -------------
 
-        // No output clamp
-        assert_eq!(settings.value(Vec2::splat(5.0)), Vec2::splat(5.0));
-        assert_eq!(settings.value(Vec2::splat(-5.0)), Vec2::splat(-5.0));
-
-        // No inversion
-        assert_eq!(settings.value(Vec2::ONE), Vec2::ONE);
-        assert_eq!(settings.value(Vec2::ZERO), Vec2::ZERO);
-        assert_eq!(settings.value(Vec2::NEG_ONE), Vec2::NEG_ONE);
-
-        // No deadzone
-        assert_eq!(Vec2::splat(0.1), settings.value(Vec2::splat(0.1)));
-        assert_eq!(Vec2::splat(0.01), settings.value(Vec2::splat(0.01)));
-        assert_eq!(Vec2::splat(-0.01), settings.value(Vec2::splat(-0.01)));
-        assert_eq!(Vec2::splat(-0.1), settings.value(Vec2::splat(-0.1)));
-
-        // No livezone normalization
-        assert_eq!(settings.value(Vec2::splat(0.75)), Vec2::splat(0.75));
-        assert_eq!(settings.value(Vec2::splat(0.5)), Vec2::splat(0.5));
-        assert_eq!(settings.value(Vec2::splat(0.11)), Vec2::splat(0.11));
-        assert_eq!(settings.value(Vec2::splat(-0.11)), Vec2::splat(-0.11));
-        assert_eq!(settings.value(Vec2::splat(-0.5)), Vec2::splat(-0.5));
-        assert_eq!(settings.value(Vec2::splat(-0.75)), Vec2::splat(-0.75));
-    }
-
-    // endregion dual-axis setting consts -------------
-
-    // region dual-axis sensitivity -------------
+    // region raw input scaling -------------
 
     #[test]
-    fn test_dual_axis_sensitivity() {
+    fn test_dual_axis_raw_scale() {
+        let original = DualAxisSettings::EMPTY.with_raw_scales(Vec2::ONE);
         let ratio = Vec2::splat(0.5);
-        let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
-        let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
+        let changed = original.with_raw_scales(ratio);
 
-        let normal_value = |value: Vec2| ratio * normal.value(value);
+        let expected_value = |value: Vec2| ratio * original.value(value);
 
-        assert_eq!(normal_value(Vec2::ONE), custom.value(Vec2::ONE));
-        assert_eq!(normal_value(Vec2::ZERO), custom.value(Vec2::ZERO));
-        assert_eq!(normal_value(Vec2::NEG_ONE), custom.value(Vec2::NEG_ONE));
+        assert_eq!(expected_value(Vec2::ONE), changed.value(Vec2::ONE));
+        assert_eq!(expected_value(Vec2::ZERO), changed.value(Vec2::ZERO));
+        assert_eq!(expected_value(Vec2::NEG_ONE), changed.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_sensitivity_x() {
+    fn test_dual_axis_raw_scale_x() {
+        let original = DualAxisSettings::EMPTY.with_raw_scales(Vec2::ONE);
         let ratio = vec2(0.5, 1.0);
-        let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
-        let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
+        let changed = original.with_raw_scale_x(ratio.x);
 
-        let normal_value = |value: Vec2| ratio * normal.value(value);
+        let expected_value = |value: Vec2| ratio * original.value(value);
 
-        assert_eq!(normal_value(Vec2::ONE), custom.value(Vec2::ONE));
-        assert_eq!(normal_value(Vec2::ZERO), custom.value(Vec2::ZERO));
-        assert_eq!(normal_value(Vec2::NEG_ONE), custom.value(Vec2::NEG_ONE));
+        assert_eq!(expected_value(Vec2::ONE), changed.value(Vec2::ONE));
+        assert_eq!(expected_value(Vec2::ZERO), changed.value(Vec2::ZERO));
+        assert_eq!(expected_value(Vec2::NEG_ONE), changed.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_sensitivity_y() {
+    fn test_dual_axis_raw_scale_y() {
+        let original = DualAxisSettings::EMPTY.with_raw_scales(Vec2::ONE);
         let ratio = vec2(1.0, 0.5);
-        let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
-        let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
+        let changed = original.with_raw_scale_y(ratio.y);
 
-        let normal_value = |value: Vec2| ratio * normal.value(value);
+        let expected_value = |value: Vec2| ratio * original.value(value);
 
-        assert_eq!(normal_value(Vec2::ONE), custom.value(Vec2::ONE));
-        assert_eq!(normal_value(Vec2::ZERO), custom.value(Vec2::ZERO));
-        assert_eq!(normal_value(Vec2::NEG_ONE), custom.value(Vec2::NEG_ONE));
+        assert_eq!(expected_value(Vec2::ONE), changed.value(Vec2::ONE));
+        assert_eq!(expected_value(Vec2::ZERO), changed.value(Vec2::ZERO));
+        assert_eq!(expected_value(Vec2::NEG_ONE), changed.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_negative_sensitivity() {
+    fn test_dual_axis_negative_raw_scales() {
+        let original = DualAxisSettings::EMPTY.with_raw_scales(Vec2::ONE);
         let ratio = Vec2::splat(-0.5);
-        let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
-        let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
+        let changed = original.with_raw_scales(ratio);
 
-        let normal_value = |value: Vec2| ratio.abs() * normal.value(value);
+        let expected_value = |value: Vec2| ratio * original.value(value);
 
-        assert_eq!(normal_value(Vec2::ONE), custom.value(Vec2::ONE));
-        assert_eq!(normal_value(Vec2::ZERO), custom.value(Vec2::ZERO));
-        assert_eq!(normal_value(Vec2::NEG_ONE), custom.value(Vec2::NEG_ONE));
+        assert_eq!(expected_value(Vec2::ONE), changed.value(Vec2::ONE));
+        assert_eq!(expected_value(Vec2::ZERO), changed.value(Vec2::ZERO));
+        assert_eq!(expected_value(Vec2::NEG_ONE), changed.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_negative_sensitivity_x() {
+    fn test_dual_axis_negative_raw_scale_x() {
+        let original = DualAxisSettings::EMPTY.with_raw_scales(Vec2::ONE);
         let ratio = vec2(-0.5, 1.0);
-        let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
-        let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
+        let changed = DualAxisSettings::EMPTY.with_raw_scales(ratio);
 
-        let normal_value = |value: Vec2| ratio.abs() * normal.value(value);
+        let expected_value = |value: Vec2| ratio * original.value(value);
 
-        assert_eq!(normal_value(Vec2::ONE), custom.value(Vec2::ONE));
-        assert_eq!(normal_value(Vec2::ZERO), custom.value(Vec2::ZERO));
-        assert_eq!(normal_value(Vec2::NEG_ONE), custom.value(Vec2::NEG_ONE));
+        assert_eq!(expected_value(Vec2::ONE), changed.value(Vec2::ONE));
+        assert_eq!(expected_value(Vec2::ZERO), changed.value(Vec2::ZERO));
+        assert_eq!(expected_value(Vec2::NEG_ONE), changed.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_negative_sensitivity_y() {
+    fn test_dual_axis_negative_raw_scale_y() {
+        let original = DualAxisSettings::EMPTY.with_raw_scales(Vec2::ONE);
         let ratio = vec2(1.0, -0.5);
-        let custom = DualAxisSettings::NO_DEADZONE.with_sensitivity(ratio);
-        let normal = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ONE);
+        let changed = original.with_raw_scales(ratio);
 
-        let normal_value = |value: Vec2| ratio.abs() * normal.value(value);
+        let expected_value = |value: Vec2| ratio * original.value(value);
 
-        assert_eq!(normal_value(Vec2::ONE), custom.value(Vec2::ONE));
-        assert_eq!(normal_value(Vec2::ZERO), custom.value(Vec2::ZERO));
-        assert_eq!(normal_value(Vec2::NEG_ONE), custom.value(Vec2::NEG_ONE));
+        assert_eq!(expected_value(Vec2::ONE), changed.value(Vec2::ONE));
+        assert_eq!(expected_value(Vec2::ZERO), changed.value(Vec2::ZERO));
+        assert_eq!(expected_value(Vec2::NEG_ONE), changed.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_zero_sensitivity() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::ZERO);
+    fn test_dual_axis_zero_raw_scale() {
+        let settings = DualAxisSettings::EMPTY.with_raw_scales(Vec2::ZERO);
 
         assert_eq!(Vec2::ZERO, settings.value(Vec2::ONE));
         assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
@@ -610,8 +958,8 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_zero_sensitivity_x() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::Y);
+    fn test_dual_axis_zero_raw_scale_x() {
+        let settings = DualAxisSettings::EMPTY.with_raw_scales(Vec2::Y);
 
         assert_eq!(Vec2::Y, settings.value(Vec2::ONE));
         assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
@@ -619,106 +967,106 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_zero_sensitivity_y() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_sensitivity(Vec2::X);
+    fn test_dual_axis_zero_raw_scale_y() {
+        let settings = DualAxisSettings::EMPTY.with_raw_scales(Vec2::X);
 
         assert_eq!(Vec2::X, settings.value(Vec2::ONE));
         assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
         assert_eq!(Vec2::NEG_X, settings.value(Vec2::NEG_ONE));
     }
 
-    // endregion dual-axis sensitivity -------------
+    // endregion raw input scaling -------------
 
-    // region dual-axis inversion -------------
+    // region inversion -------------
 
     #[test]
     fn test_dual_axis_inversion() {
-        let settings = DualAxisSettings::NO_DEADZONE;
+        let original = DualAxisSettings::EMPTY;
 
-        assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(-0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::NEG_ONE, settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::ONE, original.value(Vec2::ONE));
+        assert_eq!(Vec2::splat(0.5), original.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, original.value(Vec2::ZERO));
+        assert_eq!(Vec2::splat(-0.5), original.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::NEG_ONE, original.value(Vec2::NEG_ONE));
 
-        let settings = settings.with_inverted();
+        let inverted = original.with_inverted();
 
-        assert_eq!(Vec2::NEG_ONE, settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(-0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::ONE, settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::ONE, inverted.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::splat(-0.5), inverted.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, inverted.value(Vec2::ZERO));
+        assert_eq!(Vec2::splat(0.5), inverted.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::NEG_ONE, inverted.value(Vec2::ONE));
 
-        let settings = settings.with_inverted();
+        let reverted = inverted.with_inverted();
 
-        assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(-0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::NEG_ONE, settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::ONE, reverted.value(Vec2::ONE));
+        assert_eq!(Vec2::splat(0.5), reverted.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, reverted.value(Vec2::ZERO));
+        assert_eq!(Vec2::splat(-0.5), reverted.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::NEG_ONE, reverted.value(Vec2::NEG_ONE));
     }
 
     #[test]
     fn test_dual_axis_inversion_x() {
-        let settings = DualAxisSettings::NO_DEADZONE;
+        let original = DualAxisSettings::EMPTY;
 
-        assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(-0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::NEG_ONE, settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::ONE, original.value(Vec2::ONE));
+        assert_eq!(Vec2::splat(0.5), original.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, original.value(Vec2::ZERO));
+        assert_eq!(Vec2::splat(-0.5), original.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::NEG_ONE, original.value(Vec2::NEG_ONE));
 
-        let settings = settings.with_inverted_x();
+        let inverted_x = original.with_inverted_x();
 
-        assert_eq!(vec2(-1.0, 1.0), settings.value(Vec2::ONE));
-        assert_eq!(vec2(-0.5, 0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(vec2(0.5, -0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(vec2(1.0, -1.0), settings.value(Vec2::NEG_ONE));
+        assert_eq!(vec2(-1.0, 1.0), inverted_x.value(Vec2::ONE));
+        assert_eq!(vec2(-0.5, 0.5), inverted_x.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, inverted_x.value(Vec2::ZERO));
+        assert_eq!(vec2(0.5, -0.5), inverted_x.value(Vec2::splat(-0.5)));
+        assert_eq!(vec2(1.0, -1.0), inverted_x.value(Vec2::NEG_ONE));
 
-        let settings = settings.with_inverted_x();
+        let reverted = inverted_x.with_inverted_x();
 
-        assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(-0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::NEG_ONE, settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::ONE, reverted.value(Vec2::ONE));
+        assert_eq!(Vec2::splat(0.5), reverted.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, reverted.value(Vec2::ZERO));
+        assert_eq!(Vec2::splat(-0.5), reverted.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::NEG_ONE, reverted.value(Vec2::NEG_ONE));
     }
 
     #[test]
     fn test_dual_axis_inversion_y() {
-        let settings = DualAxisSettings::NO_DEADZONE;
+        let original = DualAxisSettings::EMPTY;
 
-        assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(-0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::NEG_ONE, settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::ONE, original.value(Vec2::ONE));
+        assert_eq!(Vec2::splat(0.5), original.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, original.value(Vec2::ZERO));
+        assert_eq!(Vec2::splat(-0.5), original.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::NEG_ONE, original.value(Vec2::NEG_ONE));
 
-        let settings = settings.with_inverted_y();
+        let inverted_y = original.with_inverted_y();
 
-        assert_eq!(vec2(1.0, -1.0), settings.value(Vec2::ONE));
-        assert_eq!(vec2(0.5, -0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(vec2(-0.5, 0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(vec2(-1.0, 1.0), settings.value(Vec2::NEG_ONE));
+        assert_eq!(vec2(1.0, -1.0), inverted_y.value(Vec2::ONE));
+        assert_eq!(vec2(0.5, -0.5), inverted_y.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, inverted_y.value(Vec2::ZERO));
+        assert_eq!(vec2(-0.5, 0.5), inverted_y.value(Vec2::splat(-0.5)));
+        assert_eq!(vec2(-1.0, 1.0), inverted_y.value(Vec2::NEG_ONE));
 
-        let settings = settings.with_inverted_y();
+        let reverted = inverted_y.with_inverted_y();
 
-        assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
-        assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(-0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::NEG_ONE, settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::ONE, reverted.value(Vec2::ONE));
+        assert_eq!(Vec2::splat(0.5), reverted.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::ZERO, reverted.value(Vec2::ZERO));
+        assert_eq!(Vec2::splat(-0.5), reverted.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::NEG_ONE, reverted.value(Vec2::NEG_ONE));
     }
 
-    // endregion dual-axis inversion -------------
+    // endregion inversion -------------
 
-    // region dual-axis input limit -------------
+    // region raw input limiting -------------
 
     #[test]
-    fn test_dual_axis_input_limit_x() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_input_limit_x(ValueLimit::AtLeast(0.5));
+    fn test_dual_axis_raw_limit_x() {
+        let settings = DualAxisSettings::EMPTY.with_raw_limit_x(ValueLimit::AtLeast(0.5));
 
         assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
         assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -728,8 +1076,8 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_input_limit_y() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_input_limit_y(ValueLimit::AtLeast(0.5));
+    fn test_dual_axis_raw_limit_y() {
+        let settings = DualAxisSettings::EMPTY.with_raw_limit_y(ValueLimit::AtLeast(0.5));
 
         assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
         assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -738,14 +1086,14 @@ mod tests {
         assert_eq!(vec2(-1.0, 0.5), settings.value(Vec2::NEG_ONE));
     }
 
-    // endregion dual-axis input limit -------------
+    // endregion raw input limiting -------------
 
-    // region dual-axis normalization -------------
+    // region normalization -------------
 
     #[test]
     fn test_dual_axis_normalization_x() {
         let normalizer = ValueNormalizer::standard_min_max(0.0..1.0);
-        let settings = DualAxisSettings::NO_DEADZONE.with_normalizer_x(normalizer);
+        let settings = DualAxisSettings::EMPTY.with_normalizer_x(normalizer);
 
         assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
         assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -757,7 +1105,7 @@ mod tests {
     #[test]
     fn test_dual_axis_normalization_y() {
         let normalizer = ValueNormalizer::standard_min_max(0.0..1.0);
-        let settings = DualAxisSettings::NO_DEADZONE.with_normalizer_y(normalizer);
+        let settings = DualAxisSettings::EMPTY.with_normalizer_y(normalizer);
 
         assert_eq!(Vec2::ONE, settings.value(Vec2::ONE));
         assert_eq!(Vec2::splat(0.5), settings.value(Vec2::splat(0.5)));
@@ -766,14 +1114,14 @@ mod tests {
         assert_eq!(vec2(-1.0, 0.0), settings.value(Vec2::NEG_ONE));
     }
 
-    // endregion dual-axis normalization -------------
+    // endregion normalization -------------
 
-    // region dual-axis deadzone -------------
+    // region deadzone -------------
 
     #[test]
     fn test_dual_axis_deadzone_circle() {
-        let deadzone = Deadzone2::new_circle(0.3, 0.35);
-        let settings = DualAxisSettings::NO_DEADZONE.with_deadzone(deadzone);
+        let deadzone = Deadzone2::circle(0.3, 0.35);
+        let settings = DualAxisSettings::EMPTY.with_deadzone(deadzone);
 
         // Deadzone
         assert_eq!(Vec2::ZERO, settings.value(Vec2::splat(0.2)));
@@ -803,52 +1151,52 @@ mod tests {
         assert_eq!(-livezone_0_3, settings.value(Vec2::splat(-0.3)));
     }
 
-    // endregion dual-axis deadzone -------------
+    // endregion deadzone -------------
 
-    // region dual-axis output scale -------------
+    // region processed input scaling -------------
 
     #[test]
-    fn test_dual_axis_output_scales() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_output_scales(Vec2::splat(5.0));
+    fn test_dual_axis_processed_scales() {
+        let settings = DualAxisSettings::EMPTY.with_processed_scales(Vec2::splat(-5.0));
 
-        assert_eq!(Vec2::splat(5.0), settings.value(Vec2::ONE));
-        assert_eq!(Vec2::splat(2.5), settings.value(Vec2::splat(0.5)));
+        assert_eq!(Vec2::splat(-5.0), settings.value(Vec2::ONE));
+        assert_eq!(Vec2::splat(-2.5), settings.value(Vec2::splat(0.5)));
         assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(Vec2::splat(-2.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(Vec2::splat(-5.0), settings.value(Vec2::NEG_ONE));
+        assert_eq!(Vec2::splat(2.5), settings.value(Vec2::splat(-0.5)));
+        assert_eq!(Vec2::splat(5.0), settings.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_output_scale_x() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_output_scale_x(5.0);
+    fn test_dual_axis_processed_scale_x() {
+        let settings = DualAxisSettings::EMPTY.with_processed_scale_x(-5.0);
 
-        assert_eq!(vec2(5.0, 1.0), settings.value(Vec2::ONE));
-        assert_eq!(vec2(2.5, 0.5), settings.value(Vec2::splat(0.5)));
+        assert_eq!(vec2(-5.0, 1.0), settings.value(Vec2::ONE));
+        assert_eq!(vec2(-2.5, 0.5), settings.value(Vec2::splat(0.5)));
         assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(vec2(-2.5, -0.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(vec2(-5.0, -1.0), settings.value(Vec2::NEG_ONE));
+        assert_eq!(vec2(2.5, -0.5), settings.value(Vec2::splat(-0.5)));
+        assert_eq!(vec2(5.0, -1.0), settings.value(Vec2::NEG_ONE));
     }
 
     #[test]
-    fn test_dual_axis_output_scale_y() {
-        let settings = DualAxisSettings::NO_DEADZONE.with_output_scale_y(5.0);
+    fn test_dual_axis_processed_scale_y() {
+        let settings = DualAxisSettings::EMPTY.with_processed_scale_y(-5.0);
 
-        assert_eq!(vec2(1.0, 5.0), settings.value(Vec2::ONE));
-        assert_eq!(vec2(0.5, 2.5), settings.value(Vec2::splat(0.5)));
+        assert_eq!(vec2(1.0, -5.0), settings.value(Vec2::ONE));
+        assert_eq!(vec2(0.5, -2.5), settings.value(Vec2::splat(0.5)));
         assert_eq!(Vec2::ZERO, settings.value(Vec2::ZERO));
-        assert_eq!(vec2(-0.5, -2.5), settings.value(Vec2::splat(-0.5)));
-        assert_eq!(vec2(-1.0, -5.0), settings.value(Vec2::NEG_ONE));
+        assert_eq!(vec2(-0.5, 2.5), settings.value(Vec2::splat(-0.5)));
+        assert_eq!(vec2(-1.0, 5.0), settings.value(Vec2::NEG_ONE));
     }
 
-    // endregion dual-axis output scale -------------
+    // endregion processed input scaling -------------
 
-    // region dual-axis output limit -------------
+    // region processed input limiting -------------
 
     #[test]
-    fn test_dual_axis_output_limit_x() {
-        let settings = DualAxisSettings::NO_DEADZONE
-            .with_output_scale_x(5.0)
-            .with_output_limit_x(ValueLimit::AtLeast(0.5));
+    fn test_dual_axis_processed_limit_x() {
+        let settings = DualAxisSettings::EMPTY
+            .with_processed_scale_x(5.0)
+            .with_processed_limit_x(ValueLimit::AtLeast(0.5));
 
         assert_eq!(vec2(5.0, 1.0), settings.value(Vec2::ONE));
         assert_eq!(vec2(2.5, 0.5), settings.value(Vec2::splat(0.5)));
@@ -858,10 +1206,10 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_output_limit_y() {
-        let settings = DualAxisSettings::NO_DEADZONE
-            .with_output_scale_y(5.0)
-            .with_output_limit_y(ValueLimit::AtLeast(0.5));
+    fn test_dual_axis_processed_limit_y() {
+        let settings = DualAxisSettings::EMPTY
+            .with_processed_scale_y(5.0)
+            .with_processed_limit_y(ValueLimit::AtLeast(0.5));
 
         assert_eq!(vec2(1.0, 5.0), settings.value(Vec2::ONE));
         assert_eq!(vec2(0.5, 2.5), settings.value(Vec2::splat(0.5)));
@@ -870,5 +1218,5 @@ mod tests {
         assert_eq!(vec2(-1.0, 0.5), settings.value(Vec2::NEG_ONE));
     }
 
-    // endregion dual-axis output limit -------------
+    // endregion processed input limiting -------------
 }

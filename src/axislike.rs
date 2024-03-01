@@ -5,6 +5,7 @@ use crate::input_settings::{
     Deadzone2, DualAxisSettings, SingleAxisSettings, ValueLimit, DEFAULT_DEADZONE_UPPER,
 };
 use crate::orientation::Rotation;
+use crate::prelude::Deadzone1;
 use crate::user_input::InputKind;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
@@ -40,9 +41,10 @@ impl SingleAxis {
     /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
     #[must_use]
     pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
+        let deadzone = Deadzone1::symmetric(threshold);
         Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::NO_DEADZONE.with_symmetric_deadzone(threshold),
+            settings: SingleAxisSettings::EMPTY.with_deadzone(deadzone),
             value: None,
         }
     }
@@ -55,7 +57,7 @@ impl SingleAxis {
     pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
         SingleAxis {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::NO_DEADZONE,
+            settings: SingleAxisSettings::EMPTY,
             value: Some(value),
         }
     }
@@ -65,7 +67,7 @@ impl SingleAxis {
     pub const fn mouse_wheel_x() -> SingleAxis {
         SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            settings: SingleAxisSettings::NO_DEADZONE,
+            settings: SingleAxisSettings::EMPTY,
             value: None,
         }
     }
@@ -75,7 +77,7 @@ impl SingleAxis {
     pub const fn mouse_wheel_y() -> SingleAxis {
         SingleAxis {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            settings: SingleAxisSettings::NO_DEADZONE,
+            settings: SingleAxisSettings::EMPTY,
             value: None,
         }
     }
@@ -85,7 +87,7 @@ impl SingleAxis {
     pub const fn mouse_motion_x() -> SingleAxis {
         SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-            settings: SingleAxisSettings::NO_DEADZONE,
+            settings: SingleAxisSettings::EMPTY,
             value: None,
         }
     }
@@ -95,7 +97,7 @@ impl SingleAxis {
     pub const fn mouse_motion_y() -> SingleAxis {
         SingleAxis {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            settings: SingleAxisSettings::NO_DEADZONE,
+            settings: SingleAxisSettings::EMPTY,
             value: None,
         }
     }
@@ -107,7 +109,7 @@ impl SingleAxis {
         let limit = ValueLimit::AtMost(negative_low);
         Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::NO_DEADZONE.with_input_limit(limit),
+            settings: SingleAxisSettings::EMPTY.with_raw_limit(limit),
             value: None,
         }
     }
@@ -119,7 +121,7 @@ impl SingleAxis {
         let limit = ValueLimit::AtLeast(positive_low);
         Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::NO_DEADZONE.with_input_limit(limit),
+            settings: SingleAxisSettings::EMPTY.with_raw_limit(limit),
             value: None,
         }
     }
@@ -207,7 +209,7 @@ impl DualAxis {
         DualAxis {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
-            settings: DualAxisSettings::NO_DEADZONE.with_deadzone(deadzone),
+            settings: DualAxisSettings::EMPTY.with_deadzone(deadzone),
             value: None,
         }
     }
@@ -226,7 +228,7 @@ impl DualAxis {
         DualAxis {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
-            settings: DualAxisSettings::CIRCLE_DEFAULT,
+            settings: DualAxisSettings::DEFAULT_CIRCLE_DEADZONE,
             value: Some(Vec2::new(x_value, y_value)),
         }
     }
@@ -237,7 +239,7 @@ impl DualAxis {
         DualAxis {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-            settings: DualAxisSettings::CIRCLE_DEFAULT,
+            settings: DualAxisSettings::DEFAULT_CIRCLE_DEADZONE,
             value: None,
         }
     }
@@ -248,7 +250,7 @@ impl DualAxis {
         DualAxis {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
-            settings: DualAxisSettings::CIRCLE_DEFAULT,
+            settings: DualAxisSettings::DEFAULT_CIRCLE_DEADZONE,
             value: None,
         }
     }
@@ -258,7 +260,7 @@ impl DualAxis {
         DualAxis {
             x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            settings: DualAxisSettings::NO_DEADZONE,
+            settings: DualAxisSettings::EMPTY,
             value: None,
         }
     }
@@ -268,7 +270,7 @@ impl DualAxis {
         DualAxis {
             x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            settings: DualAxisSettings::NO_DEADZONE,
+            settings: DualAxisSettings::EMPTY,
             value: None,
         }
     }
