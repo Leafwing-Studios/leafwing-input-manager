@@ -159,7 +159,7 @@ impl DualAxisSettings {
     /// let more_sensitive = base.with_raw_scales(Vec2::splat(2.0));
     ///
     /// // Further increase the factors on each axis
-    /// let ultra_sensitive = more_sensitive.with_raw_scale(Vec2::splat(100.0));
+    /// let ultra_sensitive = more_sensitive.with_raw_scales(Vec2::splat(100.0));
     /// ```
     #[must_use]
     pub const fn with_raw_scales(&self, scales: Vec2) -> Self {
@@ -460,7 +460,7 @@ impl DualAxisSettings {
     /// use leafwing_input_manager::prelude::{Deadzone2, DualAxisSettings};
     ///
     /// // Create a new DualAxisSettings with a circular deadzone defined by radii 0.2 and 0.3
-    ///let settings = DualAxisSettings::EMPTY.with_deadzone(Deadzone2::new_circle(0.2, 0.3));
+    ///let settings = DualAxisSettings::EMPTY.with_deadzone(Deadzone2::circle(0.2, 0.3));
     /// ```
     #[must_use]
     pub fn with_deadzone(&self, deadzone: Deadzone2) -> Self {
@@ -499,7 +499,7 @@ impl DualAxisSettings {
     /// let more_sensitive = base.with_processed_scales(Vec2::splat(2.0));
     ///
     /// // Further increase the factors on each axis
-    /// let ultra_sensitive = more_sensitive.with_processed_scale(Vec2::splat(100.0));
+    /// let ultra_sensitive = more_sensitive.with_processed_scales(Vec2::splat(100.0));
     /// ```
     #[must_use]
     pub fn with_processed_scales(&self, scales: Vec2) -> Self {
