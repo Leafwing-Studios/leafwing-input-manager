@@ -6,15 +6,22 @@
 
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
 - added input processors for axis-like inputs. Their processing procedure is as follows:
-  1. Inversion: Determines whether the input direction is reversed.
-  2. Sensitivity: Controls the responsiveness of the input.
-  3. Input Limiting: Limits the input values to a specified range.
-  4. Input Normalization: Ensures that input values fall within a standardized range before further processing.
-  5. Deadzone: Specifies the ranges where input values are considered neutral or ignored.
-  6. Output Scaling: Adjusts processed input values according to a specified scale factor.
-  7. Output Limiting: Limits the output values to a specified range.
+  1. Raw Input Scaling: Adjusts raw input values based on a specified factor.
+
+  - Positive values scale input:
+    - `0.0`: Disregards input changes (effectively disables the input)
+      - `(0.0, 1.0)`: Reduces input influence
+      - `1.0`: No adjustment (default)
+      - `(1.0, infinity)`: Amplifies input influence
+  - Negative values inverts and scale input (magnitude follows the same rules as positive values)
+
+  2. Raw Input Limiting (Optional): Clamps raw input values to a specified range.
+  3. Normalization (Optional): Scales input values into a specified range.
+  4. Deadzone (Optional): Defines regions where input values are considered ignored.
+  5. Processed Input Scaling: Adjusts processed input values based on a specified factor. It follows the same rules as raw input scaling.
+  6. Processed Input Limiting (Optional): Clamps processed input values to a specified range.
 - replaced `SingleAxis` and `DualAxis` with the newly added `SingleAxisSettings` and `DualAxisSettings`.
-- replaced `DualAxisShape` with the newly added `DualAxisDeadzone`
+- replaced `DualAxisShape` with the newly added `Deadzone2`
 
 ## Version 0.13.3
 
