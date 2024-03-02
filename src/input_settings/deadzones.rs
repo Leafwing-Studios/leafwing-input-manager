@@ -192,9 +192,9 @@ pub enum Deadzone2 {
     /// # Disadvantages
     /// - Requires computational resources similar to calculating both of them simultaneously
     RoundedSquare {
-        /// Threshold for the absolute value of input values along the x-axis.
+        /// Absolute value threshold for the deadzone on the x-axis.
         threshold_x: f32,
-        /// Threshold for the absolute value of input values along the y-axis.
+        /// Absolute value threshold for the deadzone on the y-axis.
         threshold_y: f32,
         /// Radius for the rounded corners along the x-axis.
         radius_x: f32,
@@ -257,9 +257,9 @@ impl Deadzone2 {
     ///
     /// # Arguments
     ///
-    /// - `threshold_x`: Threshold for the absolute value of input values on the x-axis,
+    /// - `threshold_x`: Absolute value threshold for the deadzone on the x-axis,
     ///      clamped to the range `[0.0, 1.0]`
-    /// - `threshold_y`: Threshold for the absolute value of input values on the y-axis,
+    /// - `threshold_y`: Absolute value threshold for the deadzone on the y-axis,
     ///      clamped to the range `[0.0, 1.0]`
     #[must_use]
     pub fn square(threshold_x: f32, threshold_y: f32) -> Self {
@@ -279,9 +279,9 @@ impl Deadzone2 {
     ///
     /// # Arguments
     ///
-    /// - `threshold_x`: Threshold for the absolute value of input values along the x-axis,
+    /// - `threshold_x`: Absolute value threshold for the deadzone on the x-axis,
     ///      clamped to the range `[0.0, 1.0]`
-    /// - `threshold_y`: Threshold for the absolute value of input values along the y-axis,
+    /// - `threshold_y`: Absolute value threshold for the deadzone on the y-axis,
     ///      clamped to the range `[0.0, 1.0]`
     /// - `radius_x`: Radius for the rounded corners along the x-axis, clamped into the range `[0.0, 1.0]`
     /// - `radius_y`: Radius for the rounded corners along the y-axis, clamped into the range `[0.0, 1.0]`
