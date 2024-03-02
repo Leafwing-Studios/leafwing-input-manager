@@ -1,4 +1,4 @@
-//! Utilities for configuring input settings and processors.
+//! Input settings and processors.
 //!
 //! This crate provides utilities to configure input settings and process various types of inputs in applications or games.
 //!
@@ -6,15 +6,15 @@
 //!
 //! The input settings modules provide utilities for configuring various aspects of input behavior.
 //!
-//! - [`single_axis_settings`]: Settings for single-axis input.
-//! - [`dual_axis_settings`]: Settings for dual-axis input.
+//! - [`single_axis_settings`]: Contains [`SingleAxisSettings`] and its processing pipeline.
+//! - [`dual_axis_settings`]: Contains [`DualAxisSettings`] and its processing pipeline.
 //!
 //! # General Input Processors
 //!
 //! The input processors modules offer functionality for processing different types of inputs.
 //!
-//! - [`common_processors`]: Utilities for various input processing methods.
-//! - [`deadzones`]: Utilities for various deadzone regions.
+//! - [`common_processors`]: Contains various input processing methods, e.g., limiting, normalization, etc.
+//! - [`deadzones`]: Contains various deadzone regions, e.g., 1D-deadzone, 2D-deadzone, etc.
 
 pub use self::dual_axis_settings::*;
 pub use self::single_axis_settings::*;

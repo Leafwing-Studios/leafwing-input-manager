@@ -1,4 +1,4 @@
-//! Settings for single-axis input.
+//! [`SingleAxisSettings`] and its processing pipeline.
 //!
 //! Single-axis inputs typically represent input values along a single dimension,
 //! such as horizontal movement on a joystick or slider.

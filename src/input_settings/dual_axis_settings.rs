@@ -1,4 +1,4 @@
-//! Settings for dual-axis input.
+//! [`DualAxisSettings`] and its processing pipeline.
 //!
 //! Dual-axis inputs typically represent input values in two dimensions,
 //! such as joystick movements in both horizontal and vertical directions.

@@ -1,4 +1,4 @@
-//! Utilities for various deadzone regions.
+//! Various deadzone regions, e.g., 1D-deadzone, 2D-deadzone, etc.
 //!
 //! This module provides functionality to define deadzones in input processing.
 //!

@@ -1,4 +1,4 @@
-//! Utilities for various input processing methods.
+//! Various input processing methods, e.g., limiting, normalization, etc.
 //!
 //! This module offers tools for various input processing methods commonly used in applications and games.
 //!
