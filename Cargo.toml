@@ -50,6 +50,10 @@ derive_more = { version = "0.99", default-features = false, features = [
 ] }
 itertools = "0.12"
 serde = { version = "1.0", features = ["derive"] }
+typetag = "0.2"
+dyn-clone = "1.0"
+dyn-eq = "0.1"
+dyn-hash = "0.2"
 
 [dev-dependencies]
 bevy = { version = "0.13", default-features = false, features = [
@@ -76,3 +80,10 @@ harness = false
 [lib]
 name = "leafwing_input_manager"
 path = "src/lib.rs"
+
+[target.x86_64-pc-windows-msvc]
+linker = "rust-lld.exe" # Use LLD Linker
+rustflags = [
+  "-Zshare-generics=n", # (Nightly)
+  "-Zthreads=0", # (Nightly) Use improved multithreading with the recommended amount of threads.
+]

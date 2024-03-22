@@ -9,6 +9,7 @@ use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
 
+mod __private_macros;
 pub mod action_diff;
 pub mod action_driver;
 pub mod action_state;
@@ -20,7 +21,7 @@ mod display_impl;
 pub mod errors;
 pub mod input_map;
 pub mod input_mocking;
-pub mod input_settings;
+pub mod input_processing;
 pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
@@ -42,12 +43,19 @@ pub mod prelude {
     #[cfg(feature = "ui")]
     pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
-    pub use crate::input_settings::*;
+    pub use crate::input_processing::*;
     pub use crate::user_input::{InputKind, Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
+
+    pub use crate::{
+        __stringify_expressions, define_axis_processing_pipeline,
+        define_dual_axis_processing_pipeline, define_dual_axis_processor,
+        define_dynamic_input_processing_pipeline, define_input_processing_pipeline,
+    };
+    pub use typetag::serde as processor_serde;
 }
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion

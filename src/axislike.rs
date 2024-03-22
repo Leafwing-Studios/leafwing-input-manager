@@ -1,11 +1,8 @@
 //! Tools for working with directional axis-like user inputs (game sticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
-use crate::input_settings::{
-    Deadzone2, DualAxisSettings, SingleAxisSettings, ValueLimit, DEFAULT_DEADZONE_UPPER,
-};
+use crate::input_processing::*;
 use crate::orientation::Rotation;
-use crate::prelude::Deadzone1;
 use crate::user_input::InputKind;
 use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
@@ -23,13 +20,13 @@ use serde::{Deserialize, Serialize};
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct SingleAxis {
     /// The axis that is being checked.
     pub axis_type: AxisType,
 
-    /// The input settings.
-    pub settings: SingleAxisSettings,
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn AxisProcessor>>,
 
     /// The target value for this input, used for input mocking.
     ///
@@ -38,112 +35,90 @@ pub struct SingleAxis {
 }
 
 impl SingleAxis {
-    /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
+    /// Creates a [`SingleAxis`] with the specified axis type.
     #[must_use]
-    pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        let deadzone = Deadzone1::symmetric(threshold);
+    pub fn new(axis_type: impl Into<AxisType>) -> Self {
         Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::EMPTY.with_deadzone(deadzone),
+            processor: None,
             value: None,
         }
     }
 
-    /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
+    /// Creates a [`SingleAxis`] with the specified axis type and `value`.
     ///
-    /// All thresholds are set to 0.0.
     /// Primarily useful for [input mocking](crate::input_mocking).
     #[must_use]
-    pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
-        SingleAxis {
+    pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> Self {
+        Self {
             axis_type: axis_type.into(),
-            settings: SingleAxisSettings::EMPTY,
+            processor: None,
             value: Some(value),
         }
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
-    pub const fn mouse_wheel_x() -> SingleAxis {
-        SingleAxis {
+    pub const fn mouse_wheel_x() -> Self {
+        Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            settings: SingleAxisSettings::EMPTY,
+            processor: None,
             value: None,
         }
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
-    pub const fn mouse_wheel_y() -> SingleAxis {
-        SingleAxis {
+    pub const fn mouse_wheel_y() -> Self {
+        Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            settings: SingleAxisSettings::EMPTY,
+            processor: None,
             value: None,
         }
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
-    pub const fn mouse_motion_x() -> SingleAxis {
-        SingleAxis {
+    pub const fn mouse_motion_x() -> Self {
+        Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-            settings: SingleAxisSettings::EMPTY,
+            processor: None,
             value: None,
         }
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
-    pub const fn mouse_motion_y() -> SingleAxis {
-        SingleAxis {
+    pub const fn mouse_motion_y() -> Self {
+        Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            settings: SingleAxisSettings::EMPTY,
+            processor: None,
             value: None,
         }
     }
 
-    /// Creates a [`SingleAxis`] with the `axis_type` and `negative_low` set to `threshold`.
-    ///
-    /// Positive values will not trigger the input.
-    pub fn negative_only(axis_type: impl Into<AxisType>, negative_low: f32) -> SingleAxis {
-        let limit = ValueLimit::AtMost(negative_low);
-        Self {
-            axis_type: axis_type.into(),
-            settings: SingleAxisSettings::EMPTY.with_raw_limit(limit),
-            value: None,
-        }
-    }
-
-    /// Creates a [`SingleAxis`] with the `axis_type` and `positive_low` set to `threshold`.
-    ///
-    /// Negative values will not trigger the input.
-    pub fn positive_only(axis_type: impl Into<AxisType>, positive_low: f32) -> SingleAxis {
-        let limit = ValueLimit::AtLeast(positive_low);
-        Self {
-            axis_type: axis_type.into(),
-            settings: SingleAxisSettings::EMPTY.with_raw_limit(limit),
-            value: None,
-        }
-    }
-
-    /// Replaces the internal settings of the [`SingleAxis`] using the given `settings_replacer`.
-    ///
-    /// # Arguments
-    ///
-    /// - `settings_replacer`: A closure that takes a mutable reference to [`SingleAxisSettings`] and replaces it.
+    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
     #[inline]
-    pub fn with_settings<F>(mut self, mut settings_replacer: F) -> Self
-    where
-        F: FnMut(&mut SingleAxisSettings) -> SingleAxisSettings,
-    {
-        self.settings = settings_replacer(&mut self.settings);
+    pub fn with_processor(mut self, processor: Option<impl AxisProcessor>) -> Self {
+        self.processor = processor.map(|processor| Box::new(processor) as Box<dyn AxisProcessor>);
         self
+    }
+
+    /// Get the "value" of this axis.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
+    #[inline]
+    pub fn input_value(&self, input_value: f32) -> f32 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
 }
 
 impl PartialEq for SingleAxis {
     fn eq(&self, other: &Self) -> bool {
-        self.axis_type == other.axis_type && self.settings == other.settings
+        self.axis_type == other.axis_type && self.processor == other.processor
     }
 }
 
@@ -152,7 +127,7 @@ impl Eq for SingleAxis {}
 impl std::hash::Hash for SingleAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.axis_type.hash(state);
-        self.settings.hash(state);
+        self.processor.hash(state);
     }
 }
 
@@ -166,7 +141,7 @@ impl std::hash::Hash for SingleAxis {
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for both `x` and `y` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct DualAxis {
     /// The horizontal axis that is being checked.
     pub x_axis_type: AxisType,
@@ -174,8 +149,8 @@ pub struct DualAxis {
     /// The vertical axis that is being checked.
     pub y_axis_type: AxisType,
 
-    /// The input settings.
-    pub settings: DualAxisSettings,
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn DualAxisProcessor>>,
 
     /// The target value for this input, used for input mocking.
     ///
@@ -184,39 +159,19 @@ pub struct DualAxis {
 }
 
 impl DualAxis {
-    /// The default size of the deadzone used by constructor methods.
-    ///
-    /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE: f32 = DEFAULT_DEADZONE_UPPER;
-
-    /// The default shape of the deadzone used by constructor methods.
-    ///
-    /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE_SHAPE: Deadzone2 = Deadzone2::CIRCLE_DEFAULT;
-
-    /// A deadzone with a size of 0.0 used by constructor methods.
-    ///
-    /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const ZERO_DEADZONE_SHAPE: Deadzone2 = Deadzone2::None;
-
-    /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
+    /// Creates a [`DualAxis`] with the specified axis types.
     #[must_use]
-    pub fn symmetric(
-        x_axis_type: impl Into<AxisType>,
-        y_axis_type: impl Into<AxisType>,
-        deadzone: Deadzone2,
-    ) -> DualAxis {
-        DualAxis {
+    pub fn new(x_axis_type: impl Into<AxisType>, y_axis_type: impl Into<AxisType>) -> Self {
+        Self {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
-            settings: DualAxisSettings::EMPTY.with_deadzone(deadzone),
+            processor: None,
             value: None,
         }
     }
 
-    /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
+    /// Creates a [`SingleAxis`] with the specified axis types and `value`.
     ///
-    /// All thresholds are set to 0.0.
     /// Primarily useful for [input mocking](crate::input_mocking).
     #[must_use]
     pub fn from_value(
@@ -224,69 +179,76 @@ impl DualAxis {
         y_axis_type: impl Into<AxisType>,
         x_value: f32,
         y_value: f32,
-    ) -> DualAxis {
-        DualAxis {
+    ) -> Self {
+        Self {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
-            settings: DualAxisSettings::DEFAULT_CIRCLE_DEADZONE,
+            processor: None,
             value: Some(Vec2::new(x_value, y_value)),
         }
     }
 
     /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
     #[must_use]
-    pub const fn left_stick() -> DualAxis {
-        DualAxis {
+    pub fn left_stick() -> Self {
+        let deadzone = CircleDeadzone::default();
+        Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-            settings: DualAxisSettings::DEFAULT_CIRCLE_DEADZONE,
+            processor: Some(Box::new(deadzone)),
             value: None,
         }
     }
 
     /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
     #[must_use]
-    pub const fn right_stick() -> DualAxis {
-        DualAxis {
+    pub fn right_stick() -> Self {
+        let deadzone = CircleDeadzone::default();
+        Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
-            settings: DualAxisSettings::DEFAULT_CIRCLE_DEADZONE,
+            processor: Some(Box::new(deadzone)),
             value: None,
         }
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
-    pub const fn mouse_wheel() -> DualAxis {
-        DualAxis {
+    pub const fn mouse_wheel() -> Self {
+        Self {
             x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            settings: DualAxisSettings::EMPTY,
+            processor: None,
             value: None,
         }
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
-    pub const fn mouse_motion() -> DualAxis {
-        DualAxis {
+    pub const fn mouse_motion() -> Self {
+        Self {
             x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            settings: DualAxisSettings::EMPTY,
+            processor: None,
             value: None,
         }
     }
 
-    /// Replaces the internal settings of the [`DualAxis`] using the given `settings_replacer`.
-    ///
-    /// # Arguments
-    ///
-    /// - `settings_replacer`: A closure that takes a mutable reference to [`DualAxisSettings`] and replaces it.
+    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
     #[inline]
-    pub fn with_settings<F>(mut self, mut settings_replacer: F) -> Self
-    where
-        F: FnMut(&mut DualAxisSettings) -> DualAxisSettings,
-    {
-        self.settings = settings_replacer(&mut self.settings);
+    pub fn with_processor(mut self, processor: Option<impl DualAxisProcessor>) -> Self {
+        self.processor =
+            processor.map(|processor| Box::new(processor) as Box<dyn DualAxisProcessor>);
         self
+    }
+
+    /// Get the "value" of these axes.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
+    #[inline]
+    pub fn input_value(&self, input_value: Vec2) -> Vec2 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
 }
 
@@ -294,7 +256,7 @@ impl PartialEq for DualAxis {
     fn eq(&self, other: &Self) -> bool {
         self.x_axis_type == other.x_axis_type
             && self.y_axis_type == other.y_axis_type
-            && self.settings == other.settings
+            && self.processor == other.processor
     }
 }
 
@@ -304,7 +266,7 @@ impl std::hash::Hash for DualAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.x_axis_type.hash(state);
         self.y_axis_type.hash(state);
-        self.settings.hash(state);
+        self.processor.hash(state);
     }
 }
 
@@ -325,16 +287,20 @@ pub struct VirtualDPad {
     pub left: InputKind,
     /// The input that represents the right direction in this virtual DPad
     pub right: InputKind,
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn DualAxisProcessor>>,
 }
 
 impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
-    pub const fn arrow_keys() -> VirtualDPad {
+    pub fn arrow_keys() -> VirtualDPad {
+        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::ArrowUp),
             down: InputKind::PhysicalKey(KeyCode::ArrowDown),
             left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
             right: InputKind::PhysicalKey(KeyCode::ArrowRight),
+            processor: Some(Box::new(deadzone)),
         }
     }
 
@@ -344,23 +310,27 @@ impl VirtualDPad {
     /// The _location_ of the keys is the same on all keyboard layouts.
     /// This ensures that the classic triangular shape is retained on all layouts,
     /// which enables comfortable movement controls.
-    pub const fn wasd() -> VirtualDPad {
+    pub fn wasd() -> VirtualDPad {
+        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::KeyW),
             down: InputKind::PhysicalKey(KeyCode::KeyS),
             left: InputKind::PhysicalKey(KeyCode::KeyA),
             right: InputKind::PhysicalKey(KeyCode::KeyD),
+            processor: Some(Box::new(deadzone)),
         }
     }
 
     #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an unquoted item
     /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
-    pub const fn dpad() -> VirtualDPad {
+    pub fn dpad() -> VirtualDPad {
+        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
+            processor: Some(Box::new(deadzone)),
         }
     }
 
@@ -368,51 +338,44 @@ impl VirtualDPad {
     ///
     /// North corresponds to up, west corresponds to left,
     /// east corresponds to right, and south corresponds to down
-    pub const fn gamepad_face_buttons() -> VirtualDPad {
+    pub fn gamepad_face_buttons() -> VirtualDPad {
+        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::North),
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
+            processor: Some(Box::new(deadzone)),
         }
     }
 
     /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
-    pub const fn mouse_wheel() -> VirtualDPad {
+    pub fn mouse_wheel() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::MouseWheel(MouseWheelDirection::Up),
             down: InputKind::MouseWheel(MouseWheelDirection::Down),
             left: InputKind::MouseWheel(MouseWheelDirection::Left),
             right: InputKind::MouseWheel(MouseWheelDirection::Right),
+            processor: None,
         }
     }
 
     /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
-    pub const fn mouse_motion() -> VirtualDPad {
+    pub fn mouse_motion() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::MouseMotion(MouseMotionDirection::Up),
             down: InputKind::MouseMotion(MouseMotionDirection::Down),
             left: InputKind::MouseMotion(MouseMotionDirection::Left),
             right: InputKind::MouseMotion(MouseMotionDirection::Right),
+            processor: None,
         }
     }
 
-    /// Returns this [`VirtualDPad`] but with `up` and `down` swapped.
-    pub fn inverted_y(mut self) -> Self {
-        std::mem::swap(&mut self.up, &mut self.down);
-        self
-    }
-
-    /// Returns this [`VirtualDPad`] but with `left` and `right` swapped.
-    pub fn inverted_x(mut self) -> Self {
-        std::mem::swap(&mut self.left, &mut self.right);
-        self
-    }
-
-    /// Returns this [`VirtualDPad`] but with inverted inputs.
-    pub fn inverted(mut self) -> Self {
-        std::mem::swap(&mut self.up, &mut self.down);
-        std::mem::swap(&mut self.left, &mut self.right);
+    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn with_processor(mut self, processor: Option<impl DualAxisProcessor>) -> Self {
+        self.processor =
+            processor.map(|processor| Box::new(processor) as Box<dyn DualAxisProcessor>);
         self
     }
 }
@@ -429,6 +392,8 @@ pub struct VirtualAxis {
     pub negative: InputKind,
     /// The input that represents the positive direction of this virtual axis
     pub positive: InputKind,
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn AxisProcessor>>,
 }
 
 impl VirtualAxis {
@@ -438,6 +403,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::PhysicalKey(negative),
             positive: InputKind::PhysicalKey(positive),
+            processor: None,
         }
     }
 
@@ -467,6 +433,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadRight),
+            processor: None,
         }
     }
 
@@ -476,6 +443,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
+            processor: None,
         }
     }
 
@@ -484,6 +452,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::West),
             positive: InputKind::GamepadButton(GamepadButtonType::East),
+            processor: None,
         }
     }
 
@@ -492,13 +461,14 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::South),
             positive: InputKind::GamepadButton(GamepadButtonType::North),
+            processor: None,
         }
     }
 
-    /// Returns this [`VirtualAxis`] but with flipped positive/negative inputs.
-    #[must_use]
-    pub fn inverted(mut self) -> Self {
-        std::mem::swap(&mut self.positive, &mut self.negative);
+    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn with_processor(mut self, processor: Option<impl AxisProcessor>) -> Self {
+        self.processor = processor.map(|processor| Box::new(processor) as Box<dyn AxisProcessor>);
         self
     }
 }

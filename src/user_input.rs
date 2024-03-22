@@ -16,7 +16,6 @@ use crate::{
 /// For example, this may store mouse, keyboard or gamepad input, including cross-device chords!
 ///
 /// Suitable for use in an [`InputMap`](crate::input_map::InputMap)
-#[allow(clippy::large_enum_variant)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum UserInput {
     /// A single button
@@ -28,7 +27,7 @@ pub enum UserInput {
     // So a vec it is!
     // RIP your uniqueness guarantees
     Chord(Vec<InputKind>),
-    /// A virtual DPad that you can get an [`DualAxis`] from
+    /// A virtual D-pad that you can get a [`DualAxis`] from
     VirtualDPad(VirtualDPad),
     /// A virtual axis that you can get a [`SingleAxis`] from
     VirtualAxis(VirtualAxis),
@@ -54,7 +53,7 @@ impl UserInput {
         let vec: Vec<InputKind> = inputs.into_iter().map(|input| input.into()).collect();
 
         match vec.len() {
-            1 => UserInput::Single(vec[0]),
+            1 => UserInput::Single(vec[0].clone()),
             _ => UserInput::Chord(vec),
         }
     }
@@ -111,26 +110,25 @@ impl UserInput {
 
     pub(crate) fn iter(&self) -> UserInputIter {
         match self {
-            UserInput::Single(button) => UserInputIter::Single(Some(*button)),
+            UserInput::Single(button) => UserInputIter::Single(Some(button.clone())),
             UserInput::Chord(buttons) => UserInputIter::Chord(buttons.iter()),
-            UserInput::VirtualDPad(dpad) => UserInputIter::VirtualDpad(
-                Some(dpad.up),
-                Some(dpad.down),
-                Some(dpad.left),
-                Some(dpad.right),
+            UserInput::VirtualDPad(dpad) => UserInputIter::VirtualDPad(
+                Some(dpad.up.clone()),
+                Some(dpad.down.clone()),
+                Some(dpad.left.clone()),
+                Some(dpad.right.clone()),
             ),
             UserInput::VirtualAxis(axis) => {
-                UserInputIter::VirtualAxis(Some(axis.negative), Some(axis.positive))
+                UserInputIter::VirtualAxis(Some(axis.negative.clone()), Some(axis.positive.clone()))
             }
         }
     }
 }
 
-#[allow(clippy::large_enum_variant)]
 pub(crate) enum UserInputIter<'a> {
     Single(Option<InputKind>),
     Chord(std::slice::Iter<'a, InputKind>),
-    VirtualDpad(
+    VirtualDPad(
         Option<InputKind>,
         Option<InputKind>,
         Option<InputKind>,
@@ -145,8 +143,8 @@ impl<'a> Iterator for UserInputIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self {
             Self::Single(ref mut input) => input.take(),
-            Self::Chord(ref mut iter) => iter.next().copied(),
-            Self::VirtualDpad(ref mut up, ref mut down, ref mut left, ref mut right) => up
+            Self::Chord(ref mut iter) => iter.next().cloned(),
+            Self::VirtualDPad(ref mut up, ref mut down, ref mut left, ref mut right) => up
                 .take()
                 .or_else(|| down.take().or_else(|| left.take().or_else(|| right.take()))),
             Self::VirtualAxis(ref mut negative, ref mut positive) => {
@@ -231,7 +229,7 @@ impl From<Modifier> for UserInput {
 ///
 /// Please contact the maintainers if you need support for another type!
 #[non_exhaustive]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum InputKind {
     /// A button on a gamepad
     GamepadButton(GamepadButtonType),
@@ -354,27 +352,27 @@ pub struct RawInputs {
 impl RawInputs {
     /// Merges the data from the given `input_kind` into `self`.
     fn merge_input_data(&mut self, input_kind: &InputKind) {
-        match *input_kind {
+        match input_kind {
             InputKind::DualAxis(DualAxis {
                 x_axis_type,
                 y_axis_type,
                 value,
                 ..
             }) => {
-                self.axis_data.push((x_axis_type, value.map(|v| v.x)));
-                self.axis_data.push((y_axis_type, value.map(|v| v.y)));
+                self.axis_data.push((*x_axis_type, value.map(|v| v.x)));
+                self.axis_data.push((*y_axis_type, value.map(|v| v.y)));
             }
             InputKind::SingleAxis(single_axis) => self
                 .axis_data
                 .push((single_axis.axis_type, single_axis.value)),
-            InputKind::GamepadButton(button) => self.gamepad_buttons.push(button),
-            InputKind::PhysicalKey(key_code) => self.keycodes.push(key_code),
+            InputKind::GamepadButton(button) => self.gamepad_buttons.push(*button),
+            InputKind::PhysicalKey(key_code) => self.keycodes.push(*key_code),
             InputKind::Modifier(modifier) => {
                 self.keycodes.extend_from_slice(&modifier.key_codes());
             }
-            InputKind::Mouse(button) => self.mouse_buttons.push(button),
-            InputKind::MouseWheel(button) => self.mouse_wheel.push(button),
-            InputKind::MouseMotion(button) => self.mouse_motion.push(button),
+            InputKind::Mouse(button) => self.mouse_buttons.push(*button),
+            InputKind::MouseWheel(button) => self.mouse_wheel.push(*button),
+            InputKind::MouseMotion(button) => self.mouse_motion.push(*button),
         }
     }
 }
@@ -463,7 +461,7 @@ mod raw_input_tests {
 
         let chord = UserInput::chord([
             InputKind::GamepadButton(GamepadButtonType::Start),
-            InputKind::SingleAxis(SingleAxis::symmetric(GamepadAxisType::LeftZ, 0.)),
+            InputKind::SingleAxis(SingleAxis::new(GamepadAxisType::LeftZ)),
         ]);
 
         let raw = chord.raw_inputs();
@@ -495,7 +493,7 @@ mod raw_input_tests {
             use bevy::input::gamepad::GamepadAxisType;
 
             let direction = SingleAxis::from_value(GamepadAxisType::LeftStickX, 1.0);
-            let expected = RawInputs::from_single_axis(direction);
+            let expected = RawInputs::from_single_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
         }
@@ -511,7 +509,7 @@ mod raw_input_tests {
                 0.5,
                 0.7,
             );
-            let expected = RawInputs::from_dual_axis(direction);
+            let expected = RawInputs::from_dual_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
         }
@@ -583,7 +581,7 @@ mod raw_input_tests {
             use crate::axislike::{MouseWheelAxisType, SingleAxis};
 
             let direction = SingleAxis::from_value(MouseWheelAxisType::X, 1.0);
-            let expected = RawInputs::from_single_axis(direction);
+            let expected = RawInputs::from_single_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
         }
@@ -594,7 +592,7 @@ mod raw_input_tests {
 
             let direction =
                 DualAxis::from_value(MouseWheelAxisType::X, MouseWheelAxisType::Y, 1.0, 1.0);
-            let expected = RawInputs::from_dual_axis(direction);
+            let expected = RawInputs::from_dual_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
         }
@@ -604,7 +602,7 @@ mod raw_input_tests {
             use crate::axislike::{MouseMotionAxisType, SingleAxis};
 
             let direction = SingleAxis::from_value(MouseMotionAxisType::X, 1.0);
-            let expected = RawInputs::from_single_axis(direction);
+            let expected = RawInputs::from_single_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
         }
@@ -615,7 +613,7 @@ mod raw_input_tests {
 
             let direction =
                 DualAxis::from_value(MouseMotionAxisType::X, MouseMotionAxisType::Y, 1.0, 1.0);
-            let expected = RawInputs::from_dual_axis(direction);
+            let expected = RawInputs::from_dual_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
         }

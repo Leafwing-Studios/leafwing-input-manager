@@ -79,7 +79,7 @@ impl<'a> InputStreams<'a> {
     pub fn input_pressed(&self, input: &UserInput) -> bool {
         match input {
             UserInput::Chord(buttons) => self.all_buttons_pressed(buttons),
-            _ => input.iter().any(|button| self.button_pressed(button)),
+            _ => input.iter().any(|button| self.button_pressed(&button)),
         }
     }
 
@@ -91,15 +91,14 @@ impl<'a> InputStreams<'a> {
 
     /// Is the `button` pressed?
     #[must_use]
-    pub fn button_pressed(&self, button: InputKind) -> bool {
+    pub fn button_pressed(&self, button: &InputKind) -> bool {
         match button {
             InputKind::DualAxis(axis) => self
-                .extract_dual_axis_data(&axis)
+                .extract_dual_axis_data(axis)
                 .is_some_and(|data| data.xy() != Vec2::ZERO),
             InputKind::SingleAxis(_) => {
-                let value = self.input_value(&button.into());
-
-                value != 0.0
+                let input: UserInput = button.clone().into();
+                self.input_value(&input) != 0.0
             }
             InputKind::GamepadButton(button_type) => self
                 .associated_gamepad
@@ -108,11 +107,11 @@ impl<'a> InputStreams<'a> {
                 .any(|gamepad| {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
-                        button_type,
+                        button_type: *button_type,
                     })
                 }),
             InputKind::PhysicalKey(keycode) => {
-                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
+                matches!(self.keycodes, Some(keycodes) if keycodes.pressed(*keycode))
             }
             InputKind::Modifier(modifier) => {
                 let key_codes = modifier.key_codes();
@@ -120,7 +119,7 @@ impl<'a> InputStreams<'a> {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(key_codes[0]) | keycodes.pressed(key_codes[1]))
             }
             InputKind::Mouse(mouse_button) => {
-                matches!(self.mouse_buttons, Some(mouse_buttons) if mouse_buttons.pressed(mouse_button))
+                matches!(self.mouse_buttons, Some(mouse_buttons) if mouse_buttons.pressed(*mouse_button))
             }
             InputKind::MouseWheel(mouse_wheel_direction) => {
                 let Some(mouse_wheel) = &self.mouse_wheel else {
@@ -159,7 +158,7 @@ impl<'a> InputStreams<'a> {
     /// Are all the `buttons` pressed?
     #[must_use]
     pub fn all_buttons_pressed(&self, buttons: &[InputKind]) -> bool {
-        buttons.iter().all(|button| self.button_pressed(*button))
+        buttons.iter().all(|button| self.button_pressed(button))
     }
 
     /// Get the "value" of the input.
@@ -188,13 +187,13 @@ impl<'a> InputStreams<'a> {
                         };
                         if let Some(gamepad) = self.associated_gamepad {
                             let value = get_gamepad_value(gamepad);
-                            single_axis.settings.value(value)
+                            single_axis.input_value(value)
                         } else {
                             self.gamepads
                                 .iter()
                                 .map(get_gamepad_value)
                                 .find(|value| *value != 0.0)
-                                .map_or(0.0, |value| single_axis.settings.value(value))
+                                .map_or(0.0, |value| single_axis.input_value(value))
                         }
                     }
                     AxisType::MouseWheel(axis_type) => {
@@ -211,7 +210,7 @@ impl<'a> InputStreams<'a> {
                             MouseWheelAxisType::X => x,
                             MouseWheelAxisType::Y => y,
                         };
-                        single_axis.settings.value(movement)
+                        single_axis.input_value(movement)
                     }
                     AxisType::MouseMotion(axis_type) => {
                         // The compiler will compile this into a direct f64 accumulation when opt-level >= 1.
@@ -220,7 +219,7 @@ impl<'a> InputStreams<'a> {
                             MouseMotionAxisType::X => x,
                             MouseMotionAxisType::Y => y,
                         };
-                        single_axis.settings.value(movement)
+                        single_axis.input_value(movement)
                     }
                 }
             }
@@ -242,7 +241,7 @@ impl<'a> InputStreams<'a> {
                     value += match input {
                         InputKind::SingleAxis(axis) => {
                             has_axis = true;
-                            self.input_value(&InputKind::SingleAxis(*axis).into())
+                            self.input_value(&InputKind::SingleAxis(axis.clone()).into())
                         }
                         InputKind::MouseWheel(axis) => {
                             has_axis = true;
@@ -322,17 +321,17 @@ impl<'a> InputStreams<'a> {
     }
 
     fn extract_single_axis_data(&self, positive: &InputKind, negative: &InputKind) -> f32 {
-        let positive = self.input_value(&UserInput::Single(*positive));
-        let negative = self.input_value(&UserInput::Single(*negative));
+        let positive = self.input_value(&UserInput::Single(positive.clone()));
+        let negative = self.input_value(&UserInput::Single(negative.clone()));
 
         positive.abs() - negative.abs()
     }
 
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> Option<DualAxisData> {
-        let x = self.input_value(&SingleAxis::symmetric(dual_axis.x_axis_type, 0.0).into());
-        let y = self.input_value(&SingleAxis::symmetric(dual_axis.y_axis_type, 0.0).into());
+        let x = self.input_value(&SingleAxis::new(dual_axis.x_axis_type).into());
+        let y = self.input_value(&SingleAxis::new(dual_axis.y_axis_type).into());
 
-        let data = dual_axis.settings.value(Vec2::new(x, y));
+        let data = dual_axis.input_value(Vec2::new(x, y));
         Some(DualAxisData::from_xy(data))
     }
 }

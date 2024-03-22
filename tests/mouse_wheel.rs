@@ -1,7 +1,7 @@
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseWheelAxisType};
+use leafwing_input_manager::axislike::{AxisType, DualAxisData};
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
@@ -79,7 +79,7 @@ fn mouse_wheel_single_axis_mocking() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(-1.),
-        settings: SingleAxisSettings::EMPTY,
+        processor: None,
     };
 
     app.send_input(input);
@@ -96,7 +96,7 @@ fn mouse_wheel_dual_axis_mocking() {
     let input = DualAxis {
         x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-        settings: DualAxisSettings::EMPTY,
+        processor: None,
         value: Some(Vec2::X),
     };
     app.send_input(input);
@@ -162,7 +162,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(1.),
-        settings: SingleAxisSettings::EMPTY,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -173,7 +173,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(-1.),
-        settings: SingleAxisSettings::EMPTY,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -184,7 +184,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(1.),
-        settings: SingleAxisSettings::EMPTY,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -195,7 +195,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(-1.),
-        settings: SingleAxisSettings::EMPTY,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -203,11 +203,12 @@ fn mouse_wheel_single_axis() {
     assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
+    // Usually a small deadzone threshold will be set
+    let deadzone = AxisDeadzone::default();
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(0.0),
-        // Usually a small deadzone threshold will be set
-        settings: SingleAxisSettings::DEFAULT,
+        processor: Some(Box::new(deadzone)),
     };
     app.send_input(input);
     app.update();
@@ -218,7 +219,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: None,
-        settings: SingleAxisSettings::EMPTY,
+        processor: None,
     };
     app.send_input(input);
     app.update();

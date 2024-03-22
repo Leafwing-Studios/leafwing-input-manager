@@ -198,7 +198,7 @@ fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
     chord.len() > 1
         && chord
             .iter()
-            .any(|button| [dpad.up, dpad.down, dpad.left, dpad.right].contains(button))
+            .any(|button| [&dpad.up, &dpad.down, &dpad.left, &dpad.right].contains(&button))
 }
 
 #[must_use]
@@ -352,6 +352,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
+                processor: None,
             },
         );
         input_map.insert_chord(CtrlUp, [ControlLeft, ArrowUp]);
@@ -360,7 +361,6 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::axislike::VirtualDPad;
         use crate::input_mocking::MockInput;
         use bevy::input::InputPlugin;
         use Action::*;
@@ -380,6 +380,7 @@ mod tests {
                 down: KeyX.into(),
                 left: KeyY.into(),
                 right: KeyZ.into(),
+                processor: None,
             }
             .into();
             let abcd_dpad: UserInput = VirtualDPad {
@@ -387,6 +388,7 @@ mod tests {
                 down: KeyB.into(),
                 left: KeyC.into(),
                 right: KeyD.into(),
+                processor: None,
             }
             .into();
 
@@ -396,6 +398,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
+                processor: None,
             }
             .into();
 

@@ -35,7 +35,8 @@ fn spawn_player(mut commands: Commands) {
         .insert(
             // This will trigger if the axis is moved 10% or more in either direction.
             Action::Rudder,
-            SingleAxis::symmetric(GamepadAxisType::RightStickX, 0.1),
+            SingleAxis::new(GamepadAxisType::RightStickX)
+                .with_processor(Some(AxisDeadzone::default())),
         )
         .build();
     commands

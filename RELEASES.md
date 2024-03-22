@@ -5,21 +5,27 @@
 ### Breaking Changes
 
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-- added input processors for axis-like inputs. Their processing procedure is as follows:
-  - Raw Input Scaling: Adjusts raw input values based on a specified factor.
-    - Positive values scale input:
-      - `0.0`: Disregards input changes (effectively disables the input)
-      - `(0.0, 1.0)`: Reduces input influence
-      - `1.0`: No adjustment (default)
-      - `(1.0, infinity)`: Amplifies input influence
-    - Negative values invert and scale input (magnitude follows the same rules as positive values)
-  - Raw Input Limiting (Optional): Clamps raw input values to a specified range.
-  - Normalization (Optional): Scales input values into a specified range.
-  - Deadzone (Optional): Defines regions where input values are considered ignored.
-  - Processed Input Scaling: Adjusts processed input values based on a specified factor. It follows the same rules as raw input scaling.
-  - Processed Input Limiting (Optional): Clamps processed input values to a specified range.
-- replaced `SingleAxis` and `DualAxis` with the newly added `SingleAxisSettings` and `DualAxisSettings`.
-- replaced `DualAxisShape` with the newly added `Deadzone2`
+
+- added input processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`:
+  - Pipeline:
+    - Dynamic pipeline (wrapped a `Vec<Box<dyn Processor>>`): `AxisProcessingPipeline` for single-axis inputs and `DualAxisProcessingPipeline` for dual-axis inputs.
+    - For production-use solutions, please `define_axis_processing_pipeline` and `define_dual_axis_processing_pipeline` macros to create inlined pipelines for compiler optimization.
+  - Inversion: `AxisInverted` for single-axis inversion; `DualAxisInverted` for dual-axis inversion.
+  - Sensitivity: `AxisSensitivity` for single-axis scaling; `DualAxisSensitivity` for dual-axis scaling.
+  - Bounds:
+    - `AxisBounds` for limiting single-axis input values in a specified min-max range;
+    - `CircleBounds` for limiting dual-axis input magnitudes to a maximum threshold;
+    - `SquareBounds` for limiting dual-axis input values in a specified min-max range on each axis;
+  - Exclusion, in simple terms, just is unscaled deadzones:
+    - `AxisExclusion` for excluding single-axis input values, treating values as zeros;
+    - `CircleExclusion` for excluding dual-axis input magnitudes, treating values as zeros;
+    - `SquareExclusion` for excluding dual-axis input values on each axis, treating values as zeros;
+  - Deadzone (normalized):
+    - `AxisDeadzone` for smoothing single-axis input values into the livezone ranges defined by `AxisExclusion` and `AxisBounds`;
+    - `CircleDeadzone` for smoothing dual-axis input values into the livezone ranges defined by `CircleExclusion` and `CircleBounds`;
+    - `SquareDeadzone` for smoothing dual-axis input values into the livezone ranges defined by `SquareExclusion` and `SquareBounds`;
+- removed `DualAxisShape`.
+- removed functions for inversion, sensitivity scaling, and deadzone creation from these axis-like inputs.
 
 ## Version 0.13.3
 
