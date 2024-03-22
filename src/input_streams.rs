@@ -103,9 +103,14 @@ impl<'a> InputStreams<'a> {
                 value < axis.negative_low || value > axis.positive_low
             }
             InputKind::GamepadButton(button_type) => self
-                .associated_gamepad
-                .into_iter()
-                .chain(self.gamepads.iter())
+                .gamepads
+                .iter()
+                .filter(|gamepad| {
+                    if let Some(associated_gamepad) = self.associated_gamepad {
+                        return gamepad == &associated_gamepad;
+                    }
+                    self.associated_gamepad.is_none()
+                })
                 .any(|gamepad| {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
