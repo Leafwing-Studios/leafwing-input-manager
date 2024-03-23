@@ -48,7 +48,7 @@ fn join(
                     (Action::Jump, GamepadButtonType::South),
                     (Action::Disconnect, GamepadButtonType::Select),
                 ])
-                // Make sure to set the gamepad!
+                // Make sure to set the gamepad or all gamepads will be used!
                 // If you don't want a specified exclusive gamepad,
                 // use `set_gamepad()` instead.
                 .set_exclusive_gamepad(gamepad)
