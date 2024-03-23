@@ -3,7 +3,7 @@
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
-use crate::input_streams::InputStreams;
+use crate::input_streams::{GamepadValueSource, InputStreams};
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
 
@@ -77,14 +77,15 @@ input_map.clear_action(&Action::Hide);
 pub struct InputMap<A: Actionlike> {
     /// The usize stored here is the index of the input in the Actionlike iterator
     map: HashMap<A, Vec<UserInput>>,
-    associated_gamepad: Option<Gamepad>,
+    /// The source where gamepad values fetch from.
+    gamepad_source: GamepadValueSource,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
             map: HashMap::default(),
-            associated_gamepad: None,
+            gamepad_source: GamepadValueSource::default(),
         }
     }
 }
@@ -235,8 +236,17 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
     pub fn merge(&mut self, other: &InputMap<A>) -> &mut Self {
-        if self.associated_gamepad != other.associated_gamepad {
-            self.associated_gamepad = None;
+        use GamepadValueSource::*;
+        match (self.gamepad_source, other.gamepad_source) {
+            (Any, other_source) => self.gamepad_source = other_source,
+            (Prefer(self_gamepad), Only(other_gamepad)) if self_gamepad == other_gamepad => {
+                self.gamepad_source = Only(self_gamepad)
+            }
+            (self_source, other_source) => {
+                if self_source.specified_gamepad() != other_source.specified_gamepad() {
+                    self.gamepad_source = Any
+                }
+            }
         }
 
         for other_action in other.map.iter() {
@@ -251,12 +261,18 @@ impl<A: Actionlike> InputMap<A> {
 
 // Configuration
 impl<A: Actionlike> InputMap<A> {
-    /// Fetches the [Gamepad] associated with the entity controlled by this entity map
+    /// Fetches the [`Gamepad`] associated with the entity controlled by this entity map
     ///
     /// If this is [`None`], input from any connected gamepad will be used.
     #[must_use]
     pub fn gamepad(&self) -> Option<Gamepad> {
-        self.associated_gamepad
+        self.gamepad_source.specified_gamepad()
+    }
+
+    /// Returns the source where gamepad values fetch from.
+    #[must_use]
+    pub fn gamepad_source(&self) -> GamepadValueSource {
+        self.gamepad_source
     }
 
     /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
@@ -268,13 +284,22 @@ impl<A: Actionlike> InputMap<A> {
     /// Because of this robust fallback behavior,
     /// this method can typically be ignored when writing single-player games.
     pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
-        self.associated_gamepad = Some(gamepad);
+        self.gamepad_source = GamepadValueSource::Prefer(gamepad);
+        self
+    }
+
+    /// Restricts input to the specified [`Gamepad`] for the entity controlled by this input map
+    ///
+    /// If the gamepad becomes unavailable or has no input,
+    /// no gamepad input will be sent to the entity.
+    pub fn set_exclusive_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
+        self.gamepad_source = GamepadValueSource::Only(gamepad);
         self
     }
 
     /// Clears any [Gamepad] associated with the entity controlled by this input map
     pub fn clear_gamepad(&mut self) -> &mut Self {
-        self.associated_gamepad = None;
+        self.gamepad_source = GamepadValueSource::Any;
         self
     }
 }
@@ -582,11 +607,24 @@ mod tests {
 
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
+        assert_eq!(input_map.gamepad_source(), GamepadValueSource::Any);
 
         input_map.set_gamepad(Gamepad { id: 0 });
         assert_eq!(input_map.gamepad(), Some(Gamepad { id: 0 }));
+        assert_eq!(
+            input_map.gamepad_source(),
+            GamepadValueSource::Prefer(Gamepad { id: 0 })
+        );
+
+        input_map.set_exclusive_gamepad(Gamepad { id: 0 });
+        assert_eq!(input_map.gamepad(), Some(Gamepad { id: 0 }));
+        assert_eq!(
+            input_map.gamepad_source(),
+            GamepadValueSource::Only(Gamepad { id: 0 })
+        );
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
+        assert_eq!(input_map.gamepad_source(), GamepadValueSource::Any);
     }
 }
