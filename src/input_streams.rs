@@ -9,7 +9,9 @@ use bevy::input::{
     Axis, ButtonInput,
 };
 use bevy::math::Vec2;
+use bevy::prelude::Reflect;
 use bevy::utils::HashSet;
+use serde::{Deserialize, Serialize};
 
 use crate::axislike::{
     deadzone_axis_value, AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
@@ -19,11 +21,41 @@ use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
 use crate::user_input::{InputKind, UserInput};
 
+/// Specifies the source of gamepad values.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+pub enum GamepadValueSource {
+    /// Allows fetching values from any registered [`Gamepad`]s.
+    #[default]
+    Any,
+
+    /// Prioritizes fetching values from the specified [`Gamepad`] if available,
+    /// falling back to other available gamepads if needed.
+    Prefer(Gamepad),
+
+    /// Restricts fetching values only from the specified [`Gamepad`].
+    Only(Gamepad),
+}
+
+impl GamepadValueSource {
+    /// Returns the specified [`Gamepad`].
+    #[must_use]
+    #[inline]
+    pub fn specified_gamepad(&self) -> Option<Gamepad> {
+        match self {
+            GamepadValueSource::Any => None,
+            GamepadValueSource::Prefer(gamepad) => Some(*gamepad),
+            GamepadValueSource::Only(gamepad) => Some(*gamepad),
+        }
+    }
+}
+
 /// A collection of [`ButtonInput`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
 /// These are typically collected via a system from the [`World`] as resources.
 #[derive(Debug, Clone)]
 pub struct InputStreams<'a> {
+    /// The source where gamepad values fetch from.
+    pub gamepad_source: GamepadValueSource,
     /// A [`GamepadButton`] [`Input`](ButtonInput) stream
     pub gamepad_buttons: &'a ButtonInput<GamepadButton>,
     /// A [`GamepadButton`] [`Axis`] stream
@@ -40,8 +72,6 @@ pub struct InputStreams<'a> {
     pub mouse_wheel: Option<Vec<MouseWheel>>,
     /// A [`MouseMotion`] event stream
     pub mouse_motion: Vec<MouseMotion>,
-    /// The [`Gamepad`] that this struct will detect inputs from
-    pub associated_gamepad: Option<Gamepad>,
 }
 
 // Constructors
@@ -61,6 +91,7 @@ impl<'a> InputStreams<'a> {
         let mouse_motion: Vec<MouseMotion> = collect_events_cloned(mouse_motion);
 
         InputStreams {
+            gamepad_source: gamepad.map(GamepadValueSource::Prefer).unwrap_or_default(),
             gamepad_buttons,
             gamepad_button_axes,
             gamepad_axes,
@@ -69,7 +100,6 @@ impl<'a> InputStreams<'a> {
             mouse_buttons,
             mouse_wheel: Some(mouse_wheel),
             mouse_motion,
-            associated_gamepad: gamepad,
         }
     }
 }
@@ -102,21 +132,12 @@ impl<'a> InputStreams<'a> {
 
                 value < axis.negative_low || value > axis.positive_low
             }
-            InputKind::GamepadButton(button_type) => self
-                .gamepads
-                .iter()
-                .filter(|gamepad| {
-                    if let Some(associated_gamepad) = self.associated_gamepad {
-                        return gamepad == &associated_gamepad;
-                    }
-                    self.associated_gamepad.is_none()
+            InputKind::GamepadButton(button_type) => self.fetch_gamepads().any(|gamepad| {
+                self.gamepad_buttons.pressed(GamepadButton {
+                    gamepad,
+                    button_type,
                 })
-                .any(|gamepad| {
-                    self.gamepad_buttons.pressed(GamepadButton {
-                        gamepad,
-                        button_type,
-                    })
-                }),
+            }),
             InputKind::PhysicalKey(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
             }
@@ -208,23 +229,15 @@ impl<'a> InputStreams<'a> {
         match input {
             UserInput::Single(InputKind::SingleAxis(single_axis)) => {
                 match single_axis.axis_type {
-                    AxisType::Gamepad(axis_type) => {
-                        let get_gamepad_value = |gamepad: Gamepad| -> f32 {
+                    AxisType::Gamepad(axis_type) => self
+                        .fetch_gamepads()
+                        .map(|gamepad| -> f32 {
                             self.gamepad_axes
                                 .get(GamepadAxis { gamepad, axis_type })
                                 .unwrap_or_default()
-                        };
-                        if let Some(gamepad) = self.associated_gamepad {
-                            let value = get_gamepad_value(gamepad);
-                            value_in_axis_range(single_axis, value)
-                        } else {
-                            self.gamepads
-                                .iter()
-                                .map(get_gamepad_value)
-                                .find(|value| *value != 0.0)
-                                .map_or(0.0, |value| value_in_axis_range(single_axis, value))
-                        }
-                    }
+                        })
+                        .find(|value| *value != 0.0)
+                        .map_or(0.0, |value| value_in_axis_range(single_axis, value)),
                     AxisType::MouseWheel(axis_type) => {
                         let Some(mouse_wheel) = &self.mouse_wheel else {
                             return 0.0;
@@ -291,25 +304,18 @@ impl<'a> InputStreams<'a> {
                 use_button_value()
             }
             // This is required because upstream bevy::input still waffles about whether triggers are buttons or axes
-            UserInput::Single(InputKind::GamepadButton(button_type)) => {
-                let get_gamepad_value = |gamepad: Gamepad| -> f32 {
+            UserInput::Single(InputKind::GamepadButton(button_type)) => self
+                .fetch_gamepads()
+                .map(|gamepad| -> f32 {
                     self.gamepad_button_axes
                         .get(GamepadButton {
                             gamepad,
                             button_type: *button_type,
                         })
                         .unwrap_or_else(use_button_value)
-                };
-                if let Some(gamepad) = self.associated_gamepad {
-                    get_gamepad_value(gamepad)
-                } else {
-                    self.gamepads
-                        .iter()
-                        .map(get_gamepad_value)
-                        .find(|value| *value != 0.0)
-                        .unwrap_or_default()
-                }
-            }
+                })
+                .find(|value| *value != 0.0)
+                .unwrap_or_default(),
             _ => use_button_value(),
         }
     }
@@ -349,6 +355,7 @@ impl<'a> InputStreams<'a> {
         }
     }
 
+    #[inline]
     fn extract_single_axis_data(&self, positive: &InputKind, negative: &InputKind) -> f32 {
         let positive = self.input_value(&UserInput::Single(*positive), true);
         let negative = self.input_value(&UserInput::Single(*negative), true);
@@ -356,11 +363,24 @@ impl<'a> InputStreams<'a> {
         positive.abs() - negative.abs()
     }
 
+    #[inline]
     fn extract_dual_axis_data(&self, dual_axis: &DualAxis) -> Option<DualAxisData> {
         let x = self.input_value(&dual_axis.x.into(), false);
         let y = self.input_value(&dual_axis.y.into(), false);
 
         dual_axis.deadzone.deadzone_input_value(x, y)
+    }
+
+    // Failed to use `impl Iterator` here
+    #[inline]
+    fn fetch_gamepads(&self) -> Box<dyn Iterator<Item = Gamepad> + 'a> {
+        match self.gamepad_source {
+            GamepadValueSource::Any => Box::new(self.gamepads.iter()),
+            GamepadValueSource::Only(gamepad) => Box::new(std::iter::once(gamepad)),
+            GamepadValueSource::Prefer(gamepad) => {
+                Box::new(std::iter::once(gamepad).chain(self.gamepads.iter()))
+            }
+        }
     }
 }
 
@@ -376,6 +396,8 @@ fn collect_events_cloned<T: Event + Clone>(events: &Events<T>) -> Vec<T> {
 // WARNING: If you update the fields of this type, you must also remember to update `InputMocking::reset_inputs`.
 #[derive(Debug)]
 pub struct MutableInputStreams<'a> {
+    /// The source where gamepad values fetch from.
+    pub gamepad_source: GamepadValueSource,
     /// A [`GamepadButton`] [`Input`](ButtonInput) stream
     pub gamepad_buttons: &'a mut ButtonInput<GamepadButton>,
     /// A [`GamepadButton`] [`Axis`] stream
@@ -400,9 +422,6 @@ pub struct MutableInputStreams<'a> {
     pub mouse_wheel: &'a mut Events<MouseWheel>,
     /// A [`MouseMotion`] event stream
     pub mouse_motion: &'a mut Events<MouseMotion>,
-
-    /// The [`Gamepad`] that this struct will detect inputs from
-    pub associated_gamepad: Option<Gamepad>,
 }
 
 impl<'a> MutableInputStreams<'a> {
@@ -437,6 +456,7 @@ impl<'a> MutableInputStreams<'a> {
         ) = input_system_state.get_mut(world);
 
         MutableInputStreams {
+            gamepad_source: gamepad.map(GamepadValueSource::Prefer).unwrap_or_default(),
             gamepad_buttons: gamepad_buttons.into_inner(),
             gamepad_button_axes: gamepad_button_axes.into_inner(),
             gamepad_axes: gamepad_axes.into_inner(),
@@ -448,7 +468,6 @@ impl<'a> MutableInputStreams<'a> {
             mouse_button_events: mouse_button_events.into_inner(),
             mouse_wheel: mouse_wheel.into_inner(),
             mouse_motion: mouse_motion.into_inner(),
-            associated_gamepad: gamepad,
         }
     }
 
@@ -457,7 +476,8 @@ impl<'a> MutableInputStreams<'a> {
     /// If an associated gamepad is set, use that.
     /// Otherwise, use the first registered gamepad, if any.
     pub fn guess_gamepad(&self) -> Option<Gamepad> {
-        self.associated_gamepad
+        self.gamepad_source
+            .specified_gamepad()
             .or_else(|| self.gamepads.iter().next())
     }
 }
@@ -465,6 +485,7 @@ impl<'a> MutableInputStreams<'a> {
 impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: MutableInputStreams<'a>) -> Self {
         InputStreams {
+            gamepad_source: mutable_streams.gamepad_source,
             gamepad_buttons: mutable_streams.gamepad_buttons,
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
@@ -473,7 +494,6 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),
             mouse_motion: collect_events_cloned(mutable_streams.mouse_motion),
-            associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
 }
@@ -481,6 +501,7 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
 impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
     fn from(mutable_streams: &'a MutableInputStreams<'a>) -> Self {
         InputStreams {
+            gamepad_source: mutable_streams.gamepad_source,
             gamepad_buttons: mutable_streams.gamepad_buttons,
             gamepad_button_axes: mutable_streams.gamepad_button_axes,
             gamepad_axes: mutable_streams.gamepad_axes,
@@ -489,7 +510,6 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             mouse_buttons: Some(mutable_streams.mouse_buttons),
             mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),
             mouse_motion: collect_events_cloned(mutable_streams.mouse_motion),
-            associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
 }
