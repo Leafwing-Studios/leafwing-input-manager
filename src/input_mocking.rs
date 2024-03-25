@@ -9,7 +9,7 @@
 
 use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType};
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
-use crate::input_streams::{InputStreams, MutableInputStreams};
+use crate::input_streams::{GamepadValueSource, InputStreams, MutableInputStreams};
 use crate::user_input::{RawInputs, UserInput};
 
 use bevy::app::App;
@@ -303,7 +303,7 @@ impl QueryInput for InputStreams<'_> {
 
     fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
         let mut input_streams = self.clone();
-        input_streams.associated_gamepad = gamepad;
+        input_streams.gamepad_source = gamepad.map(GamepadValueSource::Prefer).unwrap_or_default();
 
         input_streams.input_pressed(&input.into())
     }

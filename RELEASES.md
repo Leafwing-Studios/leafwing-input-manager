@@ -6,6 +6,14 @@
 
 - Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
 
+### Usability
+
+- added `InputMap::set_exclusive_gamepad()` that restricts input to the specified [`Gamepad`] for the entity controlled by this input map.
+
+### Bugs
+
+- fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
+
 ## Version 0.13.3
 
 ### Bugs

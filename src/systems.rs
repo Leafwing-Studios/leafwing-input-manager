@@ -125,6 +125,7 @@ pub fn update_action_state<A: Actionlike>(
 
     for (mut action_state, input_map) in query.iter_mut().chain(resources) {
         let input_streams = InputStreams {
+            gamepad_source: input_map.gamepad_source(),
             gamepad_buttons,
             gamepad_button_axes,
             gamepad_axes,
@@ -133,7 +134,6 @@ pub fn update_action_state<A: Actionlike>(
             mouse_buttons,
             mouse_wheel: mouse_wheel.clone(),
             mouse_motion: mouse_motion.clone(),
-            associated_gamepad: input_map.gamepad(),
         };
 
         action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));

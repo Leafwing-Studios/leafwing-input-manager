@@ -43,6 +43,7 @@ pub mod prelude {
     #[cfg(feature = "ui")]
     pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
+    pub use crate::input_streams::GamepadValueSource;
     pub use crate::user_input::{InputKind, Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
