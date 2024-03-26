@@ -19,7 +19,7 @@ jobs:
           toolchain: stable
           components: rustfmt, clippy
       - name: Cache Cargo build files
-        uses: Leafwing-Studios/cargo-cache@v1.1.0
+        uses: Leafwing-Studios/cargo-cache@v1.2.0
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
       - name: CI job
@@ -34,7 +34,7 @@ jobs:
         with:
           toolchain: stable
       - name: Cache Cargo build files
-        uses: Leafwing-Studios/cargo-cache@v1.1.0
+        uses: Leafwing-Studios/cargo-cache@v1.2.0
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Build & run tests
@@ -51,7 +51,7 @@ jobs:
         with:
           toolchain: stable
       - name: Cache Cargo build files
-        uses: Leafwing-Studios/cargo-cache@v1.1.0
+        uses: Leafwing-Studios/cargo-cache@v1.2.0
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Check Compile
@@ -66,7 +66,7 @@ jobs:
         with:
           toolchain: stable
       - name: Cache Cargo build files
-        uses: Leafwing-Studios/cargo-cache@v1.1.0
+        uses: Leafwing-Studios/cargo-cache@v1.2.0
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
         if: runner.os == 'linux'
