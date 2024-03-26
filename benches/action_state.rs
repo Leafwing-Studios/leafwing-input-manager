@@ -67,6 +67,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     axis_pair: None,
                     timing: Timing::default(),
                     consumed: false,
+                    disabled: false,
                 },
             )
         })
