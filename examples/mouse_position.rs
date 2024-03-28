@@ -60,8 +60,7 @@ fn update_cursor_state_from_window(
 
             if let Some(val) = window.cursor_position() {
                 action_state
-                    .action_data_mut(&driver.action)
-                    .unwrap()
+                    .action_data_mut_or_default(&driver.action)
                     .axis_pair = Some(DualAxisData::from_xy(val));
             }
         }

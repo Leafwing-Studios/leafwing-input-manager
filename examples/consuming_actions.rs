@@ -1,6 +1,5 @@
 //! Demonstrates how to "consume" actions, so they can only be responded to by a single system
 
-use bevy::ecs::system::Resource;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 

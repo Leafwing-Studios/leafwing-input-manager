@@ -1,7 +1,7 @@
 //! Demonstrates how to create default controls for an `Actionlike` and add it to an `InputMap`
 
 use bevy::prelude::*;
-use leafwing_input_manager::{prelude::*, user_input::InputKind};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()
@@ -20,7 +20,7 @@ enum PlayerAction {
 }
 
 impl PlayerAction {
-    /// Define the default binding to the input
+    /// Define the default bindings to the input
     fn default_input_map() -> InputMap<Self> {
         let mut input_map = InputMap::default();
 

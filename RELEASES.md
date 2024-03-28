@@ -4,7 +4,28 @@
 
 ### Breaking Changes
 
-- Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
+- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
+
+- added input processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`:
+  - Pipeline:
+    - Dynamic pipeline (wrapped a `Vec<Box<dyn Processor>>`): `AxisProcessingPipeline` for single-axis inputs and `DualAxisProcessingPipeline` for dual-axis inputs.
+    - For production-use solutions, please `define_axis_processing_pipeline` and `define_dual_axis_processing_pipeline` macros to create inlined pipelines for compiler optimization.
+  - Inversion: `AxisInverted` for single-axis inversion; `DualAxisInverted` for dual-axis inversion.
+  - Sensitivity: `AxisSensitivity` for single-axis scaling; `DualAxisSensitivity` for dual-axis scaling.
+  - Bounds:
+    - `AxisBounds` for limiting single-axis input values in a specified min-max range;
+    - `CircleBounds` for limiting dual-axis input magnitudes to a maximum threshold;
+    - `SquareBounds` for limiting dual-axis input values in a specified min-max range on each axis;
+  - Exclusion, in simple terms, just is unscaled deadzones:
+    - `AxisExclusion` for excluding single-axis input values, treating values as zeros;
+    - `CircleExclusion` for excluding dual-axis input magnitudes, treating values as zeros;
+    - `SquareExclusion` for excluding dual-axis input values on each axis, treating values as zeros;
+  - Deadzone (normalized):
+    - `AxisDeadzone` for smoothing single-axis input values into the livezone ranges defined by `AxisExclusion` and `AxisBounds`;
+    - `CircleDeadzone` for smoothing dual-axis input values into the livezone ranges defined by `CircleExclusion` and `CircleBounds`;
+    - `SquareDeadzone` for smoothing dual-axis input values into the livezone ranges defined by `SquareExclusion` and `SquareBounds`;
+- removed `DualAxisShape`.
+- removed functions for inversion, sensitivity scaling, and deadzone creation from these axis-like inputs.
 
 ## Version 0.13.3
 

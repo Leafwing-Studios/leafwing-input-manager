@@ -2,8 +2,8 @@
 
 use crate::action_state::{ActionData, ActionState};
 use crate::axislike::{
-    AxisType, DeadZoneShape, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
-    SingleAxis, VirtualAxis, VirtualDPad,
+    AxisType, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
+    VirtualAxis, VirtualDPad,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
@@ -176,7 +176,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<MouseWheelAxisType>()
             .register_type::<MouseMotionAxisType>()
             .register_type::<DualAxisData>()
-            .register_type::<DeadZoneShape>()
             .register_type::<ButtonState>()
             .register_type::<MouseWheelDirection>()
             .register_type::<MouseMotionDirection>()
@@ -229,7 +228,7 @@ impl<A: Actionlike> Default for ToggleActions<A> {
 pub enum InputManagerSystem {
     /// Advances action timers.
     ///
-    /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
+    /// Cleans up the state of the input manager, clearing `just_pressed` and `just_released`
     Tick,
     /// Collects input data to update the [`ActionState`]
     Update,

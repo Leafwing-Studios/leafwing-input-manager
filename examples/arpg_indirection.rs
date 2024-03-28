@@ -112,19 +112,19 @@ fn spawn_player(mut commands: Commands) {
 
 fn copy_action_state(
     mut query: Query<(
-        &ActionState<Slot>,
+        &mut ActionState<Slot>,
         &mut ActionState<Ability>,
         &AbilitySlotMap,
     )>,
 ) {
-    for (slot_state, mut ability_state, ability_slot_map) in query.iter_mut() {
+    for (mut slot_state, mut ability_state, ability_slot_map) in query.iter_mut() {
         for slot in Slot::variants() {
             if let Some(matching_ability) = ability_slot_map.get(&slot) {
                 // This copies the `ActionData` between the ActionStates,
                 // including information about how long the buttons have been pressed or released
                 ability_state.set_action_data(
                     *matching_ability,
-                    slot_state.action_data(&slot).unwrap().clone(),
+                    slot_state.action_data_mut_or_default(&slot).clone(),
                 );
             }
         }
