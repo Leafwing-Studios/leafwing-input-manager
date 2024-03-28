@@ -112,7 +112,7 @@ fn spawn_player(mut commands: Commands) {
 
 fn copy_action_state(
     mut query: Query<(
-        &ActionState<Slot>,
+        &mut ActionState<Slot>,
         &mut ActionState<Ability>,
         &AbilitySlotMap,
     )>,
