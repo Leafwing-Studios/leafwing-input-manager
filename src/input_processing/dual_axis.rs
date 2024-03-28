@@ -808,7 +808,7 @@ impl Eq for CircleExclusion {}
 
 impl Hash for CircleExclusion {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        FloatOrd(self.radius_squared).hash(state);
+        FloatOrd(self.radius).hash(state);
     }
 }
 
