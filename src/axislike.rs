@@ -99,8 +99,15 @@ impl SingleAxis {
 
     /// Replaces the current [`AxisProcessor`] with the specified `processor`.
     #[inline]
-    pub fn with_processor(mut self, processor: Option<impl AxisProcessor>) -> Self {
-        self.processor = processor.map(|processor| Box::new(processor) as Box<dyn AxisProcessor>);
+    pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
+        self
+    }
+
+    /// Remove the current used [`AxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
         self
     }
 
@@ -234,9 +241,15 @@ impl DualAxis {
 
     /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
     #[inline]
-    pub fn with_processor(mut self, processor: Option<impl DualAxisProcessor>) -> Self {
-        self.processor =
-            processor.map(|processor| Box::new(processor) as Box<dyn DualAxisProcessor>);
+    pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
+        self
+    }
+
+    /// Remove the current used [`DualAxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
         self
     }
 
@@ -373,10 +386,27 @@ impl VirtualDPad {
 
     /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
     #[inline]
-    pub fn with_processor(mut self, processor: Option<impl DualAxisProcessor>) -> Self {
-        self.processor =
-            processor.map(|processor| Box::new(processor) as Box<dyn DualAxisProcessor>);
+    pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
         self
+    }
+
+    /// Remove the current used [`DualAxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
+        self
+    }
+
+    /// Get the "value" of these axes.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
+    #[inline]
+    pub fn input_value(&self, input_value: Vec2) -> Vec2 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
 }
 
@@ -467,9 +497,27 @@ impl VirtualAxis {
 
     /// Replaces the current [`AxisProcessor`] with the specified `processor`.
     #[inline]
-    pub fn with_processor(mut self, processor: Option<impl AxisProcessor>) -> Self {
-        self.processor = processor.map(|processor| Box::new(processor) as Box<dyn AxisProcessor>);
+    pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
         self
+    }
+
+    /// Remove the current used [`AxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
+        self
+    }
+
+    /// Get the "value" of the axis.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
+    #[inline]
+    pub fn input_value(&self, input_value: f32) -> f32 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
 }
 

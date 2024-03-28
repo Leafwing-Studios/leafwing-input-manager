@@ -36,8 +36,7 @@ fn spawn_player(mut commands: Commands) {
             // Add an AxisDeadzone to process horizontal values of the right stick.
             // This will trigger if the axis is moved 10% or more in either direction.
             Action::Rudder,
-            SingleAxis::new(GamepadAxisType::RightStickX)
-                .with_processor(Some(AxisDeadzone::default())),
+            SingleAxis::new(GamepadAxisType::RightStickX).with_processor(AxisDeadzone::default()),
         )
         .build();
     commands

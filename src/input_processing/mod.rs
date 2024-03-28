@@ -104,7 +104,7 @@ macro_rules! define_input_processing_pipeline {
 /// );
 ///
 /// // Create a mutable empty pipeline.
-/// let mut pipeline = MyDynamicProcessingPipeline::new();
+/// let mut pipeline = MyDynamicProcessingPipeline::default();
 ///
 /// // Chain processors using the with() function.
 /// pipeline = pipeline.with(AxisSensitivity(2.0))
@@ -143,12 +143,6 @@ macro_rules! define_dynamic_input_processing_pipeline {
         }
 
         impl $Pipeline {
-            /// Creates an empty pipeline.
-            #[inline]
-            pub fn new() -> Self {
-                Self(Vec::new())
-            }
-
             /// Appends the given `processor` into this pipeline and returns `self`.
             #[inline]
             pub fn with(mut self, processor: impl $ProcessorTrait) -> Self {

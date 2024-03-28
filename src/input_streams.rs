@@ -224,7 +224,8 @@ impl<'a> InputStreams<'a> {
                 }
             }
             UserInput::VirtualAxis(axis) => {
-                self.extract_single_axis_data(&axis.positive, &axis.negative)
+                let data = self.extract_single_axis_data(&axis.positive, &axis.negative);
+                axis.input_value(data)
             }
             UserInput::Single(InputKind::DualAxis(_)) => {
                 self.input_axis_pair(input).unwrap_or_default().length()
@@ -314,7 +315,9 @@ impl<'a> InputStreams<'a> {
             UserInput::VirtualDPad(dpad) => {
                 let x = self.extract_single_axis_data(&dpad.right, &dpad.left);
                 let y = self.extract_single_axis_data(&dpad.up, &dpad.down);
-                Some(DualAxisData::new(x, y))
+
+                let data = dpad.input_value(Vec2::new(x, y));
+                Some(DualAxisData::from_xy(data))
             }
             _ => None,
         }

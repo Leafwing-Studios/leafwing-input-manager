@@ -757,7 +757,7 @@ mod tests {
     #[test]
     fn test_axis_processing_pipeline() {
         // Add processors to a new pipeline.
-        let mut pipeline = AxisProcessingPipeline::new()
+        let mut pipeline = AxisProcessingPipeline::default()
             .with(AxisSensitivity(4.0))
             .with(AxisInverted)
             .with(AxisInverted)

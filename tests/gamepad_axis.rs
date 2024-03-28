@@ -53,7 +53,7 @@ fn raw_gamepad_axis_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         ButtonlikeTestAction::Up,
-        SingleAxis::new(GamepadAxisType::RightStickX).with_processor(Some(AxisDeadzone::default())),
+        SingleAxis::new(GamepadAxisType::RightStickX).with_processor(AxisDeadzone::default()),
     )]));
 
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -113,11 +113,11 @@ fn game_pad_single_axis() {
     app.insert_resource(InputMap::new([
         (
             AxislikeTestAction::X,
-            SingleAxis::new(GamepadAxisType::LeftStickX).with_processor(Some(deadzone)),
+            SingleAxis::new(GamepadAxisType::LeftStickX).with_processor(deadzone),
         ),
         (
             AxislikeTestAction::Y,
-            SingleAxis::new(GamepadAxisType::LeftStickY).with_processor(Some(deadzone)),
+            SingleAxis::new(GamepadAxisType::LeftStickY).with_processor(deadzone),
         ),
     ]));
 
@@ -206,17 +206,17 @@ fn game_pad_single_axis() {
 #[test]
 fn game_pad_single_axis_inverted() {
     let mut app = test_app();
-    let processors = AxisProcessingPipeline::new()
+    let processors = AxisProcessingPipeline::default()
         .with(AxisExclusion::default())
         .with(AxisInverted);
     app.insert_resource(InputMap::new([
         (
             AxislikeTestAction::X,
-            SingleAxis::new(GamepadAxisType::LeftStickX).with_processor(Some(processors.clone())),
+            SingleAxis::new(GamepadAxisType::LeftStickX).with_processor(processors.clone()),
         ),
         (
             AxislikeTestAction::Y,
-            SingleAxis::new(GamepadAxisType::LeftStickY).with_processor(Some(processors)),
+            SingleAxis::new(GamepadAxisType::LeftStickY).with_processor(processors),
         ),
     ]));
 
@@ -275,7 +275,7 @@ fn game_pad_dual_axis_square() {
     let deadzone = SquareDeadzone::default();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_processor(Some(deadzone)),
+        DualAxis::left_stick().with_processor(deadzone),
     )]));
 
     // Test that an input inside the square deadzone is filtered out.
@@ -339,7 +339,7 @@ fn game_pad_dual_axis_circle() {
     let deadzone = CircleDeadzone::default();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_processor(Some(deadzone)),
+        DualAxis::left_stick().with_processor(deadzone),
     )]));
 
     // Test that an input inside the circle deadzone is filtered out, assuming values of 0.1
@@ -385,7 +385,7 @@ fn test_zero_square() {
     let deadzone = SquareExclusion::AllAxes(AxisExclusion::symmetric(0.0));
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_processor(Some(deadzone)),
+        DualAxis::left_stick().with_processor(deadzone),
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.
@@ -413,7 +413,7 @@ fn test_zero_circle() {
     let deadzone = CircleExclusion::new(0.0);
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_processor(Some(deadzone)),
+        DualAxis::left_stick().with_processor(deadzone),
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.

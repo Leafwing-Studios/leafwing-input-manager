@@ -1039,7 +1039,7 @@ mod tests {
     #[test]
     fn test_dual_axis_processing_pipeline() {
         // Add processors to a new pipeline.
-        let mut pipeline = DualAxisProcessingPipeline::new()
+        let mut pipeline = DualAxisProcessingPipeline::default()
             .with(AxisSensitivity(4.0).extend_dual())
             .with(AxisInverted.extend_dual())
             .with(AxisInverted.extend_dual())
