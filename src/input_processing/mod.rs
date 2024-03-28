@@ -1,7 +1,7 @@
 //! Utilities for processing input values.
 //!
 //! - The [`single_axis`] module provides the utilities for processing input values on an axis.
-//! - The [`dual_axis`] module provides the utilities for processing input values on the XY axes.
+//! - The [`dual_axis`] module provides the utilities for processing input values on the X and Y axes.
 
 pub use self::dual_axis::*;
 pub use self::single_axis::*;
