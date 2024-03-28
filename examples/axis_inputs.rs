@@ -33,6 +33,7 @@ fn spawn_player(mut commands: Commands) {
         .insert(Action::Throttle, GamepadButtonType::RightTrigger2)
         // And we'll use the right stick's x-axis as a rudder control
         .insert(
+            // Add an AxisDeadzone to process horizontal values of the right stick.
             // This will trigger if the axis is moved 10% or more in either direction.
             Action::Rudder,
             SingleAxis::new(GamepadAxisType::RightStickX)
