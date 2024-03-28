@@ -935,7 +935,7 @@ impl DualAxisProcessor for CircleDeadzone {
     fn process(&self, input_value: Vec2) -> Vec2 {
         // Short-circuiting if the input value should be excluded.
         if self.exclusion.contains(input_value) {
-            return Vec2::ZERO;
+            return self.exclusion.process(input_value);
         }
 
         // Short-circuiting if the input value should be clamped.

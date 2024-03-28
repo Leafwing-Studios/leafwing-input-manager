@@ -412,8 +412,8 @@ impl Hash for AxisBounds {
 
 // region exclusion
 
-/// Defines an exclusion range (`[negative_max, positive_min]`) where near-zero input values are ignored.
-/// In simple terms, those values are treated as `0.0`.
+/// Defines an exclusion range (`[negative_max, positive_min]`)
+/// where near-zero input values are ignored (treated as `0.0`).
 ///
 /// In simple terms, this exclusion behaves like a deadzone without normalization.
 /// This processor helps filter out minor fluctuations and unintended movements.
