@@ -14,9 +14,9 @@
 //! - [`CircleExclusion`]: Excludes input values with a magnitude less than the specified radius.
 //! - [`SquareExclusion`]: Specifies a range where input values are treated as zero (deadzone).
 //! - [`CircleDeadzone`]: Linearly scales input values into the livezone ranges defined
-//!     by the specified [`CircleExclusion`] and [`CircleBounds`].
+//!     by a specified [`CircleExclusion`].
 //! - [`SquareDeadzone`]: Linearly scales input values into the livezone ranges defined
-//!     by the specified [`SquareExclusion`] and [`SquareBounds`].
+//!     by a specified [`SquareExclusion`].
 //!
 //! Need something specific? You can also create your own processors
 //! by implementing the [`DualAxisProcessor`] trait for specific needs.
@@ -797,10 +797,10 @@ impl CircleExclusion {
     }
 
     /// Creates a new [`CircleDeadzone`] that normalizes input values
-    /// within the livezone regions defined by the `self` and the given `bounds`.
+    /// within the livezone regions defined by the `self`.
     #[inline]
-    pub fn normalized_into(&self, bounds: CircleBounds) -> CircleDeadzone {
-        CircleDeadzone::new(*self, bounds)
+    pub fn normalized(&self) -> CircleDeadzone {
+        CircleDeadzone::new(*self)
     }
 }
 
@@ -849,16 +849,17 @@ impl SquareExclusion {
 
 // region deadzone
 
-/// Normalizes input values within the specified livezone regions
-/// defined by the specified [`CircleExclusion`] and [`CircleBounds`].
+/// Defines a deadzone that normalizes input values
+/// by clamping their magnitude to a maximum of `1.0`,
+/// excluding values with a magnitude less than a specified radius,
+/// and scaling unchanged values linearly in between.
 ///
 /// It is worth considering that this normalizer reduces input values on diagonals.
 /// If that is not your goal, you might want to explore alternative normalizers.
 ///
 /// # Warning
 ///
-/// - Using overly expansive `bounds` can significantly reduce most input values.
-/// - Using an `exclusion` exceeding all `bounds` will exclude all input values.
+/// - Using an `exclusion` exceeding all bounds will exclude all input values.
 ///
 /// # Examples
 ///
@@ -866,13 +867,16 @@ impl SquareExclusion {
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
+/// // Create a deadzone that excludes values with a magnitude less than 0.3
 /// let exclusion = CircleExclusion::new(0.3);
-/// let bounds = CircleBounds::new(2.4);
-/// let deadzone = CircleDeadzone::new(exclusion, bounds);
+/// let deadzone = CircleDeadzone::new(exclusion);
 ///
 /// // Another way to create a CircleDeadzone.
-/// let alternative = exclusion.normalized_into(bounds);
+/// let alternative = exclusion.normalized();
 /// assert_eq!(alternative, deadzone);
+///
+/// // The bounds after normalization.
+/// let bounds = CircleBounds::default();
 ///
 /// // These values have a magnitude within the radius of the exclusion.
 /// let values = [Vec2::new(0.0, 0.2), Vec2::new(0.1, 0.15)];
@@ -902,7 +906,7 @@ impl SquareExclusion {
 /// }
 ///
 /// // These values are within the livezones.
-/// let values = [Vec2::new(0.9, -1.5), Vec2::new(-1.3, 1.0)];
+/// let values = [Vec2::new(0.4, -0.5), Vec2::new(-0.3, 0.5)];
 /// for value in values {
 ///     assert!(value.length() > exclusion.radius());
 ///     assert!(value.length() < bounds.radius());
@@ -920,9 +924,6 @@ pub struct CircleDeadzone {
     /// The exclusion used for normalization.
     pub(crate) exclusion: CircleExclusion,
 
-    /// The bounds used for normalization.
-    pub(crate) bounds: CircleBounds,
-
     /// Pre-calculated reciprocal of the livezone radius,
     /// preventing division during normalization.
     pub(crate) livezone_recip: f32,
@@ -933,31 +934,26 @@ impl DualAxisProcessor for CircleDeadzone {
     /// Normalizes all input values within the livezone regions and returns the result.
     #[must_use]
     fn process(&self, input_value: Vec2) -> Vec2 {
-        // Short-circuiting if the input value should be excluded.
-        if self.exclusion.contains(input_value) {
-            return self.exclusion.process(input_value);
+        let input_length_squared = input_value.length_squared();
+        if input_length_squared == 0.0 {
+            return Vec2::ZERO;
         }
-
-        // Short-circuiting if the input value should be clamped.
-        if !self.bounds.contains(input_value) {
-            return self.bounds.process(input_value);
-        }
-
-        // Normalize the input value.
-        let input_length = input_value.length();
-        let distance = input_length - self.exclusion.radius;
-        let magnitude_scale = distance * self.livezone_recip;
-        (input_value / input_length) * magnitude_scale
+        let input_length = input_length_squared.sqrt();
+        let (deadzone, bound) = self.livezone_min_max();
+        let clamped_input_length = input_length.min(bound);
+        let distance = (clamped_input_length - deadzone).max(0.0);
+        let magnitude_scale = (distance * self.livezone_recip) / input_length;
+        input_value * magnitude_scale
     }
 }
 
 impl Default for CircleDeadzone {
     /// Creates a new [`CircleDeadzone`] that normalizes input values
     /// by clamping their magnitude to a maximum of `1.0`
-    /// and excluding those with a magnitude less than `0.1`.
+    /// and excluding values with a magnitude less than `0.1`.
     #[inline]
     fn default() -> Self {
-        Self::new(CircleExclusion::default(), CircleBounds::default())
+        Self::new(CircleExclusion::default())
     }
 }
 
@@ -969,7 +965,6 @@ impl CircleDeadzone {
     /// # Requirements
     ///
     /// - `deadzone.radius` >= `0.0`.
-    /// - `bounds.radius` >= `0.0`.
     ///
     /// # Panics
     ///
@@ -977,12 +972,11 @@ impl CircleDeadzone {
     ///
     /// # Warning
     ///
-    /// - Using overly expansive `bounds` can significantly reduce most input values.
-    /// - Using an `exclusion` exceeding all `bounds` will exclude all input values.
-    pub fn new(exclusion: CircleExclusion, bounds: CircleBounds) -> Self {
+    /// - Using an `exclusion` exceeding all bounds will exclude all input values.
+    pub fn new(exclusion: CircleExclusion) -> Self {
+        let bounds = CircleBounds::default();
         Self {
             exclusion,
-            bounds,
             livezone_recip: (bounds.radius - exclusion.radius).recip(),
         }
     }
@@ -994,7 +988,14 @@ impl CircleDeadzone {
 
     /// Returns the [`CircleBounds`] used by this normalizer.
     pub fn bounds(&self) -> CircleBounds {
-        self.bounds
+        CircleBounds::default()
+    }
+
+    /// Returns the minimum and maximum bounds of the livezone range used by this normalizer.
+    ///
+    /// In simple terms, this returns `(exclusion.radius, bounds.radius)`.
+    pub fn livezone_min_max(&self) -> (f32, f32) {
+        (self.exclusion.radius, self.bounds().radius)
     }
 }
 
@@ -1003,7 +1004,6 @@ impl Eq for CircleDeadzone {}
 impl Hash for CircleDeadzone {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.exclusion.hash(state);
-        self.bounds.hash(state);
     }
 }
 
@@ -1380,9 +1380,11 @@ mod tests {
     #[test]
     fn test_circle_deadzone() {
         let exclusion = CircleExclusion::new(0.3);
-        let bounds = CircleBounds::new(2.4);
-        let deadzone = CircleDeadzone::new(exclusion, bounds);
-        assert_eq!(exclusion.normalized_into(bounds), deadzone);
+        let deadzone = CircleDeadzone::new(exclusion);
+        assert_eq!(exclusion.normalized(), deadzone);
+
+        // The bounds after normalization.
+        let bounds = CircleBounds::default();
 
         // Inner factor.
         let expected_livezone_recip = (bounds.radius() - exclusion.radius()).recip();
@@ -1400,9 +1402,6 @@ mod tests {
             // So the value should be treated as zeros.
             let result = deadzone.process(value);
             assert_eq!(result, Vec2::ZERO);
-
-            // The result is derived from the exclusion.
-            assert_eq!(result, exclusion.process(value));
         }
 
         // value.magnitude > bounds.radius
@@ -1420,13 +1419,10 @@ mod tests {
             let result = deadzone.process(value);
             assert_eq!(result.length(), bounds.radius());
             assert_eq!(result.y.atan2(result.x), value.y.atan2(value.x));
-
-            // The result is derived from the bounds.
-            assert_eq!(result, bounds.process(value));
         }
 
         // exclusion.radius <= value.magnitude <= bounds.radius
-        let values = [Vec2::new(0.9, -1.5), Vec2::new(-1.3, 1.0)];
+        let values = [Vec2::new(0.6, -0.5), Vec2::new(-0.3, -0.7)];
         for value in values {
             let magnitude = value.length();
             assert!(magnitude >= exclusion.radius());
@@ -1459,14 +1455,14 @@ mod tests {
         let exclusion_x = AxisExclusion::new(-0.2, 0.3);
         let exclusion_y = AxisExclusion::new(-0.3, 0.4);
 
-        let bounds_x = AxisBounds::symmetric(2.0);
-        let bounds_y = AxisBounds::symmetric(2.5);
-
-        let axis_x = AxisDeadzone::new(exclusion_x, bounds_x);
-        let axis_y = AxisDeadzone::new(exclusion_y, bounds_y);
+        let axis_x = AxisDeadzone::new(exclusion_x);
+        let axis_y = AxisDeadzone::new(exclusion_y);
 
         let deadzone = SquareDeadzone::XY(axis_x, axis_y);
         assert_eq!(deadzone, axis_x.extend_dual_with_y(axis_y));
+
+        // The bounds after normalization.
+        let bounds = AxisBounds::default();
 
         // These values should be excluded.
         let values = [Vec2::splat(0.1), Vec2::new(0.2, 0.05)];
@@ -1477,10 +1473,6 @@ mod tests {
             // So the value should be treated as zeros.
             let result = deadzone.process(value);
             assert_eq!(result, Vec2::ZERO);
-
-            // The result is derived from all exclusions.
-            assert_eq!(result.x, exclusion_x.process(value.x));
-            assert_eq!(result.y, exclusion_y.process(value.y));
         }
 
         // These values should be excluded on the X-axis and normalized on the Y-axis.
@@ -1500,7 +1492,7 @@ mod tests {
             // And the Y value is normalized to fit within the bounds on the Y-axis.
             assert_eq!(result.y, axis_y.process(value.y));
             assert_ne!(result.y, 0.0);
-            assert!(bounds_y.contains(result.y));
+            assert!(bounds.contains(result.y));
         }
 
         // These values should be excluded on the Y-axis and normalized on the X-axis.
@@ -1520,7 +1512,7 @@ mod tests {
             // And the X value is normalized to fit within the bounds on the X-axis.
             assert_eq!(result.x, axis_x.process(value.x));
             assert_ne!(result.x, 0.0);
-            assert!(bounds_x.contains(result.x));
+            assert!(bounds.contains(result.x));
         }
 
         // These values are out of all exclusion ranges.
@@ -1533,8 +1525,8 @@ mod tests {
             let result = deadzone.process(value);
             assert_ne!(result.x, 0.0);
             assert_ne!(result.y, 0.0);
-            assert!(bounds_x.contains(result.x));
-            assert!(bounds_y.contains(result.y));
+            assert!(bounds.contains(result.x));
+            assert!(bounds.contains(result.y));
 
             // The results are derived from the deadzone on each axis.
             assert_eq!(result.x, axis_x.process(value.x));

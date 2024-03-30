@@ -502,7 +502,7 @@ impl VirtualAxis {
         self
     }
 
-    /// Remove the current used [`AxisProcessor`].
+    /// Removes the current used [`AxisProcessor`].
     #[inline]
     pub fn no_processor(mut self) -> Self {
         self.processor = None;

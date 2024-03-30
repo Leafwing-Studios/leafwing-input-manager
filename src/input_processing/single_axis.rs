@@ -12,7 +12,7 @@
 //! - [`AxisBounds`]: Defines valid limits for input values to prevent unexpected behavior.
 //! - [`AxisExclusion`]: Specifies a range where input values are ignored (treated as zero).
 //! - [`AxisDeadzone`]: Linearly scales input values into the livezone ranges defined
-//!     by the specified [`AxisExclusion`] and [`AxisBounds`].
+//!     by a specified [`AxisExclusion`].
 //!
 //! Need something specific? You can also create your own processors
 //! by implementing the [`AxisProcessor`] trait for specific needs.
@@ -556,9 +556,9 @@ impl AxisExclusion {
     }
 
     /// Creates a new [`AxisDeadzone`] that normalizes input values
-    /// within the livezone regions defined by the `self` and the given `bounds`.
-    pub fn normalized_into(&self, bounds: AxisBounds) -> AxisDeadzone {
-        AxisDeadzone::new(*self, bounds)
+    /// within the livezone regions defined by the `self`.
+    pub fn normalized(&self) -> AxisDeadzone {
+        AxisDeadzone::new(*self)
     }
 }
 
@@ -575,68 +575,69 @@ impl Hash for AxisExclusion {
 
 // region deadzone
 
-/// Defines a deadzone for clamping out-of-bounds values,
-/// excluding those within the specified exclusion range,
+/// Defines a deadzone that normalizes input values by clamping values to `[-1.0, 1.0]`,
+/// excluding values within a specified exclusion range,
 /// and scaling unchanged values linearly in between.
 ///
 /// # Warning
 ///
-/// - Using overly expansive `bounds` can significantly reduce most input values.
-/// - Using an `exclusion` exceeding all `bounds` will exclude all input values.
+/// - Using an `exclusion` exceeding all bounds will exclude all input values.
 ///
 /// # Examples
 ///
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
 ///
-/// // Create a deadzone for the specified exclusion and bounds.
-/// let exclusion = AxisExclusion::new(-2.0, 3.0);
-/// let bounds = AxisBounds::symmetric(10.0);
-/// let deadzone = AxisDeadzone::new(exclusion, bounds);
+/// // Create a deadzone with a specified exclusion range.
+/// let exclusion = AxisExclusion::new(-0.2, 0.3);
+/// let deadzone = AxisDeadzone::new(exclusion);
 ///
 /// // Another way to create an AxisDeadzone.
-/// let alternative = exclusion.normalized_into(bounds);
+/// let alternative = exclusion.normalized();
 /// assert_eq!(alternative, deadzone);
 ///
+/// // The bounds after normalization.
+/// let bounds = AxisBounds::default();
+///
 /// // These values are within the exclusion.
-/// let values = [-2.0, 0.5, 3.0];
+/// let values = [-0.2, 0.05, 0.3];
 /// for value in values {
 ///     assert!(exclusion.contains(value));
 ///
-///     // So they're treated as zero.
+///     // So the value should be treated as zero.
 ///     assert_eq!(deadzone.process(value), 0.0);
 /// }
 ///
 /// // These values are out of the bounds.
-/// let values = [-50.0, -20.0, 20.0, 50.0];
+/// let values = [-5.0, -2.0, 2.0, 5.0];
 /// for value in values {
 ///     assert!(!bounds.contains(value));
 ///
-///     // So they're clamped to the bounds.
-///     let processed = deadzone.process(value);
-///     assert!(processed == bounds.min() || processed == bounds.max());
+///     // So the value should be clamped to the bounds.
+///     let result = deadzone.process(value);
+///     assert!(result == bounds.min() || result == bounds.max());
 /// }
 ///
 /// // These values are within the lower livezone.
-/// let values = [-9.0, -7.0, -5.0, -3.0];
+/// let values = [-0.9, -0.7, -0.5, -0.3];
 /// for value in values {
 ///     assert!(!exclusion.contains(value));
 ///     assert!(bounds.contains(value));
 ///
-///     // So they're normalized to fit the range.
-///     let (value_min, value_max) = deadzone.lower_livezone_min_max();
+///     // So the value should be normalized to fit the range.
+///     let (value_min, value_max) = deadzone.livezone_lower_min_max();
 ///     let expected = (value - value_max) / (value_max - value_min);
 ///     assert!(deadzone.process(value) - expected <= f32::EPSILON);
 /// }
 ///
 /// // These values are within the upper livezone.
-/// let values = [9.0, 7.0, 5.0, 4.0];
+/// let values = [0.9, 0.7, 0.5, 0.35];
 /// for value in values {
 ///     assert!(!exclusion.contains(value));
 ///     assert!(bounds.contains(value));
 ///
-///     // So they're normalized to fit the range.
-///     let (value_min, value_max) = deadzone.upper_livezone_min_max();
+///     // So the value should be normalized to fit the range.
+///     let (value_min, value_max) = deadzone.livezone_upper_min_max();
 ///     let expected = (value - value_min) / (value_max - value_min);
 ///     assert!(deadzone.process(value) - expected <= f32::EPSILON);
 /// }
@@ -646,9 +647,6 @@ impl Hash for AxisExclusion {
 pub struct AxisDeadzone {
     /// The exclusion used for normalization.
     pub(crate) exclusion: AxisExclusion,
-
-    /// The bounds used for normalization.
-    pub(crate) bounds: AxisBounds,
 
     /// Pre-calculated reciprocal of the lower livezone width,
     /// preventing division during normalization.
@@ -661,54 +659,49 @@ pub struct AxisDeadzone {
 
 #[typetag::serde]
 impl AxisProcessor for AxisDeadzone {
-    /// Processes the `input_value` by clamping out-of-bounds values,
-    /// excluding those within the deadzone, and normalizing unchanged values in between.
+    /// Processes the `input_value` by clamping values to `[-1.0, 1.0]`,
+    /// excluding those within the deadzone, and scaling unchanged values linearly in between.
     #[must_use]
     fn process(&self, input_value: f32) -> f32 {
-        // Short-circuiting if the input value should be excluded.
-        if self.exclusion.contains(input_value) {
-            return self.exclusion.process(input_value);
-        }
-
-        // Short-circuiting if the input value should be clamped.
-        if !self.bounds.contains(input_value) {
-            return self.bounds.process(input_value);
-        }
-
-        // Normalize the input value.
-        if input_value < self.exclusion.negative_max {
-            (input_value - self.exclusion.negative_max) * self.livezone_lower_recip
+        if input_value <= 0.0 {
+            let (bound, deadzone) = self.livezone_lower_min_max();
+            let clamped_input = input_value.max(bound);
+            let distance_to_deadzone = (clamped_input - deadzone).min(0.0);
+            distance_to_deadzone * self.livezone_lower_recip
         } else {
-            (input_value - self.exclusion.positive_min) * self.livezone_upper_recip
+            let (deadzone, bound) = self.livezone_upper_min_max();
+            let clamped_input = input_value.min(bound);
+            let distance_to_deadzone = (clamped_input - deadzone).max(0.0);
+            distance_to_deadzone * self.livezone_upper_recip
         }
     }
 }
 
 impl Default for AxisDeadzone {
-    /// Creates a default [`AxisDeadzone`],
-    /// excluding input values within `[-0.1, 0.1]` with the bounds set to `[-1.0, 1.0]`.
+    /// Creates a [`AxisDeadzone`] that normalizes input values by clamping values to `[-1.0, 1.0]`,
+    /// excluding values within `[-0.1, 0.1]`, and scaling unchanged values linearly in between.
     #[inline]
     fn default() -> Self {
-        Self::new(AxisExclusion::default(), AxisBounds::default())
+        Self::new(AxisExclusion::default())
     }
 }
 
 impl AxisDeadzone {
-    /// Creates a new [`AxisDeadzone`] based on the given [`AxisExclusion`] and [`AxisBounds`].
+    /// Creates a [`AxisDeadzone`] that normalizes input values by clamping values to `[-1.0, 1.0]`,
+    /// excluding values within the given `exclusion` range,
+    /// and scaling unchanged values linearly in between.
     ///
     /// # Warning
     ///
-    /// - Using overly expansive `bounds` can significantly reduce most input values.
-    /// - Using an `exclusion` exceeding all `bounds` will exclude all input values.
+    /// - Using an `exclusion` exceeding all bounds will exclude all input values.
     #[inline]
-    pub fn new(deadzone: AxisExclusion, bounds: AxisBounds) -> Self {
-        let (deadzone_min, deadzone_max) = deadzone.min_max();
-        let (bound_min, bound_max) = bounds.min_max();
+    pub fn new(exclusion: AxisExclusion) -> Self {
+        let (exclusion_min, exclusion_max) = exclusion.min_max();
+        let (bound_min, bound_max) = AxisBounds::default().min_max();
         Self {
-            exclusion: deadzone,
-            bounds,
-            livezone_lower_recip: (deadzone_min - bound_min).recip(),
-            livezone_upper_recip: (bound_max - deadzone_max).recip(),
+            exclusion,
+            livezone_lower_recip: (exclusion_min - bound_min).recip(),
+            livezone_upper_recip: (bound_max - exclusion_max).recip(),
         }
     }
 
@@ -719,21 +712,21 @@ impl AxisDeadzone {
 
     /// Returns the [`AxisBounds`] used by this normalizer.
     pub fn bounds(&self) -> AxisBounds {
-        self.bounds
+        AxisBounds::default()
     }
 
     /// Returns the minimum and maximum bounds of the lower livezone range used by this normalizer.
     ///
-    /// In simple terms, this returns `(bound_min, exclusion_min)`.
-    pub fn lower_livezone_min_max(&self) -> (f32, f32) {
-        (self.bounds.min(), self.exclusion.min())
+    /// In simple terms, this returns `(bounds.min, exclusion.min)`.
+    pub fn livezone_lower_min_max(&self) -> (f32, f32) {
+        (self.bounds().min(), self.exclusion.min())
     }
 
     /// Returns the minimum and maximum bounds of the upper livezone range used by this normalizer.
     ///
-    /// In simple terms, this returns `(exclusion_max, bound_max)`.
-    pub fn upper_livezone_min_max(&self) -> (f32, f32) {
-        (self.exclusion.max(), self.bounds.max())
+    /// In simple terms, this returns `(exclusion.max, bounds.max)`.
+    pub fn livezone_upper_min_max(&self) -> (f32, f32) {
+        (self.exclusion.max(), self.bounds().max())
     }
 }
 
@@ -742,7 +735,6 @@ impl Eq for AxisDeadzone {}
 impl Hash for AxisDeadzone {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.exclusion.hash(state);
-        self.bounds.hash(state);
     }
 }
 
@@ -976,21 +968,23 @@ mod tests {
 
     #[test]
     fn test_axis_deadzone() {
-        let exclusion = AxisExclusion::new(-2.0, 3.0);
-        let bounds = AxisBounds::symmetric(10.0);
-        let deadzone = AxisDeadzone::new(exclusion, bounds);
-        assert_eq!(deadzone, exclusion.normalized_into(bounds));
+        let exclusion = AxisExclusion::new(-0.2, 0.3);
+        let deadzone = AxisDeadzone::new(exclusion);
+        assert_eq!(deadzone, exclusion.normalized());
+
+        // The bounds after normalization.
+        let bounds = AxisBounds::default();
 
         // Getters.
         assert_eq!(deadzone.exclusion(), exclusion);
         assert_eq!(deadzone.bounds(), bounds);
-        assert_eq!(bounds.min(), -10.0);
-        assert_eq!(exclusion.min(), -2.0);
-        assert_eq!(exclusion.max(), 3.0);
-        assert_eq!(bounds.max(), 10.0);
+        assert_eq!(bounds.min(), -1.0);
+        assert_eq!(exclusion.min(), -0.2);
+        assert_eq!(exclusion.max(), 0.3);
+        assert_eq!(bounds.max(), 1.0);
 
-        let (lower_min, lower_max) = deadzone.lower_livezone_min_max();
-        let (upper_min, upper_max) = deadzone.upper_livezone_min_max();
+        let (lower_min, lower_max) = deadzone.livezone_lower_min_max();
+        let (upper_min, upper_max) = deadzone.livezone_upper_min_max();
         assert_eq!(lower_min, bounds.min());
         assert_eq!(lower_max, exclusion.min());
         assert_eq!(upper_min, exclusion.max());
@@ -1003,7 +997,7 @@ mod tests {
         assert_eq!(deadzone.livezone_upper_recip, expected_upper_recip);
 
         // exclusion.min <= value <= exclusion.max
-        let values = [-2.0, 0.5, 3.0];
+        let values = [-0.2, 0.05, 0.25];
         for value in values {
             assert!(value >= exclusion.min());
             assert!(value <= exclusion.max());
@@ -1012,15 +1006,11 @@ mod tests {
             assert!(exclusion.contains(value));
 
             // So the value should be treated as zeros.
-            let result = deadzone.process(value);
-            assert_eq!(result, 0.0);
-
-            // The result is derived from the exclusion.
-            assert_eq!(result, exclusion.process(value));
+            assert_eq!(deadzone.process(value), 0.0);
         }
 
         // value < bounds.min
-        let values = [-50.0, -20.0];
+        let values = [-5.0, -2.0];
         for value in values {
             assert!(value < bounds.min());
 
@@ -1028,15 +1018,11 @@ mod tests {
             assert!(!bounds.contains(value));
 
             // So the value should be clamped to the minimum bound.
-            let result = deadzone.process(value);
-            assert_eq!(result, bounds.min());
-
-            // The result is derived from the bounds.
-            assert_eq!(result, bounds.process(value));
+            assert_eq!(deadzone.process(value), bounds.min());
         }
 
         // value > bounds.max
-        let values = [20.0, 50.0];
+        let values = [2.0, 5.0];
         for value in values {
             assert!(value > bounds.max());
 
@@ -1044,15 +1030,11 @@ mod tests {
             assert!(!bounds.contains(value));
 
             // So the value should be clamped to the maximum bound.
-            let result = deadzone.process(value);
-            assert_eq!(result, bounds.max());
-
-            // The result is derived from the bounds.
-            assert_eq!(result, bounds.process(value));
+            assert_eq!(deadzone.process(value), bounds.max());
         }
 
         // lower_min < value < lower_max
-        let values = [-9.0, -7.0, -5.0, -3.0];
+        let values = [-0.9, -0.7, -0.5, -0.3];
         for value in values {
             assert!(value > lower_min);
             assert!(value < lower_max);
@@ -1074,7 +1056,7 @@ mod tests {
         }
 
         // upper_min < value < upper_max
-        let values = [9.0, 7.0, 5.0, 4.0];
+        let values = [0.9, 0.7, 0.5, 0.4];
         for value in values {
             assert!(value > upper_min);
             assert!(value < upper_max);
