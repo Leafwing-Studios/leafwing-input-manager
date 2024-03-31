@@ -2,7 +2,6 @@
 
 use bevy::ecs::prelude::{Event, Events, ResMut, World};
 use bevy::ecs::system::SystemState;
-use bevy::input::gamepad;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
