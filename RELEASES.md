@@ -6,6 +6,10 @@
 
 - Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
 
+### Bugs
+
+- fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
+
 ## Version 0.13.3
 
 ### Bugs

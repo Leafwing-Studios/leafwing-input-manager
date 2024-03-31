@@ -102,16 +102,27 @@ impl<'a> InputStreams<'a> {
 
                 value < axis.negative_low || value > axis.positive_low
             }
-            InputKind::GamepadButton(button_type) => self
-                .associated_gamepad
-                .into_iter()
-                .chain(self.gamepads.iter())
-                .any(|gamepad| {
-                    self.gamepad_buttons.pressed(GamepadButton {
+            InputKind::GamepadButton(button_type) => {
+                if let Some(gamepad) = self.associated_gamepad {
+                    return self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
                         button_type,
-                    })
-                }),
+                    });
+                }
+
+                for gamepad in self.gamepads.iter() {
+                    if self.gamepad_buttons.pressed(GamepadButton {
+                        gamepad,
+                        button_type,
+                    }) {
+                        // Return early if ANY gamepad is pressing this button
+                        return true;
+                    }
+                }
+
+                // If we don't have the required data, fall back to false
+                false
+            }
             InputKind::PhysicalKey(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(keycode))
             }
