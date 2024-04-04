@@ -9,7 +9,6 @@ use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
 
-mod __private_macros;
 pub mod action_diff;
 pub mod action_driver;
 pub mod action_state;
@@ -23,6 +22,7 @@ pub mod input_map;
 pub mod input_mocking;
 pub mod input_processing;
 pub mod input_streams;
+mod macros;
 pub mod orientation;
 pub mod plugin;
 pub mod systems;

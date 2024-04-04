@@ -38,26 +38,33 @@ macro_rules! __reflect_box_dyn_trait_object {
             ) -> ::core::option::Option<&'static ::bevy::reflect::TypeInfo> {
                 Some(<Self as ::bevy::reflect::Typed>::type_info())
             }
+
             fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn ::core::any::Any> {
                 self
             }
+
             fn as_any(&self) -> &dyn ::core::any::Any {
                 self
             }
+
             fn as_any_mut(&mut self) -> &mut dyn ::core::any::Any {
                 self
             }
+
             fn into_reflect(
                 self: ::std::boxed::Box<Self>,
             ) -> ::std::boxed::Box<dyn ::bevy::reflect::Reflect> {
                 self
             }
+
             fn as_reflect(&self) -> &dyn ::bevy::reflect::Reflect {
                 self
             }
+
             fn as_reflect_mut(&mut self) -> &mut dyn ::bevy::reflect::Reflect {
                 self
             }
+
             fn apply(&mut self, value: &dyn ::bevy::reflect::Reflect) {
                 let value = value.as_any();
                 if let Some(value) = value.downcast_ref::<Self>() {
@@ -70,6 +77,7 @@ macro_rules! __reflect_box_dyn_trait_object {
                     );
                 }
             }
+
             fn set(
                 &mut self,
                 value: ::std::boxed::Box<dyn ::bevy::reflect::Reflect>,
@@ -77,27 +85,34 @@ macro_rules! __reflect_box_dyn_trait_object {
                 *self = value.take()?;
                 Ok(())
             }
+
             fn reflect_kind(&self) -> ::bevy::reflect::ReflectKind {
                 ::bevy::reflect::ReflectKind::Value
             }
+
             fn reflect_ref(&self) -> ::bevy::reflect::ReflectRef {
                 ::bevy::reflect::ReflectRef::Value(self)
             }
+
             fn reflect_mut(&mut self) -> ::bevy::reflect::ReflectMut {
                 ::bevy::reflect::ReflectMut::Value(self)
             }
+
             fn reflect_owned(self: ::std::boxed::Box<Self>) -> ::bevy::reflect::ReflectOwned {
                 ::bevy::reflect::ReflectOwned::Value(self)
             }
+
             fn clone_value(&self) -> ::std::boxed::Box<dyn bevy::reflect::Reflect> {
                 ::std::boxed::Box::new(self.clone())
             }
+
             fn reflect_hash(&self) -> ::core::option::Option<u64> {
                 let mut hasher = ::bevy::reflect::utility::reflect_hasher();
                 ::core::hash::Hash::hash(&::core::any::Any::type_id(self), &mut hasher);
                 ::core::hash::Hash::hash(self, &mut hasher);
                 Some(hasher.finish())
             }
+
             fn reflect_partial_eq(
                 &self,
                 value: &dyn ::bevy::reflect::Reflect,
@@ -108,10 +123,12 @@ macro_rules! __reflect_box_dyn_trait_object {
                     .map(|value| self.dyn_eq(value))
                     .or(Some(false))
             }
+
             fn debug(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 Debug::fmt(self, f)
             }
         }
+
         impl ::bevy::reflect::Typed for ::std::boxed::Box<dyn $ObjectTrait> {
             fn type_info() -> &'static ::bevy::reflect::TypeInfo {
                 static CELL: ::bevy::reflect::utility::NonGenericTypeInfoCell =
@@ -121,6 +138,7 @@ macro_rules! __reflect_box_dyn_trait_object {
                 })
             }
         }
+
         impl ::bevy::reflect::TypePath for ::std::boxed::Box<dyn $ObjectTrait> {
             fn type_path() -> &'static str {
                 static CELL: ::bevy::reflect::utility::GenericTypePathCell =
@@ -133,6 +151,7 @@ macro_rules! __reflect_box_dyn_trait_object {
                     )
                 })
             }
+
             fn short_type_path() -> &'static str {
                 static CELL: ::bevy::reflect::utility::GenericTypePathCell =
                     ::bevy::reflect::utility::GenericTypePathCell::new();
@@ -144,16 +163,20 @@ macro_rules! __reflect_box_dyn_trait_object {
                     ))
                 })
             }
+
             fn type_ident() -> ::core::option::Option<&'static str> {
                 Some(::core::stringify!($ObjectTrait))
             }
+
             fn crate_name() -> ::core::option::Option<&'static str> {
                 Some(::core::module_path!().split(':').next().unwrap())
             }
+
             fn module_path() -> ::core::option::Option<&'static str> {
                 Some(::core::module_path!())
             }
         }
+
         impl ::bevy::reflect::GetTypeRegistration for ::std::boxed::Box<dyn $ObjectTrait> {
             fn get_type_registration() -> ::bevy::reflect::TypeRegistration {
                 use ::bevy::reflect::*;
@@ -164,6 +187,7 @@ macro_rules! __reflect_box_dyn_trait_object {
                 registration
             }
         }
+
         impl ::bevy::reflect::FromReflect for ::std::boxed::Box<dyn $ObjectTrait> {
             fn from_reflect(
                 reflect: &dyn ::bevy::reflect::Reflect,
