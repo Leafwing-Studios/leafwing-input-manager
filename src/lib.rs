@@ -55,7 +55,7 @@ pub mod prelude {
         define_dual_axis_processing_pipeline, define_dual_axis_processor,
         define_dynamic_input_processing_pipeline, define_input_processing_pipeline,
     };
-    pub use typetag::serde as processor_serde;
+    pub use typetag::serde as serde_trait_object;
 }
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion

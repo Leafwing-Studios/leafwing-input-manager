@@ -75,7 +75,7 @@ use super::single_axis::*;
 /// pub struct DoubleAbsoluteValueThenRejectX(f32);
 ///
 /// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[processor_serde]
+/// #[serde_trait_object]
 /// impl DualAxisProcessor for DoubleAbsoluteValueThenRejectX {
 ///     fn process(&self, input_value: Vec2) -> Vec2 {
 ///         // Implement the logic just like you would in a normal function.
@@ -263,7 +263,7 @@ macro_rules! define_dual_axis_processor {
             OnlyY,
         }
 
-        #[$crate::prelude::processor_serde]
+        #[$crate::prelude::serde_trait_object]
         impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
             #[must_use]
@@ -383,7 +383,7 @@ macro_rules! define_dual_axis_processor {
             OnlyY($AxisProcessor),
         }
 
-        #[$crate::prelude::processor_serde]
+        #[$crate::prelude::serde_trait_object]
         impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
             #[must_use]

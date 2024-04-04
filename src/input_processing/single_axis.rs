@@ -68,7 +68,7 @@ use serde::{Deserialize, Serialize};
 /// pub struct DoubleAbsoluteValueThenIgnored(f32);
 ///
 /// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[processor_serde]
+/// #[serde_trait_object]
 /// impl AxisProcessor for DoubleAbsoluteValueThenIgnored {
 ///     fn process(&self, input_value: f32) -> f32 {
 ///         // Implement the logic just like you would in a normal function.

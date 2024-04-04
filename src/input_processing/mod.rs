@@ -49,7 +49,7 @@ macro_rules! define_input_processing_pipeline {
         #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $Pipeline;
 
-        #[$crate::prelude::processor_serde]
+        #[$crate::prelude::serde_trait_object]
         impl $ProcessorTrait for $Pipeline {
             /// Processes input values through this pipeline and returns the result.
             #[must_use]
@@ -124,7 +124,7 @@ macro_rules! define_dynamic_input_processing_pipeline {
         #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $Pipeline(Vec<Box<dyn $ProcessorTrait>>);
 
-        #[$crate::prelude::processor_serde]
+        #[$crate::prelude::serde_trait_object]
         impl $ProcessorTrait for $Pipeline {
             /// Processes input values through this dynamic pipeline and returns the result.
             #[must_use]
@@ -143,8 +143,15 @@ macro_rules! define_dynamic_input_processing_pipeline {
             }
 
             /// Replaces the processor at the `index` with the given `processor`.
+            #[inline]
             pub fn set(&mut self, index: usize, processor: impl $ProcessorTrait) {
                 self.0[index] = Box::new(processor);
+            }
+
+            /// Removes all processors in this pipeline.
+            #[inline]
+            pub fn clear(&mut self) {
+                self.0.clear();
             }
         }
     };
