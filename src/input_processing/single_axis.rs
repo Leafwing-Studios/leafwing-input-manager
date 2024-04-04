@@ -36,7 +36,7 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use bevy::reflect::Reflect;
+use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;

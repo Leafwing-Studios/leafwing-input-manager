@@ -40,8 +40,7 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use bevy::math::{BVec2, Vec2};
-use bevy::reflect::Reflect;
+use bevy::prelude::{BVec2, Reflect, Vec2};
 use bevy::utils::FloatOrd;
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
