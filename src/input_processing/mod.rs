@@ -1,7 +1,4 @@
 //! Utilities for processing input values.
-//!
-//! - The [`single_axis`] module provides the utilities for processing input values on an axis.
-//! - The [`dual_axis`] module provides the utilities for processing input values on the X and Y axes.
 
 pub use self::dual_axis::*;
 pub use self::single_axis::*;
@@ -11,11 +8,9 @@ pub mod single_axis;
 
 // region pipeline
 
-/// Defines a new pipeline with the name specified by the `Pipeline` parameter
-/// that processes `InputValueType` values sequentially
-/// using a chain of specified `processors` implementing `ProcessorTrait`.
-/// This is helpful for certain optimizations such as inlining or dead code elimination,
-/// ensuring the performance and efficiency of the final product.
+/// Defines a new pipeline called the `name` that processes `value_type` values sequentially
+/// through a chain of specified `processors` implementing the `processor_type`.
+/// This enhances performance by enabling optimizations like inlining and dead code elimination.
 ///
 /// # Examples
 ///
