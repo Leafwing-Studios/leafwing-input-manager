@@ -36,7 +36,7 @@ macro_rules! __reflect_box_dyn_trait_object {
             fn get_represented_type_info(
                 &self,
             ) -> ::core::option::Option<&'static ::bevy::reflect::TypeInfo> {
-                Some(<Self as ::bevy::reflect::Typed>::type_info())
+                ::core::option::Option::Some(<Self as ::bevy::reflect::Typed>::type_info())
             }
 
             fn into_any(self: ::std::boxed::Box<Self>) -> ::std::boxed::Box<dyn ::core::any::Any> {
@@ -67,7 +67,7 @@ macro_rules! __reflect_box_dyn_trait_object {
 
             fn apply(&mut self, value: &dyn ::bevy::reflect::Reflect) {
                 let value = value.as_any();
-                if let Some(value) = value.downcast_ref::<Self>() {
+                if let ::core::option::Option::Some(value) = value.downcast_ref::<Self>() {
                     *self = value.clone();
                 } else {
                     panic!(
@@ -83,7 +83,7 @@ macro_rules! __reflect_box_dyn_trait_object {
                 value: ::std::boxed::Box<dyn ::bevy::reflect::Reflect>,
             ) -> Result<(), ::std::boxed::Box<dyn bevy::reflect::Reflect>> {
                 *self = value.take()?;
-                Ok(())
+                ::core::result::Result::Ok(())
             }
 
             fn reflect_kind(&self) -> ::bevy::reflect::ReflectKind {
@@ -110,7 +110,8 @@ macro_rules! __reflect_box_dyn_trait_object {
                 let mut hasher = ::bevy::reflect::utility::reflect_hasher();
                 ::core::hash::Hash::hash(&::core::any::Any::type_id(self), &mut hasher);
                 ::core::hash::Hash::hash(self, &mut hasher);
-                Some(hasher.finish())
+                let result = ::core::hash::Hasher::finish(&hasher);
+                ::core::option::Option::Some(result)
             }
 
             fn reflect_partial_eq(
@@ -121,11 +122,11 @@ macro_rules! __reflect_box_dyn_trait_object {
                 value
                     .downcast_ref::<Self>()
                     .map(|value| self.dyn_eq(value))
-                    .or(Some(false))
+                    .or(::core::option::Option::Some(false))
             }
 
             fn debug(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                Debug::fmt(self, f)
+                ::core::fmt::Debug::fmt(self, f)
             }
         }
 
@@ -165,15 +166,15 @@ macro_rules! __reflect_box_dyn_trait_object {
             }
 
             fn type_ident() -> ::core::option::Option<&'static str> {
-                Some(::core::stringify!($ObjectTrait))
+                ::core::option::Option::Some(::core::stringify!($ObjectTrait))
             }
 
             fn crate_name() -> ::core::option::Option<&'static str> {
-                Some(::core::module_path!().split(':').next().unwrap())
+                ::core::option::Option::Some(::core::module_path!().split(':').next().unwrap())
             }
 
             fn module_path() -> ::core::option::Option<&'static str> {
-                Some(::core::module_path!())
+                ::core::option::Option::Some(::core::module_path!())
             }
         }
 
@@ -192,7 +193,7 @@ macro_rules! __reflect_box_dyn_trait_object {
             fn from_reflect(
                 reflect: &dyn ::bevy::reflect::Reflect,
             ) -> ::core::option::Option<Self> {
-                Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+                ::core::option::Option::Some(reflect.as_any().downcast_ref::<Self>()?.clone())
             }
         }
     };
