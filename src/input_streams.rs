@@ -100,16 +100,19 @@ impl<'a> InputStreams<'a> {
                 let input: UserInput = button.clone().into();
                 self.input_value(&input) != 0.0
             }
-            InputKind::GamepadButton(button_type) => self
-                .associated_gamepad
-                .into_iter()
-                .chain(self.gamepads.iter())
-                .any(|gamepad| {
+            InputKind::GamepadButton(button_type) => {
+                let button_pressed = |gamepad: Gamepad| -> bool {
                     self.gamepad_buttons.pressed(GamepadButton {
                         gamepad,
                         button_type: *button_type,
                     })
-                }),
+                };
+                if let Some(gamepad) = self.associated_gamepad {
+                    button_pressed(gamepad)
+                } else {
+                    self.gamepads.iter().any(button_pressed)
+                }
+            }
             InputKind::PhysicalKey(keycode) => {
                 matches!(self.keycodes, Some(keycodes) if keycodes.pressed(*keycode))
             }

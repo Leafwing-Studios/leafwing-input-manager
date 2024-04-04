@@ -27,6 +27,10 @@
 - removed `DualAxisShape`.
 - removed functions for inversion, sensitivity scaling, and deadzone creation from these axis-like inputs.
 
+### Bugs
+
+- fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
+
 ## Version 0.13.3
 
 ### Bugs

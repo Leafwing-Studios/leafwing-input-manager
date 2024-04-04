@@ -261,6 +261,9 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
     ///
+    /// Use this when an [`InputMap`] should exclusively accept input from a
+    /// particular gamepad.
+    ///
     /// If this is not called, input from any connected gamepad will be used.
     /// The first matching non-zero input will be accepted,
     /// as determined by gamepad registration order.
