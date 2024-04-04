@@ -1,4 +1,4 @@
-//! Input processors for a single axis
+//! Input processors for values along a single axis
 //!
 //! This module provides [`AxisProcessor`]s to refine and manipulate input values
 //! along a single axis before they reach your game logic.
@@ -26,7 +26,8 @@
 //! Then, add desired processing steps (of type [`AxisProcessor`]) to the pipeline.
 //!
 //! Keep in mind that while this approach offers flexibility, it may limit compiler optimizations.
-//! For performance-critical production environments, opt for the `define_axis_processing_pipeline` macro.
+//! For performance-critical production environments,
+//! opt for the [`define_axis_processing_pipeline`](crate::define_axis_processing_pipeline) macro.
 //! This macro generates an optimized pipeline with inlined logic for all specified processors.
 //!
 //! All pipelines have implemented the [`AxisProcessor`] trait,
@@ -44,8 +45,8 @@ use serde::{Deserialize, Serialize};
 
 // region processor trait
 
-/// A trait for defining processors applied to input values on an axis,
-/// taking a `f32` value and return the processed `f32` result.
+/// A trait for defining processors applied to input values on a single axis.
+/// These processors accept a `f32` input and produce a `f32` output.
 ///
 /// Implementors of this trait are responsible for providing the specific processing logic.
 ///
@@ -302,7 +303,7 @@ impl Default for AxisBounds {
     /// Creates a new [`AxisBounds`] with the bounds set to `[-1.0, 1.0]`.
     #[inline]
     fn default() -> Self {
-        Self::symmetric(1.0)
+        Self::magnitude(1.0)
     }
 }
 
@@ -322,7 +323,7 @@ impl AxisBounds {
         Self { min, max }
     }
 
-    /// Creates a new [`AxisBounds`] with the bounds set to `[-threshold, threshold]`.
+    /// Creates a new [`AxisBounds`] with the magnitude bounds set to the specified `threshold`.
     ///
     /// # Requirements
     ///
@@ -332,7 +333,7 @@ impl AxisBounds {
     ///
     /// Panics if any of the requirements isn't met.
     #[inline]
-    pub fn symmetric(threshold: f32) -> Self {
+    pub fn magnitude(threshold: f32) -> Self {
         Self::new(-threshold, threshold)
     }
 
@@ -469,7 +470,7 @@ impl AxisProcessor for AxisExclusion {
 }
 
 impl Default for AxisExclusion {
-    /// Creates a default [`AxisExclusion`], excluding input values within the range `[-0.1, 0.1]`.
+    /// Creates a default [`AxisExclusion`] that excludes input values within `[-0.1, 0.1]`.
     #[inline]
     fn default() -> Self {
         Self::new(-0.1, 0.1)
@@ -477,7 +478,7 @@ impl Default for AxisExclusion {
 }
 
 impl AxisExclusion {
-    /// Creates a new [`AxisExclusion`] for input values within `[negative_max, positive_min]`.
+    /// Creates a new [`AxisExclusion`] that excludes input values within `[negative_max, positive_min]`.
     ///
     /// # Requirements
     ///
@@ -496,7 +497,7 @@ impl AxisExclusion {
         }
     }
 
-    /// Creates a new [`AxisExclusion`] for input values within `[-threshold, threshold]`.
+    /// Creates a new [`AxisExclusion`] that excludes input values with a magnitude smaller than a specified `threshold`.
     ///
     /// # Requirements
     ///
@@ -506,7 +507,7 @@ impl AxisExclusion {
     ///
     /// Panics if any of the requirements isn't met.
     #[inline]
-    pub fn symmetric(threshold: f32) -> Self {
+    pub fn magnitude(threshold: f32) -> Self {
         Self::new(-threshold, threshold)
     }
 
@@ -576,8 +577,7 @@ impl Hash for AxisExclusion {
 // region deadzone
 
 /// Defines a deadzone that normalizes input values by clamping values to `[-1.0, 1.0]`,
-/// excluding values within a specified exclusion range,
-/// and scaling unchanged values linearly in between.
+/// excluding values via a specified [`AxisExclusion`], and scaling unchanged values linearly in between.
 ///
 /// # Warning
 ///
@@ -809,7 +809,7 @@ mod tests {
         assert_eq!(bounds.max(), 3.0);
 
         // -4 to 4
-        let bounds = AxisBounds::symmetric(4.0);
+        let bounds = AxisBounds::magnitude(4.0);
         assert_eq!(bounds.min(), -4.0);
         assert_eq!(bounds.max(), 4.0);
 
@@ -908,7 +908,7 @@ mod tests {
         assert_eq!(exclusion.max(), 3.0);
 
         // -4 to 4
-        let exclusion = AxisExclusion::symmetric(4.0);
+        let exclusion = AxisExclusion::magnitude(4.0);
         assert_eq!(exclusion.min(), -4.0);
         assert_eq!(exclusion.max(), 4.0);
     }

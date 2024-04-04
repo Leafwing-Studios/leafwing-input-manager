@@ -11,8 +11,8 @@
 //! - [`DualAxisSensitivity`]: Adjusts control responsiveness by scaling input values with a multiplier.
 //! - [`CircleBounds`]: Specifies the acceptable range of magnitudes for input values.
 //! - [`SquareBounds`]: Defines valid limits for input values to prevent unexpected behavior.
-//! - [`CircleExclusion`]: Excludes input values with a magnitude less than the specified radius.
-//! - [`SquareExclusion`]: Specifies a range where input values are treated as zero (deadzone).
+//! - [`CircleExclusion`]: Specifies a range where input magnitudes are ignored (treated as zero).
+//! - [`SquareExclusion`]: Specifies a range where input values are ignored (treated as zeros).
 //! - [`CircleDeadzone`]: Linearly scales input values into the livezone ranges defined
 //!     by a specified [`CircleExclusion`].
 //! - [`SquareDeadzone`]: Linearly scales input values into the livezone ranges defined
@@ -30,7 +30,8 @@
 //! Then, add desired processing steps (of type [`DualAxisProcessor`]) to the pipeline.
 //!
 //! Keep in mind that while this approach offers flexibility, it may limit compiler optimizations.
-//! For performance-critical production environments, opt for the `define_dual_axis_processing_pipeline` macro.
+//! For performance-critical production environments,
+//! opt for the [`define_dual_axis_processing_pipeline`](crate::define_dual_axis_processing_pipeline) macro.
 //! This macro generates an optimized pipeline with inlined logic for all specified processors.
 //!
 //! All pipelines have implemented the [`DualAxisProcessor`] trait,
@@ -48,12 +49,11 @@ use dyn_hash::DynHash;
 use serde::{Deserialize, Serialize};
 
 use super::single_axis::*;
-use crate::prelude::processor_serde;
 
 // region processor trait
 
-/// A trait for defining processors applied to input values on the X and Y axes,
-/// taking a `[Vec2`] value and return the processed [`Vec2`] value.
+/// A trait for defining processors applied to input values on the X and Y axes.
+/// These processors accept a [`Vec2`] input and produce a [`Vec2`] output.
 ///
 /// Implementors of this trait are responsible for providing the specific processing logic.
 ///
@@ -263,7 +263,7 @@ macro_rules! define_dual_axis_processor {
             OnlyY,
         }
 
-        #[processor_serde]
+        #[$crate::prelude::processor_serde]
         impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
             #[must_use]
@@ -383,7 +383,7 @@ macro_rules! define_dual_axis_processor {
             OnlyY($AxisProcessor),
         }
 
-        #[processor_serde]
+        #[$crate::prelude::processor_serde]
         impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
             #[must_use]
@@ -527,8 +527,8 @@ impl DualAxisSensitivity {
 
 // region bounds
 
-/// Specifies radial bounds `[radius_min, radius_max]` for input values,
-/// ensuring their magnitudes stay within the specified range.
+/// Specifies a radial bound for input values,
+/// ensuring their magnitudes smaller than a specified threshold.
 ///
 /// # Examples
 ///
@@ -537,7 +537,7 @@ impl DualAxisSensitivity {
 /// use leafwing_input_manager::prelude::*;
 ///
 /// // Set the maximum bound to 5 for magnitudes.
-/// let bounds = CircleBounds::new(5.0);
+/// let bounds = CircleBounds::magnitude(5.0);
 ///
 /// assert_eq!(bounds.radius(), 5.0);
 ///
@@ -589,22 +589,22 @@ impl Default for CircleBounds {
     /// Creates a new [`CircleBounds`] with the maximum bound set to `1.0`.
     #[inline]
     fn default() -> Self {
-        Self::new(1.0)
+        Self::magnitude(1.0)
     }
 }
 
 impl CircleBounds {
-    /// Creates a [`CircleBounds`] with the maximum bound set to `max`.
+    /// Creates a [`CircleBounds`] with the maximum bound set to `radius`.
     ///
     /// # Requirements
     ///
-    /// - `0.0` <= `max`.
+    /// - `radius` >= `0.0`.
     ///
     /// # Panics
     ///
     /// Panics if any of the requirements isn't met.
     #[inline]
-    pub fn new(radius: f32) -> Self {
+    pub fn magnitude(radius: f32) -> Self {
         assert!(radius >= 0.0);
         Self {
             radius,
@@ -615,7 +615,7 @@ impl CircleBounds {
     /// Creates a [`CircleBounds`] with unlimited bounds.
     #[inline]
     pub fn full_range() -> Self {
-        Self::new(f32::MAX)
+        Self::magnitude(f32::MAX)
     }
 
     /// Returns the radius of the bounds.
@@ -681,11 +681,10 @@ impl SquareBounds {
 
 // region exclusion
 
-/// Specifies a radial exclusion to input values,
-/// excluding those with a magnitude less than the specified `radius`.
+/// Specifies a radial exclusion for input values,
+/// excluding those with a magnitude less than a specified threshold.
 ///
 /// In simple terms, this processor functions as an unscaled [`CircleDeadzone`].
-///
 /// This processor is useful for filtering out minor fluctuations and unintended movements.
 ///
 /// # Requirements
@@ -767,6 +766,7 @@ impl CircleExclusion {
     /// # Panics
     ///
     /// Panics if any of the requirements isn't met.
+    #[inline]
     pub fn new(radius: f32) -> Self {
         assert!(radius >= 0.0);
         Self {
@@ -815,9 +815,7 @@ impl Hash for CircleExclusion {
 define_dual_axis_processor!(
     name: SquareExclusion,
     perform: "axial exclusion ranges",
-    stored_processor_type: AxisExclusion,
-    info: "Each axis is processed individually, resulting in a per-axis \"snapping\" or locked effect, \
-        which enhances control precision for pure axial motion."
+    stored_processor_type: AxisExclusion
 );
 
 impl Default for SquareExclusion {
@@ -849,10 +847,8 @@ impl SquareExclusion {
 
 // region deadzone
 
-/// Defines a deadzone that normalizes input values
-/// by clamping their magnitude to a maximum of `1.0`,
-/// excluding values with a magnitude less than a specified radius,
-/// and scaling unchanged values linearly in between.
+/// Defines a deadzone that normalizes input values by clamping their magnitude to a maximum of `1.0`,
+/// excluding values via a specified [`CircleExclusion`], and scaling unchanged values linearly in between.
 ///
 /// It is worth considering that this normalizer reduces input values on diagonals.
 /// If that is not your goal, you might want to explore alternative normalizers.
@@ -958,7 +954,6 @@ impl Default for CircleDeadzone {
 }
 
 impl CircleDeadzone {
-    #[inline]
     /// Creates a new [`CircleDeadzone`] that normalizes input values
     /// within the livezone regions defined by the given `deadzone` and `bounds`.
     ///
@@ -973,6 +968,7 @@ impl CircleDeadzone {
     /// # Warning
     ///
     /// - Using an `exclusion` exceeding all bounds will exclude all input values.
+    #[inline]
     pub fn new(exclusion: CircleExclusion) -> Self {
         let bounds = CircleBounds::default();
         Self {
@@ -982,11 +978,13 @@ impl CircleDeadzone {
     }
 
     /// Returns the [`CircleExclusion`] used by this normalizer.
+    #[inline]
     pub fn exclusion(&self) -> CircleExclusion {
         self.exclusion
     }
 
     /// Returns the [`CircleBounds`] used by this normalizer.
+    #[inline]
     pub fn bounds(&self) -> CircleBounds {
         CircleBounds::default()
     }
@@ -994,6 +992,8 @@ impl CircleDeadzone {
     /// Returns the minimum and maximum bounds of the livezone range used by this normalizer.
     ///
     /// In simple terms, this returns `(exclusion.radius, bounds.radius)`.
+    #[must_use]
+    #[inline]
     pub fn livezone_min_max(&self) -> (f32, f32) {
         (self.exclusion.radius, self.bounds().radius)
     }
@@ -1138,7 +1138,7 @@ mod tests {
         assert_eq!(bounds.radius(), 1.0);
 
         // 0 to 3
-        let bounds = CircleBounds::new(3.0);
+        let bounds = CircleBounds::magnitude(3.0);
         assert_eq!(bounds.radius(), 3.0);
 
         // 0 to unlimited
@@ -1149,7 +1149,7 @@ mod tests {
     #[test]
     fn test_circle_value_bounds_behavior() {
         // Set the bounds to 5 for magnitude.
-        let bounds = CircleBounds::new(5.0);
+        let bounds = CircleBounds::magnitude(5.0);
 
         // Getters.
         let radius = bounds.radius();
@@ -1198,8 +1198,8 @@ mod tests {
     #[test]
     fn test_square_value_bounds_behavior() {
         // Set the bounds to [-2, 2] on the X-axis and [-3, 3] on the Y-axis.
-        let bounds_x = AxisBounds::symmetric(2.0);
-        let bounds_y = AxisBounds::symmetric(3.0);
+        let bounds_x = AxisBounds::magnitude(2.0);
+        let bounds_y = AxisBounds::magnitude(3.0);
         let bounds = bounds_x.extend_dual_with_y(bounds_y);
 
         // These values are within the bounds.

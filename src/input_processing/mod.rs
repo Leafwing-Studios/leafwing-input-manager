@@ -54,7 +54,7 @@ macro_rules! define_input_processing_pipeline {
         #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $Pipeline;
 
-        #[typetag::serde]
+        #[$crate::prelude::processor_serde]
         impl $ProcessorTrait for $Pipeline {
             /// Processes input values through this pipeline and returns the result.
             #[must_use]
@@ -118,8 +118,7 @@ macro_rules! define_input_processing_pipeline {
 #[macro_export]
 macro_rules! define_dynamic_input_processing_pipeline {
     (name: $Pipeline:ident, value_type: $InputValueType:ty, processor_type: $ProcessorTrait:ident) => {
-        #[doc = concat!("The [`", stringify!($ProcessorTrait), "`] that wraps a [`Vec`] containing boxed processors for sequential processing input values.")]
-        /// This allows for dynamic modification, beneficial during debugging and code refinement.
+        #[doc = concat!("A dynamic sequence container of [`", stringify!($ProcessorTrait), "`] designed for processing input values.")]
         ///
         /// # Warning
         ///
@@ -130,7 +129,7 @@ macro_rules! define_dynamic_input_processing_pipeline {
         #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $Pipeline(Vec<Box<dyn $ProcessorTrait>>);
 
-        #[typetag::serde]
+        #[$crate::prelude::processor_serde]
         impl $ProcessorTrait for $Pipeline {
             /// Processes input values through this dynamic pipeline and returns the result.
             #[must_use]

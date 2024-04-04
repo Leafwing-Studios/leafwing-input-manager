@@ -382,7 +382,7 @@ fn game_pad_dual_axis_circle() {
 #[test]
 fn test_zero_square() {
     let mut app = test_app();
-    let deadzone = SquareExclusion::AllAxes(AxisExclusion::symmetric(0.0));
+    let deadzone = SquareExclusion::AllAxes(AxisExclusion::magnitude(0.0));
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
         DualAxis::left_stick().with_processor(deadzone),
