@@ -743,8 +743,6 @@ impl Hash for AxisDeadzone {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use bevy::prelude::*;
-    use serde::{Deserialize, Serialize};
 
     #[test]
     fn test_axis_processing_pipeline() {

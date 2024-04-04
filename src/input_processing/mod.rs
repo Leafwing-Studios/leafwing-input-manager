@@ -22,7 +22,6 @@ pub mod single_axis;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use serde::{Serialize, Deserialize};
 ///
 /// define_input_processing_pipeline!(
 ///     // The name of the new pipeline.
@@ -52,7 +51,7 @@ macro_rules! define_input_processing_pipeline {
     ) => {
         #[doc = concat!("The [`", stringify!($ProcessorTrait), "`] for sequential processing input values by passing them through a sequence of `[", __stringify_expressions!($($processor),*), "]`.")]
         #[must_use]
-        #[derive(Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $Pipeline;
 
         #[typetag::serde]
@@ -92,7 +91,6 @@ macro_rules! define_input_processing_pipeline {
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use serde::{Serialize, Deserialize};
 ///
 /// define_dynamic_input_processing_pipeline!(
 ///     // The name of the new pipeline.
@@ -129,7 +127,7 @@ macro_rules! define_dynamic_input_processing_pipeline {
         /// For production-ready solutions, consider creating your own pipelines
         /// with optimized logic for improved performance.
         #[must_use]
-        #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+        #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $Pipeline(Vec<Box<dyn $ProcessorTrait>>);
 
         #[typetag::serde]

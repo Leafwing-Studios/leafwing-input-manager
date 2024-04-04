@@ -250,7 +250,7 @@ macro_rules! define_dual_axis_processor {
         /// # Notes
         ///
         #[doc = concat!("Helpers like [`", stringify!($AxisProcessor), "::extend_dual()`] and its peers can be used to create an instance of [`", stringify!($DualAxisProcessor), "`].")]
-        #[derive(Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         #[must_use]
         pub enum $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to all axes.")]
@@ -264,7 +264,7 @@ macro_rules! define_dual_axis_processor {
         }
 
         #[processor_serde]
-        impl DualAxisProcessor for $DualAxisProcessor {
+        impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
             #[must_use]
             #[inline]
@@ -367,7 +367,7 @@ macro_rules! define_dual_axis_processor {
         /// # Notes
         ///
         #[doc = concat!("Helpers like [`", stringify!($AxisProcessor), "::extend_dual()`] and its peers can be used to create an instance of [`", stringify!($DualAxisProcessor), "`].")]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         #[must_use]
         pub enum $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to all axes using the same [`", stringify!($AxisProcessor), "`] processor.")]
@@ -384,7 +384,7 @@ macro_rules! define_dual_axis_processor {
         }
 
         #[processor_serde]
-        impl DualAxisProcessor for $DualAxisProcessor {
+        impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
             #[must_use]
             #[inline]
@@ -1032,7 +1032,6 @@ impl Default for SquareDeadzone {
 #[cfg(test)]
 mod tests {
     use bevy::prelude::*;
-    use serde::{Deserialize, Serialize};
 
     use crate::prelude::*;
 
