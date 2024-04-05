@@ -1,41 +1,4 @@
-//! Input processors for values along the X and Y axes.
-//!
-//! This module provides [`DualAxisProcessor`]s to refine and manipulate input values
-//! along the X and Y axes before they reach your game logic.
-//!
-//! # Using Processors
-//!
-//! This module offers several built-in processors to handle common tasks.
-//!
-//! - [`DualAxisInverted`]: Flips the sign of input values (e.g., up becomes down).
-//! - [`DualAxisSensitivity`]: Adjusts control responsiveness by scaling input values with a multiplier.
-//! - [`CircleBounds`]: Specifies the acceptable range of magnitudes for input values.
-//! - [`SquareBounds`]: Defines valid limits for input values to prevent unexpected behavior.
-//! - [`CircleExclusion`]: Specifies a range where input magnitudes are ignored (treated as zero).
-//! - [`SquareExclusion`]: Specifies a range where input values are ignored (treated as zeros).
-//! - [`CircleDeadzone`]: Linearly scales input values into the livezone ranges defined
-//!     by a specified [`CircleExclusion`].
-//! - [`SquareDeadzone`]: Linearly scales input values into the livezone ranges defined
-//!     by a specified [`SquareExclusion`].
-//!
-//! Need something specific? You can also create your own processors
-//! by implementing the [`DualAxisProcessor`] trait for specific needs.
-//!
-//! Feel free to suggest additions to the built-in processors if you have a common use case!
-//!
-//! # Custom Processing Pipelines
-//!
-//! To construct custom processing pipelines for complex tasks,
-//! begin by creating an empty [`DualAxisProcessingPipeline`].
-//! Then, add desired processing steps (of type [`DualAxisProcessor`]) to the pipeline.
-//!
-//! Keep in mind that while this approach offers flexibility, it may limit compiler optimizations.
-//! For performance-critical production environments,
-//! opt for the [`define_dual_axis_processing_pipeline`](crate::define_dual_axis_processing_pipeline) macro.
-//! This macro generates an optimized pipeline with inlined logic for all specified processors.
-//!
-//! All pipelines have implemented the [`DualAxisProcessor`] trait,
-//! allowing you to use them directly as a single [`DualAxisProcessor`].
+//! Input processors for values along the X and Y axes
 
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};

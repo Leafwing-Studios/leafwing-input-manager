@@ -28,8 +28,9 @@ fn spawn_player(mut commands: Commands) {
                 // You can add a processor to handle axis-like user inputs by using the `with_processor`.
                 //
                 // This processor is a circular deadzone that normalizes input values
-                // by clamping their magnitude to a maximum of 1.0
-                // and excluding those with a magnitude less than 0.1.
+                // by clamping their magnitude to a maximum of 1.0,
+                // excluding those with a magnitude less than 0.1,
+                // and scaling other values linearly in between.
                 .with_processor(CircleDeadzone::default()),
         )
         .insert(
@@ -45,7 +46,7 @@ fn spawn_player(mut commands: Commands) {
             // You can also add a pipeline to handle axis-like user inputs.
             DualAxis::mouse_motion().with_processor(
                 DualAxisProcessingPipeline::default()
-                    // The first processor is a circular deadzone live above.
+                    // The first processor is a circular deadzone.
                     .with(CircleDeadzone::default())
                     // The next processor doubles inputs normalized by the deadzone.
                     .with(AxisSensitivity(2.0).extend_dual()),

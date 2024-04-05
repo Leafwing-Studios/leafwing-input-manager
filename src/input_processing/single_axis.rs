@@ -1,37 +1,4 @@
 //! Input processors for values along a single axis
-//!
-//! This module provides [`AxisProcessor`]s to refine and manipulate input values
-//! along a single axis before they reach your game logic.
-//!
-//! # Using Processors
-//!
-//! This module offers several built-in processors to handle common tasks.
-//!
-//! - [`AxisInverted`]: Flips the sign of input values (e.g., up becomes down).
-//! - [`AxisSensitivity`]: Adjusts control responsiveness by scaling input values with a multiplier.
-//! - [`AxisBounds`]: Defines valid limits for input values to prevent unexpected behavior.
-//! - [`AxisExclusion`]: Specifies a range where input values are ignored (treated as zero).
-//! - [`AxisDeadzone`]: Linearly scales input values into the livezone ranges defined
-//!     by a specified [`AxisExclusion`].
-//!
-//! Need something specific? You can also create your own processors
-//! by implementing the [`AxisProcessor`] trait for specific needs.
-//!
-//! Feel free to suggest additions to the built-in processors if you have a common use case!
-//!
-//! # Custom Processing Pipelines
-//!
-//! To construct custom processing pipelines for complex tasks,
-//! begin by creating an empty [`AxisProcessingPipeline`].
-//! Then, add desired processing steps (of type [`AxisProcessor`]) to the pipeline.
-//!
-//! Keep in mind that while this approach offers flexibility, it may limit compiler optimizations.
-//! For performance-critical production environments,
-//! opt for the [`define_axis_processing_pipeline`](crate::define_axis_processing_pipeline) macro.
-//! This macro generates an optimized pipeline with inlined logic for all specified processors.
-//!
-//! All pipelines have implemented the [`AxisProcessor`] trait,
-//! allowing you to use them directly as a single [`AxisProcessor`].
 
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};

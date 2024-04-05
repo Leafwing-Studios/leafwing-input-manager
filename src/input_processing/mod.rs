@@ -1,4 +1,79 @@
-//! Utilities for processing input values.
+//! Input Processors
+//!
+//! This module simplifies handling input values in your application by providing processors
+//! for refining and manipulating them before reaching the application logic.
+//!
+//! # Processor Traits
+//!
+//! The foundation of this module lies in these core traits.
+//!
+//! - [`AxisProcessor`]: Handles single-axis input values.
+//! - [`DualAxisProcessor`]: Handles dual-axis input values (X and Y axes).
+//!
+//! Need something specific? You can also create your own processors by implementing these traits for specific needs.
+//!
+//! Feel free to suggest additions to the built-in processors if you have a common use case!
+//!
+//! # Built-in Processors
+//!
+//! ## Inversion
+//!
+//! Inversion reverses the control, such as positive value becomes negative or up becomes down.
+//!
+//! - [`AxisInverted`]: Inverts single-axis input values.
+//! - [`DualAxisInverted`]: Inverts dual-axis input values.
+//!
+//! ## Sensitivity
+//!
+//! Sensitivity adjusts control responsiveness by scaling input values with a multiplier.
+//!
+//! - [`AxisSensitivity`]: Scales single-axis input values.
+//! - [`DualAxisSensitivity`]: Scales dual-axis input values.
+//!
+//! ## Value Bounds
+//!
+//! Value bounds define valid limits for input values to prevent unexpected behavior that might occur outside these boundaries.
+//! Values exceeding the bounds are clamped to fit within the specified range.
+//!
+//! - [`AxisBounds`]: Limits single-axis input values within a specified range.
+//! - [`CircleBounds`]: Limits dual-axis input values with a magnitude greater than a specified threshold.
+//! - [`SquareBounds`]: Limits dual-axis input values within a specified range along each axis.
+//!
+//! ## Deadzones
+//!
+//! ### Unscaled Versions
+//!
+//! Unscaled deadzones specify ranges where near-zero input values are excluded, treating them as zero.
+//!
+//! - [`AxisExclusion`]: Excludes single-axis input values within a specified range.
+//! - [`CircleExclusion`]: Excludes dual-axis input values with a magnitude smaller than a specified threshold.
+//! - [`SquareExclusion`]: Excludes dual-axis input values within a specified range along each axis.
+//!
+//! ### Scaled Versions
+//!
+//! Scaled deadzones process input values by clamping them to fit within the default value bounds,
+//! considering a specified exclusion range, and scaling unchanged values linearly in between.
+//!
+//! - [`AxisDeadzone`]: Normalizes single-axis input values based on [`AxisBounds::default`] and a specified [`AxisExclusion`].
+//! - [`CircleDeadzone`]: Normalizes dual-axis input values based on [`CircleBounds::default`] and a specified [`CircleExclusion`].
+//! - [`SquareDeadzone`]: Normalizes dual-axis input values based on [`SquareBounds::default`] and a specified [`SquareExclusion`].
+//!
+//! ## Composite Processors
+//!
+//! Pipelines are dynamic sequence containers of processors, allowing you to create custom processing steps.
+//!
+//! - [`AxisProcessingPipeline`]: Applies a sequence of [`AxisProcessor`]s to process single-axis input values.
+//! - [`DualAxisProcessingPipeline`]: Applies a sequence of [`DualAxisProcessor`]s to process dual-axis input values.
+//!
+//! While pipelines offer flexibility in defining custom processing steps,
+//! for performance-critical scenarios, consider using the macros below for optimized implementations.
+//!
+//! - [`define_axis_processing_pipeline`](crate::define_axis_processing_pipeline):
+//!     Generates an [`AxisProcessor`] with fixed processing steps to process single-axis input values.
+//! - [`define_dual_axis_processing_pipeline`](crate::define_dual_axis_processing_pipeline):
+//!     Generates a [`DualAxisProcessor`] with fixed processing steps to process dual-axis input values.
+//!
+//! Choose between pipelines and macros based on your specific processing needs and performance requirements.
 
 pub use self::dual_axis::*;
 pub use self::single_axis::*;
