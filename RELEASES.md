@@ -5,27 +5,37 @@
 ### Breaking Changes
 
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-
-- added input processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`:
-  - Pipeline:
-    - Dynamic pipeline (wrapped a `Vec<Box<dyn Processor>>`): `AxisProcessingPipeline` for single-axis inputs and `DualAxisProcessingPipeline` for dual-axis inputs.
-    - For production-use solutions, please `define_axis_processing_pipeline` and `define_dual_axis_processing_pipeline` macros to create inlined pipelines for compiler optimization.
-  - Inversion: `AxisInverted` for single-axis inversion; `DualAxisInverted` for dual-axis inversion.
-  - Sensitivity: `AxisSensitivity` for single-axis scaling; `DualAxisSensitivity` for dual-axis scaling.
-  - Bounds:
-    - `AxisBounds` for limiting single-axis input values in a specified min-max range;
-    - `CircleBounds` for limiting dual-axis input magnitudes to a maximum threshold;
-    - `SquareBounds` for limiting dual-axis input values in a specified min-max range on each axis;
-  - Exclusion, in simple terms, just is unscaled deadzones:
-    - `AxisExclusion` for excluding single-axis input values, treating values as zeros;
-    - `CircleExclusion` for excluding dual-axis input magnitudes, treating values as zeros;
-    - `SquareExclusion` for excluding dual-axis input values on each axis, treating values as zeros;
-  - Deadzone (normalized):
-    - `AxisDeadzone` for smoothing single-axis input values into the livezone ranges defined by `AxisExclusion` and `AxisBounds`;
-    - `CircleDeadzone` for smoothing dual-axis input values into the livezone ranges defined by `CircleExclusion` and `CircleBounds`;
-    - `SquareDeadzone` for smoothing dual-axis input values into the livezone ranges defined by `SquareExclusion` and `SquareBounds`;
 - removed `DualAxisShape`.
-- removed functions for inversion, sensitivity scaling, and deadzone creation from these axis-like inputs.
+- added input processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad` to refine input values:
+  - Traits:
+    - `AxisProcessor`: Handles single-axis values.
+    - `DualAxisProcessor`: Handles dual-axis values.
+  - Built-in processors:
+    - Composite Processors: Combine multiple processors function as a pipeline.
+      - `AxisProcessingPipeline`: Chain processors for single-axis values.
+      - `define_axis_processing_pipeline` macro: Inlined processor chaining for single-axis values with fixed steps.
+      - `DualAxisProcessingPipeline`: Chain processors for dual-axis values.
+      - `define_dual_axis_processing_pipeline` macro: Inlined processor chaining for dual-axis values with fixed steps.
+    - Inversion: Reverses control (positive becomes negative, etc.)
+      - `AxisInverted`: Single-axis inversion.
+      - `DualAxisInverted`: Dual-axis inversion.
+    - Sensitivity: Adjusts control responsiveness (doubling, halving, etc.).
+      - `AxisSensitivity`: Single-axis scaling.
+      - `DualAxisSensitivity`: Dual-axis scaling.
+    - Value Bounds: Define the boundaries for constraining input values.
+      - `AxisBounds`: Restricts single-axis values to a range.
+      - `CircleBounds`: Limits dual-axis values to a maximum magnitude.
+      - `SquareBounds`: Restricts single-axis values to a range along each axis.
+    - Deadzone: Ignores near-zero values, treating them as zero.
+      - Unscaled Deadzone:
+        - `AxisExclusion`: Excludes small single-axis values.
+        - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold.
+        - `SquareExclusion`: Excludes small dual-axis values along each axis.
+      - Scaled Deadzone:
+        - `AxisDeadzone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`.
+        - `CircleDeadzone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`.
+        - `SquareDeadzone`: Normalizes dual-axis values based on `SquareExclusion` and `SquareBounds::default`.
+- removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
 
 ### Bugs
 

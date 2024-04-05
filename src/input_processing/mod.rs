@@ -20,24 +20,25 @@
 //!
 //! Inversion reverses the control, such as positive value becomes negative or up becomes down.
 //!
-//! - [`AxisInverted`]: Inverts single-axis input values.
-//! - [`DualAxisInverted`]: Inverts dual-axis input values.
+//! - [`AxisInverted`]: Single-axis inversion.
+//! - [`DualAxisInverted`]: Dual-axis inversion.
 //!
 //! ## Sensitivity
 //!
-//! Sensitivity adjusts control responsiveness by scaling input values with a multiplier.
+//! Sensitivity adjusts control responsiveness by scaling input values with a multiplier (doubling, halving, etc.).
 //!
-//! - [`AxisSensitivity`]: Scales single-axis input values.
-//! - [`DualAxisSensitivity`]: Scales dual-axis input values.
+//! - [`AxisSensitivity`]: Single-axis scaling.
+//! - [`DualAxisSensitivity`]: Dual-axis scaling.
 //!
 //! ## Value Bounds
 //!
-//! Value bounds define valid limits for input values to prevent unexpected behavior that might occur outside these boundaries.
+//! Value bounds define the boundaries for constraining input values,
+//! preventing unexpected behavior that might occur outside these bounds.
 //! Values exceeding the bounds are clamped to fit within the specified range.
 //!
-//! - [`AxisBounds`]: Limits single-axis input values within a specified range.
-//! - [`CircleBounds`]: Limits dual-axis input values with a magnitude greater than a specified threshold.
-//! - [`SquareBounds`]: Limits dual-axis input values within a specified range along each axis.
+//! - [`AxisBounds`]: Restricts single-axis input values to a range.
+//! - [`CircleBounds`]: Limits dual-axis input values to a maximum magnitude.
+//! - [`SquareBounds`]: Restricts dual-axis input values to a range along each axis.
 //!
 //! ## Deadzones
 //!
@@ -46,7 +47,7 @@
 //! Unscaled deadzones specify ranges where near-zero input values are excluded, treating them as zero.
 //!
 //! - [`AxisExclusion`]: Excludes single-axis input values within a specified range.
-//! - [`CircleExclusion`]: Excludes dual-axis input values with a magnitude smaller than a specified threshold.
+//! - [`CircleExclusion`]: Excludes dual-axis input values below a specified magnitude threshold.
 //! - [`SquareExclusion`]: Excludes dual-axis input values within a specified range along each axis.
 //!
 //! ### Scaled Versions

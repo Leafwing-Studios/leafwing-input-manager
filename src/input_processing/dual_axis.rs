@@ -437,10 +437,10 @@ macro_rules! define_dual_axis_processor {
         impl ::core::fmt::Debug for $DualAxisProcessor {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 match self {
-                    Self::All(p) => f.write_fmt(format_args!("DualAxis::All({p})")),
-                    Self::Separate(px, py) => f.write_fmt(format_args!("DualAxis::Separate({px}, {py})"))
-                    Self::OnlyX(p) => f.write_fmt(format_args!("DualAxis::OnlyX({p})")),
-                    Self::OnlyY(p) => f.write_fmt(format_args!("DualAxis::OnlyY({p})")),
+                    Self::All(p) => f.write_fmt(format_args!("DualAxis::All({p:?})")),
+                    Self::Separate(px, py) => f.write_fmt(format_args!("DualAxis::Separate({px:?}, {py:?})")),
+                    Self::OnlyX(p) => f.write_fmt(format_args!("DualAxis::OnlyX({p:?})")),
+                    Self::OnlyY(p) => f.write_fmt(format_args!("DualAxis::OnlyY({p:?})")),
                 }
             }
         }
