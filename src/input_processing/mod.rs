@@ -201,7 +201,7 @@ macro_rules! define_dynamic_input_processing_pipeline {
         /// with optimized logic for improved performance.
         #[must_use]
         #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
-        pub struct $Pipeline(Vec<Box<dyn $ProcessorTrait>>);
+        pub struct $Pipeline(pub(crate) Vec<Box<dyn $ProcessorTrait>>);
 
         #[$crate::prelude::serde_trait_object]
         impl $ProcessorTrait for $Pipeline {

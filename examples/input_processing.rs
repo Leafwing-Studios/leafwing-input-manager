@@ -31,15 +31,17 @@ fn spawn_player(mut commands: Commands) {
                 // by clamping their magnitude to a maximum of 1.0,
                 // excluding those with a magnitude less than 0.1,
                 // and scaling other values linearly in between.
-                .with_processor(CircleDeadzone::default()),
+                .with_processor(CircleDeadzone::default())
+                // Followed by appending another processor for the next processing step.
+                .with_processor(AxisSensitivity(2.0).extend_dual()),
         )
         .insert(
             Action::Move,
             DualAxis::left_stick()
-                // This function is used to remove the current processor.
+                // This function is used to remove the current used processor.
                 .no_processor()
                 // But you can also use this function replace the processor directly.
-                .with_processor(CircleDeadzone::default()),
+                .replace_processor(CircleDeadzone::default()),
         )
         .insert(
             Action::LookAround,

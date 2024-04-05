@@ -36,6 +36,7 @@
         - `DualAxisDeadzone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`.
         - `CircleDeadzone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`.
 - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
+- added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`.
 
 ### Bugs
 

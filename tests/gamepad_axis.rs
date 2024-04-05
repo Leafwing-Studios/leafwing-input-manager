@@ -275,10 +275,10 @@ fn game_pad_dual_axis_deadzone() {
     let deadzone = DualAxisDeadzone::default();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_processor(deadzone),
+        DualAxis::left_stick().replace_processor(deadzone),
     )]));
 
-    // Test that an input inside the dual axis deadzone is filtered out.
+    // Test that an input inside the dual-axis deadzone is filtered out.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -296,7 +296,7 @@ fn game_pad_dual_axis_deadzone() {
         DualAxisData::new(0.0, 0.0)
     );
 
-    // Test that an input outside the dual axis deadzone is not filtered out.
+    // Test that an input outside the dual-axis deadzone is not filtered out.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -314,7 +314,7 @@ fn game_pad_dual_axis_deadzone() {
         DualAxisData::new(1.0, 0.11111112)
     );
 
-    // Test that each axis of the dual axis deadzone is filtered independently.
+    // Test that each axis of the dual-axis deadzone is filtered independently.
     app.send_input(DualAxis::from_value(
         GamepadAxisType::LeftStickX,
         GamepadAxisType::LeftStickY,
@@ -339,7 +339,7 @@ fn game_pad_circle_deadzone() {
     let deadzone = CircleDeadzone::default();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().with_processor(deadzone),
+        DualAxis::left_stick().replace_processor(deadzone),
     )]));
 
     // Test that an input inside the circle deadzone is filtered out, assuming values of 0.1

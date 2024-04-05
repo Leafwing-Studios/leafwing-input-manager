@@ -139,6 +139,22 @@ crate::define_dynamic_input_processing_pipeline!(
     processor_type: DualAxisProcessor
 );
 
+/// A trait for processors that can be merged with other [`DualAxisProcessor`]s.
+pub trait MergeDualAxisProcessor {
+    /// Merges this processor with another [`DualAxisProcessor`].
+    fn merge_processor(self, processor: impl DualAxisProcessor) -> Self;
+}
+
+impl MergeDualAxisProcessor for Box<dyn DualAxisProcessor> {
+    fn merge_processor(self, processor: impl DualAxisProcessor) -> Self {
+        let pipeline = match Reflect::as_any(&*self).downcast_ref::<DualAxisProcessingPipeline>() {
+            Some(pipeline) => pipeline.clone(),
+            None => DualAxisProcessingPipeline(vec![self]),
+        };
+        Box::new(pipeline.with(processor))
+    }
+}
+
 // endregion pipeline
 
 // region macros
@@ -561,6 +577,29 @@ mod tests {
         let pipeline = InvertedThenDouble;
         assert_eq!(pipeline.process(Vec2::splat(2.0)), Vec2::splat(-4.0));
         assert_eq!(pipeline.process(Vec2::splat(-4.0)), Vec2::splat(8.0));
+    }
+
+    #[test]
+    fn test_merge_axis_processor() {
+        let first = AxisSensitivity(2.0).extend_dual();
+        let first_boxed: Box<dyn DualAxisProcessor> = Box::new(first);
+
+        let second = AxisSensitivity(3.0).extend_dual();
+        let merged_second = first_boxed.merge_processor(second);
+        let expected = DualAxisProcessingPipeline::default()
+            .with(first)
+            .with(second);
+        let expected_boxed: Box<dyn DualAxisProcessor> = Box::new(expected);
+        assert_eq!(merged_second, expected_boxed);
+
+        let third = AxisSensitivity(4.0).extend_dual();
+        let merged_third = merged_second.merge_processor(third);
+        let expected = DualAxisProcessingPipeline::default()
+            .with(first)
+            .with(second)
+            .with(third);
+        let expected_boxed: Box<dyn DualAxisProcessor> = Box::new(expected);
+        assert_eq!(merged_third, expected_boxed);
     }
 
     #[test]

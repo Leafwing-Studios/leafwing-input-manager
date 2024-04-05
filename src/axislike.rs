@@ -97,9 +97,20 @@ impl SingleAxis {
         }
     }
 
-    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
+    /// Appends the given [`AxisProcessor`] into the current [`AxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
     #[inline]
     pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+        };
+        self
+    }
+
+    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl AxisProcessor) -> Self {
         self.processor = Some(Box::new(processor));
         self
     }
@@ -198,11 +209,10 @@ impl DualAxis {
     /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
     #[must_use]
     pub fn left_stick() -> Self {
-        let deadzone = CircleDeadzone::default();
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-            processor: Some(Box::new(deadzone)),
+            processor: Some(Box::<CircleDeadzone>::default()),
             value: None,
         }
     }
@@ -210,11 +220,10 @@ impl DualAxis {
     /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
     #[must_use]
     pub fn right_stick() -> Self {
-        let deadzone = CircleDeadzone::default();
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
-            processor: Some(Box::new(deadzone)),
+            processor: Some(Box::<CircleDeadzone>::default()),
             value: None,
         }
     }
@@ -239,9 +248,20 @@ impl DualAxis {
         }
     }
 
-    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
+    /// Appends the given [`DualAxisProcessor`] into the current [`DualAxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
     #[inline]
     pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+        };
+        self
+    }
+
+    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl DualAxisProcessor) -> Self {
         self.processor = Some(Box::new(processor));
         self
     }
@@ -307,13 +327,12 @@ pub struct VirtualDPad {
 impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
     pub fn arrow_keys() -> VirtualDPad {
-        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::ArrowUp),
             down: InputKind::PhysicalKey(KeyCode::ArrowDown),
             left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
             right: InputKind::PhysicalKey(KeyCode::ArrowRight),
-            processor: Some(Box::new(deadzone)),
+            processor: Some(Box::<CircleDeadzone>::default()),
         }
     }
 
@@ -324,26 +343,24 @@ impl VirtualDPad {
     /// This ensures that the classic triangular shape is retained on all layouts,
     /// which enables comfortable movement controls.
     pub fn wasd() -> VirtualDPad {
-        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::KeyW),
             down: InputKind::PhysicalKey(KeyCode::KeyS),
             left: InputKind::PhysicalKey(KeyCode::KeyA),
             right: InputKind::PhysicalKey(KeyCode::KeyD),
-            processor: Some(Box::new(deadzone)),
+            processor: Some(Box::<CircleDeadzone>::default()),
         }
     }
 
     #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an unquoted item
     /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
     pub fn dpad() -> VirtualDPad {
-        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-            processor: Some(Box::new(deadzone)),
+            processor: Some(Box::<CircleDeadzone>::default()),
         }
     }
 
@@ -352,13 +369,12 @@ impl VirtualDPad {
     /// North corresponds to up, west corresponds to left,
     /// east corresponds to right, and south corresponds to down
     pub fn gamepad_face_buttons() -> VirtualDPad {
-        let deadzone = CircleDeadzone::default();
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::North),
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
-            processor: Some(Box::new(deadzone)),
+            processor: Some(Box::<CircleDeadzone>::default()),
         }
     }
 
@@ -384,9 +400,20 @@ impl VirtualDPad {
         }
     }
 
-    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
+    /// Appends the given [`DualAxisProcessor`] into the current [`DualAxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
     #[inline]
     pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+        };
+        self
+    }
+
+    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl DualAxisProcessor) -> Self {
         self.processor = Some(Box::new(processor));
         self
     }
@@ -495,9 +522,20 @@ impl VirtualAxis {
         }
     }
 
-    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
+    /// Appends the given [`AxisProcessor`] into the current [`AxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
     #[inline]
     pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+        };
+        self
+    }
+
+    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl AxisProcessor) -> Self {
         self.processor = Some(Box::new(processor));
         self
     }
