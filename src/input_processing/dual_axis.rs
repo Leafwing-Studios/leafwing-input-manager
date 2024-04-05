@@ -205,7 +205,7 @@ macro_rules! define_dual_axis_processor {
         ///
         /// # Variants
         ///
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::AllAxes`]: Applies ", $operation, " to all axes.")]
+        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::All`]: Applies ", $operation, " to all axes.")]
         #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyX`]: Applies ", $operation, " only to the X-axis.")]
         #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyY`]: Applies ", $operation, " only to the Y-axis.")]
         ///
@@ -216,7 +216,7 @@ macro_rules! define_dual_axis_processor {
         #[must_use]
         pub enum $DualAxisProcessor {
             #[doc = concat!("Applies ", $operation, " to all axes.")]
-            AllAxes,
+            All,
 
             #[doc = concat!("Applies ", $operation, " only to the X-axis.")]
             OnlyX,
@@ -235,7 +235,7 @@ macro_rules! define_dual_axis_processor {
                 match self {
                     Self::OnlyX => Vec2::new($AxisProcessor.process(x), y),
                     Self::OnlyY => Vec2::new(x, $AxisProcessor.process(y)),
-                    Self::AllAxes => Vec2::new($AxisProcessor.process(x), $AxisProcessor.process(y)),
+                    Self::All => Vec2::new($AxisProcessor.process(x), $AxisProcessor.process(y)),
                 }
             }
         }
@@ -258,10 +258,10 @@ macro_rules! define_dual_axis_processor {
 
         // Conversion of $axis_processor into $dual_axis_processor
         impl $AxisProcessor {
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::AllAxes`] that applies ", $operation, " to all axes.")]
+            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::All`] that applies ", $operation, " to all axes.")]
             #[inline]
             pub fn extend_dual(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::AllAxes
+                $DualAxisProcessor::All
             }
 
             #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::OnlyX`] that applies ", $operation, " only to the X-axis.")]
@@ -280,9 +280,9 @@ macro_rules! define_dual_axis_processor {
         impl ::core::fmt::Debug for $DualAxisProcessor {
             fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
                 match self {
-                    Self::AllAxes => f.write_str(concat!("AllAxes(", stringify!($AxisProcessor), ")")),
-                    Self::OnlyX => f.write_str(concat!("OnlyX(", stringify!($AxisProcessor), ")")),
-                    Self::OnlyY => f.write_str(concat!("OnlyY(", stringify!($AxisProcessor), ")")),
+                    Self::All => f.write_str(concat!("DualAxis::All(", stringify!($AxisProcessor), ")")),
+                    Self::OnlyX => f.write_str(concat!("DualAxis::OnlyX(", stringify!($AxisProcessor), ")")),
+                    Self::OnlyY => f.write_str(concat!("DualAxis::OnlyY(", stringify!($AxisProcessor), ")")),
                 }
             }
         }
@@ -321,27 +321,27 @@ macro_rules! define_dual_axis_processor {
         ///
         /// # Variants
         ///
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::AllAxes`]: Applies ", $operation, " to all axes using the same [`", stringify!($AxisProcessor), "`] processor.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::XY`]: Applies two [`", stringify!($AxisProcessor), "`] processors, one for the X-axis and one for the Y-axis.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyX`]: Applies ", $operation, " only to the X-axis using the specified [`", stringify!($AxisProcessor), "`] processor.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyY`]: Applies ", $operation, " only to the Y-axis using the specified [`", stringify!($AxisProcessor), "`] processor.")]
+        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::All`]: Applies a specified [`", stringify!($AxisProcessor), "`] processor to both the X and Y axes.")]
+        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::Separate`]: Applies two [`", stringify!($AxisProcessor), "`] processors, one for the X-axis and one for the Y-axis.")]
+        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyX`]: Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the X-axis.")]
+        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyY`]: Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the Y-axis.")]
         ///
         /// # Notes
         ///
         #[doc = concat!("Helpers like [`", stringify!($AxisProcessor), "::extend_dual()`] and its peers can be used to create an instance of [`", stringify!($DualAxisProcessor), "`].")]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
+        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         #[must_use]
         pub enum $DualAxisProcessor {
-            #[doc = concat!("Applies ", $operation, " to all axes using the same [`", stringify!($AxisProcessor), "`] processor.")]
-            AllAxes($AxisProcessor),
+            #[doc = concat!("Applies a specified [`", stringify!($AxisProcessor), "`] processor to both the X and Y axes.")]
+            All($AxisProcessor),
 
             #[doc = concat!("Applies two [`", stringify!($AxisProcessor), "`] processors, one for the X-axis and one for the Y-axis.")]
-            XY($AxisProcessor, $AxisProcessor),
+            Separate($AxisProcessor, $AxisProcessor),
 
-            #[doc = concat!("Applies ", $operation, " only to the X-axis using the specified [`", stringify!($AxisProcessor), "`] processor.")]
+            #[doc = concat!("Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the X-axis.")]
             OnlyX($AxisProcessor),
 
-            #[doc = concat!("Applies ", $operation, " only to the Y-axis using the specified [`", stringify!($AxisProcessor), "`] processor.")]
+            #[doc = concat!("Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the Y-axis.")]
             OnlyY($AxisProcessor),
         }
 
@@ -355,8 +355,8 @@ macro_rules! define_dual_axis_processor {
                 match self {
                     Self::OnlyX(p) => Vec2::new(p.process(x), y),
                     Self::OnlyY(p) => Vec2::new(x, p.process(y)),
-                    Self::AllAxes(p) => Vec2::new(p.process(x), p.process(y)),
-                    Self::XY(px, py) => Vec2::new(px.process(x), py.process(y)),
+                    Self::All(p) => Vec2::new(p.process(x), p.process(y)),
+                    Self::Separate(px, py) => Vec2::new(px.process(x), py.process(y)),
                 }
             }
         }
@@ -369,8 +369,8 @@ macro_rules! define_dual_axis_processor {
                 match self {
                     Self::OnlyX(p) => Some(*p),
                     Self::OnlyY(_) => None,
-                    Self::AllAxes(p) => Some(*p),
-                    Self::XY(px, _) => Some(*px),
+                    Self::All(p) => Some(*p),
+                    Self::Separate(px, _) => Some(*px),
                 }
             }
 
@@ -381,8 +381,8 @@ macro_rules! define_dual_axis_processor {
                 match self {
                     Self::OnlyX(_) => None,
                     Self::OnlyY(p) => Some(*p),
-                    Self::AllAxes(p) => Some(*p),
-                    Self::XY(_, py) => Some(*py),
+                    Self::All(p) => Some(*p),
+                    Self::Separate(_, py) => Some(*py),
                 }
             }
 
@@ -403,10 +403,10 @@ macro_rules! define_dual_axis_processor {
 
         // Conversion of $axis_processor into $dual_axis_processor
         impl $AxisProcessor {
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::AllAxes`] that applies `self` to all axes.")]
+            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::All`] that applies `self` to all axes.")]
             #[inline]
             pub fn extend_dual(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::AllAxes(self)
+                $DualAxisProcessor::All(self)
             }
 
             #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::OnlyX`] that applies `self` only to the X-axis.")]
@@ -421,16 +421,27 @@ macro_rules! define_dual_axis_processor {
                 $DualAxisProcessor::OnlyY(self)
             }
 
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::XY`] that applies `self` to the Y-axis with the given `x` processor to the X-axis.")]
+            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::Separate`] that applies `self` to the Y-axis with the given `x` processor to the X-axis.")]
             #[inline]
             pub fn extend_dual_with_x(self, x: Self) -> $DualAxisProcessor {
-                $DualAxisProcessor::XY(x, self)
+                $DualAxisProcessor::Separate(x, self)
             }
 
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::XY`] that applies `self` to the X-axis with the given `y` processor to the Y-axis.")]
+            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::Separate`] that applies `self` to the X-axis with the given `y` processor to the Y-axis.")]
             #[inline]
             pub fn extend_dual_with_y(self, y: Self) -> $DualAxisProcessor {
-                $DualAxisProcessor::XY(self, y)
+                $DualAxisProcessor::Separate(self, y)
+            }
+        }
+
+        impl ::core::fmt::Debug for $DualAxisProcessor {
+            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                match self {
+                    Self::All(p) => f.write_fmt(format_args!("DualAxis::All({p})")),
+                    Self::Separate(px, py) => f.write_fmt(format_args!("DualAxis::Separate({px}, {py})"))
+                    Self::OnlyX(p) => f.write_fmt(format_args!("DualAxis::OnlyX({p})")),
+                    Self::OnlyY(p) => f.write_fmt(format_args!("DualAxis::OnlyY({p})")),
+                }
             }
         }
     };
@@ -457,16 +468,16 @@ crate::define_dual_axis_processor!(
 );
 
 impl DualAxisSensitivity {
-    /// Creates a new [`DualAxisSensitivity::AllAxes`] with the specified factor.
+    /// Creates a new [`DualAxisSensitivity::All`] with the specified factor.
     #[inline]
     pub fn new(sensitivity: f32) -> Self {
-        Self::AllAxes(AxisSensitivity(sensitivity))
+        Self::All(AxisSensitivity(sensitivity))
     }
 
-    /// Creates a new [`DualAxisSensitivity::XY`] with the specified factors.
+    /// Creates a new [`DualAxisSensitivity::Separate`] with the specified factors.
     #[inline]
-    pub fn new_on_xy(sensitivity_x: f32, sensitivity_y: f32) -> Self {
-        Self::XY(
+    pub fn separate(sensitivity_x: f32, sensitivity_y: f32) -> Self {
+        Self::Separate(
             AxisSensitivity(sensitivity_x),
             AxisSensitivity(sensitivity_y),
         )
@@ -633,8 +644,10 @@ impl SquareBounds {
         match self {
             Self::OnlyX(bounds) => BVec2::new(bounds.contains(x), true),
             Self::OnlyY(bounds) => BVec2::new(true, bounds.contains(y)),
-            Self::AllAxes(bounds) => BVec2::new(bounds.contains(x), bounds.contains(y)),
-            Self::XY(bounds_x, bounds_y) => BVec2::new(bounds_x.contains(x), bounds_y.contains(y)),
+            Self::All(bounds) => BVec2::new(bounds.contains(x), bounds.contains(y)),
+            Self::Separate(bounds_x, bounds_y) => {
+                BVec2::new(bounds_x.contains(x), bounds_y.contains(y))
+            }
         }
     }
 }
@@ -781,7 +794,7 @@ define_dual_axis_processor!(
 );
 
 impl Default for SquareExclusion {
-    /// Creates a default [`SquareExclusion`], excluding input values within `[-1.0, 1.0]` on each axis.
+    /// Creates a default [`SquareExclusion`] that excludes input values within `[-1.0, 1.0]` on each axis.
     #[inline]
     fn default() -> Self {
         AxisExclusion::default().extend_dual()
@@ -797,8 +810,8 @@ impl SquareExclusion {
         match self {
             Self::OnlyX(exclusion) => BVec2::new(exclusion.contains(x), false),
             Self::OnlyY(exclusion) => BVec2::new(false, exclusion.contains(y)),
-            Self::AllAxes(exclusion) => BVec2::new(exclusion.contains(x), exclusion.contains(y)),
-            Self::XY(exclusion_x, exclusion_y) => {
+            Self::All(exclusion) => BVec2::new(exclusion.contains(x), exclusion.contains(y)),
+            Self::Separate(exclusion_x, exclusion_y) => {
                 BVec2::new(exclusion_x.contains(x), exclusion_y.contains(y))
             }
         }
@@ -1033,29 +1046,27 @@ mod tests {
 
     #[test]
     fn test_dual_axis_inverted() {
+        let all = DualAxisInverted::All;
+        let only_x = DualAxisInverted::OnlyX;
+        let only_y = DualAxisInverted::OnlyY;
+
         // These should be the same.
-        assert_eq!(DualAxisInverted::AllAxes, AxisInverted.extend_dual());
-        assert_eq!(DualAxisInverted::OnlyX, AxisInverted.extend_dual_only_x());
-        assert_eq!(DualAxisInverted::OnlyY, AxisInverted.extend_dual_only_y());
+        assert_eq!(all, AxisInverted.extend_dual());
+        assert_eq!(only_x, AxisInverted.extend_dual_only_x());
+        assert_eq!(only_y, AxisInverted.extend_dual_only_y());
 
         // Check if applied.
-        assert!(DualAxisInverted::AllAxes.applied_x());
-        assert!(DualAxisInverted::AllAxes.applied_y());
-        assert!(DualAxisInverted::OnlyX.applied_x());
-        assert!(!DualAxisInverted::OnlyX.applied_y());
-        assert!(!DualAxisInverted::OnlyY.applied_x());
-        assert!(DualAxisInverted::OnlyY.applied_y());
+        assert!(all.applied_x());
+        assert!(all.applied_y());
+        assert!(only_x.applied_x());
+        assert!(!only_x.applied_y());
+        assert!(!only_y.applied_x());
+        assert!(only_y.applied_y());
 
         // And they can invert the direction.
-        assert_eq!(DualAxisInverted::AllAxes.process(Vec2::ONE), Vec2::NEG_ONE);
-        assert_eq!(
-            DualAxisInverted::OnlyX.process(Vec2::ONE),
-            Vec2::new(-1.0, 1.0)
-        );
-        assert_eq!(
-            DualAxisInverted::OnlyY.process(Vec2::ONE),
-            Vec2::new(1.0, -1.0)
-        );
+        assert_eq!(all.process(Vec2::ONE), Vec2::NEG_ONE);
+        assert_eq!(only_x.process(Vec2::ONE), Vec2::new(-1.0, 1.0));
+        assert_eq!(only_y.process(Vec2::ONE), Vec2::new(1.0, -1.0));
     }
 
     #[test]
@@ -1064,14 +1075,14 @@ mod tests {
         let axis_y = AxisSensitivity(5.0);
 
         // These should be the same.
-        let all_axes = DualAxisSensitivity::AllAxes(axis_x);
-        assert_eq!(all_axes, DualAxisSensitivity::new(4.0));
-        assert_eq!(all_axes, axis_x.extend_dual());
+        let all = DualAxisSensitivity::All(axis_x);
+        assert_eq!(all, DualAxisSensitivity::new(4.0));
+        assert_eq!(all, axis_x.extend_dual());
 
-        let xy = DualAxisSensitivity::XY(axis_x, axis_y);
-        assert_eq!(xy, DualAxisSensitivity::new_on_xy(4.0, 5.0));
-        assert_eq!(xy, axis_x.extend_dual_with_y(axis_y));
-        assert_eq!(xy, axis_y.extend_dual_with_x(axis_x));
+        let separate = DualAxisSensitivity::Separate(axis_x, axis_y);
+        assert_eq!(separate, DualAxisSensitivity::separate(4.0, 5.0));
+        assert_eq!(separate, axis_x.extend_dual_with_y(axis_y));
+        assert_eq!(separate, axis_y.extend_dual_with_x(axis_x));
 
         let only_x = DualAxisSensitivity::OnlyX(axis_x);
         assert_eq!(only_x, DualAxisSensitivity::only_x(4.0));
@@ -1085,10 +1096,10 @@ mod tests {
         let value = Vec2::new(2.0, 3.0);
         assert_eq!(axis_x.process(value.x), 8.0);
         assert_eq!(axis_y.process(value.y), 15.0);
-        assert_eq!(all_axes.process(value).x, axis_x.process(value.x));
-        assert_eq!(all_axes.process(value).y, axis_x.process(value.y));
-        assert_eq!(xy.process(value).x, axis_x.process(value.x));
-        assert_eq!(xy.process(value).y, axis_y.process(value.y));
+        assert_eq!(all.process(value).x, axis_x.process(value.x));
+        assert_eq!(all.process(value).y, axis_x.process(value.y));
+        assert_eq!(separate.process(value).x, axis_x.process(value.x));
+        assert_eq!(separate.process(value).y, axis_y.process(value.y));
         assert_eq!(only_x.process(value).x, axis_x.process(value.x));
         assert_eq!(only_y.process(value).y, axis_y.process(value.y));
     }
@@ -1419,7 +1430,7 @@ mod tests {
         let axis_x = AxisDeadzone::new(exclusion_x);
         let axis_y = AxisDeadzone::new(exclusion_y);
 
-        let deadzone = SquareDeadzone::XY(axis_x, axis_y);
+        let deadzone = SquareDeadzone::Separate(axis_x, axis_y);
         assert_eq!(deadzone, axis_x.extend_dual_with_y(axis_y));
 
         // The bounds after normalization.
