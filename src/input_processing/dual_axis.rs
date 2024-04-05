@@ -500,6 +500,37 @@ impl DualAxisSensitivity {
 
 // region bounds
 
+define_dual_axis_processor!(
+    name: DualAxisBounds,
+    perform: "axial bounds",
+    stored_processor_type: AxisBounds
+);
+
+impl Default for DualAxisBounds {
+    /// Creates a new [`DualAxisBounds`] with bounds set to `[-1.0, 1.0]` on each axis.
+    #[inline]
+    fn default() -> Self {
+        AxisBounds::default().extend_dual()
+    }
+}
+
+impl DualAxisBounds {
+    /// Checks whether the `input_value` is within the bounds along each axis.
+    #[must_use]
+    #[inline]
+    pub fn contains(&self, input_value: Vec2) -> BVec2 {
+        let Vec2 { x, y } = input_value;
+        match self {
+            Self::OnlyX(bounds) => BVec2::new(bounds.contains(x), true),
+            Self::OnlyY(bounds) => BVec2::new(true, bounds.contains(y)),
+            Self::All(bounds) => BVec2::new(bounds.contains(x), bounds.contains(y)),
+            Self::Separate(bounds_x, bounds_y) => {
+                BVec2::new(bounds_x.contains(x), bounds_y.contains(y))
+            }
+        }
+    }
+}
+
 /// Specifies a radial bound for input values,
 /// ensuring their magnitudes smaller than a specified threshold.
 ///
@@ -621,40 +652,40 @@ impl Hash for CircleBounds {
     }
 }
 
+// endregion bounds
+
+// region exclusion
+
 define_dual_axis_processor!(
-    name: SquareBounds,
-    perform: "axial bounds",
-    stored_processor_type: AxisBounds
+    name: DualAxisExclusion,
+    perform: "axial exclusion ranges",
+    stored_processor_type: AxisExclusion
 );
 
-impl Default for SquareBounds {
-    /// Creates a new [`SquareBounds`] with bounds set to `[-1.0, 1.0]` on each axis.
+impl Default for DualAxisExclusion {
+    /// Creates a default [`DualAxisExclusion`] that excludes input values within `[-1.0, 1.0]` on each axis.
     #[inline]
     fn default() -> Self {
-        AxisBounds::default().extend_dual()
+        AxisExclusion::default().extend_dual()
     }
 }
 
-impl SquareBounds {
-    /// Checks whether the `input_value` is within the bounds along each axis.
+impl DualAxisExclusion {
+    /// Checks whether the `input_value` should be excluded.
     #[must_use]
     #[inline]
     pub fn contains(&self, input_value: Vec2) -> BVec2 {
         let Vec2 { x, y } = input_value;
         match self {
-            Self::OnlyX(bounds) => BVec2::new(bounds.contains(x), true),
-            Self::OnlyY(bounds) => BVec2::new(true, bounds.contains(y)),
-            Self::All(bounds) => BVec2::new(bounds.contains(x), bounds.contains(y)),
-            Self::Separate(bounds_x, bounds_y) => {
-                BVec2::new(bounds_x.contains(x), bounds_y.contains(y))
+            Self::OnlyX(exclusion) => BVec2::new(exclusion.contains(x), false),
+            Self::OnlyY(exclusion) => BVec2::new(false, exclusion.contains(y)),
+            Self::All(exclusion) => BVec2::new(exclusion.contains(x), exclusion.contains(y)),
+            Self::Separate(exclusion_x, exclusion_y) => {
+                BVec2::new(exclusion_x.contains(x), exclusion_y.contains(y))
             }
         }
     }
 }
-
-// endregion bounds
-
-// region exclusion
 
 /// Specifies a radial exclusion for input values,
 /// excluding those with a magnitude less than a specified threshold.
@@ -787,40 +818,29 @@ impl Hash for CircleExclusion {
     }
 }
 
-define_dual_axis_processor!(
-    name: SquareExclusion,
-    perform: "axial exclusion ranges",
-    stored_processor_type: AxisExclusion
-);
-
-impl Default for SquareExclusion {
-    /// Creates a default [`SquareExclusion`] that excludes input values within `[-1.0, 1.0]` on each axis.
-    #[inline]
-    fn default() -> Self {
-        AxisExclusion::default().extend_dual()
-    }
-}
-
-impl SquareExclusion {
-    /// Checks whether the `input_value` should be excluded.
-    #[must_use]
-    #[inline]
-    pub fn contains(&self, input_value: Vec2) -> BVec2 {
-        let Vec2 { x, y } = input_value;
-        match self {
-            Self::OnlyX(exclusion) => BVec2::new(exclusion.contains(x), false),
-            Self::OnlyY(exclusion) => BVec2::new(false, exclusion.contains(y)),
-            Self::All(exclusion) => BVec2::new(exclusion.contains(x), exclusion.contains(y)),
-            Self::Separate(exclusion_x, exclusion_y) => {
-                BVec2::new(exclusion_x.contains(x), exclusion_y.contains(y))
-            }
-        }
-    }
-}
-
 // endregion exclusion
 
 // region deadzone
+
+define_dual_axis_processor!(
+    name: DualAxisDeadzone,
+    perform: "livezone value normalization",
+    stored_processor_type: AxisDeadzone,
+    info: "Each axis is processed individually, resulting in a per-axis \"snapping\" or locked effect, \
+        which enhances control precision for pure axial motion. \
+        It is commonly known as the `CrossDeadzone` due to its shape, \
+        formed by two intersecting [`AxisDeadzone`]s. \
+        It is worth considering that this normalizer increases the magnitude of diagonal values. \
+        If that is not your goal, you might want to explore alternative normalizers."
+);
+
+impl Default for DualAxisDeadzone {
+    /// Creates a default [`DualAxisDeadzone`] that normalizes input values
+    /// by clamping them to `[-1.0, 1.0]` and excluding those within `[-0.1, 0.1]` on each axis.
+    fn default() -> Self {
+        AxisDeadzone::default().extend_dual()
+    }
+}
 
 /// Defines a deadzone that normalizes input values by clamping their magnitude to a maximum of `1.0`,
 /// excluding values via a specified [`CircleExclusion`], and scaling unchanged values linearly in between.
@@ -982,26 +1002,6 @@ impl Hash for CircleDeadzone {
     }
 }
 
-define_dual_axis_processor!(
-    name: SquareDeadzone,
-    perform: "livezone value normalization",
-    stored_processor_type: AxisDeadzone,
-    info: "Each axis is processed individually, resulting in a per-axis \"snapping\" or locked effect, \
-        which enhances control precision for pure axial motion. \
-        It is commonly known as the `CrossDeadzone` due to its shape, \
-        formed by two intersecting [`AxisDeadzone`]s. \
-        It is worth considering that this normalizer increases the magnitude of diagonal values. \
-        If that is not your goal, you might want to explore alternative normalizers."
-);
-
-impl Default for SquareDeadzone {
-    /// Creates a default [`SquareDeadzone`] that normalizes input values
-    /// by clamping them to `[-1.0, 1.0]` and excluding those within `[-0.1, 0.1]` on each axis.
-    fn default() -> Self {
-        AxisDeadzone::default().extend_dual()
-    }
-}
-
 // endregion deadzone
 
 #[cfg(test)]
@@ -1105,62 +1105,9 @@ mod tests {
     }
 
     #[test]
-    fn test_circle_value_bounds_constructors() {
-        // 0 to 1
-        let bounds = CircleBounds::default();
-        assert_eq!(bounds.radius(), 1.0);
-
-        // 0 to 3
-        let bounds = CircleBounds::magnitude(3.0);
-        assert_eq!(bounds.radius(), 3.0);
-
-        // 0 to unlimited
-        let bounds = CircleBounds::full_range();
-        assert_eq!(bounds.radius(), f32::MAX);
-    }
-
-    #[test]
-    fn test_circle_value_bounds_behavior() {
-        // Set the bounds to 5 for magnitude.
-        let bounds = CircleBounds::magnitude(5.0);
-
-        // Getters.
-        let radius = bounds.radius();
-        assert_eq!(radius, 5.0);
-
-        assert_eq!(bounds.radius_squared(), 25.0);
-
-        // value.magnitude > radius_max
-        let values = [Vec2::ONE * 5.0, Vec2::X * 10.0];
-        for value in values {
-            assert!(value.length() > radius);
-
-            // So the value is out of the bounds.
-            assert!(!bounds.contains(value));
-
-            // So the value should be clamped to the maximum bound.
-            let result = bounds.process(value);
-            assert_eq!(result.length(), radius);
-            assert_eq!(result.y.atan2(result.x), value.y.atan2(value.x));
-        }
-
-        // value.magnitude <= radius
-        let values = [Vec2::ONE * 3.0, Vec2::X * 4.0];
-        for value in values {
-            assert!(value.length() <= radius);
-
-            // So the value is within the bounds.
-            assert!(bounds.contains(value));
-
-            // So the value should be left unchanged.
-            assert_eq!(bounds.process(value), value);
-        }
-    }
-
-    #[test]
-    fn test_square_value_bounds_default() {
+    fn test_dual_axis_value_bounds_default() {
         // -1 to 1 on each axis
-        let bounds = SquareBounds::default();
+        let bounds = DualAxisBounds::default();
 
         assert_eq!(bounds, AxisBounds::default().extend_dual());
 
@@ -1169,7 +1116,7 @@ mod tests {
     }
 
     #[test]
-    fn test_square_value_bounds_behavior() {
+    fn test_dual_axis_value_bounds_behavior() {
         // Set the bounds to [-2, 2] on the X-axis and [-3, 3] on the Y-axis.
         let bounds_x = AxisBounds::magnitude(2.0);
         let bounds_y = AxisBounds::magnitude(3.0);
@@ -1234,54 +1181,62 @@ mod tests {
     }
 
     #[test]
-    fn test_circle_exclusion_constructors() {
-        // 0 to 0.1
-        let exclusion = CircleExclusion::default();
-        assert_eq!(exclusion.radius(), 0.1);
-        assert_eq!(exclusion.radius_squared(), 0.010000001);
+    fn test_circle_value_bounds_constructors() {
+        // 0 to 1
+        let bounds = CircleBounds::default();
+        assert_eq!(bounds.radius(), 1.0);
 
-        // 0 to 0.5
-        let exclusion = CircleExclusion::new(0.5);
-        assert_eq!(exclusion.radius(), 0.5);
-        assert_eq!(exclusion.radius_squared(), 0.25);
+        // 0 to 3
+        let bounds = CircleBounds::magnitude(3.0);
+        assert_eq!(bounds.radius(), 3.0);
+
+        // 0 to unlimited
+        let bounds = CircleBounds::full_range();
+        assert_eq!(bounds.radius(), f32::MAX);
     }
 
     #[test]
-    fn test_circle_exclusion_behavior() {
-        // Set an exclusion with a radius of 9 for magnitudes.
-        let exclusion = CircleExclusion::new(9.0);
-        assert_eq!(exclusion.radius(), 9.0);
-        assert_eq!(exclusion.radius_squared(), 81.0);
+    fn test_circle_value_bounds_behavior() {
+        // Set the bounds to 5 for magnitude.
+        let bounds = CircleBounds::magnitude(5.0);
+
+        // Getters.
+        let radius = bounds.radius();
+        assert_eq!(radius, 5.0);
+
+        assert_eq!(bounds.radius_squared(), 25.0);
+
+        // value.magnitude > radius_max
+        let values = [Vec2::ONE * 5.0, Vec2::X * 10.0];
+        for value in values {
+            assert!(value.length() > radius);
+
+            // So the value is out of the bounds.
+            assert!(!bounds.contains(value));
+
+            // So the value should be clamped to the maximum bound.
+            let result = bounds.process(value);
+            assert_eq!(result.length(), radius);
+            assert_eq!(result.y.atan2(result.x), value.y.atan2(value.x));
+        }
 
         // value.magnitude <= radius
-        let values = [Vec2::ONE, Vec2::X, Vec2::new(0.5, 3.0)];
+        let values = [Vec2::ONE * 3.0, Vec2::X * 4.0];
         for value in values {
-            assert!(value.length() <= exclusion.radius());
+            assert!(value.length() <= radius);
 
-            // So the value should be excluded.
-            assert!(exclusion.contains(value));
-
-            // So the value should be treated as zeros.
-            assert_eq!(exclusion.process(value), Vec2::ZERO);
-        }
-
-        // value.magnitude >= radius
-        let values = [Vec2::new(15.0, 10.0), Vec2::new(20.0, 1.5)];
-        for value in values {
-            assert!(value.length() >= exclusion.radius());
-
-            // So the value is out of the range.
-            assert!(!exclusion.contains(value));
+            // So the value is within the bounds.
+            assert!(bounds.contains(value));
 
             // So the value should be left unchanged.
-            assert_eq!(exclusion.process(value), value);
+            assert_eq!(bounds.process(value), value);
         }
     }
 
     #[test]
-    fn test_square_exclusion_default() {
+    fn test_dual_axis_exclusion_default() {
         // -0.1 to 0.1 on each axis.
-        let exclusion = SquareExclusion::default();
+        let exclusion = DualAxisExclusion::default();
 
         assert_eq!(exclusion, AxisExclusion::default().extend_dual());
 
@@ -1290,7 +1245,7 @@ mod tests {
     }
 
     #[test]
-    fn test_square_exclusion_behavior() {
+    fn test_dual_axis_exclusion_behavior() {
         let exclusion = AxisExclusion::new(-0.3, 0.4).extend_dual();
 
         // These values within all exclusion ranges.
@@ -1346,6 +1301,135 @@ mod tests {
 
             // So the value should be left unchanged.
             assert_eq!(exclusion.process(value), value);
+        }
+    }
+
+    #[test]
+    fn test_circle_exclusion_constructors() {
+        // 0 to 0.1
+        let exclusion = CircleExclusion::default();
+        assert_eq!(exclusion.radius(), 0.1);
+        assert_eq!(exclusion.radius_squared(), 0.010000001);
+
+        // 0 to 0.5
+        let exclusion = CircleExclusion::new(0.5);
+        assert_eq!(exclusion.radius(), 0.5);
+        assert_eq!(exclusion.radius_squared(), 0.25);
+    }
+
+    #[test]
+    fn test_circle_exclusion_behavior() {
+        // Set an exclusion with a radius of 9 for magnitudes.
+        let exclusion = CircleExclusion::new(9.0);
+        assert_eq!(exclusion.radius(), 9.0);
+        assert_eq!(exclusion.radius_squared(), 81.0);
+
+        // value.magnitude <= radius
+        let values = [Vec2::ONE, Vec2::X, Vec2::new(0.5, 3.0)];
+        for value in values {
+            assert!(value.length() <= exclusion.radius());
+
+            // So the value should be excluded.
+            assert!(exclusion.contains(value));
+
+            // So the value should be treated as zeros.
+            assert_eq!(exclusion.process(value), Vec2::ZERO);
+        }
+
+        // value.magnitude >= radius
+        let values = [Vec2::new(15.0, 10.0), Vec2::new(20.0, 1.5)];
+        for value in values {
+            assert!(value.length() >= exclusion.radius());
+
+            // So the value is out of the range.
+            assert!(!exclusion.contains(value));
+
+            // So the value should be left unchanged.
+            assert_eq!(exclusion.process(value), value);
+        }
+    }
+
+    #[test]
+    fn test_dual_axis_deadzone() {
+        let exclusion_x = AxisExclusion::new(-0.2, 0.3);
+        let exclusion_y = AxisExclusion::new(-0.3, 0.4);
+
+        let axis_x = AxisDeadzone::new(exclusion_x);
+        let axis_y = AxisDeadzone::new(exclusion_y);
+
+        let deadzone = DualAxisDeadzone::Separate(axis_x, axis_y);
+        assert_eq!(deadzone, axis_x.extend_dual_with_y(axis_y));
+
+        // The bounds after normalization.
+        let bounds = AxisBounds::default();
+
+        // These values should be excluded.
+        let values = [Vec2::splat(0.1), Vec2::new(0.2, 0.05)];
+        for value in values {
+            assert!(exclusion_x.contains(value.x));
+            assert!(exclusion_y.contains(value.y));
+
+            // So the value should be treated as zeros.
+            let result = deadzone.process(value);
+            assert_eq!(result, Vec2::ZERO);
+        }
+
+        // These values should be excluded on the X-axis and normalized on the Y-axis.
+        let values = [Vec2::new(0.2, 20.0), Vec2::new(-0.1, -60.0)];
+        for value in values {
+            assert!(exclusion_x.contains(value.x));
+            assert!(!exclusion_y.contains(value.y));
+
+            // So the X value should be treated as zero.
+            let result = deadzone.process(value);
+            assert_eq!(result.x, 0.0);
+            assert_eq!(result.x, axis_x.process(value.x));
+
+            // The result of X value is derived from the exclusion on the X-axis.
+            assert_eq!(result.x, exclusion_x.process(value.x));
+
+            // And the Y value is normalized to fit within the bounds on the Y-axis.
+            assert_eq!(result.y, axis_y.process(value.y));
+            assert_ne!(result.y, 0.0);
+            assert!(bounds.contains(result.y));
+        }
+
+        // These values should be excluded on the Y-axis and normalized on the X-axis.
+        let values = [Vec2::new(-30.2, 0.2), Vec2::new(-50.1, -0.1)];
+        for value in values {
+            assert!(!exclusion_x.contains(value.x));
+            assert!(exclusion_y.contains(value.y));
+
+            // So the Y value should be treated as zero.
+            let result = deadzone.process(value);
+            assert_eq!(result.y, 0.0);
+            assert_eq!(result.y, axis_y.process(value.y));
+
+            // The result of Y value is derived from the exclusion on the Y-axis.
+            assert_eq!(result.y, exclusion_y.process(value.y));
+
+            // And the X value is normalized to fit within the bounds on the X-axis.
+            assert_eq!(result.x, axis_x.process(value.x));
+            assert_ne!(result.x, 0.0);
+            assert!(bounds.contains(result.x));
+        }
+
+        // These values are out of all exclusion ranges.
+        let values = [Vec2::new(29.0, 20.0), Vec2::new(-35.0, -60.0)];
+        for value in values {
+            assert!(!exclusion_x.contains(value.x));
+            assert!(!exclusion_y.contains(value.y));
+
+            // So the value should be normalized into the range.
+            let result = deadzone.process(value);
+            assert_ne!(result.x, 0.0);
+            assert_ne!(result.y, 0.0);
+            assert!(bounds.contains(result.x));
+            assert!(bounds.contains(result.y));
+
+            // The results are derived from the deadzone on each axis.
+            assert_eq!(result.x, axis_x.process(value.x));
+            assert_eq!(result.y, axis_y.process(value.y));
         }
     }
 
@@ -1419,90 +1503,6 @@ mod tests {
             let delta = result - expected;
             assert!(delta.x.abs() <= f32::EPSILON);
             assert!(delta.y.abs() <= f32::EPSILON);
-        }
-    }
-
-    #[test]
-    fn test_square_deadzone() {
-        let exclusion_x = AxisExclusion::new(-0.2, 0.3);
-        let exclusion_y = AxisExclusion::new(-0.3, 0.4);
-
-        let axis_x = AxisDeadzone::new(exclusion_x);
-        let axis_y = AxisDeadzone::new(exclusion_y);
-
-        let deadzone = SquareDeadzone::Separate(axis_x, axis_y);
-        assert_eq!(deadzone, axis_x.extend_dual_with_y(axis_y));
-
-        // The bounds after normalization.
-        let bounds = AxisBounds::default();
-
-        // These values should be excluded.
-        let values = [Vec2::splat(0.1), Vec2::new(0.2, 0.05)];
-        for value in values {
-            assert!(exclusion_x.contains(value.x));
-            assert!(exclusion_y.contains(value.y));
-
-            // So the value should be treated as zeros.
-            let result = deadzone.process(value);
-            assert_eq!(result, Vec2::ZERO);
-        }
-
-        // These values should be excluded on the X-axis and normalized on the Y-axis.
-        let values = [Vec2::new(0.2, 20.0), Vec2::new(-0.1, -60.0)];
-        for value in values {
-            assert!(exclusion_x.contains(value.x));
-            assert!(!exclusion_y.contains(value.y));
-
-            // So the X value should be treated as zero.
-            let result = deadzone.process(value);
-            assert_eq!(result.x, 0.0);
-            assert_eq!(result.x, axis_x.process(value.x));
-
-            // The result of X value is derived from the exclusion on the X-axis.
-            assert_eq!(result.x, exclusion_x.process(value.x));
-
-            // And the Y value is normalized to fit within the bounds on the Y-axis.
-            assert_eq!(result.y, axis_y.process(value.y));
-            assert_ne!(result.y, 0.0);
-            assert!(bounds.contains(result.y));
-        }
-
-        // These values should be excluded on the Y-axis and normalized on the X-axis.
-        let values = [Vec2::new(-30.2, 0.2), Vec2::new(-50.1, -0.1)];
-        for value in values {
-            assert!(!exclusion_x.contains(value.x));
-            assert!(exclusion_y.contains(value.y));
-
-            // So the Y value should be treated as zero.
-            let result = deadzone.process(value);
-            assert_eq!(result.y, 0.0);
-            assert_eq!(result.y, axis_y.process(value.y));
-
-            // The result of Y value is derived from the exclusion on the Y-axis.
-            assert_eq!(result.y, exclusion_y.process(value.y));
-
-            // And the X value is normalized to fit within the bounds on the X-axis.
-            assert_eq!(result.x, axis_x.process(value.x));
-            assert_ne!(result.x, 0.0);
-            assert!(bounds.contains(result.x));
-        }
-
-        // These values are out of all exclusion ranges.
-        let values = [Vec2::new(29.0, 20.0), Vec2::new(-35.0, -60.0)];
-        for value in values {
-            assert!(!exclusion_x.contains(value.x));
-            assert!(!exclusion_y.contains(value.y));
-
-            // So the value should be normalized into the range.
-            let result = deadzone.process(value);
-            assert_ne!(result.x, 0.0);
-            assert_ne!(result.y, 0.0);
-            assert!(bounds.contains(result.x));
-            assert!(bounds.contains(result.y));
-
-            // The results are derived from the deadzone on each axis.
-            assert_eq!(result.x, axis_x.process(value.x));
-            assert_eq!(result.y, axis_y.process(value.y));
         }
     }
 }

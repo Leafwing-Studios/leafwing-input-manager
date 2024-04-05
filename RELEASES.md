@@ -24,17 +24,17 @@
       - `DualAxisSensitivity`: Dual-axis scaling.
     - Value Bounds: Define the boundaries for constraining input values.
       - `AxisBounds`: Restricts single-axis values to a range.
+      - `DualAxisBounds`: Restricts single-axis values to a range along each axis.
       - `CircleBounds`: Limits dual-axis values to a maximum magnitude.
-      - `SquareBounds`: Restricts single-axis values to a range along each axis.
     - Deadzone: Ignores near-zero values, treating them as zero.
       - Unscaled Deadzone:
         - `AxisExclusion`: Excludes small single-axis values.
+        - `DualAxisExclusion`: Excludes small dual-axis values along each axis.
         - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold.
-        - `SquareExclusion`: Excludes small dual-axis values along each axis.
       - Scaled Deadzone:
         - `AxisDeadzone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`.
+        - `DualAxisDeadzone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`.
         - `CircleDeadzone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`.
-        - `SquareDeadzone`: Normalizes dual-axis values based on `SquareExclusion` and `SquareBounds::default`.
 - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
 
 ### Bugs

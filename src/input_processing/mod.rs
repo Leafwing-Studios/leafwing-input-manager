@@ -37,8 +37,8 @@
 //! Values exceeding the bounds are clamped to fit within the specified range.
 //!
 //! - [`AxisBounds`]: Restricts single-axis input values to a range.
+//! - [`DualAxisBounds`]: Restricts dual-axis input values to a range along each axis.
 //! - [`CircleBounds`]: Limits dual-axis input values to a maximum magnitude.
-//! - [`SquareBounds`]: Restricts dual-axis input values to a range along each axis.
 //!
 //! ## Deadzones
 //!
@@ -47,8 +47,8 @@
 //! Unscaled deadzones specify ranges where near-zero input values are excluded, treating them as zero.
 //!
 //! - [`AxisExclusion`]: Excludes single-axis input values within a specified range.
+//! - [`DualAxisExclusion`]: Excludes dual-axis input values within a specified range along each axis.
 //! - [`CircleExclusion`]: Excludes dual-axis input values below a specified magnitude threshold.
-//! - [`SquareExclusion`]: Excludes dual-axis input values within a specified range along each axis.
 //!
 //! ### Scaled Versions
 //!
@@ -56,8 +56,8 @@
 //! considering a specified exclusion range, and scaling unchanged values linearly in between.
 //!
 //! - [`AxisDeadzone`]: Normalizes single-axis input values based on [`AxisBounds::default`] and a specified [`AxisExclusion`].
+//! - [`DualAxisDeadzone`]: Normalizes dual-axis input values based on [`DualAxisBounds::default`] and a specified [`DualAxisExclusion`].
 //! - [`CircleDeadzone`]: Normalizes dual-axis input values based on [`CircleBounds::default`] and a specified [`CircleExclusion`].
-//! - [`SquareDeadzone`]: Normalizes dual-axis input values based on [`SquareBounds::default`] and a specified [`SquareExclusion`].
 //!
 //! ## Composite Processors
 //!
