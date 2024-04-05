@@ -199,7 +199,7 @@ impl Default for DualAxisDeadzone {
     }
 }
 
-/// Defines a deadzone that normalizes input values by clamping their magnitude to a maximum of `1.0`,
+/// Defines a deadzone that normalizes input values by clamping them within [`CircleBounds::default`],
 /// excluding values via a specified [`CircleExclusion`], and scaling unchanged values linearly in between.
 ///
 /// It is worth considering that this normalizer reduces input values on diagonals.
@@ -279,7 +279,8 @@ pub struct CircleDeadzone {
 
 #[typetag::serde]
 impl DualAxisProcessor for CircleDeadzone {
-    /// Normalizes all input values within the livezone regions and returns the result.
+    /// Processes the `input_value` by clamping them within [`CircleBounds::default`],
+    /// excluding those within the deadzone, and scaling unchanged values linearly in between.
     #[must_use]
     fn process(&self, input_value: Vec2) -> Vec2 {
         let input_length_squared = input_value.length_squared();

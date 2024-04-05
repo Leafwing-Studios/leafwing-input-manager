@@ -559,7 +559,7 @@ impl Hash for AxisExclusion {
 
 // region deadzone
 
-/// Defines a deadzone that normalizes input values by clamping values to `[-1.0, 1.0]`,
+/// Defines a deadzone that normalizes input values by clamping them within [`AxisBounds::default`],
 /// excluding values via a specified [`AxisExclusion`], and scaling unchanged values linearly in between.
 ///
 /// # Warning
@@ -642,7 +642,7 @@ pub struct AxisDeadzone {
 
 #[typetag::serde]
 impl AxisProcessor for AxisDeadzone {
-    /// Processes the `input_value` by clamping values to `[-1.0, 1.0]`,
+    /// Processes the `input_value` by clamping them within [`AxisBounds::default`],
     /// excluding those within the deadzone, and scaling unchanged values linearly in between.
     #[must_use]
     fn process(&self, input_value: f32) -> f32 {
