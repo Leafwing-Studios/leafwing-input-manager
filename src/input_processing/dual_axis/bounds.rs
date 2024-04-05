@@ -1,3 +1,5 @@
+//! Value bounds for dual-axis inputs
+
 use std::hash::{Hash, Hasher};
 
 use bevy::prelude::*;

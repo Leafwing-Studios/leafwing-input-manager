@@ -1,4 +1,4 @@
-//! Input processors for values along a single axis
+//! Input processors for single-axis values
 
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};

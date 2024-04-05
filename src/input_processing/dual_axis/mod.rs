@@ -1,4 +1,4 @@
-//! Input processors for values along the X and Y axes
+//! Input processors for dual-axis values
 
 use std::fmt::Debug;
 use std::hash::Hash;
