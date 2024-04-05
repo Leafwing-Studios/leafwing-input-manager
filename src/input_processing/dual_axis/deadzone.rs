@@ -16,7 +16,9 @@ use crate::define_dual_axis_processor;
 define_dual_axis_processor!(
     name: DualAxisExclusion,
     perform: "axial exclusion ranges",
-    stored_processor_type: AxisExclusion
+    stored_processor_type: AxisExclusion,
+    info: "Each axis is processed individually, resulting in a per-axis \"snapping\" or locked effect, \
+        which enhances control precision for pure axial motion."
 );
 
 impl Default for DualAxisExclusion {
@@ -46,6 +48,9 @@ impl DualAxisExclusion {
 
 /// Specifies a radial exclusion for input values,
 /// excluding those with a magnitude less than a specified threshold.
+///
+/// This processor forms a circular deadzone with a specified radius.
+/// Input values with a magnitude less than this radius will be treated as zeros.
 ///
 /// In simple terms, this processor functions as an unscaled [`CircleDeadzone`].
 /// This processor is useful for filtering out minor fluctuations and unintended movements.
@@ -93,8 +98,7 @@ pub struct CircleExclusion {
     /// The radius of the circle.
     pub(crate) radius: f32,
 
-    /// Pre-calculated squared `radius`,
-    /// preventing redundant calculations.
+    /// Pre-calculated squared `radius`, preventing redundant calculations.
     pub(crate) radius_squared: f32,
 }
 
@@ -113,14 +117,14 @@ impl DualAxisProcessor for CircleExclusion {
 }
 
 impl Default for CircleExclusion {
-    /// Creates a [`CircleExclusion`] with a radius of `0.1`.
+    /// Creates a [`CircleExclusion`] that excludes input values below a specified magnitude of `0.1`.
     fn default() -> Self {
         Self::new(0.1)
     }
 }
 
 impl CircleExclusion {
-    /// Creates a new [`CircleExclusion`] with the specified `radius`.
+    /// Creates a new [`CircleExclusion`] that excludes input values below a specified magnitude threshold (`radius`).
     ///
     /// # Requirements
     ///
@@ -199,8 +203,11 @@ impl Default for DualAxisDeadzone {
     }
 }
 
-/// Defines a deadzone that normalizes input values by clamping them within [`CircleBounds::default`],
+/// Normalizes input values by clamping them within [`CircleBounds::default`],
 /// excluding values via a specified [`CircleExclusion`], and scaling unchanged values linearly in between.
+///
+/// In simple terms, this processor functions as a scaled [`CircleExclusion`].
+/// This processor is useful for filtering out minor fluctuations and unintended movements.
 ///
 /// It is worth considering that this normalizer reduces input values on diagonals.
 /// If that is not your goal, you might want to explore alternative normalizers.
@@ -272,8 +279,7 @@ pub struct CircleDeadzone {
     /// The exclusion used for normalization.
     pub(crate) exclusion: CircleExclusion,
 
-    /// Pre-calculated reciprocal of the livezone radius,
-    /// preventing division during normalization.
+    /// Pre-calculated reciprocal of the livezone radius, preventing division during normalization.
     pub(crate) livezone_recip: f32,
 }
 
@@ -290,8 +296,8 @@ impl DualAxisProcessor for CircleDeadzone {
         let input_length = input_length_squared.sqrt();
         let (deadzone, bound) = self.livezone_min_max();
         let clamped_input_length = input_length.min(bound);
-        let distance = (clamped_input_length - deadzone).max(0.0);
-        let magnitude_scale = (distance * self.livezone_recip) / input_length;
+        let offset_to_deadzone = (clamped_input_length - deadzone).max(0.0);
+        let magnitude_scale = (offset_to_deadzone * self.livezone_recip) / input_length;
         input_value * magnitude_scale
     }
 }
@@ -312,7 +318,7 @@ impl CircleDeadzone {
     ///
     /// # Requirements
     ///
-    /// - `deadzone.radius` >= `0.0`.
+    /// - `exclusion.radius` >= `0.0`.
     ///
     /// # Panics
     ///

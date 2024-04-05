@@ -277,7 +277,8 @@ impl AxisProcessor for AxisBounds {
     #[must_use]
     #[inline(always)]
     fn process(&self, input_value: f32) -> f32 {
-        // std clamp() will panic if either bound set to `NaN`.
+        // The constructors guarantee that all bounds will not be `NaN`,
+        // whereas clamp() function includes checks if either bound is set to `NaN`.
         input_value.max(self.min).min(self.max)
     }
 }
@@ -302,11 +303,12 @@ impl AxisBounds {
     /// Panics if any of the requirements isn't met.
     #[inline]
     pub fn new(min: f32, max: f32) -> Self {
+        // PartialOrd for f32 ensures that NaN values are checked during comparisons.
         assert!(min <= max);
         Self { min, max }
     }
 
-    /// Creates a new [`AxisBounds`] with the magnitude bounds set to the specified `threshold`.
+    /// Creates a new [`AxisBounds`] that limits input values to a maximum magnitude `threshold`.
     ///
     /// # Requirements
     ///
@@ -344,7 +346,7 @@ impl AxisBounds {
         self.min
     }
 
-    /// Returns the maximum bounds.
+    /// Returns the maximum bound.
     #[must_use]
     #[inline]
     pub fn max(&self) -> f32 {
@@ -559,7 +561,7 @@ impl Hash for AxisExclusion {
 
 // region deadzone
 
-/// Defines a deadzone that normalizes input values by clamping them within [`AxisBounds::default`],
+/// Normalizes input values by clamping them within [`AxisBounds::default`],
 /// excluding values via a specified [`AxisExclusion`], and scaling unchanged values linearly in between.
 ///
 /// # Warning
@@ -649,13 +651,13 @@ impl AxisProcessor for AxisDeadzone {
         if input_value <= 0.0 {
             let (bound, deadzone) = self.livezone_lower_min_max();
             let clamped_input = input_value.max(bound);
-            let distance_to_deadzone = (clamped_input - deadzone).min(0.0);
-            distance_to_deadzone * self.livezone_lower_recip
+            let offset_to_deadzone = (clamped_input - deadzone).min(0.0);
+            offset_to_deadzone * self.livezone_lower_recip
         } else {
             let (deadzone, bound) = self.livezone_upper_min_max();
             let clamped_input = input_value.min(bound);
-            let distance_to_deadzone = (clamped_input - deadzone).max(0.0);
-            distance_to_deadzone * self.livezone_upper_recip
+            let offset_to_deadzone = (clamped_input - deadzone).max(0.0);
+            offset_to_deadzone * self.livezone_upper_recip
         }
     }
 }
@@ -736,7 +738,7 @@ mod tests {
             .with(AxisInverted)
             .with(AxisSensitivity(4.0));
 
-        // Replace the 3rd processor.
+        // Replace the processor at index 3.
         pipeline.set(3, AxisSensitivity(6.0));
 
         // This pipeline now scales input values by a factor of 24.0
@@ -827,7 +829,7 @@ mod tests {
         assert_eq!(bounds.min(), f32::MIN);
         assert_eq!(bounds.max(), 15.0);
 
-        // f32::MIN to f32::MAX
+        // unlimited bounds
         let bounds = AxisBounds::full_range();
         assert_eq!(bounds.min(), f32::MIN);
         assert_eq!(bounds.max(), f32::MAX);

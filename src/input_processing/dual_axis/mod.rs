@@ -554,7 +554,7 @@ mod tests {
             .with(AxisInverted.extend_dual())
             .with(AxisSensitivity(4.0).extend_dual());
 
-        // Replace the 3rd processor.
+        // Replace the processor at index 3.
         pipeline.set(3, AxisSensitivity(6.0).extend_dual());
 
         // This pipeline now scales input values by a factor of 24.0

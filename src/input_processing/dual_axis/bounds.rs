@@ -44,6 +44,9 @@ impl DualAxisBounds {
 /// Specifies a radial bound for input values,
 /// ensuring their magnitudes smaller than a specified threshold.
 ///
+/// This processor forms a circular boundary with a specified radius.
+/// Input values exceeding the magnitude of this radius will be clamped to fit within the circle.
+///
 /// # Examples
 ///
 /// ```rust
@@ -51,7 +54,7 @@ impl DualAxisBounds {
 /// use leafwing_input_manager::prelude::*;
 ///
 /// // Set the maximum bound to 5 for magnitudes.
-/// let bounds = CircleBounds::magnitude(5.0);
+/// let bounds = CircleBounds::new(5.0);
 ///
 /// assert_eq!(bounds.radius(), 5.0);
 ///
@@ -84,8 +87,7 @@ pub struct CircleBounds {
     /// The maximum radius of the circle.
     pub(crate) radius: f32,
 
-    /// Pre-calculated squared `radius_max`,
-    /// preventing redundant calculations.
+    /// Pre-calculated squared `radius`, preventing redundant calculations.
     pub(crate) radius_squared: f32,
 }
 
@@ -100,15 +102,15 @@ impl DualAxisProcessor for CircleBounds {
 }
 
 impl Default for CircleBounds {
-    /// Creates a new [`CircleBounds`] with the maximum bound set to `1.0`.
+    /// Creates a new [`CircleBounds`] that limits input values to a maximum magnitude of `1.0`.
     #[inline]
     fn default() -> Self {
-        Self::magnitude(1.0)
+        Self::new(1.0)
     }
 }
 
 impl CircleBounds {
-    /// Creates a [`CircleBounds`] with the maximum bound set to `radius`.
+    /// Creates a [`CircleBounds`] that limits input values to a maximum magnitude threshold (`radius`).
     ///
     /// # Requirements
     ///
@@ -118,7 +120,7 @@ impl CircleBounds {
     ///
     /// Panics if any of the requirements isn't met.
     #[inline]
-    pub fn magnitude(radius: f32) -> Self {
+    pub fn new(radius: f32) -> Self {
         assert!(radius >= 0.0);
         Self {
             radius,
@@ -129,7 +131,7 @@ impl CircleBounds {
     /// Creates a [`CircleBounds`] with unlimited bounds.
     #[inline]
     pub fn full_range() -> Self {
-        Self::magnitude(f32::MAX)
+        Self::new(f32::MAX)
     }
 
     /// Returns the radius of the bounds.
@@ -249,10 +251,10 @@ mod tests {
         assert_eq!(bounds.radius(), 1.0);
 
         // 0 to 3
-        let bounds = CircleBounds::magnitude(3.0);
+        let bounds = CircleBounds::new(3.0);
         assert_eq!(bounds.radius(), 3.0);
 
-        // 0 to unlimited
+        // 0 to f32::MAX
         let bounds = CircleBounds::full_range();
         assert_eq!(bounds.radius(), f32::MAX);
     }
@@ -260,7 +262,7 @@ mod tests {
     #[test]
     fn test_circle_value_bounds_behavior() {
         // Set the bounds to 5 for magnitude.
-        let bounds = CircleBounds::magnitude(5.0);
+        let bounds = CircleBounds::new(5.0);
 
         // Getters.
         let radius = bounds.radius();
