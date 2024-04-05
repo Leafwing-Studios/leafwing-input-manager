@@ -58,7 +58,7 @@ impl DualAxisBounds {
 ///
 /// assert_eq!(bounds.radius(), 5.0);
 ///
-/// // These values have a magnitude greater than radius.
+/// // These values have a magnitude greater than the radius.
 /// let values = [Vec2::ONE * 5.0, Vec2::X * 10.0];
 /// for value in values {
 ///     assert!(value.length() > bounds.radius());
