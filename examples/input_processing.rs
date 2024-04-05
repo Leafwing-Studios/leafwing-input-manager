@@ -38,10 +38,10 @@ fn spawn_player(mut commands: Commands) {
         .insert(
             Action::Move,
             DualAxis::left_stick()
-                // This function is used to remove the current used processor.
-                .no_processor()
-                // But you can also use this function replace the processor directly.
-                .replace_processor(CircleDeadzone::default()),
+                // You can replace the currently used processor with another processor.
+                .replace_processor(CircleDeadzone::default())
+                // Or remove the processor directly, leaving no processor applied.
+                .no_processor(),
         )
         .insert(
             Action::LookAround,
