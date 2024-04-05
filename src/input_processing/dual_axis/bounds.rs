@@ -31,12 +31,12 @@ impl DualAxisBounds {
     pub fn contains(&self, input_value: Vec2) -> BVec2 {
         let Vec2 { x, y } = input_value;
         match self {
-            Self::OnlyX(bounds) => BVec2::new(bounds.contains(x), true),
-            Self::OnlyY(bounds) => BVec2::new(true, bounds.contains(y)),
             Self::All(bounds) => BVec2::new(bounds.contains(x), bounds.contains(y)),
             Self::Separate(bounds_x, bounds_y) => {
                 BVec2::new(bounds_x.contains(x), bounds_y.contains(y))
             }
+            Self::OnlyX(bounds) => BVec2::new(bounds.contains(x), true),
+            Self::OnlyY(bounds) => BVec2::new(true, bounds.contains(y)),
         }
     }
 }

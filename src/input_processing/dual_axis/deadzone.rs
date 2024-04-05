@@ -34,12 +34,12 @@ impl DualAxisExclusion {
     pub fn contains(&self, input_value: Vec2) -> BVec2 {
         let Vec2 { x, y } = input_value;
         match self {
-            Self::OnlyX(exclusion) => BVec2::new(exclusion.contains(x), false),
-            Self::OnlyY(exclusion) => BVec2::new(false, exclusion.contains(y)),
             Self::All(exclusion) => BVec2::new(exclusion.contains(x), exclusion.contains(y)),
             Self::Separate(exclusion_x, exclusion_y) => {
                 BVec2::new(exclusion_x.contains(x), exclusion_y.contains(y))
             }
+            Self::OnlyX(exclusion) => BVec2::new(exclusion.contains(x), false),
+            Self::OnlyY(exclusion) => BVec2::new(false, exclusion.contains(y)),
         }
     }
 }
