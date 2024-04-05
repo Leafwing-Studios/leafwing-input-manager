@@ -15,7 +15,7 @@
 macro_rules! __stringify_expressions {
     // Concatenate multiple expressions with commas.
     ($($e:expr),*) => {
-        __stringify_expressions!(@__helper $($e),*)
+        $crate::__stringify_expressions!(@__helper $($e),*)
     };
     // Helper to add commas between expressions.
     (@__helper $first:expr, $($rest:expr),*) => {

@@ -3,7 +3,7 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use bevy::prelude::Reflect;
+use bevy::prelude::*;
 use bevy::utils::FloatOrd;
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
@@ -709,7 +709,7 @@ impl Hash for AxisDeadzone {
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::*;
+    use super::*;
 
     #[test]
     fn test_axis_processing_pipeline() {

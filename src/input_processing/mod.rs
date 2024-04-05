@@ -120,7 +120,10 @@ macro_rules! define_input_processing_pipeline {
         processor_type: $ProcessorTrait:ident,
         processors: [$($processor:expr),* $(,)?]
     ) => {
-        #[doc = concat!("The [`", stringify!($ProcessorTrait), "`] for sequential processing input values by passing them through a sequence of `[", __stringify_expressions!($($processor),*), "]`.")]
+        #[doc = concat!(
+            "The [`", stringify!($ProcessorTrait), "`] for sequential processing input values",
+            "by passing them through a sequence of `[", $crate::__stringify_expressions!($($processor),*), "]`.",
+        )]
         #[must_use]
         #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
         pub struct $Pipeline;
