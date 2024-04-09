@@ -1,14 +1,14 @@
-//! Input processors for dual-axis values
+//! Processors for dual-axis input values
 
-use std::fmt::Debug;
-use std::hash::Hash;
+use std::fmt::{Debug, Formatter};
+use std::hash::{Hash, Hasher};
 
 use bevy::prelude::*;
+use bevy::utils::FloatOrd;
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
-
-use super::single_axis::*;
+use serde::{Deserialize, Serialize};
 
 pub use self::bounds::*;
 pub use self::deadzone::*;
@@ -16,12 +16,8 @@ pub use self::deadzone::*;
 mod bounds;
 mod deadzone;
 
-// region processor trait
-
-/// A trait for defining processors applied to input values on the X and Y axes.
-/// These processors accept a [`Vec2`] input and produce a [`Vec2`] output.
-///
-/// Implementors of this trait are responsible for providing the specific processing logic.
+/// A trait for processing dual-axis input values,
+/// accepting a [`Vec2`] input and producing a [`Vec2`] output.
 ///
 /// # Examples
 ///
@@ -38,7 +34,7 @@ mod deadzone;
 /// // implementation is necessary as shown below.
 /// // Otherwise, you can derive Eq and Hash directly.
 /// #[derive(Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
-/// pub struct DoubleAbsoluteValueThenRejectX(f32);
+/// pub struct DoubleAbsoluteValueThenRejectX(pub f32);
 ///
 /// // Add this attribute for ensuring proper serialization and deserialization.
 /// #[serde_trait_object]
@@ -47,7 +43,7 @@ mod deadzone;
 ///         // Implement the logic just like you would in a normal function.
 ///
 ///         // You can use other processors within this function.
-///         let value = AxisSensitivity(2.0).extend_dual().process(input_value);
+///         let value = DualAxisSensitivity::all(2.0).process(input_value);
 ///
 ///         let value = value.abs();
 ///         let new_x = if value.x == self.0 {
@@ -75,7 +71,7 @@ mod deadzone;
 /// assert_eq!(processor.process(Vec2::splat(2.0)), Vec2::new(0.0, 4.0));
 /// assert_eq!(processor.process(Vec2::splat(-2.0)), Vec2::new(0.0, 4.0));
 ///
-/// // Others are left unchanged.
+/// // Others are just doubled absolute value.
 /// assert_eq!(processor.process(Vec2::splat(6.0)), Vec2::splat(12.0));
 /// assert_eq!(processor.process(Vec2::splat(4.0)), Vec2::splat(8.0));
 /// assert_eq!(processor.process(Vec2::splat(0.0)), Vec2::splat(0.0));
@@ -84,69 +80,114 @@ mod deadzone;
 /// ```
 #[typetag::serde(tag = "type")]
 pub trait DualAxisProcessor: Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect {
-    /// Processes the `input_value` and returns the result.
+    /// Computes the result by processing the `input_value`.
     fn process(&self, input_value: Vec2) -> Vec2;
 }
 
 dyn_clone::clone_trait_object!(DualAxisProcessor);
 dyn_eq::eq_trait_object!(DualAxisProcessor);
 dyn_hash::hash_trait_object!(DualAxisProcessor);
-crate::__reflect_box_dyn_trait_object!(DualAxisProcessor);
+crate::__reflect_trait_object!(DualAxisProcessor);
 
-// endregion processor trait
-
-// region pipeline
-
-/// Defines an optimized pipeline that sequentially processes input values
-/// using a chain of specified [`DualAxisProcessor`]s with inlined logic.
+/// A dynamic sequence container of [`DualAxisProcessor`]s designed for processing input values.
+///
+/// # Warning
+///
+/// This flexibility may hinder compiler optimizations such as inlining or dead code elimination.
+/// For performance-critical scenarios, consider creating your own processors for improved performance.
 ///
 /// # Examples
 ///
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use serde::{Serialize, Deserialize};
 ///
-/// define_dual_axis_processing_pipeline!(
-///     // The name of the new pipeline.
-///     name: InvertedThenDouble,
-///     // Processors used in the pipeline.
-///     processors: [AxisInverted.extend_dual(), AxisSensitivity(2.0).extend_dual()]
-/// );
+/// let input_value = Vec2::splat(1.5);
 ///
-/// // This new pipeline is just a unit struct with inlined logic.
-/// let processor = InvertedThenDouble;
+/// // Just a heads up, the default pipeline won't tweak values.
+/// let pipeline = DualAxisProcessingPipeline::default();
+/// assert_eq!(pipeline.process(input_value), input_value);
 ///
-/// // Now you can use it!
-/// assert_eq!(processor.process(Vec2::splat(2.0)), Vec2::splat(-4.0));
-/// assert_eq!(processor.process(Vec2::splat(-1.0)), Vec2::splat(2.0));
+/// // You can link up a sequence of processors to make a pipeline.
+/// let mut pipeline = DualAxisProcessingPipeline::default()
+///     .with(DualAxisSensitivity::all(2.0))
+///     .with(DualAxisInverted::ALL);
+///
+/// // Now it doubles and flips values.
+/// assert_eq!(pipeline.process(input_value), -2.0 * input_value);
+///
+/// // You can also add processors just like you would do with a Vec.
+/// pipeline.push(DualAxisSensitivity::only_x(1.5));
+///
+/// // Now it flips values and multiplies the results by [3, 2]
+/// assert_eq!(pipeline.process(input_value), Vec2::new(-3.0, -2.0) * input_value);
+///
+/// // Plus, you can switch out a processor at a specific index.
+/// pipeline.set(0, DualAxisSensitivity::all(3.0));
+///
+/// // Now it flips values and multiplies the results by [4.5, 3]
+/// assert_eq!(pipeline.process(input_value), Vec2::new(-4.5, -3.0) * input_value);
+///
+/// // If needed, you can clear out all processors.
+/// pipeline.clear();
+///
+/// // Now it just leaves values as is.
+/// assert_eq!(pipeline.process(input_value), input_value);
 /// ```
-#[macro_export]
-macro_rules! define_dual_axis_processing_pipeline {
-    (name: $Pipeline:ident, processors: [$($processor:expr),* $(,)?]) => {
-        $crate::define_input_processing_pipeline!(
-            name: $Pipeline,
-            value_type: Vec2,
-            processor_type: DualAxisProcessor,
-            processors: [$($processor,)*]
-        );
-    };
+#[must_use]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+pub struct DualAxisProcessingPipeline(pub(crate) Vec<Box<dyn DualAxisProcessor>>);
+
+#[typetag::serde]
+impl DualAxisProcessor for DualAxisProcessingPipeline {
+    /// Computes the result by passing the `input_value` through this pipeline.
+    #[must_use]
+    #[inline]
+    fn process(&self, input_value: Vec2) -> Vec2 {
+        self.0
+            .iter()
+            .fold(input_value, |value, next| next.process(value))
+    }
 }
 
-crate::define_dynamic_input_processing_pipeline!(
-    name: DualAxisProcessingPipeline,
-    value_type: Vec2,
-    processor_type: DualAxisProcessor
-);
+impl DualAxisProcessingPipeline {
+    /// Appends the given [`DualAxisProcessor`] into this pipeline and returns `self`.
+    #[inline]
+    pub fn with(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.push(processor);
+        self
+    }
 
-/// A trait for processors that can be merged with other [`DualAxisProcessor`]s.
-pub trait MergeDualAxisProcessor {
-    /// Merges this processor with another [`DualAxisProcessor`].
-    fn merge_processor(self, processor: impl DualAxisProcessor) -> Self;
+    /// Appends the given [`DualAxisProcessor`] into this pipeline.
+    #[inline]
+    pub fn push(&mut self, processor: impl DualAxisProcessor) {
+        self.0.push(Box::new(processor));
+    }
+
+    /// Replaces the processor at the `index` with the given [`DualAxisProcessor`].
+    #[inline]
+    pub fn set(&mut self, index: usize, processor: impl DualAxisProcessor) {
+        self.0[index] = Box::new(processor);
+    }
+
+    /// Removes all processors in this pipeline.
+    #[inline]
+    pub fn clear(&mut self) {
+        self.0.clear();
+    }
 }
 
-impl MergeDualAxisProcessor for Box<dyn DualAxisProcessor> {
-    fn merge_processor(self, processor: impl DualAxisProcessor) -> Self {
+/// A trait for appending a [`DualAxisProcessor`] as the next processing step in the pipeline,
+/// enabling further processing of input values.
+pub trait WithNextDualAxisProcessor {
+    /// Appends a [`DualAxisProcessor`] as the next processing step in the pipeline.
+    fn with_processor(self, processor: impl DualAxisProcessor) -> Self;
+}
+
+impl WithNextDualAxisProcessor for Box<dyn DualAxisProcessor> {
+    /// Creates a new boxed [`DualAxisProcessingPipeline`] with the existing steps
+    /// and appends the given [`DualAxisProcessor`].
+    fn with_processor(self, processor: impl DualAxisProcessor) -> Self {
         let pipeline = match Reflect::as_any(&*self).downcast_ref::<DualAxisProcessingPipeline>() {
             Some(pipeline) => pipeline.clone(),
             None => DualAxisProcessingPipeline(vec![self]),
@@ -155,391 +196,156 @@ impl MergeDualAxisProcessor for Box<dyn DualAxisProcessor> {
     }
 }
 
-// endregion pipeline
+/// Flips the sign of dual-axis input values, resulting in a directional reversal of control.
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let value = Vec2::new(1.5, 2.0);
+/// let Vec2 { x, y } = value;
+///
+/// assert_eq!(DualAxisInverted::ALL.process(value), -value);
+/// assert_eq!(DualAxisInverted::ALL.process(-value), value);
+///
+/// assert_eq!(DualAxisInverted::ONLY_X.process(value), Vec2::new(-x, y));
+/// assert_eq!(DualAxisInverted::ONLY_X.process(-value), Vec2::new(x, -y));
+///
+/// assert_eq!(DualAxisInverted::ONLY_Y.process(value), Vec2::new(x, -y));
+/// assert_eq!(DualAxisInverted::ONLY_Y.process(-value), Vec2::new(-x, y));
+#[derive(Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct DualAxisInverted(Vec2);
 
-// region macros
+#[typetag::serde]
+impl DualAxisProcessor for DualAxisInverted {
+    /// Multiples the `input_value` by the specified inversion vector.
+    #[must_use]
+    #[inline]
+    fn process(&self, input_value: Vec2) -> Vec2 {
+        self.0 * input_value
+    }
+}
 
-/// Generates a [`DualAxisProcessor`] enum representing different ways of applying the `operation`
-/// to input values on the X and Y axes using the specified `AxisProcessor`.
+impl DualAxisInverted {
+    /// The [`DualAxisInverted`] that inverts both axes.
+    pub const ALL: Self = Self(Vec2::NEG_ONE);
+
+    /// The [`DualAxisInverted`] that only inverts the X-axis inputs.
+    pub const ONLY_X: Self = Self(Vec2::new(-1.0, 1.0));
+
+    /// The [`DualAxisInverted`] that only inverts the Y-axis inputs.
+    pub const ONLY_Y: Self = Self(Vec2::new(1.0, -1.0));
+
+    /// Are inputs inverted on both axes?
+    #[must_use]
+    #[inline]
+    pub fn inverted(&self) -> BVec2 {
+        self.0.cmpne(Vec2::NEG_ONE)
+    }
+}
+
+impl Eq for DualAxisInverted {}
+
+impl Hash for DualAxisInverted {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        FloatOrd(self.0.x).hash(state);
+        FloatOrd(self.0.y).hash(state);
+    }
+}
+
+impl Debug for DualAxisInverted {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        write!(f, "DualAxisInverted({:?})", self.inverted())
+    }
+}
+
+/// Scales dual-axis input values using a specified multiplier,
+/// allowing fine-tuning the responsiveness of controls.
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use serde::{Serialize, Deserialize};
 ///
-/// // Create a DualAxisProcessor using AxisProcessor that defined as unit struct.
-/// define_dual_axis_processor!(
-///     // The name of your processor.
-///     name: MyDualAxisInverted,
-///     // The operation name you want to add into the doc.
-///     perform: "my operation",
-///     // Specifies the unit struct used as AxisProcessor.
-///     unit_processor_type: MyAxisProcessor
-///     // Optional: Uncomment the next line to add additional description if needed.
-///     // info: "the additional description of `MyDualAxisProcessor`"
-/// );
+/// let value = Vec2::new(1.5, 2.5);
+/// let Vec2 { x, y } = value;
 ///
-/// // Create a DualAxisProcessor using `AxisProcessor stored in its variants.
-/// define_dual_axis_processor!(
-///     name: MyDualAxisProcessor,
-///     perform: "my operation",
-///     // The only thing to change.
-///     stored_processor_type: MyAxisProcessor
-///     // Add additional descriptions if needed.
-/// );
+/// // Negated X and halved Y
+/// let neg_x_half_y = DualAxisSensitivity::new(-1.0, 0.5);
+/// assert_eq!(neg_x_half_y.process(value).x, -x);
+/// assert_eq!(neg_x_half_y.process(value).y, 0.5 * y);
+///
+/// // Doubled X and doubled Y
+/// let double = DualAxisSensitivity::all(2.0);
+/// assert_eq!(double.process(value), 2.0 * value);
+///
+/// // Halved X
+/// let half_x = DualAxisSensitivity::only_x(0.5);
+/// assert_eq!(half_x.process(value).x, 0.5 * x);
+/// assert_eq!(half_x.process(value).y, y);
+///
+/// // Negated and doubled Y
+/// let neg_double_y = DualAxisSensitivity::only_y(-2.0);
+/// assert_eq!(neg_double_y.process(value).x, x);
+/// assert_eq!(neg_double_y.process(value).y, -2.0 * y);
 /// ```
-#[macro_export]
-macro_rules! define_dual_axis_processor {
-    // This branch defines a DualAxisProcessor that performs the operation
-    // using the AxisProcessor directly during processing
-    (
-        name: $DualAxisProcessor:ident,
-        perform: $operation:literal,
-        unit_processor_type: $AxisProcessor:ident
-    ) => {
-        $crate::define_dual_axis_processor!(
-            name: $DualAxisProcessor,
-            perform: $operation,
-            unit_processor_type: $AxisProcessor,
-            info: ""
-        );
-    };
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct DualAxisSensitivity(pub(crate) Vec2);
 
-    // This branch defines a DualAxisProcessor that performs the operation
-    // using the AxisProcessor directly during processing
-    // with additional description in the documentation
-    (
-        name: $DualAxisProcessor:ident,
-        perform: $operation:literal,
-        unit_processor_type: $AxisProcessor:ident,
-        info: $information:literal
-    ) => {
-        #[doc = concat!("Applies ", $operation, " to input values on the X and Y axes using the specified [`", stringify!($AxisProcessor), "`] processors.")]
-        ///
-        #[doc = $information]
-        ///
-        #[doc = concat!("In simple terms, this processor is just the dual-axis version of [`", stringify!($AxisProcessor), "`]. ")]
-        /// Please refer to its documentation for detailed examples and usage guidelines.
-        ///
-        /// # Variants
-        ///
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::All`]: Applies ", $operation, " to all axes.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyX`]: Applies ", $operation, " only to the X-axis.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyY`]: Applies ", $operation, " only to the Y-axis.")]
-        ///
-        /// # Notes
-        ///
-        #[doc = concat!("Helpers like [`", stringify!($AxisProcessor), "::extend_dual()`] and its peers can be used to create an instance of [`", stringify!($DualAxisProcessor), "`].")]
-        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
-        #[must_use]
-        pub enum $DualAxisProcessor {
-            #[doc = concat!("Applies ", $operation, " to all axes.")]
-            All,
-
-            #[doc = concat!("Applies ", $operation, " only to the X-axis.")]
-            OnlyX,
-
-            #[doc = concat!("Applies ", $operation, " only to the Y-axis.")]
-            OnlyY,
-        }
-
-        #[$crate::prelude::serde_trait_object]
-        impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
-            #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
-            #[must_use]
-            #[inline]
-            fn process(&self, input_value: Vec2) -> Vec2 {
-                let Vec2 { x, y } = input_value;
-                match self {
-                    Self::OnlyX => {
-                        let new_x = $crate::prelude::AxisProcessor::process(&$AxisProcessor, x);
-                        Vec2::new(new_x, y)
-                    }
-                    Self::OnlyY => {
-                        let new_y = $crate::prelude::AxisProcessor::process(&$AxisProcessor, y);
-                        Vec2::new(x, new_y)
-                    }
-                    Self::All => Vec2::new(
-                        $crate::prelude::AxisProcessor::process(&$AxisProcessor, x),
-                        $crate::prelude::AxisProcessor::process(&$AxisProcessor, y),
-                    ),
-                }
-            }
-        }
-
-        impl $DualAxisProcessor {
-            #[doc = concat!("Checks if ", $operation, " is applied to the X-axis.")]
-            #[must_use]
-            #[inline]
-            pub fn applied_x(&self) -> bool {
-                *self != Self::OnlyY
-            }
-
-            #[doc = concat!("Checks if ", $operation, " is applied to the Y-axis.")]
-            #[must_use]
-            #[inline]
-            pub fn applied_y(&self) -> bool {
-                *self != Self::OnlyX
-            }
-        }
-
-        // Conversion of $axis_processor into $dual_axis_processor
-        impl $AxisProcessor {
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::All`] that applies ", $operation, " to all axes.")]
-            #[inline]
-            pub fn extend_dual(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::All
-            }
-
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::OnlyX`] that applies ", $operation, " only to the X-axis.")]
-            #[inline]
-            pub fn extend_dual_only_x(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::OnlyX
-            }
-
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::OnlyY`] that applies ", $operation, " only to the Y-axis.")]
-            #[inline]
-            pub fn extend_dual_only_y(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::OnlyY
-            }
-        }
-
-        impl ::core::fmt::Debug for $DualAxisProcessor {
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                match self {
-                    Self::All => f.write_str(concat!("DualAxis::All(", stringify!($AxisProcessor), ")")),
-                    Self::OnlyX => f.write_str(concat!("DualAxis::OnlyX(", stringify!($AxisProcessor), ")")),
-                    Self::OnlyY => f.write_str(concat!("DualAxis::OnlyY(", stringify!($AxisProcessor), ")")),
-                }
-            }
-        }
-    };
-
-    // This branch defines a DualAxisProcessor that performs the operation
-    // using the specified AxisProcessor stored in the variants.
-    (
-        name: $DualAxisProcessor:ident,
-        perform: $operation:literal,
-        stored_processor_type: $AxisProcessor:ident
-    ) => {
-        $crate::define_dual_axis_processor!(
-            name: $DualAxisProcessor,
-            perform: $operation,
-            stored_processor_type: $AxisProcessor,
-            info: ""
-        );
-    };
-
-    // This branch defines a DualAxisProcessor that performs the operation
-    // using the specified AxisProcessor stored in the variants
-    // with additional description in the documentation.
-    (
-        name: $DualAxisProcessor:ident,
-        perform: $operation:literal,
-        stored_processor_type: $AxisProcessor:ident,
-        info: $information:literal
-    ) => {
-        #[doc = concat!("Applies ", $operation, " to input values on the X and Y axes using the specified [`", stringify!($AxisProcessor), "`] processors.")]
-        ///
-        #[doc = $information]
-        ///
-        #[doc = concat!("In simple terms, this processor is just the dual-axis version of [`", stringify!($AxisProcessor), "`].")]
-        /// Please refer to its documentation for detailed examples and usage guidelines.
-        ///
-        /// # Variants
-        ///
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::All`]: Applies a specified [`", stringify!($AxisProcessor), "`] processor to both the X and Y axes.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::Separate`]: Applies two [`", stringify!($AxisProcessor), "`] processors, one for the X-axis and one for the Y-axis.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyX`]: Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the X-axis.")]
-        #[doc = concat!("- [`", stringify!($DualAxisProcessor), "::OnlyY`]: Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the Y-axis.")]
-        ///
-        /// # Notes
-        ///
-        #[doc = concat!("Helpers like [`", stringify!($AxisProcessor), "::extend_dual()`] and its peers can be used to create an instance of [`", stringify!($DualAxisProcessor), "`].")]
-        #[derive(Clone, Copy, PartialEq, Eq, Hash, ::bevy::reflect::Reflect, ::serde::Serialize, ::serde::Deserialize)]
-        #[must_use]
-        pub enum $DualAxisProcessor {
-            #[doc = concat!("Applies a specified [`", stringify!($AxisProcessor), "`] processor to both the X and Y axes.")]
-            All($AxisProcessor),
-
-            #[doc = concat!("Applies two [`", stringify!($AxisProcessor), "`] processors, one for the X-axis and one for the Y-axis.")]
-            Separate($AxisProcessor, $AxisProcessor),
-
-            #[doc = concat!("Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the X-axis.")]
-            OnlyX($AxisProcessor),
-
-            #[doc = concat!("Applies a specified [`", stringify!($AxisProcessor), "`] processors only to the Y-axis.")]
-            OnlyY($AxisProcessor),
-        }
-
-        #[$crate::prelude::serde_trait_object]
-        impl $crate::prelude::DualAxisProcessor for $DualAxisProcessor {
-            #[doc = concat!("Applies ", $operation, " to the `input_value` and returns the result.")]
-            #[must_use]
-            #[inline]
-            fn process(&self, input_value: Vec2) -> Vec2 {
-                let Vec2 { x, y } = input_value;
-                match self {
-                    Self::OnlyX(processor) => {
-                        let new_x = $crate::prelude::AxisProcessor::process(processor, x);
-                        Vec2::new(new_x, y)
-                    }
-                    Self::OnlyY(processor) => {
-                        let new_y = $crate::prelude::AxisProcessor::process(processor, y);
-                        Vec2::new(x, new_y)
-                    }
-                    Self::All(processor) => Vec2::new(
-                        $crate::prelude::AxisProcessor::process(processor, x),
-                        $crate::prelude::AxisProcessor::process(processor, y),
-                    ),
-                    Self::Separate(processor_x, processor_y) => Vec2::new(
-                        $crate::prelude::AxisProcessor::process(processor_x, x),
-                        $crate::prelude::AxisProcessor::process(processor_y, y),
-                    ),
-                }
-            }
-        }
-
-        impl $DualAxisProcessor {
-            /// Returns the processor for the X-axis inputs, if exists.
-            #[must_use]
-            #[inline]
-            pub fn x(&self) -> Option<$AxisProcessor> {
-                match self {
-                    Self::All(processor) => Some(*processor),
-                    Self::Separate(processor_x, _) => Some(*processor_x),
-                    Self::OnlyX(processor) => Some(*processor),
-                    Self::OnlyY(_) => None,
-                }
-            }
-
-            /// Returns the processor for the Y-axis inputs, if exists.
-            #[must_use]
-            #[inline]
-            pub fn y(&self) -> Option<$AxisProcessor> {
-                match self {
-                    Self::All(processor) => Some(*processor),
-                    Self::Separate(_, processor_y) => Some(*processor_y),
-                    Self::OnlyX(_) => None,
-                    Self::OnlyY(processor) => Some(*processor),
-                }
-            }
-
-            /// Checks if there is an associated processor for the X-axis inputs.
-            #[must_use]
-            #[inline]
-            pub fn applied_x(&self) -> bool {
-                self.x().is_some()
-            }
-
-            /// Checks if there is an associated processor for the Y-axis inputs.
-            #[must_use]
-            #[inline]
-            pub fn applied_y(&self) -> bool {
-                self.y().is_some()
-            }
-        }
-
-        // Conversion of $axis_processor into $dual_axis_processor
-        impl $AxisProcessor {
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::All`] that applies `self` to all axes.")]
-            #[inline]
-            pub fn extend_dual(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::All(self)
-            }
-
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::OnlyX`] that applies `self` only to the X-axis.")]
-            #[inline]
-            pub fn extend_dual_only_x(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::OnlyX(self)
-            }
-
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::OnlyY`] that applies `self` only to the Y-axis.")]
-            #[inline]
-            pub fn extend_dual_only_y(self) -> $DualAxisProcessor {
-                $DualAxisProcessor::OnlyY(self)
-            }
-
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::Separate`] that applies `self` to the Y-axis with the given `x` processor to the X-axis.")]
-            #[inline]
-            pub fn extend_dual_with_x(self, x: Self) -> $DualAxisProcessor {
-                $DualAxisProcessor::Separate(x, self)
-            }
-
-            #[doc = concat!("Creates a new [`", stringify!($DualAxisProcessor), "::Separate`] that applies `self` to the X-axis with the given `y` processor to the Y-axis.")]
-            #[inline]
-            pub fn extend_dual_with_y(self, y: Self) -> $DualAxisProcessor {
-                $DualAxisProcessor::Separate(self, y)
-            }
-        }
-
-        impl ::core::fmt::Debug for $DualAxisProcessor {
-            fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
-                match self {
-                    Self::All(processor) => f.write_fmt(format_args!("DualAxis::All({processor:?})")),
-                    Self::Separate(processor_x, processor_y) => {
-                        f.write_fmt(format_args!("DualAxis::Separate({processor_x:?}, {processor_y:?})"))
-                    }
-                    Self::OnlyX(processor) => f.write_fmt(format_args!("DualAxis::OnlyX({processor:?})")),
-                    Self::OnlyY(processor) => f.write_fmt(format_args!("DualAxis::OnlyY({processor:?})")),
-                }
-            }
-        }
-    };
+#[typetag::serde]
+impl DualAxisProcessor for DualAxisSensitivity {
+    /// Multiples the `input_value` by the specified sensitivity vector.
+    #[must_use]
+    #[inline]
+    fn process(&self, input_value: Vec2) -> Vec2 {
+        self.0 * input_value
+    }
 }
-
-// endregion macros
-
-// region inversion
-
-crate::define_dual_axis_processor!(
-    name: DualAxisInverted,
-    perform: "inversion",
-    unit_processor_type: AxisInverted
-);
-
-// endregion inversion
-
-// region sensitivity
-
-crate::define_dual_axis_processor!(
-    name: DualAxisSensitivity,
-    perform: "sensitivity scaling",
-    stored_processor_type: AxisSensitivity
-);
 
 impl DualAxisSensitivity {
-    /// Creates a new [`DualAxisSensitivity::All`] with the specified factor.
+    /// Creates a [`DualAxisSensitivity`] with the given values for each axis separately.
     #[inline]
-    pub fn new(sensitivity: f32) -> Self {
-        Self::All(AxisSensitivity(sensitivity))
+    pub const fn new(sensitivity_x: f32, sensitivity_y: f32) -> Self {
+        Self(Vec2::new(sensitivity_x, sensitivity_y))
     }
 
-    /// Creates a new [`DualAxisSensitivity::Separate`] with the specified factors.
+    /// Creates a [`DualAxisSensitivity`] with the same value for both axes.
     #[inline]
-    pub fn separate(sensitivity_x: f32, sensitivity_y: f32) -> Self {
-        Self::Separate(
-            AxisSensitivity(sensitivity_x),
-            AxisSensitivity(sensitivity_y),
-        )
+    pub const fn all(sensitivity: f32) -> Self {
+        Self::new(sensitivity, sensitivity)
     }
 
-    /// Creates a new [`DualAxisSensitivity::OnlyX`] with the specified factor.
+    /// Creates a [`DualAxisSensitivity`] that only affects the X-axis using the given value.
     #[inline]
-    pub fn only_x(sensitivity: f32) -> Self {
-        Self::OnlyX(AxisSensitivity(sensitivity))
+    pub const fn only_x(sensitivity: f32) -> Self {
+        Self::new(sensitivity, 1.0)
     }
 
-    /// Creates a new [`DualAxisSensitivity::OnlyY`] with the specified factor.
+    /// Creates a [`DualAxisSensitivity`] that only affects the Y-axis using the given value.
     #[inline]
-    pub fn only_y(sensitivity: f32) -> Self {
-        Self::OnlyY(AxisSensitivity(sensitivity))
+    pub const fn only_y(sensitivity: f32) -> Self {
+        Self::new(1.0, sensitivity)
+    }
+
+    /// Returns the sensitivity values.
+    #[must_use]
+    #[inline]
+    pub fn sensitivities(&self) -> Vec2 {
+        self.0
     }
 }
 
-// endregion sensitivity
+impl Eq for DualAxisSensitivity {}
+
+impl Hash for DualAxisSensitivity {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        FloatOrd(self.0.x).hash(state);
+        FloatOrd(self.0.y).hash(state);
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -549,51 +355,39 @@ mod tests {
     fn test_dual_axis_processing_pipeline() {
         // Add processors to a new pipeline.
         let mut pipeline = DualAxisProcessingPipeline::default()
-            .with(AxisSensitivity(4.0).extend_dual())
-            .with(AxisInverted.extend_dual())
-            .with(AxisInverted.extend_dual())
-            .with(AxisSensitivity(4.0).extend_dual());
+            .with(DualAxisSensitivity::all(4.0))
+            .with(DualAxisInverted::ALL)
+            .with(DualAxisInverted::ALL);
 
-        // Replace the processor at index 3.
-        pipeline.set(3, AxisSensitivity(6.0).extend_dual());
+        pipeline.push(DualAxisSensitivity::all(3.0));
+
+        pipeline.set(3, DualAxisSensitivity::all(6.0));
 
         // This pipeline now scales input values by a factor of 24.0
         assert_eq!(pipeline.process(Vec2::splat(2.0)), Vec2::splat(48.0));
         assert_eq!(pipeline.process(Vec2::splat(-3.0)), Vec2::splat(-72.0));
-    }
 
-    #[test]
-    fn test_inlined_dual_axis_processing_pipeline() {
-        // Define an optimized pipeline.
-        define_dual_axis_processing_pipeline!(
-            name: InvertedThenDouble,
-            processors: [
-                AxisInverted.extend_dual(),
-                AxisSensitivity(2.0).extend_dual(),
-            ]
-        );
-
-        // This pipeline now inverts and scales input values by a factor of 2.0
-        let pipeline = InvertedThenDouble;
-        assert_eq!(pipeline.process(Vec2::splat(2.0)), Vec2::splat(-4.0));
-        assert_eq!(pipeline.process(Vec2::splat(-4.0)), Vec2::splat(8.0));
+        // Now it just leaves values as is.
+        pipeline.clear();
+        assert_eq!(pipeline, DualAxisProcessingPipeline::default());
+        assert_eq!(pipeline.process(Vec2::splat(2.0)), Vec2::splat(2.0));
     }
 
     #[test]
     fn test_merge_axis_processor() {
-        let first = AxisSensitivity(2.0).extend_dual();
+        let first = DualAxisSensitivity::all(2.0);
         let first_boxed: Box<dyn DualAxisProcessor> = Box::new(first);
 
-        let second = AxisSensitivity(3.0).extend_dual();
-        let merged_second = first_boxed.merge_processor(second);
+        let second = DualAxisSensitivity::all(3.0);
+        let merged_second = first_boxed.with_processor(second);
         let expected = DualAxisProcessingPipeline::default()
             .with(first)
             .with(second);
         let expected_boxed: Box<dyn DualAxisProcessor> = Box::new(expected);
         assert_eq!(merged_second, expected_boxed);
 
-        let third = AxisSensitivity(4.0).extend_dual();
-        let merged_third = merged_second.merge_processor(third);
+        let third = DualAxisSensitivity::all(4.0);
+        let merged_third = merged_second.with_processor(third);
         let expected = DualAxisProcessingPipeline::default()
             .with(first)
             .with(second)
@@ -604,61 +398,59 @@ mod tests {
 
     #[test]
     fn test_dual_axis_inverted() {
-        let all = DualAxisInverted::All;
-        let only_x = DualAxisInverted::OnlyX;
-        let only_y = DualAxisInverted::OnlyY;
+        for x in -300..300 {
+            let x = x as f32 * 0.01;
 
-        // These should be identical.
-        assert_eq!(all, AxisInverted.extend_dual());
-        assert_eq!(only_x, AxisInverted.extend_dual_only_x());
-        assert_eq!(only_y, AxisInverted.extend_dual_only_y());
+            for y in -300..300 {
+                let y = y as f32 * 0.01;
+                let value = Vec2::new(x, y);
 
-        // Check if applied.
-        assert!(all.applied_x());
-        assert!(all.applied_y());
-        assert!(only_x.applied_x());
-        assert!(!only_x.applied_y());
-        assert!(!only_y.applied_x());
-        assert!(only_y.applied_y());
+                assert_eq!(DualAxisInverted::ALL.process(value), -value);
+                assert_eq!(DualAxisInverted::ALL.process(-value), value);
 
-        // And they can invert the direction.
-        assert_eq!(all.process(Vec2::ONE), Vec2::NEG_ONE);
-        assert_eq!(only_x.process(Vec2::ONE), Vec2::new(-1.0, 1.0));
-        assert_eq!(only_y.process(Vec2::ONE), Vec2::new(1.0, -1.0));
+                assert_eq!(DualAxisInverted::ONLY_X.process(value), Vec2::new(-x, y));
+                assert_eq!(DualAxisInverted::ONLY_X.process(-value), Vec2::new(x, -y));
+
+                assert_eq!(DualAxisInverted::ONLY_Y.process(value), Vec2::new(x, -y));
+                assert_eq!(DualAxisInverted::ONLY_Y.process(-value), Vec2::new(-x, y));
+            }
+        }
     }
 
     #[test]
     fn test_dual_axis_sensitivity() {
-        let axis_x = AxisSensitivity(4.0);
-        let axis_y = AxisSensitivity(5.0);
+        for x in -300..300 {
+            let x = x as f32 * 0.01;
 
-        // These should be identical.
-        let all = DualAxisSensitivity::All(axis_x);
-        assert_eq!(all, DualAxisSensitivity::new(4.0));
-        assert_eq!(all, axis_x.extend_dual());
+            for y in -300..300 {
+                let y = y as f32 * 0.01;
+                let value = Vec2::new(x, y);
 
-        let separate = DualAxisSensitivity::Separate(axis_x, axis_y);
-        assert_eq!(separate, DualAxisSensitivity::separate(4.0, 5.0));
-        assert_eq!(separate, axis_x.extend_dual_with_y(axis_y));
-        assert_eq!(separate, axis_y.extend_dual_with_x(axis_x));
+                let sensitivity = x;
 
-        let only_x = DualAxisSensitivity::OnlyX(axis_x);
-        assert_eq!(only_x, DualAxisSensitivity::only_x(4.0));
-        assert_eq!(only_x, axis_x.extend_dual_only_x());
+                let all = DualAxisSensitivity::all(sensitivity);
+                assert_eq!(all.sensitivities(), Vec2::splat(sensitivity));
+                assert_eq!(all.process(value), sensitivity * value);
 
-        let only_y = DualAxisSensitivity::OnlyY(axis_y);
-        assert_eq!(only_y, DualAxisSensitivity::only_y(5.0));
-        assert_eq!(only_y, axis_y.extend_dual_only_y());
+                let only_x = DualAxisSensitivity::only_x(sensitivity);
+                assert_eq!(only_x.sensitivities(), Vec2::new(sensitivity, 1.0));
+                assert_eq!(only_x.process(value).x, x * sensitivity);
+                assert_eq!(only_x.process(value).y, y);
 
-        // The DualAxisSensitivity is just a dual-axis version of AxisSensitivity.
-        let value = Vec2::new(2.0, 3.0);
-        assert_eq!(axis_x.process(value.x), 8.0);
-        assert_eq!(axis_y.process(value.y), 15.0);
-        assert_eq!(all.process(value).x, axis_x.process(value.x));
-        assert_eq!(all.process(value).y, axis_x.process(value.y));
-        assert_eq!(separate.process(value).x, axis_x.process(value.x));
-        assert_eq!(separate.process(value).y, axis_y.process(value.y));
-        assert_eq!(only_x.process(value).x, axis_x.process(value.x));
-        assert_eq!(only_y.process(value).y, axis_y.process(value.y));
+                let only_y = DualAxisSensitivity::only_y(sensitivity);
+                assert_eq!(only_y.sensitivities(), Vec2::new(1.0, sensitivity));
+                assert_eq!(only_y.process(value).x, x);
+                assert_eq!(only_y.process(value).y, y * sensitivity);
+
+                let sensitivity2 = y;
+                let separate = DualAxisSensitivity::new(sensitivity, sensitivity2);
+                assert_eq!(
+                    separate.sensitivities(),
+                    Vec2::new(sensitivity, sensitivity2)
+                );
+                assert_eq!(separate.process(value).x, x * sensitivity);
+                assert_eq!(separate.process(value).y, y * sensitivity2);
+            }
+        }
     }
 }

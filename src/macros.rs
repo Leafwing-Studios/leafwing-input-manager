@@ -1,36 +1,7 @@
-/// Joins multiple expressions into a single string, separated by commas.
-///
-/// # Examples
-///
-/// ```rust
-/// use leafwing_input_manager::prelude::*;
-///
-/// let sequence = __stringify_expressions!(AxisInverted, AxisSensitivity(2.0));
-///
-/// // Rust will automatically add additional parentheses to complex expressions.
-/// assert_eq!(sequence, "AxisInverted, AxisSensitivity(2.0)");
-/// ```
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __stringify_expressions {
-    // Concatenate multiple expressions with commas.
-    ($($e:expr),*) => {
-        $crate::__stringify_expressions!(@__helper $($e),*)
-    };
-    // Helper to add commas between expressions.
-    (@__helper $first:expr, $($rest:expr),*) => {
-        core::concat!(stringify!($first), $(", ", stringify!($rest)),*)
-    };
-    // Helper for the last expression without a trailing comma.
-    (@__helper $last:expr) => {
-        stringify!($last)
-    };
-}
-
 /// Implements the Bevy's [`Reflect`](bevy::reflect::Reflect) for boxed trait objects.
 #[doc(hidden)]
 #[macro_export]
-macro_rules! __reflect_box_dyn_trait_object {
+macro_rules! __reflect_trait_object {
     ($ObjectTrait:ident) => {
         impl ::bevy::reflect::Reflect for ::std::boxed::Box<dyn $ObjectTrait> {
             fn get_represented_type_info(

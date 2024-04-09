@@ -1,99 +1,411 @@
 //! Value bounds for dual-axis inputs
 
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use bevy::prelude::*;
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
-use super::super::single_axis::*;
 use super::DualAxisProcessor;
-use crate::define_dual_axis_processor;
+use crate::input_processing::single_axis::*;
 
-define_dual_axis_processor!(
-    name: DualAxisBounds,
-    perform: "axial bounds",
-    stored_processor_type: AxisBounds
-);
-
-impl Default for DualAxisBounds {
-    /// Creates a new [`DualAxisBounds`] with bounds set to `[-1.0, 1.0]` on each axis.
-    #[inline]
-    fn default() -> Self {
-        AxisBounds::default().extend_dual()
-    }
-}
-
-impl DualAxisBounds {
-    /// Checks whether the `input_value` is within the bounds along each axis.
-    #[must_use]
-    #[inline]
-    pub fn contains(&self, input_value: Vec2) -> BVec2 {
-        let Vec2 { x, y } = input_value;
-        match self {
-            Self::All(bounds) => BVec2::new(bounds.contains(x), bounds.contains(y)),
-            Self::Separate(bounds_x, bounds_y) => {
-                BVec2::new(bounds_x.contains(x), bounds_y.contains(y))
-            }
-            Self::OnlyX(bounds) => BVec2::new(bounds.contains(x), true),
-            Self::OnlyY(bounds) => BVec2::new(true, bounds.contains(y)),
-        }
-    }
-}
-
-/// Specifies a radial bound for input values,
-/// ensuring their magnitudes smaller than a specified threshold.
+/// Specifies a square-shaped region defining acceptable ranges for valid dual-axis inputs,
+/// with independent min-max ranges for each axis, restricting all values stay within intended limits
+/// to avoid unexpected behavior caused by extreme inputs.
 ///
-/// This processor forms a circular boundary with a specified radius.
-/// Input values exceeding the magnitude of this radius will be clamped to fit within the circle.
-///
-/// # Examples
+/// In simple terms, this processor is just the dual-axis version of [`AxisBounds`].
+/// Helpers like [`AxisBounds::extend_dual()`] and its peers can be used to create a [`DualAxisBounds`].
 ///
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
 ///
-/// // Set the maximum bound to 5 for magnitudes.
-/// let bounds = CircleBounds::new(5.0);
+/// // Restrict X to [-2, 3] and Y to [-1, 4].
+/// let bounds = DualAxisBounds::new((-2.0, 3.0), (-1.0, 4.0));
+/// assert_eq!(bounds.bounds_x().min_max(), (-2.0, 3.0));
+/// assert_eq!(bounds.bounds_y().min_max(), (-1.0, 4.0));
 ///
-/// assert_eq!(bounds.radius(), 5.0);
+/// // Another way to create a DualAxisBounds.
+/// let bounds_x = AxisBounds::new(-2.0, 3.0);
+/// let bounds_y = AxisBounds::new(-1.0, 4.0);
+/// assert_eq!(bounds_x.extend_dual_with_y(bounds_y), bounds);
 ///
-/// // These values have a magnitude greater than the radius.
-/// let values = [Vec2::ONE * 5.0, Vec2::X * 10.0];
-/// for value in values {
-///     assert!(value.length() > bounds.radius());
+/// for x in -300..300 {
+///     let x = x as f32 * 0.01;
+///     for y in -300..300 {
+///         let y = y as f32 * 0.01;
+///         let value = Vec2::new(x, y);
 ///
-///     // So the value is out of the bounds.
-///     assert!(!bounds.contains(value));
-///
-///     // And the value should be clamped to the maximum bound.
-///     let result = bounds.process(value);
-///     assert_eq!(result.length(), bounds.radius());
-///     assert_eq!(result.y.atan2(result.x), value.y.atan2(value.x));
-/// }
-///
-/// // These values are within the bounds.
-/// let values = [Vec2::ONE * 3.0, Vec2::X * 4.0];
-/// for value in values {
-///     assert!(bounds.contains(value));
-///
-///     // So the value should be left unchanged.
-///     assert_eq!(bounds.process(value), value);
+///         assert_eq!(bounds.process(value).x, bounds_x.process(x));
+///         assert_eq!(bounds.process(value).y, bounds_y.process(y));
+///     }
 /// }
 /// ```
+#[doc(alias = "SquareBounds")]
+#[doc(alias = "AxialBounds")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct DualAxisBounds {
+    /// The [`AxisBounds`] for the X-axis inputs.
+    pub(crate) bounds_x: AxisBounds,
+
+    /// The [`AxisBounds`] for the Y-axis inputs.
+    pub(crate) bounds_y: AxisBounds,
+}
+
+#[typetag::serde]
+impl DualAxisProcessor for DualAxisBounds {
+    /// Clamps `input_value` within the bounds.
+    #[must_use]
+    #[inline]
+    fn process(&self, input_value: Vec2) -> Vec2 {
+        Vec2::new(
+            self.bounds_x.process(input_value.x),
+            self.bounds_y.process(input_value.y),
+        )
+    }
+}
+
+impl Default for DualAxisBounds {
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-1.0, 1.0]` on both axes.
+    #[inline]
+    fn default() -> Self {
+        Self {
+            bounds_x: AxisBounds::default(),
+            bounds_y: AxisBounds::default(),
+        }
+    }
+}
+
+impl DualAxisBounds {
+    /// Unlimited [`DualAxisBounds`].
+    pub const FULL_RANGE: Self = Self {
+        bounds_x: AxisBounds::FULL_RANGE,
+        bounds_y: AxisBounds::FULL_RANGE,
+    };
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[min, max]` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn new((x_min, x_max): (f32, f32), (y_min, y_max): (f32, f32)) -> Self {
+        Self {
+            bounds_x: AxisBounds::new(x_min, x_max),
+            bounds_y: AxisBounds::new(y_min, y_max),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the same range `[min, max]` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn all(min: f32, max: f32) -> Self {
+        let range = (min, max);
+        Self::new(range, range)
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values within the range `[min, max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_x(min: f32, max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::new(min, max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values within the range `[min, max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_y(min: f32, max: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::new(min, max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-threshold, threshold]` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric")]
+    #[inline]
+    pub fn magnitude(threshold_x: f32, threshold_y: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::magnitude(threshold_x),
+            bounds_y: AxisBounds::magnitude(threshold_y),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-threshold, threshold]` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric_all")]
+    #[inline]
+    pub fn magnitude_all(threshold: f32) -> Self {
+        Self::magnitude(threshold, threshold)
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values within the range `[-threshold, threshold]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric_only_x")]
+    #[inline]
+    pub fn magnitude_only_x(threshold: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::magnitude(threshold),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values within the range `[-threshold, threshold]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric_only_y")]
+    #[inline]
+    pub fn magnitude_only_y(threshold: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::magnitude(threshold),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a minimum value on each axis.
+    #[inline]
+    pub const fn at_least(x_min: f32, y_min: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_least(x_min),
+            bounds_y: AxisBounds::at_least(y_min),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a minimum value on both axes.
+    #[inline]
+    pub const fn at_least_all(min: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_least(min),
+            bounds_y: AxisBounds::at_least(min),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values to a minimum value.
+    #[inline]
+    pub const fn at_least_only_x(min: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_least(min),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values to a minimum value.
+    #[inline]
+    pub const fn at_least_only_y(min: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::at_least(min),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a maximum value on each axis.
+    #[inline]
+    pub const fn at_most(x_max: f32, y_max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_most(x_max),
+            bounds_y: AxisBounds::at_most(y_max),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a maximum value on both axes.
+    #[inline]
+    pub const fn at_most_all(max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_most(max),
+            bounds_y: AxisBounds::at_most(max),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values to a maximum value.
+    #[inline]
+    pub const fn at_most_only_x(max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_most(max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values to a maximum value.
+    #[inline]
+    pub const fn at_most_only_y(max: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::at_most(max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Returns the bounds for inputs along each axis.
+    #[inline]
+    pub fn bounds(&self) -> (AxisBounds, AxisBounds) {
+        (self.bounds_x, self.bounds_y)
+    }
+
+    /// Returns the bounds for the X-axis inputs.
+    #[inline]
+    pub fn bounds_x(&self) -> AxisBounds {
+        self.bounds().0
+    }
+
+    /// Returns the bounds for the Y-axis inputs.
+    #[inline]
+    pub fn bounds_y(&self) -> AxisBounds {
+        self.bounds().1
+    }
+
+    /// Is `input_value` is within the bounds?
+    #[must_use]
+    #[inline]
+    pub fn contains(&self, input_value: Vec2) -> BVec2 {
+        BVec2::new(
+            self.bounds_x.contains(input_value.x),
+            self.bounds_y.contains(input_value.y),
+        )
+    }
+}
+
+impl AxisBounds {
+    /// Creates a [`DualAxisBounds`] using `self` for both axes.
+    #[inline]
+    pub const fn extend_dual(self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x: self,
+            bounds_y: self,
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] only using `self` for the X-axis.
+    #[inline]
+    pub const fn extend_dual_only_x(self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x: self,
+            ..DualAxisBounds::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] only using `self` to the Y-axis.
+    #[inline]
+    pub const fn extend_dual_only_y(self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_y: self,
+            ..DualAxisBounds::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] using `self` to the Y-axis with the given `bounds_x` to the X-axis.
+    #[inline]
+    pub const fn extend_dual_with_x(self, bounds_x: Self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x,
+            bounds_y: self,
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] using `self` to the X-axis with the given `bounds_y` to the Y-axis.
+    #[inline]
+    pub const fn extend_dual_with_y(self, bounds_y: Self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x: self,
+            bounds_y,
+        }
+    }
+}
+
+impl From<AxisBounds> for DualAxisBounds {
+    fn from(bounds: AxisBounds) -> Self {
+        bounds.extend_dual()
+    }
+}
+
+/// Specifies a circular region defining acceptable ranges for valid dual-axis inputs,
+/// with a radius defining the maximum threshold magnitude,
+/// restricting all values stay within intended limits
+/// to avoid unexpected behavior caused by extreme inputs.
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
+///
+/// // Restrict magnitudes to no greater than 5
+/// let bounds = CircleBounds::new(5.0);
+///
+/// for x in -300..300 {
+///     let x = x as f32 * 0.01;
+///     for y in -300..300 {
+///         let y = y as f32 * 0.01;
+///         let value = Vec2::new(x, y);
+///         assert_eq!(bounds.process(value), value.clamp_length_max(5.0));
+///     }
+/// }
+/// ```
+#[doc(alias = "RadialBounds")]
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct CircleBounds {
     /// The maximum radius of the circle.
     pub(crate) radius: f32,
-
-    /// Pre-calculated squared `radius`, preventing redundant calculations.
-    pub(crate) radius_squared: f32,
 }
 
 #[typetag::serde]
 impl DualAxisProcessor for CircleBounds {
-    /// Clamps the magnitude of `input_value` to fit within the bounds.
+    /// Clamps the magnitude of `input_value` within the bounds.
     #[must_use]
     #[inline]
     fn process(&self, input_value: Vec2) -> Vec2 {
@@ -102,7 +414,7 @@ impl DualAxisProcessor for CircleBounds {
 }
 
 impl Default for CircleBounds {
-    /// Creates a new [`CircleBounds`] that limits input values to a maximum magnitude of `1.0`.
+    /// Creates a [`CircleBounds`] that restricts the values to a maximum magnitude of `1.0`.
     #[inline]
     fn default() -> Self {
         Self::new(1.0)
@@ -110,28 +422,24 @@ impl Default for CircleBounds {
 }
 
 impl CircleBounds {
-    /// Creates a [`CircleBounds`] that limits input values to a maximum magnitude threshold (`radius`).
+    /// Unlimited [`CircleBounds`].
+    pub const FULL_RANGE: Self = Self { radius: f32::MAX };
+
+    /// Creates a [`CircleBounds`] that restricts input values to a maximum magnitude.
     ///
     /// # Requirements
     ///
-    /// - `radius` >= `0.0`.
+    /// - `threshold` >= `0.0`.
     ///
     /// # Panics
     ///
-    /// Panics if any of the requirements isn't met.
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "magnitude")]
+    #[doc(alias = "from_radius")]
     #[inline]
-    pub fn new(radius: f32) -> Self {
-        assert!(radius >= 0.0);
-        Self {
-            radius,
-            radius_squared: radius.powi(2),
-        }
-    }
-
-    /// Creates a [`CircleBounds`] with unlimited bounds.
-    #[inline]
-    pub fn full_range() -> Self {
-        Self::new(f32::MAX)
+    pub fn new(threshold: f32) -> Self {
+        assert!(threshold >= 0.0);
+        Self { radius: threshold }
     }
 
     /// Returns the radius of the bounds.
@@ -141,18 +449,11 @@ impl CircleBounds {
         self.radius
     }
 
-    /// Returns the squared radius of the bounds.
-    #[must_use]
-    #[inline]
-    pub fn radius_squared(&self) -> f32 {
-        self.radius_squared
-    }
-
-    /// Checks whether the `input_value` is within this deadzone.
+    /// Is the `input_value` is within the bounds?
     #[must_use]
     #[inline]
     pub fn contains(&self, input_value: Vec2) -> bool {
-        input_value.length_squared() <= self.radius_squared
+        input_value.length() <= self.radius
     }
 }
 
@@ -169,131 +470,152 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_dual_axis_value_bounds_default() {
-        // -1 to 1 on each axis
+    fn test_dual_axis_value_bounds_constructors() {
+        fn test_bounds(
+            bounds: DualAxisBounds,
+            (x_min, x_max): (f32, f32),
+            (y_min, y_max): (f32, f32),
+        ) {
+            assert_eq!(bounds.bounds_x().min_max(), (x_min, x_max));
+            assert_eq!(bounds.bounds_y().min_max(), (y_min, y_max));
+
+            let bounds_x = AxisBounds::new(x_min, x_max);
+            let bounds_y = AxisBounds::new(y_min, y_max);
+            assert_eq!(bounds_x.extend_dual_with_y(bounds_y), bounds);
+
+            let (bx, by) = bounds.bounds();
+            assert_eq!(bx, bounds_x);
+            assert_eq!(by, bounds_y);
+
+            for x in -300..300 {
+                let x = x as f32 * 0.01;
+                for y in -300..300 {
+                    let y = y as f32 * 0.01;
+                    let value = Vec2::new(x, y);
+
+                    let expected = BVec2::new(bounds_x.contains(x), bounds_y.contains(y));
+                    assert_eq!(bounds.contains(value), expected);
+
+                    let expected = Vec2::new(bounds_x.process(x), bounds_y.process(y));
+                    assert_eq!(bounds.process(value), expected);
+                }
+            }
+        }
+
+        let full_range = (f32::MIN, f32::MAX);
+
+        let bounds = DualAxisBounds::FULL_RANGE;
+        test_bounds(bounds, full_range, full_range);
+
         let bounds = DualAxisBounds::default();
+        test_bounds(bounds, (-1.0, 1.0), (-1.0, 1.0));
 
-        assert_eq!(bounds, AxisBounds::default().extend_dual());
+        let bounds = DualAxisBounds::new((-2.0, 3.0), (-1.0, 4.0));
+        test_bounds(bounds, (-2.0, 3.0), (-1.0, 4.0));
 
-        assert!(matches!(bounds.x(), Some(bounds_x) if bounds_x.min_max() == (-1.0, 1.0)));
-        assert!(matches!(bounds.y(), Some(bounds_y) if bounds_y.min_max() == (-1.0, 1.0)));
-    }
+        let bounds = DualAxisBounds::all(-2.0, 3.0);
+        test_bounds(bounds, (-2.0, 3.0), (-2.0, 3.0));
 
-    #[test]
-    fn test_dual_axis_value_bounds_behavior() {
-        // Set the bounds to [-2, 2] on the X-axis and [-3, 3] on the Y-axis.
-        let bounds_x = AxisBounds::magnitude(2.0);
-        let bounds_y = AxisBounds::magnitude(3.0);
-        let bounds = bounds_x.extend_dual_with_y(bounds_y);
+        let bounds = DualAxisBounds::only_x(-2.0, 3.0);
+        test_bounds(bounds, (-2.0, 3.0), full_range);
 
-        // These values are within the bounds.
-        let values = [Vec2::ONE, Vec2::X];
-        for value in values {
-            assert!(bounds.contains(value).all());
-            assert!(bounds.contains(value).x);
-            assert!(bounds.contains(value).y);
+        let bounds = DualAxisBounds::only_y(-1.0, 4.0);
+        test_bounds(bounds, full_range, (-1.0, 4.0));
 
-            // So the value should be left unchanged.
-            assert_eq!(bounds.process(value), value);
-        }
+        let bounds = DualAxisBounds::magnitude(2.0, 3.0);
+        test_bounds(bounds, (-2.0, 2.0), (-3.0, 3.0));
 
-        // These values are only within the X-axis bounds (outside Y).
-        let values = [Vec2::new(2.0, -5.0), Vec2::Y * 5.0];
-        for value in values {
-            assert!(!bounds.contains(value).all());
-            assert!(bounds.contains(value).any());
-            assert!(bounds.contains(value).x);
-            assert!(!bounds.contains(value).y);
+        let bounds = DualAxisBounds::magnitude_all(3.0);
+        test_bounds(bounds, (-3.0, 3.0), (-3.0, 3.0));
 
-            // So the X value should be left unchanged.
-            assert_eq!(bounds.process(value).x, value.x);
+        let bounds = DualAxisBounds::magnitude_only_x(3.0);
+        test_bounds(bounds, (-3.0, 3.0), full_range);
 
-            // And the Y value should be clamped to the closer bound.
-            let clamped_y = bounds.process(value).y;
-            assert!(clamped_y == bounds_y.min() || clamped_y == bounds_y.max());
-        }
+        let bounds = DualAxisBounds::magnitude_only_y(3.0);
+        test_bounds(bounds, full_range, (-3.0, 3.0));
 
-        // These values are only within the Y-axis bounds (outside X).
-        let values = [Vec2::new(20.0, -2.0), Vec2::X * 5.0];
-        for value in values {
-            assert!(!bounds.contains(value).all());
-            assert!(bounds.contains(value).any());
-            assert!(!bounds.contains(value).x);
-            assert!(bounds.contains(value).y);
+        let bounds = DualAxisBounds::at_least(2.0, 3.0);
+        test_bounds(bounds, (2.0, f32::MAX), (3.0, f32::MAX));
 
-            // So the Y value should be left unchanged.
-            assert_eq!(bounds.process(value).y, value.y);
+        let bounds = DualAxisBounds::at_least_all(3.0);
+        test_bounds(bounds, (3.0, f32::MAX), (3.0, f32::MAX));
 
-            // And the X value should be clamped to the closer bound.
-            let clamped_x = bounds.process(value).x;
-            assert!(clamped_x == bounds_x.min() || clamped_x == bounds_x.max());
-        }
+        let bounds = DualAxisBounds::at_least_only_x(3.0);
+        test_bounds(bounds, (3.0, f32::MAX), full_range);
 
-        // These values are out of all bounds.
-        let values = [Vec2::new(5.0, -5.0), Vec2::ONE * 8.0];
-        for value in values {
-            assert!(!bounds.contains(value).all());
-            assert!(!bounds.contains(value).any());
-            assert!(!bounds.contains(value).x);
-            assert!(!bounds.contains(value).y);
+        let bounds = DualAxisBounds::at_least_only_y(3.0);
+        test_bounds(bounds, full_range, (3.0, f32::MAX));
 
-            // So the value should be clamped to the closer bound.
-            let result = bounds.process(value);
-            assert!(result.x == bounds_x.min() || result.x == bounds_x.max());
-            assert!(result.y == bounds_y.min() || result.y == bounds_y.max());
-        }
+        let bounds = DualAxisBounds::at_most(2.0, 3.0);
+        test_bounds(bounds, (f32::MIN, 2.0), (f32::MIN, 3.0));
+
+        let bounds = DualAxisBounds::at_most_all(3.0);
+        test_bounds(bounds, (f32::MIN, 3.0), (f32::MIN, 3.0));
+
+        let bounds = DualAxisBounds::at_most_only_x(3.0);
+        test_bounds(bounds, (f32::MIN, 3.0), full_range);
+
+        let bounds = DualAxisBounds::at_most_only_y(3.0);
+        test_bounds(bounds, full_range, (f32::MIN, 3.0));
+
+        let bounds_x = AxisBounds::new(-2.0, 3.0);
+        let bounds_y = AxisBounds::new(-1.0, 4.0);
+
+        test_bounds(bounds_x.extend_dual(), (-2.0, 3.0), (-2.0, 3.0));
+        test_bounds(bounds_x.into(), (-2.0, 3.0), (-2.0, 3.0));
+
+        test_bounds(bounds_y.extend_dual(), (-1.0, 4.0), (-1.0, 4.0));
+        test_bounds(bounds_y.into(), (-1.0, 4.0), (-1.0, 4.0));
+
+        test_bounds(bounds_x.extend_dual_only_x(), (-2.0, 3.0), full_range);
+
+        test_bounds(bounds_y.extend_dual_only_y(), full_range, (-1.0, 4.0));
+
+        test_bounds(
+            bounds_x.extend_dual_with_y(bounds_y),
+            (-2.0, 3.0),
+            (-1.0, 4.0),
+        );
+
+        test_bounds(
+            bounds_y.extend_dual_with_x(bounds_x),
+            (-2.0, 3.0),
+            (-1.0, 4.0),
+        );
     }
 
     #[test]
     fn test_circle_value_bounds_constructors() {
-        // 0 to 1
+        fn test_bounds(bounds: CircleBounds, radius: f32) {
+            assert_eq!(bounds.radius(), radius);
+
+            for x in -300..300 {
+                let x = x as f32 * 0.01;
+                for y in -300..300 {
+                    let y = y as f32 * 0.01;
+                    let value = Vec2::new(x, y);
+
+                    if value.length() <= radius {
+                        assert!(bounds.contains(value));
+                    } else {
+                        assert!(!bounds.contains(value));
+                    }
+
+                    let expected = value.clamp_length_max(radius);
+                    let delta = (bounds.process(value) - expected).abs();
+                    assert!(delta.x <= f32::EPSILON);
+                    assert!(delta.y <= f32::EPSILON);
+                }
+            }
+        }
+
+        let bounds = CircleBounds::FULL_RANGE;
+        test_bounds(bounds, f32::MAX);
+
         let bounds = CircleBounds::default();
-        assert_eq!(bounds.radius(), 1.0);
+        test_bounds(bounds, 1.0);
 
-        // 0 to 3
         let bounds = CircleBounds::new(3.0);
-        assert_eq!(bounds.radius(), 3.0);
-
-        // 0 to f32::MAX
-        let bounds = CircleBounds::full_range();
-        assert_eq!(bounds.radius(), f32::MAX);
-    }
-
-    #[test]
-    fn test_circle_value_bounds_behavior() {
-        // Set the bounds to 5 for magnitude.
-        let bounds = CircleBounds::new(5.0);
-
-        // Getters.
-        let radius = bounds.radius();
-        assert_eq!(radius, 5.0);
-
-        assert_eq!(bounds.radius_squared(), 25.0);
-
-        // value.magnitude > radius_max
-        let values = [Vec2::ONE * 5.0, Vec2::X * 10.0];
-        for value in values {
-            assert!(value.length() > radius);
-
-            // So the value is out of the bounds.
-            assert!(!bounds.contains(value));
-
-            // So the value should be clamped to the maximum bound.
-            let result = bounds.process(value);
-            assert_eq!(result.length(), radius);
-            assert_eq!(result.y.atan2(result.x), value.y.atan2(value.x));
-        }
-
-        // value.magnitude <= radius
-        let values = [Vec2::ONE * 3.0, Vec2::X * 4.0];
-        for value in values {
-            assert!(value.length() <= radius);
-
-            // So the value is within the bounds.
-            assert!(bounds.contains(value));
-
-            // So the value should be left unchanged.
-            assert_eq!(bounds.process(value), value);
-        }
+        test_bounds(bounds, 3.0);
     }
 }

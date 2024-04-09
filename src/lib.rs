@@ -50,11 +50,6 @@ pub mod prelude {
     pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
 
-    pub use crate::{
-        __stringify_expressions, define_axis_processing_pipeline,
-        define_dual_axis_processing_pipeline, define_dual_axis_processor,
-        define_dynamic_input_processing_pipeline, define_input_processing_pipeline,
-    };
     pub use typetag::serde as serde_trait_object;
 }
 

@@ -31,15 +31,15 @@ fn spawn_player(mut commands: Commands) {
                 // by clamping their magnitude to a maximum of 1.0,
                 // excluding those with a magnitude less than 0.1,
                 // and scaling other values linearly in between.
-                .with_processor(CircleDeadzone::default())
-                // Followed by appending another processor for the next processing step.
-                .with_processor(AxisSensitivity(2.0).extend_dual()),
+                .with_processor(CircleDeadZone::new(0.1))
+                // Followed by appending Y-axis inversion for the next processing step.
+                .with_processor(DualAxisInverted::ONLY_Y),
         )
         .insert(
             Action::Move,
             DualAxis::left_stick()
                 // You can replace the currently used processor with another processor.
-                .replace_processor(CircleDeadzone::default())
+                .replace_processor(CircleDeadZone::default())
                 // Or remove the processor directly, leaving no processor applied.
                 .no_processor(),
         )
@@ -49,9 +49,9 @@ fn spawn_player(mut commands: Commands) {
             DualAxis::mouse_motion().with_processor(
                 DualAxisProcessingPipeline::default()
                     // The first processor is a circular deadzone.
-                    .with(CircleDeadzone::default())
+                    .with(CircleDeadZone::new(0.1))
                     // The next processor doubles inputs normalized by the deadzone.
-                    .with(AxisSensitivity(2.0).extend_dual()),
+                    .with(DualAxisSensitivity::all(2.0)),
             ),
         );
     commands

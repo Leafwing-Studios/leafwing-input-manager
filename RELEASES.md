@@ -5,17 +5,14 @@
 ### Breaking Changes
 
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-- removed `DualAxisShape`.
 - added input processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad` to refine input values:
-  - Traits:
+  - added processor traits:
     - `AxisProcessor`: Handles single-axis values.
     - `DualAxisProcessor`: Handles dual-axis values.
-  - Built-in processors:
-    - Composite Processors: Combine multiple processors function as a pipeline.
+  - added built-in processors:
+    - Pipelines: Combine multiple processors into a pipeline.
       - `AxisProcessingPipeline`: Chain processors for single-axis values.
-      - `define_axis_processing_pipeline` macro: Inlined processor chaining for single-axis values with fixed steps.
       - `DualAxisProcessingPipeline`: Chain processors for dual-axis values.
-      - `define_dual_axis_processing_pipeline` macro: Inlined processor chaining for dual-axis values with fixed steps.
     - Inversion: Reverses control (positive becomes negative, etc.)
       - `AxisInverted`: Single-axis inversion.
       - `DualAxisInverted`: Dual-axis inversion.
@@ -26,17 +23,18 @@
       - `AxisBounds`: Restricts single-axis values to a range.
       - `DualAxisBounds`: Restricts single-axis values to a range along each axis.
       - `CircleBounds`: Limits dual-axis values to a maximum magnitude.
-    - Deadzone: Ignores near-zero values, treating them as zero.
-      - Unscaled Deadzone:
+    - Deadzones: Ignores near-zero values, treating them as zero.
+      - Unscaled versions:
         - `AxisExclusion`: Excludes small single-axis values.
         - `DualAxisExclusion`: Excludes small dual-axis values along each axis.
         - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold.
-      - Scaled Deadzone:
-        - `AxisDeadzone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`.
-        - `DualAxisDeadzone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`.
-        - `CircleDeadzone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`.
-- removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
-- added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`.
+      - Scaled versions:
+        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`.
+        - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`.
+        - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`.
+  - removed `DeadZoneShape`.
+  - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
+  - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`.
 
 ### Bugs
 

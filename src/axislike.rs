@@ -103,7 +103,7 @@ impl SingleAxis {
     pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
         self.processor = match self.processor {
             None => Some(Box::new(processor)),
-            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
         };
         self
     }
@@ -125,6 +125,7 @@ impl SingleAxis {
     /// Get the "value" of this axis.
     /// If a processor is set, it will compute and return the processed value.
     /// Otherwise, pass the `input_value` through unchanged.
+    #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
         match &self.processor {
@@ -212,7 +213,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-            processor: Some(Box::<CircleDeadzone>::default()),
+            processor: Some(Box::<CircleDeadZone>::default()),
             value: None,
         }
     }
@@ -223,7 +224,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
-            processor: Some(Box::<CircleDeadzone>::default()),
+            processor: Some(Box::<CircleDeadZone>::default()),
             value: None,
         }
     }
@@ -254,7 +255,7 @@ impl DualAxis {
     pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
         self.processor = match self.processor {
             None => Some(Box::new(processor)),
-            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
         };
         self
     }
@@ -276,6 +277,7 @@ impl DualAxis {
     /// Get the "value" of these axes.
     /// If a processor is set, it will compute and return the processed value.
     /// Otherwise, pass the `input_value` through unchanged.
+    #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
         match &self.processor {
@@ -332,7 +334,7 @@ impl VirtualDPad {
             down: InputKind::PhysicalKey(KeyCode::ArrowDown),
             left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
             right: InputKind::PhysicalKey(KeyCode::ArrowRight),
-            processor: Some(Box::<CircleDeadzone>::default()),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
@@ -348,7 +350,7 @@ impl VirtualDPad {
             down: InputKind::PhysicalKey(KeyCode::KeyS),
             left: InputKind::PhysicalKey(KeyCode::KeyA),
             right: InputKind::PhysicalKey(KeyCode::KeyD),
-            processor: Some(Box::<CircleDeadzone>::default()),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
@@ -360,7 +362,7 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-            processor: Some(Box::<CircleDeadzone>::default()),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
@@ -374,7 +376,7 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
-            processor: Some(Box::<CircleDeadzone>::default()),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
@@ -406,7 +408,7 @@ impl VirtualDPad {
     pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
         self.processor = match self.processor {
             None => Some(Box::new(processor)),
-            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
         };
         self
     }
@@ -428,6 +430,7 @@ impl VirtualDPad {
     /// Get the "value" of these axes.
     /// If a processor is set, it will compute and return the processed value.
     /// Otherwise, pass the `input_value` through unchanged.
+    #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
         match &self.processor {
@@ -528,7 +531,7 @@ impl VirtualAxis {
     pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
         self.processor = match self.processor {
             None => Some(Box::new(processor)),
-            Some(current_processor) => Some(current_processor.merge_processor(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
         };
         self
     }
@@ -550,6 +553,7 @@ impl VirtualAxis {
     /// Get the "value" of the axis.
     /// If a processor is set, it will compute and return the processed value.
     /// Otherwise, pass the `input_value` through unchanged.
+    #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
         match &self.processor {

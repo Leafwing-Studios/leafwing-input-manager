@@ -204,7 +204,7 @@ fn mouse_wheel_single_axis() {
 
     // 0
     // Usually a small deadzone threshold will be set
-    let deadzone = AxisDeadzone::default();
+    let deadzone = AxisDeadZone::default();
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(0.0),

@@ -207,7 +207,7 @@ fn mouse_motion_single_axis() {
 
     // 0
     // Usually a small deadzone threshold will be set
-    let deadzone = AxisDeadzone::default();
+    let deadzone = AxisDeadZone::default();
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
         value: Some(0.0),
