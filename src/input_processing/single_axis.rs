@@ -252,7 +252,7 @@ impl Hash for AxisSensitivity {
 /// ```rust
 /// use leafwing_input_manager::prelude::*;
 ///
-/// // Restrict values to [-2, 1.5].
+/// // Restrict values to [-2.0, 1.5].
 /// let bounds = AxisBounds::new(-2.0, 1.5);
 ///
 /// for value in -300..300 {
@@ -846,17 +846,17 @@ mod tests {
         let bounds = AxisBounds::default();
         test_bounds(bounds, -1.0, 1.0);
 
-        let bounds = AxisBounds::new(-2.0, 3.0);
-        test_bounds(bounds, -2.0, 3.0);
+        let bounds = AxisBounds::new(-2.0, 2.5);
+        test_bounds(bounds, -2.0, 2.5);
 
-        let bounds = AxisBounds::magnitude(4.0);
-        test_bounds(bounds, -4.0, 4.0);
+        let bounds = AxisBounds::magnitude(2.0);
+        test_bounds(bounds, -2.0, 2.0);
 
-        let bounds = AxisBounds::at_least(-10.0);
-        test_bounds(bounds, -10.0, f32::MAX);
+        let bounds = AxisBounds::at_least(-1.0);
+        test_bounds(bounds, -1.0, f32::MAX);
 
-        let bounds = AxisBounds::at_most(15.0);
-        test_bounds(bounds, f32::MIN, 15.0);
+        let bounds = AxisBounds::at_most(1.5);
+        test_bounds(bounds, f32::MIN, 1.5);
     }
 
     #[test]

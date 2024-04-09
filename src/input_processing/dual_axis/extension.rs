@@ -1,15 +1,377 @@
-//! Deadzones for dual-axis inputs
+//! Extensions for `AxisProcessor`s designed to handle dual-axis inputs
 
 use std::fmt::Debug;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
 use bevy::prelude::*;
-use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
-use super::bounds::*;
 use super::DualAxisProcessor;
 use crate::input_processing::single_axis::*;
+
+/// Specifies a square-shaped region defining acceptable ranges for valid dual-axis inputs,
+/// with independent min-max ranges for each axis, restricting all values stay within intended limits
+/// to avoid unexpected behavior caused by extreme inputs.
+///
+/// In simple terms, this processor is just the dual-axis version of [`AxisBounds`].
+/// Helpers like [`AxisBounds::extend_dual()`] and its peers can be used to create a [`DualAxisBounds`].
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
+///
+/// // Restrict X to [-2.0, 2.5] and Y to [-1.0, 1.5].
+/// let bounds = DualAxisBounds::new((-2.0, 2.5), (-1.0, 1.5));
+/// assert_eq!(bounds.bounds_x().min_max(), (-2.0, 2.5));
+/// assert_eq!(bounds.bounds_y().min_max(), (-1.0, 1.5));
+///
+/// // Another way to create a DualAxisBounds.
+/// let bounds_x = AxisBounds::new(-2.0, 2.5);
+/// let bounds_y = AxisBounds::new(-1.0, 1.5);
+/// assert_eq!(bounds_x.extend_dual_with_y(bounds_y), bounds);
+///
+/// for x in -300..300 {
+///     let x = x as f32 * 0.01;
+///     for y in -300..300 {
+///         let y = y as f32 * 0.01;
+///         let value = Vec2::new(x, y);
+///
+///         assert_eq!(bounds.process(value).x, bounds_x.process(x));
+///         assert_eq!(bounds.process(value).y, bounds_y.process(y));
+///     }
+/// }
+/// ```
+#[doc(alias = "SquareBounds")]
+#[doc(alias = "AxialBounds")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct DualAxisBounds {
+    /// The [`AxisBounds`] for the X-axis inputs.
+    pub(crate) bounds_x: AxisBounds,
+
+    /// The [`AxisBounds`] for the Y-axis inputs.
+    pub(crate) bounds_y: AxisBounds,
+}
+
+#[typetag::serde]
+impl DualAxisProcessor for DualAxisBounds {
+    /// Clamps `input_value` within the bounds.
+    #[must_use]
+    #[inline]
+    fn process(&self, input_value: Vec2) -> Vec2 {
+        Vec2::new(
+            self.bounds_x.process(input_value.x),
+            self.bounds_y.process(input_value.y),
+        )
+    }
+}
+
+impl Default for DualAxisBounds {
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-1.0, 1.0]` on both axes.
+    #[inline]
+    fn default() -> Self {
+        Self {
+            bounds_x: AxisBounds::default(),
+            bounds_y: AxisBounds::default(),
+        }
+    }
+}
+
+impl DualAxisBounds {
+    /// Unlimited [`DualAxisBounds`].
+    pub const FULL_RANGE: Self = Self {
+        bounds_x: AxisBounds::FULL_RANGE,
+        bounds_y: AxisBounds::FULL_RANGE,
+    };
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[min, max]` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn new((x_min, x_max): (f32, f32), (y_min, y_max): (f32, f32)) -> Self {
+        Self {
+            bounds_x: AxisBounds::new(x_min, x_max),
+            bounds_y: AxisBounds::new(y_min, y_max),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the same range `[min, max]` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn all(min: f32, max: f32) -> Self {
+        let range = (min, max);
+        Self::new(range, range)
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values within the range `[min, max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_x(min: f32, max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::new(min, max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values within the range `[min, max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` <= `max`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_y(min: f32, max: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::new(min, max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-threshold, threshold]` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric")]
+    #[inline]
+    pub fn magnitude(threshold_x: f32, threshold_y: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::magnitude(threshold_x),
+            bounds_y: AxisBounds::magnitude(threshold_y),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-threshold, threshold]` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric_all")]
+    #[inline]
+    pub fn magnitude_all(threshold: f32) -> Self {
+        Self::magnitude(threshold, threshold)
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values within the range `[-threshold, threshold]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric_only_x")]
+    #[inline]
+    pub fn magnitude_only_x(threshold: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::magnitude(threshold),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values within the range `[-threshold, threshold]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[doc(alias = "symmetric_only_y")]
+    #[inline]
+    pub fn magnitude_only_y(threshold: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::magnitude(threshold),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a minimum value on each axis.
+    #[inline]
+    pub const fn at_least(x_min: f32, y_min: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_least(x_min),
+            bounds_y: AxisBounds::at_least(y_min),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a minimum value on both axes.
+    #[inline]
+    pub const fn at_least_all(min: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_least(min),
+            bounds_y: AxisBounds::at_least(min),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values to a minimum value.
+    #[inline]
+    pub const fn at_least_only_x(min: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_least(min),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values to a minimum value.
+    #[inline]
+    pub const fn at_least_only_y(min: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::at_least(min),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a maximum value on each axis.
+    #[inline]
+    pub const fn at_most(x_max: f32, y_max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_most(x_max),
+            bounds_y: AxisBounds::at_most(y_max),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that restricts values to a maximum value on both axes.
+    #[inline]
+    pub const fn at_most_all(max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_most(max),
+            bounds_y: AxisBounds::at_most(max),
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts X values to a maximum value.
+    #[inline]
+    pub const fn at_most_only_x(max: f32) -> Self {
+        Self {
+            bounds_x: AxisBounds::at_most(max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] that only restricts Y values to a maximum value.
+    #[inline]
+    pub const fn at_most_only_y(max: f32) -> Self {
+        Self {
+            bounds_y: AxisBounds::at_most(max),
+            ..Self::FULL_RANGE
+        }
+    }
+
+    /// Returns the bounds for inputs along each axis.
+    #[inline]
+    pub fn bounds(&self) -> (AxisBounds, AxisBounds) {
+        (self.bounds_x, self.bounds_y)
+    }
+
+    /// Returns the bounds for the X-axis inputs.
+    #[inline]
+    pub fn bounds_x(&self) -> AxisBounds {
+        self.bounds().0
+    }
+
+    /// Returns the bounds for the Y-axis inputs.
+    #[inline]
+    pub fn bounds_y(&self) -> AxisBounds {
+        self.bounds().1
+    }
+
+    /// Is `input_value` is within the bounds?
+    #[must_use]
+    #[inline]
+    pub fn contains(&self, input_value: Vec2) -> BVec2 {
+        BVec2::new(
+            self.bounds_x.contains(input_value.x),
+            self.bounds_y.contains(input_value.y),
+        )
+    }
+}
+
+impl AxisBounds {
+    /// Creates a [`DualAxisBounds`] using `self` for both axes.
+    #[inline]
+    pub const fn extend_dual(self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x: self,
+            bounds_y: self,
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] only using `self` for the X-axis.
+    #[inline]
+    pub const fn extend_dual_only_x(self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x: self,
+            ..DualAxisBounds::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] only using `self` to the Y-axis.
+    #[inline]
+    pub const fn extend_dual_only_y(self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_y: self,
+            ..DualAxisBounds::FULL_RANGE
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] using `self` to the Y-axis with the given `bounds_x` to the X-axis.
+    #[inline]
+    pub const fn extend_dual_with_x(self, bounds_x: Self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x,
+            bounds_y: self,
+        }
+    }
+
+    /// Creates a [`DualAxisBounds`] using `self` to the X-axis with the given `bounds_y` to the Y-axis.
+    #[inline]
+    pub const fn extend_dual_with_y(self, bounds_y: Self) -> DualAxisBounds {
+        DualAxisBounds {
+            bounds_x: self,
+            bounds_y,
+        }
+    }
+}
+
+impl From<AxisBounds> for DualAxisBounds {
+    fn from(bounds: AxisBounds) -> Self {
+        bounds.extend_dual()
+    }
+}
 
 /// Specifies a cross-shaped region for excluding dual-axis inputs,
 /// with min-max independent min-max ranges for each axis, resulting in per-axis "snapping" effect,
@@ -660,308 +1022,124 @@ impl From<DualAxisExclusion> for DualAxisDeadZone {
     }
 }
 
-/// Specifies a cross-shaped region for excluding dual-axis inputs,
-/// with a radius defining the maximum excluded magnitude,
-/// helping filter out minor fluctuations and unintended movements.
-///
-/// ```rust
-/// use bevy::prelude::*;
-/// use leafwing_input_manager::prelude::*;
-///
-/// // Exclude magnitudes less than or equal to 0.2
-/// let exclusion = CircleExclusion::new(0.2);
-///
-/// for x in -300..300 {
-///     let x = x as f32 * 0.01;
-///     for y in -300..300 {
-///         let y = y as f32 * 0.01;
-///         let value = Vec2::new(x, y);
-///
-///         if value.length() <= 0.2 {
-///             assert!(exclusion.contains(value));
-///             assert_eq!(exclusion.process(value), Vec2::ZERO);
-///         } else {
-///             assert!(!exclusion.contains(value));
-///             assert_eq!(exclusion.process(value), value);
-///         }
-///     }
-/// }
-/// ```
-#[doc(alias = "RadialExclusion")]
-#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
-#[must_use]
-pub struct CircleExclusion {
-    /// Pre-calculated squared radius of the circle, preventing redundant calculations.
-    pub(crate) radius_squared: f32,
-}
-
-#[typetag::serde]
-impl DualAxisProcessor for CircleExclusion {
-    /// Excludes input values with a magnitude less than the `radius`.
-    #[must_use]
-    #[inline]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        if self.contains(input_value) {
-            Vec2::ZERO
-        } else {
-            input_value
-        }
-    }
-}
-
-impl Default for CircleExclusion {
-    /// Creates a [`CircleExclusion`] that ignores input values below a minimum magnitude of `0.1`.
-    fn default() -> Self {
-        Self::new(0.1)
-    }
-}
-
-impl CircleExclusion {
-    /// Zero-size [`CircleExclusion`], leaving values as is.
-    pub const ZERO: Self = Self {
-        radius_squared: 0.0,
-    };
-
-    /// Creates a [`CircleExclusion`] that ignores input values below a minimum magnitude.
-    ///
-    /// # Requirements
-    ///
-    /// - `radius` >= `0.0`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the requirements aren't met.
-    #[doc(alias = "magnitude")]
-    #[doc(alias = "from_radius")]
-    #[inline]
-    pub fn new(threshold: f32) -> Self {
-        assert!(threshold >= 0.0);
-        Self {
-            radius_squared: threshold.powi(2),
-        }
-    }
-
-    /// Returns the radius of the circle.
-    #[must_use]
-    #[inline]
-    pub fn radius(&self) -> f32 {
-        self.radius_squared.sqrt()
-    }
-
-    /// Checks whether the `input_value` should be excluded.
-    #[must_use]
-    #[inline]
-    pub fn contains(&self, input_value: Vec2) -> bool {
-        input_value.length_squared() <= self.radius_squared
-    }
-
-    /// Creates a [`CircleDeadZone`] using `self` as the exclusion range.
-    #[inline]
-    pub fn scaled(self) -> CircleDeadZone {
-        self.into()
-    }
-}
-
-impl Eq for CircleExclusion {}
-
-impl Hash for CircleExclusion {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        FloatOrd(self.radius_squared).hash(state);
-    }
-}
-
-/// A scaled version of [`CircleExclusion`] with the bounds
-/// set to [`CircleBounds::new(1.0)`](CircleBounds::default)
-/// that normalizes non-excluded input values into the "live zone",
-/// the remaining range within the bounds after dead zone exclusion.
-///
-/// Normalizes input values by clamping them within [`CircleBounds::default`],
-/// excluding values via a specified [`CircleExclusion`], and scaling unchanged values linearly in between.
-///
-/// In simple terms, this processor functions as a scaled [`CircleExclusion`].
-/// This processor is useful for filtering out minor fluctuations and unintended movements.
-///
-/// It is worth considering that this normalizer reduces input values on diagonals.
-/// If that is not your goal, you might want to explore alternative normalizers.
-///
-/// ```rust
-/// use bevy::prelude::*;
-/// use leafwing_input_manager::prelude::*;
-///
-/// // Exclude magnitudes less than or equal to 0.2
-/// let deadzone = CircleDeadZone::new(0.2);
-///
-/// for x in -300..300 {
-///     let x = x as f32 * 0.01;
-///     for y in -300..300 {
-///         let y = y as f32 * 0.01;
-///         let value = Vec2::new(x, y);
-///
-///         // Values within the dead zone are treated as zeros.
-///         if value.length() <= 0.2 {
-///             assert!(deadzone.within_exclusion(value));
-///             assert_eq!(deadzone.process(value), Vec2::ZERO);
-///         }
-///
-///         // Values within the live zone are scaled linearly.
-///         else if value.length() <= 1.0 {
-///             assert!(deadzone.within_livezone(value));
-///
-///             let expected_scale = f32::inverse_lerp(0.2, 1.0, value.length());
-///             let expected = value.normalize() * expected_scale;
-///             let delta = (deadzone.process(value) - expected).abs();
-///             assert!(delta.x <= 0.00001);
-///             assert!(delta.y <= 0.00001);
-///         }
-///
-///         // Values outside the bounds are restricted to the region.
-///         else {
-///             assert!(!deadzone.within_bounds(value));
-///
-///             let expected = value.clamp_length_max(1.0);
-///             let delta = (deadzone.process(value) - expected).abs();
-///             assert!(delta.x <= 0.00001);
-///             assert!(delta.y <= 0.00001);
-///         }
-///     }
-/// }
-/// ```
-#[doc(alias = "RadialDeadZone")]
-#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
-#[must_use]
-pub struct CircleDeadZone {
-    /// The radius of the circle.
-    pub(crate) radius: f32,
-
-    /// Pre-calculated reciprocal of the live zone size, preventing division during normalization.
-    pub(crate) livezone_recip: f32,
-}
-
-#[typetag::serde]
-impl DualAxisProcessor for CircleDeadZone {
-    /// Normalizes input values into the live zone.
-    #[must_use]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        let input_length = input_value.length();
-        if input_length == 0.0 {
-            return Vec2::ZERO;
-        }
-
-        // Clamp out-of-bounds values to a maximum magnitude of 1,
-        // and then exclude values within the dead zone,
-        // and finally linearly scale the result to the live zone.
-        let (deadzone, bound) = self.livezone_min_max();
-        let clamped_input_length = input_length.min(bound);
-        let offset_to_deadzone = (clamped_input_length - deadzone).max(0.0);
-        let magnitude_scale = (offset_to_deadzone * self.livezone_recip) / input_length;
-        input_value * magnitude_scale
-    }
-}
-
-impl Default for CircleDeadZone {
-    /// Creates a [`CircleDeadZone`] that excludes input values below a minimum magnitude of `0.1`.
-    #[inline]
-    fn default() -> Self {
-        CircleExclusion::default().into()
-    }
-}
-
-impl CircleDeadZone {
-    /// Zero-size [`CircleDeadZone`], only restricting values to a maximum magnitude of `1.0`.
-    pub const ZERO: Self = Self {
-        radius: 0.0,
-        livezone_recip: 1.0,
-    };
-
-    /// Creates a [`CircleDeadZone`] that excludes input values below a minimum magnitude.
-    ///
-    /// # Requirements
-    ///
-    /// - `threshold` >= `0.0`.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the requirements aren't met.
-    #[doc(alias = "magnitude")]
-    #[doc(alias = "from_radius")]
-    #[inline]
-    pub fn new(threshold: f32) -> Self {
-        let bounds = CircleBounds::default();
-        Self {
-            radius: threshold,
-            livezone_recip: (bounds.radius - threshold).recip(),
-        }
-    }
-
-    /// Returns the radius of the circle.
-    #[must_use]
-    #[inline]
-    pub fn radius(&self) -> f32 {
-        self.radius
-    }
-
-    /// Returns the [`CircleExclusion`] used by this deadzone.
-    #[inline]
-    pub fn exclusion(&self) -> CircleExclusion {
-        CircleExclusion::new(self.radius)
-    }
-
-    /// Returns the [`CircleBounds`] used by this deadzone.
-    #[inline]
-    pub fn bounds(&self) -> CircleBounds {
-        CircleBounds::default()
-    }
-
-    /// Returns the minimum and maximum radii of the live zone used by this deadzone.
-    ///
-    /// In simple terms, this returns `(self.radius, bounds.radius)`.
-    #[must_use]
-    #[inline]
-    pub fn livezone_min_max(&self) -> (f32, f32) {
-        (self.radius, self.bounds().radius)
-    }
-
-    /// Is the given `input_value` within the exclusion range?
-    #[must_use]
-    #[inline]
-    pub fn within_exclusion(&self, input_value: Vec2) -> bool {
-        self.exclusion().contains(input_value)
-    }
-
-    /// Is the given `input_value` within the bounds?
-    #[must_use]
-    #[inline]
-    pub fn within_bounds(&self, input_value: Vec2) -> bool {
-        self.bounds().contains(input_value)
-    }
-
-    /// Is the given `input_value` within the live zone?
-    #[must_use]
-    #[inline]
-    pub fn within_livezone(&self, input_value: Vec2) -> bool {
-        let input_length = input_value.length();
-        let (min, max) = self.livezone_min_max();
-        min <= input_length && input_length <= max
-    }
-}
-
-impl From<CircleExclusion> for CircleDeadZone {
-    fn from(exclusion: CircleExclusion) -> Self {
-        Self::new(exclusion.radius())
-    }
-}
-
-impl Eq for CircleDeadZone {}
-
-impl Hash for CircleDeadZone {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        FloatOrd(self.radius).hash(state);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_dual_axis_value_bounds() {
+        fn test_bounds(
+            bounds: DualAxisBounds,
+            (x_min, x_max): (f32, f32),
+            (y_min, y_max): (f32, f32),
+        ) {
+            assert_eq!(bounds.bounds_x().min_max(), (x_min, x_max));
+            assert_eq!(bounds.bounds_y().min_max(), (y_min, y_max));
+
+            let bounds_x = AxisBounds::new(x_min, x_max);
+            let bounds_y = AxisBounds::new(y_min, y_max);
+            assert_eq!(bounds_x.extend_dual_with_y(bounds_y), bounds);
+
+            let (bx, by) = bounds.bounds();
+            assert_eq!(bx, bounds_x);
+            assert_eq!(by, bounds_y);
+
+            for x in -300..300 {
+                let x = x as f32 * 0.01;
+                for y in -300..300 {
+                    let y = y as f32 * 0.01;
+                    let value = Vec2::new(x, y);
+
+                    let expected = BVec2::new(bounds_x.contains(x), bounds_y.contains(y));
+                    assert_eq!(bounds.contains(value), expected);
+
+                    let expected = Vec2::new(bounds_x.process(x), bounds_y.process(y));
+                    assert_eq!(bounds.process(value), expected);
+                }
+            }
+        }
+
+        let full_range = (f32::MIN, f32::MAX);
+
+        let bounds = DualAxisBounds::FULL_RANGE;
+        test_bounds(bounds, full_range, full_range);
+
+        let bounds = DualAxisBounds::default();
+        test_bounds(bounds, (-1.0, 1.0), (-1.0, 1.0));
+
+        let bounds = DualAxisBounds::new((-2.0, 2.5), (-1.0, 1.5));
+        test_bounds(bounds, (-2.0, 2.5), (-1.0, 1.5));
+
+        let bounds = DualAxisBounds::all(-2.0, 2.5);
+        test_bounds(bounds, (-2.0, 2.5), (-2.0, 2.5));
+
+        let bounds = DualAxisBounds::only_x(-2.0, 2.5);
+        test_bounds(bounds, (-2.0, 2.5), full_range);
+
+        let bounds = DualAxisBounds::only_y(-1.0, 1.5);
+        test_bounds(bounds, full_range, (-1.0, 1.5));
+
+        let bounds = DualAxisBounds::magnitude(2.0, 2.5);
+        test_bounds(bounds, (-2.0, 2.0), (-2.5, 2.5));
+
+        let bounds = DualAxisBounds::magnitude_all(2.5);
+        test_bounds(bounds, (-2.5, 2.5), (-2.5, 2.5));
+
+        let bounds = DualAxisBounds::magnitude_only_x(2.5);
+        test_bounds(bounds, (-2.5, 2.5), full_range);
+
+        let bounds = DualAxisBounds::magnitude_only_y(2.5);
+        test_bounds(bounds, full_range, (-2.5, 2.5));
+
+        let bounds = DualAxisBounds::at_least(2.0, 2.5);
+        test_bounds(bounds, (2.0, f32::MAX), (2.5, f32::MAX));
+
+        let bounds = DualAxisBounds::at_least_all(2.5);
+        test_bounds(bounds, (2.5, f32::MAX), (2.5, f32::MAX));
+
+        let bounds = DualAxisBounds::at_least_only_x(2.5);
+        test_bounds(bounds, (2.5, f32::MAX), full_range);
+
+        let bounds = DualAxisBounds::at_least_only_y(2.5);
+        test_bounds(bounds, full_range, (2.5, f32::MAX));
+
+        let bounds = DualAxisBounds::at_most(2.0, 2.5);
+        test_bounds(bounds, (f32::MIN, 2.0), (f32::MIN, 2.5));
+
+        let bounds = DualAxisBounds::at_most_all(2.5);
+        test_bounds(bounds, (f32::MIN, 2.5), (f32::MIN, 2.5));
+
+        let bounds = DualAxisBounds::at_most_only_x(2.5);
+        test_bounds(bounds, (f32::MIN, 2.5), full_range);
+
+        let bounds = DualAxisBounds::at_most_only_y(2.5);
+        test_bounds(bounds, full_range, (f32::MIN, 2.5));
+
+        let bounds_x = AxisBounds::new(-2.0, 2.5);
+        let bounds_y = AxisBounds::new(-1.0, 1.5);
+
+        test_bounds(bounds_x.extend_dual(), (-2.0, 2.5), (-2.0, 2.5));
+        test_bounds(bounds_x.into(), (-2.0, 2.5), (-2.0, 2.5));
+
+        test_bounds(bounds_y.extend_dual(), (-1.0, 1.5), (-1.0, 1.5));
+        test_bounds(bounds_y.into(), (-1.0, 1.5), (-1.0, 1.5));
+
+        test_bounds(bounds_x.extend_dual_only_x(), (-2.0, 2.5), full_range);
+
+        test_bounds(bounds_y.extend_dual_only_y(), full_range, (-1.0, 1.5));
+
+        test_bounds(
+            bounds_x.extend_dual_with_y(bounds_y),
+            (-2.0, 2.5),
+            (-1.0, 1.5),
+        );
+
+        test_bounds(
+            bounds_y.extend_dual_with_x(bounds_x),
+            (-2.0, 2.5),
+            (-1.0, 1.5),
+        );
+    }
 
     #[test]
     fn test_dual_axis_exclusion() {
@@ -1166,89 +1344,5 @@ mod tests {
 
         let deadzone = DualAxisDeadZone::magnitude_only_y(0.3);
         test_deadzone(deadzone, zero_size, (-0.3, 0.3));
-    }
-
-    #[test]
-    fn test_circle_exclusion() {
-        fn test_exclusion(exclusion: CircleExclusion, radius: f32) {
-            assert_eq!(exclusion.radius(), radius);
-
-            for x in -300..300 {
-                let x = x as f32 * 0.01;
-                for y in -300..300 {
-                    let y = y as f32 * 0.01;
-                    let value = Vec2::new(x, y);
-
-                    if value.length() <= radius {
-                        assert!(exclusion.contains(value));
-                        assert_eq!(exclusion.process(value), Vec2::ZERO);
-                    } else {
-                        assert!(!exclusion.contains(value));
-                        assert_eq!(exclusion.process(value), value);
-                    }
-                }
-            }
-        }
-
-        let exclusion = CircleExclusion::ZERO;
-        test_exclusion(exclusion, 0.0);
-
-        let exclusion = CircleExclusion::default();
-        test_exclusion(exclusion, 0.1);
-
-        let exclusion = CircleExclusion::new(0.5);
-        test_exclusion(exclusion, 0.5);
-    }
-
-    #[test]
-    fn test_circle_deadzone() {
-        fn test_deadzone(deadzone: CircleDeadZone, radius: f32) {
-            assert_eq!(deadzone.radius(), radius);
-
-            let exclusion = CircleExclusion::new(radius);
-            assert_eq!(exclusion.scaled(), deadzone);
-
-            for x in -300..300 {
-                let x = x as f32 * 0.01;
-                for y in -300..300 {
-                    let y = y as f32 * 0.01;
-                    let value = Vec2::new(x, y);
-
-                    // Values within the dead zone are treated as zeros.
-                    if value.length() <= radius {
-                        assert!(deadzone.within_exclusion(value));
-                        assert_eq!(deadzone.process(value), Vec2::ZERO);
-                    }
-                    // Values within the live zone are scaled linearly.
-                    else if value.length() <= 1.0 {
-                        assert!(deadzone.within_livezone(value));
-
-                        let expected_scale = f32::inverse_lerp(radius, 1.0, value.length());
-                        let expected = value.normalize() * expected_scale;
-                        let delta = (deadzone.process(value) - expected).abs();
-                        assert!(delta.x <= 0.00001);
-                        assert!(delta.y <= 0.00001);
-                    }
-                    // Values outside the bounds are restricted to the region.
-                    else {
-                        assert!(!deadzone.within_bounds(value));
-
-                        let expected = value.clamp_length_max(1.0);
-                        let delta = (deadzone.process(value) - expected).abs();
-                        assert!(delta.x <= 0.00001);
-                        assert!(delta.y <= 0.00001);
-                    }
-                }
-            }
-        }
-
-        let deadzone = CircleDeadZone::ZERO;
-        test_deadzone(deadzone, 0.0);
-
-        let deadzone = CircleDeadZone::default();
-        test_deadzone(deadzone, 0.1);
-
-        let deadzone = CircleDeadZone::new(0.5);
-        test_deadzone(deadzone, 0.5);
     }
 }

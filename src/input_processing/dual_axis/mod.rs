@@ -10,11 +10,11 @@ use dyn_eq::DynEq;
 use dyn_hash::DynHash;
 use serde::{Deserialize, Serialize};
 
-pub use self::bounds::*;
-pub use self::deadzone::*;
+pub use self::circle::*;
+pub use self::extension::*;
 
-mod bounds;
-mod deadzone;
+mod circle;
+mod extension;
 
 /// A trait for processing dual-axis input values,
 /// accepting a [`Vec2`] input and producing a [`Vec2`] output.

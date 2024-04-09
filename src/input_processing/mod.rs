@@ -75,7 +75,7 @@
 //!
 //! - [`AxisDeadZone`]: A scaled version of [`AxisExclusion`] with the bounds set to [`AxisBounds::magnitude(1.0)`](AxisBounds::default).
 //! - [`DualAxisDeadZone`]: A scaled version of [`DualAxisExclusion`] with the bounds set to [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default).
-//! - [`CircleDeadZone`]: A scaled version of [`CircleExclusion`] with the bounds set to [`CircleBounds::magnitude(1.0)`](CircleBounds::default).
+//! - [`CircleDeadZone`]: A scaled version of [`CircleExclusion`] with the bounds set to [`CircleBounds::new(1.0)`](CircleBounds::default).
 
 pub use self::dual_axis::*;
 pub use self::single_axis::*;
