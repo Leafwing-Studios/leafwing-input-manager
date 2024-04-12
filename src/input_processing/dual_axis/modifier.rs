@@ -56,7 +56,7 @@ impl DualAxisInverted {
     #[must_use]
     #[inline]
     pub fn inverted(&self) -> BVec2 {
-        self.0.cmpne(Vec2::NEG_ONE)
+        self.0.cmpeq(Vec2::NEG_ONE)
     }
 }
 
@@ -159,9 +159,14 @@ impl Hash for DualAxisSensitivity {
 #[cfg(test)]
 mod tests {
     use crate::input_processing::dual_axis::*;
+    use bevy::math::BVec2;
 
     #[test]
     fn test_dual_axis_inverted() {
+        assert_eq!(DualAxisInverted::ALL.inverted(), BVec2::TRUE);
+        assert_eq!(DualAxisInverted::ONLY_X.inverted(), BVec2::new(true, false));
+        assert_eq!(DualAxisInverted::ONLY_Y.inverted(), BVec2::new(false, true));
+
         for x in -300..300 {
             let x = x as f32 * 0.01;
 
