@@ -80,6 +80,10 @@ mod range;
 ///     }
 /// }
 ///
+/// // Remember to register your processor - it will ensure everything works smoothly!
+/// let mut app = App::new();
+/// app.register_dual_axis_processor::<DoubleAbsoluteValueThenRejectX>();
+///
 /// // Now you can use it!
 /// let processor = DoubleAbsoluteValueThenRejectX(4.0);
 ///

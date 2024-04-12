@@ -77,6 +77,10 @@ mod range;
 ///     }
 /// }
 ///
+/// // Remember to register your processor - it will ensure everything works smoothly!
+/// let mut app = App::new();
+/// app.register_axis_processor::<DoubleAbsoluteValueThenIgnored>();
+///
 /// // Now you can use it!
 /// let processor = DoubleAbsoluteValueThenIgnored(4.0);
 ///

@@ -1,4 +1,4 @@
-//! Type tag registration
+//! Type tag registration for trait objects
 
 pub use serde_flexitos::{MapRegistry, Registry};
 

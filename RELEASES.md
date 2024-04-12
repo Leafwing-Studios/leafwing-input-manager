@@ -35,6 +35,8 @@
   - removed `DeadZoneShape`.
   - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
   - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`.
+  - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
+  - added `serde_typetag` procedural macro attribute for processor type tagging.
 
 ### Bugs
 
