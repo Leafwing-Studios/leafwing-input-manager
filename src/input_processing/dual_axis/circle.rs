@@ -1,4 +1,4 @@
-//! Circular input boundaries for dual-axis inputs
+//! Circular range processors for dual-axis inputs
 
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};

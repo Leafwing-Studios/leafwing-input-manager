@@ -1,4 +1,4 @@
-//! Extensions for `AxisProcessor`s designed to handle dual-axis inputs
+//! Range processors for dual-axis inputs
 
 use std::fmt::Debug;
 use std::hash::Hash;

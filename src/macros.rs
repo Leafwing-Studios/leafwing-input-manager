@@ -42,7 +42,7 @@ macro_rules! __reflect_trait_object {
                     *self = value.clone();
                 } else {
                     panic!(
-                        "Value is not a std::boxed::Box<dyb {}::{}>.",
+                        "Value is not a std::boxed::Box<dyn {}::{}>.",
                         module_path!(),
                         stringify!($ObjectTrait),
                     );
