@@ -191,13 +191,13 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Caution
     ///
-    /// To access the [`ActionData`] regardless of whether the action has been triggered,
+    /// To access the [`ActionData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// # Returns
     ///
     /// - `Some(ActionData)` if it exists.
-    /// - `None` if the action has never been triggered (pressed, clicked, etc.).
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
     pub fn action_data(&self, action: &A) -> Option<&ActionData> {
@@ -211,7 +211,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Caution
     ///
-    /// - To access the [`ActionData`] regardless of whether the action has been triggered,
+    /// - To access the [`ActionData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// - To insert a default [`ActionData`] if it doesn't exist,
@@ -220,7 +220,7 @@ impl<A: Actionlike> ActionState<A> {
     /// # Returns
     ///
     /// - `Some(ActionData)` if it exists.
-    /// - `None` if the action has never been triggered (pressed, clicked, etc.).
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
     pub fn action_data_mut(&mut self, action: &A) -> Option<&mut ActionData> {
@@ -229,7 +229,7 @@ impl<A: Actionlike> ActionState<A> {
 
     /// A mutable reference of the [`ActionData`] corresponding to the `action`.
     ///
-    /// If the action has no data yet (because the `action` has **not** been triggered),
+    /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`ActionData`] for you,
     /// avoiding potential errors from unwrapping [`None`].
     ///
