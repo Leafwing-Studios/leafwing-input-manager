@@ -1,6 +1,6 @@
 //! Modifiers for dual-axis inputs
 
-use std::fmt::{Debug, Formatter};
+use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
 use bevy::prelude::{BVec2, Reflect, Vec2};
@@ -8,6 +8,7 @@ use bevy::utils::FloatOrd;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
+use crate as leafwing_input_manager;
 use crate::input_processing::DualAxisProcessor;
 
 /// Flips the sign of dual-axis input values, resulting in a directional reversal of control.
@@ -27,7 +28,7 @@ use crate::input_processing::DualAxisProcessor;
 ///
 /// assert_eq!(DualAxisInverted::ONLY_Y.process(value), Vec2::new(x, -y));
 /// assert_eq!(DualAxisInverted::ONLY_Y.process(-value), Vec2::new(-x, y));
-#[derive(Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct DualAxisInverted(Vec2);
 
@@ -65,12 +66,6 @@ impl Hash for DualAxisInverted {
     fn hash<H: Hasher>(&self, state: &mut H) {
         FloatOrd(self.0.x).hash(state);
         FloatOrd(self.0.y).hash(state);
-    }
-}
-
-impl Debug for DualAxisInverted {
-    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
-        write!(f, "DualAxisInverted({:?})", self.inverted())
     }
 }
 

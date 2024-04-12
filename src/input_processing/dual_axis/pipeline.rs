@@ -5,6 +5,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
+use crate as leafwing_input_manager;
 
 /// A dynamic sequence container of [`DualAxisProcessor`]s designed for processing input values.
 ///

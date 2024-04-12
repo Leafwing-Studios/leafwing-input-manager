@@ -285,3 +285,43 @@ impl RegisterAxisProcessor for App {
         self
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_test::{assert_tokens, Token};
+
+    #[test]
+    fn test_serde_dual_axis_processor() {
+        let mut app = App::new();
+        app.register_axis_processor::<AxisInverted>();
+        app.register_axis_processor::<AxisSensitivity>();
+
+        let inversion: Box<dyn AxisProcessor> = Box::new(AxisInverted);
+        assert_tokens(
+            &inversion,
+            &[
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("AxisInverted"),
+                Token::UnitStruct {
+                    name: "AxisInverted",
+                },
+                Token::MapEnd,
+            ],
+        );
+
+        let sensitivity: Box<dyn AxisProcessor> = Box::new(AxisSensitivity(5.0));
+        assert_tokens(
+            &sensitivity,
+            &[
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("AxisSensitivity"),
+                Token::NewtypeStruct {
+                    name: "AxisSensitivity",
+                },
+                Token::F32(5.0),
+                Token::MapEnd,
+            ],
+        );
+    }
+}

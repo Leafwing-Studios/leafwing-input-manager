@@ -4,6 +4,7 @@ use bevy::prelude::Reflect;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
+use crate as leafwing_input_manager;
 use crate::input_processing::AxisProcessor;
 
 /// A dynamic sequence container of [`AxisProcessor`]s designed for processing input values.

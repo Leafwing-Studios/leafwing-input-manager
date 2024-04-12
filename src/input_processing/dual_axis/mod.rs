@@ -301,25 +301,41 @@ mod tests {
         app.register_dual_axis_processor::<DualAxisSensitivity>();
 
         let inversion: Box<dyn DualAxisProcessor> = Box::new(DualAxisInverted::ALL);
-        let sensitivity: Box<dyn DualAxisProcessor> = Box::new(DualAxisSensitivity::all(5.0));
-
         assert_tokens(
             &inversion,
             &[
                 Token::Map { len: Some(1) },
-                Token::Str("DualAxisInverted"),
-                Token::Map { len: Some(1) },
-                Token::None,
+                Token::BorrowedStr("DualAxisInverted"),
+                Token::NewtypeStruct {
+                    name: "DualAxisInverted",
+                },
+                Token::TupleStruct {
+                    name: "Vec2",
+                    len: 2,
+                },
+                Token::F32(-1.0),
+                Token::F32(-1.0),
+                Token::TupleStructEnd,
                 Token::MapEnd,
             ],
         );
+
+        let sensitivity: Box<dyn DualAxisProcessor> = Box::new(DualAxisSensitivity::only_x(5.0));
         assert_tokens(
             &sensitivity,
             &[
                 Token::Map { len: Some(1) },
-                Token::Str("DualAxisInverted"),
-                Token::Map { len: Some(1) },
-                Token::None,
+                Token::BorrowedStr("DualAxisSensitivity"),
+                Token::NewtypeStruct {
+                    name: "DualAxisSensitivity",
+                },
+                Token::TupleStruct {
+                    name: "Vec2",
+                    len: 2,
+                },
+                Token::F32(5.0),
+                Token::F32(1.0),
+                Token::TupleStructEnd,
                 Token::MapEnd,
             ],
         );

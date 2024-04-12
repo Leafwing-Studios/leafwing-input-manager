@@ -8,6 +8,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
+use crate as leafwing_input_manager;
 use crate::input_processing::single_axis::*;
 
 /// Specifies a square-shaped region defining acceptable ranges for valid dual-axis inputs,

@@ -21,6 +21,6 @@ pub fn crate_path() -> TokenStream {
         //
         // Note that doc tests, integration tests and examples want the full standard import,
         // as they are evaluated as if they were external
-        quote!(crate)
+        quote!(leafwing_input_manager)
     }
 }

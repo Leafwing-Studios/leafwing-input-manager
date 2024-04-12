@@ -8,6 +8,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::AxisProcessor;
+use crate as leafwing_input_manager;
 
 /// Specifies an acceptable min-max range for valid single-axis inputs,
 /// restricting all value stays within intended limits

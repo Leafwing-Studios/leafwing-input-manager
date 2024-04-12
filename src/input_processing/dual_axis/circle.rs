@@ -9,6 +9,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
+use crate as leafwing_input_manager;
 
 /// Specifies a circular region defining acceptable ranges for valid dual-axis inputs,
 /// with a radius defining the maximum threshold magnitude,
