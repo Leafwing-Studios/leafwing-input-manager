@@ -276,14 +276,14 @@ pub trait RegisterAxisProcessor {
     /// Registers the specified [`AxisProcessor`].
     fn register_axis_processor<'de, T>(&mut self) -> &mut Self
     where
-        T: RegisterTypeTag<'de, dyn AxisProcessor>;
+        T: RegisterTypeTag<'de, dyn AxisProcessor> + GetTypeRegistration;
 }
 
 impl RegisterAxisProcessor for App {
     #[allow(unsafe_code)]
     fn register_axis_processor<'de, T>(&mut self) -> &mut Self
     where
-        T: RegisterTypeTag<'de, dyn AxisProcessor>,
+        T: RegisterTypeTag<'de, dyn AxisProcessor> + GetTypeRegistration,
     {
         let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
         T::register_typetag(&mut registry);
