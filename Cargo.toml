@@ -42,7 +42,7 @@ bevy = { version = "0.13", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.26", default-features = false, optional = true }
+bevy_egui = { version = "0.26", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
