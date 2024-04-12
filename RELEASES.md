@@ -4,7 +4,39 @@
 
 ### Breaking Changes
 
-- Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
+- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
+- added input processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad` to refine input values:
+  - added processor traits:
+    - `AxisProcessor`: Handles single-axis values.
+    - `DualAxisProcessor`: Handles dual-axis values.
+  - added built-in processors:
+    - Pipelines: Combine multiple processors into a pipeline.
+      - `AxisProcessingPipeline`: Chain processors for single-axis values.
+      - `DualAxisProcessingPipeline`: Chain processors for dual-axis values.
+    - Inversion: Reverses control (positive becomes negative, etc.)
+      - `AxisInverted`: Single-axis inversion.
+      - `DualAxisInverted`: Dual-axis inversion.
+    - Sensitivity: Adjusts control responsiveness (doubling, halving, etc.).
+      - `AxisSensitivity`: Single-axis scaling.
+      - `DualAxisSensitivity`: Dual-axis scaling.
+    - Value Bounds: Define the boundaries for constraining input values.
+      - `AxisBounds`: Restricts single-axis values to a range.
+      - `DualAxisBounds`: Restricts single-axis values to a range along each axis.
+      - `CircleBounds`: Limits dual-axis values to a maximum magnitude.
+    - Deadzones: Ignores near-zero values, treating them as zero.
+      - Unscaled versions:
+        - `AxisExclusion`: Excludes small single-axis values.
+        - `DualAxisExclusion`: Excludes small dual-axis values along each axis.
+        - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold.
+      - Scaled versions:
+        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`.
+        - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`.
+        - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`.
+  - removed `DeadZoneShape`.
+  - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
+  - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`.
+  - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
+  - added `serde_typetag` procedural macro attribute for processor type tagging.
 
 ### Bugs
 

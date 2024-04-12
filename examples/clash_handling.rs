@@ -4,7 +4,6 @@
 //! See [`ClashStrategy`] for more details.
 
 use bevy::prelude::*;
-use leafwing_input_manager::clashing_inputs::ClashStrategy;
 use leafwing_input_manager::prelude::*;
 
 fn main() {

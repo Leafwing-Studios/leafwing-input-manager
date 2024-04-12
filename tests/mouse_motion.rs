@@ -4,7 +4,6 @@ use bevy::prelude::*;
 use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseMotionAxisType};
 use leafwing_input_manager::buttonlike::MouseMotionDirection;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum ButtonlikeTestAction {
@@ -83,10 +82,7 @@ fn mouse_motion_single_axis_mocking() {
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
         value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: None,
     };
 
     app.send_input(input);
@@ -101,23 +97,10 @@ fn mouse_motion_dual_axis_mocking() {
     assert_eq!(events.drain().count(), 0);
 
     let input = DualAxis {
-        x: SingleAxis {
-            axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-            value: Some(1.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            inverted: false,
-            sensitivity: 1.0,
-        },
-        y: SingleAxis {
-            axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            value: Some(0.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            inverted: false,
-            sensitivity: 1.0,
-        },
-        deadzone: DualAxis::ZERO_DEADZONE_SHAPE,
+        x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+        y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+        processor: None,
+        value: Some(Vec2::X),
     };
     app.send_input(input);
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
@@ -182,10 +165,7 @@ fn mouse_motion_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
         value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -196,10 +176,7 @@ fn mouse_motion_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
         value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -210,10 +187,7 @@ fn mouse_motion_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
         value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -224,10 +198,7 @@ fn mouse_motion_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
         value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -235,14 +206,12 @@ fn mouse_motion_single_axis() {
     assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
+    // Usually a small deadzone threshold will be set
+    let deadzone = AxisDeadZone::default();
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
         value: Some(0.0),
-        // Usually a small deadzone threshold will be set
-        positive_low: 0.1,
-        negative_low: 0.1,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: Some(Box::new(deadzone)),
     };
     app.send_input(input);
     app.update();
@@ -253,10 +222,7 @@ fn mouse_motion_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
         value: None,
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: None,
     };
     app.send_input(input);
     app.update();
@@ -292,7 +258,7 @@ fn mouse_motion_dual_axis() {
 }
 
 #[test]
-fn mouse_motion_virtualdpad() {
+fn mouse_motion_virtual_dpad() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,

@@ -2,12 +2,13 @@
 
 use crate::action_state::{ActionData, ActionState};
 use crate::axislike::{
-    AxisType, DeadZoneShape, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType,
-    SingleAxis, VirtualAxis, VirtualDPad,
+    AxisType, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
+    VirtualAxis, VirtualDPad,
 };
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
+use crate::input_processing::*;
 use crate::timing::Timing;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
@@ -176,10 +177,25 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<MouseWheelAxisType>()
             .register_type::<MouseMotionAxisType>()
             .register_type::<DualAxisData>()
-            .register_type::<DeadZoneShape>()
             .register_type::<ButtonState>()
             .register_type::<MouseWheelDirection>()
             .register_type::<MouseMotionDirection>()
+            // Processors
+            .register_axis_processor::<AxisProcessingPipeline>()
+            .register_axis_processor::<AxisInverted>()
+            .register_axis_processor::<AxisSensitivity>()
+            .register_axis_processor::<AxisBounds>()
+            .register_axis_processor::<AxisExclusion>()
+            .register_axis_processor::<AxisDeadZone>()
+            .register_dual_axis_processor::<DualAxisProcessingPipeline>()
+            .register_dual_axis_processor::<DualAxisInverted>()
+            .register_dual_axis_processor::<DualAxisSensitivity>()
+            .register_dual_axis_processor::<DualAxisBounds>()
+            .register_dual_axis_processor::<DualAxisExclusion>()
+            .register_dual_axis_processor::<DualAxisDeadZone>()
+            .register_dual_axis_processor::<CircleBounds>()
+            .register_dual_axis_processor::<CircleExclusion>()
+            .register_dual_axis_processor::<CircleDeadZone>()
             // Resources
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();
@@ -229,7 +245,7 @@ impl<A: Actionlike> Default for ToggleActions<A> {
 pub enum InputManagerSystem {
     /// Advances action timers.
     ///
-    /// Cleans up the state of the input manager, clearing `just_pressed` and just_released`
+    /// Cleans up the state of the input manager, clearing `just_pressed` and `just_released`
     Tick,
     /// Collects input data to update the [`ActionState`]
     Update,

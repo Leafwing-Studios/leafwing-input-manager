@@ -1,6 +1,7 @@
 //! Tools for working with directional axis-like user inputs (game sticks, D-Pads and emulated equivalents)
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
+use crate::input_processing::*;
 use crate::orientation::Rotation;
 use crate::user_input::InputKind;
 use bevy::input::{
@@ -10,7 +11,6 @@ use bevy::input::{
 use bevy::math::primitives::Direction2d;
 use bevy::math::Vec2;
 use bevy::reflect::Reflect;
-use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
 /// A single directional axis with a configurable trigger zone.
@@ -20,22 +20,14 @@ use serde::{Deserialize, Serialize};
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Reflect)]
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct SingleAxis {
     /// The axis that is being checked.
     pub axis_type: AxisType,
-    /// Any axis value higher than this will trigger the input.
-    pub positive_low: f32,
-    /// Any axis value lower than this will trigger the input.
-    pub negative_low: f32,
-    /// Whether to invert output values from this axis.
-    pub inverted: bool,
-    /// How sensitive the axis is to input values.
-    ///
-    /// Since sensitivity is a multiplier, any value `>1.0` will increase sensitivity while any value `<1.0` will decrease sensitivity.
-    /// This value should always be strictly positive: a value of 0 will cause the axis to stop functioning,
-    /// while negative values will invert the direction.
-    pub sensitivity: f32,
+
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn AxisProcessor>>,
+
     /// The target value for this input, used for input mocking.
     ///
     /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
@@ -43,116 +35,109 @@ pub struct SingleAxis {
 }
 
 impl SingleAxis {
-    /// Creates a [`SingleAxis`] with the given `positive_low` and `negative_low` thresholds.
+    /// Creates a [`SingleAxis`] with the specified axis type.
     #[must_use]
-    pub const fn with_threshold(
-        axis_type: AxisType,
-        negative_low: f32,
-        positive_low: f32,
-    ) -> SingleAxis {
-        SingleAxis {
-            axis_type,
-            positive_low,
-            negative_low,
-            inverted: false,
-            sensitivity: 1.0,
+    pub fn new(axis_type: impl Into<AxisType>) -> Self {
+        Self {
+            axis_type: axis_type.into(),
+            processor: None,
             value: None,
         }
     }
 
-    /// Creates a [`SingleAxis`] with both `positive_low` and `negative_low` set to `threshold`.
-    #[must_use]
-    pub fn symmetric(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        Self::with_threshold(axis_type.into(), -threshold, threshold)
-    }
-
-    /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
+    /// Creates a [`SingleAxis`] with the specified axis type and `value`.
     ///
-    /// All thresholds are set to 0.0.
     /// Primarily useful for [input mocking](crate::input_mocking).
     #[must_use]
-    pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> SingleAxis {
-        SingleAxis {
+    pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> Self {
+        Self {
             axis_type: axis_type.into(),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            inverted: false,
-            sensitivity: 1.0,
+            processor: None,
             value: Some(value),
         }
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
-    pub const fn mouse_wheel_x() -> SingleAxis {
-        let axis_type = AxisType::MouseWheel(MouseWheelAxisType::X);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+    pub const fn mouse_wheel_x() -> Self {
+        Self {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+            processor: None,
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
     #[must_use]
-    pub const fn mouse_wheel_y() -> SingleAxis {
-        let axis_type = AxisType::MouseWheel(MouseWheelAxisType::Y);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+    pub const fn mouse_wheel_y() -> Self {
+        Self {
+            axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+            processor: None,
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] corresponding to horizontal [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
-    pub const fn mouse_motion_x() -> SingleAxis {
-        let axis_type = AxisType::MouseMotion(MouseMotionAxisType::X);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+    pub const fn mouse_motion_x() -> Self {
+        Self {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+            processor: None,
+            value: None,
+        }
     }
 
     /// Creates a [`SingleAxis`] corresponding to vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
     #[must_use]
-    pub const fn mouse_motion_y() -> SingleAxis {
-        let axis_type = AxisType::MouseMotion(MouseMotionAxisType::Y);
-        SingleAxis::with_threshold(axis_type, 0.0, 0.0)
+    pub const fn mouse_motion_y() -> Self {
+        Self {
+            axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+            processor: None,
+            value: None,
+        }
     }
 
-    /// Creates a [`SingleAxis`] with the `axis_type` and `negative_low` set to `threshold`.
-    ///
-    /// Positive values will not trigger the input.
-    pub fn negative_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        SingleAxis::with_threshold(axis_type.into(), threshold, f32::MAX)
-    }
-
-    /// Creates a [`SingleAxis`] with the `axis_type` and `positive_low` set to `threshold`.
-    ///
-    /// Negative values will not trigger the input.
-    pub fn positive_only(axis_type: impl Into<AxisType>, threshold: f32) -> SingleAxis {
-        SingleAxis::with_threshold(axis_type.into(), f32::MIN, threshold)
-    }
-
-    /// Returns this [`SingleAxis`] with the deadzone set to the specified value
-    #[must_use]
-    pub fn with_deadzone(mut self, deadzone: f32) -> SingleAxis {
-        self.negative_low = -deadzone;
-        self.positive_low = deadzone;
+    /// Appends the given [`AxisProcessor`] into the current [`AxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
+    #[inline]
+    pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
+        };
         self
     }
 
-    /// Returns this [`SingleAxis`] with the sensitivity set to the specified value
-    #[must_use]
-    pub fn with_sensitivity(mut self, sensitivity: f32) -> SingleAxis {
-        self.sensitivity = sensitivity;
+    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
         self
     }
 
-    /// Returns this [`SingleAxis`] inverted.
-    #[must_use]
-    pub fn inverted(mut self) -> Self {
-        self.inverted = !self.inverted;
+    /// Remove the current used [`AxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
         self
+    }
+
+    /// Get the "value" of this axis.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
+    #[must_use]
+    #[inline]
+    pub fn input_value(&self, input_value: f32) -> f32 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
 }
 
 impl PartialEq for SingleAxis {
     fn eq(&self, other: &Self) -> bool {
-        self.axis_type == other.axis_type
-            && FloatOrd(self.positive_low) == FloatOrd(other.positive_low)
-            && FloatOrd(self.negative_low) == FloatOrd(other.negative_low)
-            && FloatOrd(self.sensitivity) == FloatOrd(other.sensitivity)
+        self.axis_type == other.axis_type && self.processor == other.processor
     }
 }
 
@@ -161,9 +146,7 @@ impl Eq for SingleAxis {}
 impl std::hash::Hash for SingleAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.axis_type.hash(state);
-        FloatOrd(self.positive_low).hash(state);
-        FloatOrd(self.negative_low).hash(state);
-        FloatOrd(self.sensitivity).hash(state);
+        self.processor.hash(state);
     }
 }
 
@@ -177,55 +160,37 @@ impl std::hash::Hash for SingleAxis {
 /// # Warning
 ///
 /// `positive_low` must be greater than or equal to `negative_low` for both `x` and `y` for this type to be validly constructed.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash, Reflect)]
+#[derive(Debug, Clone, Serialize, Deserialize, Reflect)]
 pub struct DualAxis {
-    /// The axis representing horizontal movement.
-    pub x: SingleAxis,
-    /// The axis representing vertical movement.
-    pub y: SingleAxis,
-    /// The shape of the deadzone
-    pub deadzone: DeadZoneShape,
+    /// The horizontal axis that is being checked.
+    pub x_axis_type: AxisType,
+
+    /// The vertical axis that is being checked.
+    pub y_axis_type: AxisType,
+
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn DualAxisProcessor>>,
+
+    /// The target value for this input, used for input mocking.
+    ///
+    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
+    pub value: Option<Vec2>,
 }
 
 impl DualAxis {
-    /// The default size of the deadzone used by constructor methods.
-    ///
-    /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE: f32 = 0.1;
-
-    /// The default shape of the deadzone used by constructor methods.
-    ///
-    /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const DEFAULT_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Ellipse {
-        radius_x: Self::DEFAULT_DEADZONE,
-        radius_y: Self::DEFAULT_DEADZONE,
-    };
-
-    /// A deadzone with a size of 0.0 used by constructor methods.
-    ///
-    /// This cannot be changed, but the struct can be easily manually constructed.
-    pub const ZERO_DEADZONE_SHAPE: DeadZoneShape = DeadZoneShape::Ellipse {
-        radius_x: 0.0,
-        radius_y: 0.0,
-    };
-
-    /// Creates a [`DualAxis`] with both `positive_low` and `negative_low` in both axes set to `threshold` with a `deadzone_shape`.
+    /// Creates a [`DualAxis`] with the specified axis types.
     #[must_use]
-    pub fn symmetric(
-        x_axis_type: impl Into<AxisType>,
-        y_axis_type: impl Into<AxisType>,
-        deadzone_shape: DeadZoneShape,
-    ) -> DualAxis {
-        DualAxis {
-            x: SingleAxis::symmetric(x_axis_type, 0.0),
-            y: SingleAxis::symmetric(y_axis_type, 0.0),
-            deadzone: deadzone_shape,
+    pub fn new(x_axis_type: impl Into<AxisType>, y_axis_type: impl Into<AxisType>) -> Self {
+        Self {
+            x_axis_type: x_axis_type.into(),
+            y_axis_type: y_axis_type.into(),
+            processor: None,
+            value: None,
         }
     }
 
-    /// Creates a [`SingleAxis`] with the specified `axis_type` and `value`.
+    /// Creates a [`SingleAxis`] with the specified axis types and `value`.
     ///
-    /// All thresholds are set to 0.0.
     /// Primarily useful for [input mocking](crate::input_mocking).
     #[must_use]
     pub fn from_value(
@@ -233,91 +198,110 @@ impl DualAxis {
         y_axis_type: impl Into<AxisType>,
         x_value: f32,
         y_value: f32,
-    ) -> DualAxis {
-        DualAxis {
-            x: SingleAxis::from_value(x_axis_type, x_value),
-            y: SingleAxis::from_value(y_axis_type, y_value),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+    ) -> Self {
+        Self {
+            x_axis_type: x_axis_type.into(),
+            y_axis_type: y_axis_type.into(),
+            processor: None,
+            value: Some(Vec2::new(x_value, y_value)),
         }
     }
 
     /// Creates a [`DualAxis`] for the left analogue stick of the gamepad.
     #[must_use]
-    pub const fn left_stick() -> DualAxis {
-        let axis_x = AxisType::Gamepad(GamepadAxisType::LeftStickX);
-        let axis_y = AxisType::Gamepad(GamepadAxisType::LeftStickY);
-        DualAxis {
-            x: SingleAxis::with_threshold(axis_x, 0.0, 0.0),
-            y: SingleAxis::with_threshold(axis_y, 0.0, 0.0),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+    pub fn left_stick() -> Self {
+        Self {
+            x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
+            y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
+            processor: Some(Box::<CircleDeadZone>::default()),
+            value: None,
         }
     }
 
     /// Creates a [`DualAxis`] for the right analogue stick of the gamepad.
     #[must_use]
-    pub const fn right_stick() -> DualAxis {
-        let axis_x = AxisType::Gamepad(GamepadAxisType::RightStickX);
-        let axis_y = AxisType::Gamepad(GamepadAxisType::RightStickY);
-        DualAxis {
-            x: SingleAxis::with_threshold(axis_x, 0.0, 0.0),
-            y: SingleAxis::with_threshold(axis_y, 0.0, 0.0),
-            deadzone: Self::DEFAULT_DEADZONE_SHAPE,
+    pub fn right_stick() -> Self {
+        Self {
+            x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
+            y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
+            processor: Some(Box::<CircleDeadZone>::default()),
+            value: None,
         }
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseWheel`](bevy::input::mouse::MouseWheel) movement
-    pub const fn mouse_wheel() -> DualAxis {
-        DualAxis {
-            x: SingleAxis::mouse_wheel_x(),
-            y: SingleAxis::mouse_wheel_y(),
-            deadzone: Self::ZERO_DEADZONE_SHAPE,
+    pub const fn mouse_wheel() -> Self {
+        Self {
+            x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+            y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+            processor: None,
+            value: None,
         }
     }
 
     /// Creates a [`DualAxis`] corresponding to horizontal and vertical [`MouseMotion`](bevy::input::mouse::MouseMotion) movement
-    pub const fn mouse_motion() -> DualAxis {
-        DualAxis {
-            x: SingleAxis::mouse_motion_x(),
-            y: SingleAxis::mouse_motion_y(),
-            deadzone: Self::ZERO_DEADZONE_SHAPE,
+    pub const fn mouse_motion() -> Self {
+        Self {
+            x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
+            y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
+            processor: None,
+            value: None,
         }
     }
 
-    /// Returns this [`DualAxis`] with the deadzone set to the specified values and shape
-    #[must_use]
-    pub fn with_deadzone(mut self, deadzone: DeadZoneShape) -> DualAxis {
-        self.deadzone = deadzone;
+    /// Appends the given [`DualAxisProcessor`] into the current [`DualAxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
+    #[inline]
+    pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
+        };
         self
     }
 
-    /// Returns this [`DualAxis`] with the sensitivity set to the specified values
-    #[must_use]
-    pub fn with_sensitivity(mut self, x_sensitivity: f32, y_sensitivity: f32) -> DualAxis {
-        self.x.sensitivity = x_sensitivity;
-        self.y.sensitivity = y_sensitivity;
+    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
         self
     }
 
-    /// Returns this [`DualAxis`] with an inverted X-axis.
-    #[must_use]
-    pub fn inverted_x(mut self) -> DualAxis {
-        self.x = self.x.inverted();
+    /// Remove the current used [`DualAxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
         self
     }
 
-    /// Returns this [`DualAxis`] with an inverted Y-axis.
+    /// Get the "value" of these axes.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
     #[must_use]
-    pub fn inverted_y(mut self) -> DualAxis {
-        self.y = self.y.inverted();
-        self
+    #[inline]
+    pub fn input_value(&self, input_value: Vec2) -> Vec2 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
+}
 
-    /// Returns this [`DualAxis`] with both axes inverted.
-    #[must_use]
-    pub fn inverted(mut self) -> DualAxis {
-        self.x = self.x.inverted();
-        self.y = self.y.inverted();
-        self
+impl PartialEq for DualAxis {
+    fn eq(&self, other: &Self) -> bool {
+        self.x_axis_type == other.x_axis_type
+            && self.y_axis_type == other.y_axis_type
+            && self.processor == other.processor
+    }
+}
+
+impl Eq for DualAxis {}
+
+impl std::hash::Hash for DualAxis {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.x_axis_type.hash(state);
+        self.y_axis_type.hash(state);
+        self.processor.hash(state);
     }
 }
 
@@ -338,16 +322,19 @@ pub struct VirtualDPad {
     pub left: InputKind,
     /// The input that represents the right direction in this virtual DPad
     pub right: InputKind,
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn DualAxisProcessor>>,
 }
 
 impl VirtualDPad {
     /// Generates a [`VirtualDPad`] corresponding to the arrow keyboard keycodes
-    pub const fn arrow_keys() -> VirtualDPad {
+    pub fn arrow_keys() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::ArrowUp),
             down: InputKind::PhysicalKey(KeyCode::ArrowDown),
             left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
             right: InputKind::PhysicalKey(KeyCode::ArrowRight),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
@@ -357,23 +344,25 @@ impl VirtualDPad {
     /// The _location_ of the keys is the same on all keyboard layouts.
     /// This ensures that the classic triangular shape is retained on all layouts,
     /// which enables comfortable movement controls.
-    pub const fn wasd() -> VirtualDPad {
+    pub fn wasd() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::PhysicalKey(KeyCode::KeyW),
             down: InputKind::PhysicalKey(KeyCode::KeyS),
             left: InputKind::PhysicalKey(KeyCode::KeyA),
             right: InputKind::PhysicalKey(KeyCode::KeyD),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
     #[allow(clippy::doc_markdown)] // False alarm because it thinks DPad is an unquoted item
     /// Generates a [`VirtualDPad`] corresponding to the DPad on a gamepad
-    pub const fn dpad() -> VirtualDPad {
+    pub fn dpad() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::DPadUp),
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
@@ -381,52 +370,73 @@ impl VirtualDPad {
     ///
     /// North corresponds to up, west corresponds to left,
     /// east corresponds to right, and south corresponds to down
-    pub const fn gamepad_face_buttons() -> VirtualDPad {
+    pub fn gamepad_face_buttons() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::GamepadButton(GamepadButtonType::North),
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
+            processor: Some(Box::<CircleDeadZone>::default()),
         }
     }
 
     /// Generates a [`VirtualDPad`] corresponding to discretized mousewheel movements
-    pub const fn mouse_wheel() -> VirtualDPad {
+    pub fn mouse_wheel() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::MouseWheel(MouseWheelDirection::Up),
             down: InputKind::MouseWheel(MouseWheelDirection::Down),
             left: InputKind::MouseWheel(MouseWheelDirection::Left),
             right: InputKind::MouseWheel(MouseWheelDirection::Right),
+            processor: None,
         }
     }
 
     /// Generates a [`VirtualDPad`] corresponding to discretized mouse motions
-    pub const fn mouse_motion() -> VirtualDPad {
+    pub fn mouse_motion() -> VirtualDPad {
         VirtualDPad {
             up: InputKind::MouseMotion(MouseMotionDirection::Up),
             down: InputKind::MouseMotion(MouseMotionDirection::Down),
             left: InputKind::MouseMotion(MouseMotionDirection::Left),
             right: InputKind::MouseMotion(MouseMotionDirection::Right),
+            processor: None,
         }
     }
 
-    /// Returns this [`VirtualDPad`] but with `up` and `down` swapped.
-    pub fn inverted_y(mut self) -> Self {
-        std::mem::swap(&mut self.up, &mut self.down);
+    /// Appends the given [`DualAxisProcessor`] into the current [`DualAxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
+    #[inline]
+    pub fn with_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
+        };
         self
     }
 
-    /// Returns this [`VirtualDPad`] but with `left` and `right` swapped.
-    pub fn inverted_x(mut self) -> Self {
-        std::mem::swap(&mut self.left, &mut self.right);
+    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl DualAxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
         self
     }
 
-    /// Returns this [`VirtualDPad`] but with inverted inputs.
-    pub fn inverted(mut self) -> Self {
-        std::mem::swap(&mut self.up, &mut self.down);
-        std::mem::swap(&mut self.left, &mut self.right);
+    /// Remove the current used [`DualAxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
         self
+    }
+
+    /// Get the "value" of these axes.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
+    #[must_use]
+    #[inline]
+    pub fn input_value(&self, input_value: Vec2) -> Vec2 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
 }
 
@@ -442,6 +452,8 @@ pub struct VirtualAxis {
     pub negative: InputKind,
     /// The input that represents the positive direction of this virtual axis
     pub positive: InputKind,
+    /// The processor used to handle input values.
+    pub processor: Option<Box<dyn AxisProcessor>>,
 }
 
 impl VirtualAxis {
@@ -451,6 +463,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::PhysicalKey(negative),
             positive: InputKind::PhysicalKey(positive),
+            processor: None,
         }
     }
 
@@ -480,6 +493,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadRight),
+            processor: None,
         }
     }
 
@@ -489,6 +503,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
+            processor: None,
         }
     }
 
@@ -497,6 +512,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::West),
             positive: InputKind::GamepadButton(GamepadButtonType::East),
+            processor: None,
         }
     }
 
@@ -505,14 +521,45 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::South),
             positive: InputKind::GamepadButton(GamepadButtonType::North),
+            processor: None,
         }
     }
 
-    /// Returns this [`VirtualAxis`] but with flipped positive/negative inputs.
-    #[must_use]
-    pub fn inverted(mut self) -> Self {
-        std::mem::swap(&mut self.positive, &mut self.negative);
+    /// Appends the given [`AxisProcessor`] into the current [`AxisProcessingPipeline`],
+    /// or creates a new pipeline if one doesn't exist.
+    #[inline]
+    pub fn with_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = match self.processor {
+            None => Some(Box::new(processor)),
+            Some(current_processor) => Some(current_processor.with_processor(processor)),
+        };
         self
+    }
+
+    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
+    #[inline]
+    pub fn replace_processor(mut self, processor: impl AxisProcessor) -> Self {
+        self.processor = Some(Box::new(processor));
+        self
+    }
+
+    /// Removes the current used [`AxisProcessor`].
+    #[inline]
+    pub fn no_processor(mut self) -> Self {
+        self.processor = None;
+        self
+    }
+
+    /// Get the "value" of the axis.
+    /// If a processor is set, it will compute and return the processed value.
+    /// Otherwise, pass the `input_value` through unchanged.
+    #[must_use]
+    #[inline]
+    pub fn input_value(&self, input_value: f32) -> f32 {
+        match &self.processor {
+            Some(processor) => processor.process(input_value),
+            _ => input_value,
+        }
     }
 }
 
@@ -723,119 +770,5 @@ impl DualAxisData {
 impl From<DualAxisData> for Vec2 {
     fn from(data: DualAxisData) -> Vec2 {
         data.xy
-    }
-}
-
-/// The shape of the deadzone for a [`DualAxis`] input.
-///
-/// Input values that are on the boundary of the shape are counted as inside.
-/// If the size of a shape is 0.0, then all input values are read, except for 0.0.
-///
-/// All inputs are scaled to be continuous.
-/// So with an ellipse deadzone with a radius of 0.1, the input range `0.1..=1.0` will be scaled to `0.0..=1.0`.
-///
-/// Deadzone values should be in the range `0.0..=1.0`.
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Reflect)]
-pub enum DeadZoneShape {
-    /// Deadzone with the shape of a cross.
-    ///
-    /// The cross is represented by horizontal and vertical rectangles.
-    /// Each axis is handled separately which creates a per-axis "snapping" effect.
-    Cross {
-        /// The width of the horizontal axis.
-        ///
-        /// Affects the snapping of the y-axis.
-        horizontal_width: f32,
-        /// The width of the vertical axis.
-        ///
-        /// Affects the snapping of the x-axis.
-        vertical_width: f32,
-    },
-    /// Deadzone with the shape of an ellipse.
-    Ellipse {
-        /// The horizontal radius of the ellipse.
-        radius_x: f32,
-        /// The vertical radius of the ellipse.
-        radius_y: f32,
-    },
-}
-
-impl Eq for DeadZoneShape {}
-
-impl std::hash::Hash for DeadZoneShape {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        match self {
-            DeadZoneShape::Cross {
-                horizontal_width,
-                vertical_width,
-            } => {
-                FloatOrd(*horizontal_width).hash(state);
-                FloatOrd(*vertical_width).hash(state);
-            }
-            DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                FloatOrd(*radius_x).hash(state);
-                FloatOrd(*radius_y).hash(state);
-            }
-        }
-    }
-}
-
-impl DeadZoneShape {
-    /// Computes the input value based on the deadzone.
-    pub fn deadzone_input_value(&self, x: f32, y: f32) -> Option<DualAxisData> {
-        match self {
-            DeadZoneShape::Cross {
-                horizontal_width,
-                vertical_width,
-            } => self.cross_deadzone_value(x, y, *horizontal_width, *vertical_width),
-            DeadZoneShape::Ellipse { radius_x, radius_y } => {
-                self.ellipse_deadzone_value(x, y, *radius_x, *radius_y)
-            }
-        }
-    }
-
-    /// Computes the input value based on the cross deadzone.
-    fn cross_deadzone_value(
-        &self,
-        x: f32,
-        y: f32,
-        horizontal_width: f32,
-        vertical_width: f32,
-    ) -> Option<DualAxisData> {
-        let new_x = deadzone_axis_value(x, vertical_width);
-        let new_y = deadzone_axis_value(y, horizontal_width);
-        let is_outside_deadzone = new_x != 0.0 || new_y != 0.0;
-        is_outside_deadzone.then(|| DualAxisData::new(new_x, new_y))
-    }
-
-    /// Computes the input value based on the ellipse deadzone.
-    fn ellipse_deadzone_value(
-        &self,
-        x: f32,
-        y: f32,
-        radius_x: f32,
-        radius_y: f32,
-    ) -> Option<DualAxisData> {
-        let x_ratio = x / radius_x.max(f32::EPSILON);
-        let y_ratio = y / radius_y.max(f32::EPSILON);
-        let is_outside_deadzone = x_ratio.powi(2) + y_ratio.powi(2) >= 1.0;
-        is_outside_deadzone.then(|| {
-            let new_x = deadzone_axis_value(x, radius_x);
-            let new_y = deadzone_axis_value(y, radius_y);
-            DualAxisData::new(new_x, new_y)
-        })
-    }
-}
-
-/// Applies the given deadzone to the axis value.
-///
-/// Returns 0.0 if the axis value is within the deadzone.
-/// Otherwise, returns the normalized axis value between -1.0 and 1.0.
-pub(crate) fn deadzone_axis_value(axis_value: f32, deadzone: f32) -> f32 {
-    let abs_axis_value = axis_value.abs();
-    if abs_axis_value <= deadzone {
-        0.0
-    } else {
-        axis_value.signum() * (abs_axis_value - deadzone) / (1.0 - deadzone)
     }
 }
