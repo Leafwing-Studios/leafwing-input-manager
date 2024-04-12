@@ -274,18 +274,20 @@ static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn AxisProcessor>>> =
 /// A trait for registering a specific [`AxisProcessor`].
 pub trait RegisterAxisProcessor {
     /// Registers the specified [`AxisProcessor`].
-    fn register_axis_processor<'de, T: RegisterTypeTag<'de, dyn AxisProcessor>>(
-        &mut self,
-    ) -> &mut Self;
+    fn register_axis_processor<'de, T>(&mut self) -> &mut Self
+    where
+        T: RegisterTypeTag<'de, dyn AxisProcessor>;
 }
 
 impl RegisterAxisProcessor for App {
     #[allow(unsafe_code)]
-    fn register_axis_processor<'de, T: RegisterTypeTag<'de, dyn AxisProcessor>>(
-        &mut self,
-    ) -> &mut Self {
+    fn register_axis_processor<'de, T>(&mut self) -> &mut Self
+    where
+        T: RegisterTypeTag<'de, dyn AxisProcessor>,
+    {
         let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
         T::register_typetag(&mut registry);
+        self.register_type::<T>();
         self
     }
 }

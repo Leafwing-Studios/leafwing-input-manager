@@ -1,3 +1,5 @@
+//! Modifiers for single-axis inputs
+
 use std::hash::{Hash, Hasher};
 
 use bevy::prelude::Reflect;

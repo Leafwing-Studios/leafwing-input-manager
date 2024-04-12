@@ -71,19 +71,13 @@ impl Default for DualAxisBounds {
     /// Creates a [`DualAxisBounds`] that restricts values within the range `[-1.0, 1.0]` on both axes.
     #[inline]
     fn default() -> Self {
-        Self {
-            bounds_x: AxisBounds::default(),
-            bounds_y: AxisBounds::default(),
-        }
+        AxisBounds::default().extend_dual()
     }
 }
 
 impl DualAxisBounds {
     /// Unlimited [`DualAxisBounds`].
-    pub const FULL_RANGE: Self = Self {
-        bounds_x: AxisBounds::FULL_RANGE,
-        bounds_y: AxisBounds::FULL_RANGE,
-    };
+    pub const FULL_RANGE: Self = AxisBounds::FULL_RANGE.extend_dual();
 
     /// Creates a [`DualAxisBounds`] that restricts values within the range `[min, max]` on each axis.
     ///
@@ -232,10 +226,7 @@ impl DualAxisBounds {
     /// Creates a [`DualAxisBounds`] that restricts values to a minimum value on both axes.
     #[inline]
     pub const fn at_least_all(min: f32) -> Self {
-        Self {
-            bounds_x: AxisBounds::at_least(min),
-            bounds_y: AxisBounds::at_least(min),
-        }
+        AxisBounds::at_least(min).extend_dual()
     }
 
     /// Creates a [`DualAxisBounds`] that only restricts X values to a minimum value.
@@ -268,10 +259,7 @@ impl DualAxisBounds {
     /// Creates a [`DualAxisBounds`] that restricts values to a maximum value on both axes.
     #[inline]
     pub const fn at_most_all(max: f32) -> Self {
-        Self {
-            bounds_x: AxisBounds::at_most(max),
-            bounds_y: AxisBounds::at_most(max),
-        }
+        AxisBounds::at_most(max).extend_dual()
     }
 
     /// Creates a [`DualAxisBounds`] that only restricts X values to a maximum value.
@@ -375,7 +363,7 @@ impl From<AxisBounds> for DualAxisBounds {
 }
 
 /// Specifies a cross-shaped region for excluding dual-axis inputs,
-/// with min-max independent min-max ranges for each axis, resulting in per-axis "snapping" effect,
+/// with min-max independent min-max ranges for each axis, resulting in a per-axis "snapping" effect,
 /// helping filter out minor fluctuations to enhance control precision for pure axial motion.
 ///
 /// In simple terms, this processor is just the dual-axis version of [`AxisExclusion`].
@@ -434,19 +422,13 @@ impl Default for DualAxisExclusion {
     /// Creates a [`DualAxisExclusion`] that excludes input values within `[-1.0, 1.0]` on both axes.
     #[inline]
     fn default() -> Self {
-        Self {
-            exclusion_x: AxisExclusion::default(),
-            exclusion_y: AxisExclusion::default(),
-        }
+        AxisExclusion::default().extend_dual()
     }
 }
 
 impl DualAxisExclusion {
     /// Zero-size [`DualAxisExclusion`], leaving values as is.
-    pub const ZERO: Self = Self {
-        exclusion_x: AxisExclusion::ZERO,
-        exclusion_y: AxisExclusion::ZERO,
-    };
+    pub const ZERO: Self = AxisExclusion::ZERO.extend_dual();
 
     /// Creates a [`DualAxisExclusion`] that ignores values within the range `[negative_max, positive_min]` on each axis.
     ///
@@ -623,7 +605,7 @@ impl DualAxisExclusion {
 impl AxisExclusion {
     /// Creates a [`DualAxisExclusion`] using `self` for both axes.
     #[inline]
-    pub fn extend_dual(self) -> DualAxisExclusion {
+    pub const fn extend_dual(self) -> DualAxisExclusion {
         DualAxisExclusion {
             exclusion_x: self,
             exclusion_y: self,
@@ -632,7 +614,7 @@ impl AxisExclusion {
 
     /// Creates a [`DualAxisExclusion`] only using `self` for the X-axis.
     #[inline]
-    pub fn extend_dual_only_x(self) -> DualAxisExclusion {
+    pub const fn extend_dual_only_x(self) -> DualAxisExclusion {
         DualAxisExclusion {
             exclusion_x: self,
             ..DualAxisExclusion::ZERO
@@ -641,7 +623,7 @@ impl AxisExclusion {
 
     /// Creates a [`DualAxisExclusion`] only using `self` to the Y-axis.
     #[inline]
-    pub fn extend_dual_only_y(self) -> DualAxisExclusion {
+    pub const fn extend_dual_only_y(self) -> DualAxisExclusion {
         DualAxisExclusion {
             exclusion_y: self,
             ..DualAxisExclusion::ZERO
@@ -650,7 +632,7 @@ impl AxisExclusion {
 
     /// Creates a [`DualAxisExclusion`] using `self` to the Y-axis with the given `bounds_x` to the X-axis.
     #[inline]
-    pub fn extend_dual_with_x(self, exclusion_x: Self) -> DualAxisExclusion {
+    pub const fn extend_dual_with_x(self, exclusion_x: Self) -> DualAxisExclusion {
         DualAxisExclusion {
             exclusion_x,
             exclusion_y: self,
@@ -659,7 +641,7 @@ impl AxisExclusion {
 
     /// Creates a [`DualAxisExclusion`] using `self` to the X-axis with the given `bounds_y` to the Y-axis.
     #[inline]
-    pub fn extend_dual_with_y(self, exclusion_y: Self) -> DualAxisExclusion {
+    pub const fn extend_dual_with_y(self, exclusion_y: Self) -> DualAxisExclusion {
         DualAxisExclusion {
             exclusion_x: self,
             exclusion_y,

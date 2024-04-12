@@ -410,7 +410,7 @@ fn test_zero_dual_axis_deadzone() {
 #[test]
 fn test_zero_circle_deadzone() {
     let mut app = test_app();
-    let deadzone = DualAxisDeadZone::ZERO;
+    let deadzone = CircleDeadZone::ZERO;
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
         DualAxis::left_stick().with_processor(deadzone),
