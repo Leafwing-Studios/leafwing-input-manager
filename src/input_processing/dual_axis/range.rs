@@ -43,8 +43,7 @@ use crate::input_processing::single_axis::*;
 ///     }
 /// }
 /// ```
-#[doc(alias = "SquareBounds")]
-#[doc(alias = "AxialBounds")]
+#[doc(alias("SquareBounds", "AxialBounds"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct DualAxisBounds {
@@ -407,8 +406,7 @@ impl From<AxisBounds> for DualAxisBounds {
 ///     }
 /// }
 /// ```
-#[doc(alias = "CrossExclusion")]
-#[doc(alias = "AxialExclusion")]
+#[doc(alias("CrossExclusion", "AxialExclusion"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct DualAxisExclusion {
@@ -714,8 +712,7 @@ impl From<AxisExclusion> for DualAxisExclusion {
 ///     }
 /// }
 /// ```
-#[doc(alias = "CrossDeadZone")]
-#[doc(alias = "AxialDeadZone")]
+#[doc(alias("CrossDeadZone", "AxialDeadZone"))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct DualAxisDeadZone {
