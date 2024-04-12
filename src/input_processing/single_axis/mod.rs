@@ -249,8 +249,8 @@ impl<'a> Serialize for dyn AxisProcessor + 'a {
     where
         S: Serializer,
     {
-        // Check that `ExampleObj` has `erased_serde::Serialize` as a supertrait, preventing infinite recursion at runtime.
-        const fn __check_erased_serialize_supertrait<T: ?Sized + AxisProcessor>() {
+        // Check that `AxisProcessor` has `erased_serde::Serialize` as a super trait, preventing infinite recursion at runtime.
+        const fn __check_erased_serialize_super_trait<T: ?Sized + AxisProcessor>() {
             require_erased_serialize_impl::<T>();
         }
         serialize_trait_object(serializer, self.reflect_short_type_path(), self)
