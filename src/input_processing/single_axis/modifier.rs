@@ -1,8 +1,11 @@
-use crate::input_processing::AxisProcessor;
+use std::hash::{Hash, Hasher};
+
 use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
+use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
-use std::hash::{Hash, Hasher};
+
+use crate::input_processing::AxisProcessor;
 
 /// Flips the sign of single-axis input values, resulting in a directional reversal of control.
 ///
@@ -16,7 +19,7 @@ use std::hash::{Hash, Hasher};
 #[must_use]
 pub struct AxisInverted;
 
-#[typetag::serde]
+#[serde_typetag]
 impl AxisProcessor for AxisInverted {
     /// Returns the opposite value of the `input_value`.
     #[must_use]
@@ -45,7 +48,7 @@ impl AxisProcessor for AxisInverted {
 #[must_use]
 pub struct AxisSensitivity(pub f32);
 
-#[typetag::serde]
+#[serde_typetag]
 impl AxisProcessor for AxisSensitivity {
     /// Multiples the `input_value` by the specified sensitivity factor.
     #[must_use]

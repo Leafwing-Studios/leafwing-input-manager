@@ -588,7 +588,7 @@ impl<A: Actionlike> ActionState<A> {
 
 #[cfg(test)]
 mod tests {
-    use crate as leafwing_input_manager;
+
     use crate::action_state::ActionState;
     use crate::clashing_inputs::ClashStrategy;
     use crate::input_map::InputMap;

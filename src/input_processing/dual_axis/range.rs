@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use bevy::prelude::*;
+use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
@@ -53,7 +54,7 @@ pub struct DualAxisBounds {
     pub(crate) bounds_y: AxisBounds,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for DualAxisBounds {
     /// Clamps `input_value` within the bounds.
     #[must_use]
@@ -417,7 +418,7 @@ pub struct DualAxisExclusion {
     pub(crate) exclusion_y: AxisExclusion,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for DualAxisExclusion {
     /// Excludes values within the specified region.
     #[must_use]
@@ -724,7 +725,7 @@ pub struct DualAxisDeadZone {
     pub(crate) deadzone_y: AxisDeadZone,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for DualAxisDeadZone {
     /// Normalizes input values into the live zone.
     #[must_use]

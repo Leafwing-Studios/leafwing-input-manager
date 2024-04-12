@@ -3,16 +3,24 @@
 use std::any::{Any, TypeId};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::sync::RwLock;
 
+use bevy::prelude::App;
 use bevy::reflect::utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell};
 use bevy::reflect::{
-    FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize, ReflectFromPtr,
-    ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo, TypePath,
-    TypeRegistration, Typed, ValueInfo,
+    erased_serde, FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize,
+    ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
+    TypePath, TypeRegistration, Typed, ValueInfo,
 };
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_flexitos::ser::require_erased_serialize_impl;
+use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
+
+use crate::typetag::RegisterTypeTag;
 
 pub use self::modifier::*;
 pub use self::pipeline::*;
@@ -43,7 +51,7 @@ mod range;
 /// pub struct DoubleAbsoluteValueThenIgnored(pub f32);
 ///
 /// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[typetag::serde]
+/// #[serde_typetag]
 /// impl AxisProcessor for DoubleAbsoluteValueThenIgnored {
 ///     fn process(&self, input_value: f32) -> f32 {
 ///         // Implement the logic just like you would in a normal function.
@@ -83,8 +91,9 @@ mod range;
 /// assert_eq!(processor.process(-4.0), 8.0);
 /// assert_eq!(processor.process(-6.0), 12.0);
 /// ```
-#[typetag::serde(tag = "type")]
-pub trait AxisProcessor: Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect {
+pub trait AxisProcessor:
+    Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Computes the result by processing the `input_value`.
     fn process(&self, input_value: f32) -> f32;
 }
@@ -228,5 +237,51 @@ impl GetTypeRegistration for Box<dyn AxisProcessor> {
 impl FromReflect for Box<dyn AxisProcessor> {
     fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
         Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+    }
+}
+
+impl<'a> Serialize for dyn AxisProcessor + 'a {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Check that `ExampleObj` has `erased_serde::Serialize` as a supertrait, preventing infinite recursion at runtime.
+        const fn __check_erased_serialize_supertrait<T: ?Sized + AxisProcessor>() {
+            require_erased_serialize_impl::<T>();
+        }
+        serialize_trait_object(serializer, self.reflect_short_type_path(), self)
+    }
+}
+
+impl<'de> Deserialize<'de> for Box<dyn AxisProcessor> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let registry = unsafe { PROCESSOR_REGISTRY.read().unwrap() };
+        registry.deserialize_trait_object(deserializer)
+    }
+}
+
+/// Registry of deserializers for [`AxisProcessor`]s.
+static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn AxisProcessor>>> =
+    Lazy::new(|| RwLock::new(MapRegistry::new("AxisProcessor")));
+
+/// A trait for registering a specific [`AxisProcessor`].
+pub trait RegisterAxisProcessor {
+    /// Registers the specified [`AxisProcessor`].
+    fn register_axis_processor<'de, T: RegisterTypeTag<'de, dyn AxisProcessor>>(
+        &mut self,
+    ) -> &mut Self;
+}
+
+impl RegisterAxisProcessor for App {
+    #[allow(unsafe_code)]
+    fn register_axis_processor<'de, T: RegisterTypeTag<'de, dyn AxisProcessor>>(
+        &mut self,
+    ) -> &mut Self {
+        let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
+        T::register_typetag(&mut registry);
+        self
     }
 }

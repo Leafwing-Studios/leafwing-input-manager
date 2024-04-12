@@ -1,5 +1,4 @@
 #![forbid(missing_docs)]
-#![forbid(unsafe_code)]
 #![warn(clippy::doc_markdown)]
 #![doc = include_str!("../README.md")]
 
@@ -26,6 +25,7 @@ pub mod orientation;
 pub mod plugin;
 pub mod systems;
 pub mod timing;
+pub mod typetag;
 pub mod user_input;
 
 // Importing the derive macro
@@ -48,8 +48,6 @@ pub mod prelude {
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
-
-    pub use typetag::serde as serde_trait_object;
 }
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion

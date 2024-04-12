@@ -5,6 +5,7 @@ use std::hash::{Hash, Hasher};
 
 use bevy::prelude::*;
 use bevy::utils::FloatOrd;
+use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
@@ -38,7 +39,7 @@ pub struct CircleBounds {
     pub(crate) radius: f32,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for CircleBounds {
     /// Clamps the magnitude of `input_value` within the bounds.
     #[must_use]
@@ -135,7 +136,7 @@ pub struct CircleExclusion {
     pub(crate) radius_squared: f32,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for CircleExclusion {
     /// Excludes input values with a magnitude less than the `radius`.
     #[must_use]
@@ -271,7 +272,7 @@ pub struct CircleDeadZone {
     pub(crate) livezone_recip: f32,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for CircleDeadZone {
     /// Normalizes input values into the live zone.
     #[must_use]

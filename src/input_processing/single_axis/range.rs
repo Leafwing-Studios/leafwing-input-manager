@@ -1,9 +1,11 @@
 //! Range processors for single-axis inputs
 
+use std::hash::{Hash, Hasher};
+
 use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
+use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
-use std::hash::{Hash, Hasher};
 
 use super::AxisProcessor;
 
@@ -32,7 +34,7 @@ pub struct AxisBounds {
     pub(crate) max: f32,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl AxisProcessor for AxisBounds {
     /// Clamps `input_value` within the bounds.
     #[must_use]
@@ -184,7 +186,7 @@ pub struct AxisExclusion {
     pub(crate) positive_min: f32,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl AxisProcessor for AxisExclusion {
     /// Excludes values within the specified range.
     #[must_use]
@@ -361,7 +363,7 @@ pub struct AxisDeadZone {
     pub(crate) livezone_upper_recip: f32,
 }
 
-#[typetag::serde]
+#[serde_typetag]
 impl AxisProcessor for AxisDeadZone {
     /// Normalizes input values into the live zone.
     #[must_use]

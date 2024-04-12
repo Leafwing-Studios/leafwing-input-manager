@@ -455,7 +455,6 @@ mod tests {
     use bevy::prelude::Reflect;
     use serde::{Deserialize, Serialize};
 
-    use crate as leafwing_input_manager;
     use crate::prelude::*;
 
     #[derive(

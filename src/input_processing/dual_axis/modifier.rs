@@ -5,6 +5,7 @@ use std::hash::{Hash, Hasher};
 
 use bevy::prelude::{BVec2, Reflect, Vec2};
 use bevy::utils::FloatOrd;
+use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate::input_processing::DualAxisProcessor;
@@ -30,7 +31,7 @@ use crate::input_processing::DualAxisProcessor;
 #[must_use]
 pub struct DualAxisInverted(Vec2);
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for DualAxisInverted {
     /// Multiples the `input_value` by the specified inversion vector.
     #[must_use]
@@ -108,7 +109,7 @@ impl Debug for DualAxisInverted {
 #[must_use]
 pub struct DualAxisSensitivity(pub(crate) Vec2);
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for DualAxisSensitivity {
     /// Multiples the `input_value` by the specified sensitivity vector.
     #[must_use]

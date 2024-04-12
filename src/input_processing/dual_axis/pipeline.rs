@@ -1,6 +1,7 @@
 //! Processing pipeline for dual-axis inputs.
 
 use bevy::prelude::{Reflect, Vec2};
+use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
@@ -54,7 +55,7 @@ use super::DualAxisProcessor;
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub struct DualAxisProcessingPipeline(pub(crate) Vec<Box<dyn DualAxisProcessor>>);
 
-#[typetag::serde]
+#[serde_typetag]
 impl DualAxisProcessor for DualAxisProcessingPipeline {
     /// Computes the result by passing the `input_value` through this pipeline.
     #[must_use]

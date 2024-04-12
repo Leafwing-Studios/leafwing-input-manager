@@ -3,17 +3,24 @@
 use std::any::{Any, TypeId};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::sync::RwLock;
 
-use bevy::prelude::Vec2;
+use bevy::prelude::{App, Vec2};
 use bevy::reflect::utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell};
 use bevy::reflect::{
-    FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize, ReflectFromPtr,
-    ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo, TypePath,
-    TypeRegistration, Typed, ValueInfo,
+    erased_serde, FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize,
+    ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
+    TypePath, TypeRegistration, Typed, ValueInfo,
 };
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
+use once_cell::sync::Lazy;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde_flexitos::ser::require_erased_serialize_impl;
+use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
+
+use crate::typetag::RegisterTypeTag;
 
 pub use self::circle::*;
 pub use self::modifier::*;
@@ -46,7 +53,7 @@ mod range;
 /// pub struct DoubleAbsoluteValueThenRejectX(pub f32);
 ///
 /// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[typetag::serde]
+/// #[serde_typetag]
 /// impl DualAxisProcessor for DoubleAbsoluteValueThenRejectX {
 ///     fn process(&self, input_value: Vec2) -> Vec2 {
 ///         // Implement the logic just like you would in a normal function.
@@ -87,8 +94,9 @@ mod range;
 /// assert_eq!(processor.process(Vec2::splat(-4.0)), Vec2::splat(8.0));
 /// assert_eq!(processor.process(Vec2::splat(-6.0)), Vec2::splat(12.0));
 /// ```
-#[typetag::serde(tag = "type")]
-pub trait DualAxisProcessor: Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect {
+pub trait DualAxisProcessor:
+    Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Computes the result by processing the `input_value`.
     fn process(&self, input_value: Vec2) -> Vec2;
 }
@@ -232,5 +240,88 @@ impl GetTypeRegistration for Box<dyn DualAxisProcessor> {
 impl FromReflect for Box<dyn DualAxisProcessor> {
     fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
         Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+    }
+}
+
+impl<'a> Serialize for dyn DualAxisProcessor + 'a {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Check that `ExampleObj` has `erased_serde::Serialize` as a supertrait, preventing infinite recursion at runtime.
+        const fn __check_erased_serialize_supertrait<T: ?Sized + DualAxisProcessor>() {
+            require_erased_serialize_impl::<T>();
+        }
+        serialize_trait_object(serializer, self.reflect_short_type_path(), self)
+    }
+}
+
+impl<'de> Deserialize<'de> for Box<dyn DualAxisProcessor> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let registry = unsafe { PROCESSOR_REGISTRY.read().unwrap() };
+        registry.deserialize_trait_object(deserializer)
+    }
+}
+
+/// Registry of deserializers for [`DualAxisProcessor`]s.
+static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn DualAxisProcessor>>> =
+    Lazy::new(|| RwLock::new(MapRegistry::new("DualAxisProcessor")));
+
+/// A trait for registering a specific [`DualAxisProcessor`].
+pub trait RegisterDualAxisProcessor {
+    /// Registers the specified [`DualAxisProcessor`].
+    fn register_dual_axis_processor<'de, T: RegisterTypeTag<'de, dyn DualAxisProcessor>>(
+        &mut self,
+    ) -> &mut Self;
+}
+
+impl RegisterDualAxisProcessor for App {
+    #[allow(unsafe_code)]
+    fn register_dual_axis_processor<'de, T: RegisterTypeTag<'de, dyn DualAxisProcessor>>(
+        &mut self,
+    ) -> &mut Self {
+        let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
+        T::register_typetag(&mut registry);
+        self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_test::{assert_tokens, Token};
+
+    #[test]
+    fn test_serde_dual_axis_processor() {
+        let mut app = App::new();
+        app.register_dual_axis_processor::<DualAxisInverted>();
+        app.register_dual_axis_processor::<DualAxisSensitivity>();
+
+        let inversion: Box<dyn DualAxisProcessor> = Box::new(DualAxisInverted::ALL);
+        let sensitivity: Box<dyn DualAxisProcessor> = Box::new(DualAxisSensitivity::all(5.0));
+
+        assert_tokens(
+            &inversion,
+            &[
+                Token::Map { len: Some(1) },
+                Token::Str("DualAxisInverted"),
+                Token::Map { len: Some(1) },
+                Token::None,
+                Token::MapEnd,
+            ],
+        );
+        assert_tokens(
+            &sensitivity,
+            &[
+                Token::Map { len: Some(1) },
+                Token::Str("DualAxisInverted"),
+                Token::Map { len: Some(1) },
+                Token::None,
+                Token::MapEnd,
+            ],
+        );
     }
 }

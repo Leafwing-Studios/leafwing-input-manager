@@ -1,8 +1,10 @@
 //! Processing pipeline for single-axis inputs.
 
-use crate::input_processing::AxisProcessor;
 use bevy::prelude::Reflect;
+use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
+
+use crate::input_processing::AxisProcessor;
 
 /// A dynamic sequence container of [`AxisProcessor`]s designed for processing input values.
 ///
@@ -50,7 +52,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub struct AxisProcessingPipeline(pub(crate) Vec<Box<dyn AxisProcessor>>);
 
-#[typetag::serde]
+#[serde_typetag]
 impl AxisProcessor for AxisProcessingPipeline {
     /// Computes the result by passing the `input_value` through this pipeline.
     #[must_use]
