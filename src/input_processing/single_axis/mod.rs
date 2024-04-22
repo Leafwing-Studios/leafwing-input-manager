@@ -1,17 +1,10 @@
 //! Processors for single-axis input values
 
-use std::any::{Any, TypeId};
-use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
+use std::sync::Arc;
 
-use bevy::prelude::{FromReflect, Reflect, ReflectDeserialize, ReflectSerialize, TypePath};
-use bevy::reflect::utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell};
-use bevy::reflect::{
-    FromType, GetTypeRegistration, ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned,
-    ReflectRef, TypeInfo, TypeRegistration, Typed, ValueInfo,
-};
+use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
-use dyn_eq::DynEq;
 use serde::{Deserialize, Serialize};
 
 pub use self::custom::*;
@@ -24,9 +17,10 @@ mod range;
 /// accepting a `f32` input and producing a `f32` output.
 #[must_use]
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum AxisProcessor {
     /// No processor is applied.
+    #[default]
     None,
 
     /// Flips the sign of input values, resulting in a directional reversal of control.
@@ -64,21 +58,19 @@ pub enum AxisProcessor {
     /// A wrapper around [`AxisDeadZone`] to represent scaled deadzone.
     DeadZone(AxisDeadZone),
 
-    // Using a [`Vec`] directly here causes a compiler error (E0275) due to an overflow
-    // while evaluating the requirement `Vec<AxisProcessor>: bevy::prelude::FromReflect`.
-    /// Processes input values sequentially by chaining together two [`AxisProcessor`]s,
-    /// one for the current step and the other for the next step.
+    /// Processes input values sequentially through a sequence of [`AxisProcessor`]s.
     ///
-    /// For a straightforward creation of a [`AxisProcessor::OrderedPair`],
+    /// For a straightforward creation of a [`AxisProcessor::Pipeline`],
     /// you can use [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] methods.
     ///
     /// ```rust
+    /// use std::sync::Arc;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// let expected = AxisProcessor::OrderedPair(
-    ///     Box::new(AxisProcessor::Inverted),
-    ///     Box::new(AxisProcessor::Sensitivity(2.0)),
-    /// );
+    /// let expected = AxisProcessor::Pipeline(vec![
+    ///     Arc::new(AxisProcessor::Inverted),
+    ///     Arc::new(AxisProcessor::Sensitivity(2.0)),
+    /// ]);
     ///
     /// assert_eq!(
     ///     expected,
@@ -93,7 +85,7 @@ pub enum AxisProcessor {
     ///     ])
     /// );
     /// ```
-    OrderedPair(Box<AxisProcessor>, Box<AxisProcessor>),
+    Pipeline(Vec<Arc<AxisProcessor>>),
 
     /// A user-defined processor that implements [`CustomAxisProcessor`].
     Custom(Box<dyn CustomAxisProcessor>),
@@ -111,31 +103,47 @@ impl AxisProcessor {
             Self::ValueBounds(bounds) => bounds.clamp(input_value),
             Self::Exclusion(exclusion) => exclusion.exclude(input_value),
             Self::DeadZone(deadzone) => deadzone.normalize(input_value),
-            Self::OrderedPair(current, next) => next.process(current.process(input_value)),
+            Self::Pipeline(sequence) => sequence
+                .iter()
+                .fold(input_value, |value, next| next.process(value)),
             Self::Custom(processor) => processor.process(input_value),
         }
     }
 
     /// Appends the given `next_processor` as the next processing step.
+    ///
+    /// - If either processor is [`AxisProcessor::None`], returns the other.
+    /// - If the current processor is [`AxisProcessor::Pipeline`], pushes the other into it.
+    /// - If the given processor is [`AxisProcessor::Pipeline`], prepends the current one into it.
+    /// - If both processors are [`AxisProcessor::Pipeline`], merges the two pipelines.
+    /// - If neither processor is [`AxisProcessor::None`] nor a pipeline,
+    ///     creates a new pipeline containing them.
     #[inline]
     pub fn with_processor(self, next_processor: impl Into<AxisProcessor>) -> Self {
         let other = next_processor.into();
-        match (&self, &other) {
-            (Self::None, Self::None) => Self::None,
+        match (self.clone(), other.clone()) {
             (_, Self::None) => self,
             (Self::None, _) => other,
-            (_, _) => Self::OrderedPair(Box::new(self), Box::new(other)),
+            (Self::Pipeline(mut self_seq), Self::Pipeline(mut next_seq)) => {
+                self_seq.append(&mut next_seq);
+                Self::Pipeline(self_seq)
+            }
+            (Self::Pipeline(mut self_seq), _) => {
+                self_seq.push(Arc::new(other));
+                Self::Pipeline(self_seq)
+            }
+            (_, Self::Pipeline(mut next_seq)) => {
+                next_seq.insert(0, Arc::new(self));
+                Self::Pipeline(next_seq)
+            }
+            (_, _) => Self::Pipeline(vec![Arc::new(self), Arc::new(other)]),
         }
     }
 }
 
 impl From<Vec<AxisProcessor>> for AxisProcessor {
     fn from(value: Vec<AxisProcessor>) -> Self {
-        let mut processor = Self::None;
-        for p in &value {
-            processor = processor.with_processor(p.clone());
-        }
-        processor
+        Self::Pipeline(value.into_iter().map(Arc::new).collect())
     }
 }
 
@@ -151,150 +159,9 @@ impl Hash for AxisProcessor {
             Self::ValueBounds(bounds) => bounds.hash(state),
             Self::Exclusion(exclusion) => exclusion.hash(state),
             Self::DeadZone(deadzone) => deadzone.hash(state),
-            Self::OrderedPair(current, next) => {
-                current.hash(state);
-                next.hash(state);
-            }
+            Self::Pipeline(sequence) => sequence.hash(state),
             Self::Custom(processor) => processor.hash(state),
         }
-    }
-}
-
-impl Reflect for Box<AxisProcessor> {
-    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
-        Some(Self::type_info())
-    }
-
-    fn into_any(self: Box<Self>) -> Box<dyn Any> {
-        self
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-
-    fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
-        self
-    }
-
-    fn as_reflect(&self) -> &dyn Reflect {
-        self
-    }
-
-    fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
-        self
-    }
-
-    fn apply(&mut self, value: &dyn Reflect) {
-        let value = value.as_any();
-        if let Some(value) = value.downcast_ref::<Self>() {
-            self.clone_from(value);
-        } else {
-            panic!(
-                "Value is not a std::boxed::Box<dyn {}::AxisProcessor>.",
-                module_path!(),
-            );
-        }
-    }
-
-    fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
-        *self = value.take()?;
-        Ok(())
-    }
-
-    fn reflect_kind(&self) -> ReflectKind {
-        ReflectKind::Value
-    }
-
-    fn reflect_ref(&self) -> ReflectRef {
-        ReflectRef::Value(self)
-    }
-
-    fn reflect_mut(&mut self) -> ReflectMut {
-        ReflectMut::Value(self)
-    }
-
-    fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-        ReflectOwned::Value(self)
-    }
-
-    fn clone_value(&self) -> Box<dyn Reflect> {
-        Box::new(self.clone())
-    }
-
-    fn reflect_hash(&self) -> Option<u64> {
-        let mut hasher = reflect_hasher();
-        let type_id = TypeId::of::<Self>();
-        Hash::hash(&type_id, &mut hasher);
-        Hash::hash(self, &mut hasher);
-        Some(hasher.finish())
-    }
-
-    fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-        let value = value.as_any();
-        value
-            .downcast_ref::<Self>()
-            .map(|value| self.dyn_eq(value))
-            .or(Some(false))
-    }
-
-    fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
-    }
-}
-
-impl Typed for Box<AxisProcessor> {
-    fn type_info() -> &'static TypeInfo {
-        static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-        CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
-    }
-}
-
-impl TypePath for Box<AxisProcessor> {
-    fn type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| {
-            {
-                format!("std::boxed::Box<{}::AxisProcessor>", module_path!())
-            }
-        })
-    }
-
-    fn short_type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| "Box<AxisProcessor>".to_string())
-    }
-
-    fn type_ident() -> Option<&'static str> {
-        Some("Box<AxisProcessor>")
-    }
-
-    fn crate_name() -> Option<&'static str> {
-        Some(module_path!().split(':').next().unwrap())
-    }
-
-    fn module_path() -> Option<&'static str> {
-        Some(module_path!())
-    }
-}
-
-impl GetTypeRegistration for Box<AxisProcessor> {
-    fn get_type_registration() -> TypeRegistration {
-        let mut registration = TypeRegistration::of::<Self>();
-        registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-        registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-        registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
-        registration
-    }
-}
-
-impl FromReflect for Box<AxisProcessor> {
-    fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-        Some(reflect.as_any().downcast_ref::<Self>()?.clone())
     }
 }
 
@@ -327,29 +194,26 @@ mod tests {
     }
 
     #[test]
-    fn test_axis_processor_ordered_pair() {
-        let first = Box::new(AxisProcessor::Inverted);
-        let second = Box::new(AxisProcessor::Sensitivity(2.0));
-        let merged_second = AxisProcessor::OrderedPair(first, second);
-
-        let third = Box::new(AxisProcessor::Sensitivity(-1.5));
-        let merged_third = AxisProcessor::OrderedPair(Box::new(merged_second.clone()), third);
+    fn test_axis_processor_pipeline() {
+        let pipeline = AxisProcessor::Pipeline(vec![
+            Arc::new(AxisProcessor::Inverted),
+            Arc::new(AxisProcessor::Sensitivity(2.0)),
+        ]);
 
         for value in -300..300 {
             let value = value as f32 * 0.01;
 
-            assert_eq!(merged_second.process(value), value * -2.0);
-            assert_eq!(merged_third.process(value), value * 3.0);
+            assert_eq!(pipeline.process(value), value * -2.0);
         }
     }
 
     #[test]
     fn test_axis_processor_from_list() {
-        assert_eq!(AxisProcessor::from(vec![]), AxisProcessor::None);
+        assert_eq!(AxisProcessor::from(vec![]), AxisProcessor::Pipeline(vec![]));
 
         assert_eq!(
             AxisProcessor::from(vec![AxisProcessor::Inverted]),
-            AxisProcessor::Inverted
+            AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
         );
 
         assert_eq!(
@@ -357,25 +221,10 @@ mod tests {
                 AxisProcessor::Inverted,
                 AxisProcessor::Sensitivity(2.0),
             ]),
-            AxisProcessor::OrderedPair(
-                Box::new(AxisProcessor::Inverted),
-                Box::new(AxisProcessor::Sensitivity(2.0)),
-            )
-        );
-
-        assert_eq!(
-            AxisProcessor::from(vec![
-                AxisProcessor::Inverted,
-                AxisProcessor::Sensitivity(2.0),
-                AxisDeadZone::default().into(),
-            ]),
-            AxisProcessor::OrderedPair(
-                Box::new(AxisProcessor::OrderedPair(
-                    Box::new(AxisProcessor::Inverted),
-                    Box::new(AxisProcessor::Sensitivity(2.0)),
-                )),
-                Box::new(AxisProcessor::DeadZone(AxisDeadZone::default())),
-            )
+            AxisProcessor::Pipeline(vec![
+                Arc::new(AxisProcessor::Inverted),
+                Arc::new(AxisProcessor::Sensitivity(2.0)),
+            ])
         );
     }
 }

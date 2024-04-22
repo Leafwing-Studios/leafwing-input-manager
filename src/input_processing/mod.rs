@@ -17,19 +17,17 @@
 //!
 //! # Built-in Processors
 //!
-//! ## Processing Pipelines
+//! ## Pipelines
 //!
 //! Pipelines handle input values sequentially through a sequence of processors.
 //!
-//! To create a pipeline, you can use these methods.
+//! - [`AxisProcessor::Pipeline`]: Pipeline for single-axis inputs.
+//! - [`DualAxisProcessor::Pipeline`]: Pipeline for dual-axis inputs.
 //!
-//! - [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] for single-axis inputs.
-//! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for dual-axis inputs.
+//! You can also use these methods to create a pipeline.
 //!
-//! They create ordered pairs, akin to the [cons cells](https://en.wikipedia.org/wiki/Cons).
-//!
-//! - [`AxisProcessor::OrderedPair`]: Combines two [`AxisProcessor`]s for single-axis input values.
-//! - [`DualAxisProcessor::OrderedPair`]: Combines two [`DualAxisProcessor`]s for dual-axis input values.
+//! - [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] for [`AxisProcessor::Pipeline`].
+//! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for [`DualAxisProcessor::Pipeline`].
 //!
 //! ## Inversion
 //!

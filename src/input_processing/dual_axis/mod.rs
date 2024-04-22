@@ -1,16 +1,9 @@
 //! Processors for dual-axis input values
 
-use std::any::{Any, TypeId};
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
+use std::sync::Arc;
 
-use bevy::prelude::{FromReflect, Reflect, ReflectDeserialize, ReflectSerialize, TypePath, Vec2};
-use bevy::reflect::utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell};
-use bevy::reflect::{
-    FromType, GetTypeRegistration, ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned,
-    ReflectRef, TypeInfo, TypeRegistration, Typed, ValueInfo,
-};
-use dyn_eq::DynEq;
+use bevy::prelude::{Reflect, Vec2};
 use serde::{Deserialize, Serialize};
 
 pub use self::circle::*;
@@ -27,9 +20,10 @@ mod range;
 /// accepting a [`Vec2`] input and producing a [`Vec2`] output.
 #[must_use]
 #[non_exhaustive]
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum DualAxisProcessor {
     /// No processor is applied.
+    #[default]
     None,
 
     /// A wrapper around [`DualAxisInverted`] to represent inversion.
@@ -56,21 +50,20 @@ pub enum DualAxisProcessor {
     /// A wrapper around [`CircleDeadZone`] to represent scaled deadzone.
     CircleDeadZone(CircleDeadZone),
 
-    // Using a [`Vec`] directly here causes a compiler error (E0275) due to an overflow
-    // while evaluating the requirement `Vec<DualAxisProcessor>: bevy::prelude::FromReflect`.
-    /// Processes input values sequentially by chaining together two [`DualAxisProcessor`]s,
+    /// Processes input values sequentially through a sequence of [`DualAxisProcessor`]s.
     /// one for the current step and the other for the next step.
     ///
-    /// For a straightforward creation of a [`DualAxisProcessor::OrderedPair`],
+    /// For a straightforward creation of a [`DualAxisProcessor::Pipeline`],
     /// you can use [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] methods.
     ///
     /// ```rust
+    /// use std::sync::Arc;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// let expected = DualAxisProcessor::OrderedPair(
-    ///     Box::new(DualAxisInverted::ALL.into()),
-    ///     Box::new(DualAxisSensitivity::all(2.0).into()),
-    /// );
+    /// let expected = DualAxisProcessor::Pipeline(vec![
+    ///     Arc::new(DualAxisInverted::ALL.into()),
+    ///     Arc::new(DualAxisSensitivity::all(2.0).into()),
+    /// ]);
     ///
     /// assert_eq!(
     ///     expected,
@@ -84,7 +77,7 @@ pub enum DualAxisProcessor {
     ///         DualAxisSensitivity::all(2.0).into(),
     ///     ])
     /// );
-    OrderedPair(Box<DualAxisProcessor>, Box<DualAxisProcessor>),
+    Pipeline(Vec<Arc<DualAxisProcessor>>),
 
     /// A user-defined processor that implements [`CustomDualAxisProcessor`].
     Custom(Box<dyn CustomDualAxisProcessor>),
@@ -105,169 +98,47 @@ impl DualAxisProcessor {
             Self::CircleBounds(bounds) => bounds.clamp(input_value),
             Self::CircleExclusion(exclusion) => exclusion.exclude(input_value),
             Self::CircleDeadZone(deadzone) => deadzone.normalize(input_value),
-            Self::OrderedPair(current, next) => next.process(current.process(input_value)),
+            Self::Pipeline(sequence) => sequence
+                .iter()
+                .fold(input_value, |value, next| next.process(value)),
             Self::Custom(processor) => processor.process(input_value),
         }
     }
 
     /// Appends the given `next_processor` as the next processing step.
+    ///
+    /// - If either processor is [`DualAxisProcessor::None`], returns the other.
+    /// - If the current processor is [`DualAxisProcessor::Pipeline`], pushes the other into it.
+    /// - If the given processor is [`DualAxisProcessor::Pipeline`], prepends the current one into it.
+    /// - If both processors are [`DualAxisProcessor::Pipeline`], merges the two pipelines.
+    /// - If neither processor is [`DualAxisProcessor::None`] nor a pipeline,
+    ///     creates a new pipeline containing them.
     #[inline]
     pub fn with_processor(self, next_processor: impl Into<DualAxisProcessor>) -> Self {
         let other = next_processor.into();
-        match (&self, &other) {
-            (Self::None, Self::None) => Self::None,
+        match (self.clone(), other.clone()) {
             (_, Self::None) => self,
             (Self::None, _) => other,
-            (_, _) => Self::OrderedPair(Box::new(self), Box::new(other)),
+            (Self::Pipeline(mut self_seq), Self::Pipeline(mut next_seq)) => {
+                self_seq.append(&mut next_seq);
+                Self::Pipeline(self_seq)
+            }
+            (Self::Pipeline(mut self_seq), _) => {
+                self_seq.push(Arc::new(other));
+                Self::Pipeline(self_seq)
+            }
+            (_, Self::Pipeline(mut next_seq)) => {
+                next_seq.insert(0, Arc::new(self));
+                Self::Pipeline(next_seq)
+            }
+            (_, _) => Self::Pipeline(vec![Arc::new(self), Arc::new(other)]),
         }
     }
 }
 
 impl From<Vec<DualAxisProcessor>> for DualAxisProcessor {
     fn from(value: Vec<DualAxisProcessor>) -> Self {
-        let mut processor = Self::None;
-        for p in &value {
-            processor = processor.with_processor(p.clone());
-        }
-        processor
-    }
-}
-
-impl Reflect for Box<DualAxisProcessor> {
-    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
-        Some(Self::type_info())
-    }
-
-    fn into_any(self: Box<Self>) -> Box<dyn Any> {
-        self
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-
-    fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
-        self
-    }
-
-    fn as_reflect(&self) -> &dyn Reflect {
-        self
-    }
-
-    fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
-        self
-    }
-
-    fn apply(&mut self, value: &dyn Reflect) {
-        let value = value.as_any();
-        if let Some(value) = value.downcast_ref::<Self>() {
-            self.clone_from(value);
-        } else {
-            panic!(
-                "Value is not a std::boxed::Box<dyn {}::DualAxisProcessor>.",
-                module_path!(),
-            );
-        }
-    }
-
-    fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
-        *self = value.take()?;
-        Ok(())
-    }
-
-    fn reflect_kind(&self) -> ReflectKind {
-        ReflectKind::Value
-    }
-
-    fn reflect_ref(&self) -> ReflectRef {
-        ReflectRef::Value(self)
-    }
-
-    fn reflect_mut(&mut self) -> ReflectMut {
-        ReflectMut::Value(self)
-    }
-
-    fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-        ReflectOwned::Value(self)
-    }
-
-    fn clone_value(&self) -> Box<dyn Reflect> {
-        Box::new(self.clone())
-    }
-
-    fn reflect_hash(&self) -> Option<u64> {
-        let mut hasher = reflect_hasher();
-        let type_id = TypeId::of::<Self>();
-        Hash::hash(&type_id, &mut hasher);
-        Hash::hash(self, &mut hasher);
-        Some(hasher.finish())
-    }
-
-    fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-        let value = value.as_any();
-        value
-            .downcast_ref::<Self>()
-            .map(|value| self.dyn_eq(value))
-            .or(Some(false))
-    }
-
-    fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
-    }
-}
-
-impl Typed for Box<DualAxisProcessor> {
-    fn type_info() -> &'static TypeInfo {
-        static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-        CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
-    }
-}
-
-impl TypePath for Box<DualAxisProcessor> {
-    fn type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| {
-            {
-                format!("std::boxed::Box<{}::DualAxisProcessor>", module_path!())
-            }
-        })
-    }
-
-    fn short_type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| "Box<DualAxisProcessor>".to_string())
-    }
-
-    fn type_ident() -> Option<&'static str> {
-        Some("Box<DualAxisProcessor>")
-    }
-
-    fn crate_name() -> Option<&'static str> {
-        Some(module_path!().split(':').next().unwrap())
-    }
-
-    fn module_path() -> Option<&'static str> {
-        Some(module_path!())
-    }
-}
-
-impl GetTypeRegistration for Box<DualAxisProcessor> {
-    fn get_type_registration() -> TypeRegistration {
-        let mut registration = TypeRegistration::of::<Self>();
-        registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-        registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-        registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
-        registration
-    }
-}
-
-impl FromReflect for Box<DualAxisProcessor> {
-    fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-        Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+        Self::Pipeline(value.into_iter().map(Arc::new).collect())
     }
 }
 
@@ -276,13 +147,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_dual_axis_processor_ordered_pair() {
-        let first = Box::new(DualAxisInverted::ALL.into());
-        let second = Box::new(DualAxisSensitivity::all(2.0).into());
-        let merged_second = DualAxisProcessor::OrderedPair(first, second);
-
-        let third = Box::new(DualAxisSensitivity::all(-1.5).into());
-        let merged_third = DualAxisProcessor::OrderedPair(Box::new(merged_second.clone()), third);
+    fn test_axis_processor_pipeline() {
+        let pipeline = DualAxisProcessor::Pipeline(vec![
+            Arc::new(DualAxisInverted::ALL.into()),
+            Arc::new(DualAxisSensitivity::all(2.0).into()),
+        ]);
 
         for x in -300..300 {
             let x = x as f32 * 0.01;
@@ -290,19 +159,21 @@ mod tests {
                 let y = y as f32 * 0.01;
                 let value = Vec2::new(x, y);
 
-                assert_eq!(merged_second.process(value), value * -2.0);
-                assert_eq!(merged_third.process(value), value * 3.0);
+                assert_eq!(pipeline.process(value), value * -2.0);
             }
         }
     }
 
     #[test]
     fn test_dual_axis_processor_from_list() {
-        assert_eq!(DualAxisProcessor::from(vec![]), DualAxisProcessor::None);
+        assert_eq!(
+            DualAxisProcessor::from(vec![]),
+            DualAxisProcessor::Pipeline(vec![])
+        );
 
         assert_eq!(
             DualAxisProcessor::from(vec![DualAxisInverted::ALL.into()]),
-            DualAxisProcessor::Inverted(DualAxisInverted::ALL)
+            DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
         );
 
         assert_eq!(
@@ -310,29 +181,10 @@ mod tests {
                 DualAxisInverted::ALL.into(),
                 DualAxisSensitivity::all(2.0).into(),
             ]),
-            DualAxisProcessor::OrderedPair(
-                Box::new(DualAxisProcessor::Inverted(DualAxisInverted::ALL)),
-                Box::new(DualAxisProcessor::Sensitivity(DualAxisSensitivity::all(
-                    2.0
-                ))),
-            )
-        );
-
-        assert_eq!(
-            DualAxisProcessor::from(vec![
-                DualAxisInverted::ALL.into(),
-                DualAxisSensitivity::all(2.0).into(),
-                DualAxisDeadZone::default().into(),
-            ]),
-            DualAxisProcessor::OrderedPair(
-                Box::new(DualAxisProcessor::OrderedPair(
-                    Box::new(DualAxisProcessor::Inverted(DualAxisInverted::ALL)),
-                    Box::new(DualAxisProcessor::Sensitivity(DualAxisSensitivity::all(
-                        2.0
-                    ))),
-                )),
-                Box::new(DualAxisProcessor::DeadZone(DualAxisDeadZone::default())),
-            )
+            DualAxisProcessor::Pipeline(vec![
+                Arc::new(DualAxisInverted::ALL.into()),
+                Arc::new(DualAxisSensitivity::all(2.0).into()),
+            ])
         );
     }
 }
