@@ -3,110 +3,116 @@
 use std::any::{Any, TypeId};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
-use std::sync::RwLock;
 
-use bevy::prelude::App;
+use bevy::prelude::{FromReflect, Reflect, ReflectDeserialize, ReflectSerialize, TypePath};
 use bevy::reflect::utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell};
 use bevy::reflect::{
-    erased_serde, FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize,
-    ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
-    TypePath, TypeRegistration, Typed, ValueInfo,
+    FromType, GetTypeRegistration, ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned,
+    ReflectRef, TypeInfo, TypeRegistration, Typed, ValueInfo,
 };
-use dyn_clone::DynClone;
+use bevy::utils::FloatOrd;
 use dyn_eq::DynEq;
-use dyn_hash::DynHash;
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
+use serde::{Deserialize, Serialize};
 
-use crate::typetag::RegisterTypeTag;
-
-pub use self::modifier::*;
-pub use self::pipeline::*;
+pub use self::custom::*;
 pub use self::range::*;
 
-mod modifier;
-mod pipeline;
+mod custom;
 mod range;
 
-/// A trait for processing single-axis input values,
+/// A processor for single-axis input values,
 /// accepting a `f32` input and producing a `f32` output.
-///
-/// # Examples
-///
-/// ```rust
-/// use std::hash::{Hash, Hasher};
-/// use bevy::prelude::*;
-/// use bevy::utils::FloatOrd;
-/// use serde::{Deserialize, Serialize};
-/// use leafwing_input_manager::prelude::*;
-///
-/// /// Doubles the input, takes the absolute value,
-/// /// and discards results that meet the specified condition.
-/// // If your processor includes fields not implemented Eq and Hash,
-/// // implementation is necessary as shown below.
-/// // Otherwise, you can derive Eq and Hash directly.
-/// #[derive(Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
-/// pub struct DoubleAbsoluteValueThenIgnored(pub f32);
-///
-/// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[serde_typetag]
-/// impl AxisProcessor for DoubleAbsoluteValueThenIgnored {
-///     fn process(&self, input_value: f32) -> f32 {
-///         // Implement the logic just like you would in a normal function.
-///
-///         // You can use other processors within this function.
-///         let value = AxisSensitivity(2.0).process(input_value);
-///
-///         let value = value.abs();
-///         if value == self.0 {
-///             0.0
-///         } else {
-///             value
-///         }
-///     }
-/// }
-///
-/// // Unfortunately, manual implementation is required due to the float field.
-/// impl Eq for DoubleAbsoluteValueThenIgnored {}
-/// impl Hash for DoubleAbsoluteValueThenIgnored {
-///     fn hash<H: Hasher>(&self, state: &mut H) {
-///         // Encapsulate the float field for hashing.
-///         FloatOrd(self.0).hash(state);
-///     }
-/// }
-///
-/// // Remember to register your processor - it will ensure everything works smoothly!
-/// let mut app = App::new();
-/// app.register_axis_processor::<DoubleAbsoluteValueThenIgnored>();
-///
-/// // Now you can use it!
-/// let processor = DoubleAbsoluteValueThenIgnored(4.0);
-///
-/// // Rejected!
-/// assert_eq!(processor.process(2.0), 0.0);
-/// assert_eq!(processor.process(-2.0), 0.0);
-///
-/// // Others are just doubled absolute value.
-/// assert_eq!(processor.process(6.0), 12.0);
-/// assert_eq!(processor.process(4.0), 8.0);
-/// assert_eq!(processor.process(0.0), 0.0);
-/// assert_eq!(processor.process(-4.0), 8.0);
-/// assert_eq!(processor.process(-6.0), 12.0);
-/// ```
-pub trait AxisProcessor:
-    Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
-{
-    /// Computes the result by processing the `input_value`.
-    fn process(&self, input_value: f32) -> f32;
+#[must_use]
+#[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
+pub enum AxisProcessor {
+    /// Flips the sign of input values, resulting in a directional reversal of control.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// assert_eq!(AxisProcessor::Inverted.process(2.5), -2.5);
+    /// assert_eq!(AxisProcessor::Inverted.process(-2.5), 2.5);
+    /// ```
+    Inverted,
+
+    /// Scales input values using a specified multiplier to fine-tune the responsiveness of control.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// // Doubled!
+    /// assert_eq!(AxisProcessor::Sensitivity(2.0).process(2.0), 4.0);
+    ///
+    /// // Halved!
+    /// assert_eq!(AxisProcessor::Sensitivity(0.5).process(2.0), 1.0);
+    ///
+    /// // Negated and halved!
+    /// assert_eq!(AxisProcessor::Sensitivity(-0.5).process(2.0), -1.0);
+    /// ```
+    Sensitivity(f32),
+
+    /// A wrapper around [`AxisBounds`] to represent value bounds.
+    ValueBounds(AxisBounds),
+
+    /// A wrapper around [`AxisExclusion`] to represent unscaled deadzone.
+    Exclusion(AxisExclusion),
+
+    /// A wrapper around [`AxisDeadZone`] to represent scaled deadzone.
+    DeadZone(AxisDeadZone),
+
+    /// Processes input values sequentially by chaining together two [`AxisProcessor`]s,
+    /// one for the current step and the other for the next step.
+    Sequential(Box<AxisProcessor>, Box<AxisProcessor>),
+
+    /// A user-defined processor that implements [`CustomAxisProcessor`].
+    Custom(Box<dyn CustomAxisProcessor>),
 }
 
-dyn_clone::clone_trait_object!(AxisProcessor);
-dyn_eq::eq_trait_object!(AxisProcessor);
-dyn_hash::hash_trait_object!(AxisProcessor);
+impl AxisProcessor {
+    /// Computes the result by processing the `input_value`.
+    #[must_use]
+    #[inline]
+    pub fn process(&self, input_value: f32) -> f32 {
+        match self {
+            Self::Inverted => -input_value,
+            Self::Sensitivity(sensitivity) => sensitivity * input_value,
+            Self::ValueBounds(bounds) => bounds.clamp(input_value),
+            Self::Exclusion(exclusion) => exclusion.exclude(input_value),
+            Self::DeadZone(deadzone) => deadzone.normalize(input_value),
+            Self::Sequential(current, next) => next.process(current.process(input_value)),
+            Self::Custom(processor) => processor.process(input_value),
+        }
+    }
 
-impl Reflect for Box<dyn AxisProcessor> {
+    /// Appends the given `next_processor` as the next processing step.
+    #[inline]
+    pub fn with_processor(self, next_processor: impl Into<AxisProcessor>) -> Self {
+        Self::Sequential(Box::new(self), Box::new(next_processor.into()))
+    }
+}
+
+impl Eq for AxisProcessor {}
+
+impl Hash for AxisProcessor {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(self).hash(state);
+        match self {
+            Self::Inverted => {}
+            Self::Sensitivity(sensitivity) => FloatOrd(*sensitivity).hash(state),
+            Self::ValueBounds(bounds) => bounds.hash(state),
+            Self::Exclusion(exclusion) => exclusion.hash(state),
+            Self::DeadZone(deadzone) => deadzone.hash(state),
+            Self::Sequential(current, next) => {
+                current.hash(state);
+                next.hash(state);
+            }
+            Self::Custom(processor) => processor.hash(state),
+        }
+    }
+}
+
+impl Reflect for Box<AxisProcessor> {
     fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
         Some(Self::type_info())
     }
@@ -138,7 +144,7 @@ impl Reflect for Box<dyn AxisProcessor> {
     fn apply(&mut self, value: &dyn Reflect) {
         let value = value.as_any();
         if let Some(value) = value.downcast_ref::<Self>() {
-            *self = value.clone();
+            self.clone_from(value);
         } else {
             panic!(
                 "Value is not a std::boxed::Box<dyn {}::AxisProcessor>.",
@@ -174,7 +180,7 @@ impl Reflect for Box<dyn AxisProcessor> {
 
     fn reflect_hash(&self) -> Option<u64> {
         let mut hasher = reflect_hasher();
-        let type_id = TypeId::of::<Box<dyn AxisProcessor>>();
+        let type_id = TypeId::of::<Self>();
         Hash::hash(&type_id, &mut hasher);
         Hash::hash(self, &mut hasher);
         Some(hasher.finish())
@@ -193,30 +199,30 @@ impl Reflect for Box<dyn AxisProcessor> {
     }
 }
 
-impl Typed for Box<dyn AxisProcessor> {
+impl Typed for Box<AxisProcessor> {
     fn type_info() -> &'static TypeInfo {
         static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
         CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
     }
 }
 
-impl TypePath for Box<dyn AxisProcessor> {
+impl TypePath for Box<AxisProcessor> {
     fn type_path() -> &'static str {
         static CELL: GenericTypePathCell = GenericTypePathCell::new();
         CELL.get_or_insert::<Self, _>(|| {
             {
-                format!("std::boxed::Box(dyn {}::AxisProcessor)", module_path!())
+                format!("std::boxed::Box<{}::AxisProcessor>", module_path!())
             }
         })
     }
 
     fn short_type_path() -> &'static str {
         static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| "Box(dyn AxisProcessor)".to_string())
+        CELL.get_or_insert::<Self, _>(|| "Box<AxisProcessor>".to_string())
     }
 
     fn type_ident() -> Option<&'static str> {
-        Some("AxisProcessor")
+        Some("Box<AxisProcessor>")
     }
 
     fn crate_name() -> Option<&'static str> {
@@ -228,7 +234,7 @@ impl TypePath for Box<dyn AxisProcessor> {
     }
 }
 
-impl GetTypeRegistration for Box<dyn AxisProcessor> {
+impl GetTypeRegistration for Box<AxisProcessor> {
     fn get_type_registration() -> TypeRegistration {
         let mut registration = TypeRegistration::of::<Self>();
         registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
@@ -238,96 +244,37 @@ impl GetTypeRegistration for Box<dyn AxisProcessor> {
     }
 }
 
-impl FromReflect for Box<dyn AxisProcessor> {
+impl FromReflect for Box<AxisProcessor> {
     fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
         Some(reflect.as_any().downcast_ref::<Self>()?.clone())
-    }
-}
-
-impl<'a> Serialize for dyn AxisProcessor + 'a {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // Check that `AxisProcessor` has `erased_serde::Serialize` as a super trait, preventing infinite recursion at runtime.
-        const fn __check_erased_serialize_super_trait<T: ?Sized + AxisProcessor>() {
-            require_erased_serialize_impl::<T>();
-        }
-        serialize_trait_object(serializer, self.reflect_short_type_path(), self)
-    }
-}
-
-impl<'de> Deserialize<'de> for Box<dyn AxisProcessor> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let registry = unsafe { PROCESSOR_REGISTRY.read().unwrap() };
-        registry.deserialize_trait_object(deserializer)
-    }
-}
-
-/// Registry of deserializers for [`AxisProcessor`]s.
-static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn AxisProcessor>>> =
-    Lazy::new(|| RwLock::new(MapRegistry::new("AxisProcessor")));
-
-/// A trait for registering a specific [`AxisProcessor`].
-pub trait RegisterAxisProcessor {
-    /// Registers the specified [`AxisProcessor`].
-    fn register_axis_processor<'de, T>(&mut self) -> &mut Self
-    where
-        T: RegisterTypeTag<'de, dyn AxisProcessor> + GetTypeRegistration;
-}
-
-impl RegisterAxisProcessor for App {
-    #[allow(unsafe_code)]
-    fn register_axis_processor<'de, T>(&mut self) -> &mut Self
-    where
-        T: RegisterTypeTag<'de, dyn AxisProcessor> + GetTypeRegistration,
-    {
-        let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
-        T::register_typetag(&mut registry);
-        self.register_type::<T>();
-        self
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_test::{assert_tokens, Token};
 
     #[test]
-    fn test_serde_dual_axis_processor() {
-        let mut app = App::new();
-        app.register_axis_processor::<AxisInverted>();
-        app.register_axis_processor::<AxisSensitivity>();
+    fn test_axis_inversion_processor() {
+        for value in -300..300 {
+            let value = value as f32 * 0.01;
 
-        let inversion: Box<dyn AxisProcessor> = Box::new(AxisInverted);
-        assert_tokens(
-            &inversion,
-            &[
-                Token::Map { len: Some(1) },
-                Token::BorrowedStr("AxisInverted"),
-                Token::UnitStruct {
-                    name: "AxisInverted",
-                },
-                Token::MapEnd,
-            ],
-        );
+            assert_eq!(AxisProcessor::Inverted.process(value), -value);
+            assert_eq!(AxisProcessor::Inverted.process(-value), value);
+        }
+    }
 
-        let sensitivity: Box<dyn AxisProcessor> = Box::new(AxisSensitivity(5.0));
-        assert_tokens(
-            &sensitivity,
-            &[
-                Token::Map { len: Some(1) },
-                Token::BorrowedStr("AxisSensitivity"),
-                Token::NewtypeStruct {
-                    name: "AxisSensitivity",
-                },
-                Token::F32(5.0),
-                Token::MapEnd,
-            ],
-        );
+    #[test]
+    fn test_axis_sensitivity_processor() {
+        for value in -300..300 {
+            let value = value as f32 * 0.01;
+
+            for sensitivity in -300..300 {
+                let sensitivity = sensitivity as f32 * 0.01;
+
+                let processor = AxisProcessor::Sensitivity(sensitivity);
+                assert_eq!(processor.process(value), sensitivity * value);
+            }
+        }
     }
 }

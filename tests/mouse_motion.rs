@@ -211,7 +211,7 @@ fn mouse_motion_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
         value: Some(0.0),
-        processor: Some(Box::new(deadzone)),
+        processor: Some(deadzone.into()),
     };
     app.send_input(input);
     app.update();

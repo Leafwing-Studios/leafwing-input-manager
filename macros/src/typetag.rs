@@ -19,14 +19,16 @@ pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> TokenStream {
 
     let trait_path = &trait_.1;
 
-    let self_ty = input.self_ty.clone();
+    let where_clause = &input.generics.where_clause;
+    let generics_params = &input.generics.params;
 
-    let ident = match type_name(&self_ty) {
+    let self_ty = &input.self_ty;
+
+    let ident = match type_name(self_ty) {
         Some(name) => quote!(#name),
         None => {
             let impl_token = input.impl_token;
-            let ty = &input.self_ty;
-            let span = quote!(#impl_token, #ty);
+            let span = quote!(#impl_token, #self_ty);
             let msg = "expected explicit name for Type";
             return Error::new_spanned(span, msg).to_compile_error();
         }
@@ -37,7 +39,7 @@ pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> TokenStream {
     quote! {
         #input
 
-        impl<'de> #crate_path::typetag::RegisterTypeTag<'de, dyn #trait_path> for #self_ty {
+        impl<'de, #generics_params> #crate_path::typetag::RegisterTypeTag<'de, dyn #trait_path> for #self_ty #where_clause {
             fn register_typetag(
                 registry: &mut #crate_path::typetag::MapRegistry<dyn #trait_path>,
             ) {

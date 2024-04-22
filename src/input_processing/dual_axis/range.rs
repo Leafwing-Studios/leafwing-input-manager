@@ -4,11 +4,9 @@ use std::fmt::Debug;
 use std::hash::Hash;
 
 use bevy::prelude::*;
-use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
-use crate as leafwing_input_manager;
 use crate::input_processing::single_axis::*;
 
 /// Specifies a square-shaped region defining acceptable ranges for valid dual-axis inputs,
@@ -38,8 +36,8 @@ use crate::input_processing::single_axis::*;
 ///         let y = y as f32 * 0.01;
 ///         let value = Vec2::new(x, y);
 ///
-///         assert_eq!(bounds.process(value).x, bounds_x.process(x));
-///         assert_eq!(bounds.process(value).y, bounds_y.process(y));
+///         assert_eq!(bounds.clamp(value).x, bounds_x.clamp(x));
+///         assert_eq!(bounds.clamp(value).y, bounds_y.clamp(y));
 ///     }
 /// }
 /// ```
@@ -52,27 +50,6 @@ pub struct DualAxisBounds {
 
     /// The [`AxisBounds`] for the Y-axis inputs.
     pub(crate) bounds_y: AxisBounds,
-}
-
-#[serde_typetag]
-impl DualAxisProcessor for DualAxisBounds {
-    /// Clamps `input_value` within the bounds.
-    #[must_use]
-    #[inline]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        Vec2::new(
-            self.bounds_x.process(input_value.x),
-            self.bounds_y.process(input_value.y),
-        )
-    }
-}
-
-impl Default for DualAxisBounds {
-    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-1.0, 1.0]` on both axes.
-    #[inline]
-    fn default() -> Self {
-        AxisBounds::default().extend_dual()
-    }
 }
 
 impl DualAxisBounds {
@@ -307,6 +284,30 @@ impl DualAxisBounds {
             self.bounds_y.contains(input_value.y),
         )
     }
+
+    /// Clamps `input_value` within the bounds.
+    #[must_use]
+    #[inline]
+    pub fn clamp(&self, input_value: Vec2) -> Vec2 {
+        Vec2::new(
+            self.bounds_x.clamp(input_value.x),
+            self.bounds_y.clamp(input_value.y),
+        )
+    }
+}
+
+impl Default for DualAxisBounds {
+    /// Creates a [`DualAxisBounds`] that restricts values within the range `[-1.0, 1.0]` on both axes.
+    #[inline]
+    fn default() -> Self {
+        AxisBounds::default().extend_dual()
+    }
+}
+
+impl From<DualAxisBounds> for DualAxisProcessor {
+    fn from(value: DualAxisBounds) -> Self {
+        Self::ValueBounds(value)
+    }
 }
 
 impl AxisBounds {
@@ -356,9 +357,9 @@ impl AxisBounds {
     }
 }
 
-impl From<AxisBounds> for DualAxisBounds {
+impl From<AxisBounds> for DualAxisProcessor {
     fn from(bounds: AxisBounds) -> Self {
-        bounds.extend_dual()
+        Self::ValueBounds(bounds.extend_dual())
     }
 }
 
@@ -389,8 +390,8 @@ impl From<AxisBounds> for DualAxisBounds {
 ///         let y = y as f32 * 0.01;
 ///         let value = Vec2::new(x, y);
 ///
-///         assert_eq!(exclusion.process(value).x, exclusion_x.process(x));
-///         assert_eq!(exclusion.process(value).y, exclusion_y.process(y));
+///         assert_eq!(exclusion.exclude(value).x, exclusion_x.exclude(x));
+///         assert_eq!(exclusion.exclude(value).y, exclusion_y.exclude(y));
 ///     }
 /// }
 /// ```
@@ -403,27 +404,6 @@ pub struct DualAxisExclusion {
 
     /// The [`AxisExclusion`] for the Y-axis inputs.
     pub(crate) exclusion_y: AxisExclusion,
-}
-
-#[serde_typetag]
-impl DualAxisProcessor for DualAxisExclusion {
-    /// Excludes values within the specified region.
-    #[must_use]
-    #[inline]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        Vec2::new(
-            self.exclusion_x.process(input_value.x),
-            self.exclusion_y.process(input_value.y),
-        )
-    }
-}
-
-impl Default for DualAxisExclusion {
-    /// Creates a [`DualAxisExclusion`] that excludes input values within `[-1.0, 1.0]` on both axes.
-    #[inline]
-    fn default() -> Self {
-        AxisExclusion::default().extend_dual()
-    }
 }
 
 impl DualAxisExclusion {
@@ -596,9 +576,33 @@ impl DualAxisExclusion {
         )
     }
 
+    /// Excludes values within the specified region.
+    #[must_use]
+    #[inline]
+    pub fn exclude(&self, input_value: Vec2) -> Vec2 {
+        Vec2::new(
+            self.exclusion_x.exclude(input_value.x),
+            self.exclusion_y.exclude(input_value.y),
+        )
+    }
+
     /// Creates a [`DualAxisDeadZone`] using `self` as the exclusion range.
     pub fn scaled(self) -> DualAxisDeadZone {
-        self.into()
+        DualAxisDeadZone::new(self.exclusion_x.min_max(), self.exclusion_y.min_max())
+    }
+}
+
+impl Default for DualAxisExclusion {
+    /// Creates a [`DualAxisExclusion`] that excludes input values within `[-1.0, 1.0]` on both axes.
+    #[inline]
+    fn default() -> Self {
+        AxisExclusion::default().extend_dual()
+    }
+}
+
+impl From<DualAxisExclusion> for DualAxisProcessor {
+    fn from(value: DualAxisExclusion) -> Self {
+        Self::Exclusion(value)
     }
 }
 
@@ -649,9 +653,9 @@ impl AxisExclusion {
     }
 }
 
-impl From<AxisExclusion> for DualAxisExclusion {
+impl From<AxisExclusion> for DualAxisProcessor {
     fn from(exclusion: AxisExclusion) -> Self {
-        exclusion.extend_dual()
+        Self::Exclusion(exclusion.extend_dual())
     }
 }
 
@@ -689,8 +693,8 @@ impl From<AxisExclusion> for DualAxisExclusion {
 ///         let y = y as f32 * 0.01;
 ///         let value = Vec2::new(x, y);
 ///
-///         assert_eq!(deadzone.process(value).x, deadzone_x.process(x));
-///         assert_eq!(deadzone.process(value).y, deadzone_y.process(y));
+///         assert_eq!(deadzone.normalize(value).x, deadzone_x.normalize(x));
+///         assert_eq!(deadzone.normalize(value).y, deadzone_y.normalize(y));
 ///     }
 /// }
 /// ```
@@ -703,26 +707,6 @@ pub struct DualAxisDeadZone {
 
     /// The [`AxisDeadZone`] for the Y-axis inputs.
     pub(crate) deadzone_y: AxisDeadZone,
-}
-
-#[serde_typetag]
-impl DualAxisProcessor for DualAxisDeadZone {
-    /// Normalizes input values into the live zone.
-    #[must_use]
-    #[inline]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        Vec2::new(
-            self.deadzone_x.process(input_value.x),
-            self.deadzone_y.process(input_value.y),
-        )
-    }
-}
-
-impl Default for DualAxisDeadZone {
-    /// Creates a [`DualAxisDeadZone`] that excludes input values within the deadzone `[-0.1, 0.1]` on both axes.
-    fn default() -> Self {
-        AxisDeadZone::default().extend_dual()
-    }
 }
 
 impl DualAxisDeadZone {
@@ -939,6 +923,29 @@ impl DualAxisDeadZone {
             self.deadzone_y.within_livezone_upper(input_value.y),
         )
     }
+
+    /// Normalizes input values into the live zone.
+    #[must_use]
+    #[inline]
+    pub fn normalize(&self, input_value: Vec2) -> Vec2 {
+        Vec2::new(
+            self.deadzone_x.normalize(input_value.x),
+            self.deadzone_y.normalize(input_value.y),
+        )
+    }
+}
+
+impl Default for DualAxisDeadZone {
+    /// Creates a [`DualAxisDeadZone`] that excludes input values within the deadzone `[-0.1, 0.1]` on both axes.
+    fn default() -> Self {
+        AxisDeadZone::default().extend_dual()
+    }
+}
+
+impl From<DualAxisDeadZone> for DualAxisProcessor {
+    fn from(value: DualAxisDeadZone) -> Self {
+        Self::DeadZone(value)
+    }
 }
 
 impl AxisDeadZone {
@@ -988,9 +995,9 @@ impl AxisDeadZone {
     }
 }
 
-impl From<AxisDeadZone> for DualAxisDeadZone {
+impl From<AxisDeadZone> for DualAxisProcessor {
     fn from(deadzone: AxisDeadZone) -> Self {
-        deadzone.extend_dual()
+        Self::DeadZone(deadzone.extend_dual())
     }
 }
 
@@ -1020,10 +1027,19 @@ mod tests {
             let bounds_x = AxisBounds::new(x_min, x_max);
             let bounds_y = AxisBounds::new(y_min, y_max);
             assert_eq!(bounds_x.extend_dual_with_y(bounds_y), bounds);
+            assert_eq!(bounds_y.extend_dual_with_x(bounds_x), bounds);
 
             let (bx, by) = bounds.bounds();
             assert_eq!(bx, bounds_x);
             assert_eq!(by, bounds_y);
+
+            assert_eq!(
+                DualAxisProcessor::from(bounds_x),
+                DualAxisProcessor::ValueBounds(DualAxisBounds::all(x_min, x_max))
+            );
+
+            let processor = DualAxisProcessor::ValueBounds(bounds);
+            assert_eq!(DualAxisProcessor::from(bounds), processor);
 
             for x in -300..300 {
                 let x = x as f32 * 0.01;
@@ -1031,11 +1047,13 @@ mod tests {
                     let y = y as f32 * 0.01;
                     let value = Vec2::new(x, y);
 
+                    assert_eq!(processor.process(value), bounds.clamp(value));
+
                     let expected = BVec2::new(bounds_x.contains(x), bounds_y.contains(y));
                     assert_eq!(bounds.contains(value), expected);
 
-                    let expected = Vec2::new(bounds_x.process(x), bounds_y.process(y));
-                    assert_eq!(bounds.process(value), expected);
+                    let expected = Vec2::new(bounds_x.clamp(x), bounds_y.clamp(y));
+                    assert_eq!(bounds.clamp(value), expected);
                 }
             }
         }
@@ -1100,10 +1118,8 @@ mod tests {
         let bounds_y = AxisBounds::new(-1.0, 1.5);
 
         test_bounds(bounds_x.extend_dual(), (-2.0, 2.5), (-2.0, 2.5));
-        test_bounds(bounds_x.into(), (-2.0, 2.5), (-2.0, 2.5));
 
         test_bounds(bounds_y.extend_dual(), (-1.0, 1.5), (-1.0, 1.5));
-        test_bounds(bounds_y.into(), (-1.0, 1.5), (-1.0, 1.5));
 
         test_bounds(bounds_x.extend_dual_only_x(), (-2.0, 2.5), full_range);
 
@@ -1146,11 +1162,24 @@ mod tests {
             assert_eq!(ex, exclusion_x);
             assert_eq!(ey, exclusion_y);
 
+            assert_eq!(
+                DualAxisProcessor::from(exclusion_x),
+                DualAxisProcessor::Exclusion(DualAxisExclusion::all(
+                    x_negative_max,
+                    x_positive_min
+                ))
+            );
+
+            let processor = DualAxisProcessor::Exclusion(exclusion);
+            assert_eq!(DualAxisProcessor::from(exclusion), processor);
+
             for x in -300..300 {
                 let x = x as f32 * 0.01;
                 for y in -300..300 {
                     let y = y as f32 * 0.01;
                     let value = Vec2::new(x, y);
+
+                    assert_eq!(processor.process(value), exclusion.exclude(value));
 
                     assert_eq!(
                         exclusion.contains(value),
@@ -1158,8 +1187,8 @@ mod tests {
                     );
 
                     assert_eq!(
-                        exclusion.process(value),
-                        Vec2::new(exclusion_x.process(x), exclusion_y.process(y))
+                        exclusion.exclude(value),
+                        Vec2::new(exclusion_x.exclude(x), exclusion_y.exclude(y))
                     );
                 }
             }
@@ -1201,8 +1230,8 @@ mod tests {
         let exclusion_y = AxisExclusion::new(-0.1, 0.4);
 
         test_exclusion(exclusion_x.extend_dual(), (-0.2, 0.3), (-0.2, 0.3));
-        test_exclusion(exclusion_x.into(), (-0.2, 0.3), (-0.2, 0.3));
-        test_exclusion(exclusion_y.into(), (-0.1, 0.4), (-0.1, 0.4));
+
+        test_exclusion(exclusion_y.extend_dual(), (-0.1, 0.4), (-0.1, 0.4));
 
         test_exclusion(exclusion_x.extend_dual_only_x(), (-0.2, 0.3), zero_size);
 
@@ -1251,11 +1280,21 @@ mod tests {
             assert_eq!(dx, deadzone_x);
             assert_eq!(dy, deadzone_y);
 
+            assert_eq!(
+                DualAxisProcessor::from(deadzone_x),
+                DualAxisProcessor::DeadZone(DualAxisDeadZone::all(x_negative_max, x_positive_min))
+            );
+
+            let processor = DualAxisProcessor::DeadZone(deadzone);
+            assert_eq!(DualAxisProcessor::from(deadzone), processor);
+
             for x in -300..300 {
                 let x = x as f32 * 0.01;
                 for y in -300..300 {
                     let y = y as f32 * 0.01;
                     let value = Vec2::new(x, y);
+
+                    assert_eq!(processor.process(value), deadzone.normalize(value));
 
                     assert_eq!(
                         deadzone.within_exclusion(value),
@@ -1287,8 +1326,8 @@ mod tests {
                     );
 
                     assert_eq!(
-                        deadzone.process(value),
-                        Vec2::new(deadzone_x.process(x), deadzone_y.process(y))
+                        deadzone.normalize(value),
+                        Vec2::new(deadzone_x.normalize(x), deadzone_y.normalize(y))
                     );
                 }
             }
@@ -1325,5 +1364,28 @@ mod tests {
 
         let deadzone = DualAxisDeadZone::magnitude_only_y(0.3);
         test_deadzone(deadzone, zero_size, (-0.3, 0.3));
+
+        let deadzone_x = AxisDeadZone::new(-0.2, 0.3);
+        let deadzone_y = AxisDeadZone::new(-0.1, 0.4);
+
+        test_deadzone(deadzone_x.extend_dual(), (-0.2, 0.3), (-0.2, 0.3));
+
+        test_deadzone(deadzone_y.extend_dual(), (-0.1, 0.4), (-0.1, 0.4));
+
+        test_deadzone(deadzone_x.extend_dual_only_x(), (-0.2, 0.3), zero_size);
+
+        test_deadzone(deadzone_y.extend_dual_only_y(), zero_size, (-0.1, 0.4));
+
+        test_deadzone(
+            deadzone_x.extend_dual_with_y(deadzone_y),
+            (-0.2, 0.3),
+            (-0.1, 0.4),
+        );
+
+        test_deadzone(
+            deadzone_y.extend_dual_with_x(deadzone_x),
+            (-0.2, 0.3),
+            (-0.1, 0.4),
+        );
     }
 }

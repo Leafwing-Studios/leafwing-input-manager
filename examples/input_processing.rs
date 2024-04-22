@@ -13,7 +13,6 @@ fn main() {
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
     Move,
-    LookAround,
 }
 
 #[derive(Component)]
@@ -42,17 +41,6 @@ fn spawn_player(mut commands: Commands) {
                 .replace_processor(CircleDeadZone::default())
                 // Or remove the processor directly, leaving no processor applied.
                 .no_processor(),
-        )
-        .insert(
-            Action::LookAround,
-            // You can also add a pipeline to handle axis-like user inputs.
-            DualAxis::mouse_motion().with_processor(
-                DualAxisProcessingPipeline::default()
-                    // The first processor is a circular deadzone.
-                    .with(CircleDeadZone::new(0.1))
-                    // The next processor doubles inputs normalized by the deadzone.
-                    .with(DualAxisSensitivity::all(2.0)),
-            ),
         );
     commands
         .spawn(InputManagerBundle::with_map(input_map))
