@@ -3,8 +3,6 @@
 //! This module simplifies input handling in your application by providing processors
 //! for refining and manipulating values before reaching the application logic.
 //!
-//! # Processor Enums
-//!
 //! The foundation of this module lies in these enums.
 //!
 //! - [`AxisProcessor`]: Handles `f32` values for single-axis inputs.
