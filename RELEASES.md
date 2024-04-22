@@ -43,6 +43,9 @@
   - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad`.
   - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
   - added `serde_typetag` procedural macro attribute for processor type tagging.
+- made the dependency on bevy's `bevy_gilrs` feature optional.
+  - it is still enabled by leafwing-input-manager's default features.
+  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
 
 ### Bugs
 
