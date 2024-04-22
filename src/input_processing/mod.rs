@@ -28,10 +28,10 @@
 //! - [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] for single-axis inputs.
 //! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for single-axis inputs.
 //!
-//! They actually create these [ordered pairs](https://en.wikipedia.org/wiki/Cons).
+//! They create ordered pairs, akin to the [cons cells](https://en.wikipedia.org/wiki/Cons).
 //!
-//! - [`AxisProcessor::OrderedPair`]: Transforms single-axis input values with two [`AxisProcessor`]s.
-//! - [`DualAxisProcessor::OrderedPair`]: Transforms dual-axis input values with two [`DualAxisProcessor`]s.
+//! - [`AxisProcessor::OrderedPair`]: Combines two [`AxisProcessor`]s for single-axis input values.
+//! - [`DualAxisProcessor::OrderedPair`]: Combines two [`DualAxisProcessor`]s for dual-axis input values.
 //!
 //! ## Inversion
 //!

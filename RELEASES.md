@@ -16,7 +16,7 @@
     - Pipelines: Handle input values sequentially through a sequence of processors, created by these methods.
       - `AxisProcessor::with_processor` or `From<Vec<AxisProcessor>>::from` for single-axis inputs.
       - `DualAxisProcessor::with_processor` or `From<Vec<DualAxisProcessor>>::from` for single-axis inputs.
-    - Ordered Pairs: Combine two processors as a ordered pipeline.
+    - Ordered Pairs: Combine two processors as an ordered pipeline.
       - `AxisProcessor::OrderedPair`: Combine two processors for single-axis values.
       - `DualAxisProcessor::OrderedPair`: Combine two processors for dual-axis values.
     - Inversion: Reverses control (positive becomes negative, etc.)
