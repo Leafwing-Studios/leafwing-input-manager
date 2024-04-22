@@ -26,6 +26,9 @@ mod range;
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum AxisProcessor {
+    /// No processor is applied.
+    None,
+
     /// Flips the sign of input values, resulting in a directional reversal of control.
     ///
     /// ```rust
@@ -61,9 +64,36 @@ pub enum AxisProcessor {
     /// A wrapper around [`AxisDeadZone`] to represent scaled deadzone.
     DeadZone(AxisDeadZone),
 
+    // Using a [`Vec`] directly here causes a compiler error (E0275) due to an overflow
+    // while evaluating the requirement `Vec<AxisProcessor>: bevy::prelude::FromReflect`.
     /// Processes input values sequentially by chaining together two [`AxisProcessor`]s,
     /// one for the current step and the other for the next step.
-    Sequential(Box<AxisProcessor>, Box<AxisProcessor>),
+    ///
+    /// For a straightforward creation of a [`AxisProcessor::OrderedPair`],
+    /// you can use [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] methods.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// let expected = AxisProcessor::OrderedPair(
+    ///     Box::new(AxisProcessor::Inverted),
+    ///     Box::new(AxisProcessor::Sensitivity(2.0)),
+    /// );
+    ///
+    /// assert_eq!(
+    ///     expected,
+    ///     AxisProcessor::Inverted.with_processor(AxisProcessor::Sensitivity(2.0))
+    /// );
+    ///
+    /// assert_eq!(
+    ///     expected,
+    ///     AxisProcessor::from(vec![
+    ///         AxisProcessor::Inverted,
+    ///         AxisProcessor::Sensitivity(2.0),
+    ///     ])
+    /// );
+    /// ```
+    OrderedPair(Box<AxisProcessor>, Box<AxisProcessor>),
 
     /// A user-defined processor that implements [`CustomAxisProcessor`].
     Custom(Box<dyn CustomAxisProcessor>),
@@ -75,12 +105,13 @@ impl AxisProcessor {
     #[inline]
     pub fn process(&self, input_value: f32) -> f32 {
         match self {
+            Self::None => input_value,
             Self::Inverted => -input_value,
             Self::Sensitivity(sensitivity) => sensitivity * input_value,
             Self::ValueBounds(bounds) => bounds.clamp(input_value),
             Self::Exclusion(exclusion) => exclusion.exclude(input_value),
             Self::DeadZone(deadzone) => deadzone.normalize(input_value),
-            Self::Sequential(current, next) => next.process(current.process(input_value)),
+            Self::OrderedPair(current, next) => next.process(current.process(input_value)),
             Self::Custom(processor) => processor.process(input_value),
         }
     }
@@ -88,7 +119,23 @@ impl AxisProcessor {
     /// Appends the given `next_processor` as the next processing step.
     #[inline]
     pub fn with_processor(self, next_processor: impl Into<AxisProcessor>) -> Self {
-        Self::Sequential(Box::new(self), Box::new(next_processor.into()))
+        let other = next_processor.into();
+        match (&self, &other) {
+            (Self::None, Self::None) => Self::None,
+            (_, Self::None) => self,
+            (Self::None, _) => other,
+            (_, _) => Self::OrderedPair(Box::new(self), Box::new(other)),
+        }
+    }
+}
+
+impl From<Vec<AxisProcessor>> for AxisProcessor {
+    fn from(value: Vec<AxisProcessor>) -> Self {
+        let mut processor = Self::None;
+        for p in &value {
+            processor = processor.with_processor(p.clone());
+        }
+        processor
     }
 }
 
@@ -98,12 +145,13 @@ impl Hash for AxisProcessor {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
         match self {
+            Self::None => {}
             Self::Inverted => {}
             Self::Sensitivity(sensitivity) => FloatOrd(*sensitivity).hash(state),
             Self::ValueBounds(bounds) => bounds.hash(state),
             Self::Exclusion(exclusion) => exclusion.hash(state),
             Self::DeadZone(deadzone) => deadzone.hash(state),
-            Self::Sequential(current, next) => {
+            Self::OrderedPair(current, next) => {
                 current.hash(state);
                 next.hash(state);
             }
@@ -276,5 +324,58 @@ mod tests {
                 assert_eq!(processor.process(value), sensitivity * value);
             }
         }
+    }
+
+    #[test]
+    fn test_axis_processor_ordered_pair() {
+        let first = Box::new(AxisProcessor::Inverted);
+        let second = Box::new(AxisProcessor::Sensitivity(2.0));
+        let merged_second = AxisProcessor::OrderedPair(first, second);
+
+        let third = Box::new(AxisProcessor::Sensitivity(-1.5));
+        let merged_third = AxisProcessor::OrderedPair(Box::new(merged_second.clone()), third);
+
+        for value in -300..300 {
+            let value = value as f32 * 0.01;
+
+            assert_eq!(merged_second.process(value), value * -2.0);
+            assert_eq!(merged_third.process(value), value * 3.0);
+        }
+    }
+
+    #[test]
+    fn test_axis_processor_from_list() {
+        assert_eq!(AxisProcessor::from(vec![]), AxisProcessor::None);
+
+        assert_eq!(
+            AxisProcessor::from(vec![AxisProcessor::Inverted]),
+            AxisProcessor::Inverted
+        );
+
+        assert_eq!(
+            AxisProcessor::from(vec![
+                AxisProcessor::Inverted,
+                AxisProcessor::Sensitivity(2.0),
+            ]),
+            AxisProcessor::OrderedPair(
+                Box::new(AxisProcessor::Inverted),
+                Box::new(AxisProcessor::Sensitivity(2.0)),
+            )
+        );
+
+        assert_eq!(
+            AxisProcessor::from(vec![
+                AxisProcessor::Inverted,
+                AxisProcessor::Sensitivity(2.0),
+                AxisDeadZone::default().into(),
+            ]),
+            AxisProcessor::OrderedPair(
+                Box::new(AxisProcessor::OrderedPair(
+                    Box::new(AxisProcessor::Inverted),
+                    Box::new(AxisProcessor::Sensitivity(2.0)),
+                )),
+                Box::new(AxisProcessor::DeadZone(AxisDeadZone::default())),
+            )
+        );
     }
 }

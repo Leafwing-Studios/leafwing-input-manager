@@ -29,6 +29,9 @@ mod range;
 #[non_exhaustive]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum DualAxisProcessor {
+    /// No processor is applied.
+    None,
+
     /// A wrapper around [`DualAxisInverted`] to represent inversion.
     Inverted(DualAxisInverted),
 
@@ -53,9 +56,35 @@ pub enum DualAxisProcessor {
     /// A wrapper around [`CircleDeadZone`] to represent scaled deadzone.
     CircleDeadZone(CircleDeadZone),
 
+    // Using a [`Vec`] directly here causes a compiler error (E0275) due to an overflow
+    // while evaluating the requirement `Vec<DualAxisProcessor>: bevy::prelude::FromReflect`.
     /// Processes input values sequentially by chaining together two [`DualAxisProcessor`]s,
     /// one for the current step and the other for the next step.
-    Sequential(Box<DualAxisProcessor>, Box<DualAxisProcessor>),
+    ///
+    /// For a straightforward creation of a [`DualAxisProcessor::OrderedPair`],
+    /// you can use [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] methods.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// let expected = DualAxisProcessor::OrderedPair(
+    ///     Box::new(DualAxisInverted::ALL.into()),
+    ///     Box::new(DualAxisSensitivity::all(2.0).into()),
+    /// );
+    ///
+    /// assert_eq!(
+    ///     expected,
+    ///     DualAxisProcessor::from(DualAxisInverted::ALL).with_processor(DualAxisSensitivity::all(2.0))
+    /// );
+    ///
+    /// assert_eq!(
+    ///     expected,
+    ///     DualAxisProcessor::from(vec![
+    ///         DualAxisInverted::ALL.into(),
+    ///         DualAxisSensitivity::all(2.0).into(),
+    ///     ])
+    /// );
+    OrderedPair(Box<DualAxisProcessor>, Box<DualAxisProcessor>),
 
     /// A user-defined processor that implements [`CustomDualAxisProcessor`].
     Custom(Box<dyn CustomDualAxisProcessor>),
@@ -67,6 +96,7 @@ impl DualAxisProcessor {
     #[inline]
     pub fn process(&self, input_value: Vec2) -> Vec2 {
         match self {
+            Self::None => input_value,
             Self::Inverted(inversion) => inversion.invert(input_value),
             Self::Sensitivity(sensitivity) => sensitivity.scale(input_value),
             Self::ValueBounds(bounds) => bounds.clamp(input_value),
@@ -75,7 +105,7 @@ impl DualAxisProcessor {
             Self::CircleBounds(bounds) => bounds.clamp(input_value),
             Self::CircleExclusion(exclusion) => exclusion.exclude(input_value),
             Self::CircleDeadZone(deadzone) => deadzone.normalize(input_value),
-            Self::Sequential(current, next) => next.process(current.process(input_value)),
+            Self::OrderedPair(current, next) => next.process(current.process(input_value)),
             Self::Custom(processor) => processor.process(input_value),
         }
     }
@@ -83,7 +113,23 @@ impl DualAxisProcessor {
     /// Appends the given `next_processor` as the next processing step.
     #[inline]
     pub fn with_processor(self, next_processor: impl Into<DualAxisProcessor>) -> Self {
-        Self::Sequential(Box::new(self), Box::new(next_processor.into()))
+        let other = next_processor.into();
+        match (&self, &other) {
+            (Self::None, Self::None) => Self::None,
+            (_, Self::None) => self,
+            (Self::None, _) => other,
+            (_, _) => Self::OrderedPair(Box::new(self), Box::new(other)),
+        }
+    }
+}
+
+impl From<Vec<DualAxisProcessor>> for DualAxisProcessor {
+    fn from(value: Vec<DualAxisProcessor>) -> Self {
+        let mut processor = Self::None;
+        for p in &value {
+            processor = processor.with_processor(p.clone());
+        }
+        processor
     }
 }
 
@@ -222,5 +268,71 @@ impl GetTypeRegistration for Box<DualAxisProcessor> {
 impl FromReflect for Box<DualAxisProcessor> {
     fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
         Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_dual_axis_processor_ordered_pair() {
+        let first = Box::new(DualAxisInverted::ALL.into());
+        let second = Box::new(DualAxisSensitivity::all(2.0).into());
+        let merged_second = DualAxisProcessor::OrderedPair(first, second);
+
+        let third = Box::new(DualAxisSensitivity::all(-1.5).into());
+        let merged_third = DualAxisProcessor::OrderedPair(Box::new(merged_second.clone()), third);
+
+        for x in -300..300 {
+            let x = x as f32 * 0.01;
+            for y in -300..300 {
+                let y = y as f32 * 0.01;
+                let value = Vec2::new(x, y);
+
+                assert_eq!(merged_second.process(value), value * -2.0);
+                assert_eq!(merged_third.process(value), value * 3.0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_dual_axis_processor_from_list() {
+        assert_eq!(DualAxisProcessor::from(vec![]), DualAxisProcessor::None);
+
+        assert_eq!(
+            DualAxisProcessor::from(vec![DualAxisInverted::ALL.into()]),
+            DualAxisProcessor::Inverted(DualAxisInverted::ALL)
+        );
+
+        assert_eq!(
+            DualAxisProcessor::from(vec![
+                DualAxisInverted::ALL.into(),
+                DualAxisSensitivity::all(2.0).into(),
+            ]),
+            DualAxisProcessor::OrderedPair(
+                Box::new(DualAxisProcessor::Inverted(DualAxisInverted::ALL)),
+                Box::new(DualAxisProcessor::Sensitivity(DualAxisSensitivity::all(
+                    2.0
+                ))),
+            )
+        );
+
+        assert_eq!(
+            DualAxisProcessor::from(vec![
+                DualAxisInverted::ALL.into(),
+                DualAxisSensitivity::all(2.0).into(),
+                DualAxisDeadZone::default().into(),
+            ]),
+            DualAxisProcessor::OrderedPair(
+                Box::new(DualAxisProcessor::OrderedPair(
+                    Box::new(DualAxisProcessor::Inverted(DualAxisInverted::ALL)),
+                    Box::new(DualAxisProcessor::Sensitivity(DualAxisSensitivity::all(
+                        2.0
+                    ))),
+                )),
+                Box::new(DualAxisProcessor::DeadZone(DualAxisDeadZone::default())),
+            )
+        );
     }
 }

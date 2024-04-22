@@ -17,7 +17,7 @@ pub struct SingleAxis {
     pub axis_type: AxisType,
 
     /// The processor used to handle input values.
-    pub processor: Option<AxisProcessor>,
+    pub processor: AxisProcessor,
 
     /// The target value for this input, used for input mocking.
     ///
@@ -31,7 +31,7 @@ impl SingleAxis {
     pub fn new(axis_type: impl Into<AxisType>) -> Self {
         Self {
             axis_type: axis_type.into(),
-            processor: None,
+            processor: AxisProcessor::None,
             value: None,
         }
     }
@@ -43,7 +43,7 @@ impl SingleAxis {
     pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> Self {
         Self {
             axis_type: axis_type.into(),
-            processor: None,
+            processor: AxisProcessor::None,
             value: Some(value),
         }
     }
@@ -53,7 +53,7 @@ impl SingleAxis {
     pub const fn mouse_wheel_x() -> Self {
         Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            processor: None,
+            processor: AxisProcessor::None,
             value: None,
         }
     }
@@ -63,7 +63,7 @@ impl SingleAxis {
     pub const fn mouse_wheel_y() -> Self {
         Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            processor: None,
+            processor: AxisProcessor::None,
             value: None,
         }
     }
@@ -73,7 +73,7 @@ impl SingleAxis {
     pub const fn mouse_motion_x() -> Self {
         Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-            processor: None,
+            processor: AxisProcessor::None,
             value: None,
         }
     }
@@ -83,7 +83,7 @@ impl SingleAxis {
     pub const fn mouse_motion_y() -> Self {
         Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            processor: None,
+            processor: AxisProcessor::None,
             value: None,
         }
     }
@@ -91,24 +91,21 @@ impl SingleAxis {
     /// Appends the given [`AxisProcessor`] as the next processing step.
     #[inline]
     pub fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = match self.processor {
-            None => Some(processor.into()),
-            Some(current) => Some(current.with_processor(processor.into())),
-        };
+        self.processor = self.processor.with_processor(processor);
         self
     }
 
     /// Replaces the current [`AxisProcessor`] with the specified `processor`.
     #[inline]
     pub fn replace_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = Some(processor.into());
+        self.processor = processor.into();
         self
     }
 
     /// Remove the current used [`AxisProcessor`].
     #[inline]
     pub fn no_processor(mut self) -> Self {
-        self.processor = None;
+        self.processor = AxisProcessor::None;
         self
     }
 
@@ -118,10 +115,7 @@ impl SingleAxis {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
-        match &self.processor {
-            Some(processor) => processor.process(input_value),
-            _ => input_value,
-        }
+        self.processor.process(input_value)
     }
 }
 
@@ -155,7 +149,7 @@ pub struct DualAxis {
     pub y_axis_type: AxisType,
 
     /// The processor used to handle input values.
-    pub processor: Option<DualAxisProcessor>,
+    pub processor: DualAxisProcessor,
 
     /// The target value for this input, used for input mocking.
     ///
@@ -170,7 +164,7 @@ impl DualAxis {
         Self {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
-            processor: None,
+            processor: DualAxisProcessor::None,
             value: None,
         }
     }
@@ -188,7 +182,7 @@ impl DualAxis {
         Self {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
-            processor: None,
+            processor: DualAxisProcessor::None,
             value: Some(Vec2::new(x_value, y_value)),
         }
     }
@@ -199,7 +193,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-            processor: Some(CircleDeadZone::default().into()),
+            processor: CircleDeadZone::default().into(),
             value: None,
         }
     }
@@ -210,7 +204,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
-            processor: Some(CircleDeadZone::default().into()),
+            processor: CircleDeadZone::default().into(),
             value: None,
         }
     }
@@ -220,7 +214,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            processor: None,
+            processor: DualAxisProcessor::None,
             value: None,
         }
     }
@@ -230,7 +224,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            processor: None,
+            processor: DualAxisProcessor::None,
             value: None,
         }
     }
@@ -238,24 +232,21 @@ impl DualAxis {
     /// Appends the given [`DualAxisProcessor`] as the next processing step.
     #[inline]
     pub fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = match self.processor {
-            None => Some(processor.into()),
-            Some(current) => Some(current.with_processor(processor.into())),
-        };
+        self.processor = self.processor.with_processor(processor);
         self
     }
 
     /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
     #[inline]
     pub fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = Some(processor.into());
+        self.processor = processor.into();
         self
     }
 
     /// Remove the current used [`DualAxisProcessor`].
     #[inline]
     pub fn no_processor(mut self) -> Self {
-        self.processor = None;
+        self.processor = DualAxisProcessor::None;
         self
     }
 
@@ -265,10 +256,7 @@ impl DualAxis {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
-        match &self.processor {
-            Some(processor) => processor.process(input_value),
-            _ => input_value,
-        }
+        self.processor.process(input_value)
     }
 }
 
@@ -308,7 +296,7 @@ pub struct VirtualDPad {
     /// The input that represents the right direction in this virtual DPad
     pub right: InputKind,
     /// The processor used to handle input values.
-    pub processor: Option<DualAxisProcessor>,
+    pub processor: DualAxisProcessor,
 }
 
 impl VirtualDPad {
@@ -319,7 +307,7 @@ impl VirtualDPad {
             down: InputKind::PhysicalKey(KeyCode::ArrowDown),
             left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
             right: InputKind::PhysicalKey(KeyCode::ArrowRight),
-            processor: Some(CircleDeadZone::default().into()),
+            processor: CircleDeadZone::default().into(),
         }
     }
 
@@ -335,7 +323,7 @@ impl VirtualDPad {
             down: InputKind::PhysicalKey(KeyCode::KeyS),
             left: InputKind::PhysicalKey(KeyCode::KeyA),
             right: InputKind::PhysicalKey(KeyCode::KeyD),
-            processor: Some(CircleDeadZone::default().into()),
+            processor: CircleDeadZone::default().into(),
         }
     }
 
@@ -347,7 +335,7 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-            processor: Some(CircleDeadZone::default().into()),
+            processor: CircleDeadZone::default().into(),
         }
     }
 
@@ -361,7 +349,7 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
-            processor: Some(CircleDeadZone::default().into()),
+            processor: CircleDeadZone::default().into(),
         }
     }
 
@@ -372,7 +360,7 @@ impl VirtualDPad {
             down: InputKind::MouseWheel(MouseWheelDirection::Down),
             left: InputKind::MouseWheel(MouseWheelDirection::Left),
             right: InputKind::MouseWheel(MouseWheelDirection::Right),
-            processor: None,
+            processor: DualAxisProcessor::None,
         }
     }
 
@@ -383,31 +371,28 @@ impl VirtualDPad {
             down: InputKind::MouseMotion(MouseMotionDirection::Down),
             left: InputKind::MouseMotion(MouseMotionDirection::Left),
             right: InputKind::MouseMotion(MouseMotionDirection::Right),
-            processor: None,
+            processor: DualAxisProcessor::None,
         }
     }
 
     /// Appends the given [`DualAxisProcessor`] as the next processing step.
     #[inline]
     pub fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = match self.processor {
-            None => Some(processor.into()),
-            Some(current) => Some(current.with_processor(processor.into())),
-        };
+        self.processor = self.processor.with_processor(processor);
         self
     }
 
     /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
     #[inline]
     pub fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = Some(processor.into());
+        self.processor = processor.into();
         self
     }
 
     /// Remove the current used [`DualAxisProcessor`].
     #[inline]
     pub fn no_processor(mut self) -> Self {
-        self.processor = None;
+        self.processor = DualAxisProcessor::None;
         self
     }
 
@@ -417,10 +402,7 @@ impl VirtualDPad {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
-        match &self.processor {
-            Some(processor) => processor.process(input_value),
-            _ => input_value,
-        }
+        self.processor.process(input_value)
     }
 }
 
@@ -437,7 +419,7 @@ pub struct VirtualAxis {
     /// The input that represents the positive direction of this virtual axis
     pub positive: InputKind,
     /// The processor used to handle input values.
-    pub processor: Option<AxisProcessor>,
+    pub processor: AxisProcessor,
 }
 
 impl VirtualAxis {
@@ -447,7 +429,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::PhysicalKey(negative),
             positive: InputKind::PhysicalKey(positive),
-            processor: None,
+            processor: AxisProcessor::None,
         }
     }
 
@@ -477,7 +459,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-            processor: None,
+            processor: AxisProcessor::None,
         }
     }
 
@@ -487,7 +469,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
-            processor: None,
+            processor: AxisProcessor::None,
         }
     }
 
@@ -496,7 +478,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::West),
             positive: InputKind::GamepadButton(GamepadButtonType::East),
-            processor: None,
+            processor: AxisProcessor::None,
         }
     }
 
@@ -505,31 +487,28 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::South),
             positive: InputKind::GamepadButton(GamepadButtonType::North),
-            processor: None,
+            processor: AxisProcessor::None,
         }
     }
 
     /// Appends the given [`AxisProcessor`] as the next processing step.
     #[inline]
     pub fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = match self.processor {
-            None => Some(processor.into()),
-            Some(current) => Some(current.with_processor(processor.into())),
-        };
+        self.processor = self.processor.with_processor(processor);
         self
     }
 
     /// Replaces the current [`AxisProcessor`] with the specified `processor`.
     #[inline]
     pub fn replace_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = Some(processor.into());
+        self.processor = processor.into();
         self
     }
 
     /// Removes the current used [`AxisProcessor`].
     #[inline]
     pub fn no_processor(mut self) -> Self {
-        self.processor = None;
+        self.processor = AxisProcessor::None;
         self
     }
 
@@ -539,10 +518,7 @@ impl VirtualAxis {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
-        match &self.processor {
-            Some(processor) => processor.process(input_value),
-            _ => input_value,
-        }
+        self.processor.process(input_value)
     }
 }
 

@@ -19,15 +19,19 @@
 //!
 //! # Built-in Processors
 //!
-//! ## Sequential Processors
+//! ## Processing Pipelines
 //!
-//! Sequential processors handle input values sequentially by chaining together two processors,
-//! one for the current step and the other for the next step.
+//! Pipelines handle input values sequentially through a sequence of processors.
 //!
-//! - [`AxisProcessor::Sequential`]: Transforms single-axis input values with two [`AxisProcessor`]s.
-//! - [`DualAxisProcessor::Sequential`]: Transforms dual-axis input values with two [`DualAxisProcessor`]s.
+//! To create a pipeline, you can use these methods.
 //!
-//! You can also use `with_processor` method to create a sequential processor from another processor.
+//! - [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] for single-axis inputs.
+//! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for single-axis inputs.
+//!
+//! They actually create these [ordered pairs](https://en.wikipedia.org/wiki/Cons).
+//!
+//! - [`AxisProcessor::OrderedPair`]: Transforms single-axis input values with two [`AxisProcessor`]s.
+//! - [`DualAxisProcessor::OrderedPair`]: Transforms dual-axis input values with two [`DualAxisProcessor`]s.
 //!
 //! ## Inversion
 //!
@@ -51,7 +55,8 @@
 //! clamping out-of-bounds inputs to the nearest valid value and leaving others as is
 //! to avoid unexpected behavior caused by extreme inputs.
 //!
-//! - [`AxisBounds`]: A min-max range for valid single-axis inputs, implemented [`Into<AxisProcessor>`].
+//! - [`AxisBounds`]: A min-max range for valid single-axis inputs,
+//!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisBounds`]: A square-shaped region for valid dual-axis inputs,
 //!     with independent min-max ranges for each axis, implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleBounds`]: A circular region for valid dual-axis inputs,
@@ -66,7 +71,7 @@
 //! helping filter out minor fluctuations and unintended movements.
 //!
 //! - [`AxisExclusion`]: A min-max range for excluding single-axis input values,
-//!     implemented `Into<AxisProcessor>`.
+//!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisExclusion`]: A cross-shaped region for excluding dual-axis inputs,
 //!     with independent min-max ranges for each axis, implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleExclusion`]: A circular region for excluding dual-axis inputs,
@@ -79,7 +84,8 @@
 //! the remaining region within the bounds after dead zone exclusion.
 //!
 //! - [`AxisDeadZone`]: A scaled version of [`AxisExclusion`] with the bounds
-//!     set to [`AxisBounds::magnitude(1.0)`](AxisBounds::default), implemented [`Into<AxisProcessor>`].
+//!     set to [`AxisBounds::magnitude(1.0)`](AxisBounds::default),
+//!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisDeadZone`]: A scaled version of [`DualAxisExclusion`] with the bounds
 //!     set to [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default), implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleDeadZone`]: A scaled version of [`CircleExclusion`] with the bounds

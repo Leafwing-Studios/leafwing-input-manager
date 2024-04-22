@@ -9,10 +9,16 @@
   - added processor enums:
     - `AxisProcessor`: Handles single-axis values.
     - `DualAxisProcessor`: Handles dual-axis values.
+  - added processor traits for defining custom processors:
+    - `CustomAxisProcessor`: Handles single-axis values.
+    - `CustomDualAxisProcessor`: Handles dual-axis values.
   - added built-in processor variants (no variant versions implemented `Into<Processor>`):
-    - Chaining: Combine multiple processors as a pipeline.
-      - `AxisProcessor::Sequential`: Combine two processors for single-axis values.
-      - `DualAxisProcessor::Sequential`: Combine two processors for dual-axis values.
+    - Pipelines: Handle input values sequentially through a sequence of processors, created by these methods.
+      - `AxisProcessor::with_processor` or `From<Vec<AxisProcessor>>::from` for single-axis inputs.
+      - `DualAxisProcessor::with_processor` or `From<Vec<DualAxisProcessor>>::from` for single-axis inputs.
+    - Ordered Pairs: Combine two processors as a ordered pipeline.
+      - `AxisProcessor::OrderedPair`: Combine two processors for single-axis values.
+      - `DualAxisProcessor::OrderedPair`: Combine two processors for dual-axis values.
     - Inversion: Reverses control (positive becomes negative, etc.)
       - `AxisProcessor::Inverted`: Single-axis inversion.
       - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
@@ -20,16 +26,16 @@
       - `AxisProcessor::Sensitivity`: Single-axis scaling.
       - `DualAxisSensitivity`: Dual-axis scaling, implemented `Into<DualAxisProcessor>`.
     - Value Bounds: Define the boundaries for constraining input values.
-      - `AxisBounds`: Restricts single-axis values to a range, implemented `Into<AxisProcessor>`.
+      - `AxisBounds`: Restricts single-axis values to a range, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
       - `DualAxisBounds`: Restricts single-axis values to a range along each axis, implemented `Into<DualAxisProcessor>`.
       - `CircleBounds`: Limits dual-axis values to a maximum magnitude, implemented `Into<DualAxisProcessor>`.
     - Deadzones: Ignores near-zero values, treating them as zero.
       - Unscaled versions:
-        - `AxisExclusion`: Excludes small single-axis values, implemented `Into<AxisProcessor>`.
+        - `AxisExclusion`: Excludes small single-axis values, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
         - `DualAxisExclusion`: Excludes small dual-axis values along each axis, implemented `Into<DualAxisProcessor>`.
         - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold, implemented `Into<DualAxisProcessor>`.
       - Scaled versions:
-        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>`.
+        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
         - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
         - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
   - removed `DeadZoneShape`.
