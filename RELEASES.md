@@ -13,9 +13,12 @@
     - `CustomAxisProcessor`: Handles single-axis values.
     - `CustomDualAxisProcessor`: Handles dual-axis values.
   - added built-in processor variants (no variant versions implemented `Into<Processor>`):
-    - Pipelines: Handle input values sequentially through a sequence of processors, created by these methods.
-      - `AxisProcessor::with_processor` or `From<Vec<AxisProcessor>>::from` for single-axis inputs.
-      - `DualAxisProcessor::with_processor` or `From<Vec<DualAxisProcessor>>::from` for single-axis inputs.
+    - Pipelines: Handle input values sequentially through a sequence of processors.
+      - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
+      - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
+      - you can also create them by these methods:
+        - `AxisProcessor::with_processor` or `From<Vec<AxisProcessor>>::from` for `AxisProcessor::Pipeline`.
+        - `DualAxisProcessor::with_processor` or `From<Vec<DualAxisProcessor>>::from` for `DualAxisProcessor::Pipeline`.
     - Inversion: Reverses control (positive becomes negative, etc.)
       - `AxisProcessor::Inverted`: Single-axis inversion.
       - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
