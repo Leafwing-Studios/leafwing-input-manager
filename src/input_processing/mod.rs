@@ -24,7 +24,7 @@
 //! To create a pipeline, you can use these methods.
 //!
 //! - [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] for single-axis inputs.
-//! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for single-axis inputs.
+//! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for dual-axis inputs.
 //!
 //! They create ordered pairs, akin to the [cons cells](https://en.wikipedia.org/wiki/Cons).
 //!

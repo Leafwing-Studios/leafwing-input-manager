@@ -274,7 +274,7 @@ impl<'de> Deserialize<'de> for Box<dyn CustomAxisProcessor> {
 
 /// Registry of deserializers for [`CustomAxisProcessor`]s.
 static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn CustomAxisProcessor>>> =
-    Lazy::new(|| RwLock::new(MapRegistry::new("AxisProcessor")));
+    Lazy::new(|| RwLock::new(MapRegistry::new("CustomAxisProcessor")));
 
 /// A trait for registering a specific [`CustomAxisProcessor`].
 pub trait RegisterCustomAxisProcessor {

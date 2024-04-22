@@ -275,7 +275,7 @@ impl<'de> Deserialize<'de> for Box<dyn CustomDualAxisProcessor> {
 
 /// Registry of deserializers for [`CustomDualAxisProcessor`]s.
 static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn CustomDualAxisProcessor>>> =
-    Lazy::new(|| RwLock::new(MapRegistry::new("DualAxisProcessor")));
+    Lazy::new(|| RwLock::new(MapRegistry::new("CustomDualAxisProcessor")));
 
 /// A trait for registering a specific [`CustomDualAxisProcessor`].
 pub trait RegisterDualAxisProcessor {
@@ -305,7 +305,7 @@ mod tests {
     use serde_test::{assert_tokens, Token};
 
     #[test]
-    fn test_serde_dual_axis_processor() {
+    fn test_custom_dual_axis_processor() {
         #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
         struct CustomDualAxisInverted;
 
