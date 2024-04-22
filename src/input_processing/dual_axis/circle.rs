@@ -5,11 +5,9 @@ use std::hash::{Hash, Hasher};
 
 use bevy::prelude::*;
 use bevy::utils::FloatOrd;
-use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::DualAxisProcessor;
-use crate as leafwing_input_manager;
 
 /// Specifies a circular region defining acceptable ranges for valid dual-axis inputs,
 /// with a radius defining the maximum threshold magnitude,
@@ -28,7 +26,7 @@ use crate as leafwing_input_manager;
 ///     for y in -300..300 {
 ///         let y = y as f32 * 0.01;
 ///         let value = Vec2::new(x, y);
-///         assert_eq!(bounds.process(value), value.clamp_length_max(2.0));
+///         assert_eq!(bounds.clamp(value), value.clamp_length_max(2.0));
 ///     }
 /// }
 /// ```
@@ -38,24 +36,6 @@ use crate as leafwing_input_manager;
 pub struct CircleBounds {
     /// The maximum radius of the circle.
     pub(crate) radius: f32,
-}
-
-#[serde_typetag]
-impl DualAxisProcessor for CircleBounds {
-    /// Clamps the magnitude of `input_value` within the bounds.
-    #[must_use]
-    #[inline]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        input_value.clamp_length_max(self.radius)
-    }
-}
-
-impl Default for CircleBounds {
-    /// Creates a [`CircleBounds`] that restricts the values to a maximum magnitude of `1.0`.
-    #[inline]
-    fn default() -> Self {
-        Self::new(1.0)
-    }
 }
 
 impl CircleBounds {
@@ -92,6 +72,27 @@ impl CircleBounds {
     pub fn contains(&self, input_value: Vec2) -> bool {
         input_value.length() <= self.radius
     }
+
+    /// Clamps the magnitude of `input_value` within the bounds.
+    #[must_use]
+    #[inline]
+    pub fn clamp(&self, input_value: Vec2) -> Vec2 {
+        input_value.clamp_length_max(self.radius)
+    }
+}
+
+impl Default for CircleBounds {
+    /// Creates a [`CircleBounds`] that restricts the values to a maximum magnitude of `1.0`.
+    #[inline]
+    fn default() -> Self {
+        Self::new(1.0)
+    }
+}
+
+impl From<CircleBounds> for DualAxisProcessor {
+    fn from(value: CircleBounds) -> Self {
+        Self::CircleBounds(value)
+    }
 }
 
 impl Eq for CircleBounds {}
@@ -121,10 +122,10 @@ impl Hash for CircleBounds {
 ///
 ///         if value.length() <= 0.2 {
 ///             assert!(exclusion.contains(value));
-///             assert_eq!(exclusion.process(value), Vec2::ZERO);
+///             assert_eq!(exclusion.exclude(value), Vec2::ZERO);
 ///         } else {
 ///             assert!(!exclusion.contains(value));
-///             assert_eq!(exclusion.process(value), value);
+///             assert_eq!(exclusion.exclude(value), value);
 ///         }
 ///     }
 /// }
@@ -135,27 +136,6 @@ impl Hash for CircleBounds {
 pub struct CircleExclusion {
     /// Pre-calculated squared radius of the circle, preventing redundant calculations.
     pub(crate) radius_squared: f32,
-}
-
-#[serde_typetag]
-impl DualAxisProcessor for CircleExclusion {
-    /// Excludes input values with a magnitude less than the `radius`.
-    #[must_use]
-    #[inline]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        if self.contains(input_value) {
-            Vec2::ZERO
-        } else {
-            input_value
-        }
-    }
-}
-
-impl Default for CircleExclusion {
-    /// Creates a [`CircleExclusion`] that ignores input values below a minimum magnitude of `0.1`.
-    fn default() -> Self {
-        Self::new(0.1)
-    }
 }
 
 impl CircleExclusion {
@@ -200,7 +180,31 @@ impl CircleExclusion {
     /// Creates a [`CircleDeadZone`] using `self` as the exclusion range.
     #[inline]
     pub fn scaled(self) -> CircleDeadZone {
-        self.into()
+        CircleDeadZone::new(self.radius())
+    }
+
+    /// Excludes input values with a magnitude less than the `radius`.
+    #[must_use]
+    #[inline]
+    pub fn exclude(&self, input_value: Vec2) -> Vec2 {
+        if self.contains(input_value) {
+            Vec2::ZERO
+        } else {
+            input_value
+        }
+    }
+}
+
+impl Default for CircleExclusion {
+    /// Creates a [`CircleExclusion`] that ignores input values below a minimum magnitude of `0.1`.
+    fn default() -> Self {
+        Self::new(0.1)
+    }
+}
+
+impl From<CircleExclusion> for DualAxisProcessor {
+    fn from(value: CircleExclusion) -> Self {
+        Self::CircleExclusion(value)
     }
 }
 
@@ -236,7 +240,7 @@ impl Hash for CircleExclusion {
 ///         // Values within the dead zone are treated as zeros.
 ///         if value.length() <= 0.2 {
 ///             assert!(deadzone.within_exclusion(value));
-///             assert_eq!(deadzone.process(value), Vec2::ZERO);
+///             assert_eq!(deadzone.normalize(value), Vec2::ZERO);
 ///         }
 ///
 ///         // Values within the live zone are scaled linearly.
@@ -245,7 +249,7 @@ impl Hash for CircleExclusion {
 ///
 ///             let expected_scale = f32::inverse_lerp(0.2, 1.0, value.length());
 ///             let expected = value.normalize() * expected_scale;
-///             let delta = (deadzone.process(value) - expected).abs();
+///             let delta = (deadzone.normalize(value) - expected).abs();
 ///             assert!(delta.x <= 0.00001);
 ///             assert!(delta.y <= 0.00001);
 ///         }
@@ -255,7 +259,7 @@ impl Hash for CircleExclusion {
 ///             assert!(!deadzone.within_bounds(value));
 ///
 ///             let expected = value.clamp_length_max(1.0);
-///             let delta = (deadzone.process(value) - expected).abs();
+///             let delta = (deadzone.normalize(value) - expected).abs();
 ///             assert!(delta.x <= 0.00001);
 ///             assert!(delta.y <= 0.00001);
 ///         }
@@ -271,35 +275,6 @@ pub struct CircleDeadZone {
 
     /// Pre-calculated reciprocal of the live zone size, preventing division during normalization.
     pub(crate) livezone_recip: f32,
-}
-
-#[serde_typetag]
-impl DualAxisProcessor for CircleDeadZone {
-    /// Normalizes input values into the live zone.
-    #[must_use]
-    fn process(&self, input_value: Vec2) -> Vec2 {
-        let input_length = input_value.length();
-        if input_length == 0.0 {
-            return Vec2::ZERO;
-        }
-
-        // Clamp out-of-bounds values to a maximum magnitude of 1,
-        // and then exclude values within the dead zone,
-        // and finally linearly scale the result to the live zone.
-        let (deadzone, bound) = self.livezone_min_max();
-        let clamped_input_length = input_length.min(bound);
-        let offset_to_deadzone = (clamped_input_length - deadzone).max(0.0);
-        let magnitude_scale = (offset_to_deadzone * self.livezone_recip) / input_length;
-        input_value * magnitude_scale
-    }
-}
-
-impl Default for CircleDeadZone {
-    /// Creates a [`CircleDeadZone`] that excludes input values below a minimum magnitude of `0.1`.
-    #[inline]
-    fn default() -> Self {
-        CircleExclusion::default().into()
-    }
 }
 
 impl CircleDeadZone {
@@ -379,11 +354,37 @@ impl CircleDeadZone {
         let (min, max) = self.livezone_min_max();
         min <= input_length && input_length <= max
     }
+
+    /// Normalizes input values into the live zone.
+    #[must_use]
+    pub fn normalize(&self, input_value: Vec2) -> Vec2 {
+        let input_length = input_value.length();
+        if input_length == 0.0 {
+            return Vec2::ZERO;
+        }
+
+        // Clamp out-of-bounds values to a maximum magnitude of 1.0,
+        // and then exclude values within the dead zone,
+        // and finally linearly scale the result to the live zone.
+        let (deadzone, bound) = self.livezone_min_max();
+        let clamped_input_length = input_length.min(bound);
+        let offset_to_deadzone = (clamped_input_length - deadzone).max(0.0);
+        let magnitude_scale = (offset_to_deadzone * self.livezone_recip) / input_length;
+        input_value * magnitude_scale
+    }
 }
 
-impl From<CircleExclusion> for CircleDeadZone {
-    fn from(exclusion: CircleExclusion) -> Self {
-        Self::new(exclusion.radius())
+impl Default for CircleDeadZone {
+    /// Creates a [`CircleDeadZone`] that excludes input values below a minimum magnitude of `0.1`.
+    #[inline]
+    fn default() -> Self {
+        CircleDeadZone::new(0.1)
+    }
+}
+
+impl From<CircleDeadZone> for DualAxisProcessor {
+    fn from(value: CircleDeadZone) -> Self {
+        Self::CircleDeadZone(value)
     }
 }
 
@@ -404,11 +405,16 @@ mod tests {
         fn test_bounds(bounds: CircleBounds, radius: f32) {
             assert_eq!(bounds.radius(), radius);
 
+            let processor = DualAxisProcessor::CircleBounds(bounds);
+            assert_eq!(DualAxisProcessor::from(bounds), processor);
+
             for x in -300..300 {
                 let x = x as f32 * 0.01;
                 for y in -300..300 {
                     let y = y as f32 * 0.01;
                     let value = Vec2::new(x, y);
+
+                    assert_eq!(processor.process(value), bounds.clamp(value));
 
                     if value.length() <= radius {
                         assert!(bounds.contains(value));
@@ -417,7 +423,7 @@ mod tests {
                     }
 
                     let expected = value.clamp_length_max(radius);
-                    let delta = (bounds.process(value) - expected).abs();
+                    let delta = (bounds.clamp(value) - expected).abs();
                     assert!(delta.x <= f32::EPSILON);
                     assert!(delta.y <= f32::EPSILON);
                 }
@@ -439,18 +445,23 @@ mod tests {
         fn test_exclusion(exclusion: CircleExclusion, radius: f32) {
             assert_eq!(exclusion.radius(), radius);
 
+            let processor = DualAxisProcessor::CircleExclusion(exclusion);
+            assert_eq!(DualAxisProcessor::from(exclusion), processor);
+
             for x in -300..300 {
                 let x = x as f32 * 0.01;
                 for y in -300..300 {
                     let y = y as f32 * 0.01;
                     let value = Vec2::new(x, y);
 
+                    assert_eq!(processor.process(value), exclusion.exclude(value));
+
                     if value.length() <= radius {
                         assert!(exclusion.contains(value));
-                        assert_eq!(exclusion.process(value), Vec2::ZERO);
+                        assert_eq!(exclusion.exclude(value), Vec2::ZERO);
                     } else {
                         assert!(!exclusion.contains(value));
-                        assert_eq!(exclusion.process(value), value);
+                        assert_eq!(exclusion.exclude(value), value);
                     }
                 }
             }
@@ -474,16 +485,21 @@ mod tests {
             let exclusion = CircleExclusion::new(radius);
             assert_eq!(exclusion.scaled(), deadzone);
 
+            let processor = DualAxisProcessor::CircleDeadZone(deadzone);
+            assert_eq!(DualAxisProcessor::from(deadzone), processor);
+
             for x in -300..300 {
                 let x = x as f32 * 0.01;
                 for y in -300..300 {
                     let y = y as f32 * 0.01;
                     let value = Vec2::new(x, y);
 
+                    assert_eq!(processor.process(value), deadzone.normalize(value));
+
                     // Values within the dead zone are treated as zeros.
                     if value.length() <= radius {
                         assert!(deadzone.within_exclusion(value));
-                        assert_eq!(deadzone.process(value), Vec2::ZERO);
+                        assert_eq!(deadzone.normalize(value), Vec2::ZERO);
                     }
                     // Values within the live zone are scaled linearly.
                     else if value.length() <= 1.0 {
@@ -491,7 +507,7 @@ mod tests {
 
                         let expected_scale = f32::inverse_lerp(radius, 1.0, value.length());
                         let expected = value.normalize() * expected_scale;
-                        let delta = (deadzone.process(value) - expected).abs();
+                        let delta = (deadzone.normalize(value) - expected).abs();
                         assert!(delta.x <= 0.00001);
                         assert!(delta.y <= 0.00001);
                     }
@@ -500,7 +516,7 @@ mod tests {
                         assert!(!deadzone.within_bounds(value));
 
                         let expected = value.clamp_length_max(1.0);
-                        let delta = (deadzone.process(value) - expected).abs();
+                        let delta = (deadzone.normalize(value) - expected).abs();
                         assert!(delta.x <= 0.00001);
                         assert!(delta.y <= 0.00001);
                     }

@@ -1,349 +1,426 @@
 //! Processors for dual-axis input values
 
-use std::any::{Any, TypeId};
-use std::fmt::{Debug, Formatter};
+use bevy::math::BVec2;
 use std::hash::{Hash, Hasher};
-use std::sync::RwLock;
+use std::sync::Arc;
 
-use bevy::prelude::{App, Vec2};
-use bevy::reflect::utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell};
-use bevy::reflect::{
-    erased_serde, FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize,
-    ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
-    TypePath, TypeRegistration, Typed, ValueInfo,
-};
-use dyn_clone::DynClone;
-use dyn_eq::DynEq;
-use dyn_hash::DynHash;
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
-
-use crate::typetag::RegisterTypeTag;
+use bevy::prelude::{Reflect, Vec2};
+use bevy::utils::FloatOrd;
+use serde::{Deserialize, Serialize};
 
 pub use self::circle::*;
-pub use self::modifier::*;
-pub use self::pipeline::*;
+pub use self::custom::*;
 pub use self::range::*;
 
 mod circle;
-mod modifier;
-mod pipeline;
+mod custom;
 mod range;
 
-/// A trait for processing dual-axis input values,
+/// A processor for dual-axis input values,
 /// accepting a [`Vec2`] input and producing a [`Vec2`] output.
-///
-/// # Examples
+#[must_use]
+#[non_exhaustive]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+pub enum DualAxisProcessor {
+    /// No processor is applied.
+    #[default]
+    None,
+
+    /// A wrapper around [`DualAxisInverted`] to represent inversion.
+    Inverted(DualAxisInverted),
+
+    /// A wrapper around [`DualAxisSensitivity`] to represent sensitivity.
+    Sensitivity(DualAxisSensitivity),
+
+    /// A wrapper around [`DualAxisBounds`] to represent value bounds.
+    ValueBounds(DualAxisBounds),
+
+    /// A wrapper around [`DualAxisExclusion`] to represent unscaled deadzone.
+    Exclusion(DualAxisExclusion),
+
+    /// A wrapper around [`DualAxisDeadZone`] to represent scaled deadzone.
+    DeadZone(DualAxisDeadZone),
+
+    /// A wrapper around [`CircleBounds`] to represent circular value bounds.
+    CircleBounds(CircleBounds),
+
+    /// A wrapper around [`CircleExclusion`] to represent unscaled deadzone.
+    CircleExclusion(CircleExclusion),
+
+    /// A wrapper around [`CircleDeadZone`] to represent scaled deadzone.
+    CircleDeadZone(CircleDeadZone),
+
+    /// Processes input values sequentially through a sequence of [`DualAxisProcessor`]s.
+    /// one for the current step and the other for the next step.
+    ///
+    /// For a straightforward creation of a [`DualAxisProcessor::Pipeline`],
+    /// you can use [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] methods.
+    ///
+    /// ```rust
+    /// use std::sync::Arc;
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// let expected = DualAxisProcessor::Pipeline(vec![
+    ///     Arc::new(DualAxisInverted::ALL.into()),
+    ///     Arc::new(DualAxisSensitivity::all(2.0).into()),
+    /// ]);
+    ///
+    /// assert_eq!(
+    ///     expected,
+    ///     DualAxisProcessor::from(DualAxisInverted::ALL).with_processor(DualAxisSensitivity::all(2.0))
+    /// );
+    ///
+    /// assert_eq!(
+    ///     expected,
+    ///     DualAxisProcessor::from(vec![
+    ///         DualAxisInverted::ALL.into(),
+    ///         DualAxisSensitivity::all(2.0).into(),
+    ///     ])
+    /// );
+    Pipeline(Vec<Arc<DualAxisProcessor>>),
+
+    /// A user-defined processor that implements [`CustomDualAxisProcessor`].
+    Custom(Box<dyn CustomDualAxisProcessor>),
+}
+
+impl DualAxisProcessor {
+    /// Computes the result by processing the `input_value`.
+    #[must_use]
+    #[inline]
+    pub fn process(&self, input_value: Vec2) -> Vec2 {
+        match self {
+            Self::None => input_value,
+            Self::Inverted(inversion) => inversion.invert(input_value),
+            Self::Sensitivity(sensitivity) => sensitivity.scale(input_value),
+            Self::ValueBounds(bounds) => bounds.clamp(input_value),
+            Self::Exclusion(exclusion) => exclusion.exclude(input_value),
+            Self::DeadZone(deadzone) => deadzone.normalize(input_value),
+            Self::CircleBounds(bounds) => bounds.clamp(input_value),
+            Self::CircleExclusion(exclusion) => exclusion.exclude(input_value),
+            Self::CircleDeadZone(deadzone) => deadzone.normalize(input_value),
+            Self::Pipeline(sequence) => sequence
+                .iter()
+                .fold(input_value, |value, next| next.process(value)),
+            Self::Custom(processor) => processor.process(input_value),
+        }
+    }
+
+    /// Appends the given `next_processor` as the next processing step.
+    ///
+    /// - If either processor is [`DualAxisProcessor::None`], returns the other.
+    /// - If the current processor is [`DualAxisProcessor::Pipeline`], pushes the other into it.
+    /// - If the given processor is [`DualAxisProcessor::Pipeline`], prepends the current one into it.
+    /// - If both processors are [`DualAxisProcessor::Pipeline`], merges the two pipelines.
+    /// - If neither processor is [`DualAxisProcessor::None`] nor a pipeline,
+    ///     creates a new pipeline containing them.
+    #[inline]
+    pub fn with_processor(self, next_processor: impl Into<DualAxisProcessor>) -> Self {
+        let other = next_processor.into();
+        match (self.clone(), other.clone()) {
+            (_, Self::None) => self,
+            (Self::None, _) => other,
+            (Self::Pipeline(mut self_seq), Self::Pipeline(mut next_seq)) => {
+                self_seq.append(&mut next_seq);
+                Self::Pipeline(self_seq)
+            }
+            (Self::Pipeline(mut self_seq), _) => {
+                self_seq.push(Arc::new(other));
+                Self::Pipeline(self_seq)
+            }
+            (_, Self::Pipeline(mut next_seq)) => {
+                next_seq.insert(0, Arc::new(self));
+                Self::Pipeline(next_seq)
+            }
+            (_, _) => Self::Pipeline(vec![Arc::new(self), Arc::new(other)]),
+        }
+    }
+}
+
+impl From<Vec<DualAxisProcessor>> for DualAxisProcessor {
+    fn from(value: Vec<DualAxisProcessor>) -> Self {
+        Self::Pipeline(value.into_iter().map(Arc::new).collect())
+    }
+}
+
+/// Flips the sign of dual-axis input values, resulting in a directional reversal of control.
 ///
 /// ```rust
-/// use std::hash::{Hash, Hasher};
 /// use bevy::prelude::*;
-/// use bevy::utils::FloatOrd;
-/// use serde::{Deserialize, Serialize};
 /// use leafwing_input_manager::prelude::*;
 ///
-/// /// Doubles the input, takes its absolute value,
-/// /// and discards results that meet the specified condition on the X-axis.
-/// // If your processor includes fields not implemented Eq and Hash,
-/// // implementation is necessary as shown below.
-/// // Otherwise, you can derive Eq and Hash directly.
-/// #[derive(Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
-/// pub struct DoubleAbsoluteValueThenRejectX(pub f32);
+/// let value = Vec2::new(1.5, 2.0);
+/// let Vec2 { x, y } = value;
 ///
-/// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[serde_typetag]
-/// impl DualAxisProcessor for DoubleAbsoluteValueThenRejectX {
-///     fn process(&self, input_value: Vec2) -> Vec2 {
-///         // Implement the logic just like you would in a normal function.
+/// assert_eq!(DualAxisInverted::ALL.invert(value), -value);
+/// assert_eq!(DualAxisInverted::ALL.invert(-value), value);
 ///
-///         // You can use other processors within this function.
-///         let value = DualAxisSensitivity::all(2.0).process(input_value);
+/// assert_eq!(DualAxisInverted::ONLY_X.invert(value), Vec2::new(-x, y));
+/// assert_eq!(DualAxisInverted::ONLY_X.invert(-value), Vec2::new(x, -y));
 ///
-///         let value = value.abs();
-///         let new_x = if value.x == self.0 {
-///             0.0
-///         } else {
-///             value.x
-///         };
-///         Vec2::new(new_x, value.y)
-///     }
-/// }
+/// assert_eq!(DualAxisInverted::ONLY_Y.invert(value), Vec2::new(x, -y));
+/// assert_eq!(DualAxisInverted::ONLY_Y.invert(-value), Vec2::new(-x, y));
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct DualAxisInverted(Vec2);
+
+impl DualAxisInverted {
+    /// The [`DualAxisInverted`] that inverts both axes.
+    pub const ALL: Self = Self(Vec2::NEG_ONE);
+
+    /// The [`DualAxisInverted`] that only inverts the X-axis inputs.
+    pub const ONLY_X: Self = Self(Vec2::new(-1.0, 1.0));
+
+    /// The [`DualAxisInverted`] that only inverts the Y-axis inputs.
+    pub const ONLY_Y: Self = Self(Vec2::new(1.0, -1.0));
+
+    /// Are inputs inverted on both axes?
+    #[must_use]
+    #[inline]
+    pub fn inverted(&self) -> BVec2 {
+        self.0.cmpeq(Vec2::NEG_ONE)
+    }
+
+    /// Multiples the `input_value` by the specified inversion vector.
+    #[must_use]
+    #[inline]
+    pub fn invert(&self, input_value: Vec2) -> Vec2 {
+        self.0 * input_value
+    }
+}
+
+impl From<DualAxisInverted> for DualAxisProcessor {
+    fn from(value: DualAxisInverted) -> Self {
+        Self::Inverted(value)
+    }
+}
+
+impl Eq for DualAxisInverted {}
+
+impl Hash for DualAxisInverted {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        FloatOrd(self.0.x).hash(state);
+        FloatOrd(self.0.y).hash(state);
+    }
+}
+
+/// Scales dual-axis input values using a specified multiplier to fine-tune the responsiveness of control.
 ///
-/// // Unfortunately, manual implementation is required due to the float field.
-/// impl Eq for DoubleAbsoluteValueThenRejectX {}
-/// impl Hash for DoubleAbsoluteValueThenRejectX {
-///     fn hash<H: Hasher>(&self, state: &mut H) {
-///         // Encapsulate the float field for hashing.
-///         FloatOrd(self.0).hash(state);
-///     }
-/// }
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
 ///
-/// // Remember to register your processor - it will ensure everything works smoothly!
-/// let mut app = App::new();
-/// app.register_dual_axis_processor::<DoubleAbsoluteValueThenRejectX>();
+/// let value = Vec2::new(1.5, 2.5);
+/// let Vec2 { x, y } = value;
 ///
-/// // Now you can use it!
-/// let processor = DoubleAbsoluteValueThenRejectX(4.0);
+/// // Negated X and halved Y
+/// let neg_x_half_y = DualAxisSensitivity::new(-1.0, 0.5);
+/// assert_eq!(neg_x_half_y.scale(value).x, -x);
+/// assert_eq!(neg_x_half_y.scale(value).y, 0.5 * y);
 ///
-/// // Rejected X!
-/// assert_eq!(processor.process(Vec2::splat(2.0)), Vec2::new(0.0, 4.0));
-/// assert_eq!(processor.process(Vec2::splat(-2.0)), Vec2::new(0.0, 4.0));
+/// // Doubled X and doubled Y
+/// let double = DualAxisSensitivity::all(2.0);
+/// assert_eq!(double.scale(value), 2.0 * value);
 ///
-/// // Others are just doubled absolute value.
-/// assert_eq!(processor.process(Vec2::splat(6.0)), Vec2::splat(12.0));
-/// assert_eq!(processor.process(Vec2::splat(4.0)), Vec2::splat(8.0));
-/// assert_eq!(processor.process(Vec2::splat(0.0)), Vec2::splat(0.0));
-/// assert_eq!(processor.process(Vec2::splat(-4.0)), Vec2::splat(8.0));
-/// assert_eq!(processor.process(Vec2::splat(-6.0)), Vec2::splat(12.0));
+/// // Halved X
+/// let half_x = DualAxisSensitivity::only_x(0.5);
+/// assert_eq!(half_x.scale(value).x, 0.5 * x);
+/// assert_eq!(half_x.scale(value).y, y);
+///
+/// // Negated and doubled Y
+/// let neg_double_y = DualAxisSensitivity::only_y(-2.0);
+/// assert_eq!(neg_double_y.scale(value).x, x);
+/// assert_eq!(neg_double_y.scale(value).y, -2.0 * y);
 /// ```
-pub trait DualAxisProcessor:
-    Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
-{
-    /// Computes the result by processing the `input_value`.
-    fn process(&self, input_value: Vec2) -> Vec2;
-}
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct DualAxisSensitivity(pub(crate) Vec2);
 
-dyn_clone::clone_trait_object!(DualAxisProcessor);
-dyn_eq::eq_trait_object!(DualAxisProcessor);
-dyn_hash::hash_trait_object!(DualAxisProcessor);
-
-impl Reflect for Box<dyn DualAxisProcessor> {
-    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
-        Some(Self::type_info())
+impl DualAxisSensitivity {
+    /// Creates a [`DualAxisSensitivity`] with the given values for each axis separately.
+    #[inline]
+    pub const fn new(sensitivity_x: f32, sensitivity_y: f32) -> Self {
+        Self(Vec2::new(sensitivity_x, sensitivity_y))
     }
 
-    fn into_any(self: Box<Self>) -> Box<dyn Any> {
-        self
+    /// Creates a [`DualAxisSensitivity`] with the same value for both axes.
+    #[inline]
+    pub const fn all(sensitivity: f32) -> Self {
+        Self::new(sensitivity, sensitivity)
     }
 
-    fn as_any(&self) -> &dyn Any {
-        self
+    /// Creates a [`DualAxisSensitivity`] that only affects the X-axis using the given value.
+    #[inline]
+    pub const fn only_x(sensitivity: f32) -> Self {
+        Self::new(sensitivity, 1.0)
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
+    /// Creates a [`DualAxisSensitivity`] that only affects the Y-axis using the given value.
+    #[inline]
+    pub const fn only_y(sensitivity: f32) -> Self {
+        Self::new(1.0, sensitivity)
     }
 
-    fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
-        self
+    /// Returns the sensitivity values.
+    #[must_use]
+    #[inline]
+    pub fn sensitivities(&self) -> Vec2 {
+        self.0
     }
 
-    fn as_reflect(&self) -> &dyn Reflect {
-        self
-    }
-
-    fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
-        self
-    }
-
-    fn apply(&mut self, value: &dyn Reflect) {
-        let value = value.as_any();
-        if let Some(value) = value.downcast_ref::<Self>() {
-            *self = value.clone();
-        } else {
-            panic!(
-                "Value is not a std::boxed::Box<dyn {}::DualAxisProcessor>.",
-                module_path!(),
-            );
-        }
-    }
-
-    fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
-        *self = value.take()?;
-        Ok(())
-    }
-
-    fn reflect_kind(&self) -> ReflectKind {
-        ReflectKind::Value
-    }
-
-    fn reflect_ref(&self) -> ReflectRef {
-        ReflectRef::Value(self)
-    }
-
-    fn reflect_mut(&mut self) -> ReflectMut {
-        ReflectMut::Value(self)
-    }
-
-    fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-        ReflectOwned::Value(self)
-    }
-
-    fn clone_value(&self) -> Box<dyn Reflect> {
-        Box::new(self.clone())
-    }
-
-    fn reflect_hash(&self) -> Option<u64> {
-        let mut hasher = reflect_hasher();
-        let type_id = TypeId::of::<Box<dyn DualAxisProcessor>>();
-        Hash::hash(&type_id, &mut hasher);
-        Hash::hash(self, &mut hasher);
-        Some(hasher.finish())
-    }
-
-    fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-        let value = value.as_any();
-        value
-            .downcast_ref::<Self>()
-            .map(|value| self.dyn_eq(value))
-            .or(Some(false))
-    }
-
-    fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
+    /// Multiples the `input_value` by the specified sensitivity vector.
+    #[must_use]
+    #[inline]
+    pub fn scale(&self, input_value: Vec2) -> Vec2 {
+        self.0 * input_value
     }
 }
 
-impl Typed for Box<dyn DualAxisProcessor> {
-    fn type_info() -> &'static TypeInfo {
-        static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-        CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
+impl From<DualAxisSensitivity> for DualAxisProcessor {
+    fn from(value: DualAxisSensitivity) -> Self {
+        Self::Sensitivity(value)
     }
 }
 
-impl TypePath for Box<dyn DualAxisProcessor> {
-    fn type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| {
-            {
-                format!("std::boxed::Box(dyn {}::DualAxisProcessor)", module_path!())
-            }
-        })
-    }
+impl Eq for DualAxisSensitivity {}
 
-    fn short_type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| "Box(dyn DualAxisProcessor)".to_string())
-    }
-
-    fn type_ident() -> Option<&'static str> {
-        Some("DualAxisProcessor")
-    }
-
-    fn crate_name() -> Option<&'static str> {
-        Some(module_path!().split(':').next().unwrap())
-    }
-
-    fn module_path() -> Option<&'static str> {
-        Some(module_path!())
-    }
-}
-
-impl GetTypeRegistration for Box<dyn DualAxisProcessor> {
-    fn get_type_registration() -> TypeRegistration {
-        let mut registration = TypeRegistration::of::<Self>();
-        registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-        registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-        registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
-        registration
-    }
-}
-
-impl FromReflect for Box<dyn DualAxisProcessor> {
-    fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-        Some(reflect.as_any().downcast_ref::<Self>()?.clone())
-    }
-}
-
-impl<'a> Serialize for dyn DualAxisProcessor + 'a {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // Check that `DualAxisProcessor` has `erased_serde::Serialize` as a super trait, preventing infinite recursion at runtime.
-        const fn __check_erased_serialize_super_trait<T: ?Sized + DualAxisProcessor>() {
-            require_erased_serialize_impl::<T>();
-        }
-        serialize_trait_object(serializer, self.reflect_short_type_path(), self)
-    }
-}
-
-impl<'de> Deserialize<'de> for Box<dyn DualAxisProcessor> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let registry = unsafe { PROCESSOR_REGISTRY.read().unwrap() };
-        registry.deserialize_trait_object(deserializer)
-    }
-}
-
-/// Registry of deserializers for [`DualAxisProcessor`]s.
-static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn DualAxisProcessor>>> =
-    Lazy::new(|| RwLock::new(MapRegistry::new("DualAxisProcessor")));
-
-/// A trait for registering a specific [`DualAxisProcessor`].
-pub trait RegisterDualAxisProcessor {
-    /// Registers the specified [`DualAxisProcessor`].
-    fn register_dual_axis_processor<'de, T>(&mut self) -> &mut Self
-    where
-        T: RegisterTypeTag<'de, dyn DualAxisProcessor> + GetTypeRegistration;
-}
-
-impl RegisterDualAxisProcessor for App {
-    #[allow(unsafe_code)]
-    fn register_dual_axis_processor<'de, T>(&mut self) -> &mut Self
-    where
-        T: RegisterTypeTag<'de, dyn DualAxisProcessor> + GetTypeRegistration,
-    {
-        let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
-        T::register_typetag(&mut registry);
-        self.register_type::<T>();
-        self
+impl Hash for DualAxisSensitivity {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        FloatOrd(self.0.x).hash(state);
+        FloatOrd(self.0.y).hash(state);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_test::{assert_tokens, Token};
 
     #[test]
-    fn test_serde_dual_axis_processor() {
-        let mut app = App::new();
-        app.register_dual_axis_processor::<DualAxisInverted>();
-        app.register_dual_axis_processor::<DualAxisSensitivity>();
+    fn test_axis_processor_pipeline() {
+        let pipeline = DualAxisProcessor::Pipeline(vec![
+            Arc::new(DualAxisInverted::ALL.into()),
+            Arc::new(DualAxisSensitivity::all(2.0).into()),
+        ]);
 
-        let inversion: Box<dyn DualAxisProcessor> = Box::new(DualAxisInverted::ALL);
-        assert_tokens(
-            &inversion,
-            &[
-                Token::Map { len: Some(1) },
-                Token::BorrowedStr("DualAxisInverted"),
-                Token::NewtypeStruct {
-                    name: "DualAxisInverted",
-                },
-                Token::TupleStruct {
-                    name: "Vec2",
-                    len: 2,
-                },
-                Token::F32(-1.0),
-                Token::F32(-1.0),
-                Token::TupleStructEnd,
-                Token::MapEnd,
-            ],
+        for x in -300..300 {
+            let x = x as f32 * 0.01;
+            for y in -300..300 {
+                let y = y as f32 * 0.01;
+                let value = Vec2::new(x, y);
+
+                assert_eq!(pipeline.process(value), value * -2.0);
+            }
+        }
+    }
+
+    #[test]
+    fn test_dual_axis_processor_from_list() {
+        assert_eq!(
+            DualAxisProcessor::from(vec![]),
+            DualAxisProcessor::Pipeline(vec![])
         );
 
-        let sensitivity: Box<dyn DualAxisProcessor> = Box::new(DualAxisSensitivity::only_x(5.0));
-        assert_tokens(
-            &sensitivity,
-            &[
-                Token::Map { len: Some(1) },
-                Token::BorrowedStr("DualAxisSensitivity"),
-                Token::NewtypeStruct {
-                    name: "DualAxisSensitivity",
-                },
-                Token::TupleStruct {
-                    name: "Vec2",
-                    len: 2,
-                },
-                Token::F32(5.0),
-                Token::F32(1.0),
-                Token::TupleStructEnd,
-                Token::MapEnd,
-            ],
+        assert_eq!(
+            DualAxisProcessor::from(vec![DualAxisInverted::ALL.into()]),
+            DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
         );
+
+        assert_eq!(
+            DualAxisProcessor::from(vec![
+                DualAxisInverted::ALL.into(),
+                DualAxisSensitivity::all(2.0).into(),
+            ]),
+            DualAxisProcessor::Pipeline(vec![
+                Arc::new(DualAxisInverted::ALL.into()),
+                Arc::new(DualAxisSensitivity::all(2.0).into()),
+            ])
+        );
+    }
+
+    #[test]
+    fn test_dual_axis_inverted() {
+        let all = DualAxisInverted::ALL;
+        assert_eq!(all.inverted(), BVec2::TRUE);
+
+        let only_x = DualAxisInverted::ONLY_X;
+        assert_eq!(only_x.inverted(), BVec2::new(true, false));
+
+        let only_y = DualAxisInverted::ONLY_Y;
+        assert_eq!(only_y.inverted(), BVec2::new(false, true));
+
+        for x in -300..300 {
+            let x = x as f32 * 0.01;
+
+            for y in -300..300 {
+                let y = y as f32 * 0.01;
+                let value = Vec2::new(x, y);
+
+                let processor = DualAxisProcessor::Inverted(all);
+                assert_eq!(DualAxisProcessor::from(all), processor);
+                assert_eq!(processor.process(value), all.invert(value));
+                assert_eq!(all.invert(value), -value);
+                assert_eq!(all.invert(-value), value);
+
+                let processor = DualAxisProcessor::Inverted(only_x);
+                assert_eq!(DualAxisProcessor::from(only_x), processor);
+                assert_eq!(processor.process(value), only_x.invert(value));
+                assert_eq!(only_x.invert(value), Vec2::new(-x, y));
+                assert_eq!(only_x.invert(-value), Vec2::new(x, -y));
+
+                let processor = DualAxisProcessor::Inverted(only_y);
+                assert_eq!(DualAxisProcessor::from(only_y), processor);
+                assert_eq!(processor.process(value), only_y.invert(value));
+                assert_eq!(only_y.invert(value), Vec2::new(x, -y));
+                assert_eq!(only_y.invert(-value), Vec2::new(-x, y));
+            }
+        }
+    }
+
+    #[test]
+    fn test_dual_axis_sensitivity() {
+        for x in -300..300 {
+            let x = x as f32 * 0.01;
+
+            for y in -300..300 {
+                let y = y as f32 * 0.01;
+                let value = Vec2::new(x, y);
+
+                let sensitivity = x;
+
+                let all = DualAxisSensitivity::all(sensitivity);
+                let processor = DualAxisProcessor::Sensitivity(all);
+                assert_eq!(DualAxisProcessor::from(all), processor);
+                assert_eq!(processor.process(value), all.scale(value));
+                assert_eq!(all.sensitivities(), Vec2::splat(sensitivity));
+                assert_eq!(all.scale(value), sensitivity * value);
+
+                let only_x = DualAxisSensitivity::only_x(sensitivity);
+                let processor = DualAxisProcessor::Sensitivity(only_x);
+                assert_eq!(DualAxisProcessor::from(only_x), processor);
+                assert_eq!(processor.process(value), only_x.scale(value));
+                assert_eq!(only_x.sensitivities(), Vec2::new(sensitivity, 1.0));
+                assert_eq!(only_x.scale(value).x, x * sensitivity);
+                assert_eq!(only_x.scale(value).y, y);
+
+                let only_y = DualAxisSensitivity::only_y(sensitivity);
+                let processor = DualAxisProcessor::Sensitivity(only_y);
+                assert_eq!(DualAxisProcessor::from(only_y), processor);
+                assert_eq!(processor.process(value), only_y.scale(value));
+                assert_eq!(only_y.sensitivities(), Vec2::new(1.0, sensitivity));
+                assert_eq!(only_y.scale(value).x, x);
+                assert_eq!(only_y.scale(value).y, y * sensitivity);
+
+                let sensitivity2 = y;
+                let separate = DualAxisSensitivity::new(sensitivity, sensitivity2);
+                let processor = DualAxisProcessor::Sensitivity(separate);
+                assert_eq!(DualAxisProcessor::from(separate), processor);
+                assert_eq!(processor.process(value), separate.scale(value));
+                assert_eq!(
+                    separate.sensitivities(),
+                    Vec2::new(sensitivity, sensitivity2)
+                );
+                assert_eq!(separate.scale(value).x, x * sensitivity);
+                assert_eq!(separate.scale(value).y, y * sensitivity2);
+            }
+        }
     }
 }

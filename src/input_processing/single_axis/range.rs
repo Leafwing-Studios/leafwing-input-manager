@@ -4,11 +4,9 @@ use std::hash::{Hash, Hasher};
 
 use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
-use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use super::AxisProcessor;
-use crate as leafwing_input_manager;
 
 /// Specifies an acceptable min-max range for valid single-axis inputs,
 /// restricting all value stays within intended limits
@@ -20,9 +18,13 @@ use crate as leafwing_input_manager;
 /// // Restrict values to [-2.0, 1.5].
 /// let bounds = AxisBounds::new(-2.0, 1.5);
 ///
+/// // The ways to create an AxisProcessor.
+/// let processor = AxisProcessor::from(bounds);
+/// assert_eq!(processor, AxisProcessor::ValueBounds(bounds));
+///
 /// for value in -300..300 {
 ///     let value = value as f32 * 0.01;
-///     assert_eq!(bounds.process(value), value.clamp(-2.0, 1.5));
+///     assert_eq!(bounds.clamp(value), value.clamp(-2.0, 1.5));
 /// }
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
@@ -33,29 +35,6 @@ pub struct AxisBounds {
 
     /// The maximum value of valid inputs.
     pub(crate) max: f32,
-}
-
-#[serde_typetag]
-impl AxisProcessor for AxisBounds {
-    /// Clamps `input_value` within the bounds.
-    #[must_use]
-    #[inline(always)]
-    fn process(&self, input_value: f32) -> f32 {
-        // clamp() includes checks if either bound is set to NaN,
-        // but the constructors guarantee that all bounds will not be NaN.
-        input_value.min(self.max).max(self.min)
-    }
-}
-
-impl Default for AxisBounds {
-    /// Creates an [`AxisBounds`] that restricts values to the range `[-1.0, 1.0]`.
-    #[inline]
-    fn default() -> Self {
-        Self {
-            min: -1.0,
-            max: 1.0,
-        }
-    }
 }
 
 impl AxisBounds {
@@ -141,6 +120,32 @@ impl AxisBounds {
     pub fn contains(&self, input_value: f32) -> bool {
         self.min <= input_value && input_value <= self.max
     }
+
+    /// Clamps `input_value` within the bounds.
+    #[must_use]
+    #[inline]
+    pub fn clamp(&self, input_value: f32) -> f32 {
+        // clamp() includes checks if either bound is set to NaN,
+        // but the constructors guarantee that all bounds will not be NaN.
+        input_value.min(self.max).max(self.min)
+    }
+}
+
+impl Default for AxisBounds {
+    /// Creates an [`AxisBounds`] that restricts values to the range `[-1.0, 1.0]`.
+    #[inline]
+    fn default() -> Self {
+        Self {
+            min: -1.0,
+            max: 1.0,
+        }
+    }
+}
+
+impl From<AxisBounds> for AxisProcessor {
+    fn from(value: AxisBounds) -> Self {
+        Self::ValueBounds(value)
+    }
 }
 
 impl Eq for AxisBounds {}
@@ -165,15 +170,19 @@ impl Hash for AxisBounds {
 /// // Exclude values between -0.2 and 0.3
 /// let exclusion = AxisExclusion::new(-0.2, 0.3);
 ///
+/// // The ways to create an AxisProcessor.
+/// let processor = AxisProcessor::from(exclusion);
+/// assert_eq!(processor, AxisProcessor::Exclusion(exclusion));
+///
 /// for value in -300..300 {
 ///     let value = value as f32 * 0.01;
 ///
 ///     if -0.2 <= value && value <= 0.3 {
 ///         assert!(exclusion.contains(value));
-///         assert_eq!(exclusion.process(value), 0.0);
+///         assert_eq!(exclusion.exclude(value), 0.0);
 ///     } else {
 ///         assert!(!exclusion.contains(value));
-///         assert_eq!(exclusion.process(value), value);
+///         assert_eq!(exclusion.exclude(value), value);
 ///     }
 /// }
 /// ```
@@ -185,31 +194,6 @@ pub struct AxisExclusion {
 
     /// The minimum positive value treated as zero.
     pub(crate) positive_min: f32,
-}
-
-#[serde_typetag]
-impl AxisProcessor for AxisExclusion {
-    /// Excludes values within the specified range.
-    #[must_use]
-    #[inline(always)]
-    fn process(&self, input_value: f32) -> f32 {
-        if self.contains(input_value) {
-            0.0
-        } else {
-            input_value
-        }
-    }
-}
-
-impl Default for AxisExclusion {
-    /// Creates an [`AxisExclusion`] that ignores values within the range `[-0.1, 0.1]`.
-    #[inline]
-    fn default() -> Self {
-        Self {
-            negative_max: -0.1,
-            positive_min: 0.1,
-        }
-    }
 }
 
 impl AxisExclusion {
@@ -281,10 +265,38 @@ impl AxisExclusion {
         self.negative_max <= input_value && input_value <= self.positive_min
     }
 
+    /// Excludes values within the specified range.
+    #[must_use]
+    #[inline]
+    pub fn exclude(&self, input_value: f32) -> f32 {
+        if self.contains(input_value) {
+            0.0
+        } else {
+            input_value
+        }
+    }
+
     /// Creates an [`AxisDeadZone`] using `self` as the exclusion range.
     #[inline]
     pub fn scaled(self) -> AxisDeadZone {
-        self.into()
+        AxisDeadZone::new(self.negative_max, self.positive_min)
+    }
+}
+
+impl Default for AxisExclusion {
+    /// Creates an [`AxisExclusion`] that ignores values within the range `[-0.1, 0.1]`.
+    #[inline]
+    fn default() -> Self {
+        Self {
+            negative_max: -0.1,
+            positive_min: 0.1,
+        }
+    }
+}
+
+impl From<AxisExclusion> for AxisProcessor {
+    fn from(value: AxisExclusion) -> Self {
+        Self::Exclusion(value)
     }
 }
 
@@ -315,6 +327,10 @@ impl Hash for AxisExclusion {
 /// let exclusion = AxisExclusion::new(-0.2, 0.3);
 /// assert_eq!(exclusion.scaled(), deadzone);
 ///
+/// // The ways to create an AxisProcessor.
+/// let processor = AxisProcessor::from(deadzone);
+/// assert_eq!(processor, AxisProcessor::DeadZone(deadzone));
+///
 /// // The bounds after normalization.
 /// let bounds = deadzone.bounds();
 /// assert_eq!(bounds.min(), -1.0);
@@ -326,7 +342,7 @@ impl Hash for AxisExclusion {
 ///     // Values within the dead zone are treated as zero.
 ///     if -0.2 <= value && value <= 0.3 {
 ///         assert!(deadzone.within_exclusion(value));
-///         assert_eq!(deadzone.process(value), 0.0);
+///         assert_eq!(deadzone.normalize(value), 0.0);
 ///     }
 ///
 ///     // Values within the live zone are scaled linearly.
@@ -334,18 +350,18 @@ impl Hash for AxisExclusion {
 ///         assert!(deadzone.within_livezone_lower(value));
 ///
 ///         let expected = f32::inverse_lerp(-1.0, -0.2, value) - 1.0;
-///         assert!((deadzone.process(value) - expected).abs() <= f32::EPSILON);
+///         assert!((deadzone.normalize(value) - expected).abs() <= f32::EPSILON);
 ///     } else if 0.3 < value && value <= 1.0 {
 ///         assert!(deadzone.within_livezone_upper(value));
 ///
 ///         let expected = f32::inverse_lerp(0.3, 1.0, value);
-///         assert!((deadzone.process(value) - expected).abs() <= f32::EPSILON);
+///         assert!((deadzone.normalize(value) - expected).abs() <= f32::EPSILON);
 ///     }
 ///
 ///     // Values outside the bounds are restricted to the range.
 ///     else {
 ///         assert!(!deadzone.within_bounds(value));
-///         assert_eq!(deadzone.process(value), value.clamp(-1.0, 1.0));
+///         assert_eq!(deadzone.normalize(value), value.clamp(-1.0, 1.0));
 ///     }
 /// }
 /// ```
@@ -362,48 +378,6 @@ pub struct AxisDeadZone {
     /// Pre-calculated reciprocal of the upper live zone size,
     /// preventing division during normalization.
     pub(crate) livezone_upper_recip: f32,
-}
-
-#[serde_typetag]
-impl AxisProcessor for AxisDeadZone {
-    /// Normalizes input values into the live zone.
-    #[must_use]
-    fn process(&self, input_value: f32) -> f32 {
-        // Clamp out-of-bounds values to [-1, 1],
-        // and then exclude values within the dead zone,
-        // and finally linearly scale the result to the live zone.
-        if input_value <= 0.0 {
-            let (bound, deadzone) = self.livezone_lower_min_max();
-            let clamped_input = input_value.max(bound);
-            let distance_to_deadzone = (clamped_input - deadzone).min(0.0);
-            distance_to_deadzone * self.livezone_lower_recip
-        } else {
-            let (deadzone, bound) = self.livezone_upper_min_max();
-            let clamped_input = input_value.min(bound);
-            let distance_to_deadzone = (clamped_input - deadzone).max(0.0);
-            distance_to_deadzone * self.livezone_upper_recip
-        }
-    }
-}
-
-impl From<AxisExclusion> for AxisDeadZone {
-    fn from(deadzone: AxisExclusion) -> Self {
-        let (deadzone_min, deadzone_max) = deadzone.min_max();
-        let (bound_min, bound_max) = AxisBounds::default().min_max();
-        Self {
-            exclusion: deadzone,
-            livezone_lower_recip: (deadzone_min - bound_min).recip(),
-            livezone_upper_recip: (bound_max - deadzone_max).recip(),
-        }
-    }
-}
-
-impl Default for AxisDeadZone {
-    /// Creates an [`AxisDeadZone`] that excludes input values within the deadzone `[-0.1, 0.1]`.
-    #[inline]
-    fn default() -> Self {
-        AxisExclusion::default().into()
-    }
 }
 
 impl AxisDeadZone {
@@ -426,7 +400,12 @@ impl AxisDeadZone {
     /// Panics if the requirements aren't met.
     #[inline]
     pub fn new(negative_max: f32, positive_min: f32) -> Self {
-        AxisExclusion::new(negative_max, positive_min).into()
+        let (bound_min, bound_max) = AxisBounds::default().min_max();
+        Self {
+            exclusion: AxisExclusion::new(negative_max, positive_min),
+            livezone_lower_recip: (negative_max - bound_min).recip(),
+            livezone_upper_recip: (bound_max - positive_min).recip(),
+        }
     }
 
     /// Creates an [`AxisDeadZone`] that excludes input values below a `threshold` magnitude
@@ -442,7 +421,7 @@ impl AxisDeadZone {
     #[doc(alias = "symmetric")]
     #[inline]
     pub fn magnitude(threshold: f32) -> Self {
-        AxisExclusion::magnitude(threshold).into()
+        AxisDeadZone::new(-threshold, threshold)
     }
 
     /// Returns the [`AxisExclusion`] used by this deadzone.
@@ -504,6 +483,39 @@ impl AxisDeadZone {
         let (min, max) = self.livezone_upper_min_max();
         min <= input_value && input_value <= max
     }
+
+    /// Normalizes input values into the live zone.
+    #[must_use]
+    pub fn normalize(&self, input_value: f32) -> f32 {
+        // Clamp out-of-bounds values to [-1, 1],
+        // and then exclude values within the dead zone,
+        // and finally linearly scale the result to the live zone.
+        if input_value <= 0.0 {
+            let (bound, deadzone) = self.livezone_lower_min_max();
+            let clamped_input = input_value.max(bound);
+            let distance_to_deadzone = (clamped_input - deadzone).min(0.0);
+            distance_to_deadzone * self.livezone_lower_recip
+        } else {
+            let (deadzone, bound) = self.livezone_upper_min_max();
+            let clamped_input = input_value.min(bound);
+            let distance_to_deadzone = (clamped_input - deadzone).max(0.0);
+            distance_to_deadzone * self.livezone_upper_recip
+        }
+    }
+}
+
+impl Default for AxisDeadZone {
+    /// Creates an [`AxisDeadZone`] that excludes input values within the deadzone `[-0.1, 0.1]`.
+    #[inline]
+    fn default() -> Self {
+        AxisDeadZone::new(-0.1, 0.1)
+    }
+}
+
+impl From<AxisDeadZone> for AxisProcessor {
+    fn from(value: AxisDeadZone) -> Self {
+        Self::DeadZone(value)
+    }
 }
 
 impl Eq for AxisDeadZone {}
@@ -516,7 +528,7 @@ impl Hash for AxisDeadZone {
 
 #[cfg(test)]
 mod tests {
-    use crate::input_processing::*;
+    use super::*;
     use bevy::prelude::FloatExt;
 
     #[test]
@@ -526,8 +538,13 @@ mod tests {
             assert_eq!(bounds.max(), max);
             assert_eq!(bounds.min_max(), (min, max));
 
+            let processor = AxisProcessor::ValueBounds(bounds);
+            assert_eq!(AxisProcessor::from(bounds), processor);
+
             for value in -300..300 {
                 let value = value as f32 * 0.01;
+
+                assert_eq!(bounds.clamp(value), processor.process(value));
 
                 if min <= value && value <= max {
                     assert!(bounds.contains(value));
@@ -535,7 +552,7 @@ mod tests {
                     assert!(!bounds.contains(value));
                 }
 
-                assert_eq!(bounds.process(value), value.clamp(min, max));
+                assert_eq!(bounds.clamp(value), value.clamp(min, max));
             }
         }
 
@@ -565,15 +582,20 @@ mod tests {
             assert_eq!(exclusion.max(), max);
             assert_eq!(exclusion.min_max(), (min, max));
 
+            let processor = AxisProcessor::Exclusion(exclusion);
+            assert_eq!(AxisProcessor::from(exclusion), processor);
+
             for value in -300..300 {
                 let value = value as f32 * 0.01;
 
+                assert_eq!(exclusion.exclude(value), processor.process(value));
+
                 if min <= value && value <= max {
                     assert!(exclusion.contains(value));
-                    assert_eq!(exclusion.process(value), 0.0);
+                    assert_eq!(exclusion.exclude(value), 0.0);
                 } else {
                     assert!(!exclusion.contains(value));
-                    assert_eq!(exclusion.process(value), value);
+                    assert_eq!(exclusion.exclude(value), value);
                 }
             }
         }
@@ -607,32 +629,37 @@ mod tests {
 
             assert_eq!(AxisExclusion::new(min, max).scaled(), deadzone);
 
+            let processor = AxisProcessor::DeadZone(deadzone);
+            assert_eq!(AxisProcessor::from(deadzone), processor);
+
             for value in -300..300 {
                 let value = value as f32 * 0.01;
+
+                assert_eq!(deadzone.normalize(value), processor.process(value));
 
                 // Values within the dead zone are treated as zero.
                 if min <= value && value <= max {
                     assert!(deadzone.within_exclusion(value));
-                    assert_eq!(deadzone.process(value), 0.0);
+                    assert_eq!(deadzone.normalize(value), 0.0);
                 }
                 // Values within the live zone are scaled linearly.
                 else if -1.0 <= value && value < min {
                     assert!(deadzone.within_livezone_lower(value));
 
                     let expected = f32::inverse_lerp(-1.0, min, value) - 1.0;
-                    let delta = (deadzone.process(value) - expected).abs();
+                    let delta = (deadzone.normalize(value) - expected).abs();
                     assert!(delta <= f32::EPSILON);
                 } else if max < value && value <= 1.0 {
                     assert!(deadzone.within_livezone_upper(value));
 
                     let expected = f32::inverse_lerp(max, 1.0, value);
-                    let delta = (deadzone.process(value) - expected).abs();
+                    let delta = (deadzone.normalize(value) - expected).abs();
                     assert!(delta <= f32::EPSILON);
                 }
                 // Values outside the bounds are restricted to the nearest valid value.
                 else {
                     assert!(!deadzone.within_bounds(value));
-                    assert_eq!(deadzone.process(value), value.clamp(-1.0, 1.0));
+                    assert_eq!(deadzone.normalize(value), value.clamp(-1.0, 1.0));
                 }
             }
         }

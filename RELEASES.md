@@ -5,36 +5,42 @@
 ### Breaking Changes
 
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-- added input processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad` to refine input values:
-  - added processor traits:
+- added input processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad` to refine input values:
+  - added processor enums:
     - `AxisProcessor`: Handles single-axis values.
     - `DualAxisProcessor`: Handles dual-axis values.
-  - added built-in processors:
-    - Pipelines: Combine multiple processors into a pipeline.
-      - `AxisProcessingPipeline`: Chain processors for single-axis values.
-      - `DualAxisProcessingPipeline`: Chain processors for dual-axis values.
+  - added processor traits for defining custom processors:
+    - `CustomAxisProcessor`: Handles single-axis values.
+    - `CustomDualAxisProcessor`: Handles dual-axis values.
+  - added built-in processor variants (no variant versions implemented `Into<Processor>`):
+    - Pipelines: Handle input values sequentially through a sequence of processors.
+      - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
+      - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
+      - you can also create them by these methods:
+        - `AxisProcessor::with_processor` or `From<Vec<AxisProcessor>>::from` for `AxisProcessor::Pipeline`.
+        - `DualAxisProcessor::with_processor` or `From<Vec<DualAxisProcessor>>::from` for `DualAxisProcessor::Pipeline`.
     - Inversion: Reverses control (positive becomes negative, etc.)
-      - `AxisInverted`: Single-axis inversion.
-      - `DualAxisInverted`: Dual-axis inversion.
+      - `AxisProcessor::Inverted`: Single-axis inversion.
+      - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
     - Sensitivity: Adjusts control responsiveness (doubling, halving, etc.).
-      - `AxisSensitivity`: Single-axis scaling.
-      - `DualAxisSensitivity`: Dual-axis scaling.
+      - `AxisProcessor::Sensitivity`: Single-axis scaling.
+      - `DualAxisSensitivity`: Dual-axis scaling, implemented `Into<DualAxisProcessor>`.
     - Value Bounds: Define the boundaries for constraining input values.
-      - `AxisBounds`: Restricts single-axis values to a range.
-      - `DualAxisBounds`: Restricts single-axis values to a range along each axis.
-      - `CircleBounds`: Limits dual-axis values to a maximum magnitude.
+      - `AxisBounds`: Restricts single-axis values to a range, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+      - `DualAxisBounds`: Restricts single-axis values to a range along each axis, implemented `Into<DualAxisProcessor>`.
+      - `CircleBounds`: Limits dual-axis values to a maximum magnitude, implemented `Into<DualAxisProcessor>`.
     - Deadzones: Ignores near-zero values, treating them as zero.
       - Unscaled versions:
-        - `AxisExclusion`: Excludes small single-axis values.
-        - `DualAxisExclusion`: Excludes small dual-axis values along each axis.
-        - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold.
+        - `AxisExclusion`: Excludes small single-axis values, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+        - `DualAxisExclusion`: Excludes small dual-axis values along each axis, implemented `Into<DualAxisProcessor>`.
+        - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold, implemented `Into<DualAxisProcessor>`.
       - Scaled versions:
-        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`.
-        - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`.
-        - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`.
+        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+        - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
+        - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
   - removed `DeadZoneShape`.
   - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
-  - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`,  `VirtualAxis`, and `VirtualDpad`.
+  - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad`.
   - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
   - added `serde_typetag` procedural macro attribute for processor type tagging.
 - made the dependency on bevy's `bevy_gilrs` feature optional.

@@ -45,14 +45,13 @@ fn spawn_player(mut commands: Commands) {
         )
         .insert(
             Action::LookAround,
-            // You can also add a pipeline to handle axis-like user inputs.
-            DualAxis::mouse_motion().with_processor(
-                DualAxisProcessingPipeline::default()
-                    // The first processor is a circular deadzone.
-                    .with(CircleDeadZone::new(0.1))
-                    // The next processor doubles inputs normalized by the deadzone.
-                    .with(DualAxisSensitivity::all(2.0)),
-            ),
+            // You can also use a sequence of processors as the processing pipeline.
+            DualAxis::mouse_motion().replace_processor(DualAxisProcessor::from(vec![
+                // The first processor is a circular deadzone.
+                CircleDeadZone::new(0.1).into(),
+                // The next processor doubles inputs normalized by the deadzone.
+                DualAxisSensitivity::all(2.0).into(),
+            ])),
         );
     commands
         .spawn(InputManagerBundle::with_map(input_map))
