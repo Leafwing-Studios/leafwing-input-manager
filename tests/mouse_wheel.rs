@@ -1,7 +1,7 @@
 use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseWheelAxisType};
+use leafwing_input_manager::axislike::{AxisType, DualAxisData};
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
@@ -79,10 +79,7 @@ fn mouse_wheel_single_axis_mocking() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: AxisProcessor::None,
     };
 
     app.send_input(input);
@@ -97,23 +94,10 @@ fn mouse_wheel_dual_axis_mocking() {
     assert_eq!(events.drain().count(), 0);
 
     let input = DualAxis {
-        x: SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            value: Some(1.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            inverted: false,
-            sensitivity: 1.0,
-        },
-        y: SingleAxis {
-            axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            value: Some(0.),
-            positive_low: 0.0,
-            negative_low: 0.0,
-            inverted: false,
-            sensitivity: 1.0,
-        },
-        deadzone: DualAxis::ZERO_DEADZONE_SHAPE,
+        x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
+        y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
+        processor: DualAxisProcessor::None,
+        value: Some(Vec2::X),
     };
     app.send_input(input);
     let mut events = app.world.resource_mut::<Events<MouseWheel>>();
@@ -178,10 +162,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: AxisProcessor::None,
     };
     app.send_input(input);
     app.update();
@@ -192,10 +173,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
         value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: AxisProcessor::None,
     };
     app.send_input(input);
     app.update();
@@ -206,10 +184,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: AxisProcessor::None,
     };
     app.send_input(input);
     app.update();
@@ -220,10 +195,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(-1.),
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: AxisProcessor::None,
     };
     app.send_input(input);
     app.update();
@@ -231,14 +203,11 @@ fn mouse_wheel_single_axis() {
     assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
+    // Usually a small deadzone threshold will be set
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: Some(0.0),
-        // Usually a small deadzone threshold will be set
-        positive_low: 0.1,
-        negative_low: 0.1,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: AxisDeadZone::default().into(),
     };
     app.send_input(input);
     app.update();
@@ -249,10 +218,7 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis {
         axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
         value: None,
-        positive_low: 0.0,
-        negative_low: 0.0,
-        inverted: false,
-        sensitivity: 1.0,
+        processor: AxisProcessor::None,
     };
     app.send_input(input);
     app.update();

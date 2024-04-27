@@ -5,7 +5,7 @@
 //! and include it as a resource in a bevy app.
 
 use bevy::prelude::*;
-use leafwing_input_manager::{prelude::*, user_input::InputKind};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()

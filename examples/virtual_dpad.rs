@@ -32,6 +32,7 @@ fn spawn_player(mut commands: Commands) {
             down: KeyCode::KeyS.into(),
             left: KeyCode::KeyA.into(),
             right: KeyCode::KeyD.into(),
+            processor: DualAxisProcessor::None,
         },
     )]);
     commands

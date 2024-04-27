@@ -198,7 +198,7 @@ fn dpad_chord_clash(dpad: &VirtualDPad, chord: &[InputKind]) -> bool {
     chord.len() > 1
         && chord
             .iter()
-            .any(|button| [dpad.up, dpad.down, dpad.left, dpad.right].contains(button))
+            .any(|button| [&dpad.up, &dpad.down, &dpad.left, &dpad.right].contains(&button))
 }
 
 #[must_use]
@@ -313,6 +313,7 @@ fn resolve_clash<A: Actionlike>(
 mod tests {
     use super::*;
     use crate as leafwing_input_manager;
+    use crate::input_processing::DualAxisProcessor;
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use bevy::prelude::Reflect;
@@ -352,6 +353,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
+                processor: DualAxisProcessor::None,
             },
         );
         input_map.insert_chord(CtrlUp, [ControlLeft, ArrowUp]);
@@ -360,7 +362,6 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::axislike::VirtualDPad;
         use crate::input_mocking::MockInput;
         use bevy::input::InputPlugin;
         use Action::*;
@@ -380,6 +381,7 @@ mod tests {
                 down: KeyX.into(),
                 left: KeyY.into(),
                 right: KeyZ.into(),
+                processor: DualAxisProcessor::None,
             }
             .into();
             let abcd_dpad: UserInput = VirtualDPad {
@@ -387,6 +389,7 @@ mod tests {
                 down: KeyB.into(),
                 left: KeyC.into(),
                 right: KeyD.into(),
+                processor: DualAxisProcessor::None,
             }
             .into();
 
@@ -396,6 +399,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
+                processor: DualAxisProcessor::None,
             }
             .into();
 
