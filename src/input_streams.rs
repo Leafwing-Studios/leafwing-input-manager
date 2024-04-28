@@ -11,12 +11,11 @@ use bevy::input::{
 use bevy::math::Vec2;
 use bevy::utils::HashSet;
 
-use crate::axislike::{
-    AxisType, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
-};
+use crate::axislike::{AxisType, MouseMotionAxisType, MouseWheelAxisType, SingleAxis};
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::prelude::DualAxis;
 use crate::user_input::{InputKind, UserInput};
+use crate::user_inputs::axislike::DualAxisData;
 
 /// A collection of [`ButtonInput`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///

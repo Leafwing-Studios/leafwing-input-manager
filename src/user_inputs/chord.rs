@@ -15,7 +15,14 @@ use crate::user_inputs::UserInput;
 /// When it treated as a single-axis input, it uses the sum of values from all inner single-axis inputs.
 /// When it treated as a dual-axis input, it only uses the value of the first inner dual-axis input.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
-pub struct ChordInput(Vec<Box<dyn UserInput>>);
+pub struct ChordInput(
+    // Note: we cannot use a HashSet here because of https://users.rust-lang.org/t/hash-not-implemented-why-cant-it-be-derived/92416/8
+    // We cannot use a BTreeSet because the underlying types don't impl Ord
+    // We don't want to use a PetitSet here because of memory bloat
+    // So a vec it is!
+    // RIP your uniqueness guarantees
+    Vec<Box<dyn UserInput>>,
+);
 
 // #[serde_typetag]
 impl UserInput for ChordInput {

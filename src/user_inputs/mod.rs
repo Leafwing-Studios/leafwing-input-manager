@@ -47,16 +47,24 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
 use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
 
+use self::axislike::DualAxisData;
 use crate::input_streams::InputStreams;
+use crate::orientation::Rotation;
 use crate::typetag::RegisterTypeTag;
 
+pub use self::chord::*;
+pub use self::gamepad::*;
+pub use self::keyboard::*;
+pub use self::mouse::*;
+
+pub mod axislike;
 pub mod chord;
 pub mod gamepad;
 pub mod keyboard;
 pub mod mouse;
 
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
-pub enum InputKind {
+pub enum UserInputDataType {
     Button,
     Axis,
     DualAxis,
@@ -64,19 +72,25 @@ pub enum InputKind {
 
 /// A trait for defining the behavior expected from different user input sources.
 ///
-/// Implementers of this trait should provide methods for accessing and
-/// processing user input data.
+/// Implementers of this trait should provide methods for accessing and processing user input data.
 pub trait UserInput:
     Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
-    /// Checks if the user input is currently active.
+    /// Checks if the input is currently active.
     fn is_active(&self, input_streams: &InputStreams) -> bool;
 
-    /// Retrieves the current value of the user input.
+    /// Retrieves the current value of the input.
     fn value(&self, input_streams: &InputStreams) -> f32;
 
-    /// Retrieves the current dual-axis value of the user input if available.
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<Vec2>;
+    /// Attempts to retrieve the current [`DualAxisData`] of the input if applicable.
+    ///
+    /// This method is intended for inputs that represent movement on two axes.
+    /// However, some input types (e.g., buttons, mouse scroll) don't inherently provide separate X and Y information.
+    ///
+    /// For implementers that don't represent dual-axis input, this method should always return [`None`].
+    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
+        None
+    }
 }
 
 dyn_clone::clone_trait_object!(UserInput);
