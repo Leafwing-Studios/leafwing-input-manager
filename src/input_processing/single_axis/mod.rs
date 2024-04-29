@@ -61,7 +61,7 @@ pub enum AxisProcessor {
     /// Processes input values sequentially through a sequence of [`AxisProcessor`]s.
     ///
     /// For a straightforward creation of a [`AxisProcessor::Pipeline`],
-    /// you can use [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] methods.
+    /// you can use [`AxisProcessor::with_processor`] or [`FromIterator<AxisProcessor>::from_iter`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;
@@ -79,7 +79,7 @@ pub enum AxisProcessor {
     ///
     /// assert_eq!(
     ///     expected,
-    ///     AxisProcessor::from(vec![
+    ///     AxisProcessor::from_iter([
     ///         AxisProcessor::Inverted,
     ///         AxisProcessor::Sensitivity(2.0),
     ///     ])
@@ -141,9 +141,9 @@ impl AxisProcessor {
     }
 }
 
-impl From<Vec<AxisProcessor>> for AxisProcessor {
-    fn from(value: Vec<AxisProcessor>) -> Self {
-        Self::Pipeline(value.into_iter().map(Arc::new).collect())
+impl FromIterator<AxisProcessor> for AxisProcessor {
+    fn from_iter<T: IntoIterator<Item = AxisProcessor>>(iter: T) -> Self {
+        Self::Pipeline(iter.into_iter().map(Arc::new).collect())
     }
 }
 
@@ -208,19 +208,19 @@ mod tests {
     }
 
     #[test]
-    fn test_axis_processor_from_list() {
-        assert_eq!(AxisProcessor::from(vec![]), AxisProcessor::Pipeline(vec![]));
+    fn test_axis_processor_from_iter() {
+        assert_eq!(
+            AxisProcessor::from_iter([]),
+            AxisProcessor::Pipeline(vec![])
+        );
 
         assert_eq!(
-            AxisProcessor::from(vec![AxisProcessor::Inverted]),
+            AxisProcessor::from_iter([AxisProcessor::Inverted]),
             AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
         );
 
         assert_eq!(
-            AxisProcessor::from(vec![
-                AxisProcessor::Inverted,
-                AxisProcessor::Sensitivity(2.0),
-            ]),
+            AxisProcessor::from_iter([AxisProcessor::Inverted, AxisProcessor::Sensitivity(2.0)]),
             AxisProcessor::Pipeline(vec![
                 Arc::new(AxisProcessor::Inverted),
                 Arc::new(AxisProcessor::Sensitivity(2.0)),

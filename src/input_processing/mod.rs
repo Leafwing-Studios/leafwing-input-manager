@@ -26,8 +26,8 @@
 //!
 //! You can also use these methods to create a pipeline.
 //!
-//! - [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] for [`AxisProcessor::Pipeline`].
-//! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for [`DualAxisProcessor::Pipeline`].
+//! - [`AxisProcessor::with_processor`] or [`FromIterator<AxisProcessor>::from_iter`] for [`AxisProcessor::Pipeline`].
+//! - [`DualAxisProcessor::with_processor`] or [`FromIterator<DualAxisProcessor>::from_iter`] for [`DualAxisProcessor::Pipeline`].
 //!
 //! ## Inversion
 //!

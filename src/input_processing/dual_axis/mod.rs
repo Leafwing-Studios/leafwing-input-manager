@@ -54,7 +54,7 @@ pub enum DualAxisProcessor {
     /// one for the current step and the other for the next step.
     ///
     /// For a straightforward creation of a [`DualAxisProcessor::Pipeline`],
-    /// you can use [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] methods.
+    /// you can use [`DualAxisProcessor::with_processor`] or [`FromIterator<DualAxisProcessor>::from_iter`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;
@@ -72,7 +72,7 @@ pub enum DualAxisProcessor {
     ///
     /// assert_eq!(
     ///     expected,
-    ///     DualAxisProcessor::from(vec![
+    ///     DualAxisProcessor::from_iter([
     ///         DualAxisInverted::ALL.into(),
     ///         DualAxisSensitivity::all(2.0).into(),
     ///     ])
@@ -136,9 +136,9 @@ impl DualAxisProcessor {
     }
 }
 
-impl From<Vec<DualAxisProcessor>> for DualAxisProcessor {
-    fn from(value: Vec<DualAxisProcessor>) -> Self {
-        Self::Pipeline(value.into_iter().map(Arc::new).collect())
+impl FromIterator<DualAxisProcessor> for DualAxisProcessor {
+    fn from_iter<T: IntoIterator<Item = DualAxisProcessor>>(iter: T) -> Self {
+        Self::Pipeline(iter.into_iter().map(Arc::new).collect())
     }
 }
 
@@ -313,19 +313,19 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_processor_from_list() {
+    fn test_dual_axis_processor_from_iter() {
         assert_eq!(
-            DualAxisProcessor::from(vec![]),
+            DualAxisProcessor::from_iter([]),
             DualAxisProcessor::Pipeline(vec![])
         );
 
         assert_eq!(
-            DualAxisProcessor::from(vec![DualAxisInverted::ALL.into()]),
+            DualAxisProcessor::from_iter([DualAxisInverted::ALL.into()]),
             DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
         );
 
         assert_eq!(
-            DualAxisProcessor::from(vec![
+            DualAxisProcessor::from_iter([
                 DualAxisInverted::ALL.into(),
                 DualAxisSensitivity::all(2.0).into(),
             ]),
