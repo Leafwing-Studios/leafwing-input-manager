@@ -4,7 +4,52 @@
 
 ### Breaking Changes
 
-- Removed `Direction` type. Use `bevy::math::primitives::Direction2d`.
+- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
+- added input processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad` to refine input values:
+  - added processor enums:
+    - `AxisProcessor`: Handles single-axis values.
+    - `DualAxisProcessor`: Handles dual-axis values.
+  - added processor traits for defining custom processors:
+    - `CustomAxisProcessor`: Handles single-axis values.
+    - `CustomDualAxisProcessor`: Handles dual-axis values.
+  - added built-in processor variants (no variant versions implemented `Into<Processor>`):
+    - Pipelines: Handle input values sequentially through a sequence of processors.
+      - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
+      - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
+      - you can also create them by these methods:
+        - `AxisProcessor::with_processor` or `From<Vec<AxisProcessor>>::from` for `AxisProcessor::Pipeline`.
+        - `DualAxisProcessor::with_processor` or `From<Vec<DualAxisProcessor>>::from` for `DualAxisProcessor::Pipeline`.
+    - Inversion: Reverses control (positive becomes negative, etc.)
+      - `AxisProcessor::Inverted`: Single-axis inversion.
+      - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
+    - Sensitivity: Adjusts control responsiveness (doubling, halving, etc.).
+      - `AxisProcessor::Sensitivity`: Single-axis scaling.
+      - `DualAxisSensitivity`: Dual-axis scaling, implemented `Into<DualAxisProcessor>`.
+    - Value Bounds: Define the boundaries for constraining input values.
+      - `AxisBounds`: Restricts single-axis values to a range, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+      - `DualAxisBounds`: Restricts single-axis values to a range along each axis, implemented `Into<DualAxisProcessor>`.
+      - `CircleBounds`: Limits dual-axis values to a maximum magnitude, implemented `Into<DualAxisProcessor>`.
+    - Deadzones: Ignores near-zero values, treating them as zero.
+      - Unscaled versions:
+        - `AxisExclusion`: Excludes small single-axis values, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+        - `DualAxisExclusion`: Excludes small dual-axis values along each axis, implemented `Into<DualAxisProcessor>`.
+        - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold, implemented `Into<DualAxisProcessor>`.
+      - Scaled versions:
+        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+        - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
+        - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
+  - removed `DeadZoneShape`.
+  - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
+  - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad`.
+  - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
+  - added `serde_typetag` procedural macro attribute for processor type tagging.
+- made the dependency on bevy's `bevy_gilrs` feature optional.
+  - it is still enabled by leafwing-input-manager's default features.
+  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
+
+### Bugs
+
+- fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
 
 ## Version 0.13.3
 
@@ -81,7 +126,7 @@
 
 - improved deadzone handling for both `DualAxis` and `SingleAxis` deadzones
   - all deadzones now scale the input so that it is continuous.
-  - `DeadZoneShape::Cross` handles each axis seperately, making a per-axis "snapping" effect
+  - `DeadZoneShape::Cross` handles each axis separately, making a per-axis "snapping" effect
   - an input that falls on the exact boundary of a deadzone is now considered inside it
 - added support in `ActionDiff` for value and axis_pair changes
 
@@ -449,7 +494,7 @@
 - `InputManagerPlugin` now works even if some input stream resources are missing
 - added the `input_pressed` method to `InputMap`, to check if a single input is pressed
 - renamed `InputMap::assign_gamepad` to `InputMap::set_gamepad` for consistency and clarity (it does not uniquely assign a gamepad)
-- removed `strum` dependency by reimplementing the funcitonality, allowing users to define actions with only the `Actionlike` trait
+- removed `strum` dependency by reimplementing the functionality, allowing users to define actions with only the `Actionlike` trait
 - added the `get_at` and `index` methods on the `Actionlike` trait, allowing you to fetch a specific action by its position in the defining enum and vice versa
 - `Copy` bound on `Actionlike` trait relaxed to `Clone`, allowing you to store non-copy data in your enum variants
 - `Clone`, `PartialEq` and `Debug` trait impls for `ActionState`

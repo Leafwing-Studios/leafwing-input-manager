@@ -49,7 +49,7 @@ enum Action {
 
 // Construction
 let mut input_map = InputMap::new([
-   // Note that the type of your iterators must be homogenous;
+   // Note that the type of your iterators must be homogeneous;
    // you can use `InputKind` or `UserInput` if needed
    // as unifying types
   (Action::Run, GamepadButtonType::South),
@@ -261,6 +261,9 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
     ///
+    /// Use this when an [`InputMap`] should exclusively accept input from a
+    /// particular gamepad.
+    ///
     /// If this is not called, input from any connected gamepad will be used.
     /// The first matching non-zero input will be accepted,
     /// as determined by gamepad registration order.
@@ -325,7 +328,7 @@ impl<A: Actionlike> InputMap<A> {
 
                 if input_streams.input_pressed(input) {
                     action_datum.state = ButtonState::JustPressed;
-                    action_datum.value += input_streams.input_value(input, true);
+                    action_datum.value += input_streams.input_value(input);
                 }
             }
 

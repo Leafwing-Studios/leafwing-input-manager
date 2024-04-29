@@ -104,9 +104,9 @@ fn jump(query: Query<&ActionState<Action>, With<Player>>) {
 }
 ```
 
-This snippet is the `minimal.rs` example from the [`examples`](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/latest/examples) folder: check there for more in-depth learning materials!
+This snippet is the `minimal.rs` example from the [`examples`](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main/examples) folder: check there for more in-depth learning materials!
 
 ## Crate Feature Flags
 
 This crate has four feature flags: `asset`, `ui`, `no_ui_priority`, and `egui`.
-Please refer to the `[features]` section in the [`Cargo.toml`](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/latest/Cargo.toml) for detailed information about their configurations.
+Please refer to the `[features]` section in the [`Cargo.toml`](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main/Cargo.toml) for detailed information about their configurations.

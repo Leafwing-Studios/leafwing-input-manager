@@ -6,6 +6,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_players)
+        .add_systems(Update, move_players)
         .run();
 }
 
@@ -16,7 +17,7 @@ enum Action {
     Jump,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 enum Player {
     One,
     Two,
@@ -74,4 +75,13 @@ fn spawn_players(mut commands: Commands) {
         player: Player::Two,
         input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::Two)),
     });
+}
+
+fn move_players(player_query: Query<(&Player, &ActionState<Action>)>) {
+    for (player, action_state) in player_query.iter() {
+        let actions = action_state.get_just_pressed();
+        if !actions.is_empty() {
+            info!("Player {player:?} performed actions {actions:?}");
+        }
+    }
 }

@@ -6,7 +6,7 @@
 //! Note that [`ActionState`] can also be serialized and sent directly.
 //! This approach will be less bandwidth efficient, but involve less complexity and CPU work.
 
-use bevy::ecs::event::{Events, ManualEventReader};
+use bevy::ecs::event::ManualEventReader;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::action_diff::ActionDiffEvent;
@@ -22,10 +22,6 @@ enum FpsAction {
     Jump,
     Shoot,
 }
-
-/// This identifier uniquely identifies entities across the network
-#[derive(Component, Clone, PartialEq, Eq, Hash, Debug)]
-struct StableId(u64);
 
 /// Processes an [`Events`] stream of [`ActionDiff`] to update an [`ActionState`]
 ///

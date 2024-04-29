@@ -184,20 +184,43 @@ impl<A: Actionlike> ActionState<A> {
         });
     }
 
-    /// A reference of the [`ActionData`] corresponding to the `action` if populated.
+    /// A reference of the [`ActionData`] corresponding to the `action` if triggered.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    ///
+    /// # Caution
+    ///
+    /// To access the [`ActionData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ActionData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
     pub fn action_data(&self, action: &A) -> Option<&ActionData> {
         self.action_data.get(action)
     }
 
-    /// A mutable reference of the [`ActionData`] corresponding to the `action` if populated.
+    /// A mutable reference of the [`ActionData`] corresponding to the `action` if triggered.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    ///
+    /// # Caution
+    ///
+    /// - To access the [`ActionData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// - To insert a default [`ActionData`] if it doesn't exist,
+    /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ActionData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
     pub fn action_data_mut(&mut self, action: &A) -> Option<&mut ActionData> {
@@ -205,6 +228,10 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// A mutable reference of the [`ActionData`] corresponding to the `action`.
+    ///
+    /// If the `action` has no data yet (because the `action` has not been triggered),
+    /// this method will create and insert a default [`ActionData`] for you,
+    /// avoiding potential errors from unwrapping [`None`].
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.

@@ -1,5 +1,4 @@
 #![forbid(missing_docs)]
-#![forbid(unsafe_code)]
 #![warn(clippy::doc_markdown)]
 #![doc = include_str!("../README.md")]
 
@@ -20,11 +19,13 @@ mod display_impl;
 pub mod errors;
 pub mod input_map;
 pub mod input_mocking;
+pub mod input_processing;
 pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
 pub mod systems;
 pub mod timing;
+pub mod typetag;
 pub mod user_input;
 
 // Importing the derive macro
@@ -34,20 +35,21 @@ pub use leafwing_input_manager_macros::Actionlike;
 pub mod prelude {
     pub use crate::action_driver::ActionStateDriver;
     pub use crate::action_state::ActionState;
-    pub use crate::axislike::{
-        DeadZoneShape, DualAxis, MouseWheelAxisType, SingleAxis, VirtualAxis, VirtualDPad,
-    };
+    pub use crate::axislike::{DualAxis, MouseWheelAxisType, SingleAxis, VirtualAxis, VirtualDPad};
     pub use crate::buttonlike::MouseWheelDirection;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
     #[cfg(feature = "ui")]
     pub use crate::input_mocking::MockUIInteraction;
     pub use crate::input_mocking::{MockInput, QueryInput};
+    pub use crate::input_processing::*;
     pub use crate::user_input::{InputKind, Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
     pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
+
+    pub use leafwing_input_manager_macros::serde_typetag;
 }
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion
