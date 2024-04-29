@@ -72,7 +72,7 @@ pub enum DualAxisProcessor {
     ///
     /// assert_eq!(
     ///     expected,
-    ///     DualAxisProcessor::from(vec![
+    ///     DualAxisProcessor::from_iter([
     ///         DualAxisInverted::ALL.into(),
     ///         DualAxisSensitivity::all(2.0).into(),
     ///     ])
@@ -136,9 +136,9 @@ impl DualAxisProcessor {
     }
 }
 
-impl From<Vec<DualAxisProcessor>> for DualAxisProcessor {
-    fn from(value: Vec<DualAxisProcessor>) -> Self {
-        Self::Pipeline(value.into_iter().map(Arc::new).collect())
+impl FromIterator<DualAxisProcessor> for DualAxisProcessor {
+    fn from_iter<T: IntoIterator<Item = DualAxisProcessor>>(iter: T) -> Self {
+        Self::Pipeline(iter.into_iter().map(Arc::new).collect())
     }
 }
 
@@ -315,17 +315,17 @@ mod tests {
     #[test]
     fn test_dual_axis_processor_from_list() {
         assert_eq!(
-            DualAxisProcessor::from(vec![]),
+            DualAxisProcessor::from_iter([]),
             DualAxisProcessor::Pipeline(vec![])
         );
 
         assert_eq!(
-            DualAxisProcessor::from(vec![DualAxisInverted::ALL.into()]),
+            DualAxisProcessor::from_iter([DualAxisInverted::ALL.into()]),
             DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
         );
 
         assert_eq!(
-            DualAxisProcessor::from(vec![
+            DualAxisProcessor::from_iter([
                 DualAxisInverted::ALL.into(),
                 DualAxisSensitivity::all(2.0).into(),
             ]),
