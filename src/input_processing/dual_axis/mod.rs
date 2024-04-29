@@ -54,7 +54,7 @@ pub enum DualAxisProcessor {
     /// one for the current step and the other for the next step.
     ///
     /// For a straightforward creation of a [`DualAxisProcessor::Pipeline`],
-    /// you can use [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] methods.
+    /// you can use [`DualAxisProcessor::with_processor`] or [`FromIterator<DualAxisProcessor>::from_iter`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;

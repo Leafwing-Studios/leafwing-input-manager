@@ -61,7 +61,7 @@ pub enum AxisProcessor {
     /// Processes input values sequentially through a sequence of [`AxisProcessor`]s.
     ///
     /// For a straightforward creation of a [`AxisProcessor::Pipeline`],
-    /// you can use [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] methods.
+    /// you can use [`AxisProcessor::with_processor`] or [`FromIterator<AxisProcessor>::from_iter`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;
