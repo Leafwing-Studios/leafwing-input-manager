@@ -502,9 +502,9 @@ impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
 
 mod tests {
     use bevy::prelude::Reflect;
-    use bevy::utils::HashMap;
     use serde::{Deserialize, Serialize};
 
+    use super::*;
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
