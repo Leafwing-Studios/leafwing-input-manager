@@ -183,8 +183,8 @@ impl Reflect for Box<dyn CustomDualAxisProcessor> {
     }
 
     fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-        let value = value.as_any();
         value
+            .as_any()
             .downcast_ref::<Self>()
             .map(|value| self.dyn_eq(value))
             .or(Some(false))
