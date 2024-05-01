@@ -16,22 +16,6 @@
 
 ### Enhancements
 
-- added `serde_typetag` procedural macro attribute for trait object type tagging.
-
-#### InputMap
-
-Introduce new fluent builders for creating a new `InputMap<A>` with short configurations:
-
-- `fn with(mut self, action: A, input: impl Into<Item = UserInput>)`.
-- `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
-- `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
-- `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
-
-Introduce new iterators over `InputMap<A>`:
-
-- `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
-- `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
-
 #### Input Processors
 
 Input processors allow you to create custom logic for axis-like input manipulation.
@@ -70,6 +54,22 @@ Input processors allow you to create custom logic for axis-like input manipulati
       - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
       - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
       - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
+
+### Usability
+
+#### InputMap
+
+Introduce new fluent builders for creating a new `InputMap<A>` with short configurations:
+
+- `fn with(mut self, action: A, input: impl Into<Item = UserInput>)`.
+- `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
+- `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
+- `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
+
+Introduce new iterators over `InputMap<A>`:
+
+- `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
+- `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
 
 ### Bugs
 

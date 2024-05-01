@@ -502,6 +502,7 @@ impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
 
 mod tests {
     use bevy::prelude::Reflect;
+    use bevy::utils::HashMap;
     use serde::{Deserialize, Serialize};
 
     use crate as leafwing_input_manager;
@@ -534,6 +535,8 @@ mod tests {
         let input_map = InputMap::default()
             .with(Action::Run, KeyCode::KeyW)
             .with(Action::Run, KeyCode::ShiftLeft)
+            // Duplicate associations should be ignored
+            .with(Action::Run, KeyCode::ShiftLeft)
             .with_one_to_many(Action::Run, [KeyCode::KeyR, KeyCode::ShiftRight])
             .with_multiple([
                 (Action::Jump, KeyCode::Space),
@@ -541,20 +544,20 @@ mod tests {
                 (Action::Hide, KeyCode::ControlRight),
             ]);
 
-        let expected_run_bindings: Vec<UserInput> = vec![
-            KeyCode::KeyW.into(),
-            KeyCode::ShiftLeft.into(),
-            KeyCode::KeyR.into(),
-            KeyCode::ShiftRight.into(),
-        ];
-        assert_eq!(input_map.get(&Action::Run), Some(&expected_run_bindings));
+        let expected_bindings: HashMap<UserInput, Action> = HashMap::from([
+            (KeyCode::KeyW.into(), Action::Run),
+            (KeyCode::ShiftLeft.into(), Action::Run),
+            (KeyCode::KeyR.into(), Action::Run),
+            (KeyCode::ShiftRight.into(), Action::Run),
+            (KeyCode::Space.into(), Action::Jump),
+            (KeyCode::ControlLeft.into(), Action::Hide),
+            (KeyCode::ControlRight.into(), Action::Hide),
+        ]);
 
-        let expected_jump_bindings: Vec<UserInput> = vec![KeyCode::Space.into()];
-        assert_eq!(input_map.get(&Action::Jump), Some(&expected_jump_bindings));
-
-        let expected_hide_bindings: Vec<UserInput> =
-            vec![KeyCode::ControlLeft.into(), KeyCode::ControlRight.into()];
-        assert_eq!(input_map.get(&Action::Hide), Some(&expected_hide_bindings));
+        for (action, input) in input_map.bindings() {
+            let expected_action = expected_bindings.get(input).unwrap();
+            assert_eq!(expected_action, action);
+        }
     }
 
     #[test]
