@@ -5,47 +5,71 @@
 ### Breaking Changes
 
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-- added input processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad` to refine input values:
-  - added processor enums:
-    - `AxisProcessor`: Handles single-axis values.
-    - `DualAxisProcessor`: Handles dual-axis values.
-  - added processor traits for defining custom processors:
-    - `CustomAxisProcessor`: Handles single-axis values.
-    - `CustomDualAxisProcessor`: Handles dual-axis values.
-  - added built-in processor variants (no variant versions implemented `Into<Processor>`):
-    - Pipelines: Handle input values sequentially through a sequence of processors.
-      - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
-      - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
-      - you can also create them by these methods:
-        - `AxisProcessor::with_processor` or `From<Vec<AxisProcessor>>::from` for `AxisProcessor::Pipeline`.
-        - `DualAxisProcessor::with_processor` or `From<Vec<DualAxisProcessor>>::from` for `DualAxisProcessor::Pipeline`.
-    - Inversion: Reverses control (positive becomes negative, etc.)
-      - `AxisProcessor::Inverted`: Single-axis inversion.
-      - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
-    - Sensitivity: Adjusts control responsiveness (doubling, halving, etc.).
-      - `AxisProcessor::Sensitivity`: Single-axis scaling.
-      - `DualAxisSensitivity`: Dual-axis scaling, implemented `Into<DualAxisProcessor>`.
-    - Value Bounds: Define the boundaries for constraining input values.
-      - `AxisBounds`: Restricts single-axis values to a range, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
-      - `DualAxisBounds`: Restricts single-axis values to a range along each axis, implemented `Into<DualAxisProcessor>`.
-      - `CircleBounds`: Limits dual-axis values to a maximum magnitude, implemented `Into<DualAxisProcessor>`.
-    - Deadzones: Ignores near-zero values, treating them as zero.
-      - Unscaled versions:
-        - `AxisExclusion`: Excludes small single-axis values, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
-        - `DualAxisExclusion`: Excludes small dual-axis values along each axis, implemented `Into<DualAxisProcessor>`.
-        - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold, implemented `Into<DualAxisProcessor>`.
-      - Scaled versions:
-        - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
-        - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
-        - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
-  - removed `DeadZoneShape`.
+- replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
   - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
-  - added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad`.
-  - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
-  - added `serde_typetag` procedural macro attribute for processor type tagging.
+  - removed `DeadZoneShape`.
 - made the dependency on bevy's `bevy_gilrs` feature optional.
   - it is still enabled by leafwing-input-manager's default features.
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
+- removed `InputMap::build` method in favor of new fluent builder pattern (see 'Enhancements: InputMap' for details).
+- renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
+
+### Enhancements
+
+- added `serde_typetag` procedural macro attribute for trait object type tagging.
+
+#### InputMap
+
+Introduce new fluent builders for creating a new `InputMap<A>` with short configurations:
+
+- `fn with(mut self, action: A, input: impl Into<Item = UserInput>)`.
+- `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
+- `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
+- `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
+
+Introduce new iterators over `InputMap<A>`:
+
+- `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
+- `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
+
+#### Input Processors
+
+Input processors allow you to create custom logic for axis-like input manipulation.
+
+- added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad`.
+- added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
+- added processor enums:
+  - `AxisProcessor`: Handles single-axis values.
+  - `DualAxisProcessor`: Handles dual-axis values.
+- added processor traits for defining custom processors:
+  - `CustomAxisProcessor`: Handles single-axis values.
+  - `CustomDualAxisProcessor`: Handles dual-axis values.
+- added built-in processor variants (no variant versions implemented `Into<Processor>`):
+  - Pipelines: Handle input values sequentially through a sequence of processors.
+    - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
+    - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
+    - you can also create them by these methods:
+      - `AxisProcessor::with_processor` or `FromIterator<AxisProcessor>::from_iter` for `AxisProcessor::Pipeline`.
+      - `DualAxisProcessor::with_processor` or `FromIterator<DualAxisProcessor>::from_iter` for `DualAxisProcessor::Pipeline`.
+  - Inversion: Reverses control (positive becomes negative, etc.)
+    - `AxisProcessor::Inverted`: Single-axis inversion.
+    - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
+  - Sensitivity: Adjusts control responsiveness (doubling, halving, etc.).
+    - `AxisProcessor::Sensitivity`: Single-axis scaling.
+    - `DualAxisSensitivity`: Dual-axis scaling, implemented `Into<DualAxisProcessor>`.
+  - Value Bounds: Define the boundaries for constraining input values.
+    - `AxisBounds`: Restricts single-axis values to a range, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+    - `DualAxisBounds`: Restricts single-axis values to a range along each axis, implemented `Into<DualAxisProcessor>`.
+    - `CircleBounds`: Limits dual-axis values to a maximum magnitude, implemented `Into<DualAxisProcessor>`.
+  - Deadzones: Ignores near-zero values, treating them as zero.
+    - Unscaled versions:
+      - `AxisExclusion`: Excludes small single-axis values, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+      - `DualAxisExclusion`: Excludes small dual-axis values along each axis, implemented `Into<DualAxisProcessor>`.
+      - `CircleExclusion`: Excludes dual-axis values below a specified magnitude threshold, implemented `Into<DualAxisProcessor>`.
+    - Scaled versions:
+      - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
+      - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
+      - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
 
 ### Bugs
 

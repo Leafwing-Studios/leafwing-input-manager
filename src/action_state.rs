@@ -647,7 +647,7 @@ mod tests {
 
         // Starting state
         let input_streams = InputStreams::from_world(&app.world, None);
-        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -660,7 +660,7 @@ mod tests {
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
-        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(action_state.just_pressed(&Action::Run));
@@ -669,7 +669,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -681,7 +681,7 @@ mod tests {
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
-        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -690,7 +690,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -723,7 +723,7 @@ mod tests {
         // Starting state
         let input_streams = InputStreams::from_world(&app.world, None);
         action_state
-            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
         assert!(action_state.released(&Action::One));
         assert!(action_state.released(&Action::Two));
         assert!(action_state.released(&Action::OneAndTwo));
@@ -734,7 +734,7 @@ mod tests {
         let input_streams = InputStreams::from_world(&app.world, None);
 
         action_state
-            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
 
         assert!(action_state.pressed(&Action::One));
         assert!(action_state.released(&Action::Two));
@@ -743,7 +743,7 @@ mod tests {
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state
-            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
 
         assert!(action_state.pressed(&Action::One));
         assert!(action_state.released(&Action::Two));
@@ -755,7 +755,7 @@ mod tests {
         let input_streams = InputStreams::from_world(&app.world, None);
 
         action_state
-            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
 
         // Now only the longest OneAndTwo has been pressed,
         // while both One and Two have been released
@@ -766,7 +766,7 @@ mod tests {
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state
-            .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
 
         assert!(action_state.released(&Action::One));
         assert!(action_state.released(&Action::Two));
