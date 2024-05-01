@@ -430,7 +430,7 @@ impl DualAxisExclusion {
         }
     }
 
-    /// Creates a [`DualAxisExclusion`] that ignores values within the range `[negative_max, positive_min]` on both axis.
+    /// Creates a [`DualAxisExclusion`] that ignores values within the range `[negative_max, positive_min]` on both axes.
     ///
     /// # Requirements
     ///

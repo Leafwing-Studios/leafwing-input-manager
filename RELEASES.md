@@ -6,8 +6,7 @@
 
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
 - replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
-  - removed functions for inverting, adjusting sensitivity, and creating deadzones from `SingleAxis` and `DualAxis`.
-  - removed `DeadZoneShape`.
+  - removed `DeadZoneShape` in favor of new dead zone processors.
 - made the dependency on bevy's `bevy_gilrs` feature optional.
   - it is still enabled by leafwing-input-manager's default features.
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
@@ -20,14 +19,15 @@
 
 Input processors allow you to create custom logic for axis-like input manipulation.
 
-- added `with_processor`, `replace_processor`, and `no_processor` to manage processors for `SingleAxis`, `DualAxis`, `VirtualAxis`, and `VirtualDpad`.
-- added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
 - added processor enums:
   - `AxisProcessor`: Handles single-axis values.
   - `DualAxisProcessor`: Handles dual-axis values.
 - added processor traits for defining custom processors:
   - `CustomAxisProcessor`: Handles single-axis values.
   - `CustomDualAxisProcessor`: Handles dual-axis values.
+- implemented `WithAxisProcessor` to manage processors for `SingleAxis` and `VirtualAxis`.
+- implemented `WithDualAxisProcessor` to manage processors for `DualAxis` and `VirtualDpad`.
+- added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
 - added built-in processor variants (no variant versions implemented `Into<Processor>`):
   - Pipelines: Handle input values sequentially through a sequence of processors.
     - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
