@@ -26,7 +26,7 @@ fn spawn_player(mut commands: Commands) {
             VirtualDPad::wasd()
                 // You can configure a processing pipeline to handle axis-like user inputs.
                 //
-                // This step add a circular deadzone that normalizes input values
+                // This step adds a circular deadzone that normalizes input values
                 // by clamping their magnitude to a maximum of 1.0,
                 // excluding those with a magnitude less than 0.1,
                 // and scaling other values linearly in between.
