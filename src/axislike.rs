@@ -98,7 +98,7 @@ impl SingleAxis {
     }
 }
 
-impl WithAxisProcessor for SingleAxis {
+impl WithAxisProcessorExt for SingleAxis {
     #[inline]
     fn no_processor(mut self) -> Self {
         self.processor = AxisProcessor::None;
@@ -519,7 +519,7 @@ impl VirtualAxis {
     }
 }
 
-impl WithAxisProcessor for VirtualAxis {
+impl WithAxisProcessorExt for VirtualAxis {
     #[inline]
     fn no_processor(mut self) -> Self {
         self.processor = AxisProcessor::None;
