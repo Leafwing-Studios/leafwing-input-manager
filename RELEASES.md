@@ -25,8 +25,8 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - added processor traits for defining custom processors:
   - `CustomAxisProcessor`: Handles single-axis values.
   - `CustomDualAxisProcessor`: Handles dual-axis values.
-- implemented `WithAxisProcessor` to manage processors for `SingleAxis` and `VirtualAxis`.
-- implemented `WithDualAxisProcessor` to manage processors for `DualAxis` and `VirtualDpad`.
+- implemented `WithAxisProcessorExt` to manage processors for `SingleAxis` and `VirtualAxis`.
+- implemented `WithDualAxisProcessorExt` to manage processors for `DualAxis` and `VirtualDpad`.
 - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
 - added built-in processor variants (no variant versions implemented `Into<Processor>`):
   - Pipelines: Handle input values sequentially through a sequence of processors.
