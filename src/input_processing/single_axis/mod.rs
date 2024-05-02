@@ -166,7 +166,7 @@ impl Hash for AxisProcessor {
 }
 
 /// Provides methods for configuring and manipulating the processing pipeline for single-axis input.
-pub trait WithAxisProcessor: Sized {
+pub trait WithAxisProcessorExt: Sized {
     /// Remove the current used [`AxisProcessor`].
     fn no_processor(self) -> Self;
 
@@ -193,15 +193,15 @@ pub trait WithAxisProcessor: Sized {
     /// Appends an [`AxisBounds`] processor as the next processing step,
     /// restricting values within the range `[min, max]` on the axis.
     #[inline]
-    fn filter(self, min: f32, max: f32) -> Self {
+    fn with_bounds(self, min: f32, max: f32) -> Self {
         self.with_processor(AxisBounds::new(min, max))
     }
 
     /// Appends an [`AxisBounds`] processor as the next processing step,
-    /// restricting values to a `max` magnitude.
+    /// restricting values to a `threshold` magnitude.
     #[inline]
-    fn filter_magnitude(self, max: f32) -> Self {
-        self.with_processor(AxisBounds::magnitude(max))
+    fn with_symmetric_bounds(self, threshold: f32) -> Self {
+        self.with_processor(AxisBounds::magnitude(threshold))
     }
 
     /// Appends an [`AxisDeadZone`] processor as the next processing step,
@@ -210,33 +210,33 @@ pub trait WithAxisProcessor: Sized {
     /// the remaining range within the [`AxisBounds::magnitude(1.0)`](AxisBounds::default)
     /// after dead zone exclusion.
     #[inline]
-    fn deadzone(self, negative_max: f32, positive_min: f32) -> Self {
+    fn with_deadzone(self, negative_max: f32, positive_min: f32) -> Self {
         self.with_processor(AxisDeadZone::new(negative_max, positive_min))
     }
 
     /// Appends an [`AxisDeadZone`] processor as the next processing step,
-    /// excluding values below a `min` magnitude, treating them as zeros
+    /// excluding values below a `threshold` magnitude, treating them as zeros
     /// then normalizing non-excluded input values into the "live zone",
     /// the remaining range within the [`AxisBounds::magnitude(1.0)`](AxisBounds::default)
     /// after dead zone exclusion.
     #[inline]
-    fn deadzone_magnitude(self, min: f32) -> Self {
-        self.with_processor(AxisDeadZone::magnitude(min))
+    fn with_deadzone_magnitude(self, threshold: f32) -> Self {
+        self.with_processor(AxisDeadZone::magnitude(threshold))
     }
 
     /// Appends an [`AxisExclusion`] processor as the next processing step,
     /// ignoring values within the dead zone range `[negative_max, positive_min]` on the axis,
     /// treating them as zeros.
     #[inline]
-    fn deadzone_unscaled(self, negative_max: f32, positive_min: f32) -> Self {
+    fn with_deadzone_unscaled(self, negative_max: f32, positive_min: f32) -> Self {
         self.with_processor(AxisExclusion::new(negative_max, positive_min))
     }
 
     /// Appends an [`AxisExclusion`] processor as the next processing step,
-    /// ignoring values below a `min` magnitude, treating them as zeros.
+    /// ignoring values below a `threshold` magnitude, treating them as zeros.
     #[inline]
-    fn deadzone_magnitude_unscaled(self, min: f32) -> Self {
-        self.with_processor(AxisExclusion::magnitude(min))
+    fn with_deadzone_magnitude_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(AxisExclusion::magnitude(threshold))
     }
 }
 

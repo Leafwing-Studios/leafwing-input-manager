@@ -238,7 +238,7 @@ impl DualAxis {
     }
 }
 
-impl WithDualAxisProcessor for DualAxis {
+impl WithDualAxisProcessorExt for DualAxis {
     #[inline]
     fn no_processor(mut self) -> Self {
         self.processor = DualAxisProcessor::None;
@@ -383,7 +383,7 @@ impl VirtualDPad {
     }
 }
 
-impl WithDualAxisProcessor for VirtualDPad {
+impl WithDualAxisProcessorExt for VirtualDPad {
     #[inline]
     fn no_processor(mut self) -> Self {
         self.processor = DualAxisProcessor::None;

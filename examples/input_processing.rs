@@ -30,7 +30,7 @@ fn spawn_player(mut commands: Commands) {
                 // by clamping their magnitude to a maximum of 1.0,
                 // excluding those with a magnitude less than 0.1,
                 // and scaling other values linearly in between.
-                .deadzone_magnitude(0.1)
+                .with_circle_deadzone(0.1)
                 // Followed by appending Y-axis inversion for the next processing step.
                 .inverted_y(),
         )
