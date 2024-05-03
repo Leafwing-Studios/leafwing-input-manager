@@ -111,8 +111,8 @@ fn two_inputs_clash_handling() {
     let mut app = test_app();
 
     // Two inputs
-    app.send_input(Digit1);
-    app.send_input(Digit2);
+    app.press_input(Digit1);
+    app.press_input(Digit2);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
@@ -128,9 +128,9 @@ fn three_inputs_clash_handling() {
 
     // Three inputs
     app.reset_inputs();
-    app.send_input(Digit1);
-    app.send_input(Digit2);
-    app.send_input(Digit3);
+    app.press_input(Digit1);
+    app.press_input(Digit2);
+    app.press_input(Digit3);
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -149,10 +149,10 @@ fn modifier_clash_handling() {
 
     // Modifier
     app.reset_inputs();
-    app.send_input(Digit1);
-    app.send_input(Digit2);
-    app.send_input(Digit3);
-    app.send_input(ControlLeft);
+    app.press_input(Digit1);
+    app.press_input(Digit2);
+    app.press_input(Digit3);
+    app.press_input(ControlLeft);
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -174,9 +174,9 @@ fn multiple_modifiers_clash_handling() {
 
     // Multiple modifiers
     app.reset_inputs();
-    app.send_input(Digit1);
-    app.send_input(ControlLeft);
-    app.send_input(AltLeft);
+    app.press_input(Digit1);
+    app.press_input(ControlLeft);
+    app.press_input(AltLeft);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, CtrlOne, AltOne, CtrlAltOne]);
@@ -192,8 +192,8 @@ fn action_order_clash_handling() {
 
     // Action order
     app.reset_inputs();
-    app.send_input(Digit3);
-    app.send_input(Digit2);
+    app.press_input(Digit3);
+    app.press_input(Digit2);
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [Two, TwoAndThree]);

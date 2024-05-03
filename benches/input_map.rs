@@ -77,8 +77,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     // Constructing our test app / input stream outside the timed benchmark
     let mut app = App::new();
     app.add_plugins(InputPlugin);
-    app.send_input(KeyCode::KeyA);
-    app.send_input(KeyCode::KeyB);
+    app.press_input(KeyCode::KeyA);
+    app.press_input(KeyCode::KeyB);
     app.update();
 
     let input_streams = InputStreams::from_world(&app.world, None);

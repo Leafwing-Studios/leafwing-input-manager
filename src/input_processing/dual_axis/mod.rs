@@ -1,10 +1,9 @@
 //! Processors for dual-axis input values
 
-use bevy::math::BVec2;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use bevy::prelude::{Reflect, Vec2};
+use bevy::prelude::{BVec2, Reflect, Vec2};
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
