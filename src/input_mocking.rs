@@ -327,12 +327,15 @@ impl MockInput for MutableInputStreams<'_> {
             }
         }
 
-        // Deactivate axes
+        // Deactivate GamepadAxisType
         for axis_type in raw_inputs.axis_types.iter() {
             if let (Some(gamepad), AxisType::Gamepad(axis)) = (gamepad, axis_type) {
                 self.send_gamepad_axis_value(gamepad, axis, 0.0);
             }
         }
+
+        // Mouse axial inputs don't require an explicit deactivating,
+        // as we directly check the state by reading the mouse input events.
     }
 
     fn reset_inputs(&mut self) {
