@@ -69,9 +69,9 @@ impl AxisBounds {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric")]
+    #[doc(alias = "magnitude")]
     #[inline]
-    pub fn magnitude(threshold: f32) -> Self {
+    pub fn symmetric(threshold: f32) -> Self {
         Self::new(-threshold, threshold)
     }
 
@@ -231,9 +231,9 @@ impl AxisExclusion {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric")]
+    #[doc(alias = "magnitude")]
     #[inline]
-    pub fn magnitude(threshold: f32) -> Self {
+    pub fn symmetric(threshold: f32) -> Self {
         Self::new(-threshold, threshold)
     }
 
@@ -418,9 +418,9 @@ impl AxisDeadZone {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric")]
+    #[doc(alias = "magnitude")]
     #[inline]
-    pub fn magnitude(threshold: f32) -> Self {
+    pub fn symmetric(threshold: f32) -> Self {
         AxisDeadZone::new(-threshold, threshold)
     }
 
@@ -565,7 +565,7 @@ mod tests {
         let bounds = AxisBounds::new(-2.0, 2.5);
         test_bounds(bounds, -2.0, 2.5);
 
-        let bounds = AxisBounds::magnitude(2.0);
+        let bounds = AxisBounds::symmetric(2.0);
         test_bounds(bounds, -2.0, 2.0);
 
         let bounds = AxisBounds::at_least(-1.0);
@@ -609,7 +609,7 @@ mod tests {
         let exclusion = AxisExclusion::new(-2.0, 2.5);
         test_exclusion(exclusion, -2.0, 2.5);
 
-        let exclusion = AxisExclusion::magnitude(1.5);
+        let exclusion = AxisExclusion::symmetric(1.5);
         test_exclusion(exclusion, -1.5, 1.5);
     }
 
@@ -673,7 +673,7 @@ mod tests {
         let deadzone = AxisDeadZone::new(-0.2, 0.3);
         test_deadzone(deadzone, -0.2, 0.3);
 
-        let deadzone = AxisDeadZone::magnitude(0.4);
+        let deadzone = AxisDeadZone::symmetric(0.4);
         test_deadzone(deadzone, -0.4, 0.4);
     }
 }

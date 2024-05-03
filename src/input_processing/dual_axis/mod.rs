@@ -202,6 +202,13 @@ pub trait WithDualAxisProcessorExt: Sized {
     }
 
     /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values within the same range `[-threshold, threshold]` on both axes.
+    #[inline]
+    fn with_bounds_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisBounds::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
     /// only restricting values within the range `[min, max]` on the X-axis.
     #[inline]
     fn with_bounds_x(self, min: f32, max: f32) -> Self {
@@ -209,10 +216,24 @@ pub trait WithDualAxisProcessorExt: Sized {
     }
 
     /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values within the range `[-threshold, threshold]` on the X-axis.
+    #[inline]
+    fn with_bounds_x_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisBounds::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
     /// only restricting values within the range `[min, max]` on the Y-axis.
     #[inline]
     fn with_bounds_y(self, min: f32, max: f32) -> Self {
         self.with_processor(DualAxisBounds::only_y(min, max))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values within the range `[-threshold, threshold]` on the Y-axis.
+    #[inline]
+    fn with_bounds_y_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisBounds::symmetric_all(threshold))
     }
 
     /// Appends a [`CircleBounds`] processor as the next processing step,
@@ -223,33 +244,63 @@ pub trait WithDualAxisProcessorExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[-threshold, threshold]` on both axes,
+    /// excluding values within the dead zone range `[min, max]` on both axes,
     /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
-    /// the remaining range within the [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default)
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
     /// after dead zone exclusion.
     #[inline]
-    fn with_deadzone(self, threshold: f32) -> Self {
-        self.with_processor(DualAxisDeadZone::magnitude_all(threshold))
+    fn with_deadzone(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::all(min, max))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[-threshold, threshold]` on both axes,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[min, max]` on the X-axis,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_x(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_x(min, max))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
     /// excluding values within the dead zone range `[-threshold, threshold]` on the X-axis,
     /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
-    /// the remaining range within the [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default)
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
     /// after dead zone exclusion.
     #[inline]
-    fn with_deadzone_x(self, threshold: f32) -> Self {
-        self.with_processor(DualAxisDeadZone::magnitude_only_x(threshold))
+    fn with_deadzone_x_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::symmetric_only_x(threshold))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[min, max]` on the Y-axis,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_y(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_y(min, max))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
     /// excluding values within the deadzone range `[-threshold, threshold]` on the Y-axis,
     /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
-    /// the remaining range within the [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default)
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
     /// after dead zone exclusion.
     #[inline]
-    fn with_deadzone_y(self, threshold: f32) -> Self {
-        self.with_processor(DualAxisDeadZone::magnitude_only_y(threshold))
+    fn with_deadzone_y_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::symmetric_only_y(threshold))
     }
 
     /// Appends a [`CircleDeadZone`] processor as the next processing step,
@@ -263,27 +314,51 @@ pub trait WithDualAxisProcessorExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// ignoring values within the dead zone range `[min, max]` on both axes,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_unscaled(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::all(min, max))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
     /// ignoring values within the dead zone range `[-threshold, threshold]` on both axes,
     /// treating them as zeros.
     #[inline]
-    fn with_deadzone_unscaled(self, threshold: f32) -> Self {
-        self.with_processor(DualAxisExclusion::magnitude_all(threshold))
+    fn with_deadzone_symmetric_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisExclusion::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the dead zone range `[min, max]` on the X-axis,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_x_unscaled(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_x(min, max))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
     /// only ignoring values within the dead zone range `[-threshold, threshold]` on the X-axis,
     /// treating them as zeros.
     #[inline]
-    fn with_deadzone_x_unscaled(self, threshold: f32) -> Self {
-        self.with_processor(DualAxisExclusion::magnitude_only_x(threshold))
+    fn with_deadzone_x_symmetric_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisExclusion::symmetric_only_x(threshold))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the dead zone range `[min, max]` on the Y-axis,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_y_unscaled(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_y(min, max))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
     /// only ignoring values within the dead zone range `[-threshold, threshold]` on the Y-axis,
     /// treating them as zeros.
     #[inline]
-    fn with_deadzone_y_unscaled(self, threshold: f32) -> Self {
-        self.with_processor(DualAxisExclusion::magnitude_only_y(threshold))
+    fn with_deadzone_y_symmetric_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisExclusion::symmetric_only_y(threshold))
     }
 
     /// Appends a [`CircleExclusion`] processor as the next processing step,

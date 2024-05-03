@@ -80,10 +80,10 @@
 //! the remaining region within the bounds after dead zone exclusion.
 //!
 //! - [`AxisDeadZone`]: A scaled version of [`AxisExclusion`] with the bounds
-//!     set to [`AxisBounds::magnitude(1.0)`](AxisBounds::default),
+//!     set to [`AxisBounds::symmetric(1.0)`](AxisBounds::default),
 //!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisDeadZone`]: A scaled version of [`DualAxisExclusion`] with the bounds
-//!     set to [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default), implemented [`Into<DualAxisProcessor>`].
+//!     set to [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default), implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleDeadZone`]: A scaled version of [`CircleExclusion`] with the bounds
 //!     set to [`CircleBounds::new(1.0)`](CircleBounds::default), implemented [`Into<DualAxisProcessor>`].
 

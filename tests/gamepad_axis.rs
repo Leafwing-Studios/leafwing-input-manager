@@ -53,7 +53,7 @@ fn raw_gamepad_axis_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         ButtonlikeTestAction::Up,
-        SingleAxis::new(GamepadAxisType::RightStickX).with_deadzone_magnitude(0.1),
+        SingleAxis::new(GamepadAxisType::RightStickX).with_deadzone_symmetric(0.1),
     )]));
 
     let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
@@ -103,11 +103,11 @@ fn game_pad_single_axis() {
     app.insert_resource(InputMap::new([
         (
             AxislikeTestAction::X,
-            SingleAxis::new(GamepadAxisType::LeftStickX).with_deadzone_magnitude(0.1),
+            SingleAxis::new(GamepadAxisType::LeftStickX).with_deadzone_symmetric(0.1),
         ),
         (
             AxislikeTestAction::Y,
-            SingleAxis::new(GamepadAxisType::LeftStickY).with_deadzone_magnitude(0.1),
+            SingleAxis::new(GamepadAxisType::LeftStickY).with_deadzone_symmetric(0.1),
         ),
     ]));
 
@@ -170,13 +170,13 @@ fn game_pad_single_axis_inverted() {
         (
             AxislikeTestAction::X,
             SingleAxis::new(GamepadAxisType::LeftStickX)
-                .with_deadzone_magnitude(0.1)
+                .with_deadzone_symmetric(0.1)
                 .inverted(),
         ),
         (
             AxislikeTestAction::Y,
             SingleAxis::new(GamepadAxisType::LeftStickY)
-                .with_deadzone_magnitude(0.1)
+                .with_deadzone_symmetric(0.1)
                 .inverted(),
         ),
     ]));
@@ -219,7 +219,7 @@ fn game_pad_dual_axis_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().replace_processor(DualAxisDeadZone::magnitude_all(0.1)),
+        DualAxis::left_stick().replace_processor(DualAxisDeadZone::symmetric_all(0.1)),
     )]));
 
     // Test that an input inside the dual-axis deadzone is filtered out.
@@ -302,7 +302,7 @@ fn test_zero_dual_axis_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().replace_processor(DualAxisDeadZone::magnitude_all(0.0)),
+        DualAxis::left_stick().replace_processor(DualAxisDeadZone::symmetric_all(0.0)),
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.
