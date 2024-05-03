@@ -88,27 +88,6 @@ impl SingleAxis {
         }
     }
 
-    /// Appends the given [`AxisProcessor`] as the next processing step.
-    #[inline]
-    pub fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
-        self
-    }
-
-    /// Replaces the current [`AxisProcessor`] with the specified `processor`.
-    #[inline]
-    pub fn replace_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
-        self
-    }
-
-    /// Remove the current used [`AxisProcessor`].
-    #[inline]
-    pub fn no_processor(mut self) -> Self {
-        self.processor = AxisProcessor::None;
-        self
-    }
-
     /// Get the "value" of this axis.
     /// If a processor is set, it will compute and return the processed value.
     /// Otherwise, pass the `input_value` through unchanged.
@@ -116,6 +95,26 @@ impl SingleAxis {
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
         self.processor.process(input_value)
+    }
+}
+
+impl WithAxisProcessorExt for SingleAxis {
+    #[inline]
+    fn no_processor(mut self) -> Self {
+        self.processor = AxisProcessor::None;
+        self
+    }
+
+    #[inline]
+    fn replace_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
+        self.processor = processor.into();
+        self
+    }
+
+    #[inline]
+    fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
+        self.processor = self.processor.with_processor(processor);
+        self
     }
 }
 
@@ -229,27 +228,6 @@ impl DualAxis {
         }
     }
 
-    /// Appends the given [`DualAxisProcessor`] as the next processing step.
-    #[inline]
-    pub fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
-        self
-    }
-
-    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
-    #[inline]
-    pub fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
-        self
-    }
-
-    /// Remove the current used [`DualAxisProcessor`].
-    #[inline]
-    pub fn no_processor(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
-        self
-    }
-
     /// Get the "value" of these axes.
     /// If a processor is set, it will compute and return the processed value.
     /// Otherwise, pass the `input_value` through unchanged.
@@ -257,6 +235,26 @@ impl DualAxis {
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
         self.processor.process(input_value)
+    }
+}
+
+impl WithDualAxisProcessorExt for DualAxis {
+    #[inline]
+    fn no_processor(mut self) -> Self {
+        self.processor = DualAxisProcessor::None;
+        self
+    }
+
+    #[inline]
+    fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
+        self.processor = processor.into();
+        self
+    }
+
+    #[inline]
+    fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
+        self.processor = self.processor.with_processor(processor);
+        self
     }
 }
 
@@ -375,27 +373,6 @@ impl VirtualDPad {
         }
     }
 
-    /// Appends the given [`DualAxisProcessor`] as the next processing step.
-    #[inline]
-    pub fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
-        self
-    }
-
-    /// Replaces the current [`DualAxisProcessor`] with the specified `processor`.
-    #[inline]
-    pub fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
-        self
-    }
-
-    /// Remove the current used [`DualAxisProcessor`].
-    #[inline]
-    pub fn no_processor(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
-        self
-    }
-
     /// Get the "value" of these axes.
     /// If a processor is set, it will compute and return the processed value.
     /// Otherwise, pass the `input_value` through unchanged.
@@ -403,6 +380,26 @@ impl VirtualDPad {
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
         self.processor.process(input_value)
+    }
+}
+
+impl WithDualAxisProcessorExt for VirtualDPad {
+    #[inline]
+    fn no_processor(mut self) -> Self {
+        self.processor = DualAxisProcessor::None;
+        self
+    }
+
+    #[inline]
+    fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
+        self.processor = processor.into();
+        self
+    }
+
+    #[inline]
+    fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
+        self.processor = self.processor.with_processor(processor);
+        self
     }
 }
 
@@ -519,6 +516,26 @@ impl VirtualAxis {
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
         self.processor.process(input_value)
+    }
+}
+
+impl WithAxisProcessorExt for VirtualAxis {
+    #[inline]
+    fn no_processor(mut self) -> Self {
+        self.processor = AxisProcessor::None;
+        self
+    }
+
+    #[inline]
+    fn replace_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
+        self.processor = processor.into();
+        self
+    }
+
+    #[inline]
+    fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
+        self.processor = self.processor.with_processor(processor);
+        self
     }
 }
 

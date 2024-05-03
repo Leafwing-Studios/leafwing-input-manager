@@ -183,8 +183,8 @@ impl Reflect for Box<dyn CustomDualAxisProcessor> {
     }
 
     fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-        let value = value.as_any();
         value
+            .as_any()
             .downcast_ref::<Self>()
             .map(|value| self.dyn_eq(value))
             .or(Some(false))
@@ -278,14 +278,14 @@ static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn CustomDualAxisProcess
     Lazy::new(|| RwLock::new(MapRegistry::new("CustomDualAxisProcessor")));
 
 /// A trait for registering a specific [`CustomDualAxisProcessor`].
-pub trait RegisterDualAxisProcessor {
+pub trait RegisterDualAxisProcessorExt {
     /// Registers the specified [`CustomDualAxisProcessor`].
     fn register_dual_axis_processor<'de, T>(&mut self) -> &mut Self
     where
         T: RegisterTypeTag<'de, dyn CustomDualAxisProcessor> + GetTypeRegistration;
 }
 
-impl RegisterDualAxisProcessor for App {
+impl RegisterDualAxisProcessorExt for App {
     fn register_dual_axis_processor<'de, T>(&mut self) -> &mut Self
     where
         T: RegisterTypeTag<'de, dyn CustomDualAxisProcessor> + GetTypeRegistration,
