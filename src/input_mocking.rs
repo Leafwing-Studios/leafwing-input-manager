@@ -76,8 +76,13 @@ use crate::user_input::*;
 /// app.update();
 /// ```
 pub trait MockInput {
-    /// Simulates an active event for the given `input`,
+    /// Simulates an activated event for the given `input`,
     /// pressing all buttons and keys in the [`RawInputs`] of the `input`.
+    ///
+    /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
+    /// like [`KeyCode`]s, [`Modifier`]s, and [`UserInput::Chord`]s.
+    /// Axial inputs (e.g., analog thumb sticks) aren't affected.
+    /// Use [`Self::send_axis_values`] for those.
     ///
     /// # Input State Persistence
     ///
@@ -89,9 +94,6 @@ pub trait MockInput {
     /// If no controllers are found, it is silently ignored.
     ///
     /// # Limitations
-    ///
-    /// Non-binary inputs (e.g., analog thumb sticks) aren't affected.
-    /// Use [`Self::send_axis_values`] for those.
     ///
     /// Unfortunately, due to upstream constraints,
     /// pressing a [`GamepadButtonType`] has no effect
@@ -99,8 +101,13 @@ pub trait MockInput {
     /// See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
     fn press_input(&mut self, input: impl Into<UserInput>);
 
-    /// Simulates an active event for the given `input`, using the specified `gamepad`,
+    /// Simulates an activated event for the given `input`, using the specified `gamepad`,
     /// pressing all buttons and keys in the [`RawInputs`] of the `input`.
+    ///
+    /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
+    /// like [`KeyCode`]s, [`Modifier`]s, and [`UserInput::Chord`]s.
+    /// Axial inputs (e.g., analog thumb sticks) aren't affected.
+    /// Use [`Self::send_axis_values_as_gamepad`] for those.
     ///
     /// # Input State Persistence
     ///
@@ -108,22 +115,21 @@ pub trait MockInput {
     ///
     /// # Limitations
     ///
-    /// Non-binary inputs (e.g., analog thumb sticks) aren't affected.
-    /// Use [`Self::send_axis_values`] for those.
-    ///
     /// Unfortunately, due to upstream constraints,
     /// pressing a [`GamepadButtonType`] has no effect
     /// because Bevy currently disregards all external [`GamepadButtonChangedEvent`] events.
     /// See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
     fn press_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
-    /// Simulates changes in axis values of the given `input`.
+    /// Simulates axis value changed events for the given `input`.
     /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`] of the `input`.
     /// Missing axis values default to `0.0`.
     ///
-    /// # Supported Inputs
-    ///
-    /// - Inputs with one or more axes (e.g., mouse wheel and thumb stick).
+    /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
+    /// like [`SingleAxis`](crate::axislike::SingleAxis) and [`DualAxis`](crate::axislike::DualAxis).
+    /// Non-axial inputs (e.g., keys and buttons) aren't affected;
+    /// the current value will be retained for the next encountered axis.
+    /// Use [`Self::press_input`] for those.
     ///
     /// # Input State Persistence
     ///
@@ -133,35 +139,25 @@ pub trait MockInput {
     ///
     /// Gamepad input is sent by the first registered controller.
     /// If no controllers are found, it is silently ignored.
-    ///
-    /// # Limitations
-    ///
-    /// Non-axial inputs (e.g., keys and buttons) aren't affected;
-    /// the current value will be retained for the next encountered axis.
-    /// Use [`Self::press_input`] for those.
     fn send_axis_values(
         &mut self,
         input: impl Into<UserInput>,
         values: impl IntoIterator<Item = f32>,
     );
 
-    /// Simulates changes in axis values of the given `input`, using the specified `gamepad`.
+    /// Simulates axis value changed events for the given `input`, using the specified `gamepad`.
     /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`] of the `input`.
     /// Missing axis values default to `0.0`.
     ///
-    /// # Supported Inputs
-    ///
-    /// - Inputs with one or more axes (e.g., mouse wheel and thumb stick).
+    /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
+    /// like [`SingleAxis`](crate::axislike::SingleAxis) and [`DualAxis`](crate::axislike::DualAxis).
+    /// Non-axial inputs (e.g., keys and buttons) aren't affected;
+    /// the current value will be retained for the next encountered axis.
+    /// Use [`Self::press_input_as_gamepad`] for those.
     ///
     /// # Input State Persistence
     ///
     /// Each axis remains at the specified value until explicitly changed or by calling [`Self::reset_inputs`].
-    ///
-    /// # Limitations
-    ///
-    /// Non-axial inputs (e.g., keys and buttons) aren't affected;
-    /// the current value will be retained for the next encountered axis.
-    /// Use [`Self::press_input_as_gamepad`] for those.
     fn send_axis_values_as_gamepad(
         &mut self,
         input: impl Into<UserInput>,
@@ -169,7 +165,7 @@ pub trait MockInput {
         gamepad: Option<Gamepad>,
     );
 
-    /// Simulates a release or deactivate event for the given `input`.
+    /// Simulates a released or deactivated event for the given `input`.
     ///
     /// # Gamepad Input
     ///
@@ -177,7 +173,7 @@ pub trait MockInput {
     /// If no controllers are found, it is silently ignored.
     fn release_input(&mut self, input: impl Into<UserInput>);
 
-    /// Simulates a release or deactivate event for the given `input`, using the specified `gamepad`.
+    /// Simulates a released or deactivated event for the given `input`, using the specified `gamepad`.
     fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
 
     /// Resets all inputs in the [`MutableInputStreams`] to their default state.
