@@ -25,7 +25,7 @@ use std::cmp::Ordering;
 /// - `ControlLeft + S`, `AltLeft + S` and `ControlLeft + AltLeft + S`: clashes
 ///
 /// This strategy is only used when assessing the actions and input holistically,
-/// in [`InputMap::which_pressed`], using [`InputMap::handle_clashes`].
+/// in [`InputMap::process_actions`], using [`InputMap::handle_clashes`].
 #[non_exhaustive]
 #[derive(Resource, Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize, Default)]
 pub enum ClashStrategy {
@@ -580,7 +580,7 @@ mod tests {
             app.send_input(ControlLeft);
             app.update();
 
-            let action_data = input_map.which_pressed(
+            let action_data = input_map.process_actions(
                 &InputStreams::from_world(&app.world, None),
                 ClashStrategy::PrioritizeLongest,
             );

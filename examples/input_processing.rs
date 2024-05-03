@@ -20,9 +20,8 @@ enum Action {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
-    let mut input_map = InputMap::default();
-    input_map
-        .insert(
+    let input_map = InputMap::default()
+        .with(
             Action::Move,
             VirtualDPad::wasd()
                 // You can add a processor to handle axis-like user inputs by using the `with_processor`.
@@ -35,7 +34,7 @@ fn spawn_player(mut commands: Commands) {
                 // Followed by appending Y-axis inversion for the next processing step.
                 .with_processor(DualAxisInverted::ONLY_Y),
         )
-        .insert(
+        .with(
             Action::Move,
             DualAxis::left_stick()
                 // You can replace the currently used processor with another processor.
@@ -43,7 +42,7 @@ fn spawn_player(mut commands: Commands) {
                 // Or remove the processor directly, leaving no processor applied.
                 .no_processor(),
         )
-        .insert(
+        .with(
             Action::LookAround,
             // You can also use a sequence of processors as the processing pipeline.
             DualAxis::mouse_motion().replace_processor(DualAxisProcessor::from_iter([

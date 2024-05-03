@@ -122,8 +122,7 @@ fn spawn_player(mut commands: Commands) {
     use KeyCode::*;
 
     let input_map = InputMap::new([(MoveLeft, KeyW), (MoveRight, KeyD), (Jump, Space)])
-        .insert(Shoot, MouseButton::Left)
-        .build();
+        .with(Shoot, MouseButton::Left);
     commands
         .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player);

@@ -14,6 +14,7 @@ fn main() {
 #[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 enum CameraMovement {
     Zoom,
+    Pan,
     PanLeft,
     PanRight,
 }
@@ -21,16 +22,15 @@ enum CameraMovement {
 fn setup(mut commands: Commands) {
     let input_map = InputMap::default()
         // This will capture the total continuous value, for direct use.
-        .insert(CameraMovement::Zoom, SingleAxis::mouse_wheel_y())
+        .with(CameraMovement::Zoom, SingleAxis::mouse_wheel_y())
         // This will return a binary button-like output.
-        .insert(CameraMovement::PanLeft, MouseWheelDirection::Left)
-        .insert(CameraMovement::PanRight, MouseWheelDirection::Right)
-        // Alternatively, you could model this as a virtual Dpad.
+        .with(CameraMovement::PanLeft, MouseWheelDirection::Left)
+        .with(CameraMovement::PanRight, MouseWheelDirection::Right)
+        // Alternatively, you could model this as a virtual D-pad.
         // It's extremely useful for modeling 4-directional button-like inputs with the mouse wheel
-        // .insert(VirtualDpad::mouse_wheel(), Pan)
+        .with(CameraMovement::Pan, VirtualDPad::mouse_wheel())
         // Or even a continuous `DualAxis`!
-        // .insert(DualAxis::mouse_wheel(), Pan)
-        .build();
+        .with(CameraMovement::Pan, DualAxis::mouse_wheel());
     commands
         .spawn(Camera2dBundle::default())
         .insert(InputManagerBundle::with_map(input_map));
