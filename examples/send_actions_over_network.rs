@@ -69,8 +69,8 @@ fn main() {
     client_app.update();
 
     // Sending inputs to the client
-    client_app.send_input(KeyCode::Space);
-    client_app.send_input(MouseButton::Left);
+    client_app.press_input(KeyCode::Space);
+    client_app.press_input(MouseButton::Left);
 
     // These are converted into actions when the client_app's `Schedule` runs
     client_app.update();

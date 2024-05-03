@@ -18,11 +18,6 @@ pub struct SingleAxis {
 
     /// The processor used to handle input values.
     pub processor: AxisProcessor,
-
-    /// The target value for this input, used for input mocking.
-    ///
-    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
-    pub value: Option<f32>,
 }
 
 impl SingleAxis {
@@ -32,19 +27,6 @@ impl SingleAxis {
         Self {
             axis_type: axis_type.into(),
             processor: AxisProcessor::None,
-            value: None,
-        }
-    }
-
-    /// Creates a [`SingleAxis`] with the specified axis type and `value`.
-    ///
-    /// Primarily useful for [input mocking](crate::input_mocking).
-    #[must_use]
-    pub fn from_value(axis_type: impl Into<AxisType>, value: f32) -> Self {
-        Self {
-            axis_type: axis_type.into(),
-            processor: AxisProcessor::None,
-            value: Some(value),
         }
     }
 
@@ -54,7 +36,6 @@ impl SingleAxis {
         Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             processor: AxisProcessor::None,
-            value: None,
         }
     }
 
@@ -64,7 +45,6 @@ impl SingleAxis {
         Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
             processor: AxisProcessor::None,
-            value: None,
         }
     }
 
@@ -74,7 +54,6 @@ impl SingleAxis {
         Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             processor: AxisProcessor::None,
-            value: None,
         }
     }
 
@@ -84,7 +63,6 @@ impl SingleAxis {
         Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
             processor: AxisProcessor::None,
-            value: None,
         }
     }
 
@@ -149,11 +127,6 @@ pub struct DualAxis {
 
     /// The processor used to handle input values.
     pub processor: DualAxisProcessor,
-
-    /// The target value for this input, used for input mocking.
-    ///
-    /// WARNING: this field is ignored for the sake of [`Eq`] and [`Hash`](std::hash::Hash)
-    pub value: Option<Vec2>,
 }
 
 impl DualAxis {
@@ -164,25 +137,6 @@ impl DualAxis {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
             processor: DualAxisProcessor::None,
-            value: None,
-        }
-    }
-
-    /// Creates a [`DualAxis`] with the specified axis types and `value`.
-    ///
-    /// Primarily useful for [input mocking](crate::input_mocking).
-    #[must_use]
-    pub fn from_value(
-        x_axis_type: impl Into<AxisType>,
-        y_axis_type: impl Into<AxisType>,
-        x_value: f32,
-        y_value: f32,
-    ) -> Self {
-        Self {
-            x_axis_type: x_axis_type.into(),
-            y_axis_type: y_axis_type.into(),
-            processor: DualAxisProcessor::None,
-            value: Some(Vec2::new(x_value, y_value)),
         }
     }
 
@@ -193,7 +147,6 @@ impl DualAxis {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
             processor: CircleDeadZone::default().into(),
-            value: None,
         }
     }
 
@@ -204,7 +157,6 @@ impl DualAxis {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
             processor: CircleDeadZone::default().into(),
-            value: None,
         }
     }
 
@@ -214,7 +166,6 @@ impl DualAxis {
             x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
             processor: DualAxisProcessor::None,
-            value: None,
         }
     }
 
@@ -224,7 +175,6 @@ impl DualAxis {
             x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
             processor: DualAxisProcessor::None,
-            value: None,
         }
     }
 
@@ -567,6 +517,16 @@ pub enum MouseWheelAxisType {
     Y,
 }
 
+impl MouseWheelAxisType {
+    /// Returns the corresponding [`DualAxisType`].
+    pub fn axis(&self) -> DualAxisType {
+        match self {
+            Self::X => DualAxisType::X,
+            Self::Y => DualAxisType::Y,
+        }
+    }
+}
+
 /// The motion direction of the mouse.
 ///
 /// Stored in the [`AxisType`] enum.
@@ -576,6 +536,16 @@ pub enum MouseMotionAxisType {
     X,
     /// Vertical movement.
     Y,
+}
+
+impl MouseMotionAxisType {
+    /// Returns the corresponding [`DualAxisType`].
+    pub fn axis(&self) -> DualAxisType {
+        match self {
+            Self::X => DualAxisType::X,
+            Self::Y => DualAxisType::Y,
+        }
+    }
 }
 
 impl From<GamepadAxisType> for AxisType {
@@ -632,6 +602,157 @@ impl TryFrom<AxisType> for MouseMotionAxisType {
 /// An [`AxisType`] could not be converted into a more specialized variant
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct AxisConversionError;
+
+/// The directions for single-axis inputs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub enum AxisDirection {
+    /// Negative direction.
+    Negative,
+
+    /// Positive direction.
+    Positive,
+}
+
+impl AxisDirection {
+    /// Returns the full active value along an axis.
+    #[must_use]
+    #[inline]
+    pub fn full_active_value(&self) -> f32 {
+        match self {
+            Self::Negative => -1.0,
+            Self::Positive => 1.0,
+        }
+    }
+
+    /// Checks if the given `value` represents an active input in this direction.
+    #[must_use]
+    #[inline]
+    pub fn is_active(&self, value: f32) -> bool {
+        match self {
+            Self::Negative => value < 0.0,
+            Self::Positive => value > 0.0,
+        }
+    }
+}
+
+/// An axis for dual-axis inputs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub enum DualAxisType {
+    /// The X-axis (typically horizontal movement).
+    X,
+
+    /// The Y-axis (typically vertical movement).
+    Y,
+}
+
+impl DualAxisType {
+    /// Returns the positive and negative [`DualAxisDirection`]s for the current axis.
+    #[inline]
+    pub const fn directions(&self) -> [DualAxisDirection; 2] {
+        [self.negative(), self.positive()]
+    }
+
+    /// Returns the negative [`DualAxisDirection`] for the current axis.
+    #[inline]
+    pub const fn negative(&self) -> DualAxisDirection {
+        match self {
+            Self::X => DualAxisDirection::Left,
+            Self::Y => DualAxisDirection::Down,
+        }
+    }
+
+    /// Returns the positive [`DualAxisDirection`] for the current axis.
+    #[inline]
+    pub const fn positive(&self) -> DualAxisDirection {
+        match self {
+            Self::X => DualAxisDirection::Right,
+            Self::Y => DualAxisDirection::Up,
+        }
+    }
+
+    /// Returns the value along the current axis.
+    #[must_use]
+    #[inline]
+    pub const fn get_value(&self, value: Vec2) -> f32 {
+        match self {
+            Self::X => value.x,
+            Self::Y => value.y,
+        }
+    }
+
+    /// Creates a [`Vec2`] with the specified `value` on this axis and `0.0` on the other.
+    #[must_use]
+    #[inline]
+    pub const fn dual_axis_value(&self, value: f32) -> Vec2 {
+        match self {
+            Self::X => Vec2::new(value, 0.0),
+            Self::Y => Vec2::new(0.0, value),
+        }
+    }
+}
+
+/// The directions for dual-axis inputs.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub enum DualAxisDirection {
+    /// Upward direction.
+    Up,
+
+    /// Downward direction.
+    Down,
+
+    /// Leftward direction.
+    Left,
+
+    /// Rightward direction.
+    Right,
+}
+
+impl DualAxisDirection {
+    /// Returns the [`DualAxisType`] associated with this direction.
+    #[inline]
+    pub fn axis(&self) -> DualAxisType {
+        match self {
+            Self::Up => DualAxisType::Y,
+            Self::Down => DualAxisType::Y,
+            Self::Left => DualAxisType::X,
+            Self::Right => DualAxisType::X,
+        }
+    }
+
+    /// Returns the [`AxisDirection`] (positive or negative) on the axis.
+    #[inline]
+    pub fn axis_direction(&self) -> AxisDirection {
+        match self {
+            Self::Up => AxisDirection::Positive,
+            Self::Down => AxisDirection::Negative,
+            Self::Left => AxisDirection::Negative,
+            Self::Right => AxisDirection::Positive,
+        }
+    }
+
+    /// Returns the full active value along both axes.
+    #[must_use]
+    #[inline]
+    pub fn full_active_value(&self) -> Vec2 {
+        match self {
+            Self::Up => Vec2::Y,
+            Self::Down => Vec2::NEG_Y,
+            Self::Left => Vec2::NEG_X,
+            Self::Right => Vec2::X,
+        }
+    }
+
+    /// Checks if the given `value` represents an active input in this direction.
+    #[must_use]
+    #[inline]
+    pub fn is_active(&self, value: Vec2) -> bool {
+        let component_along_axis = self.axis().get_value(value);
+        self.axis_direction().is_active(component_along_axis)
+    }
+}
 
 /// A wrapped [`Vec2`] that represents the combination of two input axes.
 ///

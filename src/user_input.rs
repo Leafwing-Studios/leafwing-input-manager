@@ -343,28 +343,19 @@ pub struct RawInputs {
     pub mouse_motion: Vec<MouseMotionDirection>,
     /// Gamepad buttons, independent of a [`Gamepad`](bevy::input::gamepad::Gamepad)
     pub gamepad_buttons: Vec<GamepadButtonType>,
-    /// Axis-like data
-    ///
-    /// The `f32` stores the magnitude of the axis motion, and is only used for input mocking.
-    pub axis_data: Vec<(AxisType, Option<f32>)>,
+    /// Axes representing mouse movement or gamepad input.
+    pub axis_types: Vec<AxisType>,
 }
 
 impl RawInputs {
     /// Merges the data from the given `input_kind` into `self`.
     fn merge_input_data(&mut self, input_kind: &InputKind) {
         match input_kind {
-            InputKind::DualAxis(DualAxis {
-                x_axis_type,
-                y_axis_type,
-                value,
-                ..
-            }) => {
-                self.axis_data.push((*x_axis_type, value.map(|v| v.x)));
-                self.axis_data.push((*y_axis_type, value.map(|v| v.y)));
+            InputKind::DualAxis(axes) => {
+                self.axis_types.push(axes.x_axis_type);
+                self.axis_types.push(axes.y_axis_type);
             }
-            InputKind::SingleAxis(single_axis) => self
-                .axis_data
-                .push((single_axis.axis_type, single_axis.value)),
+            InputKind::SingleAxis(single_axis) => self.axis_types.push(single_axis.axis_type),
             InputKind::GamepadButton(button) => self.gamepad_buttons.push(*button),
             InputKind::PhysicalKey(key_code) => self.keycodes.push(*key_code),
             InputKind::Modifier(modifier) => {
@@ -416,17 +407,14 @@ impl RawInputs {
 
     fn from_dual_axis(axis: DualAxis) -> RawInputs {
         RawInputs {
-            axis_data: vec![
-                (axis.x_axis_type, axis.value.map(|v| v.x)),
-                (axis.y_axis_type, axis.value.map(|v| v.y)),
-            ],
+            axis_types: vec![axis.x_axis_type, axis.y_axis_type],
             ..Default::default()
         }
     }
 
     fn from_single_axis(axis: SingleAxis) -> RawInputs {
         RawInputs {
-            axis_data: vec![(axis.axis_type, axis.value)],
+            axis_types: vec![axis.axis_type],
             ..Default::default()
         }
     }
@@ -434,10 +422,7 @@ impl RawInputs {
 
 #[cfg(test)]
 mod raw_input_tests {
-    use crate::{
-        axislike::AxisType,
-        user_input::{InputKind, RawInputs, UserInput},
-    };
+    use crate::user_input::{InputKind, RawInputs, UserInput};
 
     #[test]
     fn simple_chord() {
@@ -467,7 +452,7 @@ mod raw_input_tests {
         let raw = chord.raw_inputs();
         let expected = RawInputs {
             gamepad_buttons: vec![GamepadButtonType::Start],
-            axis_data: vec![(AxisType::Gamepad(GamepadAxisType::LeftZ), None)],
+            axis_types: vec![GamepadAxisType::LeftZ.into()],
             ..Default::default()
         };
 
@@ -492,7 +477,7 @@ mod raw_input_tests {
             use crate::axislike::SingleAxis;
             use bevy::input::gamepad::GamepadAxisType;
 
-            let direction = SingleAxis::from_value(GamepadAxisType::LeftStickX, 1.0);
+            let direction = SingleAxis::new(GamepadAxisType::LeftStickX);
             let expected = RawInputs::from_single_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
@@ -501,14 +486,8 @@ mod raw_input_tests {
         #[test]
         fn dual_gamepad_axis() {
             use crate::axislike::DualAxis;
-            use bevy::input::gamepad::GamepadAxisType;
 
-            let direction = DualAxis::from_value(
-                GamepadAxisType::LeftStickX,
-                GamepadAxisType::LeftStickY,
-                0.5,
-                0.7,
-            );
+            let direction = DualAxis::left_stick();
             let expected = RawInputs::from_dual_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
@@ -578,9 +557,9 @@ mod raw_input_tests {
 
         #[test]
         fn single_mousewheel_axis() {
-            use crate::axislike::{MouseWheelAxisType, SingleAxis};
+            use crate::axislike::SingleAxis;
 
-            let direction = SingleAxis::from_value(MouseWheelAxisType::X, 1.0);
+            let direction = SingleAxis::mouse_wheel_x();
             let expected = RawInputs::from_single_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
@@ -588,10 +567,9 @@ mod raw_input_tests {
 
         #[test]
         fn dual_mousewheel_axis() {
-            use crate::axislike::{DualAxis, MouseWheelAxisType};
+            use crate::axislike::DualAxis;
 
-            let direction =
-                DualAxis::from_value(MouseWheelAxisType::X, MouseWheelAxisType::Y, 1.0, 1.0);
+            let direction = DualAxis::mouse_wheel();
             let expected = RawInputs::from_dual_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
@@ -599,9 +577,9 @@ mod raw_input_tests {
 
         #[test]
         fn single_mouse_motion_axis() {
-            use crate::axislike::{MouseMotionAxisType, SingleAxis};
+            use crate::axislike::SingleAxis;
 
-            let direction = SingleAxis::from_value(MouseMotionAxisType::X, 1.0);
+            let direction = SingleAxis::mouse_motion_x();
             let expected = RawInputs::from_single_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)
@@ -609,10 +587,9 @@ mod raw_input_tests {
 
         #[test]
         fn dual_mouse_motion_axis() {
-            use crate::axislike::{DualAxis, MouseMotionAxisType};
+            use crate::axislike::DualAxis;
 
-            let direction =
-                DualAxis::from_value(MouseMotionAxisType::X, MouseMotionAxisType::Y, 1.0, 1.0);
+            let direction = DualAxis::mouse_motion();
             let expected = RawInputs::from_dual_axis(direction.clone());
             let raw = UserInput::from(direction).raw_inputs();
             assert_eq!(expected, raw)

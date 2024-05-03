@@ -1,7 +1,7 @@
 use bevy::input::mouse::MouseMotion;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::{AxisType, DualAxisData, MouseMotionAxisType};
+use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::buttonlike::MouseMotionDirection;
 use leafwing_input_manager::prelude::*;
 
@@ -48,7 +48,7 @@ fn raw_mouse_motion_events() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::X,
-        SingleAxis::from_value(AxisType::MouseMotion(MouseMotionAxisType::Y), 1.0),
+        SingleAxis::mouse_motion_y(),
     )]));
 
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
@@ -67,7 +67,7 @@ fn mouse_motion_discrete_mocking() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     assert_eq!(events.drain().count(), 0);
 
-    app.send_input(MouseMotionDirection::Up);
+    app.press_input(MouseMotionDirection::Up);
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
 
     assert_eq!(events.drain().count(), 1);
@@ -79,13 +79,9 @@ fn mouse_motion_single_axis_mocking() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     assert_eq!(events.drain().count(), 0);
 
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-        value: Some(-1.),
-        processor: AxisProcessor::None,
-    };
+    let input = SingleAxis::mouse_motion_x();
+    app.send_axis_values(input, [-1.0]);
 
-    app.send_input(input);
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     assert_eq!(events.drain().count(), 1);
 }
@@ -96,13 +92,9 @@ fn mouse_motion_dual_axis_mocking() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     assert_eq!(events.drain().count(), 0);
 
-    let input = DualAxis {
-        x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-        y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-        processor: DualAxisProcessor::None,
-        value: Some(Vec2::X),
-    };
-    app.send_input(input);
+    let input = DualAxis::mouse_motion();
+    app.send_axis_values(input, [1.0, 0.0]);
+
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     // Dual axis events are split out
     assert_eq!(events.drain().count(), 2);
@@ -123,7 +115,7 @@ fn mouse_motion_buttonlike() {
         // Get the first associated input
         let input = input_map.get(action).unwrap().first().unwrap().clone();
 
-        app.send_input(input.clone());
+        app.press_input(input.clone());
         app.update();
 
         let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
@@ -141,8 +133,8 @@ fn mouse_motion_buttonlike_cancels() {
         (ButtonlikeTestAction::Right, MouseMotionDirection::Right),
     ]));
 
-    app.send_input(MouseMotionDirection::Up);
-    app.send_input(MouseMotionDirection::Down);
+    app.press_input(MouseMotionDirection::Up);
+    app.press_input(MouseMotionDirection::Down);
 
     // Correctly flushes the world
     app.update();
@@ -162,68 +154,43 @@ fn mouse_motion_single_axis() {
     ]));
 
     // +X
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-        value: Some(1.),
-        processor: AxisProcessor::None,
-    };
-    app.send_input(input);
+    let input = SingleAxis::mouse_motion_x();
+    app.send_axis_values(input, [1.0]);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // -X
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-        value: Some(-1.),
-        processor: AxisProcessor::None,
-    };
-    app.send_input(input);
+    let input = SingleAxis::mouse_motion_x();
+    app.send_axis_values(input, [-1.0]);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // +Y
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-        value: Some(1.),
-        processor: AxisProcessor::None,
-    };
-    app.send_input(input);
+    let input = SingleAxis::mouse_motion_y();
+    app.send_axis_values(input, [-1.0]);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // -Y
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-        value: Some(-1.),
-        processor: AxisProcessor::None,
-    };
-    app.send_input(input);
+    let input = SingleAxis::mouse_motion_y();
+    app.send_axis_values(input, [-1.0]);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
-    // Usually a small deadzone threshold will be set
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-        value: Some(0.0),
-        processor: AxisDeadZone::default().into(),
-    };
-    app.send_input(input);
+    let input = SingleAxis::mouse_motion_y();
+    app.send_axis_values(input, [0.0]);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(&AxislikeTestAction::Y));
 
     // None
-    let input = SingleAxis {
-        axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-        value: None,
-        processor: AxisProcessor::None,
-    };
-    app.send_input(input);
+    let input = SingleAxis::mouse_motion_y();
+    app.send_axis_values(input, []);
     app.update();
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(&AxislikeTestAction::Y));
@@ -237,13 +204,8 @@ fn mouse_motion_dual_axis() {
         DualAxis::mouse_motion(),
     )]));
 
-    app.send_input(DualAxis::from_value(
-        MouseMotionAxisType::X,
-        MouseMotionAxisType::Y,
-        5.0,
-        0.0,
-    ));
-
+    let input = DualAxis::mouse_motion();
+    app.send_axis_values(input, [5.0, 0.0]);
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
@@ -264,22 +226,18 @@ fn mouse_motion_virtual_dpad() {
         VirtualDPad::mouse_motion(),
     )]));
 
-    app.send_input(DualAxis::from_value(
-        MouseMotionAxisType::X,
-        MouseMotionAxisType::Y,
-        0.0,
-        -2.0,
-    ));
+    let input = DualAxis::mouse_motion();
+    app.send_axis_values(input, [0.0, -2.0]);
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
 
     assert!(action_state.pressed(&AxislikeTestAction::XY));
-    // This should be a unit length, because we're working with a VirtualDpad
+    // This should be a unit length, because we're working with a VirtualDPad
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        // This should be a unit length, because we're working with a VirtualDpad
+        // This should be a unit length, because we're working with a VirtualDPad
         DualAxisData::new(0.0, -1.0)
     );
 }
@@ -300,13 +258,9 @@ fn mouse_drag() {
 
     app.insert_resource(input_map);
 
-    app.send_input(DualAxis::from_value(
-        MouseMotionAxisType::X,
-        MouseMotionAxisType::Y,
-        5.0,
-        0.0,
-    ));
-    app.send_input(MouseButton::Right);
+    let input = DualAxis::mouse_motion();
+    app.send_axis_values(input, [5.0, 0.0]);
+    app.press_input(MouseButton::Right);
     app.update();
 
     let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();

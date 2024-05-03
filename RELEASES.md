@@ -12,6 +12,10 @@
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
 - removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
+- split `MockInput::send_input` method to two methods:
+  - `fn press_input(&self, input: UserInput)` for focusing on simulating button and key presses.
+  - `fn send_axis_values(&self, input: UserInput, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis of the input.
+- removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
 
 ### Enhancements
 
@@ -28,7 +32,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - implemented `WithAxisProcessorExt` to manage processors for `SingleAxis` and `VirtualAxis`.
 - implemented `WithDualAxisProcessorExt` to manage processors for `DualAxis` and `VirtualDpad`.
 - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
-- added built-in processor variants (no variant versions implemented `Into<Processor>`):
+- added built-in processors (variants of processor enums and `Into<Processor>` implementors):
   - Pipelines: Handle input values sequentially through a sequence of processors.
     - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
     - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.

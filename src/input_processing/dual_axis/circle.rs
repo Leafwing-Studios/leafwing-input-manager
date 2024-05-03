@@ -3,7 +3,7 @@
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
 
-use bevy::prelude::*;
+use bevy::prelude::{Reflect, Vec2};
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
@@ -399,6 +399,7 @@ impl Hash for CircleDeadZone {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::prelude::FloatExt;
 
     #[test]
     fn test_circle_value_bounds() {

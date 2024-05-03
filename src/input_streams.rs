@@ -488,7 +488,7 @@ mod tests {
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
         assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
 
-        input_streams.send_input(KeyCode::ControlLeft);
+        input_streams.press_input(KeyCode::ControlLeft);
         app.update();
 
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
@@ -500,7 +500,7 @@ mod tests {
         let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
         assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
 
-        input_streams.send_input(KeyCode::ControlRight);
+        input_streams.press_input(KeyCode::ControlRight);
         app.update();
 
         let input_streams = MutableInputStreams::from_world(&mut app.world, None);

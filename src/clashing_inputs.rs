@@ -467,8 +467,8 @@ mod tests {
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
-            app.send_input(Digit1);
-            app.send_input(Digit2);
+            app.press_input(Digit1);
+            app.press_input(Digit2);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world, None);
@@ -495,7 +495,7 @@ mod tests {
             let chord_clash = input_map
                 .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
                 .unwrap();
-            app.send_input(Digit3);
+            app.press_input(Digit3);
             app.update();
 
             let input_streams = InputStreams::from_world(&app.world, None);
@@ -516,8 +516,8 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(Digit1);
-            app.send_input(Digit2);
+            app.press_input(Digit1);
+            app.press_input(Digit2);
             app.update();
 
             let mut action_data = HashMap::new();
@@ -547,8 +547,8 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(ControlLeft);
-            app.send_input(ArrowUp);
+            app.press_input(ControlLeft);
+            app.press_input(ArrowUp);
             app.update();
 
             let mut action_data = HashMap::new();
@@ -575,9 +575,9 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.send_input(Digit1);
-            app.send_input(Digit2);
-            app.send_input(ControlLeft);
+            app.press_input(Digit1);
+            app.press_input(Digit2);
+            app.press_input(ControlLeft);
             app.update();
 
             let action_data = input_map.process_actions(

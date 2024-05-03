@@ -655,7 +655,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Pressing
-        app.send_input(KeyCode::KeyR);
+        app.press_input(KeyCode::KeyR);
         // Process the input events into Input<KeyCode> data
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
@@ -729,7 +729,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing One
-        app.send_input(Digit1);
+        app.press_input(Digit1);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
@@ -750,7 +750,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing Two
-        app.send_input(Digit2);
+        app.press_input(Digit2);
         app.update();
         let input_streams = InputStreams::from_world(&app.world, None);
 
