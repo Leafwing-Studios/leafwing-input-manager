@@ -15,7 +15,7 @@
 - split `MockInput::send_input` method to two methods:
   - `fn press_input(&self, input: UserInput)` for focusing on simulating button and key presses.
   - `fn send_axis_values(&self, input: UserInput, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis of the input.
-- removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking (see 'Usability: Input Mocking' for details).
+- removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
 
 ### Enhancements
 
