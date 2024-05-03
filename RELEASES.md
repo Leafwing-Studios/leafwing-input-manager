@@ -10,7 +10,7 @@
 - made the dependency on bevy's `bevy_gilrs` feature optional.
   - it is still enabled by leafwing-input-manager's default features.
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
-- removed `InputMap::build` method in favor of new fluent builder pattern (see 'Enhancements: InputMap' for details).
+- removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
 
 ### Enhancements
