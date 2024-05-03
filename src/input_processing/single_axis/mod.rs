@@ -200,8 +200,8 @@ pub trait WithAxisProcessorExt: Sized {
     /// Appends an [`AxisBounds`] processor as the next processing step,
     /// restricting values to a `threshold` magnitude.
     #[inline]
-    fn with_symmetric_bounds(self, threshold: f32) -> Self {
-        self.with_processor(AxisBounds::magnitude(threshold))
+    fn with_bounds_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(AxisBounds::symmetric(threshold))
     }
 
     /// Appends an [`AxisDeadZone`] processor as the next processing step,
@@ -215,13 +215,13 @@ pub trait WithAxisProcessorExt: Sized {
     }
 
     /// Appends an [`AxisDeadZone`] processor as the next processing step,
-    /// excluding values below a `threshold` magnitude, treating them as zeros
-    /// then normalizing non-excluded input values into the "live zone",
+    /// excluding values within the dead zone range `[-threshold, threshold]` on the axis,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
     /// the remaining range within the [`AxisBounds::magnitude(1.0)`](AxisBounds::default)
     /// after dead zone exclusion.
     #[inline]
-    fn with_deadzone_magnitude(self, threshold: f32) -> Self {
-        self.with_processor(AxisDeadZone::magnitude(threshold))
+    fn with_deadzone_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(AxisDeadZone::symmetric(threshold))
     }
 
     /// Appends an [`AxisExclusion`] processor as the next processing step,
@@ -233,10 +233,11 @@ pub trait WithAxisProcessorExt: Sized {
     }
 
     /// Appends an [`AxisExclusion`] processor as the next processing step,
-    /// ignoring values below a `threshold` magnitude, treating them as zeros.
+    /// ignoring values within the dead zone range `[-threshold, threshold]` on the axis,
+    /// treating them as zeros.
     #[inline]
-    fn with_deadzone_magnitude_unscaled(self, threshold: f32) -> Self {
-        self.with_processor(AxisExclusion::magnitude(threshold))
+    fn with_deadzone_symmetric_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(AxisExclusion::symmetric(threshold))
     }
 }
 
