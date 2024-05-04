@@ -1,5 +1,5 @@
 //! Contains the main plugin exported by this crate.
-//!
+
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::marker::PhantomData;

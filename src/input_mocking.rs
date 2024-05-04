@@ -218,7 +218,7 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
-        let raw_inputs = input.raw_inputs();
+        let raw_inputs = input.to_raw_inputs();
 
         // Press KeyCode
         for keycode in raw_inputs.keycodes.iter() {
@@ -269,7 +269,7 @@ impl MockInput for MutableInputStreams<'_> {
         values: impl IntoIterator<Item = f32>,
         gamepad: Option<Gamepad>,
     ) {
-        let raw_inputs = input.raw_inputs();
+        let raw_inputs = input.to_raw_inputs();
         let mut value_iter = values.into_iter();
 
         if let Some(gamepad) = gamepad {
@@ -297,7 +297,7 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
-        let raw_inputs = input.raw_inputs();
+        let raw_inputs = input.to_raw_inputs();
 
         // Release KeyCode
         for keycode in raw_inputs.keycodes.iter() {

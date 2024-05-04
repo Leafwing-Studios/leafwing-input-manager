@@ -38,9 +38,9 @@ fn spawn_player(mut commands: Commands) {
             Action::Move,
             GamepadStick::LEFT
                 // You can replace the currently used pipeline with another processor.
-                .replace_processor(CircleDeadZone::default())
-                // Or remove the pipeline directly, leaving no any processing applied.
-                .no_processor(),
+                .replace_processing_pipeline(CircleDeadZone::default())
+                // Or reset the pipeline directly, leaving no any processing applied.
+                .reset_processing_pipeline(),
         )
         .with(
             Action::LookAround,

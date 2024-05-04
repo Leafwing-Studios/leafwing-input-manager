@@ -9,10 +9,11 @@ use serde::{Deserialize, Serialize};
 use crate as leafwing_input_manager;
 use crate::axislike::{AxisDirection, AxisInputMode, DualAxisData};
 use crate::input_processing::{
-    AxisProcessor, DualAxisProcessor, WithAxisProcessorExt, WithDualAxisProcessorExt,
+    AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
+    WithDualAxisProcessingPipelineExt,
 };
 use crate::input_streams::InputStreams;
-use crate::user_input::raw_inputs::RawInputs;
+use crate::raw_inputs::RawInputs;
 use crate::user_input::{InputKind, UserInput};
 
 /// Retrieves the current value of the specified `axis`.
@@ -102,7 +103,7 @@ impl UserInput for GamepadControlDirection {
 
     /// Creates a [`RawInputs`] from the direction directly.
     #[inline]
-    fn raw_inputs(&self) -> RawInputs {
+    fn to_raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_control_directions([*self])
     }
 
@@ -110,7 +111,7 @@ impl UserInput for GamepadControlDirection {
     /// as it represents a simple virtual button.
     #[must_use]
     #[inline]
-    fn destructure(&self) -> Vec<Box<dyn UserInput>> {
+    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
         vec![Box::new(*self)]
     }
 
@@ -225,14 +226,14 @@ impl UserInput for GamepadControlAxis {
 
     /// Creates a [`RawInputs`] from the [`GamepadAxisType`] used by the axis.
     #[inline]
-    fn raw_inputs(&self) -> RawInputs {
+    fn to_raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_axes([self.axis])
     }
 
     /// Returns both positive and negative [`GamepadControlDirection`]s to represent the movement.
     #[must_use]
     #[inline]
-    fn destructure(&self) -> Vec<Box<dyn UserInput>> {
+    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
         vec![
             Box::new(GamepadControlDirection::negative(self.axis)),
             Box::new(GamepadControlDirection::positive(self.axis)),
@@ -269,15 +270,15 @@ impl UserInput for GamepadControlAxis {
     }
 }
 
-impl WithAxisProcessorExt for GamepadControlAxis {
+impl WithAxisProcessingPipelineExt for GamepadControlAxis {
     #[inline]
-    fn no_processor(mut self) -> Self {
+    fn reset_processing_pipeline(mut self) -> Self {
         self.processor = AxisProcessor::None;
         self
     }
 
     #[inline]
-    fn replace_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
+    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
         self.processor = processor.into();
         self
     }
@@ -375,14 +376,14 @@ impl UserInput for GamepadStick {
 
     /// Creates a [`RawInputs`] from two [`GamepadAxisType`]s used by the stick.
     #[inline]
-    fn raw_inputs(&self) -> RawInputs {
+    fn to_raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_axes([self.x, self.y])
     }
 
     /// Returns four [`GamepadControlDirection`]s to represent the movement.
     #[must_use]
     #[inline]
-    fn destructure(&self) -> Vec<Box<dyn UserInput>> {
+    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
         vec![
             Box::new(GamepadControlDirection::negative(self.x)),
             Box::new(GamepadControlDirection::positive(self.x)),
@@ -424,15 +425,15 @@ impl UserInput for GamepadStick {
     }
 }
 
-impl WithDualAxisProcessorExt for GamepadStick {
+impl WithDualAxisProcessingPipelineExt for GamepadStick {
     #[inline]
-    fn no_processor(mut self) -> Self {
+    fn reset_processing_pipeline(mut self) -> Self {
         self.processor = DualAxisProcessor::None;
         self
     }
 
     #[inline]
-    fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
+    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
         self.processor = processor.into();
         self
     }
@@ -494,7 +495,7 @@ impl UserInput for GamepadButtonType {
 
     /// Creates a [`RawInputs`] from the button directly.
     #[inline]
-    fn raw_inputs(&self) -> RawInputs {
+    fn to_raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_buttons([*self])
     }
 
@@ -502,7 +503,7 @@ impl UserInput for GamepadButtonType {
     /// as it represents a simple physical button.
     #[must_use]
     #[inline]
-    fn destructure(&self) -> Vec<Box<dyn UserInput>> {
+    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
         vec![Box::new(*self)]
     }
 
@@ -614,14 +615,14 @@ impl UserInput for GamepadVirtualAxis {
 
     /// Creates a [`RawInputs`] from two [`GamepadButtonType`]s used by this axis.
     #[inline]
-    fn raw_inputs(&self) -> RawInputs {
+    fn to_raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_buttons([self.negative, self.positive])
     }
 
     /// Returns the two [`GamepadButtonType`]s used by this axis.
     #[must_use]
     #[inline]
-    fn destructure(&self) -> Vec<Box<dyn UserInput>> {
+    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
         vec![Box::new(self.negative), Box::new(self.positive)]
     }
 
@@ -662,15 +663,15 @@ impl UserInput for GamepadVirtualAxis {
     }
 }
 
-impl WithAxisProcessorExt for GamepadVirtualAxis {
+impl WithAxisProcessingPipelineExt for GamepadVirtualAxis {
     #[inline]
-    fn no_processor(mut self) -> Self {
+    fn reset_processing_pipeline(mut self) -> Self {
         self.processor = AxisProcessor::None;
         self
     }
 
     #[inline]
-    fn replace_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
+    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
         self.processor = processor.into();
         self
     }
@@ -783,14 +784,14 @@ impl UserInput for GamepadVirtualDPad {
 
     /// Creates a [`RawInputs`] from four [`GamepadButtonType`]s used by this D-pad.
     #[inline]
-    fn raw_inputs(&self) -> RawInputs {
+    fn to_raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_buttons([self.up, self.down, self.left, self.right])
     }
 
     /// Returns the four [`GamepadButtonType`]s used by this D-pad.
     #[must_use]
     #[inline]
-    fn destructure(&self) -> Vec<Box<dyn UserInput>> {
+    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
         vec![
             Box::new(self.up),
             Box::new(self.down),
@@ -831,15 +832,15 @@ impl UserInput for GamepadVirtualDPad {
     }
 }
 
-impl WithDualAxisProcessorExt for GamepadVirtualDPad {
+impl WithDualAxisProcessingPipelineExt for GamepadVirtualDPad {
     #[inline]
-    fn no_processor(mut self) -> Self {
+    fn reset_processing_pipeline(mut self) -> Self {
         self.processor = DualAxisProcessor::None;
         self
     }
 
     #[inline]
-    fn replace_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
+    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
         self.processor = processor.into();
         self
     }
@@ -909,44 +910,44 @@ mod tests {
         let left_up = GamepadControlDirection::LEFT_UP;
         assert_eq!(left_up.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_gamepad_control_directions([left_up]);
-        assert_eq!(left_up.raw_inputs(), raw_inputs);
+        assert_eq!(left_up.to_raw_inputs(), raw_inputs);
 
         // The opposite of left up
         let left_down = GamepadControlDirection::LEFT_DOWN;
         assert_eq!(left_down.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_gamepad_control_directions([left_up]);
-        assert_eq!(left_up.raw_inputs(), raw_inputs);
+        assert_eq!(left_up.to_raw_inputs(), raw_inputs);
 
         let left_x = GamepadControlAxis::LEFT_X;
         assert_eq!(left_x.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_axes([left_x.axis]);
-        assert_eq!(left_x.raw_inputs(), raw_inputs);
+        assert_eq!(left_x.to_raw_inputs(), raw_inputs);
 
         let left_y = GamepadControlAxis::LEFT_Y;
         assert_eq!(left_y.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_axes([left_y.axis]);
-        assert_eq!(left_y.raw_inputs(), raw_inputs);
+        assert_eq!(left_y.to_raw_inputs(), raw_inputs);
 
         let left = GamepadStick::LEFT;
         assert_eq!(left.kind(), InputKind::DualAxis);
         let raw_inputs = RawInputs::from_gamepad_axes([left.x, left.y]);
-        assert_eq!(left.raw_inputs(), raw_inputs);
+        assert_eq!(left.to_raw_inputs(), raw_inputs);
 
         // Up; but for the other stick
         let right_up = GamepadControlDirection::RIGHT_DOWN;
         assert_eq!(right_up.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_gamepad_control_directions([right_up]);
-        assert_eq!(right_up.raw_inputs(), raw_inputs);
+        assert_eq!(right_up.to_raw_inputs(), raw_inputs);
 
         let right_y = GamepadControlAxis::RIGHT_Y;
         assert_eq!(right_y.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_axes([right_y.axis]);
-        assert_eq!(right_y.raw_inputs(), raw_inputs);
+        assert_eq!(right_y.to_raw_inputs(), raw_inputs);
 
         let right = GamepadStick::RIGHT;
         assert_eq!(right.kind(), InputKind::DualAxis);
         let raw_inputs = RawInputs::from_gamepad_axes([right_y.axis]);
-        assert_eq!(right_y.raw_inputs(), raw_inputs);
+        assert_eq!(right_y.to_raw_inputs(), raw_inputs);
 
         // No inputs
         let zeros = Some(DualAxisData::ZERO);
@@ -1014,37 +1015,37 @@ mod tests {
         let up = GamepadButtonType::DPadUp;
         assert_eq!(up.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([up]);
-        assert_eq!(up.raw_inputs(), raw_inputs);
+        assert_eq!(up.to_raw_inputs(), raw_inputs);
 
         let left = GamepadButtonType::DPadLeft;
         assert_eq!(left.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([left]);
-        assert_eq!(left.raw_inputs(), raw_inputs);
+        assert_eq!(left.to_raw_inputs(), raw_inputs);
 
         let down = GamepadButtonType::DPadDown;
         assert_eq!(left.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([down]);
-        assert_eq!(down.raw_inputs(), raw_inputs);
+        assert_eq!(down.to_raw_inputs(), raw_inputs);
 
         let right = GamepadButtonType::DPadRight;
         assert_eq!(left.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([right]);
-        assert_eq!(right.raw_inputs(), raw_inputs);
+        assert_eq!(right.to_raw_inputs(), raw_inputs);
 
         let x_axis = GamepadVirtualAxis::DPAD_X;
         assert_eq!(x_axis.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_buttons([left, right]);
-        assert_eq!(x_axis.raw_inputs(), raw_inputs);
+        assert_eq!(x_axis.to_raw_inputs(), raw_inputs);
 
         let y_axis = GamepadVirtualAxis::DPAD_Y;
         assert_eq!(y_axis.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_buttons([down, up]);
-        assert_eq!(y_axis.raw_inputs(), raw_inputs);
+        assert_eq!(y_axis.to_raw_inputs(), raw_inputs);
 
         let dpad = GamepadVirtualDPad::DPAD;
         assert_eq!(dpad.kind(), InputKind::DualAxis);
         let raw_inputs = RawInputs::from_gamepad_buttons([up, down, left, right]);
-        assert_eq!(dpad.raw_inputs(), raw_inputs);
+        assert_eq!(dpad.to_raw_inputs(), raw_inputs);
 
         // No inputs
         let zeros = Some(DualAxisData::ZERO);

@@ -22,6 +22,7 @@ pub mod input_processing;
 pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
+pub mod raw_inputs;
 pub mod systems;
 pub mod timing;
 pub mod typetag;

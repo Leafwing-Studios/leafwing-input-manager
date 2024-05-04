@@ -31,7 +31,7 @@
 //!
 //! ## Raw Input Events
 //!
-//! [`UserInput`]s use the method [`UserInput::raw_inputs`] returning a [`RawInputs`]
+//! [`UserInput`]s use the method [`UserInput::to_raw_inputs`] returning a [`RawInputs`]
 //! used for sending fake input events, see [input mocking](crate::input_mocking::MockInput) for details.
 //!
 //! ## Built-in Inputs
@@ -95,8 +95,8 @@ use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
 
 use crate::axislike::DualAxisData;
 use crate::input_streams::InputStreams;
+use crate::raw_inputs::RawInputs;
 use crate::typetag::RegisterTypeTag;
-use crate::user_input::raw_inputs::RawInputs;
 
 pub use self::chord::*;
 pub use self::gamepad::*;
@@ -107,7 +107,6 @@ pub mod chord;
 pub mod gamepad;
 pub mod keyboard;
 pub mod mouse;
-pub mod raw_inputs;
 
 /// Classifies [`UserInput`]s based on their behavior (buttons, analog axes, etc.).
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
@@ -134,15 +133,6 @@ pub trait UserInput:
     /// Defines the kind of data that the input should provide.
     fn kind(&self) -> InputKind;
 
-    /// Returns the [`RawInputs`] that make up the input.
-    fn raw_inputs(&self) -> RawInputs;
-
-    /// Breaks down this input until it reaches its most basic [`UserInput`]s.
-    ///
-    /// For inputs that represent a simple, atomic control,
-    /// this method should always return a list that only contains a boxed copy of the input itself.
-    fn destructure(&self) -> Vec<Box<dyn UserInput>>;
-
     /// Checks if the input is currently active.
     fn pressed(&self, input_streams: &InputStreams) -> bool;
 
@@ -157,6 +147,15 @@ pub trait UserInput:
     /// For inputs that don't represent dual-axis input, there is no need to override this method.
     /// The default implementation will always return [`None`].
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData>;
+
+    /// Returns the [`RawInputs`] that make up the input.
+    fn to_raw_inputs(&self) -> RawInputs;
+
+    /// Breaks down this input until it reaches its most basic [`UserInput`]s.
+    ///
+    /// For inputs that represent a simple, atomic control,
+    /// this method should always return a list that only contains a boxed copy of the input itself.
+    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>>;
 }
 
 dyn_clone::clone_trait_object!(UserInput);

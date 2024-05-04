@@ -57,10 +57,14 @@ fn check_clashed(lhs: &dyn UserInput, rhs: &dyn UserInput) -> bool {
         list_a.len() > 1 && list_b.iter().all(|a| list_a.contains(a))
     }
 
-    let lhs_inners = lhs.destructure();
-    let rhs_inners = rhs.destructure();
+    let lhs_inners = lhs.to_clashing_checker();
+    let rhs_inners = rhs.to_clashing_checker();
 
-    clash(&lhs_inners, &rhs_inners) || clash(&rhs_inners, &lhs_inners)
+    let res = clash(&lhs_inners, &rhs_inners) || clash(&rhs_inners, &lhs_inners);
+
+    dbg!(lhs_inners, rhs_inners, res);
+
+    res
 }
 
 impl<A: Actionlike> InputMap<A> {
@@ -240,13 +244,13 @@ fn resolve_clash<A: Actionlike>(
         ClashStrategy::PrioritizeLongest => {
             let longest_a: usize = reasons_a_is_pressed
                 .iter()
-                .map(|input| input.destructure().len())
+                .map(|input| input.to_clashing_checker().len())
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
             let longest_b: usize = reasons_b_is_pressed
                 .iter()
-                .map(|input| input.destructure().len())
+                .map(|input| input.to_clashing_checker().len())
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
