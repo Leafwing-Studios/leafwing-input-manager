@@ -29,8 +29,6 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - added processor traits for defining custom processors:
   - `CustomAxisProcessor`: Handles single-axis values.
   - `CustomDualAxisProcessor`: Handles dual-axis values.
-- implemented `WithAxisProcessorExt` to manage processors for `SingleAxis` and `VirtualAxis`.
-- implemented `WithDualAxisProcessorExt` to manage processors for `DualAxis` and `VirtualDpad`.
 - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
 - added built-in processors (variants of processor enums and `Into<Processor>` implementors):
   - Pipelines: Handle input values sequentially through a sequence of processors.
@@ -58,6 +56,8 @@ Input processors allow you to create custom logic for axis-like input manipulati
       - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
       - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
       - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
+- implemented `WithAxisProcessingPipelineExt` to manage processors for `SingleAxis` and `VirtualAxis`, integrating the common processing configuration.
+- implemented `WithDualAxisProcessingPipelineExt` to manage processors for `DualAxis` and `VirtualDpad`, integrating the common processing configuration.
 
 ### Usability
 

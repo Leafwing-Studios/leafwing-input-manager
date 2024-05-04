@@ -172,12 +172,12 @@ impl Hash for AxisProcessor {
 }
 
 /// Provides methods for configuring and manipulating the processing pipeline for single-axis input.
-pub trait WithAxisProcessorExt: Sized {
-    /// Remove the current used [`AxisProcessor`].
-    fn no_processor(self) -> Self;
+pub trait WithAxisProcessingPipelineExt: Sized {
+    /// Resets the processing pipeline, removing any currently applied processors.
+    fn reset_processing_pipeline(self) -> Self;
 
-    /// Replaces the current pipeline with the specified [`AxisProcessor`].
-    fn replace_processor(self, processor: impl Into<AxisProcessor>) -> Self;
+    /// Replaces the current processing pipeline with the specified [`AxisProcessor`].
+    fn replace_processing_pipeline(self, processor: impl Into<AxisProcessor>) -> Self;
 
     /// Appends the given [`AxisProcessor`] as the next processing step.
     fn with_processor(self, processor: impl Into<AxisProcessor>) -> Self;
