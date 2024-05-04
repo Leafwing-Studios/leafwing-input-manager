@@ -4,18 +4,18 @@
 
 ### Breaking Changes
 
-- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-- replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
-  - removed `DeadZoneShape` in favor of new dead zone processors.
-- made the dependency on bevy's `bevy_gilrs` feature optional.
-  - it is still enabled by leafwing-input-manager's default features.
-  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
 - removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
+- replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
+  - removed `DeadZoneShape` in favor of new dead zone processors.
+- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
+- removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
 - split `MockInput::send_input` method to two methods:
   - `fn press_input(&self, input: UserInput)` for focusing on simulating button and key presses.
   - `fn send_axis_values(&self, input: UserInput, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis of the input.
-- removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
+- made the dependency on bevy's `bevy_gilrs` feature optional.
+  - it is still enabled by leafwing-input-manager's default features.
+  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
 
 ### Enhancements
 
@@ -65,7 +65,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 Introduce new fluent builders for creating a new `InputMap<A>` with short configurations:
 
-- `fn with(mut self, action: A, input: impl Into<Item = UserInput>)`.
+- `fn with(mut self, action: A, input: impl Into<UserInput>)`.
 - `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
 - `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
 - `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
