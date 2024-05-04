@@ -133,7 +133,6 @@ impl UserInput for GamepadControlDirection {
 
     /// Returns a [`BasicInputs`] that only contains the [`GamepadControlDirection`] itself,
     /// as it represents a simple virtual button.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Single(Box::new(*self))
@@ -255,7 +254,6 @@ impl UserInput for GamepadControlAxis {
     }
 
     /// Returns both positive and negative [`GamepadControlDirection`]s to represent the movement.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
@@ -408,7 +406,6 @@ impl UserInput for GamepadStick {
     }
 
     /// Returns four [`GamepadControlDirection`]s to represent the movement.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
@@ -534,7 +531,6 @@ impl UserInput for GamepadButtonType {
 
     /// Creates a [`BasicInputs`] that only contains the [`GamepadButtonType`] itself,
     /// as it represents a simple physical button.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Single(Box::new(*self))
@@ -651,7 +647,6 @@ impl UserInput for GamepadVirtualAxis {
     }
 
     /// Returns the two [`GamepadButtonType`]s used by this axis.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
@@ -815,7 +810,6 @@ impl UserInput for GamepadVirtualDPad {
     }
 
     /// Returns the four [`GamepadButtonType`]s used by this D-pad.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![

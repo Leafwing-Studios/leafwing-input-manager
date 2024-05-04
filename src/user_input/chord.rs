@@ -155,7 +155,6 @@ impl UserInput for InputChord {
     }
 
     /// Retrieves a list of simple, atomic [`UserInput`]s that compose the chord.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         let inputs = self

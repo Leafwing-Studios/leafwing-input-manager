@@ -74,7 +74,6 @@ impl UserInput for KeyboardKey {
     }
 
     /// Returns a list of [`KeyCode`]s used by this [`KeyboardKey`].
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         let keycodes = self
@@ -148,7 +147,6 @@ impl UserInput for KeyCode {
 
     /// Returns a [`BasicInputs`] that only contains the [`KeyCode`] itself,
     /// as it represents a simple physical button.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Single(Box::new(*self))
@@ -253,7 +251,6 @@ impl UserInput for ModifierKey {
     }
 
     /// Returns the two [`KeyCode`]s used by this [`ModifierKey`].
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![Box::new(self.left()), Box::new(self.right())])
@@ -394,7 +391,6 @@ impl UserInput for KeyboardVirtualAxis {
     }
 
     /// Returns all the [`KeyCode`]s used by this axis.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         let keycodes = self
@@ -572,7 +568,6 @@ impl UserInput for KeyboardVirtualDPad {
     }
 
     /// Returns all the [`KeyCode`]s used by this D-pad.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         let keycodes = self

@@ -29,6 +29,11 @@
 //!   These inputs provide separate X and Y values typically ranging from `-1.0` to `1.0`.
 //!   Non-zero values are considered active.
 //!
+//! ## Basic Inputs
+//!
+//! [`UserInput`]s use the method [`UserInput::basic_inputs`] returning a [`BasicInputs`]
+//! used for clashing detection, see [clashing input check](crate::clashing_inputs) for details.
+//!
 //! ## Raw Input Events
 //!
 //! [`UserInput`]s use the method [`UserInput::raw_inputs`] returning a [`RawInputs`]

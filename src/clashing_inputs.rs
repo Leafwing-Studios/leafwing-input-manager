@@ -48,6 +48,7 @@ impl ClashStrategy {
 
 /// The basic inputs that make up a [`UserInput`].
 #[derive(Debug, Clone)]
+#[must_use]
 pub enum BasicInputs {
     /// The input consists of a single, fundamental [`UserInput`].
     /// In most cases, the input simply holds itself.

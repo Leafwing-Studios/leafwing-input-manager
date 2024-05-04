@@ -11,7 +11,9 @@
   - applied clashing check to continuous mouse inputs, for example:
     - `MouseScrollAxis::Y` will clash with `MouseScrollDirection::UP` and `MouseScrollDirection::DOWN`.
     - `MouseMove` will clash with all the two axes and the four directions.
-- removed `InputMap::insert_chord` and `InputMap::insert_modified` methods since they’re a little bit
+- removed `InputMap::insert_chord` and `InputMap::insert_modified` due to their limited applicability within the type system.
+  - the new `InputChord` contructors and builders allow you to define chords with guaranteed type safety.
+  - the new `ModifierKey::with` method simplifies the creation of input chords that include the modifier and your desired input.
 - removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
 - removed `DeadZoneShape` in favor of new dead zone processors (see 'Enhancements: Input Processors' for details).

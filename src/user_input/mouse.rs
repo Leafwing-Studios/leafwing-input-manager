@@ -49,7 +49,6 @@ impl UserInput for MouseButton {
 
     /// Returns a [`BasicInputs`] that only contains the [`MouseButton`] itself,
     /// as it represents a simple physical button.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Single(Box::new(*self))
@@ -128,7 +127,6 @@ impl UserInput for MouseMoveDirection {
 
     /// Returns a [`BasicInputs`] that only contains the [`MouseMoveDirection`] itself,
     /// as it represents a simple virtual button.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Single(Box::new(*self))
@@ -224,7 +222,6 @@ impl UserInput for MouseMoveAxis {
     }
 
     /// Returns both negative and positive [`MouseMoveDirection`] to represent the movement.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
@@ -327,7 +324,6 @@ impl UserInput for MouseMove {
     }
 
     /// Returns four [`MouseMoveDirection`]s to represent the movement.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
@@ -431,7 +427,6 @@ impl UserInput for MouseScrollDirection {
 
     /// Returns a [`BasicInputs`] that only contains the [`MouseScrollDirection`] itself,
     /// as it represents a simple virtual button.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Single(Box::new(*self))
@@ -527,7 +522,6 @@ impl UserInput for MouseScrollAxis {
     }
 
     /// Returns both positive and negative [`MouseScrollDirection`]s to represent the movement.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
@@ -630,7 +624,6 @@ impl UserInput for MouseScroll {
     }
 
     /// Returns four [`MouseScrollDirection`]s to represent the movement.
-    #[must_use]
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
