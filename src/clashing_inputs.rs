@@ -71,7 +71,7 @@ impl BasicInputs {
         }
     }
 
-    /// Returns the number of the underlying [`UserInput`]s.
+    /// Returns the number of the logical [`UserInput`]s that make up the input.
     #[allow(clippy::len_without_is_empty)]
     #[inline]
     pub fn len(&self) -> usize {
@@ -557,10 +557,11 @@ mod tests {
             action_data.insert(CtrlUp, action_datum.clone());
             action_data.insert(MoveDPad, action_datum.clone());
 
-            let streams = InputStreams::from_world(&app.world, None);
-            println!("World: {streams:?}");
-
-            input_map.handle_clashes(&mut action_data, &streams, ClashStrategy::PrioritizeLongest);
+            input_map.handle_clashes(
+                &mut action_data,
+                &InputStreams::from_world(&app.world, None),
+                ClashStrategy::PrioritizeLongest,
+            );
 
             let mut expected = HashMap::new();
             expected.insert(CtrlUp, action_datum);
