@@ -133,6 +133,76 @@ pub enum InputKind {
 /// A trait for defining the behavior expected from different user input sources.
 ///
 /// Implementers of this trait should provide methods for accessing and processing user input data.
+///
+/// # Examples
+///
+/// ```rust
+/// use std::hash::{Hash, Hasher};
+/// use bevy::prelude::*;
+/// use bevy::utils::FloatOrd;
+/// use serde::{Deserialize, Serialize};
+/// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::input_streams::InputStreams;
+/// use leafwing_input_manager::axislike::{DualAxisType, DualAxisData};
+/// use leafwing_input_manager::raw_inputs::RawInputs;
+/// use leafwing_input_manager::clashing_inputs::BasicInputs;
+///
+/// #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+/// pub struct MouseScrollAlwaysFiveOnYAxis;
+///
+/// // Add this attribute for ensuring proper serialization and deserialization.
+/// #[serde_typetag]
+/// impl UserInput for MouseScrollAlwaysFiveOnYAxis {
+///     fn kind(&self) -> InputKind {
+///         // Returns the kind of input this represents.
+///         //
+///         // In this case, it represents an axial input.
+///         InputKind::Axis
+///     }
+///
+///     fn pressed(&self, input_streams: &InputStreams) -> bool {
+///         // Checks if the input is currently active.
+///         //
+///         // Since this virtual mouse scroll always outputs a value,
+///         // it will always return `true`.
+///         true
+///     }
+///
+///     fn value(&self, input_streams: &InputStreams) -> f32 {
+///         // Gets the current value of the input as an `f32`.
+///         //
+///         // This input always represents a scroll of `5.0` on the Y-axis.
+///         5.0
+///     }
+///
+///     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
+///         // Gets the values of this input along the X and Y axes (if applicable).
+///         //
+///         // This input only represents movement on the Y-axis,
+///         // so it returns `None`.
+///         None
+///     }
+///
+///     fn basic_inputs(&self) -> BasicInputs {
+///         // Gets the most basic form of this input for clashing input detection.
+///         //
+///         // This input is a simple, atomic unit,
+///         // so it is returned as a `BasicInputs::Simple`.
+///         BasicInputs::Simple(Box::new(*self))
+///     }
+///
+///     fn raw_inputs(&self) -> RawInputs {
+///         // Defines the raw input events used for simulating this input.
+///         //
+///         // This input simulates a mouse scroll event on the Y-axis.
+///         RawInputs::from_mouse_scroll_axes([DualAxisType::Y])
+///     }
+/// }
+///
+/// // Remember to register your input - it will ensure everything works smoothly!
+/// let mut app = App::new();
+/// app.register_user_input::<MouseScrollAlwaysFiveOnYAxis>();
+/// ```
 pub trait UserInput:
     Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {

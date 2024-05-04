@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::{ButtonState, InputSystem};
-use bevy::prelude::{PostUpdate, PreUpdate};
+use bevy::prelude::{GamepadButtonType, KeyCode, PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
 
 #[cfg(feature = "ui")]
@@ -19,6 +19,7 @@ use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
 use crate::timing::Timing;
+use crate::user_input::*;
 use crate::Actionlike;
 
 /// A [`Plugin`] that collects [`ButtonInput`](bevy::input::ButtonInput) from disparate sources,
@@ -165,6 +166,24 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<Timing>()
             .register_type::<DualAxisData>()
             .register_type::<ButtonState>()
+            // Inputs
+            .register_user_input::<GamepadControlDirection>()
+            .register_user_input::<GamepadControlAxis>()
+            .register_user_input::<GamepadStick>()
+            .register_user_input::<GamepadButtonType>()
+            .register_user_input::<GamepadVirtualAxis>()
+            .register_user_input::<GamepadVirtualDPad>()
+            .register_user_input::<KeyCode>()
+            .register_user_input::<ModifierKey>()
+            .register_user_input::<KeyboardKey>()
+            .register_user_input::<KeyboardVirtualAxis>()
+            .register_user_input::<KeyboardVirtualDPad>()
+            .register_user_input::<MouseMoveDirection>()
+            .register_user_input::<MouseMoveAxis>()
+            .register_user_input::<MouseMove>()
+            .register_user_input::<MouseScrollDirection>()
+            .register_user_input::<MouseScrollAxis>()
+            .register_user_input::<MouseScroll>()
             // Processors
             .register_type::<AxisProcessor>()
             .register_type::<AxisBounds>()
