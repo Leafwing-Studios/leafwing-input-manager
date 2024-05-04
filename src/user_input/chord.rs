@@ -5,6 +5,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
+use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
 use crate::user_input::{DualAxisData, InputKind, UserInput};
@@ -102,24 +103,6 @@ impl UserInput for InputChord {
         InputKind::Button
     }
 
-    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        self.0.iter().fold(RawInputs::default(), |inputs, next| {
-            inputs.merge_input(&next.to_raw_inputs())
-        })
-    }
-
-    /// Retrieves a list of simple, atomic [`UserInput`]s that compose the chord.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        self.0
-            .iter()
-            .flat_map(|input| input.to_clashing_checker())
-            .collect()
-    }
-
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
     #[inline]
@@ -169,6 +152,26 @@ impl UserInput for InputChord {
             .filter(|input| input.kind() == InputKind::DualAxis)
             .flat_map(|input| input.axis_pair(input_streams))
             .next()
+    }
+
+    /// Retrieves a list of simple, atomic [`UserInput`]s that compose the chord.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        let inputs = self
+            .0
+            .iter()
+            .flat_map(|input| input.basic_inputs().inputs())
+            .collect();
+        BasicInputs::Group(inputs)
+    }
+
+    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        self.0.iter().fold(RawInputs::default(), |inputs, next| {
+            inputs.merge_input(&next.raw_inputs())
+        })
     }
 }
 
@@ -259,7 +262,7 @@ mod tests {
         assert_eq!(chord.0, expected_inners);
 
         let expected_raw_inputs = RawInputs::from_keycodes(required_keys);
-        assert_eq!(chord.to_raw_inputs(), expected_raw_inputs);
+        assert_eq!(chord.raw_inputs(), expected_raw_inputs);
 
         // No keys pressed, resulting in a released chord with a value of zero.
         let mut app = test_app();
@@ -321,11 +324,11 @@ mod tests {
         assert_eq!(chord.0, expected_inners);
 
         let expected_raw_inputs = RawInputs::from_keycodes(required_keys)
-            .merge_input(&MouseScrollAxis::X.to_raw_inputs())
-            .merge_input(&MouseScrollAxis::Y.to_raw_inputs())
-            .merge_input(&GamepadStick::LEFT.to_raw_inputs())
-            .merge_input(&GamepadStick::RIGHT.to_raw_inputs());
-        assert_eq!(chord.to_raw_inputs(), expected_raw_inputs);
+            .merge_input(&MouseScrollAxis::X.raw_inputs())
+            .merge_input(&MouseScrollAxis::Y.raw_inputs())
+            .merge_input(&GamepadStick::LEFT.raw_inputs())
+            .merge_input(&GamepadStick::RIGHT.raw_inputs());
+        assert_eq!(chord.raw_inputs(), expected_raw_inputs);
 
         // No input events, resulting in a released chord with values of zeros.
         let zeros = Some(DualAxisData::default());

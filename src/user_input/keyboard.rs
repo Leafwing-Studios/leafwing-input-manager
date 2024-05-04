@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::axislike::DualAxisData;
+use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
     WithDualAxisProcessingPipelineExt,
@@ -48,22 +49,6 @@ impl UserInput for KeyboardKey {
         InputKind::Button
     }
 
-    /// Creates a [`RawInputs`] from the [`KeyCode`]s used by this [`KeyboardKey`].
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes(self.keycodes())
-    }
-
-    /// Returns a list of [`KeyCode`]s used by this [`KeyboardKey`].
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        self.keycodes()
-            .iter()
-            .map(|keycode| Box::new(*keycode) as Box<dyn UserInput>)
-            .collect()
-    }
-
     /// Checks if the specified [`KeyboardKey`] is currently pressed down.
     #[must_use]
     #[inline]
@@ -86,6 +71,24 @@ impl UserInput for KeyboardKey {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns a list of [`KeyCode`]s used by this [`KeyboardKey`].
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        let keycodes = self
+            .keycodes()
+            .iter()
+            .map(|keycode| Box::new(*keycode) as Box<dyn UserInput>)
+            .collect();
+        BasicInputs::Group(keycodes)
+    }
+
+    /// Creates a [`RawInputs`] from the [`KeyCode`]s used by this [`KeyboardKey`].
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_keycodes(self.keycodes())
     }
 }
 
@@ -119,20 +122,6 @@ impl UserInput for KeyCode {
         InputKind::Button
     }
 
-    /// Creates a [`RawInputs`] from the key directly.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes([*self])
-    }
-
-    /// Returns a list that only contains the [`KeyCode`] itself,
-    /// as it represents a simple physical button.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![Box::new(*self)]
-    }
-
     /// Checks if the specified key is currently pressed down.
     #[must_use]
     #[inline]
@@ -155,6 +144,20 @@ impl UserInput for KeyCode {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns a [`BasicInputs`] that only contains the [`KeyCode`] itself,
+    /// as it represents a simple physical button.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Single(Box::new(*self))
+    }
+
+    /// Creates a [`RawInputs`] from the key directly.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_keycodes([*self])
     }
 }
 
@@ -225,19 +228,6 @@ impl UserInput for ModifierKey {
         InputKind::Button
     }
 
-    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this [`ModifierKey`].
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes(self.keycodes())
-    }
-
-    /// Returns the two [`KeyCode`]s used by this [`ModifierKey`].
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![Box::new(self.left()), Box::new(self.right())]
-    }
-
     /// Checks if the specified modifier key is currently pressed down.
     #[must_use]
     #[inline]
@@ -260,6 +250,19 @@ impl UserInput for ModifierKey {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns the two [`KeyCode`]s used by this [`ModifierKey`].
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![Box::new(self.left()), Box::new(self.right())])
+    }
+
+    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this [`ModifierKey`].
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_keycodes(self.keycodes())
     }
 }
 
@@ -362,29 +365,6 @@ impl UserInput for KeyboardVirtualAxis {
         InputKind::Axis
     }
 
-    /// Creates a [`RawInputs`] from all the [`KeyCode`]s used by this axis.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        let keycodes = self
-            .negative
-            .keycodes()
-            .into_iter()
-            .chain(self.positive.keycodes());
-        RawInputs::from_keycodes(keycodes)
-    }
-
-    /// Returns all the [`KeyCode`]s used by this axis.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        self.negative
-            .keycodes()
-            .into_iter()
-            .chain(self.positive.keycodes())
-            .map(|keycode| Box::new(keycode) as Box<dyn UserInput>)
-            .collect()
-    }
-
     /// Checks if this axis has a non-zero value after processing by the associated processor.
     #[must_use]
     #[inline]
@@ -411,6 +391,31 @@ impl UserInput for KeyboardVirtualAxis {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns all the [`KeyCode`]s used by this axis.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        let keycodes = self
+            .negative
+            .keycodes()
+            .into_iter()
+            .chain(self.positive.keycodes())
+            .map(|keycode| Box::new(keycode) as Box<dyn UserInput>)
+            .collect();
+        BasicInputs::Composite(keycodes)
+    }
+
+    /// Creates a [`RawInputs`] from all the [`KeyCode`]s used by this axis.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        let keycodes = self
+            .negative
+            .keycodes()
+            .into_iter()
+            .chain(self.positive.keycodes());
+        RawInputs::from_keycodes(keycodes)
     }
 }
 
@@ -544,33 +549,6 @@ impl UserInput for KeyboardVirtualDPad {
         InputKind::DualAxis
     }
 
-    /// Creates a [`RawInputs`] from all the [`KeyCode`]s used by this D-pad.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        let keycodes = self
-            .up
-            .keycodes()
-            .into_iter()
-            .chain(self.down.keycodes())
-            .chain(self.left.keycodes())
-            .chain(self.right.keycodes());
-        RawInputs::from_keycodes(keycodes)
-    }
-
-    /// Returns all the [`KeyCode`]s used by this D-pad.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        self.up
-            .keycodes()
-            .into_iter()
-            .chain(self.down.keycodes())
-            .chain(self.left.keycodes())
-            .chain(self.right.keycodes())
-            .map(|keycode| Box::new(keycode) as Box<dyn UserInput>)
-            .collect()
-    }
-
     /// Checks if this D-pad has a non-zero magnitude after processing by the associated processor.
     #[must_use]
     #[inline]
@@ -591,6 +569,35 @@ impl UserInput for KeyboardVirtualDPad {
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
         let value = self.processed_value(input_streams);
         Some(DualAxisData::from_xy(value))
+    }
+
+    /// Returns all the [`KeyCode`]s used by this D-pad.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        let keycodes = self
+            .up
+            .keycodes()
+            .into_iter()
+            .chain(self.down.keycodes())
+            .chain(self.left.keycodes())
+            .chain(self.right.keycodes())
+            .map(|keycode| Box::new(keycode) as Box<dyn UserInput>)
+            .collect();
+        BasicInputs::Composite(keycodes)
+    }
+
+    /// Creates a [`RawInputs`] from all the [`KeyCode`]s used by this D-pad.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        let keycodes = self
+            .up
+            .keycodes()
+            .into_iter()
+            .chain(self.down.keycodes())
+            .chain(self.left.keycodes())
+            .chain(self.right.keycodes());
+        RawInputs::from_keycodes(keycodes)
     }
 }
 
@@ -652,34 +659,34 @@ mod tests {
     fn test_keyboard_input() {
         let up = KeyCode::ArrowUp;
         assert_eq!(up.kind(), InputKind::Button);
-        assert_eq!(up.to_raw_inputs(), RawInputs::from_keycodes([up]));
+        assert_eq!(up.raw_inputs(), RawInputs::from_keycodes([up]));
 
         let left = KeyCode::ArrowLeft;
         assert_eq!(left.kind(), InputKind::Button);
-        assert_eq!(left.to_raw_inputs(), RawInputs::from_keycodes([left]));
+        assert_eq!(left.raw_inputs(), RawInputs::from_keycodes([left]));
 
         let alt = ModifierKey::Alt;
         assert_eq!(alt.kind(), InputKind::Button);
         let alt_raw_inputs = RawInputs::from_keycodes([KeyCode::AltLeft, KeyCode::AltRight]);
-        assert_eq!(alt.to_raw_inputs(), alt_raw_inputs);
+        assert_eq!(alt.raw_inputs(), alt_raw_inputs);
 
         let physical_up = KeyboardKey::PhysicalKey(up);
         assert_eq!(physical_up.kind(), InputKind::Button);
-        assert_eq!(physical_up.to_raw_inputs(), RawInputs::from_keycodes([up]));
+        assert_eq!(physical_up.raw_inputs(), RawInputs::from_keycodes([up]));
 
         let physical_any_up_left = KeyboardKey::PhysicalKeyAny(vec![up, left]);
         assert_eq!(physical_any_up_left.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_keycodes([up, left]);
-        assert_eq!(physical_any_up_left.to_raw_inputs(), raw_inputs);
+        assert_eq!(physical_any_up_left.raw_inputs(), raw_inputs);
 
         let keyboard_alt = KeyboardKey::ModifierKey(alt);
         assert_eq!(keyboard_alt.kind(), InputKind::Button);
-        assert_eq!(keyboard_alt.to_raw_inputs(), alt_raw_inputs);
+        assert_eq!(keyboard_alt.raw_inputs(), alt_raw_inputs);
 
         let arrow_y = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS;
         assert_eq!(arrow_y.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_keycodes([KeyCode::ArrowDown, KeyCode::ArrowUp]);
-        assert_eq!(arrow_y.to_raw_inputs(), raw_inputs);
+        assert_eq!(arrow_y.raw_inputs(), raw_inputs);
 
         let arrows = KeyboardVirtualDPad::ARROW_KEYS;
         assert_eq!(arrows.kind(), InputKind::DualAxis);
@@ -689,7 +696,7 @@ mod tests {
             KeyCode::ArrowLeft,
             KeyCode::ArrowRight,
         ]);
-        assert_eq!(arrows.to_raw_inputs(), raw_inputs);
+        assert_eq!(arrows.raw_inputs(), raw_inputs);
 
         // No inputs
         let zeros = Some(DualAxisData::ZERO);

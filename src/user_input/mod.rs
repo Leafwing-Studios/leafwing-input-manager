@@ -31,7 +31,7 @@
 //!
 //! ## Raw Input Events
 //!
-//! [`UserInput`]s use the method [`UserInput::to_raw_inputs`] returning a [`RawInputs`]
+//! [`UserInput`]s use the method [`UserInput::raw_inputs`] returning a [`RawInputs`]
 //! used for sending fake input events, see [input mocking](crate::input_mocking::MockInput) for details.
 //!
 //! ## Built-in Inputs
@@ -94,6 +94,7 @@ use serde_flexitos::ser::require_erased_serialize_impl;
 use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
 
 use crate::axislike::DualAxisData;
+use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
 use crate::typetag::RegisterTypeTag;
@@ -148,14 +149,14 @@ pub trait UserInput:
     /// The default implementation will always return [`None`].
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData>;
 
-    /// Returns the [`RawInputs`] that make up the input.
-    fn to_raw_inputs(&self) -> RawInputs;
-
-    /// Breaks down this input until it reaches its most basic [`UserInput`]s.
+    /// Returns the most basic inputs that make up this input.
     ///
     /// For inputs that represent a simple, atomic control,
-    /// this method should always return a list that only contains a boxed copy of the input itself.
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>>;
+    /// this method should always return a [`BasicInputs::Single`] that only contains the input itself.
+    fn basic_inputs(&self) -> BasicInputs;
+
+    /// Returns the raw input events that make up this input.
+    fn raw_inputs(&self) -> RawInputs;
 }
 
 dyn_clone::clone_trait_object!(UserInput);

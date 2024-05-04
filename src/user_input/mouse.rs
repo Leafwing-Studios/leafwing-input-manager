@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::axislike::{AxisInputMode, DualAxisData, DualAxisDirection, DualAxisType};
+use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::*;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
@@ -18,20 +19,6 @@ impl UserInput for MouseButton {
     #[inline]
     fn kind(&self) -> InputKind {
         InputKind::Button
-    }
-
-    /// Creates a [`RawInputs`] from the button directly.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_mouse_buttons([*self])
-    }
-
-    /// Returns a list that only contains the [`MouseButton`] itself,
-    /// as it represents a simple physical button.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![Box::new(*self)]
     }
 
     /// Checks if the specified button is currently pressed down.
@@ -58,6 +45,20 @@ impl UserInput for MouseButton {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns a [`BasicInputs`] that only contains the [`MouseButton`] itself,
+    /// as it represents a simple physical button.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Single(Box::new(*self))
+    }
+
+    /// Creates a [`RawInputs`] from the button directly.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_mouse_buttons([*self])
     }
 }
 
@@ -102,20 +103,6 @@ impl UserInput for MouseMoveDirection {
         InputKind::Button
     }
 
-    /// Creates a [`RawInputs`] from the direction directly.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_mouse_move_directions([*self])
-    }
-
-    /// Returns a list that only contains the [`MouseMoveDirection`] itself,
-    /// as it represents a simple virtual button.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![Box::new(*self)]
-    }
-
     /// Checks if there is any recent mouse movement along the specified direction.
     #[must_use]
     #[inline]
@@ -137,6 +124,20 @@ impl UserInput for MouseMoveDirection {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns a [`BasicInputs`] that only contains the [`MouseMoveDirection`] itself,
+    /// as it represents a simple virtual button.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Single(Box::new(*self))
+    }
+
+    /// Creates a [`RawInputs`] from the direction directly.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_mouse_move_directions([*self])
     }
 }
 
@@ -197,23 +198,6 @@ impl UserInput for MouseMoveAxis {
         InputKind::Axis
     }
 
-    /// Creates a [`RawInputs`] from the [`DualAxisType`] used by the axis.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_mouse_move_axes([self.axis])
-    }
-
-    /// Returns the raw, unprocessed [`MouseMoveAxis`] for the same axis,
-    /// as it represents a simple axis input.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![
-            Box::new(MouseMoveDirection(self.axis.negative())),
-            Box::new(MouseMoveDirection(self.axis.positive())),
-        ]
-    }
-
     /// Checks if there is any recent mouse movement along the specified axis.
     #[must_use]
     #[inline]
@@ -237,6 +221,22 @@ impl UserInput for MouseMoveAxis {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns both negative and positive [`MouseMoveDirection`] to represent the movement.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![
+            Box::new(MouseMoveDirection(self.axis.negative())),
+            Box::new(MouseMoveDirection(self.axis.positive())),
+        ])
+    }
+
+    /// Creates a [`RawInputs`] from the [`DualAxisType`] used by the axis.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_mouse_move_axes([self.axis])
     }
 }
 
@@ -296,24 +296,6 @@ impl UserInput for MouseMove {
         InputKind::DualAxis
     }
 
-    /// Creates a [`RawInputs`] from two [`DualAxisType`] used by the input.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_mouse_move_axes(DualAxisType::axes())
-    }
-
-    /// Returns two raw, unprocessed [`MouseMoveAxis`] instances to represent the movement.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![
-            Box::new(MouseMoveDirection::UP),
-            Box::new(MouseMoveDirection::DOWN),
-            Box::new(MouseMoveDirection::LEFT),
-            Box::new(MouseMoveDirection::RIGHT),
-        ]
-    }
-
     /// Checks if there is any recent mouse movement.
     #[must_use]
     #[inline]
@@ -342,6 +324,24 @@ impl UserInput for MouseMove {
         let value = self.input_mode.dual_axis_value(movement);
         let value = self.processor.process(value);
         Some(DualAxisData::from_xy(value))
+    }
+
+    /// Returns four [`MouseMoveDirection`]s to represent the movement.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![
+            Box::new(MouseMoveDirection::UP),
+            Box::new(MouseMoveDirection::DOWN),
+            Box::new(MouseMoveDirection::LEFT),
+            Box::new(MouseMoveDirection::RIGHT),
+        ])
+    }
+
+    /// Creates a [`RawInputs`] from two [`DualAxisType`]s used by the input.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_mouse_move_axes(DualAxisType::axes())
     }
 }
 
@@ -406,20 +406,6 @@ impl UserInput for MouseScrollDirection {
         InputKind::Button
     }
 
-    /// Creates a [`RawInputs`] from the direction directly.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_mouse_scroll_directions([*self])
-    }
-
-    /// Returns a list that only contains the [`MouseScrollDirection`] itself,
-    /// as it represents a simple virtual button.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![Box::new(*self)]
-    }
-
     /// Checks if there is any recent mouse wheel movement along the specified direction.
     #[must_use]
     #[inline]
@@ -441,6 +427,20 @@ impl UserInput for MouseScrollDirection {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns a [`BasicInputs`] that only contains the [`MouseScrollDirection`] itself,
+    /// as it represents a simple virtual button.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Single(Box::new(*self))
+    }
+
+    /// Creates a [`RawInputs`] from the direction directly.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_mouse_scroll_directions([*self])
     }
 }
 
@@ -501,22 +501,6 @@ impl UserInput for MouseScrollAxis {
         InputKind::Axis
     }
 
-    /// Creates a [`RawInputs`] from the [`DualAxisType`] used by the axis.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_mouse_scroll_axes([self.axis])
-    }
-
-    /// Returns both positive and negative [`MouseScrollDirection`]s to represent the movement.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![
-            Box::new(MouseScrollDirection(self.axis.negative())),
-            Box::new(MouseScrollDirection(self.axis.positive())),
-        ]
-    }
-
     /// Checks if there is any recent mouse wheel movement along the specified axis.
     #[must_use]
     #[inline]
@@ -540,6 +524,22 @@ impl UserInput for MouseScrollAxis {
     #[inline]
     fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
         None
+    }
+
+    /// Returns both positive and negative [`MouseScrollDirection`]s to represent the movement.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![
+            Box::new(MouseScrollDirection(self.axis.negative())),
+            Box::new(MouseScrollDirection(self.axis.positive())),
+        ])
+    }
+
+    /// Creates a [`RawInputs`] from the [`DualAxisType`] used by the axis.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_mouse_scroll_axes([self.axis])
     }
 }
 
@@ -599,24 +599,6 @@ impl UserInput for MouseScroll {
         InputKind::DualAxis
     }
 
-    /// Creates a [`RawInputs`] from two [`DualAxisType`] used by the input.
-    #[inline]
-    fn to_raw_inputs(&self) -> RawInputs {
-        RawInputs::from_mouse_scroll_axes(DualAxisType::axes())
-    }
-
-    /// Returns two raw, unprocessed [`MouseScrollAxis`] instances to represent the movement.
-    #[must_use]
-    #[inline]
-    fn to_clashing_checker(&self) -> Vec<Box<dyn UserInput>> {
-        vec![
-            Box::new(MouseScrollDirection::UP),
-            Box::new(MouseScrollDirection::DOWN),
-            Box::new(MouseScrollDirection::LEFT),
-            Box::new(MouseScrollDirection::RIGHT),
-        ]
-    }
-
     /// Checks if there is any recent mouse wheel movement.
     #[must_use]
     #[inline]
@@ -645,6 +627,24 @@ impl UserInput for MouseScroll {
         let value = self.input_mode.dual_axis_value(movement);
         let value = self.processor.process(value);
         Some(DualAxisData::from_xy(value))
+    }
+
+    /// Returns four [`MouseScrollDirection`]s to represent the movement.
+    #[must_use]
+    #[inline]
+    fn basic_inputs(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![
+            Box::new(MouseScrollDirection::UP),
+            Box::new(MouseScrollDirection::DOWN),
+            Box::new(MouseScrollDirection::LEFT),
+            Box::new(MouseScrollDirection::RIGHT),
+        ])
+    }
+
+    /// Creates a [`RawInputs`] from two [`DualAxisType`] used by the input.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_mouse_scroll_axes(DualAxisType::axes())
     }
 }
 
@@ -705,21 +705,15 @@ mod tests {
     fn test_mouse_button() {
         let left = MouseButton::Left;
         assert_eq!(left.kind(), InputKind::Button);
-        assert_eq!(left.to_raw_inputs(), RawInputs::from_mouse_buttons([left]));
+        assert_eq!(left.raw_inputs(), RawInputs::from_mouse_buttons([left]));
 
         let middle = MouseButton::Middle;
         assert_eq!(middle.kind(), InputKind::Button);
-        assert_eq!(
-            middle.to_raw_inputs(),
-            RawInputs::from_mouse_buttons([middle])
-        );
+        assert_eq!(middle.raw_inputs(), RawInputs::from_mouse_buttons([middle]));
 
         let right = MouseButton::Right;
         assert_eq!(right.kind(), InputKind::Button);
-        assert_eq!(
-            right.to_raw_inputs(),
-            RawInputs::from_mouse_buttons([right])
-        );
+        assert_eq!(right.raw_inputs(), RawInputs::from_mouse_buttons([right]));
 
         // No inputs
         let mut app = test_app();
@@ -762,17 +756,17 @@ mod tests {
         let mouse_move_up = MouseMoveDirection::UP;
         assert_eq!(mouse_move_up.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_mouse_move_directions([mouse_move_up]);
-        assert_eq!(mouse_move_up.to_raw_inputs(), raw_inputs);
+        assert_eq!(mouse_move_up.raw_inputs(), raw_inputs);
 
         let mouse_move_y = MouseMoveAxis::Y;
         assert_eq!(mouse_move_y.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_mouse_move_axes([DualAxisType::Y]);
-        assert_eq!(mouse_move_y.to_raw_inputs(), raw_inputs);
+        assert_eq!(mouse_move_y.raw_inputs(), raw_inputs);
 
         let mouse_move = MouseMove::RAW;
         assert_eq!(mouse_move.kind(), InputKind::DualAxis);
         let raw_inputs = RawInputs::from_mouse_move_axes([DualAxisType::X, DualAxisType::Y]);
-        assert_eq!(mouse_move.to_raw_inputs(), raw_inputs);
+        assert_eq!(mouse_move.raw_inputs(), raw_inputs);
 
         // No inputs
         let zeros = Some(DualAxisData::ZERO);
@@ -839,17 +833,17 @@ mod tests {
         let mouse_scroll_up = MouseScrollDirection::UP;
         assert_eq!(mouse_scroll_up.kind(), InputKind::Button);
         let raw_inputs = RawInputs::from_mouse_scroll_directions([mouse_scroll_up]);
-        assert_eq!(mouse_scroll_up.to_raw_inputs(), raw_inputs);
+        assert_eq!(mouse_scroll_up.raw_inputs(), raw_inputs);
 
         let mouse_scroll_y = MouseScrollAxis::Y;
         assert_eq!(mouse_scroll_y.kind(), InputKind::Axis);
         let raw_inputs = RawInputs::from_mouse_scroll_axes([DualAxisType::Y]);
-        assert_eq!(mouse_scroll_y.to_raw_inputs(), raw_inputs);
+        assert_eq!(mouse_scroll_y.raw_inputs(), raw_inputs);
 
         let mouse_scroll = MouseScroll::RAW;
         assert_eq!(mouse_scroll.kind(), InputKind::DualAxis);
         let raw_inputs = RawInputs::from_mouse_scroll_axes([DualAxisType::X, DualAxisType::Y]);
-        assert_eq!(mouse_scroll.to_raw_inputs(), raw_inputs);
+        assert_eq!(mouse_scroll.raw_inputs(), raw_inputs);
 
         // No inputs
         let zeros = Some(DualAxisData::ZERO);

@@ -10,7 +10,7 @@ use crate::user_input::{GamepadControlDirection, MouseMoveDirection, MouseScroll
 
 /// The basic input events that make up a [`UserInput`](crate::user_input::UserInput).
 ///
-/// Typically obtained by calling [`UserInput::raw_inputs`](crate::user_input::UserInput::to_raw_inputs).
+/// Typically obtained by calling [`UserInput::raw_inputs`](crate::user_input::UserInput::raw_inputs).
 #[derive(Default, Debug, Clone, PartialEq)]
 #[must_use]
 pub struct RawInputs {

@@ -75,7 +75,7 @@ use crate::user_input::*;
 /// ```
 pub trait MockInput {
     /// Simulates an activated event for the given `input`,
-    /// pressing all buttons and keys in the [`RawInputs`](raw_inputs::RawInputs) of the `input`.
+    /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
     /// like [`KeyCode`]s, [`KeyboardKey`]s, and [`InputChord`]s.
@@ -100,7 +100,7 @@ pub trait MockInput {
     fn press_input(&mut self, input: impl UserInput);
 
     /// Simulates an activated event for the given `input`, using the specified `gamepad`,
-    /// pressing all buttons and keys in the [`RawInputs`](crate::user_input::raw_inputs::RawInputs) of the `input`.
+    /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
     /// like [`KeyCode`]s, [`KeyboardKey`]s, and [`InputChord`]s.
@@ -120,7 +120,7 @@ pub trait MockInput {
     fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>);
 
     /// Simulates axis value changed events for the given `input`.
-    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`](crate::user_input::raw_inputs::RawInputs) of the `input`.
+    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     /// Missing axis values default to `0.0`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
@@ -140,7 +140,7 @@ pub trait MockInput {
     fn send_axis_values(&mut self, input: impl UserInput, values: impl IntoIterator<Item = f32>);
 
     /// Simulates axis value changed events for the given `input`, using the specified `gamepad`.
-    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`](crate::user_input::raw_inputs::RawInputs) of the `input`.
+    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     /// Missing axis values default to `0.0`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
@@ -218,7 +218,7 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
-        let raw_inputs = input.to_raw_inputs();
+        let raw_inputs = input.raw_inputs();
 
         // Press KeyCode
         for keycode in raw_inputs.keycodes.iter() {
@@ -269,7 +269,7 @@ impl MockInput for MutableInputStreams<'_> {
         values: impl IntoIterator<Item = f32>,
         gamepad: Option<Gamepad>,
     ) {
-        let raw_inputs = input.to_raw_inputs();
+        let raw_inputs = input.raw_inputs();
         let mut value_iter = values.into_iter();
 
         if let Some(gamepad) = gamepad {
@@ -297,7 +297,7 @@ impl MockInput for MutableInputStreams<'_> {
     }
 
     fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
-        let raw_inputs = input.to_raw_inputs();
+        let raw_inputs = input.raw_inputs();
 
         // Release KeyCode
         for keycode in raw_inputs.keycodes.iter() {

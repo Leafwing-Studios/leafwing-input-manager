@@ -46,25 +46,88 @@ impl ClashStrategy {
     }
 }
 
-/// Checks if the given two [`UserInput`]s clash with each other.
-#[must_use]
-#[inline]
-fn check_clashed(lhs: &dyn UserInput, rhs: &dyn UserInput) -> bool {
+/// The basic inputs that make up a [`UserInput`].
+#[derive(Debug, Clone)]
+pub enum BasicInputs {
+    /// The input consists of a single, fundamental [`UserInput`].
+    /// In most cases, the input simply holds itself.
+    Single(Box<dyn UserInput>),
+
+    /// The input consists of multiple independent [`UserInput`]s.
+    Composite(Vec<Box<dyn UserInput>>),
+
+    /// The input represents one or more independent [`UserInput`] types.
+    Group(Vec<Box<dyn UserInput>>),
+}
+
+impl BasicInputs {
+    /// Returns a list of the underlying [`UserInput`]s.
     #[inline]
-    fn clash(list_a: &[Box<dyn UserInput>], list_b: &[Box<dyn UserInput>]) -> bool {
-        // Checks if the length is greater than one,
-        // as simple, atomic input are able to trigger multiple actions.
-        list_a.len() > 1 && list_b.iter().all(|a| list_a.contains(a))
+    pub fn inputs(&self) -> Vec<Box<dyn UserInput>> {
+        match self.clone() {
+            Self::Single(input) => vec![input],
+            Self::Composite(inputs) => inputs,
+            Self::Group(inputs) => inputs,
+        }
     }
 
-    let lhs_inners = lhs.to_clashing_checker();
-    let rhs_inners = rhs.to_clashing_checker();
+    /// Returns the number of the underlying [`UserInput`]s.
+    #[allow(clippy::len_without_is_empty)]
+    #[inline]
+    pub fn len(&self) -> usize {
+        match self {
+            Self::Single(_) => 1,
+            Self::Composite(_) => 1,
+            Self::Group(inputs) => inputs.len(),
+        }
+    }
 
-    let res = clash(&lhs_inners, &rhs_inners) || clash(&rhs_inners, &lhs_inners);
-
-    dbg!(lhs_inners, rhs_inners, res);
-
-    res
+    /// Checks if the given two [`BasicInputs`] clash with each other.
+    #[inline]
+    pub fn clashed(&self, other: &BasicInputs) -> bool {
+        match (self, other) {
+            (Self::Single(_), Self::Single(_)) => false,
+            (Self::Single(self_single), Self::Group(other_group)) => {
+                other_group.len() > 1 && other_group.contains(self_single)
+            }
+            (Self::Group(self_group), Self::Single(other_single)) => {
+                self_group.len() > 1 && self_group.contains(other_single)
+            }
+            (Self::Single(self_single), Self::Composite(other_composite)) => {
+                other_composite.contains(self_single)
+            }
+            (Self::Composite(self_composite), Self::Single(other_single)) => {
+                self_composite.contains(other_single)
+            }
+            (Self::Composite(self_composite), Self::Group(other_group)) => {
+                other_group.len() > 1
+                    && other_group
+                        .iter()
+                        .any(|input| self_composite.contains(input))
+            }
+            (Self::Group(self_group), Self::Composite(other_composite)) => {
+                self_group.len() > 1
+                    && self_group
+                        .iter()
+                        .any(|input| other_composite.contains(input))
+            }
+            (Self::Group(self_group), Self::Group(other_group)) => {
+                self_group.len() > 1
+                    && other_group.len() > 1
+                    && self_group != other_group
+                    && (self_group.iter().all(|input| other_group.contains(input))
+                        || other_group.iter().all(|input| self_group.contains(input)))
+            }
+            (Self::Composite(self_composite), Self::Composite(other_composite)) => {
+                other_composite
+                    .iter()
+                    .any(|input| self_composite.contains(input))
+                    || self_composite
+                        .iter()
+                        .any(|input| other_composite.contains(input))
+            }
+        }
+    }
 }
 
 impl<A: Actionlike> InputMap<A> {
@@ -137,7 +200,7 @@ impl<A: Actionlike> InputMap<A> {
 
         for input_a in self.get(action_a)? {
             for input_b in self.get(action_b)? {
-                if check_clashed(input_a.as_ref(), input_b.as_ref()) {
+                if input_a.basic_inputs().clashed(&input_b.basic_inputs()) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
                 }
@@ -191,8 +254,8 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
             .iter()
             .filter(|&input| input.pressed(input_streams))
         {
-            // If a clash was detected,
-            if check_clashed(input_a.as_ref(), input_b.as_ref()) {
+            // If a clash was detected
+            if input_a.basic_inputs().clashed(&input_b.basic_inputs()) {
                 actual_clash.inputs_a.push(input_a.clone());
                 actual_clash.inputs_b.push(input_b.clone());
             }
@@ -211,18 +274,18 @@ fn resolve_clash<A: Actionlike>(
     input_streams: &InputStreams,
 ) -> Option<A> {
     // Figure out why the actions are pressed
-    let reasons_a_is_pressed: Vec<Box<dyn UserInput>> = clash
+    let reasons_a_is_pressed: Vec<&dyn UserInput> = clash
         .inputs_a
         .iter()
-        .filter(|&input| input.pressed(input_streams))
-        .cloned()
+        .filter(|input| input.pressed(input_streams))
+        .map(|input| input.as_ref())
         .collect();
 
-    let reasons_b_is_pressed: Vec<Box<dyn UserInput>> = clash
+    let reasons_b_is_pressed: Vec<&dyn UserInput> = clash
         .inputs_b
         .iter()
-        .filter(|&input| input.pressed(input_streams))
-        .cloned()
+        .filter(|input| input.pressed(input_streams))
+        .map(|input| input.as_ref())
         .collect();
 
     // Clashes are spurious if the actions are pressed for any non-clashing reason
@@ -230,7 +293,7 @@ fn resolve_clash<A: Actionlike>(
         for reason_b in reasons_b_is_pressed.iter() {
             // If there is at least one non-clashing reason why these buttons should both be pressed,
             // we can avoid resolving the clash completely
-            if !check_clashed(reason_a.as_ref(), reason_b.as_ref()) {
+            if !reason_a.basic_inputs().clashed(&reason_b.basic_inputs()) {
                 return None;
             }
         }
@@ -244,13 +307,13 @@ fn resolve_clash<A: Actionlike>(
         ClashStrategy::PrioritizeLongest => {
             let longest_a: usize = reasons_a_is_pressed
                 .iter()
-                .map(|input| input.to_clashing_checker().len())
+                .map(|input| input.basic_inputs().len())
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
             let longest_b: usize = reasons_b_is_pressed
                 .iter()
-                .map(|input| input.to_clashing_checker().len())
+                .map(|input| input.basic_inputs().len())
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
@@ -314,10 +377,8 @@ mod tests {
         input_map
     }
 
-    fn test_input_clash<A: UserInput, B: UserInput>(input_a: A, input_b: B) -> bool {
-        let input_a: Box<dyn UserInput> = Box::new(input_a);
-        let input_b: Box<dyn UserInput> = Box::new(input_b);
-        check_clashed(input_a.as_ref(), input_b.as_ref())
+    fn test_input_clash(input_a: impl UserInput, input_b: impl UserInput) -> bool {
+        input_a.basic_inputs().clashed(&input_b.basic_inputs())
     }
 
     mod basic_functionality {
@@ -412,13 +473,11 @@ mod tests {
             app.press_input(Digit2);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
-
             assert_eq!(
                 resolve_clash(
                     &simple_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &input_streams,
+                    &InputStreams::from_world(&app.world, None),
                 ),
                 Some(One)
             );
@@ -428,7 +487,7 @@ mod tests {
                 resolve_clash(
                     &reversed_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &input_streams,
+                    &InputStreams::from_world(&app.world, None),
                 ),
                 Some(One)
             );
@@ -498,11 +557,10 @@ mod tests {
             action_data.insert(CtrlUp, action_datum.clone());
             action_data.insert(MoveDPad, action_datum.clone());
 
-            input_map.handle_clashes(
-                &mut action_data,
-                &InputStreams::from_world(&app.world, None),
-                ClashStrategy::PrioritizeLongest,
-            );
+            let streams = InputStreams::from_world(&app.world, None);
+            println!("World: {streams:?}");
+
+            input_map.handle_clashes(&mut action_data, &streams, ClashStrategy::PrioritizeLongest);
 
             let mut expected = HashMap::new();
             expected.insert(CtrlUp, action_datum);
