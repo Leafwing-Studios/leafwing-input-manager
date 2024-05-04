@@ -4,18 +4,18 @@
 
 ### Breaking Changes
 
-- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-- replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
-  - removed `DeadZoneShape` in favor of new dead zone processors.
-- made the dependency on bevy's `bevy_gilrs` feature optional.
-  - it is still enabled by leafwing-input-manager's default features.
-  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
 - removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
+- replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
+  - removed `DeadZoneShape` in favor of new dead zone processors.
+- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
+- removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
 - split `MockInput::send_input` method to two methods:
   - `fn press_input(&self, input: UserInput)` for focusing on simulating button and key presses.
   - `fn send_axis_values(&self, input: UserInput, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis of the input.
-- removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
+- made the dependency on bevy's `bevy_gilrs` feature optional.
+  - it is still enabled by leafwing-input-manager's default features.
+  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
 
 ### Enhancements
 
@@ -29,16 +29,14 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - added processor traits for defining custom processors:
   - `CustomAxisProcessor`: Handles single-axis values.
   - `CustomDualAxisProcessor`: Handles dual-axis values.
-- implemented `WithAxisProcessorExt` to manage processors for `SingleAxis` and `VirtualAxis`.
-- implemented `WithDualAxisProcessorExt` to manage processors for `DualAxis` and `VirtualDpad`.
 - added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
 - added built-in processors (variants of processor enums and `Into<Processor>` implementors):
   - Pipelines: Handle input values sequentially through a sequence of processors.
     - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
     - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
     - you can also create them by these methods:
-      - `AxisProcessor::with_processor` or `FromIterator<AxisProcessor>::from_iter` for `AxisProcessor::Pipeline`.
-      - `DualAxisProcessor::with_processor` or `FromIterator<DualAxisProcessor>::from_iter` for `DualAxisProcessor::Pipeline`.
+      - `AxisProcessor::pipeline` or `AxisProcessor::with_processor` for `AxisProcessor::Pipeline`.
+      - `DualAxisProcessor::pipeline` or `DualAxisProcessor::with_processor` for `DualAxisProcessor::Pipeline`.
   - Inversion: Reverses control (positive becomes negative, etc.)
     - `AxisProcessor::Inverted`: Single-axis inversion.
     - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
@@ -58,22 +56,22 @@ Input processors allow you to create custom logic for axis-like input manipulati
       - `AxisDeadZone`: Normalizes single-axis values based on `AxisExclusion` and `AxisBounds::default`, implemented `Into<AxisProcessor>` and `Into<DualAxisProcessor>`.
       - `DualAxisDeadZone`: Normalizes dual-axis values based on `DualAxisExclusion` and `DualAxisBounds::default`, implemented `Into<DualAxisProcessor>`.
       - `CircleDeadZone`: Normalizes dual-axis values based on `CircleExclusion` and `CircleBounds::default`, implemented `Into<DualAxisProcessor>`.
+- implemented `WithAxisProcessingPipelineExt` to manage processors for `SingleAxis` and `VirtualAxis`, integrating the common processing configuration.
+- implemented `WithDualAxisProcessingPipelineExt` to manage processors for `DualAxis` and `VirtualDpad`, integrating the common processing configuration.
 
 ### Usability
 
 #### InputMap
 
-Introduce new fluent builders for creating a new `InputMap<A>` with short configurations:
+- added new fluent builders for creating a new `InputMap<A>` with short configurations:
+  - `fn with(mut self, action: A, input: impl Into<UserInput>)`.
+  - `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
+  - `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
+  - `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
 
-- `fn with(mut self, action: A, input: impl Into<Item = UserInput>)`.
-- `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
-- `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
-- `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
-
-Introduce new iterators over `InputMap<A>`:
-
-- `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
-- `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
+- added new iterators over `InputMap<A>`:
+  - `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
+  - `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
 
 ### Bugs
 

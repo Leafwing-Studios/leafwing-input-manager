@@ -53,7 +53,7 @@ pub enum DualAxisProcessor {
     /// one for the current step and the other for the next step.
     ///
     /// For a straightforward creation of a [`DualAxisProcessor::Pipeline`],
-    /// you can use [`DualAxisProcessor::with_processor`] or [`FromIterator<DualAxisProcessor>::from_iter`] methods.
+    /// you can use [`DualAxisProcessor::pipeline`] or [`DualAxisProcessor::with_processor`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;
@@ -83,6 +83,12 @@ pub enum DualAxisProcessor {
 }
 
 impl DualAxisProcessor {
+    /// Creates a [`DualAxisProcessor::Pipeline`] from the given `processors`.
+    #[inline]
+    pub fn pipeline(processors: impl IntoIterator<Item = DualAxisProcessor>) -> Self {
+        Self::from_iter(processors)
+    }
+
     /// Computes the result by processing the `input_value`.
     #[must_use]
     #[inline]
@@ -142,12 +148,12 @@ impl FromIterator<DualAxisProcessor> for DualAxisProcessor {
 }
 
 /// Provides methods for configuring and manipulating the processing pipeline for dual-axis input.
-pub trait WithDualAxisProcessorExt: Sized {
-    /// Remove the current used [`DualAxisProcessor`].
-    fn no_processor(self) -> Self;
+pub trait WithDualAxisProcessingPipelineExt: Sized {
+    /// Resets the processing pipeline, removing any currently applied processors.
+    fn reset_processing_pipeline(self) -> Self;
 
-    /// Replaces the current pipeline with the specified [`DualAxisProcessor`].
-    fn replace_processor(self, processor: impl Into<DualAxisProcessor>) -> Self;
+    /// Replaces the current processing pipeline with the specified [`DualAxisProcessor`].
+    fn replace_processing_pipeline(self, processor: impl Into<DualAxisProcessor>) -> Self;
 
     /// Appends the given [`DualAxisProcessor`] as the next processing step.
     fn with_processor(self, processor: impl Into<DualAxisProcessor>) -> Self;
@@ -522,7 +528,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_axis_processor_pipeline() {
+    fn test_dual_axis_processing_pipeline() {
         let pipeline = DualAxisProcessor::Pipeline(vec![
             Arc::new(DualAxisInverted::ALL.into()),
             Arc::new(DualAxisSensitivity::all(2.0).into()),
@@ -540,15 +546,35 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_processor_from_iter() {
+    fn test_dual_axis_processing_pipeline_creation() {
+        assert_eq!(
+            DualAxisProcessor::pipeline([]),
+            DualAxisProcessor::Pipeline(vec![])
+        );
         assert_eq!(
             DualAxisProcessor::from_iter([]),
             DualAxisProcessor::Pipeline(vec![])
         );
 
         assert_eq!(
+            DualAxisProcessor::pipeline([DualAxisInverted::ALL.into()]),
+            DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
+        );
+
+        assert_eq!(
             DualAxisProcessor::from_iter([DualAxisInverted::ALL.into()]),
             DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
+        );
+
+        assert_eq!(
+            DualAxisProcessor::pipeline([
+                DualAxisInverted::ALL.into(),
+                DualAxisSensitivity::all(2.0).into(),
+            ]),
+            DualAxisProcessor::Pipeline(vec![
+                Arc::new(DualAxisInverted::ALL.into()),
+                Arc::new(DualAxisSensitivity::all(2.0).into()),
+            ])
         );
 
         assert_eq!(

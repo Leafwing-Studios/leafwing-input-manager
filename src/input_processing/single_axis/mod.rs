@@ -61,7 +61,7 @@ pub enum AxisProcessor {
     /// Processes input values sequentially through a sequence of [`AxisProcessor`]s.
     ///
     /// For a straightforward creation of a [`AxisProcessor::Pipeline`],
-    /// you can use [`AxisProcessor::with_processor`] or [`FromIterator<AxisProcessor>::from_iter`] methods.
+    /// you can use [`AxisProcessor::pipeline`] or [`AxisProcessor::with_processor`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;
@@ -92,6 +92,12 @@ pub enum AxisProcessor {
 }
 
 impl AxisProcessor {
+    /// Creates an [`AxisProcessor::Pipeline`] from the given `processors`.
+    #[inline]
+    pub fn pipeline(processors: impl IntoIterator<Item = AxisProcessor>) -> Self {
+        Self::from_iter(processors)
+    }
+
     /// Computes the result by processing the `input_value`.
     #[must_use]
     #[inline]
@@ -166,12 +172,12 @@ impl Hash for AxisProcessor {
 }
 
 /// Provides methods for configuring and manipulating the processing pipeline for single-axis input.
-pub trait WithAxisProcessorExt: Sized {
-    /// Remove the current used [`AxisProcessor`].
-    fn no_processor(self) -> Self;
+pub trait WithAxisProcessingPipelineExt: Sized {
+    /// Resets the processing pipeline, removing any currently applied processors.
+    fn reset_processing_pipeline(self) -> Self;
 
-    /// Replaces the current pipeline with the specified [`AxisProcessor`].
-    fn replace_processor(self, processor: impl Into<AxisProcessor>) -> Self;
+    /// Replaces the current processing pipeline with the specified [`AxisProcessor`].
+    fn replace_processing_pipeline(self, processor: impl Into<AxisProcessor>) -> Self;
 
     /// Appends the given [`AxisProcessor`] as the next processing step.
     fn with_processor(self, processor: impl Into<AxisProcessor>) -> Self;
@@ -270,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn test_axis_processor_pipeline() {
+    fn test_axis_processing_pipeline() {
         let pipeline = AxisProcessor::Pipeline(vec![
             Arc::new(AxisProcessor::Inverted),
             Arc::new(AxisProcessor::Sensitivity(2.0)),
@@ -284,15 +290,30 @@ mod tests {
     }
 
     #[test]
-    fn test_axis_processor_from_iter() {
+    fn test_axis_processing_pipeline_creation() {
+        assert_eq!(AxisProcessor::pipeline([]), AxisProcessor::Pipeline(vec![]));
+
         assert_eq!(
             AxisProcessor::from_iter([]),
             AxisProcessor::Pipeline(vec![])
         );
 
         assert_eq!(
+            AxisProcessor::pipeline([AxisProcessor::Inverted]),
+            AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
+        );
+
+        assert_eq!(
             AxisProcessor::from_iter([AxisProcessor::Inverted]),
             AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
+        );
+
+        assert_eq!(
+            AxisProcessor::pipeline([AxisProcessor::Inverted, AxisProcessor::Sensitivity(2.0)]),
+            AxisProcessor::Pipeline(vec![
+                Arc::new(AxisProcessor::Inverted),
+                Arc::new(AxisProcessor::Sensitivity(2.0)),
+            ])
         );
 
         assert_eq!(
