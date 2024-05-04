@@ -157,7 +157,7 @@ pub trait UserInput:
     /// Returns the most basic inputs that make up this input.
     ///
     /// For inputs that represent a simple, atomic control,
-    /// this method should always return a [`BasicInputs::Single`] that only contains the input itself.
+    /// this method should always return a [`BasicInputs::Simple`] that only contains the input itself.
     fn basic_inputs(&self) -> BasicInputs;
 
     /// Returns the raw input events that make up this input.

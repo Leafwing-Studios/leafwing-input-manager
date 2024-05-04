@@ -149,7 +149,7 @@ impl UserInput for KeyCode {
     /// as it represents a simple physical button.
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
-        BasicInputs::Single(Box::new(*self))
+        BasicInputs::Simple(Box::new(*self))
     }
 
     /// Creates a [`RawInputs`] from the key directly.

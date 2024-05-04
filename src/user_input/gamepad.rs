@@ -135,7 +135,7 @@ impl UserInput for GamepadControlDirection {
     /// as it represents a simple virtual button.
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
-        BasicInputs::Single(Box::new(*self))
+        BasicInputs::Simple(Box::new(*self))
     }
 
     /// Creates a [`RawInputs`] from the direction directly.
@@ -533,7 +533,7 @@ impl UserInput for GamepadButtonType {
     /// as it represents a simple physical button.
     #[inline]
     fn basic_inputs(&self) -> BasicInputs {
-        BasicInputs::Single(Box::new(*self))
+        BasicInputs::Simple(Box::new(*self))
     }
 
     /// Creates a [`RawInputs`] from the button directly.

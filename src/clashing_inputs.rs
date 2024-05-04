@@ -52,7 +52,7 @@ impl ClashStrategy {
 pub enum BasicInputs {
     /// The input consists of a single, fundamental [`UserInput`].
     /// In most cases, the input simply holds itself.
-    Single(Box<dyn UserInput>),
+    Simple(Box<dyn UserInput>),
 
     /// The input consists of multiple independent [`UserInput`]s.
     Composite(Vec<Box<dyn UserInput>>),
@@ -66,7 +66,7 @@ impl BasicInputs {
     #[inline]
     pub fn inputs(&self) -> Vec<Box<dyn UserInput>> {
         match self.clone() {
-            Self::Single(input) => vec![input],
+            Self::Simple(input) => vec![input],
             Self::Composite(inputs) => inputs,
             Self::Group(inputs) => inputs,
         }
@@ -77,7 +77,7 @@ impl BasicInputs {
     #[inline]
     pub fn len(&self) -> usize {
         match self {
-            Self::Single(_) => 1,
+            Self::Simple(_) => 1,
             Self::Composite(_) => 1,
             Self::Group(inputs) => inputs.len(),
         }
@@ -87,17 +87,17 @@ impl BasicInputs {
     #[inline]
     pub fn clashed(&self, other: &BasicInputs) -> bool {
         match (self, other) {
-            (Self::Single(_), Self::Single(_)) => false,
-            (Self::Single(self_single), Self::Group(other_group)) => {
+            (Self::Simple(_), Self::Simple(_)) => false,
+            (Self::Simple(self_single), Self::Group(other_group)) => {
                 other_group.len() > 1 && other_group.contains(self_single)
             }
-            (Self::Group(self_group), Self::Single(other_single)) => {
+            (Self::Group(self_group), Self::Simple(other_single)) => {
                 self_group.len() > 1 && self_group.contains(other_single)
             }
-            (Self::Single(self_single), Self::Composite(other_composite)) => {
+            (Self::Simple(self_single), Self::Composite(other_composite)) => {
                 other_composite.contains(self_single)
             }
-            (Self::Composite(self_composite), Self::Single(other_single)) => {
+            (Self::Composite(self_composite), Self::Simple(other_single)) => {
                 self_composite.contains(other_single)
             }
             (Self::Composite(self_composite), Self::Group(other_group)) => {
