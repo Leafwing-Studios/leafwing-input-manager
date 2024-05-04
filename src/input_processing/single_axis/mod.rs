@@ -61,7 +61,7 @@ pub enum AxisProcessor {
     /// Processes input values sequentially through a sequence of [`AxisProcessor`]s.
     ///
     /// For a straightforward creation of a [`AxisProcessor::Pipeline`],
-    /// you can use [`AxisProcessor::with_processor`] or [`FromIterator<AxisProcessor>::from_iter`] methods.
+    /// you can use [`AxisProcessor::pipeline`] or [`AxisProcessor::with_processor`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;
@@ -92,6 +92,12 @@ pub enum AxisProcessor {
 }
 
 impl AxisProcessor {
+    /// Creates an [`AxisProcessor::Pipeline`] from the given `processors`.
+    #[inline]
+    pub fn pipeline(processors: impl IntoIterator<Item = AxisProcessor>) -> Self {
+        Self::from_iter(processors)
+    }
+
     /// Computes the result by processing the `input_value`.
     #[must_use]
     #[inline]
@@ -270,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn test_axis_processor_pipeline() {
+    fn test_axis_processing_pipeline() {
         let pipeline = AxisProcessor::Pipeline(vec![
             Arc::new(AxisProcessor::Inverted),
             Arc::new(AxisProcessor::Sensitivity(2.0)),
@@ -284,15 +290,30 @@ mod tests {
     }
 
     #[test]
-    fn test_axis_processor_from_iter() {
+    fn test_axis_processing_pipeline_creation() {
+        assert_eq!(AxisProcessor::pipeline([]), AxisProcessor::Pipeline(vec![]));
+
         assert_eq!(
             AxisProcessor::from_iter([]),
             AxisProcessor::Pipeline(vec![])
         );
 
         assert_eq!(
+            AxisProcessor::pipeline([AxisProcessor::Inverted]),
+            AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
+        );
+
+        assert_eq!(
             AxisProcessor::from_iter([AxisProcessor::Inverted]),
             AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
+        );
+
+        assert_eq!(
+            AxisProcessor::pipeline([AxisProcessor::Inverted, AxisProcessor::Sensitivity(2.0)]),
+            AxisProcessor::Pipeline(vec![
+                Arc::new(AxisProcessor::Inverted),
+                Arc::new(AxisProcessor::Sensitivity(2.0)),
+            ])
         );
 
         assert_eq!(

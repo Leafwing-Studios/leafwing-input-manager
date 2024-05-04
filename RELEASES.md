@@ -37,8 +37,8 @@ Input processors allow you to create custom logic for axis-like input manipulati
     - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
     - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
     - you can also create them by these methods:
-      - `AxisProcessor::with_processor` or `FromIterator<AxisProcessor>::from_iter` for `AxisProcessor::Pipeline`.
-      - `DualAxisProcessor::with_processor` or `FromIterator<DualAxisProcessor>::from_iter` for `DualAxisProcessor::Pipeline`.
+      - `AxisProcessor::pipeline` or `AxisProcessor::with_processor` for `AxisProcessor::Pipeline`.
+      - `DualAxisProcessor::pipeline` or `DualAxisProcessor::with_processor` for `DualAxisProcessor::Pipeline`.
   - Inversion: Reverses control (positive becomes negative, etc.)
     - `AxisProcessor::Inverted`: Single-axis inversion.
     - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.
