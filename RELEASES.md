@@ -131,8 +131,8 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
 
 - added new iterators over `InputMap<A>`:
-  - `bindings(&self) -> impl Iterator<Item = (&A, &dyn UserInput)>` for iterating over all registered action-input bindings.
   - `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
+  - `bindings(&self) -> impl Iterator<Item = (&A, &dyn UserInput)>` for iterating over all registered action-input bindings.
 
 ### Bugs
 
