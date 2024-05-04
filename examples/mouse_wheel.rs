@@ -23,7 +23,7 @@ fn setup(mut commands: Commands) {
     let input_map = InputMap::default()
         // This will capture the total continuous value, for direct use.
         .with(CameraMovement::Zoom, MouseScrollAxis::Y)
-        // These will return a binary button-like output.
+        // This will return a binary button-like output.
         .with(CameraMovement::PanLeft, MouseScrollDirection::LEFT)
         .with(CameraMovement::PanRight, MouseScrollDirection::RIGHT)
         // Alternatively, you could model them as a continuous dual-axis input

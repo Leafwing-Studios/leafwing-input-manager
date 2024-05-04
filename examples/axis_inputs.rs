@@ -27,9 +27,9 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     // Describes how to convert from player inputs into those actions
     let input_map = InputMap::default()
-        // Use the left stick for the move action
+        // Let's bind the left stick for the move action
         .with(Action::Move, GamepadStick::LEFT)
-        // Let's bind the right gamepad trigger to the throttle action
+        // And then bind the right gamepad trigger to the throttle action
         .with(Action::Throttle, GamepadButtonType::RightTrigger2)
         // And we'll use the right stick's x-axis as a rudder control
         .with(
