@@ -528,7 +528,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_axis_processing_pipeline() {
+    fn test_dual_axis_processing_pipeline() {
         let pipeline = DualAxisProcessor::Pipeline(vec![
             Arc::new(DualAxisInverted::ALL.into()),
             Arc::new(DualAxisSensitivity::all(2.0).into()),
