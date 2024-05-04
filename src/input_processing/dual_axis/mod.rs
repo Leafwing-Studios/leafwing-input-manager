@@ -149,7 +149,7 @@ impl FromIterator<DualAxisProcessor> for DualAxisProcessor {
 
 /// Provides methods for configuring and manipulating the processing pipeline for dual-axis input.
 pub trait WithDualAxisProcessingPipelineExt: Sized {
-    /// Reset the current processing pipeline, removing any currently applied processors.
+    /// Resets the processing pipeline, removing any currently applied processors.
     fn reset_processing_pipeline(self) -> Self;
 
     /// Replaces the current processing pipeline with the specified [`DualAxisProcessor`].
