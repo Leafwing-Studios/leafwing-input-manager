@@ -1,10 +1,9 @@
 //! Processors for dual-axis input values
 
-use bevy::math::BVec2;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 
-use bevy::prelude::{Reflect, Vec2};
+use bevy::prelude::{BVec2, Reflect, Vec2};
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
@@ -54,7 +53,7 @@ pub enum DualAxisProcessor {
     /// one for the current step and the other for the next step.
     ///
     /// For a straightforward creation of a [`DualAxisProcessor::Pipeline`],
-    /// you can use [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] methods.
+    /// you can use [`DualAxisProcessor::pipeline`] or [`DualAxisProcessor::with_processor`] methods.
     ///
     /// ```rust
     /// use std::sync::Arc;
@@ -84,6 +83,12 @@ pub enum DualAxisProcessor {
 }
 
 impl DualAxisProcessor {
+    /// Creates a [`DualAxisProcessor::Pipeline`] from the given `processors`.
+    #[inline]
+    pub fn pipeline(processors: impl IntoIterator<Item = DualAxisProcessor>) -> Self {
+        Self::from_iter(processors)
+    }
+
     /// Computes the result by processing the `input_value`.
     #[must_use]
     #[inline]
@@ -139,6 +144,234 @@ impl DualAxisProcessor {
 impl FromIterator<DualAxisProcessor> for DualAxisProcessor {
     fn from_iter<T: IntoIterator<Item = DualAxisProcessor>>(iter: T) -> Self {
         Self::Pipeline(iter.into_iter().map(Arc::new).collect())
+    }
+}
+
+/// Provides methods for configuring and manipulating the processing pipeline for dual-axis input.
+pub trait WithDualAxisProcessorExt: Sized {
+    /// Remove the current used [`DualAxisProcessor`].
+    fn no_processor(self) -> Self;
+
+    /// Replaces the current pipeline with the specified [`DualAxisProcessor`].
+    fn replace_processor(self, processor: impl Into<DualAxisProcessor>) -> Self;
+
+    /// Appends the given [`DualAxisProcessor`] as the next processing step.
+    fn with_processor(self, processor: impl Into<DualAxisProcessor>) -> Self;
+
+    /// Appends a [`DualAxisInverted::ALL`] processor as the next processing step,
+    /// flipping the sign of values on both axes.
+    #[inline]
+    fn inverted(self) -> Self {
+        self.with_processor(DualAxisInverted::ALL)
+    }
+
+    /// Appends a [`DualAxisInverted::ONLY_X`] processor as the next processing step,
+    /// only flipping the sign of the X-axis values.
+    #[inline]
+    fn inverted_x(self) -> Self {
+        self.with_processor(DualAxisInverted::ONLY_X)
+    }
+
+    /// Appends a [`DualAxisInverted::ONLY_Y`] processor as the next processing step,
+    /// only flipping the sign of the Y-axis values.
+    #[inline]
+    fn inverted_y(self) -> Self {
+        self.with_processor(DualAxisInverted::ONLY_Y)
+    }
+
+    /// Appends a [`DualAxisSensitivity`] processor as the next processing step,
+    /// multiplying values on both axes with the given sensitivity factor.
+    #[inline]
+    fn sensitivity(self, sensitivity: f32) -> Self {
+        self.with_processor(DualAxisSensitivity::all(sensitivity))
+    }
+
+    /// Appends a [`DualAxisSensitivity`] processor as the next processing step,
+    /// only multiplying the X-axis values with the given sensitivity factor.
+    #[inline]
+    fn sensitivity_x(self, sensitivity: f32) -> Self {
+        self.with_processor(DualAxisSensitivity::only_x(sensitivity))
+    }
+
+    /// Appends a [`DualAxisSensitivity`] processor as the next processing step,
+    /// only multiplying the Y-axis values with the given sensitivity factor.
+    #[inline]
+    fn sensitivity_y(self, sensitivity: f32) -> Self {
+        self.with_processor(DualAxisSensitivity::only_y(sensitivity))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values within the same range `[min, max]` on both axes.
+    #[inline]
+    fn with_bounds(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisBounds::all(min, max))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values within the same range `[-threshold, threshold]` on both axes.
+    #[inline]
+    fn with_bounds_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisBounds::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// only restricting values within the range `[min, max]` on the X-axis.
+    #[inline]
+    fn with_bounds_x(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisBounds::only_x(min, max))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values within the range `[-threshold, threshold]` on the X-axis.
+    #[inline]
+    fn with_bounds_x_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisBounds::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// only restricting values within the range `[min, max]` on the Y-axis.
+    #[inline]
+    fn with_bounds_y(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisBounds::only_y(min, max))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values within the range `[-threshold, threshold]` on the Y-axis.
+    #[inline]
+    fn with_bounds_y_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisBounds::symmetric_all(threshold))
+    }
+
+    /// Appends a [`CircleBounds`] processor as the next processing step,
+    /// restricting values to a `max` magnitude.
+    #[inline]
+    fn with_circle_bounds(self, max: f32) -> Self {
+        self.with_processor(CircleBounds::new(max))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[min, max]` on both axes,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::all(min, max))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[-threshold, threshold]` on both axes,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[min, max]` on the X-axis,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_x(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_x(min, max))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[-threshold, threshold]` on the X-axis,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_x_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::symmetric_only_x(threshold))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the dead zone range `[min, max]` on the Y-axis,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_y(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_y(min, max))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the deadzone range `[-threshold, threshold]` on the Y-axis,
+    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_deadzone_y_symmetric(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::symmetric_only_y(threshold))
+    }
+
+    /// Appends a [`CircleDeadZone`] processor as the next processing step,
+    /// ignoring values below a `min` magnitude, treating them as zeros,
+    /// then normalizing non-excluded input values into the "live zone",
+    /// the remaining range within the [`CircleBounds::new(1.0)`](CircleBounds::default)
+    /// after dead zone exclusion.
+    #[inline]
+    fn with_circle_deadzone(self, min: f32) -> Self {
+        self.with_processor(CircleDeadZone::new(min))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// ignoring values within the dead zone range `[min, max]` on both axes,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_unscaled(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::all(min, max))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// ignoring values within the dead zone range `[-threshold, threshold]` on both axes,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_symmetric_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisExclusion::symmetric_all(threshold))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the dead zone range `[min, max]` on the X-axis,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_x_unscaled(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_x(min, max))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the dead zone range `[-threshold, threshold]` on the X-axis,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_x_symmetric_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisExclusion::symmetric_only_x(threshold))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the dead zone range `[min, max]` on the Y-axis,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_y_unscaled(self, min: f32, max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_y(min, max))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the dead zone range `[-threshold, threshold]` on the Y-axis,
+    /// treating them as zeros.
+    #[inline]
+    fn with_deadzone_y_symmetric_unscaled(self, threshold: f32) -> Self {
+        self.with_processor(DualAxisExclusion::symmetric_only_y(threshold))
+    }
+
+    /// Appends a [`CircleExclusion`] processor as the next processing step,
+    /// ignoring values below a `min` magnitude, treating them as zeros.
+    #[inline]
+    fn with_circle_deadzone_unscaled(self, min: f32) -> Self {
+        self.with_processor(CircleExclusion::new(min))
     }
 }
 
@@ -295,7 +528,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_axis_processor_pipeline() {
+    fn test_dual_axis_processing_pipeline() {
         let pipeline = DualAxisProcessor::Pipeline(vec![
             Arc::new(DualAxisInverted::ALL.into()),
             Arc::new(DualAxisSensitivity::all(2.0).into()),
@@ -313,15 +546,35 @@ mod tests {
     }
 
     #[test]
-    fn test_dual_axis_processor_from_list() {
+    fn test_dual_axis_processing_pipeline_creation() {
+        assert_eq!(
+            DualAxisProcessor::pipeline([]),
+            DualAxisProcessor::Pipeline(vec![])
+        );
         assert_eq!(
             DualAxisProcessor::from_iter([]),
             DualAxisProcessor::Pipeline(vec![])
         );
 
         assert_eq!(
+            DualAxisProcessor::pipeline([DualAxisInverted::ALL.into()]),
+            DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
+        );
+
+        assert_eq!(
             DualAxisProcessor::from_iter([DualAxisInverted::ALL.into()]),
             DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
+        );
+
+        assert_eq!(
+            DualAxisProcessor::pipeline([
+                DualAxisInverted::ALL.into(),
+                DualAxisSensitivity::all(2.0).into(),
+            ]),
+            DualAxisProcessor::Pipeline(vec![
+                Arc::new(DualAxisInverted::ALL.into()),
+                Arc::new(DualAxisSensitivity::all(2.0).into()),
+            ])
         );
 
         assert_eq!(

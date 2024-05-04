@@ -32,16 +32,17 @@ fn spawn_input_map(mut commands: Commands) {
     use KeyCode::*;
     use TestAction::*;
 
-    let mut input_map = InputMap::default();
-
     // Setting up input mappings in the obvious way
-    input_map.insert_multiple([(One, Digit1), (Two, Digit2), (Three, Digit3)]);
+    let mut input_map = InputMap::new([(One, Digit1), (Two, Digit2), (Three, Digit3)]);
 
-    input_map.insert_chord(OneAndTwo, [Digit1, Digit2]);
-    input_map.insert_chord(OneAndThree, [Digit1, Digit3]);
-    input_map.insert_chord(TwoAndThree, [Digit2, Digit3]);
+    input_map.insert(OneAndTwo, InputChord::from_multiple([Digit1, Digit2]));
+    input_map.insert(OneAndThree, InputChord::from_multiple([Digit1, Digit3]));
+    input_map.insert(TwoAndThree, InputChord::from_multiple([Digit2, Digit3]));
 
-    input_map.insert_chord(OneAndTwoAndThree, [Digit1, Digit2, Digit3]);
+    input_map.insert(
+        OneAndTwoAndThree,
+        InputChord::from_multiple([Digit1, Digit2, Digit3]),
+    );
 
     commands.spawn(InputManagerBundle::with_map(input_map));
 }

@@ -4,7 +4,7 @@
 
 1. Ensure that `reset_inputs` for `MutableInputStreams` is resetting all relevant fields.
 2. Ensure that `RawInputs` struct has fields that cover all necessary input types.
-3. Ensure that `send_input` and `release_input` check all possible fields on `RawInputs`.
+3. Ensure that `press_input`, `send_axis_values` and `release_input` check all possible fields on `RawInputs`.
 
 ## Before release
 

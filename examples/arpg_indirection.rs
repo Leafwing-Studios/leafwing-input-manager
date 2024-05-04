@@ -101,9 +101,8 @@ fn spawn_player(mut commands: Commands) {
             (Slot::Ability3, KeyE),
             (Slot::Ability4, KeyR),
         ])
-        .insert(Slot::Primary, MouseButton::Left)
-        .insert(Slot::Secondary, MouseButton::Right)
-        .build(),
+        .with(Slot::Primary, MouseButton::Left)
+        .with(Slot::Secondary, MouseButton::Right),
         slot_action_state: ActionState::default(),
         ability_action_state: ActionState::default(),
         ability_slot_map,

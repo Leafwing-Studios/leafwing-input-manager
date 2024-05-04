@@ -131,12 +131,12 @@ impl DualAxisBounds {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric")]
+    #[doc(alias = "magnitude")]
     #[inline]
-    pub fn magnitude(threshold_x: f32, threshold_y: f32) -> Self {
+    pub fn symmetric(threshold_x: f32, threshold_y: f32) -> Self {
         Self {
-            bounds_x: AxisBounds::magnitude(threshold_x),
-            bounds_y: AxisBounds::magnitude(threshold_y),
+            bounds_x: AxisBounds::symmetric(threshold_x),
+            bounds_y: AxisBounds::symmetric(threshold_y),
         }
     }
 
@@ -149,10 +149,10 @@ impl DualAxisBounds {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_all")]
+    #[doc(alias = "magnitude_all")]
     #[inline]
-    pub fn magnitude_all(threshold: f32) -> Self {
-        Self::magnitude(threshold, threshold)
+    pub fn symmetric_all(threshold: f32) -> Self {
+        Self::symmetric(threshold, threshold)
     }
 
     /// Creates a [`DualAxisBounds`] that only restricts X values within the range `[-threshold, threshold]`.
@@ -164,11 +164,11 @@ impl DualAxisBounds {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_only_x")]
+    #[doc(alias = "magnitude_only_x")]
     #[inline]
-    pub fn magnitude_only_x(threshold: f32) -> Self {
+    pub fn symmetric_only_x(threshold: f32) -> Self {
         Self {
-            bounds_x: AxisBounds::magnitude(threshold),
+            bounds_x: AxisBounds::symmetric(threshold),
             ..Self::FULL_RANGE
         }
     }
@@ -182,11 +182,11 @@ impl DualAxisBounds {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_only_y")]
+    #[doc(alias = "magnitude_only_y")]
     #[inline]
-    pub fn magnitude_only_y(threshold: f32) -> Self {
+    pub fn symmetric_only_y(threshold: f32) -> Self {
         Self {
-            bounds_y: AxisBounds::magnitude(threshold),
+            bounds_y: AxisBounds::symmetric(threshold),
             ..Self::FULL_RANGE
         }
     }
@@ -430,7 +430,7 @@ impl DualAxisExclusion {
         }
     }
 
-    /// Creates a [`DualAxisExclusion`] that ignores values within the range `[negative_max, positive_min]` on both axis.
+    /// Creates a [`DualAxisExclusion`] that ignores values within the range `[negative_max, positive_min]` on both axes.
     ///
     /// # Requirements
     ///
@@ -488,12 +488,12 @@ impl DualAxisExclusion {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric")]
+    #[doc(alias = "magnitude")]
     #[inline]
-    pub fn magnitude(threshold_x: f32, threshold_y: f32) -> Self {
+    pub fn symmetric(threshold_x: f32, threshold_y: f32) -> Self {
         Self {
-            exclusion_x: AxisExclusion::magnitude(threshold_x),
-            exclusion_y: AxisExclusion::magnitude(threshold_y),
+            exclusion_x: AxisExclusion::symmetric(threshold_x),
+            exclusion_y: AxisExclusion::symmetric(threshold_y),
         }
     }
 
@@ -506,10 +506,10 @@ impl DualAxisExclusion {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_all")]
+    #[doc(alias = "magnitude_all")]
     #[inline]
-    pub fn magnitude_all(threshold: f32) -> Self {
-        Self::magnitude(threshold, threshold)
+    pub fn symmetric_all(threshold: f32) -> Self {
+        Self::symmetric(threshold, threshold)
     }
 
     /// Creates a [`DualAxisExclusion`] that only ignores X values within the range `[-threshold, threshold]`.
@@ -521,11 +521,11 @@ impl DualAxisExclusion {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_only_x")]
+    #[doc(alias = "magnitude_only_x")]
     #[inline]
-    pub fn magnitude_only_x(threshold: f32) -> Self {
+    pub fn symmetric_only_x(threshold: f32) -> Self {
         Self {
-            exclusion_x: AxisExclusion::magnitude(threshold),
+            exclusion_x: AxisExclusion::symmetric(threshold),
             ..Self::ZERO
         }
     }
@@ -539,11 +539,11 @@ impl DualAxisExclusion {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_only_y")]
+    #[doc(alias = "magnitude_only_y")]
     #[inline]
-    pub fn magnitude_only_y(threshold: f32) -> Self {
+    pub fn symmetric_only_y(threshold: f32) -> Self {
         Self {
-            exclusion_y: AxisExclusion::magnitude(threshold),
+            exclusion_y: AxisExclusion::symmetric(threshold),
             ..Self::ZERO
         }
     }
@@ -660,7 +660,7 @@ impl From<AxisExclusion> for DualAxisProcessor {
 }
 
 /// A scaled version of [`DualAxisExclusion`] with the bounds
-/// set to [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default)
+/// set to [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
 /// that normalizes non-excluded input values into the "live zone",
 /// the remaining range within the bounds after dead zone exclusion.
 ///
@@ -791,12 +791,12 @@ impl DualAxisDeadZone {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric")]
+    #[doc(alias = "magnitude")]
     #[inline]
-    pub fn magnitude(threshold_x: f32, threshold_y: f32) -> Self {
+    pub fn symmetric(threshold_x: f32, threshold_y: f32) -> Self {
         Self {
-            deadzone_x: AxisDeadZone::magnitude(threshold_x),
-            deadzone_y: AxisDeadZone::magnitude(threshold_y),
+            deadzone_x: AxisDeadZone::symmetric(threshold_x),
+            deadzone_y: AxisDeadZone::symmetric(threshold_y),
         }
     }
 
@@ -809,10 +809,10 @@ impl DualAxisDeadZone {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_all")]
+    #[doc(alias = "magnitude_all")]
     #[inline]
-    pub fn magnitude_all(threshold: f32) -> Self {
-        Self::magnitude(threshold, threshold)
+    pub fn symmetric_all(threshold: f32) -> Self {
+        Self::symmetric(threshold, threshold)
     }
 
     /// Creates a [`DualAxisDeadZone`] that only excludes X values within the range `[-threshold, threshold]`.
@@ -824,11 +824,11 @@ impl DualAxisDeadZone {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_only_x")]
+    #[doc(alias = "magnitude_only_x")]
     #[inline]
-    pub fn magnitude_only_x(threshold: f32) -> Self {
+    pub fn symmetric_only_x(threshold: f32) -> Self {
         Self {
-            deadzone_x: AxisDeadZone::magnitude(threshold),
+            deadzone_x: AxisDeadZone::symmetric(threshold),
             ..Self::ZERO
         }
     }
@@ -842,11 +842,11 @@ impl DualAxisDeadZone {
     /// # Panics
     ///
     /// Panics if the requirements aren't met.
-    #[doc(alias = "symmetric_only_y")]
+    #[doc(alias = "magnitude_only_y")]
     #[inline]
-    pub fn magnitude_only_y(threshold: f32) -> Self {
+    pub fn symmetric_only_y(threshold: f32) -> Self {
         Self {
-            deadzone_y: AxisDeadZone::magnitude(threshold),
+            deadzone_y: AxisDeadZone::symmetric(threshold),
             ..Self::ZERO
         }
     }
@@ -1078,16 +1078,16 @@ mod tests {
         let bounds = DualAxisBounds::only_y(-1.0, 1.5);
         test_bounds(bounds, full_range, (-1.0, 1.5));
 
-        let bounds = DualAxisBounds::magnitude(2.0, 2.5);
+        let bounds = DualAxisBounds::symmetric(2.0, 2.5);
         test_bounds(bounds, (-2.0, 2.0), (-2.5, 2.5));
 
-        let bounds = DualAxisBounds::magnitude_all(2.5);
+        let bounds = DualAxisBounds::symmetric_all(2.5);
         test_bounds(bounds, (-2.5, 2.5), (-2.5, 2.5));
 
-        let bounds = DualAxisBounds::magnitude_only_x(2.5);
+        let bounds = DualAxisBounds::symmetric_only_x(2.5);
         test_bounds(bounds, (-2.5, 2.5), full_range);
 
-        let bounds = DualAxisBounds::magnitude_only_y(2.5);
+        let bounds = DualAxisBounds::symmetric_only_y(2.5);
         test_bounds(bounds, full_range, (-2.5, 2.5));
 
         let bounds = DualAxisBounds::at_least(2.0, 2.5);
@@ -1214,16 +1214,16 @@ mod tests {
         let exclusion = DualAxisExclusion::only_y(-0.1, 0.4);
         test_exclusion(exclusion, zero_size, (-0.1, 0.4));
 
-        let exclusion = DualAxisExclusion::magnitude(0.2, 0.3);
+        let exclusion = DualAxisExclusion::symmetric(0.2, 0.3);
         test_exclusion(exclusion, (-0.2, 0.2), (-0.3, 0.3));
 
-        let exclusion = DualAxisExclusion::magnitude_all(0.3);
+        let exclusion = DualAxisExclusion::symmetric_all(0.3);
         test_exclusion(exclusion, (-0.3, 0.3), (-0.3, 0.3));
 
-        let exclusion = DualAxisExclusion::magnitude_only_x(0.3);
+        let exclusion = DualAxisExclusion::symmetric_only_x(0.3);
         test_exclusion(exclusion, (-0.3, 0.3), zero_size);
 
-        let exclusion = DualAxisExclusion::magnitude_only_y(0.3);
+        let exclusion = DualAxisExclusion::symmetric_only_y(0.3);
         test_exclusion(exclusion, zero_size, (-0.3, 0.3));
 
         let exclusion_x = AxisExclusion::new(-0.2, 0.3);
@@ -1353,16 +1353,16 @@ mod tests {
         let deadzone = DualAxisDeadZone::only_y(-0.1, 0.4);
         test_deadzone(deadzone, zero_size, (-0.1, 0.4));
 
-        let deadzone = DualAxisDeadZone::magnitude(0.2, 0.3);
+        let deadzone = DualAxisDeadZone::symmetric(0.2, 0.3);
         test_deadzone(deadzone, (-0.2, 0.2), (-0.3, 0.3));
 
-        let deadzone = DualAxisDeadZone::magnitude_all(0.3);
+        let deadzone = DualAxisDeadZone::symmetric_all(0.3);
         test_deadzone(deadzone, (-0.3, 0.3), (-0.3, 0.3));
 
-        let deadzone = DualAxisDeadZone::magnitude_only_x(0.3);
+        let deadzone = DualAxisDeadZone::symmetric_only_x(0.3);
         test_deadzone(deadzone, (-0.3, 0.3), zero_size);
 
-        let deadzone = DualAxisDeadZone::magnitude_only_y(0.3);
+        let deadzone = DualAxisDeadZone::symmetric_only_y(0.3);
         test_deadzone(deadzone, zero_size, (-0.3, 0.3));
 
         let deadzone_x = AxisDeadZone::new(-0.2, 0.3);

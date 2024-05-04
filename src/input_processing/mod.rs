@@ -26,8 +26,8 @@
 //!
 //! You can also use these methods to create a pipeline.
 //!
-//! - [`AxisProcessor::with_processor`] or [`From<Vec<AxisProcessor>>::from`] for [`AxisProcessor::Pipeline`].
-//! - [`DualAxisProcessor::with_processor`] or [`From<Vec<DualAxisProcessor>>::from`] for [`DualAxisProcessor::Pipeline`].
+//! - [`AxisProcessor::pipeline`] or [`AxisProcessor::with_processor`] for [`AxisProcessor::Pipeline`].
+//! - [`DualAxisProcessor::pipeline`] or [`DualAxisProcessor::with_processor`] for [`DualAxisProcessor::Pipeline`].
 //!
 //! ## Inversion
 //!
@@ -80,10 +80,10 @@
 //! the remaining region within the bounds after dead zone exclusion.
 //!
 //! - [`AxisDeadZone`]: A scaled version of [`AxisExclusion`] with the bounds
-//!     set to [`AxisBounds::magnitude(1.0)`](AxisBounds::default),
+//!     set to [`AxisBounds::symmetric(1.0)`](AxisBounds::default),
 //!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisDeadZone`]: A scaled version of [`DualAxisExclusion`] with the bounds
-//!     set to [`DualAxisBounds::magnitude_all(1.0)`](DualAxisBounds::default), implemented [`Into<DualAxisProcessor>`].
+//!     set to [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default), implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleDeadZone`]: A scaled version of [`CircleExclusion`] with the bounds
 //!     set to [`CircleBounds::new(1.0)`](CircleBounds::default), implemented [`Into<DualAxisProcessor>`].
 

@@ -69,8 +69,8 @@ fn main() {
     client_app.update();
 
     // Sending inputs to the client
-    client_app.send_input(KeyCode::Space);
-    client_app.send_input(MouseButton::Left);
+    client_app.press_input(KeyCode::Space);
+    client_app.press_input(MouseButton::Left);
 
     // These are converted into actions when the client_app's `Schedule` runs
     client_app.update();
@@ -122,8 +122,7 @@ fn spawn_player(mut commands: Commands) {
     use KeyCode::*;
 
     let input_map = InputMap::new([(MoveLeft, KeyW), (MoveRight, KeyD), (Jump, Space)])
-        .insert(Shoot, MouseButton::Left)
-        .build();
+        .with(Shoot, MouseButton::Left);
     commands
         .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player);

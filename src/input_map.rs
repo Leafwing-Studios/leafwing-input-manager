@@ -1,82 +1,94 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
+use std::fmt::Debug;
+
+#[cfg(feature = "asset")]
+use bevy::asset::Asset;
+use bevy::prelude::{Component, Gamepad, Reflect, Resource};
+use bevy::utils::HashMap;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+
 use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::*;
+use crate::user_input::UserInput;
 use crate::Actionlike;
 
-#[cfg(feature = "asset")]
-use bevy::asset::Asset;
-use bevy::ecs::component::Component;
-use bevy::ecs::system::Resource;
-use bevy::input::gamepad::Gamepad;
-use bevy::reflect::Reflect;
-use bevy::utils::HashMap;
-use serde::{Deserialize, Serialize};
-
-use core::fmt::Debug;
-
-/**
-Maps from raw inputs to an input-method agnostic representation
-
-Multiple inputs can be mapped to the same action,
-and each input can be mapped to multiple actions.
-
-The provided input types must be able to be converted into a [`UserInput`].
-
-By default, if two actions are triggered by a combination of buttons,
-and one combination is a strict subset of the other, only the larger input is registered.
-For example, pressing both `S` and `Ctrl + S` in your text editor app would save your file,
-but not enter the letters `s`.
-Set the [`ClashStrategy`] resource
-to configure this behavior.
-
-# Example
-```rust
-use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
-
-// You can Run!
-// But you can't Hide :(
-#[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
-enum Action {
-    Run,
-    Hide,
-}
-
-// Construction
-let mut input_map = InputMap::new([
-   // Note that the type of your iterators must be homogeneous;
-   // you can use `InputKind` or `UserInput` if needed
-   // as unifying types
-  (Action::Run, GamepadButtonType::South),
-  (Action::Hide, GamepadButtonType::LeftTrigger),
-  (Action::Hide, GamepadButtonType::RightTrigger),
-]);
-
-// Insertion
-input_map.insert(Action::Run, MouseButton::Left)
-.insert(Action::Run, KeyCode::ShiftLeft)
-// Chords
-.insert_modified(Action::Run, Modifier::Control, KeyCode::KeyR)
-.insert_chord(Action::Run,
-              [InputKind::PhysicalKey(KeyCode::KeyH),
-               InputKind::GamepadButton(GamepadButtonType::South),
-               InputKind::Mouse(MouseButton::Middle)],
-           );
-
-// Removal
-input_map.clear_action(&Action::Hide);
-```
- **/
+/// A Multi-Map that allows you to map actions to multiple [`UserInput`]s.
+///
+/// # Many-to-One Mapping
+///
+/// You can associate multiple [`UserInput`]s (e.g., keyboard keys, mouse buttons, gamepad buttons)
+/// with a single action, simplifying handling complex input combinations for the same action.
+/// Duplicate associations are ignored.
+///
+/// # One-to-Many Mapping
+///
+/// A single [`UserInput`] can be mapped to multiple actions simultaneously.
+/// This allows flexibility in defining alternative ways to trigger an action.
+///
+/// # Clash Resolution
+///
+/// By default, the [`InputMap`] prioritizes larger [`UserInput`] combinations to trigger actions.
+/// This means if two actions share some inputs, and one action requires all the inputs
+/// of the other plus additional ones; only the larger combination will be registered.
+///
+/// This avoids unintended actions from being triggered by more specific input combinations.
+/// For example, pressing both `S` and `Ctrl + S` in your text editor app
+/// would only save your file (the larger combination), and not enter the letter `s`.
+///
+/// This behavior can be customized using the [`ClashStrategy`] resource.
+///
+/// # Examples
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::InputKind;
+///
+/// // Define your actions.
+/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+/// enum Action {
+///     Move,
+///     Run,
+///     Jump,
+/// }
+///
+/// // Create an InputMap from an iterable,
+/// // allowing for multiple input types per action.
+/// let mut input_map = InputMap::new([
+///     // Multiple inputs can be bound to the same action.
+///     // Note that the type of your iterators must be homogeneous.
+///     (Action::Run, KeyCode::ShiftLeft),
+///     (Action::Run, KeyCode::ShiftRight),
+///     // Note that duplicate associations are ignored.
+///     (Action::Run, KeyCode::ShiftRight),
+///     (Action::Jump, KeyCode::Space),
+/// ])
+/// // Associate actions with other input types.
+/// .with(Action::Move, KeyboardVirtualDPad::WASD)
+/// .with(Action::Move, GamepadStick::LEFT)
+/// // Associate an action with multiple inputs at once.
+/// .with_one_to_many(Action::Jump, [KeyCode::KeyJ, KeyCode::KeyU]);
+///
+/// // You can also use methods like a normal MultiMap.
+/// input_map.insert(Action::Jump, KeyCode::KeyM);
+///
+/// // Remove all bindings to a specific action.
+/// input_map.clear_action(&Action::Jump);
+///
+/// // Remove all bindings.
+/// input_map.clear();
+/// ```
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 pub struct InputMap<A: Actionlike> {
-    /// The usize stored here is the index of the input in the Actionlike iterator
-    map: HashMap<A, Vec<UserInput>>,
+    /// The underlying map that stores action-input mappings.
+    map: HashMap<A, Vec<Box<dyn UserInput>>>,
+
+    /// The specified [`Gamepad`] from which this map exclusively accepts input.
     associated_gamepad: Option<Gamepad>,
 }
 
@@ -91,157 +103,146 @@ impl<A: Actionlike> Default for InputMap<A> {
 
 // Constructors
 impl<A: Actionlike> InputMap<A> {
-    /// Creates a new [`InputMap`] from an iterator of `(user_input, action)` pairs
+    /// Creates an [`InputMap`] from an iterator over action-input bindings.
+    /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
-    /// To create an empty input map, use the [`Default::default`] method instead.
-    ///
-    /// # Example
-    /// ```rust
-    /// use leafwing_input_manager::input_map::InputMap;
-    /// use leafwing_input_manager::Actionlike;
-    /// use bevy::input::keyboard::KeyCode;
-    /// use bevy::prelude::Reflect;
-    ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
-    /// enum Action {
-    ///     Run,
-    ///     Jump,
-    /// }
-    ///
-    /// let input_map = InputMap::new([
-    ///     (Action::Run, KeyCode::ShiftLeft),
-    ///     (Action::Jump, KeyCode::Space),
-    /// ]);
-    ///
-    /// assert_eq!(input_map.len(), 2);
-    /// ```
-    #[must_use]
-    pub fn new(bindings: impl IntoIterator<Item = (A, impl Into<UserInput>)>) -> Self {
-        let mut input_map = InputMap::default();
-        input_map.insert_multiple(bindings);
-
-        input_map
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn new<U: UserInput>(bindings: impl IntoIterator<Item = (A, U)>) -> Self {
+        bindings
+            .into_iter()
+            .fold(Self::default(), |map, (action, input)| {
+                map.with(action, input)
+            })
     }
 
-    /// Constructs a new [`InputMap`] from a `&mut InputMap`, allowing you to insert or otherwise use it
+    /// Associates an `action` with a specific `input`.
+    /// Multiple inputs can be bound to the same action.
     ///
-    /// This is helpful when constructing input maps using the "builder pattern":
-    ///  1. Create a new [`InputMap`] struct using [`InputMap::default`] or [`InputMap::new`].
-    ///  2. Add bindings and configure the struct using a chain of method calls directly on this struct.
-    ///  3. Finish building your struct by calling `.build()`, receiving a concrete struct you can insert as a component.
-    ///
-    /// Note that this is not the *original* input map, as we do not have ownership of the struct.
-    /// Under the hood, this is just a more-readable call to `.clone()`.
-    ///
-    /// # Example
-    /// ```rust
-    /// use leafwing_input_manager::prelude::*;
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn with(mut self, action: A, input: impl UserInput) -> Self {
+        self.insert(action, input);
+        self
+    }
 
-    /// use bevy::input::keyboard::KeyCode;
-    /// use bevy::prelude::Reflect;
+    /// Associates an `action` with multiple `inputs` provided by an iterator.
+    /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
-    /// enum Action {
-    ///     Run,
-    ///     Jump,
-    /// }
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn with_one_to_many<U: UserInput>(
+        mut self,
+        action: A,
+        inputs: impl IntoIterator<Item = U>,
+    ) -> Self {
+        self.insert_one_to_many(action, inputs);
+        self
+    }
+
+    /// Adds multiple action-input bindings provided by an iterator.
+    /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
-    /// let input_map: InputMap<Action> = InputMap::default()
-    ///   .insert(Action::Jump, KeyCode::Space).build();
-    /// ```
-    #[inline]
-    #[must_use]
-    pub fn build(&mut self) -> Self {
-        self.clone()
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn with_multiple<U: UserInput>(
+        mut self,
+        bindings: impl IntoIterator<Item = (A, U)>,
+    ) -> Self {
+        self.insert_multiple(bindings);
+        self
     }
 }
 
 // Insertion
 impl<A: Actionlike> InputMap<A> {
-    /// Insert a mapping between `input` and `action`
-    pub fn insert(&mut self, action: A, input: impl Into<UserInput>) -> &mut Self {
-        let input = input.into();
-
-        // Check for existing copies of the input: insertion should be idempotent
-        if !matches!(self.map.get(&action), Some(vec) if vec.contains(&input)) {
-            self.map.entry(action).or_default().push(input);
+    /// Inserts a binding between an `action` and a specific boxed dyn [`UserInput`].
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    fn insert_boxed(&mut self, action: A, input: Box<dyn UserInput>) -> &mut Self {
+        if let Some(bindings) = self.map.get_mut(&action) {
+            if !bindings.contains(&input) {
+                bindings.push(input);
+            }
+        } else {
+            self.map.insert(action, vec![input]);
         }
 
         self
     }
 
-    /// Insert a mapping between many `input`'s and one `action`
+    /// Inserts a binding between an `action` and a specific `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn insert_one_to_many(
+    pub fn insert(&mut self, action: A, input: impl UserInput) -> &mut Self {
+        self.insert_boxed(action, Box::new(input));
+        self
+    }
+
+    /// Inserts bindings between the same `action` and multiple `inputs` provided by an iterator.
+    /// Note that all elements within the iterator must be of the same type (homogeneous).
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn insert_one_to_many<U: UserInput>(
         &mut self,
         action: A,
-        input: impl IntoIterator<Item = impl Into<UserInput>>,
+        inputs: impl IntoIterator<Item = U>,
     ) -> &mut Self {
-        for input in input {
-            self.insert(action.clone(), input);
+        let inputs = inputs
+            .into_iter()
+            .map(|input| Box::new(input) as Box<dyn UserInput>);
+        if let Some(bindings) = self.map.get_mut(&action) {
+            for input in inputs {
+                if !bindings.contains(&input) {
+                    bindings.push(input);
+                }
+            }
+        } else {
+            self.map.insert(action, inputs.unique().collect());
         }
         self
     }
 
-    /// Insert a mapping between the provided `input_action_pairs`
+    /// Inserts multiple action-input bindings provided by an iterator.
+    /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
-    /// This method creates multiple distinct bindings.
-    /// If you want to require multiple buttons to be pressed at once, use [`insert_chord`](Self::insert_chord).
-    /// Any iterator convertible into a [`UserInput`] can be supplied.
-    pub fn insert_multiple(
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn insert_multiple<U: UserInput>(
         &mut self,
-        input_action_pairs: impl IntoIterator<Item = (A, impl Into<UserInput>)>,
+        bindings: impl IntoIterator<Item = (A, U)>,
     ) -> &mut Self {
-        for (action, input) in input_action_pairs {
+        for (action, input) in bindings.into_iter() {
             self.insert(action, input);
         }
-
         self
     }
 
-    /// Insert a mapping between the simultaneous combination of `buttons` and the `action` provided
+    /// Merges the provided [`InputMap`] into this `map`, combining their bindings,
+    /// avoiding duplicates.
     ///
-    /// Any iterator convertible into a [`InputKind`] can be supplied,
-    /// but will be converted into a [`HashSet`](bevy::utils::HashSet) for storage and use.
-    /// Chords can also be added with the [insert](Self::insert) method if the [`UserInput::Chord`] variant is constructed explicitly.
-    ///
-    /// When working with keyboard modifier keys, consider using the `insert_modified` method instead.
-    pub fn insert_chord(
-        &mut self,
-        action: A,
-        buttons: impl IntoIterator<Item = impl Into<InputKind>>,
-    ) -> &mut Self {
-        self.insert(action, UserInput::chord(buttons));
-        self
-    }
-
-    /// Inserts a mapping between the simultaneous combination of the [`Modifier`] plus the `input` and the `action` provided.
-    ///
-    /// When working with keyboard modifiers, should be preferred over `insert_chord`.
-    pub fn insert_modified(
-        &mut self,
-        action: A,
-        modifier: Modifier,
-        input: impl Into<InputKind>,
-    ) -> &mut Self {
-        self.insert(action, UserInput::modified(modifier, input));
-        self
-    }
-
-    /// Merges the provided [`InputMap`] into the [`InputMap`] this method was called on
-    ///
-    /// This adds both of their bindings to the resulting [`InputMap`].
-    /// Like usual, any duplicate bindings are ignored.
-    ///
-    /// If the associated gamepads do not match, the resulting associated gamepad will be set to `None`.
+    /// If the associated gamepads do not match, the association will be removed.
     pub fn merge(&mut self, other: &InputMap<A>) -> &mut Self {
         if self.associated_gamepad != other.associated_gamepad {
-            self.associated_gamepad = None;
+            self.clear_gamepad();
         }
 
-        for other_action in other.map.iter() {
-            for input in other_action.1.iter() {
-                self.insert(other_action.0.clone(), input.clone());
+        for (other_action, other_inputs) in other.map.iter() {
+            for other_input in other_inputs.iter().cloned() {
+                self.insert_boxed(other_action.clone(), other_input);
             }
         }
 
@@ -251,18 +252,19 @@ impl<A: Actionlike> InputMap<A> {
 
 // Configuration
 impl<A: Actionlike> InputMap<A> {
-    /// Fetches the [Gamepad] associated with the entity controlled by this entity map
+    /// Fetches the [`Gamepad`] associated with the entity controlled by this input map.
     ///
     /// If this is [`None`], input from any connected gamepad will be used.
     #[must_use]
-    pub fn gamepad(&self) -> Option<Gamepad> {
+    #[inline]
+    pub const fn gamepad(&self) -> Option<Gamepad> {
         self.associated_gamepad
     }
 
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map
+    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map.
     ///
-    /// Use this when an [`InputMap`] should exclusively accept input from a
-    /// particular gamepad.
+    /// Use this when an [`InputMap`] should exclusively accept input
+    /// from a particular gamepad.
     ///
     /// If this is not called, input from any connected gamepad will be used.
     /// The first matching non-zero input will be accepted,
@@ -270,24 +272,42 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Because of this robust fallback behavior,
     /// this method can typically be ignored when writing single-player games.
+    #[inline]
+    pub fn with_gamepad(mut self, gamepad: Gamepad) -> Self {
+        self.set_gamepad(gamepad);
+        self
+    }
+
+    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map.
+    ///
+    /// Use this when an [`InputMap`] should exclusively accept input
+    /// from a particular gamepad.
+    ///
+    /// If this is not called, input from any connected gamepad will be used.
+    /// The first matching non-zero input will be accepted,
+    /// as determined by gamepad registration order.
+    ///
+    /// Because of this robust fallback behavior,
+    /// this method can typically be ignored when writing single-player games.
+    #[inline]
     pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
         self.associated_gamepad = Some(gamepad);
         self
     }
 
-    /// Clears any [Gamepad] associated with the entity controlled by this input map
+    /// Clears any [`Gamepad`] associated with the entity controlled by this input map.
+    #[inline]
     pub fn clear_gamepad(&mut self) -> &mut Self {
         self.associated_gamepad = None;
         self
     }
 }
 
-// Check whether buttons are pressed
+// Check whether actions are pressed
 impl<A: Actionlike> InputMap<A> {
-    /// Is at least one of the corresponding inputs for `action` found in the provided `input` streams?
+    /// Checks if the `action` are currently pressed by any of the associated [`UserInput`]s.
     ///
-    /// Accounts for clashing inputs according to the [`ClashStrategy`].
-    /// If you need to inspect many inputs at once, prefer [`InputMap::which_pressed`] instead.
+    /// Accounts for clashing inputs according to the [`ClashStrategy`] and remove conflicting actions.
     #[must_use]
     pub fn pressed(
         &self,
@@ -295,17 +315,17 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        self.which_pressed(input_streams, clash_strategy)
+        self.process_actions(input_streams, clash_strategy)
             .get(action)
             .map(|datum| datum.state.pressed())
             .unwrap_or_default()
     }
 
-    /// Returns the actions that are currently pressed, and the responsible [`UserInput`] for each action
+    /// Processes [`UserInput`] bindings for each action and generates corresponding [`ActionData`].
     ///
-    /// Accounts for clashing inputs according to the [`ClashStrategy`].
+    /// Accounts for clashing inputs according to the [`ClashStrategy`] and remove conflicting actions.
     #[must_use]
-    pub fn which_pressed(
+    pub fn process_actions(
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
@@ -313,12 +333,12 @@ impl<A: Actionlike> InputMap<A> {
         let mut action_data = HashMap::new();
 
         // Generate the raw action presses
-        for (action, input_vec) in self.iter() {
+        for (action, input_bindings) in self.iter() {
             let mut action_datum = ActionData::default();
 
-            for input in input_vec {
+            for input in input_bindings {
                 // Merge the axis pair into action datum
-                if let Some(axis_pair) = input_streams.input_axis_pair(input) {
+                if let Some(axis_pair) = input.axis_pair(input_streams) {
                     action_datum.axis_pair = action_datum
                         .axis_pair
                         .map_or(Some(axis_pair), |current_axis_pair| {
@@ -326,9 +346,9 @@ impl<A: Actionlike> InputMap<A> {
                         });
                 }
 
-                if input_streams.input_pressed(input) {
+                if input.pressed(input_streams) {
                     action_datum.state = ButtonState::JustPressed;
-                    action_datum.value += input_streams.input_value(input);
+                    action_datum.value += input.value(input_streams);
                 }
             }
 
@@ -344,40 +364,49 @@ impl<A: Actionlike> InputMap<A> {
 
 // Utilities
 impl<A: Actionlike> InputMap<A> {
-    /// Returns an iterator over actions with their inputs
-    pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<UserInput>)> {
+    /// Returns an iterator over all registered actions with their input bindings.
+    pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn UserInput>>)> {
         self.map.iter()
     }
-    /// Returns an iterator over actions
-    pub(crate) fn actions(&self) -> impl Iterator<Item = &A> {
+
+    /// Returns an iterator over all registered action-input bindings.
+    pub fn bindings(&self) -> impl Iterator<Item = (&A, &dyn UserInput)> {
+        self.map
+            .iter()
+            .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
+    }
+
+    /// Returns an iterator over all registered actions.
+    pub fn actions(&self) -> impl Iterator<Item = &A> {
         self.map.keys()
     }
-    /// Returns a reference to the inputs mapped to `action`
+
+    /// Returns a reference to the inputs associated with the given `action`.
     #[must_use]
-    pub fn get(&self, action: &A) -> Option<&Vec<UserInput>> {
+    pub fn get(&self, action: &A) -> Option<&Vec<Box<dyn UserInput>>> {
         self.map.get(action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<UserInput>> {
+    pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn UserInput>>> {
         self.map.get_mut(action)
     }
 
-    /// How many input bindings are registered total?
+    /// Count the total number of registered input bindings.
     #[must_use]
     pub fn len(&self) -> usize {
         self.map.values().map(|inputs| inputs.len()).sum()
     }
 
-    /// Are any input bindings registered at all?
+    /// Returns `true` if the map contains no action-input bindings.
     #[inline]
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
-    /// Clears the map, removing all action-inputs pairs.
+    /// Clears the map, removing all action-input bindings.
     ///
     /// Keeps the allocated memory for reuse.
     pub fn clear(&mut self) {
@@ -387,67 +416,74 @@ impl<A: Actionlike> InputMap<A> {
 
 // Removing
 impl<A: Actionlike> InputMap<A> {
-    /// Clears all inputs registered for the `action`
+    /// Clears all input bindings associated with the `action`.
     pub fn clear_action(&mut self, action: &A) {
         self.map.remove(action);
     }
 
-    /// Removes the input for the `action` at the provided index
+    /// Removes the input for the `action` at the provided index.
     ///
     /// Returns `Some(input)` if found.
-    pub fn remove_at(&mut self, action: &A, index: usize) -> Option<UserInput> {
-        let input_vec = self.map.get_mut(action)?;
-        (input_vec.len() > index).then(|| input_vec.remove(index))
+    pub fn remove_at(&mut self, action: &A, index: usize) -> Option<Box<dyn UserInput>> {
+        let input_bindings = self.map.get_mut(action)?;
+        (input_bindings.len() > index).then(|| input_bindings.remove(index))
     }
 
     /// Removes the input for the `action` if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: &A, input: impl Into<UserInput>) -> Option<usize> {
-        let input_vec = self.map.get_mut(action)?;
-        let user_input = input.into();
-        let index = input_vec.iter().position(|i| i == &user_input)?;
-        input_vec.remove(index);
+    pub fn remove(&mut self, action: &A, input: impl UserInput) -> Option<usize> {
+        let bindings = self.map.get_mut(action)?;
+        let boxed_input: Box<dyn UserInput> = Box::new(input);
+        let index = bindings.iter().position(|input| input == &boxed_input)?;
+        bindings.remove(index);
         Some(index)
     }
 }
 
-impl<A: Actionlike> From<HashMap<A, Vec<UserInput>>> for InputMap<A> {
-    /// Create `InputMap<A>` from `HashMap<A, Vec<UserInput>>`
+impl<A: Actionlike, U: UserInput> From<HashMap<A, Vec<U>>> for InputMap<A> {
+    /// Converts a [`HashMap`] mapping actions to multiple [`UserInput`]s into an [`InputMap`].
     ///
-    /// # Example
+    /// # Examples
+    ///
     /// ```rust
-    /// use leafwing_input_manager::input_map::InputMap;
-    /// use leafwing_input_manager::user_input::UserInput;
-    /// use leafwing_input_manager::Actionlike;
-    /// use bevy::input::keyboard::KeyCode;
-    /// use bevy::reflect::Reflect;
-    ///
+    /// use bevy::prelude::*;
     /// use bevy::utils::HashMap;
+    /// use leafwing_input_manager::prelude::*;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,
     /// }
-    /// let mut map: HashMap<Action, Vec<UserInput>> = HashMap::default();
+    ///
+    /// // Create an InputMap from a HashMap mapping actions to their key bindings.
+    /// let mut map: HashMap<Action, Vec<KeyCode>> = HashMap::default();
+    ///
+    /// // Bind the "run" action to either the left or right shift keys to trigger the action.
     /// map.insert(
     ///     Action::Run,
-    ///     vec![KeyCode::ShiftLeft.into(), KeyCode::ShiftRight.into()],
+    ///     vec![KeyCode::ShiftLeft, KeyCode::ShiftRight],
     /// );
-    /// let input_map = InputMap::<Action>::from(map);
+    ///
+    /// let input_map = InputMap::from(map);
     /// ```
-    fn from(map: HashMap<A, Vec<UserInput>>) -> Self {
-        map.iter()
-            .flat_map(|(action, inputs)| inputs.iter().map(|input| (action.clone(), input.clone())))
-            .collect()
+    fn from(raw_map: HashMap<A, Vec<U>>) -> Self {
+        let mut input_map = Self::default();
+        for (action, inputs) in raw_map.into_iter() {
+            input_map.insert_one_to_many(action, inputs);
+        }
+        input_map
     }
 }
 
-impl<A: Actionlike> FromIterator<(A, UserInput)> for InputMap<A> {
-    /// Create `InputMap<A>` from iterator with the item type `(A, UserInput)`
-    fn from_iter<T: IntoIterator<Item = (A, UserInput)>>(iter: T) -> Self {
-        InputMap::new(iter)
+impl<A: Actionlike, U: UserInput> FromIterator<(A, U)> for InputMap<A> {
+    fn from_iter<T: IntoIterator<Item = (A, U)>>(iter: T) -> Self {
+        let mut input_map = Self::default();
+        for (action, input) in iter.into_iter() {
+            input_map.insert(action, input);
+        }
+        input_map
     }
 }
 
@@ -455,6 +491,7 @@ mod tests {
     use bevy::prelude::Reflect;
     use serde::{Deserialize, Serialize};
 
+    use super::*;
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
@@ -479,64 +516,82 @@ mod tests {
     }
 
     #[test]
+    fn creation() {
+        use bevy::input::keyboard::KeyCode;
+
+        let input_map = InputMap::default()
+            .with(Action::Run, KeyCode::KeyW)
+            .with(Action::Run, KeyCode::ShiftLeft)
+            // Duplicate associations should be ignored
+            .with(Action::Run, KeyCode::ShiftLeft)
+            .with_one_to_many(Action::Run, [KeyCode::KeyR, KeyCode::ShiftRight])
+            .with_multiple([
+                (Action::Jump, KeyCode::Space),
+                (Action::Hide, KeyCode::ControlLeft),
+                (Action::Hide, KeyCode::ControlRight),
+            ]);
+
+        let expected_bindings: HashMap<Box<dyn UserInput>, Action> = HashMap::from([
+            (Box::new(KeyCode::KeyW) as Box<dyn UserInput>, Action::Run),
+            (
+                Box::new(KeyCode::ShiftLeft) as Box<dyn UserInput>,
+                Action::Run,
+            ),
+            (Box::new(KeyCode::KeyR) as Box<dyn UserInput>, Action::Run),
+            (
+                Box::new(KeyCode::ShiftRight) as Box<dyn UserInput>,
+                Action::Run,
+            ),
+            (Box::new(KeyCode::Space) as Box<dyn UserInput>, Action::Jump),
+            (
+                Box::new(KeyCode::ControlLeft) as Box<dyn UserInput>,
+                Action::Hide,
+            ),
+            (
+                Box::new(KeyCode::ControlRight) as Box<dyn UserInput>,
+                Action::Hide,
+            ),
+        ]);
+
+        for (action, input) in input_map.bindings() {
+            let expected_action = expected_bindings.get(input).unwrap();
+            assert_eq!(expected_action, action);
+        }
+    }
+
+    #[test]
     fn insertion_idempotency() {
         use bevy::input::keyboard::KeyCode;
 
-        let mut input_map = InputMap::<Action>::default();
+        let mut input_map = InputMap::default();
         input_map.insert(Action::Run, KeyCode::Space);
 
-        assert_eq!(
-            input_map.get(&Action::Run),
-            Some(&vec![KeyCode::Space.into()])
-        );
+        let expected: Vec<Box<dyn UserInput>> = vec![Box::new(KeyCode::Space)];
+        assert_eq!(input_map.get(&Action::Run), Some(&expected));
 
         // Duplicate insertions should not change anything
         input_map.insert(Action::Run, KeyCode::Space);
-        assert_eq!(
-            input_map.get(&Action::Run),
-            Some(&vec![KeyCode::Space.into()])
-        );
+        assert_eq!(input_map.get(&Action::Run), Some(&expected));
     }
 
     #[test]
     fn multiple_insertion() {
         use bevy::input::keyboard::KeyCode;
 
-        let mut input_map_1 = InputMap::<Action>::default();
-        input_map_1.insert(Action::Run, KeyCode::Space);
-        input_map_1.insert(Action::Run, KeyCode::Enter);
+        let mut input_map = InputMap::default();
+        input_map.insert(Action::Run, KeyCode::Space);
+        input_map.insert(Action::Run, KeyCode::Enter);
 
-        assert_eq!(
-            input_map_1.get(&Action::Run),
-            Some(&vec![KeyCode::Space.into(), KeyCode::Enter.into()])
-        );
-
-        let input_map_2 =
-            InputMap::<Action>::new([(Action::Run, KeyCode::Space), (Action::Run, KeyCode::Enter)]);
-
-        assert_eq!(input_map_1, input_map_2);
-    }
-
-    #[test]
-    fn chord_singleton_coercion() {
-        use crate::input_map::UserInput;
-        use bevy::input::keyboard::KeyCode;
-
-        // Single items in a chord should be coerced to a singleton
-        let mut input_map_1 = InputMap::<Action>::default();
-        input_map_1.insert(Action::Run, KeyCode::Space);
-
-        let mut input_map_2 = InputMap::<Action>::default();
-        input_map_2.insert(Action::Run, UserInput::chord([KeyCode::Space]));
-
-        assert_eq!(input_map_1, input_map_2);
+        let expected: Vec<Box<dyn UserInput>> =
+            vec![Box::new(KeyCode::Space), Box::new(KeyCode::Enter)];
+        assert_eq!(input_map.get(&Action::Run), Some(&expected));
     }
 
     #[test]
     fn input_clearing() {
         use bevy::input::keyboard::KeyCode;
 
-        let mut input_map = InputMap::<Action>::default();
+        let mut input_map = InputMap::default();
         input_map.insert(Action::Run, KeyCode::Space);
 
         // Clearing action
@@ -565,7 +620,11 @@ mod tests {
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
         default_keyboard_map.insert(Action::Run, KeyCode::ShiftLeft);
-        default_keyboard_map.insert_chord(Action::Hide, [KeyCode::ControlLeft, KeyCode::KeyH]);
+        default_keyboard_map.insert(
+            Action::Hide,
+            InputChord::from_multiple([KeyCode::ControlLeft, KeyCode::KeyH]),
+        );
+
         let mut default_gamepad_map = InputMap::default();
         default_gamepad_map.insert(Action::Run, GamepadButtonType::South);
         default_gamepad_map.insert(Action::Hide, GamepadButtonType::East);

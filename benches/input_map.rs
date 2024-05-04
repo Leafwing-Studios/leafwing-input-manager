@@ -44,17 +44,16 @@ fn construct_input_map_from_iter() -> InputMap<TestAction> {
 fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
     black_box(
         InputMap::default()
-            .insert(TestAction::A, KeyCode::KeyA)
-            .insert(TestAction::B, KeyCode::KeyB)
-            .insert(TestAction::C, KeyCode::KeyC)
-            .insert(TestAction::D, KeyCode::KeyD)
-            .insert(TestAction::E, KeyCode::KeyE)
-            .insert(TestAction::F, KeyCode::KeyF)
-            .insert(TestAction::G, KeyCode::KeyG)
-            .insert(TestAction::H, KeyCode::KeyH)
-            .insert(TestAction::I, KeyCode::KeyI)
-            .insert(TestAction::J, KeyCode::KeyJ)
-            .build(),
+            .with(TestAction::A, KeyCode::KeyA)
+            .with(TestAction::B, KeyCode::KeyB)
+            .with(TestAction::C, KeyCode::KeyC)
+            .with(TestAction::D, KeyCode::KeyD)
+            .with(TestAction::E, KeyCode::KeyE)
+            .with(TestAction::F, KeyCode::KeyF)
+            .with(TestAction::G, KeyCode::KeyG)
+            .with(TestAction::H, KeyCode::KeyH)
+            .with(TestAction::I, KeyCode::KeyI)
+            .with(TestAction::J, KeyCode::KeyJ),
     )
 }
 
@@ -63,7 +62,7 @@ fn which_pressed(
     clash_strategy: ClashStrategy,
 ) -> HashMap<TestAction, ActionData> {
     let input_map = construct_input_map_from_iter();
-    input_map.which_pressed(input_streams, clash_strategy)
+    input_map.process_actions(input_streams, clash_strategy)
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -78,8 +77,8 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     // Constructing our test app / input stream outside the timed benchmark
     let mut app = App::new();
     app.add_plugins(InputPlugin);
-    app.send_input(KeyCode::KeyA);
-    app.send_input(KeyCode::KeyB);
+    app.press_input(KeyCode::KeyA);
+    app.press_input(KeyCode::KeyB);
     app.update();
 
     let input_streams = InputStreams::from_world(&app.world, None);

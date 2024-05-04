@@ -42,15 +42,13 @@ impl PlayerBundle {
             // and gracefully handle disconnects
             // Note that this step is not required:
             // if it is skipped, all input maps will read from all connected gamepads
-            .set_gamepad(Gamepad { id: 0 })
-            .build(),
+            .with_gamepad(Gamepad { id: 0 }),
             Player::Two => InputMap::new([
                 (Action::Left, KeyCode::ArrowLeft),
                 (Action::Right, KeyCode::ArrowRight),
                 (Action::Jump, KeyCode::ArrowUp),
             ])
-            .set_gamepad(Gamepad { id: 1 })
-            .build(),
+            .with_gamepad(Gamepad { id: 1 }),
         };
 
         // Each player will use the same gamepad controls, but on separate gamepads.

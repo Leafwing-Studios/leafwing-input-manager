@@ -20,33 +20,32 @@ enum Action {
 struct Player;
 
 fn spawn_player(mut commands: Commands) {
-    let mut input_map = InputMap::default();
-    input_map
-        .insert(
+    let input_map = InputMap::default()
+        .with(
             Action::Move,
-            VirtualDPad::wasd()
-                // You can add a processor to handle axis-like user inputs by using the `with_processor`.
+            KeyboardVirtualDPad::WASD
+                // You can configure a processing pipeline to handle axis-like user inputs.
                 //
-                // This processor is a circular deadzone that normalizes input values
+                // This step adds a circular deadzone that normalizes input values
                 // by clamping their magnitude to a maximum of 1.0,
                 // excluding those with a magnitude less than 0.1,
                 // and scaling other values linearly in between.
-                .with_processor(CircleDeadZone::new(0.1))
+                .with_circle_deadzone(0.1)
                 // Followed by appending Y-axis inversion for the next processing step.
-                .with_processor(DualAxisInverted::ONLY_Y),
+                .inverted_y(),
         )
-        .insert(
+        .with(
             Action::Move,
-            DualAxis::left_stick()
-                // You can replace the currently used processor with another processor.
+            GamepadStick::LEFT
+                // You can replace the currently used pipeline with another processor.
                 .replace_processor(CircleDeadZone::default())
-                // Or remove the processor directly, leaving no processor applied.
+                // Or remove the pipeline directly, leaving no any processing applied.
                 .no_processor(),
         )
-        .insert(
+        .with(
             Action::LookAround,
             // You can also use a sequence of processors as the processing pipeline.
-            DualAxis::mouse_motion().replace_processor(DualAxisProcessor::from_iter([
+            MouseMove::RAW.with_processor(DualAxisProcessor::pipeline([
                 // The first processor is a circular deadzone.
                 CircleDeadZone::new(0.1).into(),
                 // The next processor doubles inputs normalized by the deadzone.

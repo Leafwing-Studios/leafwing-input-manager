@@ -277,14 +277,14 @@ static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn CustomAxisProcessor>>
     Lazy::new(|| RwLock::new(MapRegistry::new("CustomAxisProcessor")));
 
 /// A trait for registering a specific [`CustomAxisProcessor`].
-pub trait RegisterCustomAxisProcessor {
+pub trait RegisterCustomAxisProcessorExt {
     /// Registers the specified [`CustomAxisProcessor`].
     fn register_axis_processor<'de, T>(&mut self) -> &mut Self
     where
         T: RegisterTypeTag<'de, dyn CustomAxisProcessor> + GetTypeRegistration;
 }
 
-impl RegisterCustomAxisProcessor for App {
+impl RegisterCustomAxisProcessorExt for App {
     fn register_axis_processor<'de, T>(&mut self) -> &mut Self
     where
         T: RegisterTypeTag<'de, dyn CustomAxisProcessor> + GetTypeRegistration,

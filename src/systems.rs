@@ -136,7 +136,7 @@ pub fn update_action_state<A: Actionlike>(
             associated_gamepad: input_map.gamepad(),
         };
 
-        action_state.update(input_map.which_pressed(&input_streams, *clash_strategy));
+        action_state.update(input_map.process_actions(&input_streams, *clash_strategy));
     }
 }
 

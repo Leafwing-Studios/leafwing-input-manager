@@ -25,12 +25,12 @@ impl PlayerAction {
         let mut input_map = InputMap::default();
 
         // Default gamepad input bindings
-        input_map.insert(Self::Run, DualAxis::left_stick());
+        input_map.insert(Self::Run, GamepadStick::LEFT);
         input_map.insert(Self::Jump, GamepadButtonType::South);
         input_map.insert(Self::UseItem, GamepadButtonType::RightTrigger2);
 
         // Default kbm input bindings
-        input_map.insert(Self::Run, VirtualDPad::wasd());
+        input_map.insert(Self::Run, KeyboardVirtualDPad::WASD);
         input_map.insert(Self::Jump, KeyCode::Space);
         input_map.insert(Self::UseItem, MouseButton::Left);
 

@@ -49,8 +49,7 @@ fn join(
                     (Action::Disconnect, GamepadButtonType::Select),
                 ])
                 // Make sure to set the gamepad or all gamepads will be used!
-                .set_gamepad(gamepad)
-                .build();
+                .with_gamepad(gamepad);
                 let player = commands
                     .spawn(InputManagerBundle::with_map(input_map))
                     .insert(Player { gamepad })
