@@ -63,17 +63,15 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 #### InputMap
 
-Introduce new fluent builders for creating a new `InputMap<A>` with short configurations:
+- added new fluent builders for creating a new `InputMap<A>` with short configurations:
+  - `fn with(mut self, action: A, input: impl Into<UserInput>)`.
+  - `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
+  - `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
+  - `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
 
-- `fn with(mut self, action: A, input: impl Into<UserInput>)`.
-- `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = UserInput>)`.
-- `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, UserInput)>) -> Self`.
-- `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
-
-Introduce new iterators over `InputMap<A>`:
-
-- `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
-- `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
+- added new iterators over `InputMap<A>`:
+  - `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
+  - `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
 
 ### Bugs
 
