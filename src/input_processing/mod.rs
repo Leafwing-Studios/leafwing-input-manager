@@ -31,8 +31,8 @@
 //!
 //! ## Digital Conversion
 //!
-//! Digital processors convert raw input values into three discrete values,
-//! positive value becomes `1.0`, negative values becomes `-1.0`, others leaved as is.
+//! Digital processors convert raw input values into discrete values,
+//! similar to [`f32::signum`] but returning `0.0` for zero values.
 //!
 //! - [`AxisProcessor::Digital`]: Single-axis digital conversion.
 //! - [`DualAxisProcessor::Digital`]: Dual-axis digital conversion.
