@@ -11,8 +11,6 @@
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
 - removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
 - removed `MockInput::send_input` methods, in favor of new input mocking APIs (see 'Usability: MockInput' for details).
-  - `fn press_input(&self, input: UserInput)` for focusing on simulating button and key presses.
-  - `fn send_axis_values(&self, input: UserInput, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis of the input.
 - made the dependency on bevy's `bevy_gilrs` feature optional.
   - it is still enabled by leafwing-input-manager's default features.
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
