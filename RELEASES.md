@@ -10,9 +10,7 @@
   - removed `DeadZoneShape` in favor of new dead zone processors.
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
 - removed the hacky `value` field and `from_value` method from `SingleAxis` and `DualAxis`, in favor of new input mocking.
-- split `MockInput::send_input` method to two methods:
-  - `fn press_input(&self, input: UserInput)` for focusing on simulating button and key presses.
-  - `fn send_axis_values(&self, input: UserInput, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis of the input.
+- removed `MockInput::send_input` methods, in favor of new input mocking APIs (see 'Usability: MockInput' for details).
 - made the dependency on bevy's `bevy_gilrs` feature optional.
   - it is still enabled by leafwing-input-manager's default features.
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
@@ -72,6 +70,21 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - added new iterators over `InputMap<A>`:
   - `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
   - `bindings(&self) -> impl Iterator<Item = (&A, &UserInput)>` for iterating over all registered action-input bindings.
+
+### MockInput
+
+- added new methods for the `MockInput` trait.
+  - `fn press_input(&self, input: impl Into<UserInput>)` for simulating button and key presses.
+  - `fn send_axis_values(&self, input: impl Into<UserInput>, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis represented by the input.
+  - as well as methods for a specific gamepad.
+- implemented the methods for `MutableInputStreams`, `World`, and `App`.
+
+### QueryInput
+
+- added new methods for the `QueryInput` trait.
+  - `fn read_axis_values(&self, input: impl Into<UserInput>) -> Vec<f32>` to read the values on all axes represented by an input.
+  - as well as methods for a specific gamepad.
+- implemented the methods for `InputStreams`, `World`, and `App`.
 
 ### Bugs
 
