@@ -229,11 +229,17 @@ pub trait QueryInput {
 
     /// Retrieves the values on all axes represented by the `input`.
     ///
+    /// Binary inputs (e.g., keys and buttons) are treated like single-axis inputs,
+    /// returning a value between `0.0` (not pressed) and `1.0` (fully pressed).
+    ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn read_axis_values(&self, input: impl Into<UserInput>) -> Vec<f32>;
 
     /// Retrieves the values on all axes represented by the `input` on the specified [`Gamepad`].
+    ///
+    /// Binary inputs (e.g., keys and buttons) are treated like single-axis inputs,
+    /// returning a value between `0.0` (not pressed) and `1.0` (fully pressed).
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
