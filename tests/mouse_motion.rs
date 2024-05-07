@@ -88,7 +88,7 @@ fn mouse_move_dual_axis_mocking() {
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
     assert_eq!(events.drain().count(), 0);
 
-    let input = MouseMove::RAW;
+    let input = MouseMove::default();
     app.send_axis_values(input, [1.0, 0.0]);
 
     let mut events = app.world.resource_mut::<Events<MouseMotion>>();
@@ -198,9 +198,12 @@ fn mouse_move_single_axis() {
 #[test]
 fn mouse_move_dual_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(AxislikeTestAction::XY, MouseMove::RAW)]));
+    app.insert_resource(InputMap::new([(
+        AxislikeTestAction::XY,
+        MouseMove::default(),
+    )]));
 
-    let input = MouseMove::RAW;
+    let input = MouseMove::default();
     app.send_axis_values(input, [5.0, 0.0]);
     app.update();
 
@@ -219,10 +222,10 @@ fn mouse_move_discrete() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        MouseMove::DIGITAL,
+        MouseMove::default().digital(),
     )]));
 
-    let input = MouseMove::RAW;
+    let input = MouseMove::default();
     app.send_axis_values(input, [0.0, -2.0]);
     app.update();
 
@@ -246,12 +249,12 @@ fn mouse_drag() {
 
     input_map.insert(
         AxislikeTestAction::XY,
-        InputChord::from_single(MouseMove::RAW).with(MouseButton::Right),
+        InputChord::from_single(MouseMove::default()).with(MouseButton::Right),
     );
 
     app.insert_resource(input_map);
 
-    let input = MouseMove::RAW;
+    let input = MouseMove::default();
     app.send_axis_values(input, [5.0, 0.0]);
     app.press_input(MouseButton::Right);
     app.update();

@@ -29,6 +29,14 @@
 //! - [`AxisProcessor::pipeline`] or [`AxisProcessor::with_processor`] for [`AxisProcessor::Pipeline`].
 //! - [`DualAxisProcessor::pipeline`] or [`DualAxisProcessor::with_processor`] for [`DualAxisProcessor::Pipeline`].
 //!
+//! ## Digital Conversion
+//!
+//! Digital processors convert raw input values into discrete values,
+//! similar to [`f32::signum`] but returning `0.0` for zero values.
+//!
+//! - [`AxisProcessor::Digital`]: Single-axis digital conversion.
+//! - [`DualAxisProcessor::Digital`]: Dual-axis digital conversion.
+//!
 //! ## Inversion
 //!
 //! Inversion flips the sign of input values, resulting in a directional reversal of control.

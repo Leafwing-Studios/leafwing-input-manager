@@ -7,7 +7,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::{AxisDirection, AxisInputMode, DualAxisData};
+use crate::axislike::{AxisDirection, DualAxisData};
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -15,7 +15,7 @@ use crate::input_processing::{
 };
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{InputKind, UserInput};
+use crate::user_input::{InputControlKind, UserInput};
 
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
@@ -38,86 +38,109 @@ fn read_axis_value(input_streams: &InputStreams, axis: GamepadAxisType) -> f32 {
     }
 }
 
-/// Captures values from a specified [`GamepadAxisType`] on a specific direction,
-/// treated as a button press.
+/// Provides button-like behavior for a specific direction on a [`GamepadAxisType`].
+///
+/// # Behaviors
+///
+/// - Gamepad Selection: By default, reads from **any connected gamepad**.
+///     Use the [`InputMap::set_gamepad`] for specific ones.
+/// - Activation: Only if the axis is currently held in the chosen direction.
+/// - Single-Axis Value:
+///   - `1.0`: The input is currently active.
+///   - `0.0`: The input is inactive.
+///
+/// [`InputMap::set_gamepad`]: crate::input_map::InputMap::set_gamepad
+///
+/// ```rust,ignore
+/// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
+/// use bevy::input::gamepad::GamepadEvent;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let mut app = App::new();
+/// app.add_plugins(InputPlugin);
+///
+/// // Positive Y-axis movement on left stick
+/// let input = GamepadControlDirection::LEFT_UP;
+///
+/// // Movement in the opposite direction doesn't activate the input
+/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [-1.0]);
+/// app.update();
+/// assert!(!app.pressed(input));
+///
+/// // Movement in the chosen direction activates the input
+/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// app.update();
+/// assert!(app.pressed(input));
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct GamepadControlDirection {
-    /// The [`GamepadAxisType`] that this input tracks.
+    /// The axis that this input tracks.
     pub(crate) axis: GamepadAxisType,
 
-    /// The direction of the axis.
-    pub(crate) direction: AxisDirection,
+    /// The direction of the axis to monitor (positive or negative).
+    pub(crate) side: AxisDirection,
 }
 
 impl GamepadControlDirection {
-    /// Creates a negative [`GamepadControlDirection`] of the given `axis`.
+    /// Creates a [`GamepadControlDirection`] triggered by a negative value on the specified `axis`.
     #[inline]
     pub const fn negative(axis: GamepadAxisType) -> Self {
-        Self {
-            axis,
-            direction: AxisDirection::Negative,
-        }
+        let side = AxisDirection::Negative;
+        Self { axis, side }
     }
 
-    /// Creates a negative [`GamepadControlDirection`] of the given `axis`.
+    /// Creates a [`GamepadControlDirection`] triggered by a positive value on the specified `axis`.
     #[inline]
     pub const fn positive(axis: GamepadAxisType) -> Self {
-        Self {
-            axis,
-            direction: AxisDirection::Positive,
-        }
+        let side = AxisDirection::Positive;
+        Self { axis, side }
     }
 
-    /// The upward [`GamepadControlDirection`] of the left stick.
+    /// "Up" on the left analog stick (positive Y-axis movement).
     pub const LEFT_UP: Self = Self::positive(GamepadAxisType::LeftStickY);
 
-    /// The downward [`GamepadControlDirection`] of the left stick.
+    /// "Down" on the left analog stick (negative Y-axis movement).
     pub const LEFT_DOWN: Self = Self::negative(GamepadAxisType::LeftStickY);
 
-    /// The leftward [`GamepadControlDirection`] of the left stick.
+    /// "Left" on the left analog stick (negative X-axis movement).
     pub const LEFT_LEFT: Self = Self::negative(GamepadAxisType::LeftStickX);
 
-    /// The rightward [`GamepadControlDirection`] of the left stick.
+    /// "Right" on the left analog stick (positive X-axis movement).
     pub const LEFT_RIGHT: Self = Self::positive(GamepadAxisType::LeftStickX);
 
-    /// The upward [`GamepadControlDirection`] of the right stick.
+    /// "Up" on the right analog stick (positive Y-axis movement).
     pub const RIGHT_UP: Self = Self::positive(GamepadAxisType::RightStickY);
 
-    /// The downward [`GamepadControlDirection`] of the right stick.
+    /// "Down" on the right analog stick (positive Y-axis movement).
     pub const RIGHT_DOWN: Self = Self::negative(GamepadAxisType::RightStickY);
 
-    /// The leftward [`GamepadControlDirection`] of the right stick.
+    /// "Left" on the right analog stick (positive X-axis movement).
     pub const RIGHT_LEFT: Self = Self::negative(GamepadAxisType::RightStickX);
 
-    /// The rightward [`GamepadControlDirection`] of the right stick.
+    /// "Right" on the right analog stick (positive X-axis movement).
     pub const RIGHT_RIGHT: Self = Self::positive(GamepadAxisType::RightStickX);
 }
 
 #[serde_typetag]
 impl UserInput for GamepadControlDirection {
-    /// [`GamepadControlDirection`] always acts as a virtual button.
+    /// [`GamepadControlDirection`] acts as a virtual button.
     #[inline]
-    fn kind(&self) -> InputKind {
-        InputKind::Button
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Button
     }
 
     /// Checks if there is any recent stick movement along the specified direction.
-    ///
-    /// When a [`Gamepad`] is specified, only checks the movement on the specified gamepad.
-    /// Otherwise, checks the movement on any connected gamepads.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         let value = read_axis_value(input_streams, self.axis);
-        self.direction.is_active(value)
+        self.side.is_active(value)
     }
 
     /// Retrieves the amount of the stick movement along the specified direction,
     /// returning `0.0` for no movement and `1.0` for full movement.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
@@ -131,10 +154,9 @@ impl UserInput for GamepadControlDirection {
         None
     }
 
-    /// Returns a [`BasicInputs`] that only contains the [`GamepadControlDirection`] itself,
-    /// as it represents a simple virtual button.
+    /// [`GamepadControlDirection`] represents a simple virtual button.
     #[inline]
-    fn basic_inputs(&self) -> BasicInputs {
+    fn decompose(&self) -> BasicInputs {
         BasicInputs::Simple(Box::new(*self))
     }
 
@@ -145,18 +167,46 @@ impl UserInput for GamepadControlDirection {
     }
 }
 
-/// Captures values from a specified [`GamepadAxisType`].
+/// A wrapper around a specific [`GamepadAxisType`] (e.g., left stick X-axis, right stick Y-axis).
+///
+/// # Behaviors
+///
+/// - Gamepad Selection: By default, reads from **any connected gamepad**.
+///     Use the [`InputMap::set_gamepad`] for specific ones.
+/// - Raw Value: Captures the raw value on the axis, ranging from `-1.0` to `1.0`.
+/// - Value Processing: Configure a pipeline to modify the raw value before use,
+///     see [`WithAxisProcessingPipelineExt`] for details.
+/// - Activation: Only if the processed value is non-zero.
+///
+/// [`InputMap::set_gamepad`]: crate::input_map::InputMap::set_gamepad
+///
+/// ```rust,ignore
+/// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let mut app = App::new();
+/// app.add_plugins(InputPlugin);
+///
+/// // Y-axis movement on left stick
+/// let input = GamepadControlAxis::LEFT_Y;
+///
+/// // Movement on the chosen axis activates the input
+/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// app.update();
+/// assert_eq!(app.read_axis_values(input), [1.0]);
+///
+/// // You can configure a processing pipeline (e.g., doubling the value)
+/// let doubled = GamepadControlAxis::LEFT_Y.sensitivity(2.0);
+/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct GamepadControlAxis {
-    /// The [`GamepadAxisType`] that this input tracks.
+    /// The wrapped axis.
     pub(crate) axis: GamepadAxisType,
 
-    /// The method to interpret values on the axis,
-    /// either [`AxisInputMode::Analog`] or [`AxisInputMode::Digital`].
-    pub(crate) input_mode: AxisInputMode,
-
-    /// The [`AxisProcessor`] used to handle input values.
+    /// Processes input values.
     pub(crate) processor: AxisProcessor,
 }
 
@@ -165,69 +215,42 @@ impl GamepadControlAxis {
     /// No processing is applied to raw data from the gamepad.
     #[inline]
     pub const fn new(axis: GamepadAxisType) -> Self {
-        Self {
-            axis,
-            input_mode: AxisInputMode::Analog,
-            processor: AxisProcessor::None,
-        }
+        let processor = AxisProcessor::None;
+        Self { axis, processor }
     }
 
-    /// Creates a [`GamepadControlAxis`] for discrete input from the given axis.
-    /// No processing is applied to raw data from the gamepad.
-    #[inline]
-    pub const fn digital(axis: GamepadAxisType) -> Self {
-        Self {
-            axis,
-            input_mode: AxisInputMode::Digital,
-            processor: AxisProcessor::None,
-        }
-    }
-
-    /// The horizontal [`GamepadControlAxis`] for continuous input from the left stick.
+    /// The horizontal axis (X-axis) of the left stick.
     /// No processing is applied to raw data from the gamepad.
     pub const LEFT_X: Self = Self::new(GamepadAxisType::LeftStickX);
 
-    /// The vertical [`GamepadControlAxis`] for continuous input from the left stick.
+    /// The vertical axis (Y-axis) of the left stick.
     /// No processing is applied to raw data from the gamepad.
     pub const LEFT_Y: Self = Self::new(GamepadAxisType::LeftStickY);
 
-    /// The horizontal [`GamepadControlAxis`] for continuous input from the right stick.
+    /// The left `Z` button. No processing is applied to raw data from the gamepad.
+    pub const LEFT_Z: Self = Self::new(GamepadAxisType::LeftZ);
+
+    /// The horizontal axis (X-axis) of the right stick.
     /// No processing is applied to raw data from the gamepad.
     pub const RIGHT_X: Self = Self::new(GamepadAxisType::RightStickX);
 
-    /// The vertical [`GamepadControlAxis`] for continuous input from the right stick.
+    /// The vertical axis (Y-axis) of the right stick.
     /// No processing is applied to raw data from the gamepad.
     pub const RIGHT_Y: Self = Self::new(GamepadAxisType::RightStickY);
 
-    /// The horizontal [`GamepadControlAxis`] for discrete input from the left stick.
-    /// No processing is applied to raw data from the gamepad.
-    pub const LEFT_X_DIGITAL: Self = Self::digital(GamepadAxisType::LeftStickX);
-
-    /// The vertical [`GamepadControlAxis`] for discrete input from the left stick.
-    /// No processing is applied to raw data from the gamepad.
-    pub const LEFT_Y_DIGITAL: Self = Self::digital(GamepadAxisType::LeftStickY);
-
-    /// The horizontal [`GamepadControlAxis`] for discrete input from the right stick.
-    /// No processing is applied to raw data from the gamepad.
-    pub const RIGHT_X_DIGITAL: Self = Self::digital(GamepadAxisType::RightStickX);
-
-    /// The vertical [`GamepadControlAxis`] for discrete input from the right stick.
-    /// No processing is applied to raw data from the gamepad.
-    pub const RIGHT_Y_DIGITAL: Self = Self::digital(GamepadAxisType::RightStickY);
+    /// The right `Z` button. No processing is applied to raw data from the gamepad.
+    pub const RIGHT_Z: Self = Self::new(GamepadAxisType::RightZ);
 }
 
 #[serde_typetag]
 impl UserInput for GamepadControlAxis {
-    /// [`GamepadControlAxis`] always acts as an axis input.
+    /// [`GamepadControlAxis`] acts as an axis input.
     #[inline]
-    fn kind(&self) -> InputKind {
-        InputKind::Axis
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Axis
     }
 
     /// Checks if this axis has a non-zero value.
-    ///
-    /// When a [`Gamepad`] is specified, only checks if the axis is active on the specified gamepad.
-    /// Otherwise, checks if the axis is active on any connected gamepads.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
@@ -235,14 +258,10 @@ impl UserInput for GamepadControlAxis {
     }
 
     /// Retrieves the current value of this axis after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         let value = read_axis_value(input_streams, self.axis);
-        let value = self.input_mode.axis_value(value);
         self.processor.process(value)
     }
 
@@ -253,9 +272,9 @@ impl UserInput for GamepadControlAxis {
         None
     }
 
-    /// Returns both positive and negative [`GamepadControlDirection`]s to represent the movement.
+    /// [`GamepadControlAxis`] represents a composition of two [`GamepadControlDirection`]s.
     #[inline]
-    fn basic_inputs(&self) -> BasicInputs {
+    fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
             Box::new(GamepadControlDirection::negative(self.axis)),
             Box::new(GamepadControlDirection::positive(self.axis)),
@@ -289,94 +308,87 @@ impl WithAxisProcessingPipelineExt for GamepadControlAxis {
     }
 }
 
-/// Captures values from two specified [`GamepadAxisType`]s as the X and Y axes.
+/// A gamepad stick (e.g., left stick and right stick).
+///
+/// # Behaviors
+///
+/// - Gamepad Selection: By default, reads from **any connected gamepad**.
+///     Use the [`InputMap::set_gamepad`] for specific ones.
+/// - Raw Value: Captures the raw value on both axes, ranging from `-1.0` to `1.0`.
+/// - Value Processing: Configure a pipeline to modify the raw value before use,
+///     see [`WithDualAxisProcessingPipelineExt`] for details.
+/// - Activation: Only if its processed value is non-zero on either axis.
+/// - Single-Axis Value: Reports the magnitude of the processed value.
+///
+/// [`InputMap::set_gamepad`]: crate::input_map::InputMap::set_gamepad
+///
+/// ```rust,ignore
+/// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let mut app = App::new();
+/// app.add_plugins(InputPlugin);
+///
+/// // Left stick
+/// let input = GamepadStick::LEFT;
+///
+/// // Movement on either axis activates the input
+/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// app.update();
+/// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
+///
+/// // You can configure a processing pipeline (e.g., doubling the Y value)
+/// let doubled = GamepadStick::LEFT.sensitivity_y(2.0);
+/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct GamepadStick {
-    /// The [`GamepadAxisType`] used for the X-axis.
+    /// Horizontal movement of the stick.
     pub(crate) x: GamepadAxisType,
 
-    /// The [`GamepadAxisType`] used for the Y-axis.
+    /// Vertical movement of the stick.
     pub(crate) y: GamepadAxisType,
 
-    /// The method to interpret values on both axes,
-    /// either [`AxisInputMode::Analog`] or [`AxisInputMode::Digital`].
-    pub(crate) input_mode: AxisInputMode,
-
-    /// The [`DualAxisProcessor`] used to handle input values.
+    /// Processes input values.
     pub(crate) processor: DualAxisProcessor,
 }
 
 impl GamepadStick {
-    /// Creates a [`GamepadStick`] for continuous input from two given axes as the X and Y axes.
-    /// No processing is applied to raw data from the gamepad.
-    #[inline]
-    pub const fn new(x: GamepadAxisType, y: GamepadAxisType) -> Self {
-        Self {
-            x,
-            y,
-            input_mode: AxisInputMode::Analog,
-            processor: DualAxisProcessor::None,
-        }
-    }
+    /// The left gamepad stick. No processing is applied to raw data from the gamepad.
+    pub const LEFT: Self = Self {
+        x: GamepadAxisType::LeftStickX,
+        y: GamepadAxisType::LeftStickY,
+        processor: DualAxisProcessor::None,
+    };
 
-    /// Creates a [`GamepadStick`] for discrete input from two given axes as the X and Y axes.
-    /// No processing is applied to raw data from the gamepad.
-    #[inline]
-    pub const fn digital(x: GamepadAxisType, y: GamepadAxisType) -> Self {
-        Self {
-            x,
-            y,
-            input_mode: AxisInputMode::Analog,
-            processor: DualAxisProcessor::None,
-        }
-    }
-
-    /// The left [`GamepadStick`] for continuous input on the X and Y axes.
-    /// No processing is applied to raw data from the gamepad.
-    pub const LEFT: Self = Self::new(GamepadAxisType::LeftStickX, GamepadAxisType::LeftStickY);
-
-    /// The right [`GamepadStick`] for continuous input on the X and Y axes.
-    /// No processing is applied to raw data from the gamepad.
-    pub const RIGHT: Self = Self::new(GamepadAxisType::RightStickX, GamepadAxisType::RightStickY);
-
-    /// The left [`GamepadStick`] for discrete input from the left stick on the X and Y axes.
-    /// No processing is applied to raw data from the gamepad.
-    pub const LEFT_DIGITAL: Self =
-        Self::digital(GamepadAxisType::LeftStickX, GamepadAxisType::LeftStickY);
-
-    /// The right [`GamepadStick`] for discrete input from the right stick on the X and Y axes.
-    /// No processing is applied to raw data from the gamepad.
-    pub const RIGHT_DIGITAL: Self =
-        Self::digital(GamepadAxisType::RightStickX, GamepadAxisType::RightStickY);
+    /// The right gamepad stick. No processing is applied to raw data from the gamepad.
+    pub const RIGHT: Self = Self {
+        x: GamepadAxisType::RightStickX,
+        y: GamepadAxisType::RightStickY,
+        processor: DualAxisProcessor::None,
+    };
 
     /// Retrieves the current X and Y values of this stick after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
         let x = read_axis_value(input_streams, self.x);
         let y = read_axis_value(input_streams, self.y);
-        let value = Vec2::new(x, y);
-        let value = self.input_mode.dual_axis_value(value);
-        self.processor.process(value)
+        self.processor.process(Vec2::new(x, y))
     }
 }
 
 #[serde_typetag]
 impl UserInput for GamepadStick {
-    /// [`GamepadStick`] always acts as a dual-axis input.
+    /// [`GamepadStick`] acts as a dual-axis input.
     #[inline]
-    fn kind(&self) -> InputKind {
-        InputKind::DualAxis
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::DualAxis
     }
 
     /// Checks if this stick has a non-zero magnitude.
-    ///
-    /// When a [`Gamepad`] is specified, only checks if the stick is active on the specified gamepad.
-    /// Otherwise, checks if the stick is active on any connected gamepads.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
@@ -384,20 +396,14 @@ impl UserInput for GamepadStick {
     }
 
     /// Retrieves the magnitude of the value from this stick after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         let value = self.processed_value(input_streams);
-        self.input_mode.dual_axis_magnitude(value)
+        value.length()
     }
 
     /// Retrieves the current X and Y values of this stick after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
@@ -405,9 +411,9 @@ impl UserInput for GamepadStick {
         Some(DualAxisData::from_xy(value))
     }
 
-    /// Returns four [`GamepadControlDirection`]s to represent the movement.
+    /// [`GamepadStick`] represents a composition of four [`GamepadControlDirection`]s.
     #[inline]
-    fn basic_inputs(&self) -> BasicInputs {
+    fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
             Box::new(GamepadControlDirection::negative(self.x)),
             Box::new(GamepadControlDirection::positive(self.x)),
@@ -485,16 +491,13 @@ fn button_value_any(input_streams: &InputStreams, button: GamepadButtonType) -> 
 // Built-in support for Bevy's GamepadButtonType.
 #[serde_typetag]
 impl UserInput for GamepadButtonType {
-    /// [`GamepadButtonType`] always acts as a button.
+    /// [`GamepadButtonType`] acts as a button.
     #[inline]
-    fn kind(&self) -> InputKind {
-        InputKind::Button
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Button
     }
 
     /// Checks if the specified button is currently pressed down.
-    ///
-    /// When a [`Gamepad`] is specified, only checks if the button is pressed on the specified gamepad.
-    /// Otherwise, checks if the button is pressed on any connected gamepads.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
@@ -509,9 +512,6 @@ impl UserInput for GamepadButtonType {
     }
 
     /// Retrieves the strength of the button press for the specified button.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
@@ -532,7 +532,7 @@ impl UserInput for GamepadButtonType {
     /// Creates a [`BasicInputs`] that only contains the [`GamepadButtonType`] itself,
     /// as it represents a simple physical button.
     #[inline]
-    fn basic_inputs(&self) -> BasicInputs {
+    fn decompose(&self) -> BasicInputs {
         BasicInputs::Simple(Box::new(*self))
     }
 
@@ -543,26 +543,59 @@ impl UserInput for GamepadButtonType {
     }
 }
 
-/// A virtual single-axis control constructed from two [`GamepadButtonType`]s.
-/// One button represents the negative direction (typically left or down),
-/// while the other represents the positive direction (typically right or up).
+/// A virtual single-axis control constructed by combining two [`GamepadButtonType`]s.
+/// One button represents the negative direction (left for the X-axis, down for the Y-axis),
+/// while the other represents the positive direction (right for the X-axis, up for the Y-axis).
+///
+/// # Behaviors
+///
+/// - Gamepad Selection: By default, reads from **any connected gamepad**.
+///     Use the [`InputMap::set_gamepad`] for specific ones.
+/// - Raw Value:
+///   - `-1.0`: Only the negative button is currently pressed.
+///   - `1.0`: Only the positive button is currently pressed.
+///   - `0.0`: Neither button is pressed, or both are pressed simultaneously.
+/// - Value Processing: Configure a pipeline to modify the raw value before use,
+///     see [`WithAxisProcessingPipelineExt`] for details.
+/// - Activation: Only if the processed value is non-zero.
+///
+/// [`InputMap::set_gamepad`]: crate::input_map::InputMap::set_gamepad
+///
+/// ```rust,ignore
+/// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let mut app = App::new();
+/// app.add_plugins(InputPlugin);
+///
+/// // Define a virtual Y-axis using D-pad "up" and "down" buttons
+/// let axis = GamepadVirtualAxis::DPAD_Y;
+///
+/// // Pressing either button activates the input
+/// app.press_input(GamepadButtonType::DPadUp);
+/// app.update();
+/// assert_eq!(app.read_axis_values(axis), [1.0]);
+///
+/// // You can configure a processing pipeline (e.g., doubling the value)
+/// let doubled = GamepadVirtualAxis::DPAD_Y.sensitivity(2.0);
+/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct GamepadVirtualAxis {
-    /// The [`GamepadButtonType`] used for the negative direction (typically left or down).
+    /// The button that represents the negative direction.
     pub(crate) negative: GamepadButtonType,
 
-    /// The [`GamepadButtonType`] used for the positive direction (typically right or up).
+    /// The button that represents the positive direction.
     pub(crate) positive: GamepadButtonType,
 
-    /// The [`AxisProcessor`] used to handle input values.
+    /// Processes input values.
     pub(crate) processor: AxisProcessor,
 }
 
 impl GamepadVirtualAxis {
     /// Creates a new [`GamepadVirtualAxis`] with two given [`GamepadButtonType`]s.
-    /// One button represents the negative direction (typically left or down),
-    /// while the other represents the positive direction (typically right or up).
     /// No processing is applied to raw data from the gamepad.
     #[inline]
     pub const fn new(negative: GamepadButtonType, positive: GamepadButtonType) -> Self {
@@ -604,16 +637,13 @@ impl GamepadVirtualAxis {
 
 #[serde_typetag]
 impl UserInput for GamepadVirtualAxis {
-    /// [`GamepadVirtualAxis`] always acts as an axis input.
+    /// [`GamepadVirtualAxis`] acts as an axis input.
     #[inline]
-    fn kind(&self) -> InputKind {
-        InputKind::Axis
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Axis
     }
 
     /// Checks if this axis has a non-zero value after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only checks if the buttons are pressed on the specified gamepad.
-    /// Otherwise, checks if the buttons are pressed on any connected gamepads.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
@@ -621,9 +651,6 @@ impl UserInput for GamepadVirtualAxis {
     }
 
     /// Retrieves the current value of this axis after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
@@ -648,7 +675,7 @@ impl UserInput for GamepadVirtualAxis {
 
     /// Returns the two [`GamepadButtonType`]s used by this axis.
     #[inline]
-    fn basic_inputs(&self) -> BasicInputs {
+    fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
     }
 
@@ -683,22 +710,57 @@ impl WithAxisProcessingPipelineExt for GamepadVirtualAxis {
 /// Each button represents a specific direction (up, down, left, right),
 /// functioning similarly to a directional pad (D-pad) on both X and Y axes,
 /// and offering intermediate diagonals by means of two-button combinations.
+///
+/// # Behaviors
+///
+/// - Gamepad Selection: By default, reads from **any connected gamepad**.
+///     Use the [`InputMap::set_gamepad`] for specific ones.
+/// - Raw Value: Each axis behaves as follows:
+///   - `-1.0`: Only the negative button is currently pressed (Down/Left).
+///   - `1.0`: Only the positive button is currently pressed (Up/Right).
+///   - `0.0`: Neither button is pressed, or both buttons on the same axis are pressed simultaneously.
+/// - Value Processing: Configure a pipeline to modify the raw value before use,
+///     see [`WithDualAxisProcessingPipelineExt`] for details.
+/// - Activation: Only if the processed value is non-zero on either axis.
+///
+/// [`InputMap::set_gamepad`]: crate::input_map::InputMap::set_gamepad
+///
+/// ```rust,ignore
+/// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let mut app = App::new();
+/// app.add_plugins(InputPlugin);
+///
+/// // Define a virtual D-pad using the physical D-pad buttons
+/// let input = GamepadVirtualDPad::DPAD;
+///
+/// // Pressing a D-pad button activates the corresponding axis
+/// app.press_input(GamepadButtonType::DPadUp);
+/// app.update();
+/// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
+///
+/// // You can configure a processing pipeline (e.g., doubling the Y value)
+/// let doubled = GamepadVirtualDPad::DPAD.sensitivity_y(2.0);
+/// assert_eq!(app.read_axis_values(doubled), [0.0, 2.0]);
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct GamepadVirtualDPad {
-    /// The [`GamepadButtonType`] used for the upward direction.
+    /// The button for the upward direction.
     pub(crate) up: GamepadButtonType,
 
-    /// The [`GamepadButtonType`] used for the downward direction.
+    /// The button for the downward direction.
     pub(crate) down: GamepadButtonType,
 
-    /// The [`GamepadButtonType`] used for the leftward direction.
+    /// The button for the leftward direction.
     pub(crate) left: GamepadButtonType,
 
-    /// The [`GamepadButtonType`] used for the rightward direction.
+    /// The button for the rightward direction.
     pub(crate) right: GamepadButtonType,
 
-    /// The [`DualAxisProcessor`] used to handle input values.
+    /// Processes input values.
     pub(crate) processor: DualAxisProcessor,
 }
 
@@ -748,9 +810,6 @@ impl GamepadVirtualDPad {
     );
 
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[inline]
     fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
         let value = if let Some(gamepad) = input_streams.associated_gamepad {
@@ -772,16 +831,13 @@ impl GamepadVirtualDPad {
 
 #[serde_typetag]
 impl UserInput for GamepadVirtualDPad {
-    /// [`GamepadVirtualDPad`] always acts as a dual-axis input.
+    /// [`GamepadVirtualDPad`] acts as a dual-axis input.
     #[inline]
-    fn kind(&self) -> InputKind {
-        InputKind::DualAxis
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::DualAxis
     }
 
     /// Checks if this D-pad has a non-zero magnitude after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only checks if the button is pressed on the specified gamepad.
-    /// Otherwise, checks if the button is pressed on any connected gamepads.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
@@ -789,9 +845,6 @@ impl UserInput for GamepadVirtualDPad {
     }
 
     /// Retrieves the magnitude of the value from this D-pad after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
@@ -799,9 +852,6 @@ impl UserInput for GamepadVirtualDPad {
     }
 
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processor.
-    ///
-    /// When a [`Gamepad`] is specified, only retrieves the value on the specified gamepad.
-    /// Otherwise, retrieves the value on any connected gamepads.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
@@ -811,7 +861,7 @@ impl UserInput for GamepadVirtualDPad {
 
     /// Returns the four [`GamepadButtonType`]s used by this D-pad.
     #[inline]
-    fn basic_inputs(&self) -> BasicInputs {
+    fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
             Box::new(self.up),
             Box::new(self.down),
@@ -903,44 +953,44 @@ mod tests {
     #[test]
     fn test_gamepad_axes() {
         let left_up = GamepadControlDirection::LEFT_UP;
-        assert_eq!(left_up.kind(), InputKind::Button);
+        assert_eq!(left_up.kind(), InputControlKind::Button);
         let raw_inputs = RawInputs::from_gamepad_control_directions([left_up]);
         assert_eq!(left_up.raw_inputs(), raw_inputs);
 
         // The opposite of left up
         let left_down = GamepadControlDirection::LEFT_DOWN;
-        assert_eq!(left_down.kind(), InputKind::Button);
+        assert_eq!(left_down.kind(), InputControlKind::Button);
         let raw_inputs = RawInputs::from_gamepad_control_directions([left_up]);
         assert_eq!(left_up.raw_inputs(), raw_inputs);
 
         let left_x = GamepadControlAxis::LEFT_X;
-        assert_eq!(left_x.kind(), InputKind::Axis);
+        assert_eq!(left_x.kind(), InputControlKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_axes([left_x.axis]);
         assert_eq!(left_x.raw_inputs(), raw_inputs);
 
         let left_y = GamepadControlAxis::LEFT_Y;
-        assert_eq!(left_y.kind(), InputKind::Axis);
+        assert_eq!(left_y.kind(), InputControlKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_axes([left_y.axis]);
         assert_eq!(left_y.raw_inputs(), raw_inputs);
 
         let left = GamepadStick::LEFT;
-        assert_eq!(left.kind(), InputKind::DualAxis);
+        assert_eq!(left.kind(), InputControlKind::DualAxis);
         let raw_inputs = RawInputs::from_gamepad_axes([left.x, left.y]);
         assert_eq!(left.raw_inputs(), raw_inputs);
 
         // Up; but for the other stick
         let right_up = GamepadControlDirection::RIGHT_DOWN;
-        assert_eq!(right_up.kind(), InputKind::Button);
+        assert_eq!(right_up.kind(), InputControlKind::Button);
         let raw_inputs = RawInputs::from_gamepad_control_directions([right_up]);
         assert_eq!(right_up.raw_inputs(), raw_inputs);
 
         let right_y = GamepadControlAxis::RIGHT_Y;
-        assert_eq!(right_y.kind(), InputKind::Axis);
+        assert_eq!(right_y.kind(), InputControlKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_axes([right_y.axis]);
         assert_eq!(right_y.raw_inputs(), raw_inputs);
 
         let right = GamepadStick::RIGHT;
-        assert_eq!(right.kind(), InputKind::DualAxis);
+        assert_eq!(right.kind(), InputControlKind::DualAxis);
         let raw_inputs = RawInputs::from_gamepad_axes([right_y.axis]);
         assert_eq!(right_y.raw_inputs(), raw_inputs);
 
@@ -1008,37 +1058,37 @@ mod tests {
     #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
     fn test_gamepad_buttons() {
         let up = GamepadButtonType::DPadUp;
-        assert_eq!(up.kind(), InputKind::Button);
+        assert_eq!(up.kind(), InputControlKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([up]);
         assert_eq!(up.raw_inputs(), raw_inputs);
 
         let left = GamepadButtonType::DPadLeft;
-        assert_eq!(left.kind(), InputKind::Button);
+        assert_eq!(left.kind(), InputControlKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([left]);
         assert_eq!(left.raw_inputs(), raw_inputs);
 
         let down = GamepadButtonType::DPadDown;
-        assert_eq!(left.kind(), InputKind::Button);
+        assert_eq!(left.kind(), InputControlKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([down]);
         assert_eq!(down.raw_inputs(), raw_inputs);
 
         let right = GamepadButtonType::DPadRight;
-        assert_eq!(left.kind(), InputKind::Button);
+        assert_eq!(left.kind(), InputControlKind::Button);
         let raw_inputs = RawInputs::from_gamepad_buttons([right]);
         assert_eq!(right.raw_inputs(), raw_inputs);
 
         let x_axis = GamepadVirtualAxis::DPAD_X;
-        assert_eq!(x_axis.kind(), InputKind::Axis);
+        assert_eq!(x_axis.kind(), InputControlKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_buttons([left, right]);
         assert_eq!(x_axis.raw_inputs(), raw_inputs);
 
         let y_axis = GamepadVirtualAxis::DPAD_Y;
-        assert_eq!(y_axis.kind(), InputKind::Axis);
+        assert_eq!(y_axis.kind(), InputControlKind::Axis);
         let raw_inputs = RawInputs::from_gamepad_buttons([down, up]);
         assert_eq!(y_axis.raw_inputs(), raw_inputs);
 
         let dpad = GamepadVirtualDPad::DPAD;
-        assert_eq!(dpad.kind(), InputKind::DualAxis);
+        assert_eq!(dpad.kind(), InputControlKind::DualAxis);
         let raw_inputs = RawInputs::from_gamepad_buttons([up, down, left, right]);
         assert_eq!(dpad.raw_inputs(), raw_inputs);
 

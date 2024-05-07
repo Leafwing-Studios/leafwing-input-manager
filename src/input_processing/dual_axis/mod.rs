@@ -7,6 +7,8 @@ use bevy::prelude::{BVec2, Reflect, Vec2};
 use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
+use crate::input_processing::AxisProcessor;
+
 pub use self::circle::*;
 pub use self::custom::*;
 pub use self::range::*;
@@ -24,6 +26,31 @@ pub enum DualAxisProcessor {
     /// No processor is applied.
     #[default]
     None,
+
+    /// Converts input values into three discrete values along each axis,
+    /// similar to [`Vec2::signum()`] but returning `0.0` for zero values.
+    ///
+    /// ```rust
+    /// use bevy::prelude::*;
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// // 1.0 for positive values
+    /// assert_eq!(DualAxisProcessor::Digital.process(Vec2::splat(2.5)), Vec2::ONE);
+    /// assert_eq!(DualAxisProcessor::Digital.process(Vec2::splat(0.5)), Vec2::ONE);
+    ///
+    /// // 0.0 for zero values
+    /// assert_eq!(DualAxisProcessor::Digital.process(Vec2::ZERO), Vec2::ZERO);
+    /// assert_eq!(DualAxisProcessor::Digital.process(-Vec2::ZERO), Vec2::ZERO);
+    ///
+    /// // -1.0 for negative values
+    /// assert_eq!(DualAxisProcessor::Digital.process(Vec2::splat(-0.5)), Vec2::NEG_ONE);
+    /// assert_eq!(DualAxisProcessor::Digital.process(Vec2::splat(-2.5)), Vec2::NEG_ONE);
+    ///
+    /// // Mixed digital values
+    /// assert_eq!(DualAxisProcessor::Digital.process(Vec2::new(0.5, -0.5)), Vec2::new(1.0, -1.0));
+    /// assert_eq!(DualAxisProcessor::Digital.process(Vec2::new(-0.5, 0.5)), Vec2::new(-1.0, 1.0));
+    /// ```
+    Digital,
 
     /// A wrapper around [`DualAxisInverted`] to represent inversion.
     Inverted(DualAxisInverted),
@@ -95,6 +122,10 @@ impl DualAxisProcessor {
     pub fn process(&self, input_value: Vec2) -> Vec2 {
         match self {
             Self::None => input_value,
+            Self::Digital => Vec2::new(
+                AxisProcessor::Digital.process(input_value.x),
+                AxisProcessor::Digital.process(input_value.y),
+            ),
             Self::Inverted(inversion) => inversion.invert(input_value),
             Self::Sensitivity(sensitivity) => sensitivity.scale(input_value),
             Self::ValueBounds(bounds) => bounds.clamp(input_value),
@@ -157,6 +188,13 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
 
     /// Appends the given [`DualAxisProcessor`] as the next processing step.
     fn with_processor(self, processor: impl Into<DualAxisProcessor>) -> Self;
+
+    /// Appends an [`DualAxisProcessor::Digital`] processor as the next processing step,
+    /// similar to [`Vec2::signum`] but returning `0.0` for zero values.
+    #[inline]
+    fn digital(self) -> Self {
+        self.with_processor(DualAxisProcessor::Digital)
+    }
 
     /// Appends a [`DualAxisInverted::ALL`] processor as the next processing step,
     /// flipping the sign of values on both axes.

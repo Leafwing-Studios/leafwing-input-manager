@@ -46,7 +46,7 @@ use crate::Actionlike;
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputKind;
+/// use leafwing_input_manager::user_input::InputControlKind;
 ///
 /// // Define your actions.
 /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
@@ -109,7 +109,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn new<U: UserInput>(bindings: impl IntoIterator<Item = (A, U)>) -> Self {
+    pub fn new(bindings: impl IntoIterator<Item = (A, impl UserInput)>) -> Self {
         bindings
             .into_iter()
             .fold(Self::default(), |map, (action, input)| {
@@ -134,10 +134,10 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn with_one_to_many<U: UserInput>(
+    pub fn with_one_to_many(
         mut self,
         action: A,
-        inputs: impl IntoIterator<Item = U>,
+        inputs: impl IntoIterator<Item = impl UserInput>,
     ) -> Self {
         self.insert_one_to_many(action, inputs);
         self
@@ -149,9 +149,9 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn with_multiple<U: UserInput>(
+    pub fn with_multiple(
         mut self,
-        bindings: impl IntoIterator<Item = (A, U)>,
+        bindings: impl IntoIterator<Item = (A, impl UserInput)>,
     ) -> Self {
         self.insert_multiple(bindings);
         self
@@ -195,10 +195,10 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn insert_one_to_many<U: UserInput>(
+    pub fn insert_one_to_many(
         &mut self,
         action: A,
-        inputs: impl IntoIterator<Item = U>,
+        inputs: impl IntoIterator<Item = impl UserInput>,
     ) -> &mut Self {
         let inputs = inputs
             .into_iter()
@@ -221,9 +221,9 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn insert_multiple<U: UserInput>(
+    pub fn insert_multiple(
         &mut self,
-        bindings: impl IntoIterator<Item = (A, U)>,
+        bindings: impl IntoIterator<Item = (A, impl UserInput)>,
     ) -> &mut Self {
         for (action, input) in bindings.into_iter() {
             self.insert(action, input);

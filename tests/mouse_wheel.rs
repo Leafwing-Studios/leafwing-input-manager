@@ -89,7 +89,7 @@ fn mouse_scroll_dual_axis_mocking() {
     let mut events = app.world.resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
-    let input = MouseScroll::RAW;
+    let input = MouseScroll::default();
     app.send_axis_values(input, [-1.0]);
 
     let mut events = app.world.resource_mut::<Events<MouseWheel>>();
@@ -199,9 +199,12 @@ fn mouse_scroll_single_axis() {
 #[test]
 fn mouse_scroll_dual_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(AxislikeTestAction::XY, MouseScroll::RAW)]));
+    app.insert_resource(InputMap::new([(
+        AxislikeTestAction::XY,
+        MouseScroll::default(),
+    )]));
 
-    let input = MouseScroll::RAW;
+    let input = MouseScroll::default();
     app.send_axis_values(input, [5.0, 0.0]);
     app.update();
 
@@ -220,10 +223,10 @@ fn mouse_scroll_discrete() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        MouseScroll::DIGITAL,
+        MouseScroll::default().digital(),
     )]));
 
-    let input = MouseScroll::RAW;
+    let input = MouseScroll::default();
     app.send_axis_values(input, [0.0, -2.0]);
     app.update();
 

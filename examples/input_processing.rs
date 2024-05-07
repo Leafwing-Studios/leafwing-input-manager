@@ -45,7 +45,7 @@ fn spawn_player(mut commands: Commands) {
         .with(
             Action::LookAround,
             // You can also use a sequence of processors as the processing pipeline.
-            MouseMove::RAW.with_processor(DualAxisProcessor::pipeline([
+            MouseMove::default().with_processor(DualAxisProcessor::pipeline([
                 // The first processor is a circular deadzone.
                 CircleDeadZone::new(0.1).into(),
                 // The next processor doubles inputs normalized by the deadzone.

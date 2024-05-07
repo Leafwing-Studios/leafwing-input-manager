@@ -47,8 +47,7 @@ use crate::user_input::*;
 ///
 /// let mut app = App::new();
 ///
-/// // This functionality requires Bevy's InputPlugin to be present in your plugin set.
-/// // If you included the `DefaultPlugins`, then InputPlugin is already included.
+/// // This functionality requires Bevy's InputPlugin (included with DefaultPlugins)
 /// app.add_plugins(InputPlugin);
 ///
 /// // Press a key press directly.
@@ -62,7 +61,7 @@ use crate::user_input::*;
 /// app.send_axis_values(MouseScrollAxis::Y, [5.0]);
 ///
 /// // Send values to two axes.
-/// app.send_axis_values(MouseMove::RAW, [5.0, 8.0]);
+/// app.send_axis_values(MouseMove::default(), [5.0, 8.0]);
 ///
 /// // Release or deactivate an input.
 /// app.release_input(KeyCode::KeyR);
@@ -78,7 +77,7 @@ pub trait MockInput {
     /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
-    /// like [`KeyCode`]s, [`KeyboardKey`]s, and [`InputChord`]s.
+    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`InputChord`]s.
     /// Axial inputs (e.g., analog thumb sticks) aren't affected.
     /// Use [`Self::send_axis_values`] for those.
     ///
@@ -103,7 +102,7 @@ pub trait MockInput {
     /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
-    /// like [`KeyCode`]s, [`KeyboardKey`]s, and [`InputChord`]s.
+    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`InputChord`]s.
     /// Axial inputs (e.g., analog thumb sticks) aren't affected.
     /// Use [`Self::send_axis_values_as_gamepad`] for those.
     ///
@@ -124,7 +123,7 @@ pub trait MockInput {
     /// Missing axis values default to `0.0`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
-    /// like [`MouseScrollAxis::Y`], [`MouseMove::RAW`] and [`GamepadStick::LEFT`].
+    /// like [`MouseScrollAxis::Y`], [`MouseMove`] and [`GamepadStick::LEFT`].
     /// Non-axial inputs (e.g., keys and buttons) aren't affected;
     /// the current value will be retained for the next encountered axis.
     /// Use [`Self::press_input`] for those.
@@ -144,7 +143,7 @@ pub trait MockInput {
     /// Missing axis values default to `0.0`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
-    /// like [`MouseScrollAxis::Y`], [`MouseMove::RAW`] and [`GamepadStick::LEFT`].
+    /// like [`MouseScrollAxis::Y`], [`MouseMove`] and [`GamepadStick::LEFT`].
     /// Non-axial inputs (e.g., keys and buttons) aren't affected;
     /// the current value will be retained for the next encountered axis.
     /// Use [`Self::press_input_as_gamepad`] for those.
@@ -180,22 +179,69 @@ pub trait MockInput {
     fn reset_inputs(&mut self);
 }
 
-/// Query [`ButtonInput`] state directly for testing purposes.
+/// Query input state directly for testing purposes.
 ///
 /// In game code, you should (almost) always be using [`ActionState`](crate::action_state::ActionState)
 /// methods instead.
+///
+/// # Examples
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::input_mocking::QueryInput;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let mut app = App::new();
+///
+/// // This functionality requires Bevy's InputPlugin (included with DefaultPlugins)
+/// app.add_plugins(InputPlugin);
+///
+/// // Check if a key is currently pressed down.
+/// let pressed = app.pressed(KeyCode::KeyB);
+///
+/// // Read the current vertical mouse scroll value.
+/// let value = app.read_axis_values(MouseScrollAxis::Y);
+///
+/// // Read the current changes in relative mouse X and Y coordinates.
+/// let values = app.read_axis_values(MouseMove::default());
+/// let x = values[0];
+/// let y = values[1];
+/// ```
 pub trait QueryInput {
-    /// Checks if the `input` is currently pressed.
+    /// Checks if the `input` is currently pressed or active.
     ///
-    /// This method is intended as a convenience for testing; check the [`ButtonInput`] resource directly,
-    /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
+    /// This method is intended as a convenience for testing;
+    /// use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn pressed(&self, input: impl UserInput) -> bool;
 
-    /// Checks if the `input` is currently pressed the specified [`Gamepad`].
+    /// Checks if the `input` is currently pressed or active on the specified [`Gamepad`].
     ///
-    /// This method is intended as a convenience for testing; check the [`ButtonInput`] resource directly,
-    /// or use an [`InputMap`](crate::input_map::InputMap) in real code.
+    /// This method is intended as a convenience for testing;
+    /// use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool;
+
+    /// Retrieves the values on all axes represented by the `input`.
+    ///
+    /// Binary inputs (e.g., keys and buttons) are treated like single-axis inputs,
+    /// typically returning a value between `0.0` (not pressed) and `1.0` (fully pressed).
+    ///
+    /// This method is intended as a convenience for testing;
+    /// use an [`InputMap`](crate::input_map::InputMap) in real code.
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32>;
+
+    /// Retrieves the values on all axes represented by the `input` on the specified [`Gamepad`].
+    ///
+    /// Binary inputs (e.g., keys and buttons) are treated like single-axis inputs,
+    /// typically returning a value between `0.0` (not pressed) and `1.0` (fully pressed).
+    ///
+    /// This method is intended as a convenience for testing;
+    /// use an [`InputMap`](crate::input_map::InputMap) in real code.
+    fn read_axis_values_on_gamepad(
+        &self,
+        input: impl UserInput,
+        gamepad: Option<Gamepad>,
+    ) -> Vec<f32>;
 }
 
 /// Send fake UI interaction for testing purposes.
@@ -245,7 +291,7 @@ impl MockInput for MutableInputStreams<'_> {
                 self.send_gamepad_axis_value(
                     gamepad,
                     &direction.axis,
-                    direction.direction.full_active_value(),
+                    direction.side.full_active_value(),
                 );
             }
 
@@ -402,15 +448,37 @@ impl MutableInputStreams<'_> {
 }
 
 impl QueryInput for InputStreams<'_> {
+    #[inline]
     fn pressed(&self, input: impl UserInput) -> bool {
         input.pressed(self)
     }
 
+    #[inline]
     fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
         let mut input_streams = self.clone();
         input_streams.associated_gamepad = gamepad;
 
-        input.pressed(&input_streams)
+        input_streams.pressed(input)
+    }
+
+    #[inline]
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
+        if let Some(data) = input.axis_pair(self) {
+            return vec![data.x(), data.y()];
+        }
+
+        vec![input.value(self)]
+    }
+
+    fn read_axis_values_on_gamepad(
+        &self,
+        input: impl UserInput,
+        gamepad: Option<Gamepad>,
+    ) -> Vec<f32> {
+        let mut input_streams = self.clone();
+        input_streams.associated_gamepad = gamepad;
+
+        input_streams.read_axis_values(input)
     }
 }
 
@@ -509,7 +577,21 @@ impl QueryInput for World {
     fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
         let input_streams = InputStreams::from_world(self, gamepad);
 
-        input.pressed(&input_streams)
+        input_streams.pressed(input)
+    }
+
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
+        self.read_axis_values_on_gamepad(input, None)
+    }
+
+    fn read_axis_values_on_gamepad(
+        &self,
+        input: impl UserInput,
+        gamepad: Option<Gamepad>,
+    ) -> Vec<f32> {
+        let input_streams = InputStreams::from_world(self, gamepad);
+
+        input_streams.read_axis_values(input)
     }
 }
 
@@ -576,6 +658,18 @@ impl QueryInput for App {
     fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
         self.world.pressed_on_gamepad(input, gamepad)
     }
+
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
+        self.world.read_axis_values(input)
+    }
+
+    fn read_axis_values_on_gamepad(
+        &self,
+        input: impl UserInput,
+        gamepad: Option<Gamepad>,
+    ) -> Vec<f32> {
+        self.world.read_axis_values_on_gamepad(input, gamepad)
+    }
 }
 
 #[cfg(feature = "ui")]
@@ -592,18 +686,34 @@ impl MockUIInteraction for App {
 #[cfg(test)]
 mod test {
     use crate::input_mocking::{MockInput, QueryInput};
-    use bevy::{
-        input::{
-            gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo},
-            InputPlugin,
-        },
-        prelude::*,
+    use crate::user_input::*;
+    use bevy::input::gamepad::{
+        GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
+    use bevy::input::InputPlugin;
+    use bevy::prelude::*;
+
+    fn test_app() -> App {
+        let mut app = App::new();
+        app.add_plugins(InputPlugin);
+
+        let gamepad = Gamepad::new(0);
+        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
+            gamepad,
+            connection: GamepadConnection::Connected(GamepadInfo {
+                name: "TestController".into(),
+            }),
+        }));
+        app.update();
+        app.update();
+
+        app
+    }
 
     #[test]
     fn ordinary_button_inputs() {
-        let mut app = App::new();
-        app.add_plugins(InputPlugin);
+        let mut app = test_app();
 
         // Test that buttons are unpressed by default
         assert!(!app.pressed(KeyCode::Space));
@@ -632,47 +742,30 @@ mod test {
 
     #[test]
     fn explicit_gamepad_button_inputs() {
-        let mut app = App::new();
-        app.add_plugins(InputPlugin);
-
-        let gamepad = Gamepad { id: 0 };
-        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-            gamepad,
-            connection: GamepadConnection::Connected(GamepadInfo {
-                name: "TestController".into(),
-            }),
-        }));
-        app.update();
+        let mut app = test_app();
+        let gamepad = Some(Gamepad::new(0));
 
         // Test that buttons are unpressed by default
-        assert!(!app.pressed_on_gamepad(GamepadButtonType::North, Some(gamepad)));
+        assert!(!app.pressed_on_gamepad(GamepadButtonType::North, gamepad));
 
         // Press buttons
-        app.press_input_as_gamepad(GamepadButtonType::North, Some(gamepad));
+        app.press_input_as_gamepad(GamepadButtonType::North, gamepad);
         app.update();
+
+        // Verify the button are pressed
+        assert!(app.pressed_on_gamepad(GamepadButtonType::North, gamepad));
 
         // Test that resetting inputs works
         app.reset_inputs();
         app.update();
 
-        assert!(!app.pressed_on_gamepad(GamepadButtonType::North, Some(gamepad)));
+        // Verify the button are released
+        assert!(!app.pressed_on_gamepad(GamepadButtonType::North, gamepad));
     }
 
     #[test]
     fn implicit_gamepad_button_inputs() {
-        let mut app = App::new();
-        app.add_plugins(InputPlugin);
-
-        let gamepad = Gamepad { id: 0 };
-        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-            gamepad,
-            connection: GamepadConnection::Connected(GamepadInfo {
-                name: "TestController".into(),
-            }),
-        }));
-        app.update();
+        let mut app = test_app();
 
         // Test that buttons are unpressed by default
         assert!(!app.pressed(GamepadButtonType::North));
@@ -681,14 +774,53 @@ mod test {
         app.press_input(GamepadButtonType::North);
         app.update();
 
-        // Test the convenient `pressed` API
+        // Verify the button are pressed
         assert!(app.pressed(GamepadButtonType::North));
 
         // Test that resetting inputs works
         app.reset_inputs();
         app.update();
 
+        // Verify the button are released
         assert!(!app.pressed(GamepadButtonType::North));
+    }
+
+    #[test]
+    fn mouse_inputs() {
+        let mut app = test_app();
+
+        // Mouse axes should be inactive by default (no scroll or movement)
+        assert_eq!(app.read_axis_values(MouseMove::default()), [0.0, 0.0]);
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 0.0]);
+
+        // Send a simulated mouse scroll event with a value of 3 (positive for up)
+        app.send_axis_values(MouseScrollAxis::Y, [3.0]);
+        app.update();
+
+        // Verify the mouse wheel Y axis reflects the simulated scroll
+        // and the other axis isn't affected
+        assert_eq!(app.read_axis_values(MouseScrollAxis::X), [0.0]);
+        assert_eq!(app.read_axis_values(MouseScrollAxis::Y), [3.0]);
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 3.0]);
+
+        // Send a simulated mouse movement event with a delta of (3.0, 2.0)
+        app.send_axis_values(MouseScroll::default(), [3.0, 2.0]);
+        app.update();
+
+        // Verify the mouse motion axes reflects the simulated movement
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [3.0, 2.0]);
+
+        // Mouse input data is typically reset every frame
+        // Verify other axes aren't affected
+        assert_eq!(app.read_axis_values(MouseMove::default()), [0.0, 0.0]);
+
+        // Test that resetting inputs works
+        app.reset_inputs();
+        app.update();
+
+        // Verify all axes have no value after reset
+        assert_eq!(app.read_axis_values(MouseScrollAxis::Y), [0.0]);
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 0.0]);
     }
 
     #[test]

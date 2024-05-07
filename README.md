@@ -36,7 +36,7 @@ and a single input can result in multiple actions being triggered, which can be 
 - Ergonomic insertion API that seamlessly blends multiple input types for you
   - Can't decide between `input_map.insert(Action::Jump, KeyCode::Space)` and `input_map.insert(Action::Jump, GamepadButtonType::South)`? Have both!
 - Full support for arbitrary button combinations: chord your heart out.
-  - `input_map.insert(Action::Console, InputChord::multiple([KeyCode::ControlLeft, KeyCode::Shift, KeyCode::KeyC]))`
+  - `input_map.insert(Action::Console, InputChord::from_multiple([KeyCode::ControlLeft, KeyCode::Shift, KeyCode::KeyC]))`
 - Sophisticated input disambiguation with the `ClashStrategy` enum: stop triggering individual buttons when you meant to press a chord!
 - Create an arbitrary number of strongly typed disjoint action sets by adding multiple copies of this plugin: decouple your camera and player state
 - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state

@@ -13,25 +13,25 @@
 //!
 //! Feel free to suggest additions to the built-in inputs if you have a common use case!
 //!
-//! ## Input Kinds
+//! ## Control Types
 //!
-//! [`UserInput`]s use the method [`UserInput::kind`] returning an [`InputKind`]
-//! to classify the type of data they provide (buttons, analog axes, etc.).
+//! [`UserInput`]s use the method [`UserInput::kind`] returning an [`InputControlKind`]
+//! to classify the behavior of the input (buttons, analog axes, etc.).
 //!
-//! - [`InputKind::Button`]: Represents a digital input with an on/off state (e.g., button press).
+//! - [`InputControlKind::Button`]: Represents a digital input with an on/off state (e.g., button press).
 //!   These inputs typically provide two values, typically `0.0` (inactive) and `1.0` (fully active).
 //!
-//! - [`InputKind::Axis`]: Represents an analog input (e.g., mouse wheel)
+//! - [`InputControlKind::Axis`]: Represents an analog input (e.g., mouse wheel)
 //!   with a continuous value typically ranging from `-1.0` (fully left/down) to `1.0` (fully right/up).
 //!   Non-zero values are considered active.
 //!
-//! - [`InputKind::DualAxis`]: Represents a combination of two analog axes (e.g., thumb stick).
+//! - [`InputControlKind::DualAxis`]: Represents a combination of two analog axes (e.g., thumb stick).
 //!   These inputs provide separate X and Y values typically ranging from `-1.0` to `1.0`.
 //!   Non-zero values are considered active.
 //!
 //! ## Basic Inputs
 //!
-//! [`UserInput`]s use the method [`UserInput::basic_inputs`] returning a [`BasicInputs`]
+//! [`UserInput`]s use the method [`UserInput::decompose`] returning a [`BasicInputs`]
 //! used for clashing detection, see [clashing input check](crate::clashing_inputs) for details.
 //!
 //! ## Raw Input Events
@@ -50,7 +50,6 @@
 //!
 //! - Check physical keys presses using Bevy's [`KeyCode`] directly.
 //! - Use [`ModifierKey`] to check for either left or right modifier keys is pressed.
-//! - Create complex combinations with [`KeyboardKey`], including individual keys, modifiers, and checks for any key press.
 //!
 //! ### Mouse Inputs
 //!
@@ -67,11 +66,11 @@
 //!
 //! - Create a virtual axis control:
 //!   - [`GamepadVirtualAxis`] from two [`GamepadButtonType`]s.
-//!   - [`KeyboardVirtualAxis`] from two [`KeyboardKey`]s.
+//!   - [`KeyboardVirtualAxis`] from two [`KeyCode`]s.
 //!
 //! - Create a virtual directional pad (D-pad) for dual-axis control:
 //!   - [`GamepadVirtualDPad`] from four [`GamepadButtonType`]s.
-//!   - [`KeyboardVirtualDPad`] from four [`KeyboardKey`]s.
+//!   - [`KeyboardVirtualDPad`] from four [`KeyCode`]s.
 //!
 //! [`GamepadAxisType`]: bevy::prelude::GamepadAxisType
 //! [`GamepadButtonType`]: bevy::prelude::GamepadButtonType
@@ -117,7 +116,7 @@ pub mod mouse;
 /// Classifies [`UserInput`]s based on their behavior (buttons, analog axes, etc.).
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
-pub enum InputKind {
+pub enum InputControlKind {
     /// A single input with binary state (active or inactive), typically a button press (on or off).
     Button,
 
@@ -153,11 +152,11 @@ pub enum InputKind {
 /// // Add this attribute for ensuring proper serialization and deserialization.
 /// #[serde_typetag]
 /// impl UserInput for MouseScrollAlwaysFiveOnYAxis {
-///     fn kind(&self) -> InputKind {
+///     fn kind(&self) -> InputControlKind {
 ///         // Returns the kind of input this represents.
 ///         //
 ///         // In this case, it represents an axial input.
-///         InputKind::Axis
+///         InputControlKind::Axis
 ///     }
 ///
 ///     fn pressed(&self, input_streams: &InputStreams) -> bool {
@@ -183,7 +182,7 @@ pub enum InputKind {
 ///         None
 ///     }
 ///
-///     fn basic_inputs(&self) -> BasicInputs {
+///     fn decompose(&self) -> BasicInputs {
 ///         // Gets the most basic form of this input for clashing input detection.
 ///         //
 ///         // This input is a simple, atomic unit,
@@ -206,8 +205,8 @@ pub enum InputKind {
 pub trait UserInput:
     Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
-    /// Defines the kind of data that the input should provide.
-    fn kind(&self) -> InputKind;
+    /// Defines the kind of behavior that the input should be.
+    fn kind(&self) -> InputControlKind;
 
     /// Checks if the input is currently active.
     fn pressed(&self, input_streams: &InputStreams) -> bool;
@@ -222,13 +221,13 @@ pub trait UserInput:
     ///
     /// For inputs that don't represent dual-axis input, there is no need to override this method.
     /// The default implementation will always return [`None`].
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData>;
+    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData>;
 
     /// Returns the most basic inputs that make up this input.
     ///
     /// For inputs that represent a simple, atomic control,
     /// this method should always return a [`BasicInputs::Simple`] that only contains the input itself.
-    fn basic_inputs(&self) -> BasicInputs;
+    fn decompose(&self) -> BasicInputs;
 
     /// Returns the raw input events that make up this input.
     fn raw_inputs(&self) -> RawInputs;

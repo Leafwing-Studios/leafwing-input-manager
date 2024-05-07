@@ -175,7 +175,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_user_input::<GamepadVirtualDPad>()
             .register_user_input::<KeyCode>()
             .register_user_input::<ModifierKey>()
-            .register_user_input::<KeyboardKey>()
             .register_user_input::<KeyboardVirtualAxis>()
             .register_user_input::<KeyboardVirtualDPad>()
             .register_user_input::<MouseMoveDirection>()

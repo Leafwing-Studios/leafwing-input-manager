@@ -20,7 +20,7 @@ fn setup(mut commands: Commands) {
         // This will capture the total continuous value, for direct use.
         // Note that you can also use discrete gesture-like motion,
         // via the `MouseMoveDirection` enum.
-        (CameraMovement::Pan, MouseMove::RAW),
+        (CameraMovement::Pan, MouseMove::default()),
     ]);
     commands
         .spawn(Camera2dBundle::default())

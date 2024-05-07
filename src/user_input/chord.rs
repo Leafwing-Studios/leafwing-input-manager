@@ -8,19 +8,10 @@ use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{DualAxisData, InputKind, UserInput};
+use crate::user_input::{DualAxisData, InputControlKind, UserInput};
 
 /// A combined input that groups multiple [`UserInput`]s together,
-/// which is useful for creating input combinations like hotkeys, shortcuts, and macros.
-///
-/// # Behaviors
-///
-/// - Simultaneous Activation Check: You can check if all the included inputs
-///   are actively pressed at the same time.
-/// - Single-Axis Input Combination: If some inner inputs are single-axis (like mouse wheel),
-///   the input chord can combine (sum) their values into a single value.
-/// - First Dual-Axis Input Only: Retrieves the values only from the first included
-///   dual-axis input (like gamepad triggers). The state of other dual-axis inputs is ignored.
+/// allowing you to define complex input combinations like hotkeys, shortcuts, and macros.
 ///
 /// # Warning
 ///
@@ -30,6 +21,58 @@ use crate::user_input::{DualAxisData, InputKind, UserInput};
 /// When using an input chord within another input that can hold multiple [`UserInput`]s,
 /// the chord itself will always be treated as a button.
 /// Any additional functionalities it offered (like single-axis values) will be ignored in this context.
+///
+/// # Behaviors
+///
+/// - Activation: All included inputs must be active simultaneously.
+/// - Single-Axis Value:
+///   - If the chord has single-axis inputs, their values are summed into a single value.
+///   - Otherwise, it acts like a button (`1.0` when active and `0.0` when inactive).
+/// - Dual-Axis Value: Retrieves the values only from the *first* included dual-axis input (others ignored).
+/// - Deduplication: Adding duplicate inputs within a chord will ignore the extras,
+///     preventing redundant data fetching.
+/// - Nesting: Using an input chord within another multi-input element treats it as a single button,
+///     ignoring its individual functionalities (like single-axis values).
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::prelude::*;
+///
+/// let mut app = App::new();
+/// app.add_plugins(InputPlugin);
+///
+/// // Define a chord using A and B keys
+/// let input = InputChord::from_multiple([KeyCode::KeyA, KeyCode::KeyB]);
+///
+/// // Pressing only one key doesn't activate the input
+/// app.press_input(KeyCode::KeyA);
+/// app.update();
+/// assert!(!app.pressed(input.clone()));
+///
+/// // Pressing both keys activates the input
+/// app.press_input(KeyCode::KeyB);
+/// app.update();
+/// assert!(app.pressed(input.clone()));
+///
+/// // Define a new chord with both axes for mouse movement.
+/// let input = input.with_multiple([MouseMoveAxis::X, MouseMoveAxis::Y]);
+///
+/// // Note that this chord only reports a combined single-axis value.
+/// // because it constructed from two single-axis inputs, not one dual-axis input.
+/// app.send_axis_values(MouseMove::default(), [2.0, 3.0]);
+/// app.update();
+/// assert_eq!(app.read_axis_values(input.clone()), [5.0]);
+///
+/// // Define a new chord with two dual-axis inputs.
+/// let input = input.with(MouseMove::default()).with(MouseScroll::default());
+///
+/// // Note that this chord only reports the value from the first included dual-axis input.
+/// app.send_axis_values(MouseMove::default(), [2.0, 3.0]);
+/// app.send_axis_values(MouseScroll::default(), [4.0, 5.0]);
+/// app.update();
+/// assert_eq!(app.read_axis_values(input), [2.0, 3.0]);
+/// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct InputChord(
@@ -97,10 +140,10 @@ impl InputChord {
 
 #[serde_typetag]
 impl UserInput for InputChord {
-    /// [`InputChord`] always acts as a virtual button.
+    /// [`InputChord`] acts as a virtual button.
     #[inline]
-    fn kind(&self) -> InputKind {
-        InputKind::Button
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Button
     }
 
     /// Checks if all the inner inputs within the chord are active simultaneously.
@@ -130,7 +173,7 @@ impl UserInput for InputChord {
         let mut has_axis = false;
         let mut axis_value = 0.0;
         for input in self.0.iter() {
-            if input.kind() == InputKind::Axis {
+            if input.kind() == InputControlKind::Axis {
                 has_axis = true;
                 axis_value += input.value(input_streams);
             }
@@ -149,18 +192,18 @@ impl UserInput for InputChord {
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
         self.0
             .iter()
-            .filter(|input| input.kind() == InputKind::DualAxis)
+            .filter(|input| input.kind() == InputControlKind::DualAxis)
             .flat_map(|input| input.axis_pair(input_streams))
             .next()
     }
 
     /// Retrieves a list of simple, atomic [`UserInput`]s that compose the chord.
     #[inline]
-    fn basic_inputs(&self) -> BasicInputs {
+    fn decompose(&self) -> BasicInputs {
         let inputs = self
             .0
             .iter()
-            .flat_map(|input| input.basic_inputs().inputs())
+            .flat_map(|input| input.decompose().inputs())
             .collect();
         BasicInputs::Group(inputs)
     }
@@ -359,7 +402,7 @@ mod tests {
 
         let data = DualAxisData::new(2.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseScroll::RAW, [data.x(), data.y()]);
+        app.send_axis_values(MouseScroll::default(), [data.x(), data.y()]);
         app.update();
         let inputs = InputStreams::from_world(&app.world, None);
         check(&chord, &inputs, false, data.x() + data.y(), zeros);

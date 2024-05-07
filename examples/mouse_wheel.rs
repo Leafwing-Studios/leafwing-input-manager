@@ -27,9 +27,9 @@ fn setup(mut commands: Commands) {
         .with(CameraMovement::PanLeft, MouseScrollDirection::LEFT)
         .with(CameraMovement::PanRight, MouseScrollDirection::RIGHT)
         // Alternatively, you could model them as a continuous dual-axis input
-        .with(CameraMovement::Pan, MouseScroll::RAW)
+        .with(CameraMovement::Pan, MouseScroll::default())
         // Or even a digital dual-axis input!
-        .with(CameraMovement::Pan, MouseScroll::DIGITAL);
+        .with(CameraMovement::Pan, MouseScroll::default().digital());
     commands
         .spawn(Camera2dBundle::default())
         .insert(InputManagerBundle::with_map(input_map));

@@ -201,7 +201,7 @@ impl<A: Actionlike> InputMap<A> {
 
         for input_a in self.get(action_a)? {
             for input_b in self.get(action_b)? {
-                if input_a.basic_inputs().clashed(&input_b.basic_inputs()) {
+                if input_a.decompose().clashed(&input_b.decompose()) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
                 }
@@ -256,7 +256,7 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
             .filter(|&input| input.pressed(input_streams))
         {
             // If a clash was detected
-            if input_a.basic_inputs().clashed(&input_b.basic_inputs()) {
+            if input_a.decompose().clashed(&input_b.decompose()) {
                 actual_clash.inputs_a.push(input_a.clone());
                 actual_clash.inputs_b.push(input_b.clone());
             }
@@ -294,7 +294,7 @@ fn resolve_clash<A: Actionlike>(
         for reason_b in reasons_b_is_pressed.iter() {
             // If there is at least one non-clashing reason why these buttons should both be pressed,
             // we can avoid resolving the clash completely
-            if !reason_a.basic_inputs().clashed(&reason_b.basic_inputs()) {
+            if !reason_a.decompose().clashed(&reason_b.decompose()) {
                 return None;
             }
         }
@@ -308,13 +308,13 @@ fn resolve_clash<A: Actionlike>(
         ClashStrategy::PrioritizeLongest => {
             let longest_a: usize = reasons_a_is_pressed
                 .iter()
-                .map(|input| input.basic_inputs().len())
+                .map(|input| input.decompose().len())
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
             let longest_b: usize = reasons_b_is_pressed
                 .iter()
-                .map(|input| input.basic_inputs().len())
+                .map(|input| input.decompose().len())
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
@@ -379,7 +379,7 @@ mod tests {
     }
 
     fn test_input_clash(input_a: impl UserInput, input_b: impl UserInput) -> bool {
-        input_a.basic_inputs().clashed(&input_b.basic_inputs())
+        input_a.decompose().clashed(&input_b.decompose())
     }
 
     mod basic_functionality {
