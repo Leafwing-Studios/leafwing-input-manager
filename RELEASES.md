@@ -4,10 +4,9 @@
 
 ### Breaking Changes
 
-- removed `UserInput` enum in favor of the new `UserInput` trait and its impls (see 'Enhancements: New Inputs' for details).
+- removed `UserInput` and `InputKind` enums in favor of the new `UserInput` trait and its impls (see 'Enhancements: New Inputs' for details).
   - renamed `Modifier` enum to `ModifierKey`.
-  - refactored `InputKind` variants for representing user inputs, it now represents the kind of data an input can provide (e.g., button-like input, axis-like input).
-  - by default, all input events are unprocessed now, using `With*ProcessingPipelineExt` methods to define your preferred processing steps.
+  - by default, all input events are unprocessed now, using `With*ProcessingPipelineExt` methods to configure your preferred processing steps.
   - applied clashing check to continuous mouse inputs, for example:
     - `MouseScrollAxis::Y` will clash with `MouseScrollDirection::UP` and `MouseScrollDirection::DOWN`.
     - `MouseMove` will clash with all the two axes and the four directions.
