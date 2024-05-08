@@ -35,6 +35,10 @@ Input processors allow you to create custom logic for axis-like input manipulati
     - you can also create them by these methods:
       - `AxisProcessor::pipeline` or `AxisProcessor::with_processor` for `AxisProcessor::Pipeline`.
       - `DualAxisProcessor::pipeline` or `DualAxisProcessor::with_processor` for `DualAxisProcessor::Pipeline`.
+  - Digital Conversion: discretizes values, returning `-1.0`. `0.0` or `1.0`:
+
+    - `AxisProcessor::Digital`: Single-axis digital conversion.
+    - `DualAxisProcessor::Digital`: Dual-axis digital conversion.
   - Inversion: Reverses control (positive becomes negative, etc.)
     - `AxisProcessor::Inverted`: Single-axis inversion.
     - `DualAxisInverted`: Dual-axis inversion, implemented `Into<DualAxisProcessor>`.

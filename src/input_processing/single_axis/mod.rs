@@ -23,6 +23,26 @@ pub enum AxisProcessor {
     #[default]
     None,
 
+    /// Converts input values into three discrete values,
+    /// similar to [`f32::signum()`] but returning `0.0` for zero values.
+    ///
+    /// ```rust
+    /// use leafwing_input_manager::prelude::*;
+    ///
+    /// // 1.0 for positive values
+    /// assert_eq!(AxisProcessor::Digital.process(2.5), 1.0);
+    /// assert_eq!(AxisProcessor::Digital.process(0.5), 1.0);
+    ///
+    /// // 0.0 for zero values
+    /// assert_eq!(AxisProcessor::Digital.process(0.0), 0.0);
+    /// assert_eq!(AxisProcessor::Digital.process(-0.0), 0.0);
+    ///
+    /// // -1.0 for negative values
+    /// assert_eq!(AxisProcessor::Digital.process(-0.5), -1.0);
+    /// assert_eq!(AxisProcessor::Digital.process(-2.5), -1.0);
+    /// ```
+    Digital,
+
     /// Flips the sign of input values, resulting in a directional reversal of control.
     ///
     /// ```rust
@@ -104,6 +124,13 @@ impl AxisProcessor {
     pub fn process(&self, input_value: f32) -> f32 {
         match self {
             Self::None => input_value,
+            Self::Digital => {
+                if input_value == 0.0 {
+                    0.0
+                } else {
+                    input_value.signum()
+                }
+            }
             Self::Inverted => -input_value,
             Self::Sensitivity(sensitivity) => sensitivity * input_value,
             Self::ValueBounds(bounds) => bounds.clamp(input_value),
@@ -160,6 +187,7 @@ impl Hash for AxisProcessor {
         std::mem::discriminant(self).hash(state);
         match self {
             Self::None => {}
+            Self::Digital => {}
             Self::Inverted => {}
             Self::Sensitivity(sensitivity) => FloatOrd(*sensitivity).hash(state),
             Self::ValueBounds(bounds) => bounds.hash(state),
@@ -181,6 +209,13 @@ pub trait WithAxisProcessingPipelineExt: Sized {
 
     /// Appends the given [`AxisProcessor`] as the next processing step.
     fn with_processor(self, processor: impl Into<AxisProcessor>) -> Self;
+
+    /// Appends an [`AxisProcessor::Digital`] processor as the next processing step,
+    /// similar to [`f32::signum`] but returning `0.0` for zero values.
+    #[inline]
+    fn digital(self) -> Self {
+        self.with_processor(AxisProcessor::Digital)
+    }
 
     /// Appends an [`AxisProcessor::Inverted`] processor as the next processing step,
     /// flipping the sign of values on the axis.
