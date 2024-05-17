@@ -18,9 +18,10 @@ use serde::{Deserialize, Serialize};
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
-
-    pub(crate) update_state: ButtonState,
-    pub(crate) fixed_update_state: ButtonState,
+    /// The `state` of the action in the `Main` schedule
+    pub update_state: ButtonState,
+    /// The `state` of the action in the `FixedMain` schedule
+    pub fixed_update_state: ButtonState,
     /// The "value" of the binding that triggered the action.
     ///
     /// See [`ActionState::value`] for more details.

@@ -63,6 +63,8 @@ fn criterion_benchmark(c: &mut Criterion) {
                 action,
                 ActionData {
                     state: ButtonState::JustPressed,
+                    update_state: ButtonState::Released,
+                    fixed_update_state: ButtonState::Released,
                     value: 0.0,
                     axis_pair: None,
                     timing: Timing::default(),
