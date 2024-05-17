@@ -18,6 +18,9 @@ use serde::{Deserialize, Serialize};
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
+
+    pub(crate) update_state: ButtonState,
+    pub(crate) fixed_update_state: ButtonState,
     /// The "value" of the binding that triggered the action.
     ///
     /// See [`ActionState::value`] for more details.
@@ -98,6 +101,30 @@ impl<A: Actionlike> Default for ActionState<A> {
 }
 
 impl<A: Actionlike> ActionState<A> {
+    pub(crate) fn swap_update_into_state(&mut self) {
+        for (_action, action_datum) in self.action_data.iter_mut() {
+            action_datum.state = action_datum.update_state;
+        }
+    }
+
+    pub(crate) fn swap_state_into_update(&mut self) {
+        for (_action, action_datum) in self.action_data.iter_mut() {
+            action_datum.update_state = action_datum.state;
+        }
+    }
+
+    pub(crate) fn swap_fixed_update_into_state(&mut self) {
+        for (_action, action_datum) in self.action_data.iter_mut() {
+            action_datum.state = action_datum.fixed_update_state;
+        }
+    }
+
+    pub(crate) fn swap_state_into_fixed_update(&mut self) {
+        for (_action, action_datum) in self.action_data.iter_mut() {
+            action_datum.fixed_update_state = action_datum.state;
+        }
+    }
+
     /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),

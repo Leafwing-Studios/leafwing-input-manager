@@ -28,6 +28,62 @@ use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
 use bevy_egui::EguiContext;
 
+/// a
+pub fn swap_update_into_state<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    action_state: Option<ResMut<ActionState<A>>>,
+) {
+    if let Some(mut action_state) = action_state {
+        action_state.swap_update_into_state();
+    }
+
+    for mut action_state in query.iter_mut() {
+        action_state.swap_update_into_state();
+    }
+}
+
+/// b
+pub fn swap_state_into_update<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    action_state: Option<ResMut<ActionState<A>>>,
+) {
+    if let Some(mut action_state) = action_state {
+        action_state.swap_state_into_update();
+    }
+
+    for mut action_state in query.iter_mut() {
+        action_state.swap_state_into_update();
+    }
+}
+
+/// c
+pub fn swap_fixed_update_into_state<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    action_state: Option<ResMut<ActionState<A>>>,
+) {
+    if let Some(mut action_state) = action_state {
+        action_state.swap_fixed_update_into_state();
+    }
+
+    for mut action_state in query.iter_mut() {
+        action_state.swap_fixed_update_into_state();
+    }
+}
+
+/// d
+pub fn swap_state_into_fixed_update<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    action_state: Option<ResMut<ActionState<A>>>,
+) {
+    if let Some(mut action_state) = action_state {
+        action_state.swap_state_into_fixed_update();
+    }
+
+    for mut action_state in query.iter_mut() {
+        action_state.swap_state_into_fixed_update();
+    }
+}
+
 /// Advances actions timer.
 ///
 /// Clears the just-pressed and just-released values of all [`ActionState`]s.

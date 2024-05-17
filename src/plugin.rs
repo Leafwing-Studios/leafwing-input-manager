@@ -16,11 +16,12 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use bevy::app::{App, Plugin};
+use bevy::app::{App, Plugin, RunFixedMainLoop};
 use bevy::ecs::prelude::*;
 use bevy::input::{ButtonState, InputSystem};
-use bevy::prelude::{PostUpdate, PreUpdate};
+use bevy::prelude::{FixedPostUpdate, PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
+use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -97,6 +98,10 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
 
         match self.machine {
             Machine::Client => {
+                app.add_systems(PreUpdate, swap_update_into_state::<A>
+                    .run_if(run_if_enabled::<A>)
+                    .before(InputManagerSystem::Tick)
+                );
                 app.add_systems(
                     PreUpdate,
                     tick_action_state::<A>
@@ -150,6 +155,24 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                         .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::ManualControl),
                 );
+                app.add_systems(PreUpdate, swap_state_into_update::<A>
+                    .run_if(run_if_enabled::<A>)
+                    .after(InputManagerSystem::ManualControl)
+                );
+
+                app.add_systems(RunFixedMainLoop, (swap_fixed_update_into_state::<A>, update_action_state::<A>, release_on_disable::<A>).chain()
+                    .run_if(run_if_enabled::<A>)
+                    .before(run_fixed_main_schedule));
+                app.add_systems(
+                    FixedPostUpdate,
+                    tick_action_state::<A>
+                        .run_if(run_if_enabled::<A>)
+                        .in_set(InputManagerSystem::Tick)
+                        .before(InputManagerSystem::Update),
+                );
+                app.add_systems(RunFixedMainLoop, (swap_state_into_fixed_update::<A>, swap_update_into_state::<A>).chain()
+                    .run_if(run_if_enabled::<A>)
+                    .after(run_fixed_main_schedule));
             }
             Machine::Server => {
                 app.add_systems(
