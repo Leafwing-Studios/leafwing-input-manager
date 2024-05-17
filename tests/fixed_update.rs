@@ -1,15 +1,14 @@
 use bevy::input::InputPlugin;
-use bevy::prelude::{
-    App, Fixed, FixedUpdate, KeyCode, Real, Reflect, Res, ResMut, Resource, Time, Update,
-};
+use bevy::prelude::{App, Fixed, FixedPostUpdate, FixedUpdate, IntoSystemConfigs, KeyCode, Real, Reflect, Res, ResMut, Resource, Time, Update};
 use bevy::time::TimeUpdateStrategy;
 use bevy::MinimalPlugins;
 use leafwing_input_manager::action_state::ActionState;
 use leafwing_input_manager::input_map::InputMap;
 use leafwing_input_manager::input_mocking::MockInput;
-use leafwing_input_manager::plugin::InputManagerPlugin;
+use leafwing_input_manager::plugin::{InputManagerPlugin, InputManagerSystem};
 use leafwing_input_manager_macros::Actionlike;
 use std::time::Duration;
+use bevy::app::PreUpdate;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum TestAction {
@@ -48,12 +47,11 @@ fn build_app(fixed_timestep: Duration, frame_timestep: Duration) -> App {
     app.add_systems(Update, update_counter);
     app.add_systems(FixedUpdate, fixed_update_counter);
 
-    // initialize time (needed to set a starting time for tests)
-    let now = bevy::utils::Instant::now();
+    // we have to set an initial time for TimeUpdateStrategy::ManualDuration to work properly
+    let startup = app.world.resource::<Time<Real>>().startup();
     app.world
-        .get_resource_mut::<Time<Real>>()
-        .unwrap()
-        .update_with_instant(now);
+        .resource_mut::<Time<Real>>()
+        .update_with_instant(startup);
     app
 }
 
@@ -137,6 +135,11 @@ fn frame_without_fixed_timestep() {
             .just_pressed,
         1
     );
+
+    // make sure that the timings didn't get updated twice (once in Update and once in FixedUpdate)
+    // (the `tick` function has been called twice, but it uses `Time<Real>` to update the time,
+    // which is only updated in `PreUpdate`, which is what we want)
+    assert_eq!(app.world.get_resource::<ActionState<TestAction>>().unwrap().current_duration(&TestAction::Up), Duration::from_millis(18));
 }
 
 /// We have a frames with two FixedUpdate schedule executions in between (F1 - FU1 - FU2 - F2)
@@ -191,4 +194,73 @@ fn frame_with_two_fixed_timestep() {
             .just_pressed,
         1
     );
+
+    // make sure that the timings didn't get updated twice (once in Update and once in FixedUpdate)
+    // (the `tick` function has been called twice, but it uses `Time<Real>` to update the time,
+    // which is only updated in `PreUpdate`, which is what we want)
+    assert_eq!(app.world.get_resource::<ActionState<TestAction>>().unwrap().current_duration(&TestAction::Up), Duration::from_millis(18));
+}
+
+
+/// Check that if the action is consumed in FU1, it will still be consumed in F2.
+/// (i.e. consuming is shared between the `FixedMain` and `Main` schedules)
+#[test]
+fn test_consume_in_fixed_update() {
+    let mut app = build_app(Duration::from_millis(5), Duration::from_millis(5));
+
+    app.add_systems(FixedPostUpdate, |mut action: ResMut<ActionState<TestAction>>| {
+        action.consume(&TestAction::Up);
+    });
+
+    app.press_input(KeyCode::ArrowUp);
+
+    // the FixedUpdate schedule should run once
+    // the button should be just_pressed only once
+    app.update();
+    assert_eq!(
+        app.world.get_resource::<FixedUpdateCounter>().unwrap().run,
+        1
+    );
+    assert_eq!(
+        app.world
+            .get_resource::<FixedUpdateCounter>()
+            .unwrap()
+            .just_pressed,
+        1
+    );
+    assert_eq!(
+        app.world
+            .get_resource::<UpdateCounter>()
+            .unwrap()
+            .just_pressed,
+        1
+    );
+
+    // the button should still be consumed, even after we exit the FixedUpdate schedule
+    assert!(
+        app.world.get_resource::<ActionState<TestAction>>().unwrap().action_data(&TestAction::Up).unwrap().consumed,
+    );
+}
+
+/// Check that if the action is consumed in F1, it will still be consumed in FU1.
+/// (i.e. consuming is shared between the `FixedMain` and `Main` schedules)
+#[test]
+fn test_consume_in_update() {
+    let mut app = build_app(Duration::from_millis(5), Duration::from_millis(5));
+
+
+    app.press_input(KeyCode::ArrowUp);
+    fn consume_action(mut action: ResMut<ActionState<TestAction>>) {
+        action.consume(&TestAction::Up);
+    }
+
+    app.add_systems(PreUpdate, consume_action.in_set(InputManagerSystem::ManualControl));
+
+    app.add_systems(FixedUpdate, |action: Res<ActionState<TestAction>>| {
+        // check that the action is still consumed in the FixedMain schedule
+        assert!(action.consumed(&TestAction::Up), "Action should still be consumed in FixedUpdate");
+    });
+
+    // the FixedUpdate schedule should run once
+    app.update();
 }
