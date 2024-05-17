@@ -101,27 +101,28 @@ impl<A: Actionlike> Default for ActionState<A> {
 }
 
 impl<A: Actionlike> ActionState<A> {
-    pub(crate) fn swap_update_into_state(&mut self) {
+
+    /// We are about to enter the Main schedule, so we:
+    /// - save all the changes applied to `state` into the `fixed_update_state`
+    /// - switch to loading the `update_state`
+    pub(crate) fn swap_to_update_state(&mut self) {
         for (_action, action_datum) in self.action_data.iter_mut() {
+            // save the changes applied to `state` into `fixed_update_state`
+            action_datum.fixed_update_state = action_datum.state;
+            // switch to loading the `update_state` into `state`
             action_datum.state = action_datum.update_state;
         }
     }
 
-    pub(crate) fn swap_state_into_update(&mut self) {
+    /// We are about to enter the FixedMain schedule, so we:
+    /// - save all the changes applied to `state` into the `update_state`
+    /// - switch to loading the `fixed_update_state`
+    pub(crate) fn swap_to_fixed_update_state(&mut self) {
         for (_action, action_datum) in self.action_data.iter_mut() {
+            // save the changes applied to `state` into `update_state`
             action_datum.update_state = action_datum.state;
-        }
-    }
-
-    pub(crate) fn swap_fixed_update_into_state(&mut self) {
-        for (_action, action_datum) in self.action_data.iter_mut() {
+            // switch to loading the `fixed_update_state` into `state`
             action_datum.state = action_datum.fixed_update_state;
-        }
-    }
-
-    pub(crate) fn swap_state_into_fixed_update(&mut self) {
-        for (_action, action_datum) in self.action_data.iter_mut() {
-            action_datum.fixed_update_state = action_datum.state;
         }
     }
 

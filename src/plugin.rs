@@ -19,7 +19,7 @@ use std::fmt::Debug;
 use bevy::app::{App, Plugin, RunFixedMainLoop};
 use bevy::ecs::prelude::*;
 use bevy::input::{ButtonState, InputSystem};
-use bevy::prelude::{FixedPostUpdate, PostUpdate, PreUpdate};
+use bevy::prelude::{FixedPostUpdate, FixedPreUpdate, PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
 use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
@@ -98,10 +98,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
 
         match self.machine {
             Machine::Client => {
-                app.add_systems(PreUpdate, swap_update_into_state::<A>
-                    .run_if(run_if_enabled::<A>)
-                    .before(InputManagerSystem::Tick)
-                );
+                // Main schedule
                 app.add_systems(
                     PreUpdate,
                     tick_action_state::<A>
@@ -155,14 +152,35 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                         .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::ManualControl),
                 );
-                app.add_systems(PreUpdate, swap_state_into_update::<A>
-                    .run_if(run_if_enabled::<A>)
-                    .after(InputManagerSystem::ManualControl)
-                );
 
-                app.add_systems(RunFixedMainLoop, (swap_fixed_update_into_state::<A>, update_action_state::<A>, release_on_disable::<A>).chain()
+                // FixedMain schedule
+                app.add_systems(RunFixedMainLoop,
+                                (
+                                    swap_to_fixed_update::<A>,
+                                    // we want to update the ActionState only once, even if the FixedMain schedule runs multiple times
+                                    update_action_state::<A>,
+                                ).chain()
                     .run_if(run_if_enabled::<A>)
                     .before(run_fixed_main_schedule));
+
+                app.add_systems(
+                    FixedPreUpdate, release_on_disable::<A>
+                        .in_set(InputManagerSystem::ReleaseOnDisable)
+                );
+                #[cfg(feature = "ui")]
+                app.configure_sets(
+                    FixedPreUpdate,
+                    InputManagerSystem::ManualControl
+                        .before(InputManagerSystem::ReleaseOnDisable)
+                );
+                #[cfg(feature = "ui")]
+                app.add_systems(
+                    FixedPreUpdate,
+                    update_action_state_from_interaction::<A>
+                        .run_if(run_if_enabled::<A>)
+                        .in_set(InputManagerSystem::ManualControl),
+                );
+                app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
                 app.add_systems(
                     FixedPostUpdate,
                     tick_action_state::<A>
@@ -170,7 +188,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
-                app.add_systems(RunFixedMainLoop, (swap_state_into_fixed_update::<A>, swap_update_into_state::<A>).chain()
+                app.add_systems(RunFixedMainLoop, swap_to_update::<A>
                     .run_if(run_if_enabled::<A>)
                     .after(run_fixed_main_schedule));
             }

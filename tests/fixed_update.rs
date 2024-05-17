@@ -86,13 +86,13 @@ fn frame_without_fixed_timestep() {
     assert_eq!(app.world.get_resource::<FixedUpdateCounter>().unwrap().run, 0);
     assert_eq!(app.world.get_resource::<UpdateCounter>().unwrap().just_pressed, 1);
 
-    // the FixedUpdate schedule should run once and should still the button as just_pressed
+    // the FixedUpdate schedule should run once and the action still be counted as `just_pressed`
     app.update();
     assert_eq!(app.world.get_resource::<FixedUpdateCounter>().unwrap().run, 1);
     assert_eq!(app.world.get_resource::<FixedUpdateCounter>().unwrap().just_pressed, 1);
     assert_eq!(app.world.get_resource::<UpdateCounter>().unwrap().just_pressed, 1);
 
-    // the FixedUpdate schedule should run once
+    // the FixedUpdate schedule should run once, the button should now be `pressed`
     app.update();
     assert_eq!(app.world.get_resource::<FixedUpdateCounter>().unwrap().run, 2);
     assert_eq!(app.world.get_resource::<FixedUpdateCounter>().unwrap().just_pressed, 1);
