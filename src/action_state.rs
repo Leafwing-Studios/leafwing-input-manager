@@ -101,8 +101,7 @@ impl<A: Actionlike> Default for ActionState<A> {
 }
 
 impl<A: Actionlike> ActionState<A> {
-
-    /// We are about to enter the Main schedule, so we:
+    /// We are about to enter the `Main` schedule, so we:
     /// - save all the changes applied to `state` into the `fixed_update_state`
     /// - switch to loading the `update_state`
     pub(crate) fn swap_to_update_state(&mut self) {
@@ -114,7 +113,7 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// We are about to enter the FixedMain schedule, so we:
+    /// We are about to enter the `FixedMain` schedule, so we:
     /// - save all the changes applied to `state` into the `update_state`
     /// - switch to loading the `fixed_update_state`
     pub(crate) fn swap_to_fixed_update_state(&mut self) {

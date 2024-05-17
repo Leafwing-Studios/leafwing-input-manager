@@ -154,24 +154,26 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 );
 
                 // FixedMain schedule
-                app.add_systems(RunFixedMainLoop,
-                                (
-                                    swap_to_fixed_update::<A>,
-                                    // we want to update the ActionState only once, even if the FixedMain schedule runs multiple times
-                                    update_action_state::<A>,
-                                ).chain()
-                    .run_if(run_if_enabled::<A>)
-                    .before(run_fixed_main_schedule));
+                app.add_systems(
+                    RunFixedMainLoop,
+                    (
+                        swap_to_fixed_update::<A>,
+                        // we want to update the ActionState only once, even if the FixedMain schedule runs multiple times
+                        update_action_state::<A>,
+                    )
+                        .chain()
+                        .run_if(run_if_enabled::<A>)
+                        .before(run_fixed_main_schedule),
+                );
 
                 app.add_systems(
-                    FixedPreUpdate, release_on_disable::<A>
-                        .in_set(InputManagerSystem::ReleaseOnDisable)
+                    FixedPreUpdate,
+                    release_on_disable::<A>.in_set(InputManagerSystem::ReleaseOnDisable),
                 );
                 #[cfg(feature = "ui")]
                 app.configure_sets(
                     FixedPreUpdate,
-                    InputManagerSystem::ManualControl
-                        .before(InputManagerSystem::ReleaseOnDisable)
+                    InputManagerSystem::ManualControl.before(InputManagerSystem::ReleaseOnDisable),
                 );
                 #[cfg(feature = "ui")]
                 app.add_systems(
@@ -188,9 +190,12 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
-                app.add_systems(RunFixedMainLoop, swap_to_update::<A>
-                    .run_if(run_if_enabled::<A>)
-                    .after(run_fixed_main_schedule));
+                app.add_systems(
+                    RunFixedMainLoop,
+                    swap_to_update::<A>
+                        .run_if(run_if_enabled::<A>)
+                        .after(run_fixed_main_schedule),
+                );
             }
             Machine::Server => {
                 app.add_systems(
