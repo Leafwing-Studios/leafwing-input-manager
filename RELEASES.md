@@ -4,6 +4,10 @@
 
 ### Breaking Changes
 
+- the `timing` field of the `ActionData` is now disabled by default. Timing information will only be collected
+if the `timing` feature is enabled. It is disabled by default because most games don't require timing information.
+(how long a button was pressed for)
+
 - removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
 - replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
