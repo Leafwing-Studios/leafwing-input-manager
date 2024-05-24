@@ -24,6 +24,8 @@ pub mod input_streams;
 pub mod orientation;
 pub mod plugin;
 pub mod systems;
+
+#[cfg(feature = "timing")]
 pub mod timing;
 pub mod typetag;
 pub mod user_input;

@@ -20,6 +20,9 @@ members = ["./", "tools/ci", "macros"]
 [features]
 default = ['asset', 'ui', 'bevy/bevy_gilrs']
 
+# Allow support for tracking timing information about actions (how long a button was pressed, etc.)
+timing = []
+
 # Allow using the `InputMap` as `bevy::asset::Asset`.
 asset = ['bevy/bevy_asset']
 
@@ -80,3 +83,9 @@ harness = false
 [lib]
 name = "leafwing_input_manager"
 path = "src/lib.rs"
+
+
+[[example]]
+name = "press_duration"
+path = "examples/press_duration.rs"
+required-features = ["timing"]

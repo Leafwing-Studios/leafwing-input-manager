@@ -1,6 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::action_diff::ActionDiff;
+#[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::Actionlike;
 use crate::{axislike::DualAxisData, buttonlike::ButtonState};
@@ -8,7 +9,9 @@ use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 use bevy::ecs::component::Component;
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
-use bevy::utils::{Duration, HashMap, Instant};
+#[cfg(feature = "timing")]
+use bevy::utils::Duration;
+use bevy::utils::{HashMap, Instant};
 use serde::{Deserialize, Serialize};
 
 /// Metadata about an [`Actionlike`] action
@@ -28,6 +31,7 @@ pub struct ActionData {
     /// The [`DualAxisData`] of the binding that triggered the action.
     pub axis_pair: Option<DualAxisData>,
     /// When was the button pressed / released, and how long has it been held for?
+    #[cfg(feature = "timing")]
     pub timing: Timing,
     /// Was this action consumed by [`ActionState::consume`]?
     ///
@@ -171,15 +175,16 @@ impl<A: Actionlike> ActionState<A> {
     /// assert!(action_state.pressed(&Action::Jump));
     /// assert!(!action_state.just_pressed(&Action::Jump));
     /// ```
-    pub fn tick(&mut self, current_instant: Instant, previous_instant: Instant) {
+    pub fn tick(&mut self, _current_instant: Instant, _previous_instant: Instant) {
         // Advanced the ButtonState
         self.action_data.values_mut().for_each(|ad| ad.state.tick());
 
-        // Advance the Timings
+        // Advance the Timings if the feature is enabled
+        #[cfg(feature = "timing")]
         self.action_data.values_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
-                ad.timing.tick(current_instant, previous_instant);
+                ad.timing.tick(_current_instant, _previous_instant);
             }
         });
     }
@@ -368,6 +373,7 @@ impl<A: Actionlike> ActionState<A> {
             return;
         }
 
+        #[cfg(feature = "timing")]
         if action_data.state.released() {
             action_data.timing.flip();
         }
@@ -386,6 +392,7 @@ impl<A: Actionlike> ActionState<A> {
         // Once released, consumed actions can be pressed again
         action_data.consumed = false;
 
+        #[cfg(feature = "timing")]
         if action_data.state.pressed() {
             action_data.timing.flip();
         }
@@ -439,6 +446,7 @@ impl<A: Actionlike> ActionState<A> {
         // This is the only difference from action_state.release(&action)
         action_data.consumed = true;
         action_data.state.release();
+        #[cfg(feature = "timing")]
         action_data.timing.flip();
     }
 
@@ -547,6 +555,7 @@ impl<A: Actionlike> ActionState<A> {
     /// that corresponds exactly to the start of a frame, rather than relying on idiosyncratic timing.
     ///
     /// This will also be [`None`] if the action was never pressed or released.
+    #[cfg(feature = "timing")]
     pub fn instant_started(&self, action: &A) -> Option<Instant> {
         let action_data = self.action_data(action)?;
         action_data.timing.instant_started
@@ -555,6 +564,7 @@ impl<A: Actionlike> ActionState<A> {
     /// The [`Duration`] for which the action has been held or released
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
+    #[cfg(feature = "timing")]
     pub fn current_duration(&self, action: &A) -> Duration {
         self.action_data(action)
             .map(|data| data.timing.current_duration)
@@ -567,6 +577,7 @@ impl<A: Actionlike> ActionState<A> {
     /// the action was last pressed or released.
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
+    #[cfg(feature = "timing")]
     pub fn previous_duration(&self, action: &A) -> Duration {
         self.action_data(action)
             .map(|data| data.timing.previous_duration)

@@ -206,6 +206,7 @@ fn action_state_driver() {
     assert_eq!(*respect, Respect(false));
 }
 
+#[cfg(feature = "timing")]
 #[test]
 fn duration() {
     use bevy::input::InputPlugin;

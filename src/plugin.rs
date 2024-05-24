@@ -9,6 +9,7 @@ use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
+#[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::{InputKind, Modifier, UserInput};
 use crate::Actionlike;
@@ -168,7 +169,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<ActionData>()
             .register_type::<Modifier>()
             .register_type::<ActionState<A>>()
-            .register_type::<Timing>()
             .register_type::<VirtualDPad>()
             .register_type::<VirtualAxis>()
             .register_type::<SingleAxis>()
@@ -197,6 +197,9 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             // Resources
             .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();
+
+        #[cfg(feature = "timing")]
+        app.register_type::<Timing>();
     }
 }
 
