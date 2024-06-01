@@ -461,6 +461,16 @@ fn button_pressed(
     input_streams.gamepad_buttons.pressed(button)
 }
 
+/// Checks if the given [`GamepadButtonType`] is currently pressed.
+#[must_use]
+#[inline]
+fn button_pressed_any(input_streams: &InputStreams, button: GamepadButtonType) -> bool {
+    input_streams
+        .gamepads
+        .iter()
+        .any(|gamepad| button_pressed(input_streams, gamepad, *button))
+}
+
 /// Retrieves the current value of the given [`GamepadButtonType`].
 #[must_use]
 #[inline]
@@ -469,8 +479,8 @@ fn button_value(
     gamepad: Gamepad,
     button: GamepadButtonType,
 ) -> Option<f32> {
-    // This implementation differs from `button_pressed()` because the upstream bevy::input
-    // still waffles about whether triggers are buttons or axes.
+    // This implementation differs from `button_pressed()`
+    // because the upstream bevy::input still waffles about whether triggers are buttons or axes.
     // So, we consider the axes for consistency with other gamepad axes (e.g., thumb sticks).
     let button = GamepadButton::new(gamepad, button);
     input_streams.gamepad_button_axes.get(button)
@@ -485,7 +495,7 @@ fn button_value_any(input_streams: &InputStreams, button: GamepadButtonType) -> 
             return value;
         }
     }
-    0.0
+    f32::from(button_pressed_any(input_streams, button))
 }
 
 // Built-in support for Bevy's GamepadButtonType.
@@ -504,10 +514,7 @@ impl UserInput for GamepadButtonType {
         if let Some(gamepad) = input_streams.associated_gamepad {
             button_pressed(input_streams, gamepad, *self)
         } else {
-            input_streams
-                .gamepads
-                .iter()
-                .any(|gamepad| button_pressed(input_streams, gamepad, *self))
+            button_pressed_any(input_streams, *self)
         }
     }
 
@@ -516,7 +523,8 @@ impl UserInput for GamepadButtonType {
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         if let Some(gamepad) = input_streams.associated_gamepad {
-            button_value(input_streams, gamepad, *self).unwrap_or_default()
+            button_value(input_streams, gamepad, *self)
+                .unwrap_or_else(|| f32::from(button_pressed(input_streams, gamepad, *self)))
         } else {
             button_value_any(input_streams, *self)
         }
