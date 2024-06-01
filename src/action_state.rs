@@ -710,10 +710,7 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert(Action::One, Digit1);
         input_map.insert(Action::Two, Digit2);
-        input_map.insert(
-            Action::OneAndTwo,
-            InputChord::from_multiple([Digit1, Digit2]),
-        );
+        input_map.insert(Action::OneAndTwo, InputChord::new([Digit1, Digit2]));
 
         let mut app = App::new();
         app.add_plugins(InputPlugin);

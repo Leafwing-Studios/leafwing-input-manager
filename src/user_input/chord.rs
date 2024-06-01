@@ -43,7 +43,7 @@ use crate::user_input::{DualAxisData, InputControlKind, UserInput};
 /// app.add_plugins(InputPlugin);
 ///
 /// // Define a chord using A and B keys
-/// let input = InputChord::from_multiple([KeyCode::KeyA, KeyCode::KeyB]);
+/// let input = InputChord::new([KeyCode::KeyA, KeyCode::KeyB]);
 ///
 /// // Pressing only one key doesn't activate the input
 /// app.press_input(KeyCode::KeyA);
@@ -85,13 +85,6 @@ pub struct InputChord(
 );
 
 impl InputChord {
-    /// Creates a [`InputChord`] that only contains the given [`UserInput`].
-    /// You can still use other methods to add different types of inputs into the chord.
-    #[inline]
-    pub fn from_single(input: impl UserInput) -> Self {
-        Self::default().with(input)
-    }
-
     /// Creates a [`InputChord`] from multiple [`UserInput`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
@@ -99,8 +92,15 @@ impl InputChord {
     /// This ensures that the same input isn't added multiple times,
     /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
-    pub fn from_multiple<U: UserInput>(inputs: impl IntoIterator<Item = U>) -> Self {
+    pub fn new<U: UserInput>(inputs: impl IntoIterator<Item = U>) -> Self {
         Self::default().with_multiple(inputs)
+    }
+
+    /// Creates a [`InputChord`] that only contains the given [`UserInput`].
+    /// You can still use other methods to add different types of inputs into the chord.
+    #[inline]
+    pub fn from_single(input: impl UserInput) -> Self {
+        Self::default().with(input)
     }
 
     /// Adds the given [`UserInput`] into this chord, avoiding duplicates.
@@ -109,7 +109,7 @@ impl InputChord {
     /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     pub fn with(mut self, input: impl UserInput) -> Self {
-        self.push_boxed(Box::new(input));
+        self.push_boxed_unique(Box::new(input));
         self
     }
 
@@ -121,7 +121,7 @@ impl InputChord {
     #[inline]
     pub fn with_multiple<U: UserInput>(mut self, inputs: impl IntoIterator<Item = U>) -> Self {
         for input in inputs.into_iter() {
-            self.push_boxed(Box::new(input));
+            self.push_boxed_unique(Box::new(input));
         }
         self
     }
@@ -131,7 +131,7 @@ impl InputChord {
     /// This ensures that the same input isn't added multiple times,
     /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
-    fn push_boxed(&mut self, input: Box<dyn UserInput>) {
+    fn push_boxed_unique(&mut self, input: Box<dyn UserInput>) {
         if !self.0.contains(&input) {
             self.0.push(input);
         }
@@ -285,7 +285,7 @@ mod tests {
 
     #[test]
     fn test_chord_with_buttons_only() {
-        let chord = InputChord::from_multiple([KeyCode::KeyC, KeyCode::KeyH])
+        let chord = InputChord::new([KeyCode::KeyC, KeyCode::KeyH])
             .with(KeyCode::KeyO)
             .with_multiple([KeyCode::KeyR, KeyCode::KeyD]);
 
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn test_chord_with_buttons_and_axes() {
-        let chord = InputChord::from_multiple([KeyCode::KeyA, KeyCode::KeyB])
+        let chord = InputChord::new([KeyCode::KeyA, KeyCode::KeyB])
             .with(MouseScrollAxis::X)
             .with(MouseScrollAxis::Y)
             .with(GamepadStick::LEFT)

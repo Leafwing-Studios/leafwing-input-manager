@@ -35,14 +35,11 @@ fn spawn_input_map(mut commands: Commands) {
     // Setting up input mappings in the obvious way
     let mut input_map = InputMap::new([(One, Digit1), (Two, Digit2), (Three, Digit3)]);
 
-    input_map.insert(OneAndTwo, InputChord::from_multiple([Digit1, Digit2]));
-    input_map.insert(OneAndThree, InputChord::from_multiple([Digit1, Digit3]));
-    input_map.insert(TwoAndThree, InputChord::from_multiple([Digit2, Digit3]));
+    input_map.insert(OneAndTwo, InputChord::new([Digit1, Digit2]));
+    input_map.insert(OneAndThree, InputChord::new([Digit1, Digit3]));
+    input_map.insert(TwoAndThree, InputChord::new([Digit2, Digit3]));
 
-    input_map.insert(
-        OneAndTwoAndThree,
-        InputChord::from_multiple([Digit1, Digit2, Digit3]),
-    );
+    input_map.insert(OneAndTwoAndThree, InputChord::new([Digit1, Digit2, Digit3]));
 
     commands.spawn(InputManagerBundle::with_map(input_map));
 }

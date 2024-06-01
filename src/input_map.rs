@@ -622,7 +622,7 @@ mod tests {
         default_keyboard_map.insert(Action::Run, KeyCode::ShiftLeft);
         default_keyboard_map.insert(
             Action::Hide,
-            InputChord::from_multiple([KeyCode::ControlLeft, KeyCode::KeyH]),
+            InputChord::new([KeyCode::ControlLeft, KeyCode::KeyH]),
         );
 
         let mut default_gamepad_map = InputMap::default();

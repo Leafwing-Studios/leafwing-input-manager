@@ -468,7 +468,7 @@ fn button_pressed_any(input_streams: &InputStreams, button: GamepadButtonType) -
     input_streams
         .gamepads
         .iter()
-        .any(|gamepad| button_pressed(input_streams, gamepad, *button))
+        .any(|gamepad| button_pressed(input_streams, gamepad, button))
 }
 
 /// Retrieves the current value of the given [`GamepadButtonType`].

@@ -55,7 +55,7 @@ use crate::user_input::*;
 ///
 /// // Or use chords to press multiple keys at the same time!
 /// let bevy = [KeyCode::KeyB, KeyCode::KeyE, KeyCode::KeyV, KeyCode::KeyY];
-/// app.press_input(InputChord::from_multiple(bevy));
+/// app.press_input(InputChord::new(bevy));
 ///
 /// // Send values to an axis.
 /// app.send_axis_values(MouseScrollAxis::Y, [5.0]);
