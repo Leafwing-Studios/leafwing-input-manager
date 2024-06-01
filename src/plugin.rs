@@ -1,17 +1,5 @@
 //! Contains the main plugin exported by this crate.
 
-use crate::action_state::{ActionData, ActionState};
-use crate::axislike::{
-    AxisType, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
-    VirtualAxis, VirtualDPad,
-};
-use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
-use crate::clashing_inputs::ClashStrategy;
-use crate::input_map::InputMap;
-use crate::input_processing::*;
-use crate::timing::Timing;
-use crate::user_input::{InputKind, Modifier, UserInput};
-use crate::Actionlike;
 use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
