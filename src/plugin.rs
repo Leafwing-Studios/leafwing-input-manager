@@ -162,14 +162,9 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                         update_action_state::<A>,
                     )
                         .chain()
-                        .run_if(run_if_enabled::<A>)
                         .before(run_fixed_main_schedule),
                 );
 
-                app.add_systems(
-                    FixedPreUpdate,
-                    release_on_disable::<A>.in_set(InputManagerSystem::ReleaseOnDisable),
-                );
                 #[cfg(feature = "ui")]
                 app.configure_sets(
                     FixedPreUpdate,
@@ -179,21 +174,18 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 app.add_systems(
                     FixedPreUpdate,
                     update_action_state_from_interaction::<A>
-                        .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::ManualControl),
                 );
                 app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
                 app.add_systems(
                     FixedPostUpdate,
                     tick_action_state::<A>
-                        .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
                 app.add_systems(
                     RunFixedMainLoop,
                     swap_to_update::<A>
-                        .run_if(run_if_enabled::<A>)
                         .after(run_fixed_main_schedule),
                 );
             }
@@ -201,7 +193,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 app.add_systems(
                     PreUpdate,
                     tick_action_state::<A>
-                        .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Tick),
                 );
             }
