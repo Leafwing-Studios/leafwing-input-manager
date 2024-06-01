@@ -48,7 +48,7 @@ impl ActionData {
     /// Is the action currently pressed?
     #[inline]
     #[must_use]
-    fn pressed(&self) -> bool {
+    pub fn pressed(&self) -> bool {
         !self.disabled && self.state.pressed()
     }
 
