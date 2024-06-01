@@ -1,4 +1,4 @@
-use bevy::app::{PreUpdate};
+use bevy::app::PreUpdate;
 use bevy::input::InputPlugin;
 use bevy::prelude::{
     App, Fixed, FixedPostUpdate, FixedUpdate, IntoSystemConfigs, KeyCode, Real, Reflect, Res,
@@ -39,9 +39,10 @@ fn build_app(fixed_timestep: Duration, frame_timestep: Duration) -> App {
         .init_resource::<UpdateCounter>()
         .init_resource::<FixedUpdateCounter>()
         .init_resource::<ActionState<TestAction>>()
-        .insert_resource(InputMap::<TestAction>::new([
-            (TestAction::Up, KeyCode::ArrowUp),
-        ]))
+        .insert_resource(InputMap::<TestAction>::new([(
+            TestAction::Up,
+            KeyCode::ArrowUp,
+        )]))
         .insert_resource(Time::<Fixed>::from_duration(fixed_timestep))
         .insert_resource(TimeUpdateStrategy::ManualDuration(frame_timestep));
 
@@ -99,7 +100,10 @@ fn check_fixed_update_run_count(app: &mut App, expected: usize) {
 /// Assert that the button was just_pressed the expected number of times during the FixedUpdate schedule
 fn check_fixed_update_just_pressed_count(app: &mut App, expected: usize) {
     assert_eq!(
-        app.world.get_resource::<FixedUpdateCounter>().unwrap().just_pressed,
+        app.world
+            .get_resource::<FixedUpdateCounter>()
+            .unwrap()
+            .just_pressed,
         expected,
         "Button should have been just_pressed {} times during the FixedUpdate schedule",
         expected
@@ -109,7 +113,10 @@ fn check_fixed_update_just_pressed_count(app: &mut App, expected: usize) {
 /// Assert that the button was just_pressed the expected number of times during the Update schedule
 fn check_update_just_pressed_count(app: &mut App, expected: usize) {
     assert_eq!(
-        app.world.get_resource::<UpdateCounter>().unwrap().just_pressed,
+        app.world
+            .get_resource::<UpdateCounter>()
+            .unwrap()
+            .just_pressed,
         expected,
         "Button should have been just_pressed {} times during the Update schedule",
         expected
@@ -130,7 +137,6 @@ fn frame_without_fixed_timestep() {
     check_update_just_pressed_count(&mut app, 1);
     check_fixed_update_run_count(&mut app, 0);
     reset_counters(&mut app);
-
 
     // Frame 2: the FixedUpdate schedule should run once, the button is `just_pressed` for FixedUpdate
     // because we tick independently in FixedUpdate and Update.
