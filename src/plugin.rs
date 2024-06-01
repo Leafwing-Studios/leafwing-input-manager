@@ -20,7 +20,7 @@ use std::fmt::Debug;
 use bevy::app::{App, Plugin, RunFixedMainLoop};
 use bevy::ecs::prelude::*;
 use bevy::input::{ButtonState, InputSystem};
-use bevy::prelude::{FixedPostUpdate, FixedPreUpdate, PostUpdate, PreUpdate};
+use bevy::prelude::{FixedPostUpdate, PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
 use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
@@ -156,13 +156,10 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 );
 
                 #[cfg(feature = "ui")]
-                app.configure_sets(
-                    FixedPreUpdate,
-                    InputManagerSystem::ManualControl.before(InputManagerSystem::ReleaseOnDisable),
-                );
+                app.configure_sets(bevy::app::FixedPreUpdate, InputManagerSystem::ManualControl);
                 #[cfg(feature = "ui")]
                 app.add_systems(
-                    FixedPreUpdate,
+                    bevy::app::FixedPreUpdate,
                     update_action_state_from_interaction::<A>
                         .in_set(InputManagerSystem::ManualControl),
                 );
@@ -175,8 +172,7 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 );
                 app.add_systems(
                     RunFixedMainLoop,
-                    swap_to_update::<A>
-                        .after(run_fixed_main_schedule),
+                    swap_to_update::<A>.after(run_fixed_main_schedule),
                 );
             }
             Machine::Server => {
