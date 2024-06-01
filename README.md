@@ -108,5 +108,5 @@ This snippet is the `minimal.rs` example from the [`examples`](https://github.co
 
 ## Crate Feature Flags
 
-This crate has four feature flags: `asset`, `ui`, `no_ui_priority`, and `egui`.
+This crate has five feature flags: `asset`, `timing`, `ui`, `no_ui_priority`, and `egui`.
 Please refer to the `[features]` section in the [`Cargo.toml`](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main/Cargo.toml) for detailed information about their configurations.

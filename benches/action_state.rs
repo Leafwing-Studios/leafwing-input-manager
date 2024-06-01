@@ -1,8 +1,9 @@
 use bevy::{prelude::Reflect, utils::HashMap};
 use criterion::{criterion_group, criterion_main, Criterion};
+#[cfg(feature = "timing")]
+use leafwing_input_manager::timing::Timing;
 use leafwing_input_manager::{
-    action_state::ActionData, buttonlike::ButtonState, prelude::ActionState, timing::Timing,
-    Actionlike,
+    action_state::ActionData, buttonlike::ButtonState, prelude::ActionState, Actionlike,
 };
 
 #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
@@ -65,8 +66,10 @@ fn criterion_benchmark(c: &mut Criterion) {
                     state: ButtonState::JustPressed,
                     value: 0.0,
                     axis_pair: None,
+                    #[cfg(feature = "timing")]
                     timing: Timing::default(),
                     consumed: false,
+                    disabled: false,
                 },
             )
         })

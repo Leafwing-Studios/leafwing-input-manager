@@ -240,7 +240,7 @@ mod rotation {
     /// ```
     #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Default, Display)]
     pub struct Rotation {
-        /// Millionths of a degree, measured clockwise from midnight (x=0, y=1)
+        /// Millionths of a degree, measured counterclockwise from the positive x-axis (x=1, y=0)
         ///
         /// `360_000_000` make up a full circle
         pub(crate) micro_degrees: u32,
@@ -250,7 +250,7 @@ mod rotation {
     impl Rotation {
         /// Creates a new [`Rotation`] from a whole number of millionths of a degree
         ///
-        /// Measured clockwise from midnight.
+        /// Measured counterclockwise from the positive x-axis.
         #[inline]
         #[must_use]
         pub const fn new(micro_degrees: u32) -> Rotation {
@@ -261,7 +261,7 @@ mod rotation {
 
         /// Returns the exact internal measurement, stored in millionths of a degree
         ///
-        /// Measured clockwise from midnight (x=0, y=1).
+        /// Measured counterclockwise from the positive x-axis (x=1, y=0).
         /// `360_000_000` make up a full circle.
         #[inline]
         #[must_use]

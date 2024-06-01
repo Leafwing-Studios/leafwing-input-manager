@@ -8,4 +8,4 @@ edition = "2018"
 [dependencies]
 xshell = "0.2"
 bitflags = "2"
-itertools = "0.12"
+itertools = "0.13"

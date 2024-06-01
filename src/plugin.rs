@@ -1,15 +1,26 @@
 //! Contains the main plugin exported by this crate.
 
+use crate::action_state::{ActionData, ActionState};
+use crate::axislike::{
+    AxisType, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
+    VirtualAxis, VirtualDPad,
+};
+use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
+use crate::clashing_inputs::ClashStrategy;
+use crate::input_map::InputMap;
+use crate::input_processing::*;
+use crate::timing::Timing;
+use crate::user_input::{InputKind, Modifier, UserInput};
+use crate::Actionlike;
+use core::hash::Hash;
+use core::marker::PhantomData;
 use std::fmt::Debug;
-use std::hash::Hash;
-use std::marker::PhantomData;
 
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::{ButtonState, InputSystem};
-use bevy::prelude::{GamepadButtonType, KeyCode, PostUpdate, PreUpdate};
+use bevy::prelude::{PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
-
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -18,6 +29,7 @@ use crate::axislike::DualAxisData;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
+#[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
 use crate::Actionlike;
@@ -36,10 +48,11 @@ use crate::Actionlike;
 /// consider creating multiple `Actionlike` enums
 /// and adding a copy of this plugin for each `Actionlike` type.
 ///
-/// ## Systems
+/// All actions can be dynamically enabled or disabled by calling the relevant methods on
+/// `ActionState<A>`. This can be useful when working with states to pause the game, navigate
+/// menus, and so on.
 ///
-/// All systems added by this plugin can be dynamically enabled and disabled by setting the value of the [`ToggleActions<A>`] resource is set.
-/// This can be useful when working with states to pause the game, navigate menus, or so on.
+/// ## Systems
 ///
 /// **WARNING:** These systems run during [`PreUpdate`].
 /// If you have systems that care about inputs and actions that also run during this stage,
@@ -52,7 +65,6 @@ use crate::Actionlike;
 /// - [`update_action_state`](crate::systems::update_action_state), which collects [`ButtonInput`](bevy::input::ButtonInput) resources to update the [`ActionState`]
 /// - [`update_action_state_from_interaction`](crate::systems::update_action_state_from_interaction), for triggering actions from buttons
 ///    - powers the [`ActionStateDriver`](crate::action_driver::ActionStateDriver) component based on an [`Interaction`](bevy::ui::Interaction) component
-/// - [`release_on_disable`](crate::systems::release_on_disable), which resets action states when [`ToggleActions`] is flipped, to avoid persistent presses.
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
     machine: Machine,
@@ -98,23 +110,14 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 app.add_systems(
                     PreUpdate,
                     tick_action_state::<A>
-                        .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
-                )
-                .add_systems(
-                    PreUpdate,
-                    release_on_disable::<A>
-                        .in_set(InputManagerSystem::ReleaseOnDisable)
-                        .after(InputManagerSystem::Update),
                 )
                 .add_systems(PostUpdate, release_on_input_map_removed::<A>);
 
                 app.add_systems(
                     PreUpdate,
-                    update_action_state::<A>
-                        .run_if(run_if_enabled::<A>)
-                        .in_set(InputManagerSystem::Update),
+                    update_action_state::<A>.in_set(InputManagerSystem::Update),
                 );
 
                 app.configure_sets(PreUpdate, InputManagerSystem::Update.after(InputSystem));
@@ -132,7 +135,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::ManualControl
-                        .before(InputManagerSystem::ReleaseOnDisable)
                         .after(InputManagerSystem::Tick)
                         // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
                         // not being pressed
@@ -145,16 +147,13 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                 app.add_systems(
                     PreUpdate,
                     update_action_state_from_interaction::<A>
-                        .run_if(run_if_enabled::<A>)
                         .in_set(InputManagerSystem::ManualControl),
                 );
             }
             Machine::Server => {
                 app.add_systems(
                     PreUpdate,
-                    tick_action_state::<A>
-                        .run_if(run_if_enabled::<A>)
-                        .in_set(InputManagerSystem::Tick),
+                    tick_action_state::<A>.in_set(InputManagerSystem::Tick),
                 );
             }
         };
@@ -163,7 +162,13 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<InputMap<A>>()
             .register_type::<ActionData>()
             .register_type::<ActionState<A>>()
-            .register_type::<Timing>()
+            .register_type::<VirtualDPad>()
+            .register_type::<VirtualAxis>()
+            .register_type::<SingleAxis>()
+            .register_type::<DualAxis>()
+            .register_type::<AxisType>()
+            .register_type::<MouseWheelAxisType>()
+            .register_type::<MouseMotionAxisType>()
             .register_type::<DualAxisData>()
             .register_type::<ButtonState>()
             // Inputs
@@ -198,44 +203,10 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<CircleExclusion>()
             .register_type::<CircleDeadZone>()
             // Resources
-            .init_resource::<ToggleActions<A>>()
             .init_resource::<ClashStrategy>();
-    }
-}
 
-/// Controls whether the [`ActionState`] / [`InputMap`] pairs of type `A` are active
-///
-/// If this resource does not exist, actions work normally, as if `ToggleActions::enabled == true`.
-#[derive(Resource)]
-pub struct ToggleActions<A: Actionlike> {
-    /// When this is false, [`ActionState`]'s corresponding to `A` will ignore user inputs
-    ///
-    /// When this is set to false, all corresponding [`ActionState`]s are released
-    pub enabled: bool,
-    /// Marker that stores the type of action to toggle
-    pub phantom: PhantomData<A>,
-}
-
-impl<A: Actionlike> ToggleActions<A> {
-    /// A [`ToggleActions`] in enabled state.
-    pub const ENABLED: ToggleActions<A> = ToggleActions::<A> {
-        enabled: true,
-        phantom: PhantomData::<A>,
-    };
-    /// A [`ToggleActions`] in disabled state.
-    pub const DISABLED: ToggleActions<A> = ToggleActions::<A> {
-        enabled: false,
-        phantom: PhantomData::<A>,
-    };
-}
-
-// Implement manually to not require [`Default`] for `A`
-impl<A: Actionlike> Default for ToggleActions<A> {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            phantom: PhantomData::<A>,
-        }
+        #[cfg(feature = "timing")]
+        app.register_type::<Timing>();
     }
 }
 
@@ -250,8 +221,6 @@ pub enum InputManagerSystem {
     Tick,
     /// Collects input data to update the [`ActionState`]
     Update,
-    /// Release all actions in all [`ActionState`]s if [`ToggleActions`] was added
-    ReleaseOnDisable,
     /// Manually control the [`ActionState`]
     ///
     /// Must run after [`InputManagerSystem::Update`] or the action state will be overridden

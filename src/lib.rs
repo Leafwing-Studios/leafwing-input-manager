@@ -24,6 +24,8 @@ pub mod orientation;
 pub mod plugin;
 pub mod raw_inputs;
 pub mod systems;
+
+#[cfg(feature = "timing")]
 pub mod timing;
 pub mod typetag;
 pub mod user_input;
@@ -44,7 +46,6 @@ pub mod prelude {
     pub use crate::user_input::*;
 
     pub use crate::plugin::InputManagerPlugin;
-    pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
 
     pub use leafwing_input_manager_macros::serde_typetag;
