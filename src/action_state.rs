@@ -38,6 +38,40 @@ pub struct ActionData {
     /// Actions that are consumed cannot be pressed again until they are explicitly released.
     /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
     pub consumed: bool,
+    /// Is the action disabled?
+    ///
+    /// While disabled, an action will always report as released, regardless of its actual state.
+    pub disabled: bool,
+}
+
+impl ActionData {
+    /// Is the action currently pressed?
+    #[inline]
+    #[must_use]
+    pub fn pressed(&self) -> bool {
+        !self.disabled && self.state.pressed()
+    }
+
+    /// Was the action pressed since the last time it was ticked?
+    #[inline]
+    #[must_use]
+    pub fn just_pressed(&self) -> bool {
+        !self.disabled && self.state.just_pressed()
+    }
+
+    /// Is the action currently released?
+    #[inline]
+    #[must_use]
+    pub fn released(&self) -> bool {
+        self.disabled || self.state.released()
+    }
+
+    /// Was the action released since the last time it was ticked?
+    #[inline]
+    #[must_use]
+    pub fn just_released(&self) -> bool {
+        !self.disabled && self.state.just_released()
+    }
 }
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
@@ -400,6 +434,13 @@ impl<A: Actionlike> ActionState<A> {
         action_data.state.release();
     }
 
+    /// Releases all actions
+    pub fn release_all(&mut self) {
+        for action in self.keys() {
+            self.release(&action);
+        }
+    }
+
     /// Consumes the `action`
     ///
     /// The action will be released, and will not be able to be pressed again
@@ -458,13 +499,6 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Releases all actions
-    pub fn release_all(&mut self) {
-        for action in self.keys() {
-            self.release(&action);
-        }
-    }
-
     /// Is this `action` currently consumed?
     #[inline]
     #[must_use]
@@ -472,18 +506,72 @@ impl<A: Actionlike> ActionState<A> {
         matches!(self.action_data(action), Some(action_data) if action_data.consumed)
     }
 
+    /// Disables the `action`
+    #[inline]
+    pub fn disable(&mut self, action: &A) {
+        let action_data = match self.action_data_mut(action) {
+            Some(action_data) => action_data,
+            None => {
+                self.set_action_data(action.clone(), ActionData::default());
+                self.action_data_mut(action).unwrap()
+            }
+        };
+
+        action_data.disabled = true;
+    }
+
+    /// Disables all actions
+    #[inline]
+    pub fn disable_all(&mut self) {
+        for action in self.keys() {
+            self.disable(&action);
+        }
+    }
+
+    /// Is this `action` currently disabled?
+    #[inline]
+    #[must_use]
+    pub fn disabled(&mut self, action: &A) -> bool {
+        match self.action_data(action) {
+            Some(action_data) => action_data.disabled,
+            None => false,
+        }
+    }
+
+    /// Enables the `action`
+    #[inline]
+    pub fn enable(&mut self, action: &A) {
+        let action_data = match self.action_data_mut(action) {
+            Some(action_data) => action_data,
+            None => {
+                self.set_action_data(action.clone(), ActionData::default());
+                self.action_data_mut(action).unwrap()
+            }
+        };
+
+        action_data.disabled = false;
+    }
+
+    /// Enables all actions
+    #[inline]
+    pub fn enable_all(&mut self) {
+        for action in self.keys() {
+            self.enable(&action);
+        }
+    }
+
     /// Is this `action` currently pressed?
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
-        matches!(self.action_data(action), Some(action_data) if action_data.state.pressed())
+        matches!(self.action_data(action), Some(action_data) if action_data.pressed())
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
-        matches!(self.action_data(action), Some(action_data) if action_data.state.just_pressed())
+        matches!(self.action_data(action), Some(action_data) if action_data.just_pressed())
     }
 
     /// Is this `action` currently released?
@@ -493,7 +581,7 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
         match self.action_data(action) {
-            Some(action_data) => action_data.state.released(),
+            Some(action_data) => action_data.released(),
             None => true,
         }
     }
@@ -502,7 +590,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
-        matches!(self.action_data(action), Some(action_data) if action_data.state.just_released())
+        matches!(self.action_data(action), Some(action_data) if action_data.just_released())
     }
 
     #[must_use]
@@ -510,7 +598,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn get_pressed(&self) -> Vec<A> {
         self.action_data
             .iter()
-            .filter(|(_action, data)| data.state.pressed())
+            .filter(|(_action, data)| data.pressed())
             .map(|(action, _data)| action.clone())
             .collect()
     }
@@ -520,7 +608,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn get_just_pressed(&self) -> Vec<A> {
         self.action_data
             .iter()
-            .filter(|(_action, data)| data.state.just_pressed())
+            .filter(|(_action, data)| data.just_pressed())
             .map(|(action, _data)| action.clone())
             .collect()
     }
@@ -530,7 +618,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn get_released(&self) -> Vec<A> {
         self.action_data
             .iter()
-            .filter(|(_action, data)| data.state.released())
+            .filter(|(_action, data)| data.released())
             .map(|(action, _data)| action.clone())
             .collect()
     }
@@ -540,7 +628,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn get_just_released(&self) -> Vec<A> {
         self.action_data
             .iter()
-            .filter(|(_action, data)| data.state.just_released())
+            .filter(|(_action, data)| data.just_released())
             .map(|(action, _data)| action.clone())
             .collect()
     }

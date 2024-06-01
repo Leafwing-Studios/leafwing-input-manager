@@ -48,7 +48,6 @@ pub mod prelude {
     pub use crate::user_input::{InputKind, Modifier, UserInput};
 
     pub use crate::plugin::InputManagerPlugin;
-    pub use crate::plugin::ToggleActions;
     pub use crate::{Actionlike, InputManagerBundle};
 
     pub use leafwing_input_manager_macros::serde_typetag;
