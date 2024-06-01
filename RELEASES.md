@@ -4,6 +4,10 @@
 
 ### Breaking Changes
 
+- the `timing` field of the `ActionData` is now disabled by default. Timing information will only be collected
+if the `timing` feature is enabled. It is disabled by default because most games don't require timing information.
+(how long a button was pressed for)
+- removed `ToggleActions` resource in favor of new methods on `ActionState`: `disable_all`, `disable(action)`, `enable_all`, `enable(action)`, and `disabled(action)`.
 - removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
 - replaced axis-like input handling with new input processors (see 'Enhancements: Input Processors' for details).
@@ -92,6 +96,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ### Bugs
 
+- fixed a bug where enabling a pressed action would read as `just_pressed`, and disabling a pressed action would read as `just_released`.
 - fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
 
 ## Version 0.13.3
