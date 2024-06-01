@@ -1,7 +1,6 @@
 //! Processors for dual-axis input values
 
 use std::hash::{Hash, Hasher};
-use std::sync::Arc;
 
 use bevy::prelude::{BVec2, Reflect, Vec2};
 use bevy::utils::FloatOrd;
@@ -21,12 +20,8 @@ mod range;
 /// accepting a [`Vec2`] input and producing a [`Vec2`] output.
 #[must_use]
 #[non_exhaustive]
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 pub enum DualAxisProcessor {
-    /// No processor is applied.
-    #[default]
-    None,
-
     /// Converts input values into three discrete values along each axis,
     /// similar to [`Vec2::signum()`] but returning `0.0` for zero values.
     ///
@@ -76,52 +71,16 @@ pub enum DualAxisProcessor {
     /// A wrapper around [`CircleDeadZone`] to represent scaled deadzone.
     CircleDeadZone(CircleDeadZone),
 
-    /// Processes input values sequentially through a sequence of [`DualAxisProcessor`]s.
-    /// one for the current step and the other for the next step.
-    ///
-    /// For a straightforward creation of a [`DualAxisProcessor::Pipeline`],
-    /// you can use [`DualAxisProcessor::pipeline`] or [`DualAxisProcessor::with_processor`] methods.
-    ///
-    /// ```rust
-    /// use std::sync::Arc;
-    /// use leafwing_input_manager::prelude::*;
-    ///
-    /// let expected = DualAxisProcessor::Pipeline(vec![
-    ///     Arc::new(DualAxisInverted::ALL.into()),
-    ///     Arc::new(DualAxisSensitivity::all(2.0).into()),
-    /// ]);
-    ///
-    /// assert_eq!(
-    ///     expected,
-    ///     DualAxisProcessor::from(DualAxisInverted::ALL).with_processor(DualAxisSensitivity::all(2.0))
-    /// );
-    ///
-    /// assert_eq!(
-    ///     expected,
-    ///     DualAxisProcessor::from_iter([
-    ///         DualAxisInverted::ALL.into(),
-    ///         DualAxisSensitivity::all(2.0).into(),
-    ///     ])
-    /// );
-    Pipeline(Vec<Arc<DualAxisProcessor>>),
-
     /// A user-defined processor that implements [`CustomDualAxisProcessor`].
     Custom(Box<dyn CustomDualAxisProcessor>),
 }
 
 impl DualAxisProcessor {
-    /// Creates a [`DualAxisProcessor::Pipeline`] from the given `processors`.
-    #[inline]
-    pub fn pipeline(processors: impl IntoIterator<Item = DualAxisProcessor>) -> Self {
-        Self::from_iter(processors)
-    }
-
     /// Computes the result by processing the `input_value`.
     #[must_use]
     #[inline]
     pub fn process(&self, input_value: Vec2) -> Vec2 {
         match self {
-            Self::None => input_value,
             Self::Digital => Vec2::new(
                 AxisProcessor::Digital.process(input_value.x),
                 AxisProcessor::Digital.process(input_value.y),
@@ -134,47 +93,8 @@ impl DualAxisProcessor {
             Self::CircleBounds(bounds) => bounds.clamp(input_value),
             Self::CircleExclusion(exclusion) => exclusion.exclude(input_value),
             Self::CircleDeadZone(deadzone) => deadzone.normalize(input_value),
-            Self::Pipeline(sequence) => sequence
-                .iter()
-                .fold(input_value, |value, next| next.process(value)),
             Self::Custom(processor) => processor.process(input_value),
         }
-    }
-
-    /// Appends the given `next_processor` as the next processing step.
-    ///
-    /// - If either processor is [`DualAxisProcessor::None`], returns the other.
-    /// - If the current processor is [`DualAxisProcessor::Pipeline`], pushes the other into it.
-    /// - If the given processor is [`DualAxisProcessor::Pipeline`], prepends the current one into it.
-    /// - If both processors are [`DualAxisProcessor::Pipeline`], merges the two pipelines.
-    /// - If neither processor is [`DualAxisProcessor::None`] nor a pipeline,
-    ///     creates a new pipeline containing them.
-    #[inline]
-    pub fn with_processor(self, next_processor: impl Into<DualAxisProcessor>) -> Self {
-        let other = next_processor.into();
-        match (self.clone(), other.clone()) {
-            (_, Self::None) => self,
-            (Self::None, _) => other,
-            (Self::Pipeline(mut self_seq), Self::Pipeline(mut next_seq)) => {
-                self_seq.append(&mut next_seq);
-                Self::Pipeline(self_seq)
-            }
-            (Self::Pipeline(mut self_seq), _) => {
-                self_seq.push(Arc::new(other));
-                Self::Pipeline(self_seq)
-            }
-            (_, Self::Pipeline(mut next_seq)) => {
-                next_seq.insert(0, Arc::new(self));
-                Self::Pipeline(next_seq)
-            }
-            (_, _) => Self::Pipeline(vec![Arc::new(self), Arc::new(other)]),
-        }
-    }
-}
-
-impl FromIterator<DualAxisProcessor> for DualAxisProcessor {
-    fn from_iter<T: IntoIterator<Item = DualAxisProcessor>>(iter: T) -> Self {
-        Self::Pipeline(iter.into_iter().map(Arc::new).collect())
     }
 }
 
@@ -183,8 +103,11 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     /// Resets the processing pipeline, removing any currently applied processors.
     fn reset_processing_pipeline(self) -> Self;
 
-    /// Replaces the current processing pipeline with the specified [`DualAxisProcessor`].
-    fn replace_processing_pipeline(self, processor: impl Into<DualAxisProcessor>) -> Self;
+    /// Replaces the current processing pipeline with the given [`DualAxisProcessor`]s.
+    fn replace_processing_pipeline(
+        self,
+        processors: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self;
 
     /// Appends the given [`DualAxisProcessor`] as the next processing step.
     fn with_processor(self, processor: impl Into<DualAxisProcessor>) -> Self;
@@ -564,68 +487,6 @@ impl Hash for DualAxisSensitivity {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_dual_axis_processing_pipeline() {
-        let pipeline = DualAxisProcessor::Pipeline(vec![
-            Arc::new(DualAxisInverted::ALL.into()),
-            Arc::new(DualAxisSensitivity::all(2.0).into()),
-        ]);
-
-        for x in -300..300 {
-            let x = x as f32 * 0.01;
-            for y in -300..300 {
-                let y = y as f32 * 0.01;
-                let value = Vec2::new(x, y);
-
-                assert_eq!(pipeline.process(value), value * -2.0);
-            }
-        }
-    }
-
-    #[test]
-    fn test_dual_axis_processing_pipeline_creation() {
-        assert_eq!(
-            DualAxisProcessor::pipeline([]),
-            DualAxisProcessor::Pipeline(vec![])
-        );
-        assert_eq!(
-            DualAxisProcessor::from_iter([]),
-            DualAxisProcessor::Pipeline(vec![])
-        );
-
-        assert_eq!(
-            DualAxisProcessor::pipeline([DualAxisInverted::ALL.into()]),
-            DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
-        );
-
-        assert_eq!(
-            DualAxisProcessor::from_iter([DualAxisInverted::ALL.into()]),
-            DualAxisProcessor::Pipeline(vec![Arc::new(DualAxisInverted::ALL.into())])
-        );
-
-        assert_eq!(
-            DualAxisProcessor::pipeline([
-                DualAxisInverted::ALL.into(),
-                DualAxisSensitivity::all(2.0).into(),
-            ]),
-            DualAxisProcessor::Pipeline(vec![
-                Arc::new(DualAxisInverted::ALL.into()),
-                Arc::new(DualAxisSensitivity::all(2.0).into()),
-            ])
-        );
-
-        assert_eq!(
-            DualAxisProcessor::from_iter([
-                DualAxisInverted::ALL.into(),
-                DualAxisSensitivity::all(2.0).into(),
-            ]),
-            DualAxisProcessor::Pipeline(vec![
-                Arc::new(DualAxisInverted::ALL.into()),
-                Arc::new(DualAxisSensitivity::all(2.0).into()),
-            ])
-        );
-    }
 
     #[test]
     fn test_dual_axis_inverted() {

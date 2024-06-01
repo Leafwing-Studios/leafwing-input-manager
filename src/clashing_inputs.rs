@@ -313,7 +313,6 @@ fn resolve_clash<A: Actionlike>(
 mod tests {
     use super::*;
     use crate as leafwing_input_manager;
-    use crate::input_processing::DualAxisProcessor;
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use bevy::prelude::Reflect;
@@ -353,7 +352,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             },
         );
         input_map.insert_chord(CtrlUp, [ControlLeft, ArrowUp]);
@@ -381,7 +380,7 @@ mod tests {
                 down: KeyX.into(),
                 left: KeyY.into(),
                 right: KeyZ.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             }
             .into();
             let abcd_dpad: UserInput = VirtualDPad {
@@ -389,7 +388,7 @@ mod tests {
                 down: KeyB.into(),
                 left: KeyC.into(),
                 right: KeyD.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             }
             .into();
 
@@ -399,7 +398,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             }
             .into();
 

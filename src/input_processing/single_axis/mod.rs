@@ -1,7 +1,6 @@
 //! Processors for single-axis input values
 
 use std::hash::{Hash, Hasher};
-use std::sync::Arc;
 
 use bevy::prelude::Reflect;
 use bevy::utils::FloatOrd;
@@ -17,12 +16,8 @@ mod range;
 /// accepting a `f32` input and producing a `f32` output.
 #[must_use]
 #[non_exhaustive]
-#[derive(Default, Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Reflect, Serialize, Deserialize)]
 pub enum AxisProcessor {
-    /// No processor is applied.
-    #[default]
-    None,
-
     /// Converts input values into three discrete values,
     /// similar to [`f32::signum()`] but returning `0.0` for zero values.
     ///
@@ -78,52 +73,16 @@ pub enum AxisProcessor {
     /// A wrapper around [`AxisDeadZone`] to represent scaled deadzone.
     DeadZone(AxisDeadZone),
 
-    /// Processes input values sequentially through a sequence of [`AxisProcessor`]s.
-    ///
-    /// For a straightforward creation of a [`AxisProcessor::Pipeline`],
-    /// you can use [`AxisProcessor::pipeline`] or [`AxisProcessor::with_processor`] methods.
-    ///
-    /// ```rust
-    /// use std::sync::Arc;
-    /// use leafwing_input_manager::prelude::*;
-    ///
-    /// let expected = AxisProcessor::Pipeline(vec![
-    ///     Arc::new(AxisProcessor::Inverted),
-    ///     Arc::new(AxisProcessor::Sensitivity(2.0)),
-    /// ]);
-    ///
-    /// assert_eq!(
-    ///     expected,
-    ///     AxisProcessor::Inverted.with_processor(AxisProcessor::Sensitivity(2.0))
-    /// );
-    ///
-    /// assert_eq!(
-    ///     expected,
-    ///     AxisProcessor::from_iter([
-    ///         AxisProcessor::Inverted,
-    ///         AxisProcessor::Sensitivity(2.0),
-    ///     ])
-    /// );
-    /// ```
-    Pipeline(Vec<Arc<AxisProcessor>>),
-
     /// A user-defined processor that implements [`CustomAxisProcessor`].
     Custom(Box<dyn CustomAxisProcessor>),
 }
 
 impl AxisProcessor {
-    /// Creates an [`AxisProcessor::Pipeline`] from the given `processors`.
-    #[inline]
-    pub fn pipeline(processors: impl IntoIterator<Item = AxisProcessor>) -> Self {
-        Self::from_iter(processors)
-    }
-
     /// Computes the result by processing the `input_value`.
     #[must_use]
     #[inline]
     pub fn process(&self, input_value: f32) -> f32 {
         match self {
-            Self::None => input_value,
             Self::Digital => {
                 if input_value == 0.0 {
                     0.0
@@ -136,47 +95,8 @@ impl AxisProcessor {
             Self::ValueBounds(bounds) => bounds.clamp(input_value),
             Self::Exclusion(exclusion) => exclusion.exclude(input_value),
             Self::DeadZone(deadzone) => deadzone.normalize(input_value),
-            Self::Pipeline(sequence) => sequence
-                .iter()
-                .fold(input_value, |value, next| next.process(value)),
             Self::Custom(processor) => processor.process(input_value),
         }
-    }
-
-    /// Appends the given `next_processor` as the next processing step.
-    ///
-    /// - If either processor is [`AxisProcessor::None`], returns the other.
-    /// - If the current processor is [`AxisProcessor::Pipeline`], pushes the other into it.
-    /// - If the given processor is [`AxisProcessor::Pipeline`], prepends the current one into it.
-    /// - If both processors are [`AxisProcessor::Pipeline`], merges the two pipelines.
-    /// - If neither processor is [`AxisProcessor::None`] nor a pipeline,
-    ///     creates a new pipeline containing them.
-    #[inline]
-    pub fn with_processor(self, next_processor: impl Into<AxisProcessor>) -> Self {
-        let other = next_processor.into();
-        match (self.clone(), other.clone()) {
-            (_, Self::None) => self,
-            (Self::None, _) => other,
-            (Self::Pipeline(mut self_seq), Self::Pipeline(mut next_seq)) => {
-                self_seq.append(&mut next_seq);
-                Self::Pipeline(self_seq)
-            }
-            (Self::Pipeline(mut self_seq), _) => {
-                self_seq.push(Arc::new(other));
-                Self::Pipeline(self_seq)
-            }
-            (_, Self::Pipeline(mut next_seq)) => {
-                next_seq.insert(0, Arc::new(self));
-                Self::Pipeline(next_seq)
-            }
-            (_, _) => Self::Pipeline(vec![Arc::new(self), Arc::new(other)]),
-        }
-    }
-}
-
-impl FromIterator<AxisProcessor> for AxisProcessor {
-    fn from_iter<T: IntoIterator<Item = AxisProcessor>>(iter: T) -> Self {
-        Self::Pipeline(iter.into_iter().map(Arc::new).collect())
     }
 }
 
@@ -186,14 +106,12 @@ impl Hash for AxisProcessor {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(self).hash(state);
         match self {
-            Self::None => {}
             Self::Digital => {}
             Self::Inverted => {}
             Self::Sensitivity(sensitivity) => FloatOrd(*sensitivity).hash(state),
             Self::ValueBounds(bounds) => bounds.hash(state),
             Self::Exclusion(exclusion) => exclusion.hash(state),
             Self::DeadZone(deadzone) => deadzone.hash(state),
-            Self::Pipeline(sequence) => sequence.hash(state),
             Self::Custom(processor) => processor.hash(state),
         }
     }
@@ -204,8 +122,11 @@ pub trait WithAxisProcessingPipelineExt: Sized {
     /// Resets the processing pipeline, removing any currently applied processors.
     fn reset_processing_pipeline(self) -> Self;
 
-    /// Replaces the current processing pipeline with the specified [`AxisProcessor`].
-    fn replace_processing_pipeline(self, processor: impl Into<AxisProcessor>) -> Self;
+    /// Replaces the current processing pipeline with the given [`AxisProcessor`]s.
+    fn replace_processing_pipeline(
+        self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self;
 
     /// Appends the given [`AxisProcessor`] as the next processing step.
     fn with_processor(self, processor: impl Into<AxisProcessor>) -> Self;
@@ -308,55 +229,5 @@ mod tests {
                 assert_eq!(processor.process(value), sensitivity * value);
             }
         }
-    }
-
-    #[test]
-    fn test_axis_processing_pipeline() {
-        let pipeline = AxisProcessor::Pipeline(vec![
-            Arc::new(AxisProcessor::Inverted),
-            Arc::new(AxisProcessor::Sensitivity(2.0)),
-        ]);
-
-        for value in -300..300 {
-            let value = value as f32 * 0.01;
-
-            assert_eq!(pipeline.process(value), value * -2.0);
-        }
-    }
-
-    #[test]
-    fn test_axis_processing_pipeline_creation() {
-        assert_eq!(AxisProcessor::pipeline([]), AxisProcessor::Pipeline(vec![]));
-
-        assert_eq!(
-            AxisProcessor::from_iter([]),
-            AxisProcessor::Pipeline(vec![])
-        );
-
-        assert_eq!(
-            AxisProcessor::pipeline([AxisProcessor::Inverted]),
-            AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
-        );
-
-        assert_eq!(
-            AxisProcessor::from_iter([AxisProcessor::Inverted]),
-            AxisProcessor::Pipeline(vec![Arc::new(AxisProcessor::Inverted)]),
-        );
-
-        assert_eq!(
-            AxisProcessor::pipeline([AxisProcessor::Inverted, AxisProcessor::Sensitivity(2.0)]),
-            AxisProcessor::Pipeline(vec![
-                Arc::new(AxisProcessor::Inverted),
-                Arc::new(AxisProcessor::Sensitivity(2.0)),
-            ])
-        );
-
-        assert_eq!(
-            AxisProcessor::from_iter([AxisProcessor::Inverted, AxisProcessor::Sensitivity(2.0)]),
-            AxisProcessor::Pipeline(vec![
-                Arc::new(AxisProcessor::Inverted),
-                Arc::new(AxisProcessor::Sensitivity(2.0)),
-            ])
-        );
     }
 }

@@ -32,25 +32,19 @@ fn spawn_player(mut commands: Commands) {
                 // and scaling other values linearly in between.
                 .with_circle_deadzone(0.1)
                 // Followed by appending Y-axis inversion for the next processing step.
-                .inverted_y(),
-        )
-        .with(
-            Action::Move,
-            DualAxis::left_stick()
-                // You can replace the currently used pipeline with another processor.
-                .replace_processing_pipeline(CircleDeadZone::default())
-                // Or reset the pipeline directly, leaving no any processing applied.
+                .inverted_y()
+                // Or reset the pipeline, leaving no any processing applied.
                 .reset_processing_pipeline(),
         )
         .with(
             Action::LookAround,
             // You can also use a sequence of processors as the processing pipeline.
-            DualAxis::mouse_motion().replace_processing_pipeline(DualAxisProcessor::pipeline([
+            DualAxis::mouse_motion().replace_processing_pipeline([
                 // The first processor is a circular deadzone.
                 CircleDeadZone::new(0.1).into(),
                 // The next processor doubles inputs normalized by the deadzone.
                 DualAxisSensitivity::all(2.0).into(),
-            ])),
+            ]),
         );
     commands
         .spawn(InputManagerBundle::with_map(input_map))
@@ -61,7 +55,7 @@ fn check_data(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
     for action in action_state.get_pressed() {
         println!(
-            "Pressed {action:?}! Its data: {:?}",
+            "Pressed {action:?} with data: {:?}",
             action_state.axis_pair(&action)
         );
     }
