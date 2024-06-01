@@ -220,7 +220,7 @@ fn game_pad_dual_axis_deadzone() {
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
         DualAxis::left_stick()
-            .replace_processing_pipeline(vec![DualAxisDeadZone::symmetric_all(0.1).into()]),
+            .replace_processing_pipeline([DualAxisDeadZone::symmetric_all(0.1).into()]),
     )]));
 
     // Test that an input inside the dual-axis deadzone is filtered out.
