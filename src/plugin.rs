@@ -6,14 +6,13 @@ use std::fmt::Debug;
 
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
-use bevy::input::{ButtonState, InputSystem};
-use bevy::prelude::{PostUpdate, PreUpdate};
+use bevy::input::InputSystem;
+use bevy::prelude::{GamepadButtonType, KeyCode, PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
 use crate::action_state::{ActionData, ActionState};
-use crate::axislike::DualAxisData;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
@@ -150,15 +149,6 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
             .register_type::<InputMap<A>>()
             .register_type::<ActionData>()
             .register_type::<ActionState<A>>()
-            .register_type::<VirtualDPad>()
-            .register_type::<VirtualAxis>()
-            .register_type::<SingleAxis>()
-            .register_type::<DualAxis>()
-            .register_type::<AxisType>()
-            .register_type::<MouseWheelAxisType>()
-            .register_type::<MouseMotionAxisType>()
-            .register_type::<DualAxisData>()
-            .register_type::<ButtonState>()
             // Inputs
             .register_user_input::<GamepadControlDirection>()
             .register_user_input::<GamepadControlAxis>()

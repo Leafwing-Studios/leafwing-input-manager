@@ -232,7 +232,7 @@ fn game_pad_dual_axis_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::ZERO
+        DualAxisData::new(0.0, 0.0)
     );
 
     // Test that an input outside the dual-axis deadzone is not filtered out.
@@ -280,7 +280,7 @@ fn game_pad_circle_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::ZERO
+        DualAxisData::new(0.0, 0.0)
     );
 
     // Test that an input outside the circle deadzone is not filtered out, assuming values of 0.1
@@ -315,7 +315,7 @@ fn test_zero_dual_axis_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::ZERO
+        DualAxisData::new(0.0, 0.0)
     );
 }
 
@@ -337,7 +337,7 @@ fn test_zero_circle_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::ZERO
+        DualAxisData::new(0.0, 0.0)
     );
 }
 

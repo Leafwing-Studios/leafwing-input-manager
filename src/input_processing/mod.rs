@@ -17,18 +17,6 @@
 //!
 //! # Built-in Processors
 //!
-//! ## Pipelines
-//!
-//! Pipelines handle input values sequentially through a sequence of processors.
-//!
-//! - [`AxisProcessor::Pipeline`]: Pipeline for single-axis inputs.
-//! - [`DualAxisProcessor::Pipeline`]: Pipeline for dual-axis inputs.
-//!
-//! You can also use these methods to create a pipeline.
-//!
-//! - [`AxisProcessor::pipeline`] or [`AxisProcessor::with_processor`] for [`AxisProcessor::Pipeline`].
-//! - [`DualAxisProcessor::pipeline`] or [`DualAxisProcessor::with_processor`] for [`DualAxisProcessor::Pipeline`].
-//!
 //! ## Digital Conversion
 //!
 //! Digital processors convert raw input values into discrete values,

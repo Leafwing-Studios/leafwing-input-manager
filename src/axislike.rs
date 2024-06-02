@@ -162,113 +162,118 @@ impl DualAxisDirection {
     }
 }
 
-/// A combined input data from two axes (X and Y).
+/// A wrapped [`Vec2`] that represents the combination of two input axes.
 ///
-/// This struct stores the X and Y values as a [`Vec2`] in a device-agnostic way,
-/// meaning it works consistently regardless of the specific input device (gamepad, joystick, etc.).
-/// It assumes any calibration (deadzone correction, rescaling, drift correction, etc.)
-/// has already been applied at an earlier stage of processing.
+/// The neutral origin is always at 0, 0.
+/// When working with gamepad axes, both `x` and `y` values are bounded by [-1.0, 1.0].
+/// For other input axes (such as mousewheel data), this may not be true!
 ///
-/// The neutral origin of this input data is always at `(0, 0)`.
-/// When working with gamepad axes, both X and Y values are typically bounded by `[-1.0, 1.0]`.
-/// However, this range may not apply to other input types, such as mousewheel data which can have a wider range.
-#[derive(Default, Debug, Copy, Clone, PartialEq, Deserialize, Serialize, Reflect)]
-#[must_use]
-pub struct DualAxisData(Vec2);
+/// This struct should store the processed form of your raw inputs in a device-agnostic fashion.
+/// Any deadzone correction, rescaling or drift-correction should be done at an earlier level.
+#[derive(Debug, Copy, Clone, PartialEq, Default, Deserialize, Serialize, Reflect)]
+pub struct DualAxisData {
+    xy: Vec2,
+}
 
+// Constructors
 impl DualAxisData {
-    /// All zeros.
-    pub const ZERO: Self = Self(Vec2::ZERO);
-
-    /// Creates a [`DualAxisData`] with the given values.
-    pub const fn new(x: f32, y: f32) -> Self {
-        Self(Vec2::new(x, y))
+    /// Creates a new [`DualAxisData`] from the provided (x,y) coordinates
+    pub fn new(x: f32, y: f32) -> DualAxisData {
+        DualAxisData {
+            xy: Vec2::new(x, y),
+        }
     }
 
-    /// Creates a [`DualAxisData`] directly from the given [`Vec2`].
-    pub const fn from_xy(xy: Vec2) -> Self {
-        Self(xy)
+    /// Creates a new [`DualAxisData`] directly from a [`Vec2`]
+    pub fn from_xy(xy: Vec2) -> DualAxisData {
+        DualAxisData { xy }
     }
 
-    /// Combines the directional input from this [`DualAxisData`] with another.
+    /// Merge the state of this [`DualAxisData`] with another.
     ///
     /// This is useful if you have multiple sticks bound to the same game action,
     /// and you want to get their combined position.
     ///
     /// # Warning
     ///
-    /// This method performs vector addition on the X and Y components.
-    /// While the direction is preserved, the combined magnitude might exceed the expected
-    /// range for certain input devices (e.g., gamepads typically have a maximum magnitude of `1.0`).
+    /// This method can result in values with a greater maximum magnitude than expected!
+    /// Use [`DualAxisData::clamp_length`] to limit the resulting direction.
+    pub fn merged_with(&self, other: DualAxisData) -> DualAxisData {
+        DualAxisData::from_xy(self.xy() + other.xy())
+    }
+}
+
+// Methods
+impl DualAxisData {
+    /// The value along the x-axis, typically ranging from -1 to 1
+    #[must_use]
+    #[inline]
+    pub fn x(&self) -> f32 {
+        self.xy.x
+    }
+
+    /// The value along the y-axis, typically ranging from -1 to 1
+    #[must_use]
+    #[inline]
+    pub fn y(&self) -> f32 {
+        self.xy.y
+    }
+
+    /// The (x, y) values, each typically ranging from -1 to 1
+    #[must_use]
+    #[inline]
+    pub fn xy(&self) -> Vec2 {
+        self.xy
+    }
+
+    /// The [`Direction2d`] that this axis is pointing towards, if any
     ///
-    /// To ensure the combined input stays within the expected range,
-    /// consider using [`Self::clamp_length`] on the returned value.
-    pub fn merged_with(&self, other: Self) -> Self {
-        Self(self.0 + other.0)
-    }
-
-    /// The value along the X-axis, typically ranging from `-1.0` to `1.0`.
-    #[must_use]
-    #[inline]
-    pub const fn x(&self) -> f32 {
-        self.0.x
-    }
-
-    /// The value along the Y-axis, typically ranging from `-1.0` to `1.0`.
-    #[must_use]
-    #[inline]
-    pub const fn y(&self) -> f32 {
-        self.0.y
-    }
-
-    /// The values along each axis, each typically ranging from `-1.0` to `1.0`.
-    #[must_use]
-    #[inline]
-    pub const fn xy(&self) -> Vec2 {
-        self.0
-    }
-
-    /// The [`Direction2d`] that this axis is pointing towards, if not neutral.
+    /// If the axis is neutral (x,y) = (0,0), a (0, 0) `None` will be returned
     #[must_use]
     #[inline]
     pub fn direction(&self) -> Option<Direction2d> {
-        Direction2d::new(self.0).ok()
+        Direction2d::new(self.xy).ok()
     }
 
-    /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if not neutral.
+    /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
+    ///
+    /// If the axis is neutral (x,y) = (0,0), this will be `None`
     #[must_use]
     #[inline]
     pub fn rotation(&self) -> Option<Rotation> {
-        Rotation::from_xy(self.0).ok()
+        Rotation::from_xy(self.xy).ok()
     }
 
-    /// Computes the magnitude of the value (distance from the origin), typically bounded by `[0, 1]`.
+    /// How far from the origin is this axis's position?
     ///
-    /// If you only need to compare relative magnitudes, use [`Self::length_squared`] instead for faster computation.
+    /// Typically bounded by 0 and 1.
+    ///
+    /// If you only need to compare relative magnitudes, use `magnitude_squared` instead for faster computation.
     #[must_use]
     #[inline]
     pub fn length(&self) -> f32 {
-        self.0.length()
+        self.xy.length()
     }
 
-    /// Computes the squared magnitude, typically bounded by `[0, 1]`.
+    /// The square of the axis' magnitude
     ///
-    /// This is faster than [`Self::length`], as it avoids a square root, but will generally have less natural behavior.
+    /// Typically bounded by 0 and 1.
+    ///
+    /// This is faster than `magnitude`, as it avoids a square root, but will generally have less natural behavior.
     #[must_use]
     #[inline]
     pub fn length_squared(&self) -> f32 {
-        self.0.length_squared()
+        self.xy.length_squared()
     }
 
-    /// Clamps the value to a maximum magnitude.
-    #[inline]
+    /// Clamps the magnitude of the axis
     pub fn clamp_length(&mut self, max: f32) {
-        self.0 = self.0.clamp_length_max(max);
+        self.xy = self.xy.clamp_length_max(max);
     }
 }
 
 impl From<DualAxisData> for Vec2 {
     fn from(data: DualAxisData) -> Vec2 {
-        data.0
+        data.xy
     }
 }

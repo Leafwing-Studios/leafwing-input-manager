@@ -92,14 +92,10 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - added processor traits for defining custom processors:
   - `CustomAxisProcessor`: Handles single-axis values.
   - `CustomDualAxisProcessor`: Handles dual-axis values.
-- added App extensions: `register_axis_processor` and `register_dual_axis_processor` for registration of processors.
+  - added App extensions for registration of custom processors:
+    - `register_axis_processor` for `CustomAxisProcessor`.
+    - `register_dual_axis_processor` for `CustomDualAxisProcessor`.
 - added built-in processors (variants of processor enums and `Into<Processor>` implementors):
-  - Pipelines: Handle input values sequentially through a sequence of processors.
-    - `AxisProcessor::Pipeline`: Pipeline for single-axis inputs.
-    - `DualAxisProcessor::Pipeline`: Pipeline for dual-axis inputs.
-    - you can also create them by these methods:
-      - `AxisProcessor::pipeline` or `AxisProcessor::with_processor` for `AxisProcessor::Pipeline`.
-      - `DualAxisProcessor::pipeline` or `DualAxisProcessor::with_processor` for `DualAxisProcessor::Pipeline`.
   - Digital Conversion: Discretizes values, returning `-1.0`. `0.0` or `1.0`:
     - `AxisProcessor::Digital`: Single-axis digital conversion.
     - `DualAxisProcessor::Digital`: Dual-axis digital conversion.

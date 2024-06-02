@@ -206,8 +206,8 @@ pub struct GamepadControlAxis {
     /// The wrapped axis.
     pub(crate) axis: GamepadAxisType,
 
-    /// Processes input values.
-    pub(crate) processor: AxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<AxisProcessor>,
 }
 
 impl GamepadControlAxis {
@@ -215,8 +215,10 @@ impl GamepadControlAxis {
     /// No processing is applied to raw data from the gamepad.
     #[inline]
     pub const fn new(axis: GamepadAxisType) -> Self {
-        let processor = AxisProcessor::None;
-        Self { axis, processor }
+        Self {
+            axis,
+            processors: Vec::new(),
+        }
     }
 
     /// The horizontal axis (X-axis) of the left stick.
@@ -257,12 +259,14 @@ impl UserInput for GamepadControlAxis {
         self.value(input_streams) != 0.0
     }
 
-    /// Retrieves the current value of this axis after processing by the associated processor.
+    /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         let value = read_axis_value(input_streams, self.axis);
-        self.processor.process(value)
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 
     /// Always returns [`None`] as [`GamepadControlAxis`] doesn't represent dual-axis input.
@@ -291,19 +295,22 @@ impl UserInput for GamepadControlAxis {
 impl WithAxisProcessingPipelineExt for GamepadControlAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = AxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -351,8 +358,8 @@ pub struct GamepadStick {
     /// Vertical movement of the stick.
     pub(crate) y: GamepadAxisType,
 
-    /// Processes input values.
-    pub(crate) processor: DualAxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<DualAxisProcessor>,
 }
 
 impl GamepadStick {
@@ -360,23 +367,25 @@ impl GamepadStick {
     pub const LEFT: Self = Self {
         x: GamepadAxisType::LeftStickX,
         y: GamepadAxisType::LeftStickY,
-        processor: DualAxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The right gamepad stick. No processing is applied to raw data from the gamepad.
     pub const RIGHT: Self = Self {
         x: GamepadAxisType::RightStickX,
         y: GamepadAxisType::RightStickY,
-        processor: DualAxisProcessor::None,
+        processors: Vec::new(),
     };
 
-    /// Retrieves the current X and Y values of this stick after processing by the associated processor.
+    /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[must_use]
     #[inline]
     fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
         let x = read_axis_value(input_streams, self.x);
         let y = read_axis_value(input_streams, self.y);
-        self.processor.process(Vec2::new(x, y))
+        self.processors
+            .iter()
+            .fold(Vec2::new(x, y), |value, processor| processor.process(value))
     }
 }
 
@@ -395,7 +404,7 @@ impl UserInput for GamepadStick {
         self.processed_value(input_streams) != Vec2::ZERO
     }
 
-    /// Retrieves the magnitude of the value from this stick after processing by the associated processor.
+    /// Retrieves the magnitude of the value from this stick after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
@@ -403,7 +412,7 @@ impl UserInput for GamepadStick {
         value.length()
     }
 
-    /// Retrieves the current X and Y values of this stick after processing by the associated processor.
+    /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
@@ -432,19 +441,22 @@ impl UserInput for GamepadStick {
 impl WithDualAxisProcessingPipelineExt for GamepadStick {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processor: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self {
+        self.processors = processor.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -598,8 +610,8 @@ pub struct GamepadVirtualAxis {
     /// The button that represents the positive direction.
     pub(crate) positive: GamepadButtonType,
 
-    /// Processes input values.
-    pub(crate) processor: AxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<AxisProcessor>,
 }
 
 impl GamepadVirtualAxis {
@@ -610,7 +622,7 @@ impl GamepadVirtualAxis {
         Self {
             negative,
             positive,
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -651,14 +663,14 @@ impl UserInput for GamepadVirtualAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value after processing by the associated processor.
+    /// Checks if this axis has a non-zero value after processing by the associated processors.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         self.value(input_streams) != 0.0
     }
 
-    /// Retrieves the current value of this axis after processing by the associated processor.
+    /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
@@ -671,7 +683,9 @@ impl UserInput for GamepadVirtualAxis {
             let positive = button_value_any(input_streams, self.positive);
             positive - negative
         };
-        self.processor.process(value)
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 
     /// Always returns [`None`] as [`GamepadVirtualAxis`] doesn't represent dual-axis input.
@@ -697,19 +711,22 @@ impl UserInput for GamepadVirtualAxis {
 impl WithAxisProcessingPipelineExt for GamepadVirtualAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = AxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -768,8 +785,8 @@ pub struct GamepadVirtualDPad {
     /// The button for the rightward direction.
     pub(crate) right: GamepadButtonType,
 
-    /// Processes input values.
-    pub(crate) processor: DualAxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<DualAxisProcessor>,
 }
 
 impl GamepadVirtualDPad {
@@ -787,7 +804,7 @@ impl GamepadVirtualDPad {
             down,
             left,
             right,
-            processor: DualAxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -817,7 +834,7 @@ impl GamepadVirtualDPad {
         GamepadButtonType::East,
     );
 
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processor.
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[inline]
     fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
         let value = if let Some(gamepad) = input_streams.associated_gamepad {
@@ -833,7 +850,9 @@ impl GamepadVirtualDPad {
             let right = button_value_any(input_streams, self.right);
             Vec2::new(right - left, up - down)
         };
-        self.processor.process(value)
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -845,21 +864,21 @@ impl UserInput for GamepadVirtualDPad {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processor.
+    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processors.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         self.processed_value(input_streams) != Vec2::ZERO
     }
 
-    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processor.
+    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         self.processed_value(input_streams).length()
     }
 
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processor.
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
@@ -888,19 +907,22 @@ impl UserInput for GamepadVirtualDPad {
 impl WithDualAxisProcessingPipelineExt for GamepadVirtualDPad {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processor: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self {
+        self.processors = processor.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -1003,7 +1025,7 @@ mod tests {
         assert_eq!(right_y.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::ZERO);
+        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(&app.world, None);
@@ -1101,7 +1123,7 @@ mod tests {
         assert_eq!(dpad.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::ZERO);
+        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(&app.world, None);

@@ -216,8 +216,8 @@ pub struct KeyboardVirtualAxis {
     /// The key that represents the positive direction.
     pub(crate) positive: KeyCode,
 
-    /// Processes input values.
-    pub(crate) processor: AxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<AxisProcessor>,
 }
 
 impl KeyboardVirtualAxis {
@@ -228,7 +228,7 @@ impl KeyboardVirtualAxis {
         Self {
             negative,
             positive,
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -239,7 +239,7 @@ impl KeyboardVirtualAxis {
     pub const VERTICAL_ARROW_KEYS: Self = Self {
         negative: KeyCode::ArrowDown,
         positive: KeyCode::ArrowUp,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The [`KeyboardVirtualAxis`] using the horizontal arrow key mappings.
@@ -249,7 +249,7 @@ impl KeyboardVirtualAxis {
     pub const HORIZONTAL_ARROW_KEYS: Self = Self {
         negative: KeyCode::ArrowLeft,
         positive: KeyCode::ArrowRight,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The [`KeyboardVirtualAxis`] using the common W/S key mappings.
@@ -259,7 +259,7 @@ impl KeyboardVirtualAxis {
     pub const WS: Self = Self {
         negative: KeyCode::KeyS,
         positive: KeyCode::KeyW,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The [`KeyboardVirtualAxis`] using the common A/D key mappings.
@@ -269,7 +269,7 @@ impl KeyboardVirtualAxis {
     pub const AD: Self = Self {
         negative: KeyCode::KeyA,
         positive: KeyCode::KeyD,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The [`KeyboardVirtualAxis`] using the vertical numpad key mappings.
@@ -279,7 +279,7 @@ impl KeyboardVirtualAxis {
     pub const VERTICAL_NUMPAD: Self = Self {
         negative: KeyCode::Numpad2,
         positive: KeyCode::Numpad8,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The [`KeyboardVirtualAxis`] using the horizontal numpad key mappings.
@@ -289,7 +289,7 @@ impl KeyboardVirtualAxis {
     pub const HORIZONTAL_NUMPAD: Self = Self {
         negative: KeyCode::Numpad4,
         positive: KeyCode::Numpad6,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 }
 
@@ -301,14 +301,14 @@ impl UserInput for KeyboardVirtualAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value after processing by the associated processor.
+    /// Checks if this axis has a non-zero value after processing by the associated processors.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         self.value(input_streams) != 0.0
     }
 
-    /// Retrieves the current value of this axis after processing by the associated processor.
+    /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
@@ -319,7 +319,9 @@ impl UserInput for KeyboardVirtualAxis {
         let negative = f32::from(keycodes.pressed(self.negative));
         let positive = f32::from(keycodes.pressed(self.positive));
         let value = positive - negative;
-        self.processor.process(value)
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 
     /// Always returns [`None`] as [`KeyboardVirtualAxis`] doesn't represent dual-axis input.
@@ -345,19 +347,22 @@ impl UserInput for KeyboardVirtualAxis {
 impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = AxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -412,8 +417,8 @@ pub struct KeyboardVirtualDPad {
     /// The key for the rightward direction.
     pub(crate) right: KeyCode,
 
-    /// Processes input values.
-    pub(crate) processor: DualAxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<DualAxisProcessor>,
 }
 
 impl KeyboardVirtualDPad {
@@ -426,7 +431,7 @@ impl KeyboardVirtualDPad {
             down,
             left,
             right,
-            processor: DualAxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -441,7 +446,7 @@ impl KeyboardVirtualDPad {
         down: KeyCode::ArrowDown,
         left: KeyCode::ArrowLeft,
         right: KeyCode::ArrowRight,
-        processor: DualAxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The [`KeyboardVirtualDPad`] using the common WASD key mappings.
@@ -455,7 +460,7 @@ impl KeyboardVirtualDPad {
         down: KeyCode::KeyS,
         left: KeyCode::KeyA,
         right: KeyCode::KeyD,
-        processor: DualAxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// The [`KeyboardVirtualDPad`] using the common numpad key mappings.
@@ -469,10 +474,10 @@ impl KeyboardVirtualDPad {
         down: KeyCode::Numpad2,
         left: KeyCode::Numpad4,
         right: KeyCode::Numpad6,
-        processor: DualAxisProcessor::None,
+        processors: Vec::new(),
     };
 
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processor.
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
     fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
@@ -485,7 +490,9 @@ impl KeyboardVirtualDPad {
         let left = f32::from(keycodes.pressed(self.left));
         let right = f32::from(keycodes.pressed(self.right));
         let value = Vec2::new(right - left, up - down);
-        self.processor.process(value)
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -497,21 +504,21 @@ impl UserInput for KeyboardVirtualDPad {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processor.
+    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processors.
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         self.processed_value(input_streams) != Vec2::ZERO
     }
 
-    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processor.
+    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         self.processed_value(input_streams).length()
     }
 
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processor.
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
@@ -540,19 +547,22 @@ impl UserInput for KeyboardVirtualDPad {
 impl WithDualAxisProcessingPipelineExt for KeyboardVirtualDPad {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -622,7 +632,7 @@ mod tests {
         assert_eq!(arrows.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::ZERO);
+        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(&app.world, None);

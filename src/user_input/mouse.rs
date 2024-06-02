@@ -202,21 +202,21 @@ pub struct MouseMoveAxis {
     /// The specified axis that this input tracks.
     pub(crate) axis: DualAxisType,
 
-    /// Processes input values.
-    pub(crate) processor: AxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<AxisProcessor>,
 }
 
 impl MouseMoveAxis {
     /// Movement on the X-axis. No processing is applied to raw data from the mouse.
     pub const X: Self = Self {
         axis: DualAxisType::X,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// Movement on the Y-axis. No processing is applied to raw data from the mouse.
     pub const Y: Self = Self {
         axis: DualAxisType::Y,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 }
 
@@ -236,13 +236,15 @@ impl UserInput for MouseMoveAxis {
     }
 
     /// Retrieves the amount of the mouse movement along the specified axis
-    /// after processing by the associated processor.
+    /// after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         let movement = accumulate_mouse_movement(input_streams);
         let value = self.axis.get_value(movement);
-        self.processor.process(value)
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 
     /// Always returns [`None`] as [`MouseMoveAxis`] doesn't represent dual-axis input.
@@ -271,19 +273,22 @@ impl UserInput for MouseMoveAxis {
 impl WithAxisProcessingPipelineExt for MouseMoveAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = AxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -320,8 +325,20 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct MouseMove {
-    /// Processes input values.
-    pub(crate) processor: DualAxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<DualAxisProcessor>,
+}
+
+impl MouseMove {
+    /// Retrieves the current X and Y values of the movement after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
+        let movement = accumulate_mouse_movement(input_streams);
+        self.processors
+            .iter()
+            .fold(movement, |value, processor| processor.process(value))
+    }
 }
 
 #[serde_typetag]
@@ -336,27 +353,21 @@ impl UserInput for MouseMove {
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let movement = accumulate_mouse_movement(input_streams);
-        let value = self.processor.process(movement);
-        value != Vec2::ZERO
+        self.processed_value(input_streams) != Vec2::ZERO
     }
 
-    /// Retrieves the amount of the mouse movement after processing by the associated processor.
+    /// Retrieves the amount of the mouse movement after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = accumulate_mouse_movement(input_streams);
-        let value = self.processor.process(movement);
-        value.length()
+        self.processed_value(input_streams).length()
     }
 
-    /// Retrieves the mouse displacement after processing by the associated processor.
+    /// Retrieves the mouse displacement after processing by the associated processors.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let movement = accumulate_mouse_movement(input_streams);
-        let value = self.processor.process(movement);
-        Some(DualAxisData::from_xy(value))
+        Some(DualAxisData::from_xy(self.processed_value(input_streams)))
     }
 
     /// [`MouseMove`] represents a composition of four [`MouseMoveDirection`]s.
@@ -380,19 +391,22 @@ impl UserInput for MouseMove {
 impl WithDualAxisProcessingPipelineExt for MouseMove {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processor: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self {
+        self.processors = processor.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -538,21 +552,21 @@ pub struct MouseScrollAxis {
     /// The axis that this input tracks.
     pub(crate) axis: DualAxisType,
 
-    /// Processes input values.
-    pub(crate) processor: AxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<AxisProcessor>,
 }
 
 impl MouseScrollAxis {
     /// Horizontal scrolling of the mouse wheel. No processing is applied to raw data from the mouse.
     pub const X: Self = Self {
         axis: DualAxisType::X,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 
     /// Vertical scrolling of the mouse wheel. No processing is applied to raw data from the mouse.
     pub const Y: Self = Self {
         axis: DualAxisType::Y,
-        processor: AxisProcessor::None,
+        processors: Vec::new(),
     };
 }
 
@@ -572,13 +586,15 @@ impl UserInput for MouseScrollAxis {
     }
 
     /// Retrieves the amount of the mouse wheel movement along the specified axis
-    /// after processing by the associated processor.
+    /// after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
         let movement = accumulate_wheel_movement(input_streams);
         let value = self.axis.get_value(movement);
-        self.processor.process(value)
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 
     /// Always returns [`None`] as [`MouseScrollAxis`] doesn't represent dual-axis input.
@@ -607,19 +623,22 @@ impl UserInput for MouseScrollAxis {
 impl WithAxisProcessingPipelineExt for MouseScrollAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = AxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -655,8 +674,20 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct MouseScroll {
-    /// Processes input values.
-    pub(crate) processor: DualAxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub(crate) processors: Vec<DualAxisProcessor>,
+}
+
+impl MouseScroll {
+    /// Retrieves the current X and Y values of the movement after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
+        let movement = accumulate_wheel_movement(input_streams);
+        self.processors
+            .iter()
+            .fold(movement, |value, processor| processor.process(value))
+    }
 }
 
 #[serde_typetag]
@@ -671,27 +702,21 @@ impl UserInput for MouseScroll {
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let movement = accumulate_wheel_movement(input_streams);
-        let value = self.processor.process(movement);
-        value != Vec2::ZERO
+        self.processed_value(input_streams) != Vec2::ZERO
     }
 
-    /// Retrieves the amount of the mouse wheel movement on both axes after processing by the associated processor.
+    /// Retrieves the amount of the mouse wheel movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = accumulate_wheel_movement(input_streams);
-        let value = self.processor.process(movement);
-        value.length()
+        self.processed_value(input_streams).length()
     }
 
-    /// Retrieves the mouse scroll movement on both axes after processing by the associated processor.
+    /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let movement = accumulate_wheel_movement(input_streams);
-        let value = self.processor.process(movement);
-        Some(DualAxisData::from_xy(value))
+        Some(DualAxisData::from_xy(self.processed_value(input_streams)))
     }
 
     /// [`MouseScroll`] represents a composition of four [`MouseScrollDirection`]s.
@@ -715,19 +740,22 @@ impl UserInput for MouseScroll {
 impl WithDualAxisProcessingPipelineExt for MouseScroll {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -833,7 +861,7 @@ mod tests {
         assert_eq!(mouse_move.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::ZERO);
+        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(&app.world, None);
@@ -910,7 +938,7 @@ mod tests {
         assert_eq!(mouse_scroll.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::ZERO);
+        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(&app.world, None);
