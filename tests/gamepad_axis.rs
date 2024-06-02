@@ -219,7 +219,8 @@ fn game_pad_dual_axis_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().replace_processing_pipeline(DualAxisDeadZone::symmetric_all(0.1)),
+        DualAxis::left_stick()
+            .replace_processing_pipeline([DualAxisDeadZone::symmetric_all(0.1).into()]),
     )]));
 
     // Test that an input inside the dual-axis deadzone is filtered out.
@@ -267,7 +268,7 @@ fn game_pad_circle_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().replace_processing_pipeline(CircleDeadZone::new(0.1)),
+        DualAxis::left_stick().replace_processing_pipeline([CircleDeadZone::new(0.1).into()]),
     )]));
 
     // Test that an input inside the circle deadzone is filtered out, assuming values of 0.1
@@ -302,7 +303,8 @@ fn test_zero_dual_axis_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().replace_processing_pipeline(DualAxisDeadZone::symmetric_all(0.0)),
+        DualAxis::left_stick()
+            .replace_processing_pipeline([DualAxisDeadZone::symmetric_all(0.0).into()]),
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.
@@ -324,7 +326,7 @@ fn test_zero_circle_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([(
         AxislikeTestAction::XY,
-        DualAxis::left_stick().replace_processing_pipeline(CircleDeadZone::new(0.0)),
+        DualAxis::left_stick().replace_processing_pipeline([CircleDeadZone::new(0.0).into()]),
     )]));
 
     // Test that an input of zero will be `None` even with no deadzone.
