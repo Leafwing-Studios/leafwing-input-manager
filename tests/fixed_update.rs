@@ -170,6 +170,7 @@ fn frame_without_fixed_timestep() {
 ///
 /// A button pressed in F1 should still be marked as `just_pressed` in FU1, and should just be
 /// `pressed` in FU2
+#[cfg(feature = "timing")]
 #[test]
 fn frame_with_two_fixed_timestep() {
     let mut app = build_app(Duration::from_millis(4), Duration::from_millis(9));
@@ -205,6 +206,7 @@ fn frame_with_two_fixed_timestep() {
 
 /// Check that if the action is consumed in FU1, it will still be consumed in F2.
 /// (i.e. consuming is shared between the `FixedMain` and `Main` schedules)
+#[cfg(feature = "timing")]
 #[test]
 fn test_consume_in_fixed_update() {
     let mut app = build_app(Duration::from_millis(5), Duration::from_millis(5));
