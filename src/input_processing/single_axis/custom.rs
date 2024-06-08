@@ -29,7 +29,7 @@ use crate::typetag::RegisterTypeTag;
 /// ```rust
 /// use std::hash::{Hash, Hasher};
 /// use bevy::prelude::*;
-/// use bevy::utils::FloatOrd;
+/// use bevy::math::FloatOrd;
 /// use serde::{Deserialize, Serialize};
 /// use leafwing_input_manager::prelude::*;
 ///
