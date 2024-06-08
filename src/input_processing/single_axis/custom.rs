@@ -193,7 +193,7 @@ impl Reflect for Box<dyn CustomAxisProcessor> {
         Debug::fmt(self, f)
     }
 
-    fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
+    fn try_apply(&mut self, _value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
         todo!()
     }
 }
