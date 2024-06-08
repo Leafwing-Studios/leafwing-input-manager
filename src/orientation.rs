@@ -6,8 +6,7 @@ pub use rotation_direction::RotationDirection;
 
 mod orientation_trait {
     use super::{Rotation, RotationDirection};
-    use bevy::math::primitives::Direction2d;
-    use bevy::math::Quat;
+    use bevy::math::{Dir2, Quat};
     use bevy::transform::components::{GlobalTransform, Transform};
     use core::fmt::Debug;
 
@@ -21,9 +20,9 @@ mod orientation_trait {
         /// # Example
         /// ```rust
         /// use leafwing_input_manager::orientation::{Orientation, Rotation};
-        /// use bevy::math::primitives::Direction2d;
+        /// use bevy::math::Dir2;
         ///
-        /// Direction2d::Y.distance(Direction2d::from_xy(-1.0, -1.0).unwrap()).assert_approx_eq(Rotation::from_degrees(135.));
+        /// Dir2::Y.distance(Dir2::from_xy(-1.0, -1.0).unwrap()).assert_approx_eq(Rotation::from_degrees(135.));
         /// ```
         #[must_use]
         fn distance(&self, other: Self) -> Rotation;
@@ -52,16 +51,16 @@ mod orientation_trait {
         /// # Example
         /// ```rust
         /// use leafwing_input_manager::orientation::{Orientation, RotationDirection};
-        /// use bevy::math::primitives::Direction2d;
+        /// use bevy::math::Dir2;
         ///
-        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::Y), RotationDirection::Clockwise);
-        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::NEG_Y), RotationDirection::Clockwise);
+        /// assert_eq!(Dir2::Y.rotation_direction(Dir2::Y), RotationDirection::Clockwise);
+        /// assert_eq!(Dir2::Y.rotation_direction(Dir2::NEG_Y), RotationDirection::Clockwise);
         ///
-        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::X), RotationDirection::Clockwise);
-        /// assert_eq!(Direction2d::Y.rotation_direction(Direction2d::NEG_X), RotationDirection::CounterClockwise);
+        /// assert_eq!(Dir2::Y.rotation_direction(Dir2::X), RotationDirection::Clockwise);
+        /// assert_eq!(Dir2::Y.rotation_direction(Dir2::NEG_X), RotationDirection::CounterClockwise);
         ///
-        /// assert_eq!(Direction2d::NEG_X.rotation_direction(Direction2d::NEG_Y), RotationDirection::CounterClockwise);
-        /// assert_eq!(Direction2d::NEG_Y.rotation_direction(Direction2d::NEG_X), RotationDirection::Clockwise);
+        /// assert_eq!(Dir2::NEG_X.rotation_direction(Dir2::NEG_Y), RotationDirection::CounterClockwise);
+        /// assert_eq!(Dir2::NEG_Y.rotation_direction(Dir2::NEG_X), RotationDirection::Clockwise);
         /// ```
         #[inline]
         #[must_use]
@@ -121,8 +120,8 @@ mod orientation_trait {
         }
     }
 
-    impl Orientation for Direction2d {
-        fn distance(&self, other: Direction2d) -> Rotation {
+    impl Orientation for Dir2 {
+        fn distance(&self, other: Dir2) -> Rotation {
             let self_rotation: Rotation = (*self).into();
             let other_rotation: Rotation = other.into();
             self_rotation.distance(other_rotation)
@@ -218,7 +217,7 @@ mod rotation {
     /// # Example
     /// ```rust
     /// use leafwing_input_manager::orientation::{Rotation, Orientation};
-    /// use bevy::math::primitives::Direction2d;
+    /// use bevy::math::Dir2;
     /// use core::f32::consts::{FRAC_PI_2, PI, TAU};
     ///
     /// let east = Rotation::from_radians(0.0);
@@ -236,7 +235,7 @@ mod rotation {
     ///
     /// north.assert_approx_eq(Rotation::NORTH);
     ///
-    /// Direction2d::from(west).assert_approx_eq(Direction2d::NEG_X);
+    /// Dir2::from(west).assert_approx_eq(Dir2::NEG_X);
     /// ```
     #[derive(Component, Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Default, Display)]
     pub struct Rotation {
@@ -473,18 +472,17 @@ mod rotation {
 mod conversions {
     use super::Rotation;
     use crate::errors::NearlySingularConversion;
-    use bevy::math::primitives::Direction2d;
-    use bevy::math::{Quat, Vec2, Vec3};
+    use bevy::math::{Dir2, Quat, Vec2, Vec3};
     use bevy::transform::components::{GlobalTransform, Transform};
 
-    impl From<Rotation> for Direction2d {
-        fn from(rotation: Rotation) -> Direction2d {
-            Direction2d::new_unchecked(rotation.into_xy())
+    impl From<Rotation> for Dir2 {
+        fn from(rotation: Rotation) -> Dir2 {
+            Dir2::new_unchecked(rotation.into_xy())
         }
     }
 
-    impl From<Direction2d> for Rotation {
-        fn from(direction: Direction2d) -> Rotation {
+    impl From<Dir2> for Rotation {
+        fn from(direction: Dir2) -> Rotation {
             let radians = direction.y.atan2(direction.x);
             // This dirty little trick helps us nudge the two (of eight) cardinal directions onto
             // the correct microdegree. 32-bit floating point math rounds to the wrong microdegree,
@@ -522,8 +520,7 @@ mod conversions {
 
     impl From<Quat> for Rotation {
         fn from(quaternion: Quat) -> Rotation {
-            let direction: Direction2d =
-                quaternion.mul_vec3(Vec3::X).truncate().try_into().unwrap();
+            let direction: Dir2 = quaternion.mul_vec3(Vec3::X).truncate().try_into().unwrap();
             direction.into()
         }
     }
@@ -561,58 +558,58 @@ mod conversions {
 
 #[cfg(test)]
 mod test {
-    use bevy::math::primitives::Direction2d;
+    use bevy::math::Dir2;
 
     use super::*;
 
     #[test]
     fn directions_end_up_even() {
-        let north_rot: Rotation = Direction2d::Y.into();
+        let north_rot: Rotation = Dir2::Y.into();
         assert_eq!(
             north_rot,
             Rotation::from_degrees_int(90),
             "we want north to end up exact in microdegrees"
         );
-        let northeast_rot: Rotation = Direction2d::from_xy(1.0, 1.0).unwrap().into();
+        let northeast_rot: Rotation = Dir2::from_xy(1.0, 1.0).unwrap().into();
         assert_eq!(
             northeast_rot,
             Rotation::from_degrees_int(45),
             "we want northeast to end up exact in microdegrees"
         );
-        let northwest_rot: Rotation = Direction2d::from_xy(-1.0, 1.0).unwrap().into();
+        let northwest_rot: Rotation = Dir2::from_xy(-1.0, 1.0).unwrap().into();
 
         assert_eq!(
             northwest_rot,
             Rotation::from_degrees_int(135),
             "we want northwest to end up exact in microdegrees"
         );
-        let south_rot: Rotation = Direction2d::NEG_Y.into();
+        let south_rot: Rotation = Dir2::NEG_Y.into();
         assert_eq!(
             south_rot,
             Rotation::from_degrees_int(270),
             "we want south to end up exact in microdegrees"
         );
-        let southeast_rot: Rotation = Direction2d::from_xy(1.0, -1.0).unwrap().into();
+        let southeast_rot: Rotation = Dir2::from_xy(1.0, -1.0).unwrap().into();
 
         assert_eq!(
             southeast_rot,
             Rotation::from_degrees_int(315),
             "we want southeast to end up exact in microdegrees"
         );
-        let southwest_rot: Rotation = Direction2d::from_xy(-1.0, -1.0).unwrap().into();
+        let southwest_rot: Rotation = Dir2::from_xy(-1.0, -1.0).unwrap().into();
 
         assert_eq!(
             southwest_rot,
             Rotation::from_degrees_int(225),
             "we want southwest to end up exact in microdegrees"
         );
-        let east_rot: Rotation = Direction2d::X.into();
+        let east_rot: Rotation = Dir2::X.into();
         assert_eq!(
             east_rot,
             Rotation::from_degrees_int(0),
             "we want east to end up exact in microdegrees"
         );
-        let west_rot: Rotation = Direction2d::NEG_X.into();
+        let west_rot: Rotation = Dir2::NEG_X.into();
         assert_eq!(
             west_rot,
             Rotation::from_degrees_int(180),
