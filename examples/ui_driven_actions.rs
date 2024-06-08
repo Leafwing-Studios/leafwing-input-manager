@@ -1,6 +1,6 @@
 //! Demonstrates how to connect `bevy::ui` buttons to [`ActionState`] components using the [`ActionStateDriver`] component on your button
 
-use bevy::prelude::*;
+use bevy::{color::palettes, prelude::*};
 use leafwing_input_manager::prelude::*;
 
 fn main() {
@@ -36,7 +36,7 @@ fn spawn_player(mut commands: Commands) {
                 ..Default::default()
             },
             sprite: Sprite {
-                color: Color::PINK,
+                color: palettes::css::PINK.into(),
                 ..Default::default()
             },
             ..Default::default()
@@ -54,15 +54,18 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
 
     // Left
     let left_button = commands
-        .spawn(ButtonBundle {
-            style: Style {
-                width: Val::Px(150.0),
-                height: Val::Px(150.0),
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(150.0),
+                    height: Val::Px(150.0),
+                    ..Default::default()
+                },
+
                 ..Default::default()
             },
-            background_color: Color::RED.into(),
-            ..Default::default()
-        })
+            BackgroundColor(palettes::css::RED.into()),
+        ))
         // This component links the button to the entity with the `ActionState` component
         .insert(ActionStateDriver {
             action: Action::Left,
@@ -72,15 +75,17 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
 
     // Right
     let right_button = commands
-        .spawn(ButtonBundle {
-            style: Style {
-                width: Val::Px(150.0),
-                height: Val::Px(150.0),
+        .spawn((
+            ButtonBundle {
+                style: Style {
+                    width: Val::Px(150.0),
+                    height: Val::Px(150.0),
+                    ..Default::default()
+                },
                 ..Default::default()
             },
-            background_color: Color::BLUE.into(),
-            ..Default::default()
-        })
+            BackgroundColor(palettes::css::BLUE.into()),
+        ))
         .insert(ActionStateDriver {
             action: Action::Right,
             targets: player_entity.into(),

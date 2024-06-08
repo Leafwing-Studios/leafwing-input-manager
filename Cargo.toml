@@ -68,6 +68,7 @@ bevy = { version = "0.14.0-rc.2", default-features = false, features = [
   "bevy_ui",
   "bevy_render",
   "bevy_core_pipeline",
+  "bevy_state",
   "x11",
 ] }
 bevy_egui = "0.27"

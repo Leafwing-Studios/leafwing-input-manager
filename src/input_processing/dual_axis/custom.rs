@@ -193,6 +193,10 @@ impl Reflect for Box<dyn CustomDualAxisProcessor> {
     fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(self, f)
     }
+
+    fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
+        todo!()
+    }
 }
 
 impl Typed for Box<dyn CustomDualAxisProcessor> {
