@@ -70,6 +70,10 @@ bevy = { version = "0.14.0-rc.2", default-features = false, features = [
   "bevy_core_pipeline",
   "bevy_state",
   "x11",
+  # TODO Remove these before release. See https://github.com/bevyengine/bevy/issues/13728
+  "ktx2",
+  "zstd",
+  "bevy_pbr",
 ] }
 bevy_egui = "0.27"
 serde_test = "1.0"
