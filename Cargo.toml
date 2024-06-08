@@ -98,5 +98,4 @@ path = "examples/press_duration.rs"
 required-features = ["timing"]
 
 [patch.crates-io]
-# bevy = { version = "0.14.0-rc.2" }
-bevy_egui = { git = "https://github.com/ChristopherBiscardi/bevy_egui.git", branch = "0.14-rc" }
+bevy_egui = { git = "https://github.com/Friz64/bevy_egui.git", branch = "bevy-0.14" }
