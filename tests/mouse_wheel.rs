@@ -45,7 +45,7 @@ fn raw_mouse_wheel_events() {
         MouseWheelDirection::Up,
     )]));
 
-    let mut events = app.world().resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     events.send(MouseWheel {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
@@ -61,11 +61,11 @@ fn raw_mouse_wheel_events() {
 #[test]
 fn mouse_wheel_discrete_mocking() {
     let mut app = test_app();
-    let mut events = app.world().resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
     app.send_input(MouseWheelDirection::Up);
-    let mut events = app.world().resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
 
     assert_eq!(events.drain().count(), 1);
 }
@@ -73,7 +73,7 @@ fn mouse_wheel_discrete_mocking() {
 #[test]
 fn mouse_wheel_single_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world().resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = SingleAxis {
@@ -86,14 +86,14 @@ fn mouse_wheel_single_axis_mocking() {
     };
 
     app.send_input(input);
-    let mut events = app.world().resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 1);
 }
 
 #[test]
 fn mouse_wheel_dual_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world().resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = DualAxis {
@@ -116,7 +116,7 @@ fn mouse_wheel_dual_axis_mocking() {
         deadzone: DualAxis::ZERO_DEADZONE_SHAPE,
     };
     app.send_input(input);
-    let mut events = app.world().resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     // Dual axis events are split out
     assert_eq!(events.drain().count(), 2);
 }

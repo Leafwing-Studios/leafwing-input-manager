@@ -15,7 +15,7 @@ and a single input can result in multiple actions being triggered, which can be 
 ## Supported Bevy Versions
 
 | Bevy | leafwing-input-manager |
-|------|------------------------|
+| ---- | ---------------------- |
 | 0.13 | 0.13                   |
 | 0.12 | 0.11..0.12             |
 | 0.11 | 0.10                   |

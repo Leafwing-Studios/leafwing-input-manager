@@ -1,6 +1,9 @@
 //! Demonstrates how to connect `bevy::ui` buttons to [`ActionState`] components using the [`ActionStateDriver`] component on your button
 
-use bevy::prelude::*;
+use bevy::{
+    color::palettes::css::{BLUE, PINK, RED},
+    prelude::*,
+};
 use leafwing_input_manager::prelude::*;
 
 fn main() {
@@ -36,7 +39,7 @@ fn spawn_player(mut commands: Commands) {
                 ..Default::default()
             },
             sprite: Sprite {
-                color: Color::PINK,
+                color: Color::from(PINK),
                 ..Default::default()
             },
             ..Default::default()
@@ -60,7 +63,10 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
                 height: Val::Px(150.0),
                 ..Default::default()
             },
-            background_color: Color::RED.into(),
+            image: UiImage {
+                color: Color::from(RED),
+                ..Default::default()
+            },
             ..Default::default()
         })
         // This component links the button to the entity with the `ActionState` component
@@ -78,7 +84,10 @@ fn spawn_ui(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
                 height: Val::Px(150.0),
                 ..Default::default()
             },
-            background_color: Color::BLUE.into(),
+            image: UiImage {
+                color: Color::from(BLUE),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .insert(ActionStateDriver {

@@ -80,7 +80,7 @@ impl ClashTestExt for App {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions);
         // SystemState is love, SystemState is life
         let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
-            SystemState::new(&mut self.world());
+            SystemState::new(&mut self.world_mut());
 
         let input_map_query = input_system_state.get(&self.world());
 

@@ -9,7 +9,7 @@ fn main() {
         .add_plugins(InputManagerPlugin::<Action>::default())
         .init_resource::<JoinedPlayers>()
         .add_systems(Update, (join, jump, disconnect))
-        .run()
+        .run();
 }
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]

@@ -7,7 +7,7 @@ fn main() {
         .add_plugins(InputManagerPlugin::<CameraMovement>::default())
         .add_systems(Startup, setup)
         .add_systems(Update, pan_camera)
-        .run()
+        .run();
 }
 
 #[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]

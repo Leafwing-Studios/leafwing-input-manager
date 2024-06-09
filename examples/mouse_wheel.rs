@@ -8,7 +8,7 @@ fn main() {
         .add_systems(Startup, setup)
         .add_systems(Update, zoom_camera)
         .add_systems(Update, pan_camera.after(zoom_camera))
-        .run()
+        .run();
 }
 
 #[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]

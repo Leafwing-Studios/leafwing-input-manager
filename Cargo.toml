@@ -63,6 +63,7 @@ bevy = { version = "0.14.0-rc.2", default-features = false, features = [
   "bevy_render",
   "bevy_core_pipeline",
   "x11",
+  "bevy_state",
 ] }
 bevy_egui = { git = "https://github.com/Friz64/bevy_egui/", branch = "bevy-0.14" }
 serde_test = "1.0"

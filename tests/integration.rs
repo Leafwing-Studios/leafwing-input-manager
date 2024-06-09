@@ -77,7 +77,7 @@ fn disable_input() {
     assert_eq!(*respect, Respect(true));
 
     // Disable the input
-    let mut toggle_actions = app.world().resource_mut::<ToggleActions<Action>>();
+    let mut toggle_actions = app.world_mut().resource_mut::<ToggleActions<Action>>();
     toggle_actions.enabled = false;
 
     // Now, all respect has faded
@@ -119,7 +119,7 @@ fn release_when_input_map_removed() {
     assert_eq!(*respect, Respect(true));
 
     // Remove the InputMap
-    app.world().remove_resource::<InputMap<Action>>();
+    app.world_mut().remove_resource::<InputMap<Action>>();
     // Needs an extra frame for the resource removed detection to release inputs
     app.update();
 
@@ -182,7 +182,7 @@ fn action_state_driver() {
     app.click_button::<ButtonMarker>();
 
     // Verify that the button was in fact clicked
-    let mut button_query = app.world().query::<&Interaction>();
+    let mut button_query = app.world_mut().query::<&Interaction>();
     let interaction = button_query.iter(&app.world()).next().unwrap();
     assert_eq!(*interaction, Interaction::Pressed);
 
@@ -190,7 +190,7 @@ fn action_state_driver() {
     app.update();
 
     // Check the action state
-    let mut action_state_query = app.world().query::<&ActionState<Action>>();
+    let mut action_state_query = app.world_mut().query::<&ActionState<Action>>();
     let action_state = action_state_query.iter(&app.world()).next().unwrap();
     assert!(action_state.pressed(&Action::PayRespects));
 
@@ -251,7 +251,7 @@ fn duration() {
     // Check
     app.update();
     assert!(app
-        .world
+        .world()
         .resource::<ActionState<Action>>()
         .pressed(&Action::PayRespects));
 }
