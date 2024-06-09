@@ -1,5 +1,10 @@
 # Release Notes
 
+## Version 0.14.0
+
+- updated to Bevy 0.14
+- this is strictly a compatibility release to ease migration; you should consider upgrading to version 0.15 when possible
+
 ## Version 0.13.3
 
 ### Bugs
