@@ -197,7 +197,7 @@ fn generate_value_action_diffs() {
     let entity = app
         .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(&app.world());
+        .single(app.world());
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {

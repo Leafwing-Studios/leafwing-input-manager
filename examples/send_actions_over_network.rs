@@ -76,7 +76,7 @@ fn main() {
     client_app.update();
 
     let mut player_state_query = client_app.world_mut().query::<&ActionState<FpsAction>>();
-    let player_state = player_state_query.iter(&client_app.world()).next().unwrap();
+    let player_state = player_state_query.iter(client_app.world()).next().unwrap();
     assert!(player_state.pressed(&FpsAction::Jump));
     assert!(player_state.pressed(&FpsAction::Shoot));
 
@@ -89,7 +89,7 @@ fn main() {
 
     // And the actions are pressed on the server!
     let mut player_state_query = server_app.world_mut().query::<&ActionState<FpsAction>>();
-    let player_state = player_state_query.iter(&server_app.world()).next().unwrap();
+    let player_state = player_state_query.iter(server_app.world()).next().unwrap();
     assert!(player_state.pressed(&FpsAction::Jump));
     assert!(player_state.pressed(&FpsAction::Shoot));
 
@@ -97,7 +97,7 @@ fn main() {
     client_app.reset_inputs();
     client_app.update();
     let mut player_state_query = client_app.world_mut().query::<&ActionState<FpsAction>>();
-    let player_state = player_state_query.iter(&client_app.world()).next().unwrap();
+    let player_state = player_state_query.iter(client_app.world()).next().unwrap();
     assert!(player_state.released(&FpsAction::Jump));
     assert!(player_state.released(&FpsAction::Shoot));
 
@@ -109,7 +109,7 @@ fn main() {
     server_app.update();
 
     let mut player_state_query = server_app.world_mut().query::<&ActionState<FpsAction>>();
-    let player_state = player_state_query.iter(&server_app.world()).next().unwrap();
+    let player_state = player_state_query.iter(server_app.world()).next().unwrap();
     assert!(player_state.released(&FpsAction::Jump));
     assert!(player_state.released(&FpsAction::Shoot));
 }

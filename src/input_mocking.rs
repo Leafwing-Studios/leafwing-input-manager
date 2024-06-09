@@ -860,7 +860,7 @@ mod test {
         let mut interaction_query = app
             .world_mut()
             .query::<(&Interaction, Option<&ButtonMarker>)>();
-        for (interaction, maybe_marker) in interaction_query.iter(&app.world()) {
+        for (interaction, maybe_marker) in interaction_query.iter(app.world()) {
             match maybe_marker {
                 Some(_) => assert_eq!(*interaction, Interaction::Pressed),
                 None => assert_eq!(*interaction, Interaction::None),
@@ -871,7 +871,7 @@ mod test {
         app.world_mut().reset_inputs();
 
         let mut interaction_query = app.world_mut().query::<&Interaction>();
-        for interaction in interaction_query.iter(&app.world()) {
+        for interaction in interaction_query.iter(app.world()) {
             assert_eq!(*interaction, Interaction::None)
         }
 
@@ -882,7 +882,7 @@ mod test {
         let mut interaction_query = app
             .world_mut()
             .query::<(&Interaction, Option<&ButtonMarker>)>();
-        for (interaction, maybe_marker) in interaction_query.iter(&app.world()) {
+        for (interaction, maybe_marker) in interaction_query.iter(app.world()) {
             match maybe_marker {
                 Some(_) => assert_eq!(*interaction, Interaction::Hovered),
                 None => assert_eq!(*interaction, Interaction::None),
@@ -893,7 +893,7 @@ mod test {
         app.world_mut().reset_inputs();
 
         let mut interaction_query = app.world_mut().query::<&Interaction>();
-        for interaction in interaction_query.iter(&app.world()) {
+        for interaction in interaction_query.iter(app.world()) {
             assert_eq!(*interaction, Interaction::None)
         }
     }
