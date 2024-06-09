@@ -59,10 +59,10 @@ fn create_app() -> App {
 }
 
 fn get_events<E: Event>(app: &App) -> &Events<E> {
-    app.world.resource()
+    app.world().resource()
 }
 fn get_events_mut<E: Event>(app: &mut App) -> Mut<Events<E>> {
-    app.world.resource_mut()
+    app.world_mut().resource_mut()
 }
 
 fn send_action_diff(app: &mut App, action_diff: ActionDiffEvent<Action>) {
@@ -96,8 +96,8 @@ fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffEvent
 }
 
 fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent<Action>) {
-    let mut action_state_query = app.world.query::<&ActionState<Action>>();
-    let action_state = action_state_query.get_single(&app.world).unwrap();
+    let mut action_state_query = app.world_mut().query::<&ActionState<Action>>();
+    let action_state = action_state_query.get_single(app.world()).unwrap();
     assert_eq!(action_diff_event.action_diffs.len(), 1);
     match action_diff_event.action_diffs.first().unwrap().clone() {
         ActionDiff::Pressed { action } => {
@@ -130,9 +130,9 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
 fn generate_binary_action_diffs() {
     let mut app = create_app();
     let entity = app
-        .world
+        .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(&app.world);
+        .single(app.world());
     app.add_systems(
         Update,
         pay_da_bills(|mut action_state| {
@@ -195,9 +195,9 @@ fn generate_value_action_diffs() {
     let input_value = 0.5;
     let mut app = create_app();
     let entity = app
-        .world
+        .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(&app.world);
+        .single(app.world());
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {
@@ -263,9 +263,9 @@ fn generate_axis_action_diffs() {
     let input_axis_pair = Vec2 { x: 5., y: 8. };
     let mut app = create_app();
     let entity = app
-        .world
+        .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(&app.world);
+        .single(app.world());
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {
@@ -330,9 +330,9 @@ fn generate_axis_action_diffs() {
 fn process_binary_action_diffs() {
     let mut app = create_app();
     let entity = app
-        .world
+        .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(&app.world);
+        .single(app.world());
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
     let action_diff_event = ActionDiffEvent {
@@ -364,9 +364,9 @@ fn process_binary_action_diffs() {
 fn process_value_action_diff() {
     let mut app = create_app();
     let entity = app
-        .world
+        .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(&app.world);
+        .single(app.world());
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
     let action_diff_event = ActionDiffEvent {
@@ -399,9 +399,9 @@ fn process_value_action_diff() {
 fn process_axis_action_diff() {
     let mut app = create_app();
     let entity = app
-        .world
+        .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(&app.world);
+        .single(app.world());
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
     let action_diff_event = ActionDiffEvent {

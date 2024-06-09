@@ -92,7 +92,9 @@ enum Machine {
     Client,
 }
 
-impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
+impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
+    for InputManagerPlugin<A>
+{
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 

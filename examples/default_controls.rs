@@ -9,7 +9,7 @@ fn main() {
         .add_plugins(InputManagerPlugin::<PlayerAction>::default())
         .add_systems(Startup, spawn_player)
         .add_systems(Update, use_actions)
-        .run()
+        .run();
 }
 
 #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]

@@ -133,7 +133,9 @@ fn player_mouse_look(
     if let Some(p) = window
         .cursor_position()
         .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
-        .and_then(|ray| Some(ray).zip(ray.intersect_plane(player_position, Plane3d::new(Vec3::Y))))
+        .and_then(|ray| {
+            Some(ray).zip(ray.intersect_plane(player_position, InfinitePlane3d::new(Vec3::Y)))
+        })
         .map(|(ray, p)| ray.get_point(p))
     {
         let diff = (p - player_position).xz();

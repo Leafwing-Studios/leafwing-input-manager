@@ -2,8 +2,7 @@
 
 use std::hash::{Hash, Hasher};
 
-use bevy::prelude::Reflect;
-use bevy::utils::FloatOrd;
+use bevy::{math::FloatOrd, prelude::Reflect};
 use serde::{Deserialize, Serialize};
 
 use super::AxisProcessor;

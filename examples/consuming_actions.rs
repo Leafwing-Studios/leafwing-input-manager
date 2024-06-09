@@ -25,7 +25,7 @@ fn main() {
         .add_systems(Update, close_menu::<SubMenu>.before(close_menu::<MainMenu>))
         // We can do this by ordering our systems and using `ActionState::consume`
         .add_systems(Update, close_menu::<MainMenu>)
-        .run()
+        .run();
 }
 
 #[derive(Actionlike, Debug, Clone, Reflect, PartialEq, Eq, Hash)]
