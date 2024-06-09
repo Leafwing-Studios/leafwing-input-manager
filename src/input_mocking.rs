@@ -796,6 +796,7 @@ mod test {
     }
 
     #[test]
+    #[ignore = "Mouse axis input clearing is buggy. Try again after https://github.com/bevyengine/bevy/pull/13762 is released."]
     fn mouse_inputs() {
         let mut app = test_app();
 
