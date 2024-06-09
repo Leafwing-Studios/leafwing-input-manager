@@ -38,11 +38,11 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.13" }
-bevy = { version = "0.13", default-features = false, features = [
+bevy = { version = "0.14.0-rc.2", default-features = false, features = [
   "serialize",
   "bevy_gilrs",
 ] }
-bevy_egui = { version = "0.25", optional = true }
+bevy_egui = { git = "https://github.com/Friz64/bevy_egui/", branch = "bevy-0.14", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
@@ -52,7 +52,7 @@ itertools = "0.12"
 serde = { version = "1.0", features = ["derive"] }
 
 [dev-dependencies]
-bevy = { version = "0.13", default-features = false, features = [
+bevy = { version = "0.14.0-rc.2", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
@@ -61,7 +61,7 @@ bevy = { version = "0.13", default-features = false, features = [
   "bevy_core_pipeline",
   "x11",
 ] }
-bevy_egui = "0.25"
+bevy_egui = { git = "https://github.com/Friz64/bevy_egui/", branch = "bevy-0.14" }
 serde_test = "1.0"
 criterion = "0.5"
 
