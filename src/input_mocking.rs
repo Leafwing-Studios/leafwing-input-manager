@@ -325,7 +325,7 @@ impl MockInput for MutableInputStreams<'_> {
                 AxisType::Gamepad(axis) => {
                     if let Some(gamepad) = gamepad {
                         let value = value_iter.next().unwrap_or_default();
-                        self.send_gamepad_axis_value(gamepad, &axis, value);
+                        self.send_gamepad_axis_value(gamepad, axis, value);
                     }
                 }
                 AxisType::MouseMotion(axis) => {
@@ -372,7 +372,7 @@ impl MockInput for MutableInputStreams<'_> {
         // Deactivate GamepadAxisType
         for axis_type in raw_inputs.axis_types.iter() {
             if let (Some(gamepad), AxisType::Gamepad(axis)) = (gamepad, axis_type) {
-                self.send_gamepad_axis_value(gamepad, &axis, 0.0);
+                self.send_gamepad_axis_value(gamepad, axis, 0.0);
             }
         }
 
