@@ -7,9 +7,9 @@ use bevy::input::{
     gamepad::{GamepadAxisType, GamepadButtonType},
     keyboard::KeyCode,
 };
+use bevy::math::FloatOrd;
 use bevy::math::Vec2;
 use bevy::reflect::Reflect;
-use bevy::utils::FloatOrd;
 use serde::{Deserialize, Serialize};
 
 /// A single directional axis with a configurable trigger zone.

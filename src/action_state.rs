@@ -619,7 +619,7 @@ mod tests {
         input_map.insert(Action::Run, KeyCode::KeyR);
 
         // Starting state
-        let input_streams = InputStreams::from_world(&app.world, None);
+        let input_streams = InputStreams::from_world(&app.world(), None);
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
@@ -631,7 +631,7 @@ mod tests {
         app.send_input(KeyCode::KeyR);
         // Process the input events into Input<KeyCode> data
         app.update();
-        let input_streams = InputStreams::from_world(&app.world, None);
+        let input_streams = InputStreams::from_world(&app.world(), None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
@@ -652,7 +652,7 @@ mod tests {
         // Releasing
         app.release_input(KeyCode::KeyR);
         app.update();
-        let input_streams = InputStreams::from_world(&app.world, None);
+        let input_streams = InputStreams::from_world(&app.world(), None);
 
         action_state.update(input_map.which_pressed(&input_streams, ClashStrategy::PressAll));
 
@@ -694,7 +694,7 @@ mod tests {
         let mut action_state = ActionState::<Action>::default();
 
         // Starting state
-        let input_streams = InputStreams::from_world(&app.world, None);
+        let input_streams = InputStreams::from_world(&app.world(), None);
         action_state
             .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
         assert!(action_state.released(&Action::One));
@@ -704,7 +704,7 @@ mod tests {
         // Pressing One
         app.send_input(Digit1);
         app.update();
-        let input_streams = InputStreams::from_world(&app.world, None);
+        let input_streams = InputStreams::from_world(&app.world(), None);
 
         action_state
             .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));
@@ -725,7 +725,7 @@ mod tests {
         // Pressing Two
         app.send_input(Digit2);
         app.update();
-        let input_streams = InputStreams::from_world(&app.world, None);
+        let input_streams = InputStreams::from_world(&app.world(), None);
 
         action_state
             .update(input_map.which_pressed(&input_streams, ClashStrategy::PrioritizeLongest));

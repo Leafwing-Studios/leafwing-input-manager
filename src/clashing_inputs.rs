@@ -467,7 +467,7 @@ mod tests {
             app.send_input(Digit2);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
+            let input_streams = InputStreams::from_world(&app.world(), None);
 
             assert_eq!(
                 resolve_clash(
@@ -494,7 +494,7 @@ mod tests {
             app.send_input(Digit3);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
+            let input_streams = InputStreams::from_world(&app.world(), None);
 
             assert_eq!(
                 resolve_clash(
@@ -526,7 +526,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(&app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -555,7 +555,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(&app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -577,7 +577,7 @@ mod tests {
             app.update();
 
             let action_data = input_map.which_pressed(
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(&app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 

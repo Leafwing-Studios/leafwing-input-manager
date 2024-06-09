@@ -73,22 +73,22 @@ fn disable_input() {
     // Press F to pay respects
     app.send_input(KeyCode::KeyF);
     app.update();
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
     // Disable the input
-    let mut toggle_actions = app.world.resource_mut::<ToggleActions<Action>>();
+    let mut toggle_actions = app.world().resource_mut::<ToggleActions<Action>>();
     toggle_actions.enabled = false;
 
     // Now, all respect has faded
     app.update();
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
     app.send_input(KeyCode::KeyF);
     app.update();
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }
 
@@ -115,23 +115,23 @@ fn release_when_input_map_removed() {
     // Press F to pay respects
     app.send_input(KeyCode::KeyF);
     app.update();
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
     // Remove the InputMap
-    app.world.remove_resource::<InputMap<Action>>();
+    app.world().remove_resource::<InputMap<Action>>();
     // Needs an extra frame for the resource removed detection to release inputs
     app.update();
 
     // Now, all respect has faded
     app.update();
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
     app.send_input(KeyCode::KeyF);
     app.update();
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }
 
@@ -175,34 +175,34 @@ fn action_state_driver() {
 
     app.update();
 
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 
     // Click the button to pay respects
     app.click_button::<ButtonMarker>();
 
     // Verify that the button was in fact clicked
-    let mut button_query = app.world.query::<&Interaction>();
-    let interaction = button_query.iter(&app.world).next().unwrap();
+    let mut button_query = app.world().query::<&Interaction>();
+    let interaction = button_query.iter(&app.world()).next().unwrap();
     assert_eq!(*interaction, Interaction::Pressed);
 
     // Run the app once to process the clicks
     app.update();
 
     // Check the action state
-    let mut action_state_query = app.world.query::<&ActionState<Action>>();
-    let action_state = action_state_query.iter(&app.world).next().unwrap();
+    let mut action_state_query = app.world().query::<&ActionState<Action>>();
+    let action_state = action_state_query.iter(&app.world()).next().unwrap();
     assert!(action_state.pressed(&Action::PayRespects));
 
     // Check the effects of that action state
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
     // Clear inputs
     app.reset_inputs();
     app.update();
 
-    let respect = app.world.resource::<Respect>();
+    let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
 }
 

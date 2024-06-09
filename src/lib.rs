@@ -6,7 +6,7 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use bevy::reflect::{FromReflect, Reflect, TypePath};
+use bevy::reflect::{FromReflect, GetTypeRegistration, Reflect, TypePath};
 use std::hash::Hash;
 
 pub mod action_diff;
@@ -83,7 +83,17 @@ pub mod prelude {
 /// }
 /// ```
 pub trait Actionlike:
-    Eq + Hash + Send + Sync + Clone + Hash + Reflect + TypePath + FromReflect + 'static
+    Eq
+    + Hash
+    + Send
+    + Sync
+    + Clone
+    + Hash
+    + Reflect
+    + TypePath
+    + FromReflect
+    + GetTypeRegistration
+    + 'static
 {
 }
 

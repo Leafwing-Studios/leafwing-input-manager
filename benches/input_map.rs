@@ -82,7 +82,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     app.send_input(KeyCode::KeyB);
     app.update();
 
-    let input_streams = InputStreams::from_world(&app.world, None);
+    let input_streams = InputStreams::from_world(&app.world(), None);
 
     for clash_strategy in ClashStrategy::variants() {
         which_pressed_group.bench_function(format!("{:?}", clash_strategy), |b| {

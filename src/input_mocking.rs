@@ -412,44 +412,44 @@ impl MockUIInteraction for World {
 
 impl MockInput for App {
     fn send_input(&mut self, input: impl Into<UserInput>) {
-        self.world.send_input(input);
+        self.world_mut().send_input(input);
     }
 
     fn send_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        self.world.send_input_as_gamepad(input, gamepad);
+        self.world_mut().send_input_as_gamepad(input, gamepad);
     }
 
     fn release_input(&mut self, input: impl Into<UserInput>) {
-        self.world.release_input(input);
+        self.world_mut().release_input(input);
     }
 
     fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        self.world.release_input_as_gamepad(input, gamepad);
+        self.world_mut().release_input_as_gamepad(input, gamepad);
     }
 
     fn reset_inputs(&mut self) {
-        self.world.reset_inputs();
+        self.world_mut().reset_inputs();
     }
 }
 
 impl QueryInput for App {
     fn pressed(&self, input: impl Into<UserInput>) -> bool {
-        self.world.pressed(input)
+        self.world().pressed(input)
     }
 
     fn pressed_for_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
-        self.world.pressed_for_gamepad(input, gamepad)
+        self.world().pressed_for_gamepad(input, gamepad)
     }
 }
 
 #[cfg(feature = "ui")]
 impl MockUIInteraction for App {
     fn click_button<Marker: Component>(&mut self) {
-        self.world.click_button::<Marker>();
+        self.world_mut().click_button::<Marker>();
     }
 
     fn hover_button<Marker: Component>(&mut self) {
-        self.world.hover_button::<Marker>();
+        self.world_mut().hover_button::<Marker>();
     }
 }
 
@@ -479,7 +479,7 @@ mod test {
         app.update();
 
         // Verify that checking the resource value directly works
-        let keyboard_input: &ButtonInput<KeyCode> = app.world.resource();
+        let keyboard_input: &ButtonInput<KeyCode> = app.world().resource();
         assert!(keyboard_input.pressed(KeyCode::Space));
 
         // Test the convenient .pressed API
@@ -500,7 +500,7 @@ mod test {
         app.add_plugins(InputPlugin);
 
         let gamepad = Gamepad { id: 0 };
-        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+        let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
         gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             gamepad,
             connection: GamepadConnection::Connected(GamepadInfo {
@@ -518,7 +518,7 @@ mod test {
 
         // Checking the old-fashioned way
         // FIXME: put this in a gamepad_button.rs integration test.
-        let gamepad_input = app.world.resource::<ButtonInput<GamepadButton>>();
+        let gamepad_input = app.world_mut().resource::<ButtonInput<GamepadButton>>();
         assert!(gamepad_input.pressed(GamepadButton {
             gamepad,
             button_type: GamepadButtonType::North,
@@ -540,7 +540,7 @@ mod test {
         app.add_plugins(InputPlugin);
 
         let gamepad = Gamepad { id: 0 };
-        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+        let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
         gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             gamepad,
             connection: GamepadConnection::Connected(GamepadInfo {
@@ -580,16 +580,18 @@ mod test {
         app.add_plugins(InputPlugin);
 
         // Marked button
-        app.world.spawn((Interaction::None, ButtonMarker));
+        app.world_mut().spawn((Interaction::None, ButtonMarker));
         // Unmarked button
-        app.world.spawn(Interaction::None);
+        app.world_mut().spawn(Interaction::None);
 
         // Click the button
-        app.world.click_button::<ButtonMarker>();
+        app.world_mut().click_button::<ButtonMarker>();
         app.update();
 
-        let mut interaction_query = app.world.query::<(&Interaction, Option<&ButtonMarker>)>();
-        for (interaction, maybe_marker) in interaction_query.iter(&app.world) {
+        let mut interaction_query = app
+            .world_mut()
+            .query::<(&Interaction, Option<&ButtonMarker>)>();
+        for (interaction, maybe_marker) in interaction_query.iter(&app.world()) {
             match maybe_marker {
                 Some(_) => assert_eq!(*interaction, Interaction::Pressed),
                 None => assert_eq!(*interaction, Interaction::None),
@@ -597,10 +599,10 @@ mod test {
         }
 
         // Reset inputs
-        app.world.reset_inputs();
+        app.world_mut().reset_inputs();
 
-        let mut interaction_query = app.world.query::<&Interaction>();
-        for interaction in interaction_query.iter(&app.world) {
+        let mut interaction_query = app.world_mut().query::<&Interaction>();
+        for interaction in interaction_query.iter(&app.world()) {
             assert_eq!(*interaction, Interaction::None)
         }
 
@@ -608,8 +610,10 @@ mod test {
         app.hover_button::<ButtonMarker>();
         app.update();
 
-        let mut interaction_query = app.world.query::<(&Interaction, Option<&ButtonMarker>)>();
-        for (interaction, maybe_marker) in interaction_query.iter(&app.world) {
+        let mut interaction_query = app
+            .world_mut()
+            .query::<(&Interaction, Option<&ButtonMarker>)>();
+        for (interaction, maybe_marker) in interaction_query.iter(&app.world()) {
             match maybe_marker {
                 Some(_) => assert_eq!(*interaction, Interaction::Hovered),
                 None => assert_eq!(*interaction, Interaction::None),
@@ -617,10 +621,10 @@ mod test {
         }
 
         // Reset inputs
-        app.world.reset_inputs();
+        app.world_mut().reset_inputs();
 
-        let mut interaction_query = app.world.query::<&Interaction>();
-        for interaction in interaction_query.iter(&app.world) {
+        let mut interaction_query = app.world_mut().query::<&Interaction>();
+        for interaction in interaction_query.iter(&app.world()) {
             assert_eq!(*interaction, Interaction::None)
         }
     }
