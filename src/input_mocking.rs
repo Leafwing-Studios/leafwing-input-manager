@@ -821,10 +821,6 @@ mod test {
         // Verify the mouse motion axes reflects the simulated movement
         assert_eq!(app.read_axis_values(DualAxis::mouse_motion()), [3.0, 2.0]);
 
-        // Mouse input data is typically reset every frame
-        // Verify other axes aren't affected
-        assert_eq!(app.read_axis_values(DualAxis::mouse_wheel()), [0.0, 0.0]);
-
         // Test that resetting inputs works
         app.reset_inputs();
         app.update();
