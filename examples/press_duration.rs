@@ -66,7 +66,7 @@ fn spawn_player(mut commands: Commands) {
                 ..Default::default()
             },
             sprite: Sprite {
-                color: Color::rgb(0.5, 0.5, 1.0),
+                color: Color::srgb(0.5, 0.5, 1.0),
                 ..Default::default()
             },
             ..Default::default()
