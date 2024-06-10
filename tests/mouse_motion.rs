@@ -64,7 +64,7 @@ fn mouse_move_discrete_mocking() {
     assert_eq!(events.drain().count(), 0);
 
     app.press_input(MouseMoveDirection::UP);
-    let mut events = app.world.resource_mut::<Events<MouseMotion>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
 
     assert_eq!(events.drain().count(), 1);
 }

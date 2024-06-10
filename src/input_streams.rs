@@ -203,7 +203,6 @@ mod tests {
 
     #[test]
     fn modifier_key_triggered_by_either_input() {
-        use crate::user_input::Modifier;
         let mut app = App::new();
         app.add_plugins(InputPlugin);
 

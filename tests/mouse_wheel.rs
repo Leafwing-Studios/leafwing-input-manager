@@ -65,7 +65,7 @@ fn mouse_scroll_discrete_mocking() {
     assert_eq!(events.drain().count(), 0);
 
     app.press_input(MouseScrollDirection::UP);
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
 
     assert_eq!(events.drain().count(), 1);
 }

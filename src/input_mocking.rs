@@ -616,15 +616,15 @@ impl MockUIInteraction for World {
 
 impl MockInput for App {
     fn press_input(&mut self, input: impl UserInput) {
-        self.world.press_input(input);
+        self.world_mut().press_input(input);
     }
 
     fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
-        self.world.press_input_as_gamepad(input, gamepad);
+        self.world_mut().press_input_as_gamepad(input, gamepad);
     }
 
     fn send_axis_values(&mut self, input: impl UserInput, values: impl IntoIterator<Item = f32>) {
-        self.world.send_axis_values(input, values);
+        self.world_mut().send_axis_values(input, values);
     }
 
     fn send_axis_values_as_gamepad(
@@ -638,11 +638,11 @@ impl MockInput for App {
     }
 
     fn release_input(&mut self, input: impl UserInput) {
-        self.world.release_input(input);
+        self.world_mut().release_input(input);
     }
 
     fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
-        self.world.release_input_as_gamepad(input, gamepad);
+        self.world_mut().release_input_as_gamepad(input, gamepad);
     }
 
     fn reset_inputs(&mut self) {
@@ -652,15 +652,15 @@ impl MockInput for App {
 
 impl QueryInput for App {
     fn pressed(&self, input: impl UserInput) -> bool {
-        self.world.pressed(input)
+        self.world().pressed(input)
     }
 
     fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
-        self.world.pressed_on_gamepad(input, gamepad)
+        self.world().pressed_on_gamepad(input, gamepad)
     }
 
     fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
-        self.world.read_axis_values(input)
+        self.world().read_axis_values(input)
     }
 
     fn read_axis_values_on_gamepad(

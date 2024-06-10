@@ -4,7 +4,7 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use bevy::app::{App, Plugin, RunFixedMainLoop};
+use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
 use bevy::prelude::{GamepadButtonType, KeyCode, PostUpdate, PreUpdate};

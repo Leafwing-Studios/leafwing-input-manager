@@ -1,7 +1,6 @@
 //! Tools for working with directional axis-like user inputs (game sticks, D-Pads and emulated equivalents)
 
-use bevy::prelude::{Direction2d, Reflect, Vec2};
-use bevy::prelude::{Dir2, GamepadAxisType, GamepadButtonType, KeyCode, Reflect, Vec2};
+use bevy::prelude::{Dir2, Reflect, Vec2};
 use serde::{Deserialize, Serialize};
 
 use crate::orientation::Rotation;

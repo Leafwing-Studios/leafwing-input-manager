@@ -247,7 +247,7 @@ mod tests {
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
-        let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+        let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
         gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             // This MUST be consistent with any other mocked events
             gamepad: Gamepad { id: 1 },
@@ -309,7 +309,7 @@ mod tests {
         // No keys pressed, resulting in a released chord with a value of zero.
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         released(&chord, &inputs);
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
@@ -318,7 +318,7 @@ mod tests {
             app.press_input(key);
         }
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         pressed(&chord, &inputs);
 
         // Some required keys pressed, but not all required keys for the chord,
@@ -329,7 +329,7 @@ mod tests {
                 app.press_input(*key);
             }
             app.update();
-            let inputs = InputStreams::from_world(&app.world, None);
+            let inputs = InputStreams::from_world(&app.world(), None);
             released(&chord, &inputs);
         }
 
@@ -341,7 +341,7 @@ mod tests {
         }
         app.press_input(KeyCode::KeyB);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         released(&chord, &inputs);
     }
 
@@ -376,7 +376,7 @@ mod tests {
         let zeros = Some(DualAxisData::default());
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         check(&chord, &inputs, false, 0.0, zeros);
 
         // Only one or all required keys pressed without axial inputs,
@@ -387,7 +387,7 @@ mod tests {
                 app.press_input(*key);
             }
             app.update();
-            let inputs = InputStreams::from_world(&app.world, None);
+            let inputs = InputStreams::from_world(&app.world(), None);
             check(&chord, &inputs, false, 0.0, zeros);
         }
 
@@ -397,14 +397,14 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(MouseScrollAxis::X, [value]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         check(&chord, &inputs, false, value, zeros);
 
         let data = DualAxisData::new(2.0, 3.0);
         let mut app = test_app();
         app.send_axis_values(MouseScroll::default(), [data.x(), data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         check(&chord, &inputs, false, data.x() + data.y(), zeros);
 
         // Send changes in values of first dual-axis input,
@@ -413,7 +413,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(GamepadStick::LEFT, [data.x(), data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         check(&chord, &inputs, false, 0.0, Some(data));
 
         // Send changes in values of second dual-axis input,
@@ -422,7 +422,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(GamepadStick::RIGHT, [data.x(), data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         check(&chord, &inputs, false, 0.0, zeros);
 
         // Send changes in values of first dual-axis input and all single-axis inputs,
@@ -435,7 +435,7 @@ mod tests {
         app.send_axis_values(MouseScrollAxis::X, [single.x]);
         app.send_axis_values(MouseScrollAxis::Y, [single.y]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         check(&chord, &inputs, false, single.x + single.y, Some(data));
 
         // The chord are pressed only if all inputs are activated.
@@ -451,7 +451,7 @@ mod tests {
         app.send_axis_values(MouseScrollAxis::X, [single.x]);
         app.send_axis_values(MouseScrollAxis::Y, [single.y]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         check(&chord, &inputs, true, single.x + single.y, Some(first_data));
     }
 }

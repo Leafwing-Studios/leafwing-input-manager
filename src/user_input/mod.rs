@@ -266,6 +266,27 @@ impl Reflect for Box<dyn UserInput> {
         self
     }
 
+    fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
+        let value = value.as_any();
+        if let Some(value) = value.downcast_ref::<Self>() {
+            *self = value.clone();
+            Ok(())
+        } else {
+            Err(bevy::reflect::ApplyError::MismatchedTypes {
+                from_type: self
+                    .reflect_type_ident()
+                    .unwrap_or_default()
+                    .to_string()
+                    .into_boxed_str(),
+                to_type: self
+                    .reflect_type_ident()
+                    .unwrap_or_default()
+                    .to_string()
+                    .into_boxed_str(),
+            })
+        }
+    }
+
     fn apply(&mut self, value: &dyn Reflect) {
         let value = value.as_any();
         if let Some(value) = value.downcast_ref::<Self>() {

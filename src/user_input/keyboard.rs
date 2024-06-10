@@ -635,7 +635,7 @@ mod tests {
         let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         released(&up, &inputs);
         released(&left, &inputs);
         released(&alt, &inputs);
@@ -647,7 +647,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(KeyCode::ArrowUp);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         pressed(&up, &inputs);
         released(&left, &inputs);
         released(&alt, &inputs);
@@ -659,7 +659,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(KeyCode::ArrowDown);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         released(&up, &inputs);
         released(&left, &inputs);
         released(&alt, &inputs);
@@ -671,7 +671,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(KeyCode::ArrowLeft);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         released(&up, &inputs);
         pressed(&left, &inputs);
         released(&alt, &inputs);
@@ -683,7 +683,7 @@ mod tests {
         app.press_input(KeyCode::ArrowDown);
         app.press_input(KeyCode::ArrowUp);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         pressed(&up, &inputs);
         released(&left, &inputs);
         released(&alt, &inputs);
@@ -696,7 +696,7 @@ mod tests {
         app.press_input(KeyCode::ArrowLeft);
         app.press_input(KeyCode::ArrowUp);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         pressed(&up, &inputs);
         pressed(&left, &inputs);
         released(&alt, &inputs);
@@ -707,7 +707,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(KeyCode::AltLeft);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         released(&up, &inputs);
         released(&left, &inputs);
         pressed(&alt, &inputs);
@@ -718,7 +718,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(KeyCode::AltRight);
         app.update();
-        let inputs = InputStreams::from_world(&app.world, None);
+        let inputs = InputStreams::from_world(&app.world(), None);
         released(&up, &inputs);
         released(&left, &inputs);
         pressed(&alt, &inputs);

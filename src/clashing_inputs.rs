@@ -470,7 +470,7 @@ mod tests {
                 resolve_clash(
                     &simple_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &InputStreams::from_world(&app.world, None),
+                    &InputStreams::from_world(&app.world(), None),
                 ),
                 Some(One)
             );
@@ -480,7 +480,7 @@ mod tests {
                 resolve_clash(
                     &reversed_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &InputStreams::from_world(&app.world, None),
+                    &InputStreams::from_world(&app.world(), None),
                 ),
                 Some(One)
             );
