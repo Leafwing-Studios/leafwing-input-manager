@@ -158,7 +158,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ### Tech debt
 
-- removed `ActionStateDriver` and using it to automatically press `bevy_ui` buttons based on action state
+- removed `ActionStateDriver` and `update_action_state_from_interaction`, which allowed actions to be pressed by `bevy_ui` buttons
   - this feature was not widely used and can be easily replicated externally
   - the core pattern is simply calling `action_state.press(MyAction::Variant)` in one of your systems
 - removed the `no_ui_priority` feature. To get this behavior, now just turn off the default `ui` feature
