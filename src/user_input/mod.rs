@@ -288,15 +288,7 @@ impl Reflect for Box<dyn UserInput> {
     }
 
     fn apply(&mut self, value: &dyn Reflect) {
-        let value = value.as_any();
-        if let Some(value) = value.downcast_ref::<Self>() {
-            *self = value.clone();
-        } else {
-            panic!(
-                "Value is not a std::boxed::Box<dyn {}::UserInput>.",
-                module_path!(),
-            );
-        }
+        Self::try_apply(self, value).unwrap();
     }
 
     fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
