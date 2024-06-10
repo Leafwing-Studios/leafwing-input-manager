@@ -7,6 +7,7 @@ use leafwing_input_manager::input_mocking::MockInput;
 use leafwing_input_manager::plugin::{InputManagerPlugin, InputManagerSystem};
 use leafwing_input_manager_macros::Actionlike;
 use std::time::Duration;
+use bevy::input::InputPlugin;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum TestAction {
@@ -45,8 +46,8 @@ fn build_app(fixed_timestep: Duration, frame_timestep: Duration) -> App {
     app.add_systems(FixedUpdate, fixed_update_counter);
 
     // we have to set an initial time for TimeUpdateStrategy::ManualDuration to work properly
-    let startup = app.world.resource::<Time<Real>>().startup();
-    app.world
+    let startup = app.world().resource::<Time<Real>>().startup();
+    app.world_mut()
         .resource_mut::<Time<Real>>()
         .update_with_instant(startup);
     app
@@ -75,17 +76,17 @@ fn update_counter(mut counter: ResMut<UpdateCounter>, action: Res<ActionState<Te
 
 /// Reset the counters at the end of the frame
 fn reset_counters(app: &mut App) {
-    let mut fixed_update_counters = app.world.resource_mut::<FixedUpdateCounter>();
+    let mut fixed_update_counters = app.world_mut().resource_mut::<FixedUpdateCounter>();
     fixed_update_counters.run = 0;
     fixed_update_counters.just_pressed = 0;
-    let mut update_counters = app.world.resource_mut::<UpdateCounter>();
+    let mut update_counters = app.world_mut().resource_mut::<UpdateCounter>();
     update_counters.just_pressed = 0;
 }
 
 /// Assert that the FixedUpdate schedule run the expected number of times
 fn check_fixed_update_run_count(app: &mut App, expected: usize) {
     assert_eq!(
-        app.world.get_resource::<FixedUpdateCounter>().unwrap().run,
+        app.world().get_resource::<FixedUpdateCounter>().unwrap().run,
         expected,
         "FixedUpdate schedule should have run {} times",
         expected
@@ -95,7 +96,7 @@ fn check_fixed_update_run_count(app: &mut App, expected: usize) {
 /// Assert that the button was just_pressed the expected number of times during the FixedUpdate schedule
 fn check_fixed_update_just_pressed_count(app: &mut App, expected: usize) {
     assert_eq!(
-        app.world
+        app.world()
             .get_resource::<FixedUpdateCounter>()
             .unwrap()
             .just_pressed,
@@ -108,7 +109,7 @@ fn check_fixed_update_just_pressed_count(app: &mut App, expected: usize) {
 /// Assert that the button was just_pressed the expected number of times during the Update schedule
 fn check_update_just_pressed_count(app: &mut App, expected: usize) {
     assert_eq!(
-        app.world
+        app.world()
             .get_resource::<UpdateCounter>()
             .unwrap()
             .just_pressed,
@@ -154,7 +155,7 @@ fn frame_without_fixed_timestep() {
     // which is only updated in `PreUpdate`, which is what we want)
     #[cfg(feature = "timing")]
     assert_eq!(
-        app.world
+        app.world()
             .get_resource::<ActionState<TestAction>>()
             .unwrap()
             .current_duration(&TestAction::Up),
@@ -192,7 +193,7 @@ fn frame_with_two_fixed_timestep() {
     // which is only updated in `PreUpdate`, which is what we want)
     #[cfg(feature = "timing")]
     assert_eq!(
-        app.world
+        app.world()
             .get_resource::<ActionState<TestAction>>()
             .unwrap()
             .current_duration(&TestAction::Up),
@@ -224,7 +225,7 @@ fn test_consume_in_fixed_update() {
 
     // the button should still be consumed, even after we exit the FixedUpdate schedule
     assert!(
-        app.world
+        app.world()
             .get_resource::<ActionState<TestAction>>()
             .unwrap()
             .action_data(&TestAction::Up)
