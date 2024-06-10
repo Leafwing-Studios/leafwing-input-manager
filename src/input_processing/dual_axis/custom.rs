@@ -138,15 +138,7 @@ impl Reflect for Box<dyn CustomDualAxisProcessor> {
     }
 
     fn apply(&mut self, value: &dyn Reflect) {
-        let value = value.as_any();
-        if let Some(value) = value.downcast_ref::<Self>() {
-            *self = value.clone();
-        } else {
-            panic!(
-                "Value is not a std::boxed::Box<dyn {}::CustomDualAxisProcessor>.",
-                module_path!(),
-            );
-        }
+        self.try_apply(value).unwrap()
     }
 
     fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
@@ -194,8 +186,25 @@ impl Reflect for Box<dyn CustomDualAxisProcessor> {
         Debug::fmt(self, f)
     }
 
-    fn try_apply(&mut self, _value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
-        todo!()
+    fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
+        let value = value.as_any();
+        if let Some(value) = value.downcast_ref::<Self>() {
+            *self = value.clone();
+            Ok(())
+        } else {
+            Err(bevy::reflect::ApplyError::MismatchedTypes {
+                from_type: self
+                    .reflect_type_ident()
+                    .unwrap_or_default()
+                    .to_string()
+                    .into_boxed_str(),
+                to_type: self
+                    .reflect_type_ident()
+                    .unwrap_or_default()
+                    .to_string()
+                    .into_boxed_str(),
+            })
+        }
     }
 }
 
