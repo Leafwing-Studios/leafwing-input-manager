@@ -12,7 +12,7 @@
     - `MouseMove` will clash with all the two axes and the four directions.
 - refactored the method signatures of `InputMap` to fit the new input types.
 - removed `InputMap::insert_chord` and `InputMap::insert_modified` due to their limited applicability within the type system.
-  - the new `InputChord` contructors and builders allow you to define chords with guaranteed type safety.
+  - the new `InputChord` constructors and builders allow you to define chords with guaranteed type safety.
   - the new `ModifierKey::with` method simplifies the creation of input chords that include the modifier and your desired input.
 - the `timing` field of the `ActionData` is now disabled by default. Timing information will only be collected
   if the `timing` feature is enabled. It is disabled by default because most games don't require timing information.
@@ -29,9 +29,6 @@
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
 
 ### Enhancements
-
-- Inputs are now handled correctly in the `FixedUpdate` schedule! Previously, the `ActionState`s were only updated in the `PreUpdate` schedule, so you could have situations where an action was 
-  marked as `just_pressed` multiple times in a row (if the `FixedUpdate` schedule ran multiple times in a frame) or was missed entirely (if the `FixedUpdate` schedule ran 0 times in a frame).
 
 #### New Inputs
 
@@ -157,6 +154,14 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 - fixed a bug where enabling a pressed action would read as `just_pressed`, and disabling a pressed action would read as `just_released`.
 - fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
+- inputs are now handled correctly in the `FixedUpdate` schedule! Previously, the `ActionState`s were only updated in the `PreUpdate` schedule, so you could have situations where an action was marked as `just_pressed` multiple times in a row (if the `FixedUpdate` schedule ran multiple times in a frame) or was missed entirely (if the `FixedUpdate` schedule ran 0 times in a frame).
+
+### Tech debt
+
+- removed `ActionStateDriver` and `update_action_state_from_interaction`, which allowed actions to be pressed by `bevy_ui` buttons
+  - this feature was not widely used and can be easily replicated externally
+  - the core pattern is simply calling `action_state.press(MyAction::Variant)` in one of your systems
+- removed the `no_ui_priority` feature. To get this behavior, now just turn off the default `ui` feature
 
 ## Version 0.13.3
 

@@ -810,7 +810,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&left, &inputs);
         released(&middle, &inputs);
         released(&right, &inputs);
@@ -819,7 +819,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseButton::Left);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&left, &inputs);
         released(&middle, &inputs);
         released(&right, &inputs);
@@ -828,7 +828,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseButton::Middle);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&left, &inputs);
         pressed(&middle, &inputs);
         released(&right, &inputs);
@@ -837,7 +837,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseButton::Right);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&left, &inputs);
         released(&middle, &inputs);
         pressed(&right, &inputs);
@@ -864,7 +864,7 @@ mod tests {
         let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&mouse_move_up, &inputs);
         released(&mouse_move_y, &inputs);
         check(&mouse_move, &inputs, false, 0.0, zeros);
@@ -874,7 +874,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseMoveDirection::LEFT);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&mouse_move_up, &inputs);
         released(&mouse_move_y, &inputs);
         check(&mouse_move, &inputs, true, data.length(), Some(data));
@@ -884,7 +884,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseMoveDirection::UP);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&mouse_move_up, &inputs);
         check(&mouse_move_y, &inputs, true, data.y(), None);
         check(&mouse_move, &inputs, true, data.length(), Some(data));
@@ -894,7 +894,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseMoveDirection::DOWN);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&mouse_move_up, &inputs);
         check(&mouse_move_y, &inputs, true, data.y(), None);
         check(&mouse_move, &inputs, true, data.length(), Some(data));
@@ -904,7 +904,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(MouseMoveAxis::Y, [data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&mouse_move_up, &inputs);
         check(&mouse_move_y, &inputs, true, data.y(), None);
         check(&mouse_move, &inputs, true, data.length(), Some(data));
@@ -914,7 +914,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(MouseMove::default(), [data.x(), data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&mouse_move_up, &inputs);
         check(&mouse_move_y, &inputs, true, data.y(), None);
         check(&mouse_move, &inputs, true, data.length(), Some(data));
@@ -941,7 +941,7 @@ mod tests {
         let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&mouse_scroll_up, &inputs);
         released(&mouse_scroll_y, &inputs);
         check(&mouse_scroll, &inputs, false, 0.0, zeros);
@@ -951,7 +951,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseScrollDirection::UP);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&mouse_scroll_up, &inputs);
         check(&mouse_scroll_y, &inputs, true, data.y(), None);
         check(&mouse_scroll, &inputs, true, data.length(), Some(data));
@@ -961,7 +961,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(MouseScrollDirection::DOWN);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&mouse_scroll_up, &inputs);
         check(&mouse_scroll_y, &inputs, true, data.y(), None);
         check(&mouse_scroll, &inputs, true, data.length(), Some(data));
@@ -971,7 +971,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(MouseScrollAxis::Y, [data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&mouse_scroll_up, &inputs);
         check(&mouse_scroll_y, &inputs, true, data.y(), None);
         check(&mouse_scroll, &inputs, true, data.length(), Some(data));
@@ -981,7 +981,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(MouseScroll::default(), [data.x(), data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&mouse_scroll_up, &inputs);
         check(&mouse_scroll_y, &inputs, true, data.y(), None);
         check(&mouse_scroll, &inputs, true, data.length(), Some(data));
