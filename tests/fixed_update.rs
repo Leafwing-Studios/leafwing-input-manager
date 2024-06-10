@@ -1,3 +1,4 @@
+use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::time::TimeUpdateStrategy;
 use bevy::MinimalPlugins;
@@ -7,7 +8,6 @@ use leafwing_input_manager::input_mocking::MockInput;
 use leafwing_input_manager::plugin::{InputManagerPlugin, InputManagerSystem};
 use leafwing_input_manager_macros::Actionlike;
 use std::time::Duration;
-use bevy::input::InputPlugin;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum TestAction {
@@ -86,7 +86,10 @@ fn reset_counters(app: &mut App) {
 /// Assert that the FixedUpdate schedule run the expected number of times
 fn check_fixed_update_run_count(app: &mut App, expected: usize) {
     assert_eq!(
-        app.world().get_resource::<FixedUpdateCounter>().unwrap().run,
+        app.world()
+            .get_resource::<FixedUpdateCounter>()
+            .unwrap()
+            .run,
         expected,
         "FixedUpdate schedule should have run {} times",
         expected
