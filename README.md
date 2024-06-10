@@ -15,7 +15,7 @@ and a single input can result in multiple actions being triggered, which can be 
 ## Supported Bevy Versions
 
 | Bevy | leafwing-input-manager |
-|------|------------------------|
+| ---- | ---------------------- |
 | 0.13 | 0.13                   |
 | 0.12 | 0.11..0.12             |
 | 0.11 | 0.10                   |
@@ -108,5 +108,4 @@ This snippet is the `minimal.rs` example from the [`examples`](https://github.co
 
 ## Crate Feature Flags
 
-This crate has five feature flags: `asset`, `timing`, `ui`, `no_ui_priority`, and `egui`.
-Please refer to the `[features]` section in the [`Cargo.toml`](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main/Cargo.toml) for detailed information about their configurations.
+Please refer to the `[features]` section in the [`Cargo.toml`](https://github.com/Leafwing-Studios/leafwing-input-manager/tree/main/Cargo.toml) for information about the available crate features.

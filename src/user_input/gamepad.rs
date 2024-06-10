@@ -1028,7 +1028,7 @@ mod tests {
         let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&left_up, &inputs);
         released(&left_down, &inputs);
         released(&right_up, &inputs);
@@ -1043,7 +1043,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(GamepadControlDirection::LEFT_UP);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&left_up, &inputs);
         released(&left_down, &inputs);
         released(&right_up, &inputs);
@@ -1058,7 +1058,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(GamepadControlAxis::LEFT_Y, [data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&left_up, &inputs);
         released(&left_down, &inputs);
         released(&right_up, &inputs);
@@ -1073,7 +1073,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(GamepadStick::LEFT, [data.x(), data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&left_up, &inputs);
         released(&left_down, &inputs);
         released(&right_up, &inputs);
@@ -1126,7 +1126,7 @@ mod tests {
         let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&up, &inputs);
         released(&down, &inputs);
         released(&left, &inputs);
@@ -1140,7 +1140,7 @@ mod tests {
         let mut app = test_app();
         app.press_input(GamepadButtonType::DPadLeft);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&up, &inputs);
         released(&down, &inputs);
         released(&left, &inputs);
@@ -1154,7 +1154,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(GamepadVirtualAxis::DPAD_X, [data.x()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         released(&up, &inputs);
         released(&down, &inputs);
         released(&left, &inputs);
@@ -1168,7 +1168,7 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(GamepadVirtualDPad::DPAD, [data.x(), data.y()]);
         app.update();
-        let inputs = InputStreams::from_world(&app.world(), None);
+        let inputs = InputStreams::from_world(app.world(), None);
         pressed(&up, &inputs);
         released(&down, &inputs);
         released(&left, &inputs);
