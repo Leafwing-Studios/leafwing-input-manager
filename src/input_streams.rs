@@ -198,6 +198,7 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
 mod tests {
     use super::{InputStreams, MutableInputStreams};
     use crate::prelude::{MockInput, QueryInput};
+    use crate::user_input::ModifierKey;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
@@ -207,24 +208,24 @@ mod tests {
         app.add_plugins(InputPlugin);
 
         let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
-        assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
+        assert!(!InputStreams::from(&input_streams).pressed(ModifierKey::Control));
 
         input_streams.press_input(KeyCode::ControlLeft);
         app.update();
 
         let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
-        assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
+        assert!(InputStreams::from(&input_streams).pressed(ModifierKey::Control));
 
         input_streams.reset_inputs();
         app.update();
 
         let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
-        assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
+        assert!(!InputStreams::from(&input_streams).pressed(ModifierKey::Control));
 
         input_streams.press_input(KeyCode::ControlRight);
         app.update();
 
         let input_streams = MutableInputStreams::from_world(app.world_mut(), None);
-        assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
+        assert!(InputStreams::from(&input_streams).pressed(ModifierKey::Control));
     }
 }
