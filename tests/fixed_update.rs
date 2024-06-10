@@ -149,7 +149,6 @@ fn frame_without_fixed_timestep() {
     check_fixed_update_just_pressed_count(&mut app, 0);
     reset_counters(&mut app);
 
-
     // make sure that the timings didn't get updated twice (once in Update and once in FixedUpdate)
     // (the `tick` function has been called twice, but it uses `Time<Real>` to update the time,
     // which is only updated in `PreUpdate`, which is what we want)
