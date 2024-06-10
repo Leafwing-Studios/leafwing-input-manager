@@ -1,9 +1,4 @@
-use bevy::app::PreUpdate;
-use bevy::input::InputPlugin;
-use bevy::prelude::{
-    App, Fixed, FixedPostUpdate, FixedUpdate, IntoSystemConfigs, KeyCode, Real, Reflect, Res,
-    ResMut, Resource, Time, Update,
-};
+use bevy::prelude::*;
 use bevy::time::TimeUpdateStrategy;
 use bevy::MinimalPlugins;
 use leafwing_input_manager::action_state::ActionState;
@@ -154,9 +149,11 @@ fn frame_without_fixed_timestep() {
     check_fixed_update_just_pressed_count(&mut app, 0);
     reset_counters(&mut app);
 
+
     // make sure that the timings didn't get updated twice (once in Update and once in FixedUpdate)
     // (the `tick` function has been called twice, but it uses `Time<Real>` to update the time,
     // which is only updated in `PreUpdate`, which is what we want)
+    #[cfg(feature = "timing")]
     assert_eq!(
         app.world
             .get_resource::<ActionState<TestAction>>()
@@ -170,7 +167,6 @@ fn frame_without_fixed_timestep() {
 ///
 /// A button pressed in F1 should still be marked as `just_pressed` in FU1, and should just be
 /// `pressed` in FU2
-#[cfg(feature = "timing")]
 #[test]
 fn frame_with_two_fixed_timestep() {
     let mut app = build_app(Duration::from_millis(4), Duration::from_millis(9));
@@ -195,6 +191,7 @@ fn frame_with_two_fixed_timestep() {
     // make sure that the timings didn't get updated twice (once in Update and once in FixedUpdate)
     // (the `tick` function has been called twice, but it uses `Time<Real>` to update the time,
     // which is only updated in `PreUpdate`, which is what we want)
+    #[cfg(feature = "timing")]
     assert_eq!(
         app.world
             .get_resource::<ActionState<TestAction>>()
@@ -206,7 +203,6 @@ fn frame_with_two_fixed_timestep() {
 
 /// Check that if the action is consumed in FU1, it will still be consumed in F2.
 /// (i.e. consuming is shared between the `FixedMain` and `Main` schedules)
-#[cfg(feature = "timing")]
 #[test]
 fn test_consume_in_fixed_update() {
     let mut app = build_app(Duration::from_millis(5), Duration::from_millis(5));
