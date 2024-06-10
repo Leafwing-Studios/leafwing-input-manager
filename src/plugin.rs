@@ -4,11 +4,12 @@ use core::hash::Hash;
 use core::marker::PhantomData;
 use std::fmt::Debug;
 
-use bevy::app::{App, Plugin};
+use bevy::app::{App, Plugin, RunFixedMainLoop};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
 use bevy::prelude::{GamepadButtonType, KeyCode, PostUpdate, PreUpdate};
 use bevy::reflect::TypePath;
+use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
@@ -88,12 +89,15 @@ enum Machine {
     Client,
 }
 
-impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
+impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
+    for InputManagerPlugin<A>
+{
     fn build(&self, app: &mut App) {
         use crate::systems::*;
 
         match self.machine {
             Machine::Client => {
+                // Main schedule
                 app.add_systems(
                     PreUpdate,
                     tick_action_state::<A>
@@ -135,6 +139,38 @@ impl<A: Actionlike + TypePath> Plugin for InputManagerPlugin<A> {
                     PreUpdate,
                     update_action_state_from_interaction::<A>
                         .in_set(InputManagerSystem::ManualControl),
+                );
+
+                // FixedMain schedule
+                app.add_systems(
+                    RunFixedMainLoop,
+                    (
+                        swap_to_fixed_update::<A>,
+                        // we want to update the ActionState only once, even if the FixedMain schedule runs multiple times
+                        update_action_state::<A>,
+                    )
+                        .chain()
+                        .before(run_fixed_main_schedule),
+                );
+
+                #[cfg(feature = "ui")]
+                app.configure_sets(bevy::app::FixedPreUpdate, InputManagerSystem::ManualControl);
+                #[cfg(feature = "ui")]
+                app.add_systems(
+                    bevy::app::FixedPreUpdate,
+                    update_action_state_from_interaction::<A>
+                        .in_set(InputManagerSystem::ManualControl),
+                );
+                app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
+                app.add_systems(
+                    FixedPostUpdate,
+                    tick_action_state::<A>
+                        .in_set(InputManagerSystem::Tick)
+                        .before(InputManagerSystem::Update),
+                );
+                app.add_systems(
+                    RunFixedMainLoop,
+                    swap_to_update::<A>.after(run_fixed_main_schedule),
                 );
             }
             Machine::Server => {

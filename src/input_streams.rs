@@ -193,3 +193,39 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{InputStreams, MutableInputStreams};
+    use crate::prelude::{MockInput, QueryInput};
+    use bevy::input::InputPlugin;
+    use bevy::prelude::*;
+
+    #[test]
+    fn modifier_key_triggered_by_either_input() {
+        use crate::user_input::Modifier;
+        let mut app = App::new();
+        app.add_plugins(InputPlugin);
+
+        let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
+        assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
+
+        input_streams.press_input(KeyCode::ControlLeft);
+        app.update();
+
+        let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
+        assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
+
+        input_streams.reset_inputs();
+        app.update();
+
+        let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
+        assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
+
+        input_streams.press_input(KeyCode::ControlRight);
+        app.update();
+
+        let input_streams = MutableInputStreams::from_world(app.world_mut(), None);
+        assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
+    }
+}

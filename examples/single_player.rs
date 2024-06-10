@@ -43,12 +43,12 @@ impl ArpgAction {
         ArpgAction::Right,
     ];
 
-    fn direction(self) -> Option<Direction2d> {
+    fn direction(self) -> Option<Dir2> {
         match self {
-            ArpgAction::Up => Some(Direction2d::Y),
-            ArpgAction::Down => Some(Direction2d::NEG_Y),
-            ArpgAction::Left => Some(Direction2d::NEG_X),
-            ArpgAction::Right => Some(Direction2d::X),
+            ArpgAction::Up => Some(Dir2::Y),
+            ArpgAction::Down => Some(Dir2::NEG_Y),
+            ArpgAction::Left => Some(Dir2::NEG_X),
+            ArpgAction::Right => Some(Dir2::X),
             _ => None,
         }
     }
@@ -138,7 +138,7 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
         }
 
         // Then reconvert at the end, normalizing the magnitude
-        let net_direction = Direction2d::new(direction_vector);
+        let net_direction = Dir2::new(direction_vector);
 
         if let Ok(direction) = net_direction {
             println!("Dashing in {direction:?}");
@@ -148,7 +148,7 @@ fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
 
 #[derive(Event)]
 pub struct PlayerWalk {
-    pub direction: Direction2d,
+    pub direction: Dir2,
 }
 
 fn player_walks(
@@ -169,7 +169,7 @@ fn player_walks(
     }
 
     // Then reconvert at the end, normalizing the magnitude
-    let net_direction = Direction2d::new(direction_vector);
+    let net_direction = Dir2::new(direction_vector);
 
     if let Ok(direction) = net_direction {
         event_writer.send(PlayerWalk { direction });

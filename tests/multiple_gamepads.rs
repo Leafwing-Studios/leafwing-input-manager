@@ -13,7 +13,7 @@ fn create_test_app() -> App {
     app.add_plugins(MinimalPlugins).add_plugins(InputPlugin);
     app.add_plugins(InputManagerPlugin::<MyAction>::default());
 
-    let mut gamepad_events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
         // Must be consistent with mocked events
         gamepad: Gamepad { id: 1 },
@@ -59,23 +59,23 @@ fn default_accepts_any() {
     app.init_resource::<ActionState<MyAction>>();
 
     // When we press the Jump button...
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     events.send(jump_button_press_event(FIRST_GAMEPAD));
     app.update();
 
     // ... We should receive a Jump action!
-    let mut action_state = app.world.resource_mut::<ActionState<MyAction>>();
+    let mut action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
     assert!(action_state.pressed(&MyAction::Jump));
 
     action_state.release(&MyAction::Jump);
     app.update();
 
     // This is maintained for any gamepad.
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     events.send(jump_button_press_event(SECOND_GAMEPAD));
     app.update();
 
-    let action_state = app.world.resource_mut::<ActionState<MyAction>>();
+    let action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
     assert!(action_state.pressed(&MyAction::Jump));
 }
 
@@ -91,12 +91,12 @@ fn accepts_preferred_gamepad() {
     app.init_resource::<ActionState<MyAction>>();
 
     // When we press the Jump button...
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     events.send(jump_button_press_event(PREFERRED_GAMEPAD));
     app.update();
 
     // ... We should receive a Jump action!
-    let action_state = app.world.resource_mut::<ActionState<MyAction>>();
+    let action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
     assert!(action_state.pressed(&MyAction::Jump));
 }
 
@@ -113,11 +113,11 @@ fn filters_out_other_gamepads() {
     app.init_resource::<ActionState<MyAction>>();
 
     // When we press the Jump button...
-    let mut events = app.world.resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     events.send(jump_button_press_event(OTHER_GAMEPAD));
     app.update();
 
     // ... We should receive a Jump action!
-    let action_state = app.world.resource_mut::<ActionState<MyAction>>();
+    let action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
     assert!(action_state.released(&MyAction::Jump));
 }

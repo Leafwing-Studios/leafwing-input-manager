@@ -41,9 +41,10 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.13" }
-bevy = { version = "0.13", default-features = false, features = [
+bevy = { version = "0.14.0-rc.2", default-features = false, features = [
   "serialize",
 ] }
+bevy_ecs = { version = "0.14.0-rc.2", features = ["serde"] }
 bevy_egui = { version = "0.27", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
@@ -59,14 +60,20 @@ dyn-hash = "0.2"
 once_cell = "1.19"
 
 [dev-dependencies]
-bevy = { version = "0.13", default-features = false, features = [
+bevy_ecs = { version = "0.14.0-rc.2", features = ["serde"] }
+bevy = { version = "0.14.0-rc.2", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
   "bevy_ui",
   "bevy_render",
   "bevy_core_pipeline",
+  "bevy_state",
   "x11",
+  # TODO Remove these before release. See https://github.com/bevyengine/bevy/issues/13728
+  "ktx2",
+  "zstd",
+  "bevy_pbr",
 ] }
 bevy_egui = "0.27"
 serde_test = "1.0"
@@ -89,3 +96,6 @@ path = "src/lib.rs"
 name = "press_duration"
 path = "examples/press_duration.rs"
 required-features = ["timing"]
+
+[patch.crates-io]
+bevy_egui = { git = "https://github.com/Friz64/bevy_egui.git", branch = "bevy-0.14" }

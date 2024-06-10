@@ -30,6 +30,9 @@
 
 ### Enhancements
 
+- Inputs are now handled correctly in the `FixedUpdate` schedule! Previously, the `ActionState`s were only updated in the `PreUpdate` schedule, so you could have situations where an action was 
+  marked as `just_pressed` multiple times in a row (if the `FixedUpdate` schedule ran multiple times in a frame) or was missed entirely (if the `FixedUpdate` schedule ran 0 times in a frame).
+
 #### New Inputs
 
 - added `UserInput` trait.

@@ -80,22 +80,22 @@ impl ClashTestExt for App {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions);
         // SystemState is love, SystemState is life
         let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
-            SystemState::new(&mut self.world);
+            SystemState::new(self.world_mut());
 
-        let input_map_query = input_system_state.get(&self.world);
+        let input_map_query = input_system_state.get(self.world());
 
         let input_map = input_map_query.single();
-        let keyboard_input = self.world.resource::<ButtonInput<KeyCode>>();
+        let keyboard_input = self.world().resource::<ButtonInput<KeyCode>>();
 
         for action in Action::variants() {
             if pressed_actions.contains(action) {
                 assert!(
-                    input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
+                    input_map.pressed(action, &InputStreams::from_world(self.world(), None), clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(action, &InputStreams::from_world(&self.world, None), clash_strategy),
+                    !input_map.pressed(action, &InputStreams::from_world(self.world(), None), clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }

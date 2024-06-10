@@ -28,6 +28,38 @@ use bevy::ui::Interaction;
 #[cfg(feature = "egui")]
 use bevy_egui::EguiContext;
 
+/// We are about to enter the `Main` schedule, so we:
+/// - save all the changes applied to `state` into the `fixed_update_state`
+/// - switch to loading the `update_state`
+pub fn swap_to_update<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    action_state: Option<ResMut<ActionState<A>>>,
+) {
+    if let Some(mut action_state) = action_state {
+        action_state.swap_to_update_state();
+    }
+
+    for mut action_state in query.iter_mut() {
+        action_state.swap_to_update_state();
+    }
+}
+
+/// We are about to enter the `FixedMain` schedule, so we:
+/// - save all the changes applied to `state` into the `update_state`
+/// - switch to loading the `fixed_update_state`
+pub fn swap_to_fixed_update<A: Actionlike>(
+    mut query: Query<&mut ActionState<A>>,
+    action_state: Option<ResMut<ActionState<A>>>,
+) {
+    if let Some(mut action_state) = action_state {
+        action_state.swap_to_fixed_update_state();
+    }
+
+    for mut action_state in query.iter_mut() {
+        action_state.swap_to_fixed_update_state();
+    }
+}
+
 /// Advances actions timer.
 ///
 /// Clears the just-pressed and just-released values of all [`ActionState`]s.

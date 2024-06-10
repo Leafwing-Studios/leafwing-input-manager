@@ -2,8 +2,10 @@
 
 use std::hash::{Hash, Hasher};
 
-use bevy::prelude::{BVec2, Reflect, Vec2};
-use bevy::utils::FloatOrd;
+use bevy::{
+    math::FloatOrd,
+    prelude::{BVec2, Reflect, Vec2},
+};
 use serde::{Deserialize, Serialize};
 
 use crate::input_processing::AxisProcessor;
