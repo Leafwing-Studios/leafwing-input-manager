@@ -1,7 +1,5 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
-#[cfg(feature = "ui")]
-use crate::action_driver::ActionStateDriver;
 use crate::{
     action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
     input_streams::InputStreams, Actionlike,
@@ -169,26 +167,6 @@ pub fn update_action_state<A: Actionlike>(
         };
 
         action_state.update(input_map.process_actions(&input_streams, *clash_strategy));
-    }
-}
-
-/// When a button with a component of type `A` is clicked, press the corresponding action in the [`ActionState`]
-///
-/// The action triggered is determined by the variant stored in your UI-defined button.
-#[cfg(feature = "ui")]
-pub fn update_action_state_from_interaction<A: Actionlike>(
-    ui_query: Query<(&Interaction, &ActionStateDriver<A>)>,
-    mut action_state_query: Query<&mut ActionState<A>>,
-) {
-    for (&interaction, action_state_driver) in ui_query.iter() {
-        if interaction == Interaction::Pressed {
-            for entity in action_state_driver.targets.iter() {
-                let mut action_state = action_state_query
-                    .get_mut(*entity)
-                    .expect("Entity does not exist, or does not have an `ActionState` component.");
-                action_state.press(&action_state_driver.action.clone());
-            }
-        }
     }
 }
 

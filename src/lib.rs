@@ -9,7 +9,6 @@ use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
 
 pub mod action_diff;
-pub mod action_driver;
 pub mod action_state;
 pub mod axislike;
 pub mod buttonlike;
@@ -35,7 +34,6 @@ pub use leafwing_input_manager_macros::Actionlike;
 
 /// Everything you need to get started
 pub mod prelude {
-    pub use crate::action_driver::ActionStateDriver;
     pub use crate::action_state::ActionState;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;

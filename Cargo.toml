@@ -28,12 +28,7 @@ asset = ['bevy/bevy_asset']
 
 # Add support for 'bevy::ui' integration:
 # - Allow 'bevy::ui' to take priority over actions when processing inputs.
-# - Automatic process clicks on 'bevy::ui' buttons that attached `ActionStateDriver` to drive corresponding actions.
-# - Allow using `MockUIInteraction` for 'bevy::ui' input mocking.
 ui = ['bevy/bevy_ui']
-
-# Disable the priority of 'bevy::ui' when processing inputs.
-no_ui_priority = []
 
 # Add support for 'egui' integration:
 # - Allow 'egui' to take priority over actions when processing inputs.

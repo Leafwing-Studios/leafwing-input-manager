@@ -134,13 +134,6 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .after(InputSystem),
                 );
 
-                #[cfg(feature = "ui")]
-                app.add_systems(
-                    PreUpdate,
-                    update_action_state_from_interaction::<A>
-                        .in_set(InputManagerSystem::ManualControl),
-                );
-
                 // FixedMain schedule
                 app.add_systems(
                     RunFixedMainLoop,
@@ -155,12 +148,6 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
 
                 #[cfg(feature = "ui")]
                 app.configure_sets(bevy::app::FixedPreUpdate, InputManagerSystem::ManualControl);
-                #[cfg(feature = "ui")]
-                app.add_systems(
-                    bevy::app::FixedPreUpdate,
-                    update_action_state_from_interaction::<A>
-                        .in_set(InputManagerSystem::ManualControl),
-                );
                 app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
                 app.add_systems(
                     FixedPostUpdate,
