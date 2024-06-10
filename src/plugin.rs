@@ -1,30 +1,26 @@
 //! Contains the main plugin exported by this crate.
 
+use core::hash::Hash;
+use core::marker::PhantomData;
+use std::fmt::Debug;
+
+use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
+use bevy::ecs::prelude::*;
+use bevy::input::InputSystem;
+use bevy::prelude::{GamepadButtonType, KeyCode, PostUpdate, PreUpdate};
+use bevy::reflect::TypePath;
+use bevy::time::run_fixed_main_schedule;
+#[cfg(feature = "ui")]
+use bevy::ui::UiSystem;
+
 use crate::action_state::{ActionData, ActionState};
-use crate::axislike::{
-    AxisType, DualAxis, DualAxisData, MouseMotionAxisType, MouseWheelAxisType, SingleAxis,
-    VirtualAxis, VirtualDPad,
-};
-use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
-use crate::user_input::{InputKind, Modifier, UserInput};
+use crate::user_input::*;
 use crate::Actionlike;
-use core::hash::Hash;
-use core::marker::PhantomData;
-use std::fmt::Debug;
-
-use bevy::app::{App, Plugin, RunFixedMainLoop};
-use bevy::ecs::prelude::*;
-use bevy::input::{ButtonState, InputSystem};
-use bevy::prelude::{FixedPostUpdate, PostUpdate, PreUpdate};
-use bevy::reflect::TypePath;
-use bevy::time::run_fixed_main_schedule;
-#[cfg(feature = "ui")]
-use bevy::ui::UiSystem;
 
 /// A [`Plugin`] that collects [`ButtonInput`](bevy::input::ButtonInput) from disparate sources,
 /// producing an [`ActionState`] that can be conveniently checked
@@ -187,22 +183,25 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
 
         app.register_type::<ActionState<A>>()
             .register_type::<InputMap<A>>()
-            .register_type::<UserInput>()
-            .register_type::<InputKind>()
             .register_type::<ActionData>()
-            .register_type::<Modifier>()
             .register_type::<ActionState<A>>()
-            .register_type::<VirtualDPad>()
-            .register_type::<VirtualAxis>()
-            .register_type::<SingleAxis>()
-            .register_type::<DualAxis>()
-            .register_type::<AxisType>()
-            .register_type::<MouseWheelAxisType>()
-            .register_type::<MouseMotionAxisType>()
-            .register_type::<DualAxisData>()
-            .register_type::<ButtonState>()
-            .register_type::<MouseWheelDirection>()
-            .register_type::<MouseMotionDirection>()
+            // Inputs
+            .register_user_input::<GamepadControlDirection>()
+            .register_user_input::<GamepadControlAxis>()
+            .register_user_input::<GamepadStick>()
+            .register_user_input::<GamepadButtonType>()
+            .register_user_input::<GamepadVirtualAxis>()
+            .register_user_input::<GamepadVirtualDPad>()
+            .register_user_input::<KeyCode>()
+            .register_user_input::<ModifierKey>()
+            .register_user_input::<KeyboardVirtualAxis>()
+            .register_user_input::<KeyboardVirtualDPad>()
+            .register_user_input::<MouseMoveDirection>()
+            .register_user_input::<MouseMoveAxis>()
+            .register_user_input::<MouseMove>()
+            .register_user_input::<MouseScrollDirection>()
+            .register_user_input::<MouseScrollAxis>()
+            .register_user_input::<MouseScroll>()
             // Processors
             .register_type::<AxisProcessor>()
             .register_type::<AxisBounds>()

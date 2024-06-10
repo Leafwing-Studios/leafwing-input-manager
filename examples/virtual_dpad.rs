@@ -24,8 +24,12 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     // Stores "which actions are currently activated"
-    // Map some arbitrary keys into a virtual direction pad that triggers our move action
-    let input_map = InputMap::new([(Action::Move, VirtualDPad::wasd())]);
+    let input_map = InputMap::new([(
+        Action::Move,
+        // Define a virtual D-pad using four arbitrary keys.
+        // You can also use GamepadVirtualDPad to create similar ones using gamepad buttons.
+        KeyboardVirtualDPad::new(KeyCode::KeyW, KeyCode::KeyS, KeyCode::KeyA, KeyCode::KeyD),
+    )]);
     commands
         .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player);

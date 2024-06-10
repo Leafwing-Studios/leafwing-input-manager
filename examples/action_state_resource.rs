@@ -27,8 +27,8 @@ pub enum PlayerAction {
 
 // Exhaustively match `PlayerAction` and define the default bindings to the input
 impl PlayerAction {
-    fn mkb_input_map() -> InputMap<PlayerAction> {
-        InputMap::new([(Self::Jump, KeyCode::Space)]).with(Self::Move, VirtualDPad::wasd())
+    fn mkb_input_map() -> InputMap<Self> {
+        InputMap::new([(Self::Jump, KeyCode::Space)]).with(Self::Move, KeyboardVirtualDPad::WASD)
     }
 }
 

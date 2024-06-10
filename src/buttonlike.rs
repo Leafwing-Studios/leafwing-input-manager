@@ -1,6 +1,5 @@
 //! Tools for working with button-like user inputs (mouse clicks, gamepad button, keyboard inputs and so on)
-//!
-use crate::axislike::DualAxisDirection;
+
 use bevy::reflect::Reflect;
 use serde::{Deserialize, Serialize};
 
@@ -82,61 +81,5 @@ impl ButtonState {
     #[must_use]
     pub fn just_released(&self) -> bool {
         *self == ButtonState::JustReleased
-    }
-}
-
-/// A buttonlike-input triggered by [`MouseWheel`](bevy::input::mouse::MouseWheel) events
-///
-/// These will be considered pressed if non-zero net movement in the correct direction is detected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
-pub enum MouseWheelDirection {
-    /// Corresponds to `+y`
-    Up,
-    /// Corresponds to `-y`
-    Down,
-    /// Corresponds to `+x`
-    Right,
-    /// Corresponds to `-x`
-    Left,
-}
-
-impl MouseWheelDirection {
-    /// Returns the corresponding [`DualAxisDirection`].
-    #[inline]
-    pub fn direction(&self) -> DualAxisDirection {
-        match self {
-            Self::Up => DualAxisDirection::Up,
-            Self::Down => DualAxisDirection::Down,
-            Self::Right => DualAxisDirection::Right,
-            Self::Left => DualAxisDirection::Left,
-        }
-    }
-}
-
-/// A buttonlike-input triggered by [`MouseMotion`](bevy::input::mouse::MouseMotion) events
-///
-/// These will be considered pressed if non-zero net movement in the correct direction is detected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Reflect)]
-pub enum MouseMotionDirection {
-    /// Corresponds to `+y`
-    Up,
-    /// Corresponds to `-y`
-    Down,
-    /// Corresponds to `+x`
-    Right,
-    /// Corresponds to `-x`
-    Left,
-}
-
-impl MouseMotionDirection {
-    /// Returns the corresponding [`DualAxisDirection`].
-    #[inline]
-    pub fn direction(&self) -> DualAxisDirection {
-        match self {
-            Self::Up => DualAxisDirection::Up,
-            Self::Down => DualAxisDirection::Down,
-            Self::Right => DualAxisDirection::Right,
-            Self::Left => DualAxisDirection::Left,
-        }
     }
 }

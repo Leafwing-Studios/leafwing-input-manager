@@ -44,13 +44,13 @@ impl PlayerAction {
         let mut input_map = InputMap::default();
 
         // Default gamepad input bindings
-        input_map.insert(Self::Move, DualAxis::left_stick());
-        input_map.insert(Self::Look, DualAxis::right_stick());
+        input_map.insert(Self::Move, GamepadStick::LEFT);
+        input_map.insert(Self::Look, GamepadStick::RIGHT);
         input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
 
         // Default kbm input bindings
-        input_map.insert(Self::Move, VirtualDPad::wasd());
-        input_map.insert(Self::Look, VirtualDPad::arrow_keys());
+        input_map.insert(Self::Move, KeyboardVirtualDPad::WASD);
+        input_map.insert(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
         input_map.insert(Self::Shoot, MouseButton::Left);
 
         input_map

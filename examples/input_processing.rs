@@ -23,7 +23,7 @@ fn spawn_player(mut commands: Commands) {
     let input_map = InputMap::default()
         .with(
             Action::Move,
-            VirtualDPad::wasd()
+            KeyboardVirtualDPad::WASD
                 // You can configure a processing pipeline to handle axis-like user inputs.
                 //
                 // This step adds a circular deadzone that normalizes input values
@@ -39,7 +39,7 @@ fn spawn_player(mut commands: Commands) {
         .with(
             Action::LookAround,
             // You can also use a sequence of processors as the processing pipeline.
-            DualAxis::mouse_motion().replace_processing_pipeline([
+            MouseMove::default().replace_processing_pipeline([
                 // The first processor is a circular deadzone.
                 CircleDeadZone::new(0.1).into(),
                 // The next processor doubles inputs normalized by the deadzone.

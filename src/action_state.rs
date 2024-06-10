@@ -318,9 +318,9 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of
     /// `1.0` when the button is pressed.
-    /// - Some axes, such as an analog stick, will have a value in the range `-1.0..=1.0`.
-    /// - Some axes, such as a variable trigger, will have a value in the range `0.0..=1.0`.
-    /// - Some buttons will also return a value in the range `0.0..=1.0`, such as analog gamepad
+    /// - Some axes, such as an analog stick, will have a value in the range `[-1.0, 1.0]`.
+    /// - Some axes, such as a variable trigger, will have a value in the range `[0.0, 1.0]`.
+    /// - Some buttons will also return a value in the range `[0.0, 1.0]`, such as analog gamepad
     /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
     /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
     /// repository.
@@ -356,11 +356,8 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only certain events such as [`VirtualDPad`][crate::axislike::VirtualDPad] and
-    /// [`DualAxis`][crate::axislike::DualAxis] provide an [`DualAxisData`], and this
-    /// will return [`None`] for other events.
-    ///
-    /// Chord inputs will return the [`DualAxisData`] of it's first input.
+    /// Only events that represent dual-axis control provide an [`DualAxisData`],
+    /// and this will return [`None`] for other events.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
     /// value of each axis pair will be added together.
@@ -748,6 +745,7 @@ mod tests {
     use crate::input_map::InputMap;
     use crate::input_mocking::MockInput;
     use crate::input_streams::InputStreams;
+    use crate::prelude::InputChord;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
     use bevy::utils::{Duration, Instant};
@@ -839,7 +837,7 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert(Action::One, Digit1);
         input_map.insert(Action::Two, Digit2);
-        input_map.insert_chord(Action::OneAndTwo, [Digit1, Digit2]);
+        input_map.insert(Action::OneAndTwo, InputChord::new([Digit1, Digit2]));
 
         let mut app = App::new();
         app.add_plugins(InputPlugin);

@@ -18,7 +18,6 @@ use bevy::input::{ButtonInput, ButtonState};
 use bevy::prelude::{App, Entity, Events, GamepadAxisType, ResMut, Vec2, World};
 use bevy::window::CursorMoved;
 
-use crate::axislike::AxisType;
 #[cfg(feature = "ui")]
 use bevy::ecs::{component::Component, query::With, system::Query};
 #[cfg(feature = "ui")]
@@ -43,7 +42,6 @@ use crate::user_input::*;
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::axislike::MouseMotionAxisType;
 /// use leafwing_input_manager::input_mocking::MockInput;
 /// use leafwing_input_manager::prelude::*;
 ///
@@ -57,13 +55,13 @@ use crate::user_input::*;
 ///
 /// // Or use chords to press multiple keys at the same time!
 /// let bevy = [KeyCode::KeyB, KeyCode::KeyE, KeyCode::KeyV, KeyCode::KeyY];
-/// app.press_input(UserInput::chord(bevy));
+/// app.press_input(InputChord::new(bevy));
 ///
 /// // Send values to an axis.
-/// app.send_axis_values(SingleAxis::mouse_wheel_y(), [5.0]);
+/// app.send_axis_values(MouseScrollAxis::Y, [5.0]);
 ///
 /// // Send values to two axes.
-/// app.send_axis_values(DualAxis::mouse_motion(), [5.0, 8.0]);
+/// app.send_axis_values(MouseMove::default(), [5.0, 8.0]);
 ///
 /// // Release or deactivate an input.
 /// app.release_input(KeyCode::KeyR);
@@ -76,10 +74,10 @@ use crate::user_input::*;
 /// ```
 pub trait MockInput {
     /// Simulates an activated event for the given `input`,
-    /// pressing all buttons and keys in the [`RawInputs`] of the `input`.
+    /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
-    /// like [`KeyCode`]s, [`Modifier`]s, and [`UserInput::Chord`]s.
+    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`InputChord`]s.
     /// Axial inputs (e.g., analog thumb sticks) aren't affected.
     /// Use [`Self::send_axis_values`] for those.
     ///
@@ -98,13 +96,13 @@ pub trait MockInput {
     /// pressing a [`GamepadButtonType`] has no effect
     /// because Bevy currently disregards all external [`GamepadButtonChangedEvent`] events.
     /// See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
-    fn press_input(&mut self, input: impl Into<UserInput>);
+    fn press_input(&mut self, input: impl UserInput);
 
     /// Simulates an activated event for the given `input`, using the specified `gamepad`,
-    /// pressing all buttons and keys in the [`RawInputs`] of the `input`.
+    /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
-    /// like [`KeyCode`]s, [`Modifier`]s, and [`UserInput::Chord`]s.
+    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`InputChord`]s.
     /// Axial inputs (e.g., analog thumb sticks) aren't affected.
     /// Use [`Self::send_axis_values_as_gamepad`] for those.
     ///
@@ -118,14 +116,14 @@ pub trait MockInput {
     /// pressing a [`GamepadButtonType`] has no effect
     /// because Bevy currently disregards all external [`GamepadButtonChangedEvent`] events.
     /// See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
-    fn press_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>);
 
     /// Simulates axis value changed events for the given `input`.
-    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`] of the `input`.
+    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     /// Missing axis values default to `0.0`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
-    /// like [`SingleAxis`](crate::axislike::SingleAxis) and [`DualAxis`](crate::axislike::DualAxis).
+    /// like [`MouseScrollAxis::Y`], [`MouseMove`] and [`GamepadStick::LEFT`].
     /// Non-axial inputs (e.g., keys and buttons) aren't affected;
     /// the current value will be retained for the next encountered axis.
     /// Use [`Self::press_input`] for those.
@@ -138,18 +136,14 @@ pub trait MockInput {
     ///
     /// Gamepad input is sent by the first registered controller.
     /// If no controllers are found, it is silently ignored.
-    fn send_axis_values(
-        &mut self,
-        input: impl Into<UserInput>,
-        values: impl IntoIterator<Item = f32>,
-    );
+    fn send_axis_values(&mut self, input: impl UserInput, values: impl IntoIterator<Item = f32>);
 
     /// Simulates axis value changed events for the given `input`, using the specified `gamepad`.
-    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`] of the `input`.
+    /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     /// Missing axis values default to `0.0`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward axis-like inputs
-    /// like [`SingleAxis`](crate::axislike::SingleAxis) and [`DualAxis`](crate::axislike::DualAxis).
+    /// like [`MouseScrollAxis::Y`], [`MouseMove`] and [`GamepadStick::LEFT`].
     /// Non-axial inputs (e.g., keys and buttons) aren't affected;
     /// the current value will be retained for the next encountered axis.
     /// Use [`Self::press_input_as_gamepad`] for those.
@@ -159,7 +153,7 @@ pub trait MockInput {
     /// Each axis remains at the specified value until explicitly changed or by calling [`Self::reset_inputs`].
     fn send_axis_values_as_gamepad(
         &mut self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         values: impl IntoIterator<Item = f32>,
         gamepad: Option<Gamepad>,
     );
@@ -170,10 +164,10 @@ pub trait MockInput {
     ///
     /// Gamepad input is sent by the first registered controller.
     /// If no controllers are found, it is silently ignored.
-    fn release_input(&mut self, input: impl Into<UserInput>);
+    fn release_input(&mut self, input: impl UserInput);
 
     /// Simulates a released or deactivated event for the given `input`, using the specified `gamepad`.
-    fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>);
+    fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>);
 
     /// Resets all inputs in the [`MutableInputStreams`] to their default state.
     ///
@@ -207,10 +201,10 @@ pub trait MockInput {
 /// let pressed = app.pressed(KeyCode::KeyB);
 ///
 /// // Read the current vertical mouse scroll value.
-/// let value = app.read_axis_values(SingleAxis::mouse_wheel_y());
+/// let value = app.read_axis_values(MouseScrollAxis::Y);
 ///
 /// // Read the current changes in relative mouse X and Y coordinates.
-/// let values = app.read_axis_values(DualAxis::mouse_motion());
+/// let values = app.read_axis_values(MouseMove::default());
 /// let x = values[0];
 /// let y = values[1];
 /// ```
@@ -219,13 +213,13 @@ pub trait QueryInput {
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn pressed(&self, input: impl Into<UserInput>) -> bool;
+    fn pressed(&self, input: impl UserInput) -> bool;
 
     /// Checks if the `input` is currently pressed or active on the specified [`Gamepad`].
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn pressed_on_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool;
+    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool;
 
     /// Retrieves the values on all axes represented by the `input`.
     ///
@@ -234,7 +228,7 @@ pub trait QueryInput {
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn read_axis_values(&self, input: impl Into<UserInput>) -> Vec<f32>;
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32>;
 
     /// Retrieves the values on all axes represented by the `input` on the specified [`Gamepad`].
     ///
@@ -245,7 +239,7 @@ pub trait QueryInput {
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
     fn read_axis_values_on_gamepad(
         &self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         gamepad: Option<Gamepad>,
     ) -> Vec<f32>;
 }
@@ -265,12 +259,12 @@ pub trait MockUIInteraction {
 }
 
 impl MockInput for MutableInputStreams<'_> {
-    fn press_input(&mut self, input: impl Into<UserInput>) {
+    fn press_input(&mut self, input: impl UserInput) {
         self.press_input_as_gamepad(input, self.guess_gamepad());
     }
 
-    fn press_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        let raw_inputs = input.into().raw_inputs();
+    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
+        let raw_inputs = input.raw_inputs();
 
         // Press KeyCode
         for keycode in raw_inputs.keycodes.iter() {
@@ -282,72 +276,74 @@ impl MockInput for MutableInputStreams<'_> {
             self.send_mouse_button_state(button, ButtonState::Pressed);
         }
 
-        // Press MouseMotionDirection, discrete mouse motion events
-        for direction in raw_inputs.mouse_motion.iter() {
-            self.send_mouse_move(direction.direction().full_active_value());
+        // Press MouseMoveDirection, discrete mouse motion events
+        for direction in raw_inputs.mouse_move_directions.iter() {
+            self.send_mouse_move(direction.0.full_active_value());
         }
 
-        // Press MouseWheelDirection, discrete mouse wheel events
-        for direction in raw_inputs.mouse_wheel.iter() {
-            self.send_mouse_wheel(direction.direction().full_active_value());
+        // Press MouseScrollDirection, discrete mouse wheel events
+        for direction in raw_inputs.mouse_scroll_directions.iter() {
+            self.send_mouse_scroll(direction.0.full_active_value());
         }
 
-        // Press GamepadButtonType.
-        // Unfortunately, due to upstream constraints, this has no effect
-        // because Bevy currently disregards all external GamepadButtonChangedEvent events.
-        // See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
         if let Some(gamepad) = gamepad {
+            for direction in raw_inputs.gamepad_control_directions.iter() {
+                self.send_gamepad_axis_value(
+                    gamepad,
+                    &direction.axis,
+                    direction.side.full_active_value(),
+                );
+            }
+
+            // Press GamepadButtonType.
+            // Unfortunately, due to upstream constraints, this has no effect
+            // because Bevy currently disregards all external GamepadButtonChangedEvent events.
+            // See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
             for button in raw_inputs.gamepad_buttons.iter() {
                 self.send_gamepad_button_state(gamepad, button, ButtonState::Pressed);
             }
         }
     }
 
-    fn send_axis_values(
-        &mut self,
-        input: impl Into<UserInput>,
-        values: impl IntoIterator<Item = f32>,
-    ) {
+    fn send_axis_values(&mut self, input: impl UserInput, values: impl IntoIterator<Item = f32>) {
         self.send_axis_values_as_gamepad(input, values, self.guess_gamepad())
     }
 
     fn send_axis_values_as_gamepad(
         &mut self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         values: impl IntoIterator<Item = f32>,
         gamepad: Option<Gamepad>,
     ) {
-        let raw_inputs = input.into().raw_inputs();
+        let raw_inputs = input.raw_inputs();
         let mut value_iter = values.into_iter();
 
-        for axis_types in raw_inputs.axis_types.iter() {
-            match axis_types {
-                AxisType::Gamepad(axis) => {
-                    if let Some(gamepad) = gamepad {
-                        let value = value_iter.next().unwrap_or_default();
-                        self.send_gamepad_axis_value(gamepad, axis, value);
-                    }
-                }
-                AxisType::MouseMotion(axis) => {
-                    let value = value_iter.next().unwrap_or_default();
-                    let value = axis.axis().dual_axis_value(value);
-                    self.send_mouse_move(value);
-                }
-                AxisType::MouseWheel(axis) => {
-                    let value = value_iter.next().unwrap_or_default();
-                    let value = axis.axis().dual_axis_value(value);
-                    self.send_mouse_wheel(value);
-                }
+        if let Some(gamepad) = gamepad {
+            for axis in raw_inputs.gamepad_axes.iter() {
+                let value = value_iter.next().unwrap_or_default();
+                self.send_gamepad_axis_value(gamepad, axis, value);
             }
+        }
+
+        for axis in raw_inputs.mouse_move_axes.iter() {
+            let value = value_iter.next().unwrap_or_default();
+            let value = axis.dual_axis_value(value);
+            self.send_mouse_move(value);
+        }
+
+        for axis in raw_inputs.mouse_scroll_axes.iter() {
+            let value = value_iter.next().unwrap_or_default();
+            let value = axis.dual_axis_value(value);
+            self.send_mouse_scroll(value);
         }
     }
 
-    fn release_input(&mut self, input: impl Into<UserInput>) {
+    fn release_input(&mut self, input: impl UserInput) {
         self.release_input_as_gamepad(input, self.guess_gamepad())
     }
 
-    fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
-        let raw_inputs = input.into().raw_inputs();
+    fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
+        let raw_inputs = input.raw_inputs();
 
         // Release KeyCode
         for keycode in raw_inputs.keycodes.iter() {
@@ -370,8 +366,12 @@ impl MockInput for MutableInputStreams<'_> {
         }
 
         // Deactivate GamepadAxisType
-        for axis_type in raw_inputs.axis_types.iter() {
-            if let (Some(gamepad), AxisType::Gamepad(axis)) = (gamepad, axis_type) {
+        if let Some(gamepad) = gamepad {
+            for direction in raw_inputs.gamepad_control_directions.iter() {
+                self.send_gamepad_axis_value(gamepad, &direction.axis, 0.0);
+            }
+
+            for axis in raw_inputs.gamepad_axes.iter() {
                 self.send_gamepad_axis_value(gamepad, axis, 0.0);
             }
         }
@@ -411,7 +411,7 @@ impl MutableInputStreams<'_> {
         });
     }
 
-    fn send_mouse_wheel(&mut self, delta: Vec2) {
+    fn send_mouse_scroll(&mut self, delta: Vec2) {
         self.mouse_wheel.send(MouseWheel {
             x: delta.x,
             y: delta.y,
@@ -449,12 +449,12 @@ impl MutableInputStreams<'_> {
 
 impl QueryInput for InputStreams<'_> {
     #[inline]
-    fn pressed(&self, input: impl Into<UserInput>) -> bool {
-        self.input_pressed(&input.into())
+    fn pressed(&self, input: impl UserInput) -> bool {
+        input.pressed(self)
     }
 
     #[inline]
-    fn pressed_on_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
+    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
         let mut input_streams = self.clone();
         input_streams.associated_gamepad = gamepad;
 
@@ -462,19 +462,17 @@ impl QueryInput for InputStreams<'_> {
     }
 
     #[inline]
-    fn read_axis_values(&self, input: impl Into<UserInput>) -> Vec<f32> {
-        let input = input.into();
-
-        if let Some(data) = self.input_axis_pair(&input) {
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
+        if let Some(data) = input.axis_pair(self) {
             return vec![data.x(), data.y()];
         }
 
-        vec![self.input_value(&input)]
+        vec![input.value(self)]
     }
 
     fn read_axis_values_on_gamepad(
         &self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         gamepad: Option<Gamepad>,
     ) -> Vec<f32> {
         let mut input_streams = self.clone();
@@ -485,23 +483,19 @@ impl QueryInput for InputStreams<'_> {
 }
 
 impl MockInput for World {
-    fn press_input(&mut self, input: impl Into<UserInput>) {
+    fn press_input(&mut self, input: impl UserInput) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, None);
 
         mutable_input_streams.press_input(input);
     }
 
-    fn press_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.press_input_as_gamepad(input, gamepad);
     }
 
-    fn send_axis_values(
-        &mut self,
-        input: impl Into<UserInput>,
-        values: impl IntoIterator<Item = f32>,
-    ) {
+    fn send_axis_values(&mut self, input: impl UserInput, values: impl IntoIterator<Item = f32>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, None);
 
         mutable_input_streams.send_axis_values(input, values);
@@ -509,7 +503,7 @@ impl MockInput for World {
 
     fn send_axis_values_as_gamepad(
         &mut self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         values: impl IntoIterator<Item = f32>,
         gamepad: Option<Gamepad>,
     ) {
@@ -518,13 +512,13 @@ impl MockInput for World {
         mutable_input_streams.send_axis_values(input, values);
     }
 
-    fn release_input(&mut self, input: impl Into<UserInput>) {
+    fn release_input(&mut self, input: impl UserInput) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, None);
 
         mutable_input_streams.release_input(input);
     }
 
-    fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+    fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.release_input_as_gamepad(input, gamepad);
@@ -576,23 +570,23 @@ impl MockInput for World {
 }
 
 impl QueryInput for World {
-    fn pressed(&self, input: impl Into<UserInput>) -> bool {
+    fn pressed(&self, input: impl UserInput) -> bool {
         self.pressed_on_gamepad(input, None)
     }
 
-    fn pressed_on_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
+    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
         let input_streams = InputStreams::from_world(self, gamepad);
 
         input_streams.pressed(input)
     }
 
-    fn read_axis_values(&self, input: impl Into<UserInput>) -> Vec<f32> {
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
         self.read_axis_values_on_gamepad(input, None)
     }
 
     fn read_axis_values_on_gamepad(
         &self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         gamepad: Option<Gamepad>,
     ) -> Vec<f32> {
         let input_streams = InputStreams::from_world(self, gamepad);
@@ -621,25 +615,21 @@ impl MockUIInteraction for World {
 }
 
 impl MockInput for App {
-    fn press_input(&mut self, input: impl Into<UserInput>) {
+    fn press_input(&mut self, input: impl UserInput) {
         self.world_mut().press_input(input);
     }
 
-    fn press_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
         self.world_mut().press_input_as_gamepad(input, gamepad);
     }
 
-    fn send_axis_values(
-        &mut self,
-        input: impl Into<UserInput>,
-        values: impl IntoIterator<Item = f32>,
-    ) {
+    fn send_axis_values(&mut self, input: impl UserInput, values: impl IntoIterator<Item = f32>) {
         self.world_mut().send_axis_values(input, values);
     }
 
     fn send_axis_values_as_gamepad(
         &mut self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         values: impl IntoIterator<Item = f32>,
         gamepad: Option<Gamepad>,
     ) {
@@ -647,11 +637,11 @@ impl MockInput for App {
             .send_axis_values_as_gamepad(input, values, gamepad);
     }
 
-    fn release_input(&mut self, input: impl Into<UserInput>) {
+    fn release_input(&mut self, input: impl UserInput) {
         self.world_mut().release_input(input);
     }
 
-    fn release_input_as_gamepad(&mut self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) {
+    fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
         self.world_mut().release_input_as_gamepad(input, gamepad);
     }
 
@@ -661,21 +651,21 @@ impl MockInput for App {
 }
 
 impl QueryInput for App {
-    fn pressed(&self, input: impl Into<UserInput>) -> bool {
+    fn pressed(&self, input: impl UserInput) -> bool {
         self.world().pressed(input)
     }
 
-    fn pressed_on_gamepad(&self, input: impl Into<UserInput>, gamepad: Option<Gamepad>) -> bool {
+    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
         self.world().pressed_on_gamepad(input, gamepad)
     }
 
-    fn read_axis_values(&self, input: impl Into<UserInput>) -> Vec<f32> {
+    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
         self.world().read_axis_values(input)
     }
 
     fn read_axis_values_on_gamepad(
         &self,
-        input: impl Into<UserInput>,
+        input: impl UserInput,
         gamepad: Option<Gamepad>,
     ) -> Vec<f32> {
         self.world().read_axis_values_on_gamepad(input, gamepad)
@@ -696,7 +686,7 @@ impl MockUIInteraction for App {
 #[cfg(test)]
 mod test {
     use crate::input_mocking::{MockInput, QueryInput};
-    use crate::prelude::{DualAxis, SingleAxis};
+    use crate::user_input::*;
     use bevy::input::gamepad::{
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
@@ -801,38 +791,37 @@ mod test {
         let mut app = test_app();
 
         // Mouse axes should be inactive by default (no scroll or movement)
-        assert_eq!(app.read_axis_values(DualAxis::mouse_wheel()), [0.0, 0.0]);
-        assert_eq!(app.read_axis_values(DualAxis::mouse_motion()), [0.0, 0.0]);
+        assert_eq!(app.read_axis_values(MouseMove::default()), [0.0, 0.0]);
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 0.0]);
 
         // Send a simulated mouse scroll event with a value of 3 (positive for up)
-        app.send_axis_values(SingleAxis::mouse_wheel_y(), [3.0]);
+        app.send_axis_values(MouseScrollAxis::Y, [3.0]);
         app.update();
 
         // Verify the mouse wheel Y axis reflects the simulated scroll
-        assert_eq!(app.read_axis_values(SingleAxis::mouse_wheel_y()), [3.0]);
-
-        // Verify other axes aren't affected
-        assert_eq!(app.read_axis_values(SingleAxis::mouse_wheel_x()), [0.0]);
-        assert_eq!(app.read_axis_values(DualAxis::mouse_motion()), [0.0, 0.0]);
+        // and the other axis isn't affected
+        assert_eq!(app.read_axis_values(MouseScrollAxis::X), [0.0]);
+        assert_eq!(app.read_axis_values(MouseScrollAxis::Y), [3.0]);
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 3.0]);
 
         // Send a simulated mouse movement event with a delta of (3.0, 2.0)
-        app.send_axis_values(DualAxis::mouse_motion(), [3.0, 2.0]);
+        app.send_axis_values(MouseScroll::default(), [3.0, 2.0]);
         app.update();
 
         // Verify the mouse motion axes reflects the simulated movement
-        assert_eq!(app.read_axis_values(DualAxis::mouse_motion()), [3.0, 2.0]);
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [3.0, 2.0]);
 
         // Mouse input data is typically reset every frame
         // Verify other axes aren't affected
-        assert_eq!(app.read_axis_values(DualAxis::mouse_wheel()), [0.0, 0.0]);
+        assert_eq!(app.read_axis_values(MouseMove::default()), [0.0, 0.0]);
 
         // Test that resetting inputs works
         app.reset_inputs();
         app.update();
 
         // Verify all axes have no value after reset
-        assert_eq!(app.read_axis_values(SingleAxis::mouse_wheel_y()), [0.0]);
-        assert_eq!(app.read_axis_values(DualAxis::mouse_motion()), [0.0, 0.0]);
+        assert_eq!(app.read_axis_values(MouseScrollAxis::Y), [0.0]);
+        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 0.0]);
     }
 
     #[test]

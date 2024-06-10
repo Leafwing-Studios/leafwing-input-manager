@@ -22,15 +22,14 @@ enum CameraMovement {
 fn setup(mut commands: Commands) {
     let input_map = InputMap::default()
         // This will capture the total continuous value, for direct use.
-        .with(CameraMovement::Zoom, SingleAxis::mouse_wheel_y())
+        .with(CameraMovement::Zoom, MouseScrollAxis::Y)
         // This will return a binary button-like output.
-        .with(CameraMovement::PanLeft, MouseWheelDirection::Left)
-        .with(CameraMovement::PanRight, MouseWheelDirection::Right)
-        // Alternatively, you could model this as a virtual D-pad.
-        // It's extremely useful for modeling 4-directional button-like inputs with the mouse wheel
-        .with(CameraMovement::Pan, VirtualDPad::mouse_wheel())
-        // Or even a continuous `DualAxis`!
-        .with(CameraMovement::Pan, DualAxis::mouse_wheel());
+        .with(CameraMovement::PanLeft, MouseScrollDirection::LEFT)
+        .with(CameraMovement::PanRight, MouseScrollDirection::RIGHT)
+        // Alternatively, you could model them as a continuous dual-axis input
+        .with(CameraMovement::Pan, MouseScroll::default())
+        // Or even a digital dual-axis input!
+        .with(CameraMovement::Pan, MouseScroll::default().digital());
     commands
         .spawn(Camera2dBundle::default())
         .insert(InputManagerBundle::with_map(input_map));
@@ -62,7 +61,7 @@ fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), W
 
     let (mut camera_transform, action_state) = query.single_mut();
 
-    // When using the `MouseWheelDirection` type, mouse wheel inputs can be treated like simple buttons
+    // When using the `MouseScrollDirection` type, mouse wheel inputs can be treated like simple buttons
     if action_state.pressed(&CameraMovement::PanLeft) {
         camera_transform.translation.x -= CAMERA_PAN_RATE;
     }
