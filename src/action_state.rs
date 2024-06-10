@@ -21,6 +21,10 @@ use serde::{Deserialize, Serialize};
 pub struct ActionData {
     /// Is the action pressed or released?
     pub state: ButtonState,
+    /// The `state` of the action in the `Main` schedule
+    pub update_state: ButtonState,
+    /// The `state` of the action in the `FixedMain` schedule
+    pub fixed_update_state: ButtonState,
     /// The "value" of the binding that triggered the action.
     ///
     /// See [`ActionState::value`] for more details.
@@ -136,6 +140,30 @@ impl<A: Actionlike> Default for ActionState<A> {
 }
 
 impl<A: Actionlike> ActionState<A> {
+    /// We are about to enter the `Main` schedule, so we:
+    /// - save all the changes applied to `state` into the `fixed_update_state`
+    /// - switch to loading the `update_state`
+    pub(crate) fn swap_to_update_state(&mut self) {
+        for (_action, action_datum) in self.action_data.iter_mut() {
+            // save the changes applied to `state` into `fixed_update_state`
+            action_datum.fixed_update_state = action_datum.state;
+            // switch to loading the `update_state` into `state`
+            action_datum.state = action_datum.update_state;
+        }
+    }
+
+    /// We are about to enter the `FixedMain` schedule, so we:
+    /// - save all the changes applied to `state` into the `update_state`
+    /// - switch to loading the `fixed_update_state`
+    pub(crate) fn swap_to_fixed_update_state(&mut self) {
+        for (_action, action_datum) in self.action_data.iter_mut() {
+            // save the changes applied to `state` into `update_state`
+            action_datum.update_state = action_datum.state;
+            // switch to loading the `fixed_update_state` into `state`
+            action_datum.state = action_datum.fixed_update_state;
+        }
+    }
+
     /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
