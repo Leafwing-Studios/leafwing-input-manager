@@ -1,6 +1,6 @@
 //! Tools for working with directional axis-like user inputs (game sticks, D-Pads and emulated equivalents)
 
-use bevy::prelude::{Direction2d, GamepadAxisType, GamepadButtonType, KeyCode, Reflect, Vec2};
+use bevy::prelude::{Dir2, GamepadAxisType, GamepadButtonType, KeyCode, Reflect, Vec2};
 use serde::{Deserialize, Serialize};
 
 use crate::buttonlike::{MouseMotionDirection, MouseWheelDirection};
@@ -16,8 +16,8 @@ pub struct SingleAxis {
     /// The axis that is being checked.
     pub axis_type: AxisType,
 
-    /// The processor used to handle input values.
-    pub processor: AxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl SingleAxis {
@@ -26,7 +26,7 @@ impl SingleAxis {
     pub fn new(axis_type: impl Into<AxisType>) -> Self {
         Self {
             axis_type: axis_type.into(),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -35,7 +35,7 @@ impl SingleAxis {
     pub const fn mouse_wheel_x() -> Self {
         Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -44,7 +44,7 @@ impl SingleAxis {
     pub const fn mouse_wheel_y() -> Self {
         Self {
             axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -53,7 +53,7 @@ impl SingleAxis {
     pub const fn mouse_motion_x() -> Self {
         Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -62,7 +62,7 @@ impl SingleAxis {
     pub const fn mouse_motion_y() -> Self {
         Self {
             axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -72,33 +72,38 @@ impl SingleAxis {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
-        self.processor.process(input_value)
+        self.processors
+            .iter()
+            .fold(input_value, |value, processor| processor.process(value))
     }
 }
 
 impl WithAxisProcessingPipelineExt for SingleAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = AxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
 
 impl PartialEq for SingleAxis {
     fn eq(&self, other: &Self) -> bool {
-        self.axis_type == other.axis_type && self.processor == other.processor
+        self.axis_type == other.axis_type && self.processors == other.processors
     }
 }
 
@@ -107,7 +112,7 @@ impl Eq for SingleAxis {}
 impl std::hash::Hash for SingleAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.axis_type.hash(state);
-        self.processor.hash(state);
+        self.processors.hash(state);
     }
 }
 
@@ -125,8 +130,8 @@ pub struct DualAxis {
     /// The vertical axis that is being checked.
     pub y_axis_type: AxisType,
 
-    /// The processor used to handle input values.
-    pub processor: DualAxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl DualAxis {
@@ -136,7 +141,7 @@ impl DualAxis {
         Self {
             x_axis_type: x_axis_type.into(),
             y_axis_type: y_axis_type.into(),
-            processor: DualAxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -146,7 +151,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::LeftStickY),
-            processor: CircleDeadZone::default().into(),
+            processors: vec![CircleDeadZone::default().into()],
         }
     }
 
@@ -156,7 +161,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickX),
             y_axis_type: AxisType::Gamepad(GamepadAxisType::RightStickY),
-            processor: CircleDeadZone::default().into(),
+            processors: vec![CircleDeadZone::default().into()],
         }
     }
 
@@ -165,7 +170,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::MouseWheel(MouseWheelAxisType::X),
             y_axis_type: AxisType::MouseWheel(MouseWheelAxisType::Y),
-            processor: DualAxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -174,7 +179,7 @@ impl DualAxis {
         Self {
             x_axis_type: AxisType::MouseMotion(MouseMotionAxisType::X),
             y_axis_type: AxisType::MouseMotion(MouseMotionAxisType::Y),
-            processor: DualAxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -184,26 +189,31 @@ impl DualAxis {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
-        self.processor.process(input_value)
+        self.processors
+            .iter()
+            .fold(input_value, |value, processor| processor.process(value))
     }
 }
 
 impl WithDualAxisProcessingPipelineExt for DualAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -212,7 +222,7 @@ impl PartialEq for DualAxis {
     fn eq(&self, other: &Self) -> bool {
         self.x_axis_type == other.x_axis_type
             && self.y_axis_type == other.y_axis_type
-            && self.processor == other.processor
+            && self.processors == other.processors
     }
 }
 
@@ -222,7 +232,7 @@ impl std::hash::Hash for DualAxis {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.x_axis_type.hash(state);
         self.y_axis_type.hash(state);
-        self.processor.hash(state);
+        self.processors.hash(state);
     }
 }
 
@@ -243,8 +253,8 @@ pub struct VirtualDPad {
     pub left: InputKind,
     /// The input that represents the right direction in this virtual DPad
     pub right: InputKind,
-    /// The processor used to handle input values.
-    pub processor: DualAxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl VirtualDPad {
@@ -255,7 +265,7 @@ impl VirtualDPad {
             down: InputKind::PhysicalKey(KeyCode::ArrowDown),
             left: InputKind::PhysicalKey(KeyCode::ArrowLeft),
             right: InputKind::PhysicalKey(KeyCode::ArrowRight),
-            processor: CircleDeadZone::default().into(),
+            processors: vec![CircleDeadZone::default().into()],
         }
     }
 
@@ -271,7 +281,7 @@ impl VirtualDPad {
             down: InputKind::PhysicalKey(KeyCode::KeyS),
             left: InputKind::PhysicalKey(KeyCode::KeyA),
             right: InputKind::PhysicalKey(KeyCode::KeyD),
-            processor: CircleDeadZone::default().into(),
+            processors: vec![CircleDeadZone::default().into()],
         }
     }
 
@@ -283,7 +293,7 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             left: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             right: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-            processor: CircleDeadZone::default().into(),
+            processors: vec![CircleDeadZone::default().into()],
         }
     }
 
@@ -297,7 +307,7 @@ impl VirtualDPad {
             down: InputKind::GamepadButton(GamepadButtonType::South),
             left: InputKind::GamepadButton(GamepadButtonType::West),
             right: InputKind::GamepadButton(GamepadButtonType::East),
-            processor: CircleDeadZone::default().into(),
+            processors: vec![CircleDeadZone::default().into()],
         }
     }
 
@@ -308,7 +318,7 @@ impl VirtualDPad {
             down: InputKind::MouseWheel(MouseWheelDirection::Down),
             left: InputKind::MouseWheel(MouseWheelDirection::Left),
             right: InputKind::MouseWheel(MouseWheelDirection::Right),
-            processor: DualAxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -319,7 +329,7 @@ impl VirtualDPad {
             down: InputKind::MouseMotion(MouseMotionDirection::Down),
             left: InputKind::MouseMotion(MouseMotionDirection::Left),
             right: InputKind::MouseMotion(MouseMotionDirection::Right),
-            processor: DualAxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -329,26 +339,31 @@ impl VirtualDPad {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: Vec2) -> Vec2 {
-        self.processor.process(input_value)
+        self.processors
+            .iter()
+            .fold(input_value, |value, processor| processor.process(value))
     }
 }
 
 impl WithDualAxisProcessingPipelineExt for VirtualDPad {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = DualAxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = DualAxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -365,8 +380,8 @@ pub struct VirtualAxis {
     pub negative: InputKind,
     /// The input that represents the positive direction of this virtual axis
     pub positive: InputKind,
-    /// The processor used to handle input values.
-    pub processor: AxisProcessor,
+    /// A processing pipeline that handles input values.
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl VirtualAxis {
@@ -376,7 +391,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::PhysicalKey(negative),
             positive: InputKind::PhysicalKey(positive),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -406,7 +421,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadLeft),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadRight),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -416,7 +431,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::DPadDown),
             positive: InputKind::GamepadButton(GamepadButtonType::DPadUp),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -425,7 +440,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::West),
             positive: InputKind::GamepadButton(GamepadButtonType::East),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -434,7 +449,7 @@ impl VirtualAxis {
         VirtualAxis {
             negative: InputKind::GamepadButton(GamepadButtonType::South),
             positive: InputKind::GamepadButton(GamepadButtonType::North),
-            processor: AxisProcessor::None,
+            processors: Vec::new(),
         }
     }
 
@@ -444,26 +459,31 @@ impl VirtualAxis {
     #[must_use]
     #[inline]
     pub fn input_value(&self, input_value: f32) -> f32 {
-        self.processor.process(input_value)
+        self.processors
+            .iter()
+            .fold(input_value, |value, processor| processor.process(value))
     }
 }
 
 impl WithAxisProcessingPipelineExt for VirtualAxis {
     #[inline]
     fn reset_processing_pipeline(mut self) -> Self {
-        self.processor = AxisProcessor::None;
+        self.processors.clear();
         self
     }
 
     #[inline]
-    fn replace_processing_pipeline(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = processor.into();
+    fn replace_processing_pipeline(
+        mut self,
+        processors: impl IntoIterator<Item = AxisProcessor>,
+    ) -> Self {
+        self.processors = processors.into_iter().collect();
         self
     }
 
     #[inline]
     fn with_processor(mut self, processor: impl Into<AxisProcessor>) -> Self {
-        self.processor = self.processor.with_processor(processor);
+        self.processors.push(processor.into());
         self
     }
 }
@@ -797,13 +817,13 @@ impl DualAxisData {
         self.xy
     }
 
-    /// The [`Direction2d`] that this axis is pointing towards, if any
+    /// The [`Dir2`] that this axis is pointing towards, if any
     ///
     /// If the axis is neutral (x,y) = (0,0), a (0, 0) `None` will be returned
     #[must_use]
     #[inline]
-    pub fn direction(&self) -> Option<Direction2d> {
-        Direction2d::new(self.xy).ok()
+    pub fn direction(&self) -> Option<Dir2> {
+        Dir2::new(self.xy).ok()
     }
 
     /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any

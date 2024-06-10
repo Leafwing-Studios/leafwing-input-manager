@@ -313,7 +313,6 @@ fn resolve_clash<A: Actionlike>(
 mod tests {
     use super::*;
     use crate as leafwing_input_manager;
-    use crate::input_processing::DualAxisProcessor;
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use bevy::prelude::Reflect;
@@ -353,7 +352,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             },
         );
         input_map.insert_chord(CtrlUp, [ControlLeft, ArrowUp]);
@@ -381,7 +380,7 @@ mod tests {
                 down: KeyX.into(),
                 left: KeyY.into(),
                 right: KeyZ.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             }
             .into();
             let abcd_dpad: UserInput = VirtualDPad {
@@ -389,7 +388,7 @@ mod tests {
                 down: KeyB.into(),
                 left: KeyC.into(),
                 right: KeyD.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             }
             .into();
 
@@ -399,7 +398,7 @@ mod tests {
                 down: ArrowDown.into(),
                 left: ArrowLeft.into(),
                 right: ArrowRight.into(),
-                processor: DualAxisProcessor::None,
+                processors: Vec::new(),
             }
             .into();
 
@@ -471,7 +470,7 @@ mod tests {
             app.press_input(Digit2);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
+            let input_streams = InputStreams::from_world(app.world(), None);
 
             assert_eq!(
                 resolve_clash(
@@ -498,7 +497,7 @@ mod tests {
             app.press_input(Digit3);
             app.update();
 
-            let input_streams = InputStreams::from_world(&app.world, None);
+            let input_streams = InputStreams::from_world(app.world(), None);
 
             assert_eq!(
                 resolve_clash(
@@ -530,7 +529,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -559,7 +558,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut action_data,
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -581,7 +580,7 @@ mod tests {
             app.update();
 
             let action_data = input_map.process_actions(
-                &InputStreams::from_world(&app.world, None),
+                &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 

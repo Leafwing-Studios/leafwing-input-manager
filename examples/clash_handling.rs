@@ -14,7 +14,7 @@ fn main() {
         .add_systems(Update, report_pressed_actions)
         // Change the value of this resource to change how clashes should be handled in your game
         .insert_resource(ClashStrategy::PrioritizeLongest)
-        .run()
+        .run();
 }
 
 #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]

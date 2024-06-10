@@ -45,7 +45,7 @@ fn raw_mouse_wheel_events() {
         MouseWheelDirection::Up,
     )]));
 
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     events.send(MouseWheel {
         unit: MouseScrollUnit::Pixel,
         x: 0.0,
@@ -54,18 +54,18 @@ fn raw_mouse_wheel_events() {
     });
 
     app.update();
-    let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<ButtonlikeTestAction>>();
     assert!(action_state.pressed(&ButtonlikeTestAction::Up));
 }
 
 #[test]
 fn mouse_wheel_discrete_mocking() {
     let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
     app.press_input(MouseWheelDirection::Up);
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
 
     assert_eq!(events.drain().count(), 1);
 }
@@ -73,26 +73,26 @@ fn mouse_wheel_discrete_mocking() {
 #[test]
 fn mouse_wheel_single_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = SingleAxis::mouse_wheel_x();
     app.send_axis_values(input, [-1.0]);
 
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 1);
 }
 
 #[test]
 fn mouse_wheel_dual_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = DualAxis::mouse_wheel();
     app.send_axis_values(input, [-1.0]);
 
-    let mut events = app.world.resource_mut::<Events<MouseWheel>>();
+    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     // Dual axis events are split out
     assert_eq!(events.drain().count(), 2);
 }
@@ -108,14 +108,14 @@ fn mouse_wheel_buttonlike() {
     ]));
 
     for action in ButtonlikeTestAction::variants() {
-        let input_map = app.world.resource::<InputMap<ButtonlikeTestAction>>();
+        let input_map = app.world().resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
         let input = input_map.get(action).unwrap().first().unwrap().clone();
 
         app.press_input(input.clone());
         app.update();
 
-        let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
+        let action_state = app.world().resource::<ActionState<ButtonlikeTestAction>>();
         assert!(action_state.pressed(action), "failed for {input:?}");
     }
 }
@@ -136,7 +136,7 @@ fn mouse_wheel_buttonlike_cancels() {
     // Correctly flushes the world
     app.update();
 
-    let action_state = app.world.resource::<ActionState<ButtonlikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<ButtonlikeTestAction>>();
 
     assert!(!action_state.pressed(&ButtonlikeTestAction::Up));
     assert!(!action_state.pressed(&ButtonlikeTestAction::Down));
@@ -154,42 +154,42 @@ fn mouse_wheel_single_axis() {
     let input = SingleAxis::mouse_wheel_x();
     app.send_axis_values(input, [1.0]);
     app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // -X
     let input = SingleAxis::mouse_wheel_x();
     app.send_axis_values(input, [-1.0]);
     app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // +Y
     let input = SingleAxis::mouse_wheel_y();
     app.send_axis_values(input, [1.0]);
     app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // -Y
     let input = SingleAxis::mouse_wheel_y();
     app.send_axis_values(input, [-1.0]);
     app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
     let input = SingleAxis::mouse_wheel_y();
     app.send_axis_values(input, [0.0]);
     app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(&AxislikeTestAction::Y));
 
     // None
     let input = SingleAxis::mouse_wheel_y();
     app.send_axis_values(input, []);
     app.update();
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert!(!action_state.pressed(&AxislikeTestAction::Y));
 }
 
@@ -205,7 +205,7 @@ fn mouse_wheel_dual_axis() {
     app.send_axis_values(input, [5.0, 0.0]);
     app.update();
 
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 5.0);
@@ -227,7 +227,7 @@ fn mouse_wheel_virtualdpad() {
     app.send_axis_values(input, [0.0, -2.0]);
     app.update();
 
-    let action_state = app.world.resource::<ActionState<AxislikeTestAction>>();
+    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     // This should be a unit length, because we're working with a VirtualDPad

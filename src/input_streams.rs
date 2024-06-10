@@ -485,25 +485,25 @@ mod tests {
         let mut app = App::new();
         app.add_plugins(InputPlugin);
 
-        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
         assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
 
         input_streams.press_input(KeyCode::ControlLeft);
         app.update();
 
-        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
         assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
 
         input_streams.reset_inputs();
         app.update();
 
-        let mut input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        let mut input_streams = MutableInputStreams::from_world(app.world_mut(), None);
         assert!(!InputStreams::from(&input_streams).pressed(Modifier::Control));
 
         input_streams.press_input(KeyCode::ControlRight);
         app.update();
 
-        let input_streams = MutableInputStreams::from_world(&mut app.world, None);
+        let input_streams = MutableInputStreams::from_world(app.world_mut(), None);
         assert!(InputStreams::from(&input_streams).pressed(Modifier::Control));
     }
 }
