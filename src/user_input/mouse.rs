@@ -84,7 +84,7 @@ fn accumulate_mouse_movement(input_streams: &InputStreams) -> Vec2 {
 ///   - `1.0`: The input is currently active.
 ///   - `0.0`: The input is inactive.
 ///
-/// ```rust, ignore
+/// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
@@ -434,7 +434,7 @@ fn accumulate_wheel_movement(input_streams: &InputStreams) -> Vec2 {
 ///   - `1.0`: The input is currently active.
 ///   - `0.0`: The input is inactive.
 ///
-/// ```rust, ignore
+/// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;

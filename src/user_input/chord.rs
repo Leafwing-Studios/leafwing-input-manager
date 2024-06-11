@@ -34,7 +34,7 @@ use crate::user_input::{DualAxisData, InputControlKind, UserInput};
 /// - Nesting: Using an input chord within another multi-input element treats it as a single button,
 ///     ignoring its individual functionalities (like single-axis values).
 ///
-/// ```rust, ignore
+/// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
@@ -346,7 +346,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "https://github.com/Leafwing-Studios/leafwing-input-manager/issues/538"]
     fn test_chord_with_buttons_and_axes() {
         let chord = InputChord::new([KeyCode::KeyA, KeyCode::KeyB])
             .with(MouseScrollAxis::X)
