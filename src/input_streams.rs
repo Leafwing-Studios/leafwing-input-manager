@@ -243,7 +243,7 @@ mod tests {
 
         // Starts empty
         let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.iter_current_update_events().count(), 0);
+        assert_eq!(test_events.len(), 0);
         let cloned_events = collect_events_cloned(test_events);
         assert_eq!(cloned_events.len(), 0);
 
@@ -251,7 +251,7 @@ mod tests {
         app.update();
         app.world_mut().send_event(TestEvent);
         let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.iter_current_update_events().count(), 1);
+        assert_eq!(test_events.len(), 1);
         let cloned_events = collect_events_cloned(test_events);
         assert_eq!(cloned_events.len(), 1);
 
@@ -260,14 +260,14 @@ mod tests {
         app.world_mut().send_event(TestEvent);
         app.world_mut().send_event(TestEvent);
         let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.iter_current_update_events().count(), 3); // Events are double-buffered, so we see 1 + 2 = 3
+        assert_eq!(test_events.len(), 3); // Events are double-buffered, so we see 1 + 2 = 3
         let cloned_events = collect_events_cloned(test_events);
         assert_eq!(cloned_events.len(), 2);
 
         // Sending zero events
         app.update();
         let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.iter_current_update_events().count(), 2); // Events are double-buffered, so we see 2 + 0 = 2
+        assert_eq!(test_events.len(), 2); // Events are double-buffered, so we see 2 + 0 = 2
         let cloned_events = collect_events_cloned(test_events);
         assert_eq!(cloned_events.len(), 0);
     }
