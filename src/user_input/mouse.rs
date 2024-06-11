@@ -986,4 +986,46 @@ mod tests {
         check(&mouse_scroll_y, &inputs, true, data.y(), None);
         check(&mouse_scroll, &inputs, true, data.length(), Some(data));
     }
+
+    #[test]
+    fn one_frame_accumulate_mouse_movement() {
+        let mut app = test_app();
+        app.send_axis_values(MouseMoveAxis::Y, [3.0]);
+        app.send_axis_values(MouseMoveAxis::Y, [2.0]);
+        let inputs = InputStreams::from_world(app.world(), None);
+        assert_eq!(accumulate_mouse_movement(&inputs), Vec2::new(0.0, 5.0));
+    }
+
+    #[test]
+    fn multiple_frames_accumulate_mouse_movement() {
+        let mut app = test_app();
+        let inputs = InputStreams::from_world(app.world(), None);
+        // Starts at 0
+        assert_eq!(
+            accumulate_mouse_movement(&inputs),
+            Vec2::ZERO,
+            "Initial movement is not zero."
+        );
+        app.update();
+
+        // Send some data
+        app.send_axis_values(MouseMoveAxis::Y, [3.0]);
+        let inputs = InputStreams::from_world(app.world(), None);
+        // Data is read
+        assert_eq!(
+            accumulate_mouse_movement(&inputs),
+            Vec2::new(0.0, 3.0),
+            "Movement sent was not read correctly."
+        );
+
+        // Do nothing
+        app.update();
+        let inputs = InputStreams::from_world(app.world(), None);
+        // Back to 0 for this frame
+        assert_eq!(
+            accumulate_mouse_movement(&inputs),
+            Vec2::ZERO,
+            "No movement was expected. Is the position in the event stream being cleared properly?"
+        );
+    }
 }
