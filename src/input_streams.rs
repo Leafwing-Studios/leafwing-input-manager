@@ -64,10 +64,13 @@ impl<'a> InputStreams<'a> {
     }
 }
 
-// Clones and collects the received events into a `Vec`.
+/// Clones and collects the received events into a `Vec`.
+///
+/// Only events sent this frame will be collected.
 #[inline]
 fn collect_events_cloned<T: Event + Clone>(events: &Events<T>) -> Vec<T> {
-    events.get_reader().read(events).cloned().collect()
+    // We only want to look at the events that were sent this frame
+    events.iter_current_update_events().cloned().collect()
 }
 
 /// A mutable collection of [`ButtonInput`] structs, which can be used for mocking user inputs.
