@@ -197,6 +197,7 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
 #[cfg(test)]
 mod tests {
     use super::{InputStreams, MutableInputStreams};
+    use crate::input_streams::collect_events_cloned;
     use crate::prelude::{MockInput, QueryInput};
     use crate::user_input::ModifierKey;
     use bevy::input::InputPlugin;
@@ -227,5 +228,44 @@ mod tests {
 
         let input_streams = MutableInputStreams::from_world(app.world_mut(), None);
         assert!(InputStreams::from(&input_streams).pressed(ModifierKey::Control));
+    }
+
+    #[test]
+    fn collect_events_only_covers_this_frame() {
+        #[derive(Event, Clone)]
+        struct TestEvent;
+
+        let mut app = App::new();
+        app.add_event::<TestEvent>();
+
+        // Starts empty
+        let test_events = app.world().resource::<Events<TestEvent>>();
+        assert_eq!(test_events.iter_current_update_events().count(), 0);
+        let cloned_events = collect_events_cloned(test_events);
+        assert_eq!(cloned_events.len(), 0);
+
+        // Sending one event
+        app.update();
+        app.world_mut().send_event(TestEvent);
+        let test_events = app.world().resource::<Events<TestEvent>>();
+        assert_eq!(test_events.iter_current_update_events().count(), 1);
+        let cloned_events = collect_events_cloned(test_events);
+        assert_eq!(cloned_events.len(), 1);
+
+        // Sending two events on the next frame
+        app.update();
+        app.world_mut().send_event(TestEvent);
+        app.world_mut().send_event(TestEvent);
+        let test_events = app.world().resource::<Events<TestEvent>>();
+        assert_eq!(test_events.iter_current_update_events().count(), 3); // Events are double-buffered, so we see 1 + 2 = 3
+        let cloned_events = collect_events_cloned(test_events);
+        assert_eq!(cloned_events.len(), 2);
+
+        // Sending zero events
+        app.update();
+        let test_events = app.world().resource::<Events<TestEvent>>();
+        assert_eq!(test_events.iter_current_update_events().count(), 2); // Events are double-buffered, so we see 2 + 0 = 2
+        let cloned_events = collect_events_cloned(test_events);
+        assert_eq!(cloned_events.len(), 0);
     }
 }
