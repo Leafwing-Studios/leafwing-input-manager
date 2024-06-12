@@ -81,7 +81,7 @@ pub mod prelude {
 /// }
 /// ```
 pub trait Actionlike:
-    Eq + Hash + Send + Sync + Clone + Hash + Reflect + TypePath + FromReflect + 'static
+    Eq + Hash + Send + Sync + Clone + Reflect + TypePath + FromReflect + 'static
 {
 }
 
