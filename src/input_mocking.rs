@@ -190,12 +190,13 @@ pub trait MockInput {
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::input_mocking::QueryInput;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
 ///
 /// // This functionality requires Bevy's InputPlugin (included with DefaultPlugins)
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Check if a key is currently pressed down.
 /// let pressed = app.pressed(KeyCode::KeyB);
@@ -388,7 +389,7 @@ impl MockInput for MutableInputStreams<'_> {
         *self.gamepad_axes = Default::default();
         *self.keycodes = Default::default();
         *self.mouse_buttons = Default::default();
-        *self.mouse_wheel = Default::default();
+        *self.mouse_scroll = Default::default();
         *self.mouse_motion = Default::default();
     }
 }
@@ -412,17 +413,20 @@ impl MutableInputStreams<'_> {
     }
 
     fn send_mouse_scroll(&mut self, delta: Vec2) {
-        self.mouse_wheel.send(MouseWheel {
+        let event = MouseWheel {
+            unit: MouseScrollUnit::Pixel,
             x: delta.x,
             y: delta.y,
-            // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-            unit: MouseScrollUnit::Pixel,
             window: Entity::PLACEHOLDER,
-        });
+        };
+
+        self.mouse_scroll_events.send(event);
     }
 
     fn send_mouse_move(&mut self, delta: Vec2) {
-        self.mouse_motion.send(MouseMotion { delta });
+        let event = MouseMotion { delta };
+
+        self.mouse_motion_events.send(event);
     }
 
     fn send_gamepad_button_state(
@@ -686,6 +690,7 @@ impl MockUIInteraction for App {
 #[cfg(test)]
 mod test {
     use crate::input_mocking::{MockInput, QueryInput};
+    use crate::plugin::AccumulatorPlugin;
     use crate::user_input::*;
     use bevy::input::gamepad::{
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
@@ -695,7 +700,7 @@ mod test {
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(InputPlugin);
+        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
 
         let gamepad = Gamepad::new(0);
         let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
@@ -786,7 +791,6 @@ mod test {
     }
 
     #[test]
-    #[ignore = "Mouse axis input clearing is buggy. Try again after https://github.com/bevyengine/bevy/pull/13762 is released."]
     fn mouse_inputs() {
         let mut app = test_app();
 

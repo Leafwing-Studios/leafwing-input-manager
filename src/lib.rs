@@ -14,7 +14,6 @@ pub mod axislike;
 pub mod buttonlike;
 pub mod clashing_inputs;
 pub mod common_conditions;
-pub mod errors;
 pub mod input_map;
 pub mod input_mocking;
 pub mod input_processing;

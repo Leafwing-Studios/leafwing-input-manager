@@ -34,13 +34,14 @@ use crate::user_input::{DualAxisData, InputControlKind, UserInput};
 /// - Nesting: Using an input chord within another multi-input element treats it as a single button,
 ///     ignoring its individual functionalities (like single-axis values).
 ///
-/// ```rust, ignore
+/// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Define a chord using A and B keys
 /// let input = InputChord::new([KeyCode::KeyA, KeyCode::KeyB]);
@@ -239,11 +240,14 @@ mod tests {
     use bevy::prelude::*;
 
     use super::*;
+    use crate::plugin::AccumulatorPlugin;
     use crate::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(MinimalPlugins).add_plugins(InputPlugin);
+        app.add_plugins(MinimalPlugins)
+            .add_plugins(InputPlugin)
+            .add_plugins(AccumulatorPlugin);
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
@@ -346,7 +350,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "https://github.com/Leafwing-Studios/leafwing-input-manager/issues/538"]
     fn test_chord_with_buttons_and_axes() {
         let chord = InputChord::new([KeyCode::KeyA, KeyCode::KeyB])
             .with(MouseScrollAxis::X)
