@@ -155,6 +155,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - fixed a bug where enabling a pressed action would read as `just_pressed`, and disabling a pressed action would read as `just_released`.
 - fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
 - inputs are now handled correctly in the `FixedUpdate` schedule! Previously, the `ActionState`s were only updated in the `PreUpdate` schedule, so you could have situations where an action was marked as `just_pressed` multiple times in a row (if the `FixedUpdate` schedule ran multiple times in a frame) or was missed entirely (if the `FixedUpdate` schedule ran 0 times in a frame).
+- Mouse motion and mouse scroll are now computed more efficiently and reliably, through the use of the new `AccumulatedMouseMovement` and `AccumulatedMouseScroll` resources.
 
 ### Tech debt
 
