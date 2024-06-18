@@ -10,9 +10,6 @@ fn test_app() -> App {
 
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
-        // These haven't been upstreamed yet
-        .init_resource::<AccumulatedMouseMovement>()
-        .init_resource::<AccumulatedMouseScroll>()
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_input_map);
     app

@@ -239,15 +239,14 @@ mod tests {
     use bevy::prelude::*;
 
     use super::*;
+    use crate::plugin::AccumulatorPlugin;
     use crate::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(InputPlugin)
-            // These haven't been upstreamed yet
-            .init_resource::<AccumulatedMouseMovement>()
-            .init_resource::<AccumulatedMouseScroll>();
+            .add_plugins(AccumulatorPlugin);
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail

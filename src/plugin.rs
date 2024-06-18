@@ -17,6 +17,7 @@ use crate::action_state::{ActionData, ActionState};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
+use crate::systems::{accumulate_mouse_movement, accumulate_mouse_scroll};
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
@@ -95,9 +96,8 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
 
         match self.machine {
             Machine::Client => {
-                // Resources
-                app.init_resource::<AccumulatedMouseMovement>();
-                app.init_resource::<AccumulatedMouseScroll>();
+                // TODO: this should be part of bevy_input
+                app.add_plugins(AccumulatorPlugin);
 
                 // Main schedule
                 app.add_systems(
@@ -107,20 +107,6 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .before(InputManagerSystem::Update),
                 )
                 .add_systems(PostUpdate, release_on_input_map_removed::<A>);
-
-                // TODO: these should be part of bevy_input
-                app.add_systems(
-                    PreUpdate,
-                    (accumulate_mouse_movement, accumulate_mouse_scroll)
-                        .in_set(InputManagerSystem::Accumulate),
-                );
-
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::Accumulate
-                        .after(InputSystem)
-                        .before(InputManagerSystem::Update),
-                );
 
                 app.add_systems(
                     PreUpdate,
@@ -246,4 +232,32 @@ pub enum InputManagerSystem {
     ///
     /// Must run after [`InputManagerSystem::Update`] or the action state will be overridden
     ManualControl,
+}
+
+/// A plugin to handle accumulating mouse movement and scroll events.
+///
+/// This is a clearer, more reliable and more efficient approach to computing the total mouse movement and scroll for the frame.
+/// TODO: this should be part of bevy_input
+/// This plugin is pub(crate) to allow it to be used in tests: users should always have this plugin implicitly added by [`InputManagerPlugin`].
+pub(crate) struct AccumulatorPlugin;
+
+impl Plugin for AccumulatorPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<AccumulatedMouseMovement>();
+        app.init_resource::<AccumulatedMouseScroll>();
+
+        // TODO: these should be part of bevy_input
+        app.add_systems(
+            PreUpdate,
+            (accumulate_mouse_movement, accumulate_mouse_scroll)
+                .in_set(InputManagerSystem::Accumulate),
+        );
+
+        app.configure_sets(
+            PreUpdate,
+            InputManagerSystem::Accumulate
+                .after(InputSystem)
+                .before(InputManagerSystem::Update),
+        );
+    }
 }
