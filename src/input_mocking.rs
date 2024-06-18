@@ -12,7 +12,7 @@ use bevy::ecs::system::SystemState;
 use bevy::input::gamepad::{Gamepad, GamepadButton, GamepadButtonType, GamepadEvent};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
 use bevy::input::keyboard::{Key, KeyCode, KeyboardInput, NativeKey};
-use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseWheel};
+use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseScrollUnit, MouseWheel};
 use bevy::input::touch::{TouchInput, Touches};
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::prelude::{App, Entity, Events, GamepadAxisType, ResMut, Vec2, World};
@@ -412,11 +412,20 @@ impl MutableInputStreams<'_> {
     }
 
     fn send_mouse_scroll(&mut self, delta: Vec2) {
-        self.mouse_scroll.0 += delta;
+        let event = MouseWheel {
+            unit: MouseScrollUnit::Pixel,
+            x: delta.x,
+            y: delta.y,
+            window: Entity::PLACEHOLDER,
+        };
+
+        self.mouse_scroll_events.send(event);
     }
 
     fn send_mouse_move(&mut self, delta: Vec2) {
-        self.mouse_motion.0 += delta;
+        let event = MouseMotion { delta };
+
+        self.mouse_motion_events.send(event);
     }
 
     fn send_gamepad_button_state(

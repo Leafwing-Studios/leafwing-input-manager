@@ -2,6 +2,7 @@
 
 use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
+use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
@@ -93,6 +94,10 @@ pub struct MutableInputStreams<'a> {
     pub mouse_scroll: &'a mut AccumulatedMouseScroll,
     /// The [`AccumulatedMouseMotion`] for the frame
     pub mouse_motion: &'a mut AccumulatedMouseMovement,
+    /// Mouse scroll events used for mocking mouse scroll inputs
+    pub mouse_scroll_events: &'a mut Events<MouseWheel>,
+    /// Mouse motion events used for mocking mouse motion inputs
+    pub mouse_motion_events: &'a mut Events<MouseMotion>,
 
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
@@ -123,6 +128,8 @@ impl<'a> MutableInputStreams<'a> {
             ResMut<Events<MouseButtonInput>>,
             ResMut<AccumulatedMouseScroll>,
             ResMut<AccumulatedMouseMovement>,
+            ResMut<Events<MouseWheel>>,
+            ResMut<Events<MouseMotion>>,
         )> = SystemState::new(world);
 
         let (
@@ -137,6 +144,8 @@ impl<'a> MutableInputStreams<'a> {
             mouse_button_events,
             mouse_scroll,
             mouse_motion,
+            mouse_scroll_events,
+            mouse_motion_events,
         ) = input_system_state.get_mut(world);
 
         MutableInputStreams {
@@ -151,6 +160,8 @@ impl<'a> MutableInputStreams<'a> {
             mouse_button_events: mouse_button_events.into_inner(),
             mouse_scroll: mouse_scroll.into_inner(),
             mouse_motion: mouse_motion.into_inner(),
+            mouse_scroll_events: mouse_scroll_events.into_inner(),
+            mouse_motion_events: mouse_motion_events.into_inner(),
             associated_gamepad: gamepad,
         }
     }
