@@ -108,6 +108,20 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 )
                 .add_systems(PostUpdate, release_on_input_map_removed::<A>);
 
+                // TODO: these should be part of bevy_input
+                app.add_systems(
+                    PreUpdate,
+                    (accumulate_mouse_movement, accumulate_mouse_scroll)
+                        .in_set(InputManagerSystem::Accumulate),
+                );
+
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::Accumulate
+                        .after(InputSystem)
+                        .before(InputManagerSystem::Update),
+                );
+
                 app.add_systems(
                     PreUpdate,
                     update_action_state::<A>.in_set(InputManagerSystem::Update),
@@ -224,6 +238,8 @@ pub enum InputManagerSystem {
     ///
     /// Cleans up the state of the input manager, clearing `just_pressed` and `just_released`
     Tick,
+    /// Accumulates various input event streams into a total delta for the frame.
+    Accumulate,
     /// Collects input data to update the [`ActionState`]
     Update,
     /// Manually control the [`ActionState`]

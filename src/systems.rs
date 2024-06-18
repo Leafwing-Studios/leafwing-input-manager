@@ -89,6 +89,26 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
+/// Sums the[`MouseMotion`] events received since during this frame.
+pub fn accumulate_mouse_movement(
+    mut mouse_motion: ResMut<AccumulatedMouseMovement>,
+    mut events: EventReader<MouseMotion>,
+) {
+    for event in events.read() {
+        mouse_motion.accumulate(event);
+    }
+}
+
+/// Sums the [`MouseWheel`] events received since during this frame.
+pub fn accumulate_mouse_scroll(
+    mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
+    mut events: EventReader<MouseWheel>,
+) {
+    for event in events.read() {
+        mouse_scroll.accumulate(event);
+    }
+}
+
 /// Fetches all the relevant [`ButtonInput`] resources
 /// to update [`ActionState`] according to the [`InputMap`].
 ///
@@ -101,10 +121,8 @@ pub fn update_action_state<A: Actionlike>(
     gamepads: Res<Gamepads>,
     keycodes: Option<Res<ButtonInput<KeyCode>>>,
     mouse_buttons: Option<Res<ButtonInput<MouseButton>>>,
-    mut mouse_wheel_events: EventReader<MouseWheel>,
-    mut mouse_motion_events: EventReader<MouseMotion>,
-    mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
-    mut mouse_motion: ResMut<AccumulatedMouseMovement>,
+    mouse_scroll: Res<AccumulatedMouseScroll>,
+    mouse_motion: Res<AccumulatedMouseMovement>,
     clash_strategy: Res<ClashStrategy>,
     #[cfg(feature = "ui")] interactions: Query<&Interaction>,
     #[cfg(feature = "egui")] mut maybe_egui: Query<(Entity, &'static mut EguiContext)>,
@@ -112,16 +130,6 @@ pub fn update_action_state<A: Actionlike>(
     input_map: Option<Res<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
-    // Accumulate mouse scroll and motion
-    // TODO: handle this in a separate system inside of Bevy itself
-    for event in mouse_wheel_events.read() {
-        mouse_scroll.accumulate(event);
-    }
-
-    for event in mouse_motion_events.read() {
-        mouse_motion.accumulate(event);
-    }
-
     let gamepad_buttons = gamepad_buttons.into_inner();
     let gamepad_button_axes = gamepad_button_axes.into_inner();
     let gamepad_axes = gamepad_axes.into_inner();

@@ -1008,6 +1008,10 @@ mod tests {
         let mut app = test_app();
         app.send_axis_values(MouseMoveAxis::Y, [3.0]);
         app.send_axis_values(MouseMoveAxis::Y, [2.0]);
+
+        let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMovement>();
+        assert_eq!(accumulated_mouse_movement.0, Vec2::new(0.0, 5.0));
+
         let inputs = InputStreams::from_world(app.world(), None);
         assert_eq!(inputs.mouse_scroll.0, Vec2::new(0.0, 5.0));
     }
