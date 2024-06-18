@@ -31,7 +31,7 @@ pub struct InputStreams<'a> {
     pub mouse_buttons: Option<&'a ButtonInput<MouseButton>>,
     /// The [`AccumulatedMouseScroll`] for the frame
     pub mouse_scroll: &'a AccumulatedMouseScroll,
-    /// The [`AccumulatedMouseMotion`] for the frame
+    /// The [`AccumulatedMouseMovement`] for the frame
     pub mouse_motion: &'a AccumulatedMouseMovement,
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
@@ -92,7 +92,7 @@ pub struct MutableInputStreams<'a> {
     pub mouse_button_events: &'a mut Events<MouseButtonInput>,
     /// The [`AccumulatedMouseScroll`] for the frame
     pub mouse_scroll: &'a mut AccumulatedMouseScroll,
-    /// The [`AccumulatedMouseMotion`] for the frame
+    /// The [`AccumulatedMouseMovement`] for the frame
     pub mouse_motion: &'a mut AccumulatedMouseMovement,
     /// Mouse scroll events used for mocking mouse scroll inputs
     pub mouse_scroll_events: &'a mut Events<MouseWheel>,

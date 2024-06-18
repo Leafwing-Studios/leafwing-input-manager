@@ -236,7 +236,7 @@ impl DualAxisData {
         Dir2::new(self.xy).ok()
     }
 
-    /// The [`Rotation`] (measured clockwise from midnight) that this axis is pointing towards, if any
+    /// The [`Rot2`] that this axis is pointing towards, if any.
     ///
     /// If the axis is neutral (x,y) = (0,0), this will be `None`
     #[must_use]

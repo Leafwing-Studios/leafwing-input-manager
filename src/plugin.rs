@@ -96,7 +96,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
 
         match self.machine {
             Machine::Client => {
-                // TODO: this should be part of bevy_input
+                // TODO: this should be part of `bevy_input`
                 app.add_plugins(AccumulatorPlugin);
 
                 // Main schedule
@@ -237,7 +237,7 @@ pub enum InputManagerSystem {
 /// A plugin to handle accumulating mouse movement and scroll events.
 ///
 /// This is a clearer, more reliable and more efficient approach to computing the total mouse movement and scroll for the frame.
-/// TODO: this should be part of bevy_input
+/// TODO: this should be part of `bevy_input`.
 /// This plugin is pub(crate) to allow it to be used in tests: users should always have this plugin implicitly added by [`InputManagerPlugin`].
 pub(crate) struct AccumulatorPlugin;
 

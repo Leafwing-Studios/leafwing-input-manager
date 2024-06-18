@@ -735,7 +735,7 @@ impl WithDualAxisProcessingPipelineExt for MouseScroll {
 
 /// A resource that records the accumulated mouse movement for the frame.
 ///
-/// These values are computed by summing the [`MouseMotion`](bevy::input::mouse::MouseMotion) events.
+/// These values are computed by summing the [`MouseMotion`] events.
 ///
 /// This resource is automatically added by [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 /// Its value is updated during [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
@@ -758,7 +758,7 @@ impl AccumulatedMouseMovement {
 
 /// A resource that records the accumulated mouse wheel (scrolling) movement for the frame.
 ///
-/// These values are computed by summing the [`MouseWheel`](bevy::input::mouse::MouseWheel) events.
+/// These values are computed by summing the [`MouseWheel`] events.
 ///
 /// This resource is automatically added by [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 /// Its value is updated during [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
