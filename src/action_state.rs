@@ -745,6 +745,7 @@ mod tests {
     use crate::input_map::InputMap;
     use crate::input_mocking::MockInput;
     use crate::input_streams::InputStreams;
+    use crate::plugin::AccumulatorPlugin;
     use crate::prelude::InputChord;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
@@ -754,7 +755,7 @@ mod tests {
     #[test]
     fn press_lifecycle() {
         let mut app = App::new();
-        app.add_plugins(InputPlugin);
+        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
 
         #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, bevy::prelude::Reflect)]
         enum Action {
@@ -840,7 +841,7 @@ mod tests {
         input_map.insert(Action::OneAndTwo, InputChord::new([Digit1, Digit2]));
 
         let mut app = App::new();
-        app.add_plugins(InputPlugin);
+        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
