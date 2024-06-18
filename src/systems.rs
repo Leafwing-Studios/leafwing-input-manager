@@ -94,6 +94,8 @@ pub fn accumulate_mouse_movement(
     mut mouse_motion: ResMut<AccumulatedMouseMovement>,
     mut events: EventReader<MouseMotion>,
 ) {
+    mouse_motion.reset();
+
     for event in events.read() {
         mouse_motion.accumulate(event);
     }
@@ -104,6 +106,8 @@ pub fn accumulate_mouse_scroll(
     mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
     mut events: EventReader<MouseWheel>,
 ) {
+    mouse_scroll.reset();
+
     for event in events.read() {
         mouse_scroll.accumulate(event);
     }

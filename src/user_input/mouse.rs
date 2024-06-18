@@ -743,6 +743,12 @@ impl WithDualAxisProcessingPipelineExt for MouseScroll {
 pub struct AccumulatedMouseMovement(pub Vec2);
 
 impl AccumulatedMouseMovement {
+    /// Resets the accumulated mouse movement to zero.
+    #[inline]
+    pub fn reset(&mut self) {
+        self.0 = Vec2::ZERO;
+    }
+
     /// Accumulates the specified mouse movement.
     #[inline]
     pub fn accumulate(&mut self, event: &MouseMotion) {
@@ -760,6 +766,12 @@ impl AccumulatedMouseMovement {
 pub struct AccumulatedMouseScroll(pub Vec2);
 
 impl AccumulatedMouseScroll {
+    /// Resets the accumulated mouse scroll to zero.
+    #[inline]
+    pub fn reset(&mut self) {
+        self.0 = Vec2::ZERO;
+    }
+
     /// Accumulates the specified mouse wheel movement.
     ///
     /// # Warning
