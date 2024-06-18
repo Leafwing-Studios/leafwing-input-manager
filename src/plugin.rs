@@ -97,7 +97,9 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         match self.machine {
             Machine::Client => {
                 // TODO: this should be part of `bevy_input`
-                app.add_plugins(AccumulatorPlugin);
+                if !app.is_plugin_added::<AccumulatorPlugin>() {
+                    app.add_plugins(AccumulatorPlugin);
+                }
 
                 // Main schedule
                 app.add_systems(
