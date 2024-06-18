@@ -1019,11 +1019,23 @@ mod tests {
         app.send_axis_values(MouseMoveAxis::Y, [3.0]);
         app.send_axis_values(MouseMoveAxis::Y, [2.0]);
 
+        let mouse_motion_events = app.world().get_resource::<Events<MouseMotion>>().unwrap();
+        for event in mouse_motion_events.iter_current_update_events() {
+            dbg!("Event sent: {:?}", event);
+        }
+
+        // The haven't been processed yet
+        let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMovement>();
+        assert_eq!(accumulated_mouse_movement.0, Vec2::new(0.0, 0.0));
+
+        app.update();
+
+        // Now the events should be processed
         let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMovement>();
         assert_eq!(accumulated_mouse_movement.0, Vec2::new(0.0, 5.0));
 
         let inputs = InputStreams::from_world(app.world(), None);
-        assert_eq!(inputs.mouse_scroll.0, Vec2::new(0.0, 5.0));
+        assert_eq!(inputs.mouse_motion.0, Vec2::new(0.0, 5.0));
     }
 
     #[test]
@@ -1032,18 +1044,20 @@ mod tests {
         let inputs = InputStreams::from_world(app.world(), None);
         // Starts at 0
         assert_eq!(
-            inputs.mouse_scroll.0,
+            inputs.mouse_motion.0,
             Vec2::ZERO,
             "Initial movement is not zero."
         );
-        app.update();
 
         // Send some data
         app.send_axis_values(MouseMoveAxis::Y, [3.0]);
+        // Wait for the events to be processed
+        app.update();
+
         let inputs = InputStreams::from_world(app.world(), None);
         // Data is read
         assert_eq!(
-            inputs.mouse_scroll.0,
+            inputs.mouse_motion.0,
             Vec2::new(0.0, 3.0),
             "Movement sent was not read correctly."
         );
@@ -1053,7 +1067,7 @@ mod tests {
         let inputs = InputStreams::from_world(app.world(), None);
         // Back to 0 for this frame
         assert_eq!(
-            inputs.mouse_scroll.0,
+            inputs.mouse_motion.0,
             Vec2::ZERO,
             "No movement was expected. Is the position in the event stream being cleared properly?"
         );
