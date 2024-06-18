@@ -932,7 +932,6 @@ mod tests {
     use super::*;
     use crate::input_mocking::MockInput;
     use crate::plugin::AccumulatorPlugin;
-    use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
     use bevy::input::gamepad::{
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
