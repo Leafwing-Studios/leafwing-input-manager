@@ -190,12 +190,13 @@ pub trait MockInput {
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::input_mocking::QueryInput;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
 ///
 /// // This functionality requires Bevy's InputPlugin (included with DefaultPlugins)
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Check if a key is currently pressed down.
 /// let pressed = app.pressed(KeyCode::KeyB);

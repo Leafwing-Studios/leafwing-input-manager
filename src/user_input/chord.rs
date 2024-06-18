@@ -37,10 +37,11 @@ use crate::user_input::{DualAxisData, InputControlKind, UserInput};
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Define a chord using A and B keys
 /// let input = InputChord::new([KeyCode::KeyA, KeyCode::KeyB]);

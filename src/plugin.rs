@@ -239,9 +239,10 @@ pub enum InputManagerSystem {
 /// A plugin to handle accumulating mouse movement and scroll events.
 ///
 /// This is a clearer, more reliable and more efficient approach to computing the total mouse movement and scroll for the frame.
-/// TODO: this should be part of `bevy_input`.
-/// This plugin is pub(crate) to allow it to be used in tests: users should always have this plugin implicitly added by [`InputManagerPlugin`].
-pub(crate) struct AccumulatorPlugin;
+///
+/// This plugin is public to allow it to be used in tests: users should always have this plugin implicitly added by [`InputManagerPlugin`].
+/// Ultimately, this should be included as part of [`InputPlugin`](bevy::input::InputPlugin): see [bevy#13915](https://github.com/bevyengine/bevy/issues/13915).
+pub struct AccumulatorPlugin;
 
 impl Plugin for AccumulatorPlugin {
     fn build(&self, app: &mut App) {

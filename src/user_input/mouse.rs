@@ -74,10 +74,11 @@ impl UserInput for MouseButton {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Positive Y-axis movement
 /// let input = MouseMoveDirection::UP;
@@ -166,10 +167,11 @@ impl UserInput for MouseMoveDirection {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Y-axis movement
 /// let input = MouseMoveAxis::Y;
@@ -293,10 +295,11 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// let input = MouseMove::default();
 ///
@@ -410,10 +413,11 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Positive Y-axis scrolling
 /// let input = MouseScrollDirection::UP;
@@ -502,10 +506,11 @@ impl UserInput for MouseScrollDirection {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Y-axis movement
 /// let input = MouseScrollAxis::Y;
@@ -628,10 +633,11 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// let input = MouseScroll::default();
 ///
