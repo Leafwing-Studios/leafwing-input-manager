@@ -782,7 +782,10 @@ mod tests {
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(InputPlugin);
+        app.add_plugins(InputPlugin)
+            // These haven't been upstreamed yet
+            .init_resource::<AccumulatedMouseMovement>()
+            .init_resource::<AccumulatedMouseScroll>();
         app
     }
 

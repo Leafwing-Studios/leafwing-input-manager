@@ -689,7 +689,10 @@ mod test {
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(InputPlugin);
+        app.add_plugins(InputPlugin)
+            // These haven't been upstreamed yet
+            .init_resource::<AccumulatedMouseMovement>()
+            .init_resource::<AccumulatedMouseScroll>();
 
         let gamepad = Gamepad::new(0);
         let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();

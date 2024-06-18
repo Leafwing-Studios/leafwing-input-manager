@@ -572,12 +572,16 @@ mod tests {
     use super::*;
     use crate::input_mocking::MockInput;
     use crate::raw_inputs::RawInputs;
+    use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(InputPlugin);
+        app.add_plugins(InputPlugin)
+            // These haven't been upstreamed yet
+            .init_resource::<AccumulatedMouseMovement>()
+            .init_resource::<AccumulatedMouseScroll>();
         app
     }
 

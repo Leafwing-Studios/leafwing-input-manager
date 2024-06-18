@@ -25,6 +25,9 @@ fn test_app() -> App {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
+        // These haven't been upstreamed yet
+        .init_resource::<AccumulatedMouseMovement>()
+        .init_resource::<AccumulatedMouseScroll>()
         .add_plugins(InputManagerPlugin::<ButtonlikeTestAction>::default())
         .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
         .init_resource::<ActionState<ButtonlikeTestAction>>()
