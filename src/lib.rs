@@ -19,7 +19,6 @@ pub mod input_map;
 pub mod input_mocking;
 pub mod input_processing;
 pub mod input_streams;
-pub mod orientation;
 pub mod plugin;
 pub mod raw_inputs;
 pub mod systems;
@@ -82,7 +81,7 @@ pub mod prelude {
 /// }
 /// ```
 pub trait Actionlike:
-    Eq + Hash + Send + Sync + Clone + Hash + Reflect + TypePath + FromReflect + 'static
+    Eq + Hash + Send + Sync + Clone + Reflect + TypePath + FromReflect + 'static
 {
 }
 

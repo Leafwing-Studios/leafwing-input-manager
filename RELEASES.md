@@ -162,6 +162,8 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - this feature was not widely used and can be easily replicated externally
   - the core pattern is simply calling `action_state.press(MyAction::Variant)` in one of your systems
 - removed the `no_ui_priority` feature. To get this behavior, now just turn off the default `ui` feature
+- removed the `orientation` module, migrating to `bevy_math::Rot2`
+  - use the types provided in `bevy_math` instead
 
 ## Version 0.13.3
 

@@ -1,9 +1,10 @@
 //! Tools for working with directional axis-like user inputs (game sticks, D-Pads and emulated equivalents)
 
-use bevy::prelude::{Dir2, Reflect, Vec2};
+use bevy::{
+    math::Rot2,
+    prelude::{Dir2, Reflect, Vec2},
+};
 use serde::{Deserialize, Serialize};
-
-use crate::orientation::Rotation;
 
 /// The directions for single-axis inputs.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
@@ -240,8 +241,8 @@ impl DualAxisData {
     /// If the axis is neutral (x,y) = (0,0), this will be `None`
     #[must_use]
     #[inline]
-    pub fn rotation(&self) -> Option<Rotation> {
-        Rotation::from_xy(self.xy).ok()
+    pub fn rotation(&self) -> Option<Rot2> {
+        self.direction().map(|dir| dir.rotation_from_x())
     }
 
     /// How far from the origin is this axis's position?
