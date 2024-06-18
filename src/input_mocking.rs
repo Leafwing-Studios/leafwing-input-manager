@@ -12,7 +12,7 @@ use bevy::ecs::system::SystemState;
 use bevy::input::gamepad::{Gamepad, GamepadButton, GamepadButtonType, GamepadEvent};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent};
 use bevy::input::keyboard::{Key, KeyCode, KeyboardInput, NativeKey};
-use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseScrollUnit, MouseWheel};
+use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseWheel};
 use bevy::input::touch::{TouchInput, Touches};
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::prelude::{App, Entity, Events, GamepadAxisType, ResMut, Vec2, World};
@@ -388,7 +388,7 @@ impl MockInput for MutableInputStreams<'_> {
         *self.gamepad_axes = Default::default();
         *self.keycodes = Default::default();
         *self.mouse_buttons = Default::default();
-        *self.mouse_wheel = Default::default();
+        *self.mouse_scroll = Default::default();
         *self.mouse_motion = Default::default();
     }
 }
@@ -412,17 +412,11 @@ impl MutableInputStreams<'_> {
     }
 
     fn send_mouse_scroll(&mut self, delta: Vec2) {
-        self.mouse_wheel.send(MouseWheel {
-            x: delta.x,
-            y: delta.y,
-            // FIXME: MouseScrollUnit is not recorded and is always assumed to be Pixel
-            unit: MouseScrollUnit::Pixel,
-            window: Entity::PLACEHOLDER,
-        });
+        self.mouse_scroll.0 += delta;
     }
 
     fn send_mouse_move(&mut self, delta: Vec2) {
-        self.mouse_motion.send(MouseMotion { delta });
+        self.mouse_motion.0 += delta;
     }
 
     fn send_gamepad_button_state(

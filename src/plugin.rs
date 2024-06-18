@@ -95,6 +95,10 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
 
         match self.machine {
             Machine::Client => {
+                // Resources
+                app.init_resource::<AccumulatedMouseMovement>();
+                app.init_resource::<AccumulatedMouseScroll>();
+
                 // Main schedule
                 app.add_systems(
                     PreUpdate,
@@ -166,7 +170,9 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             }
         };
 
-        app.register_type::<ActionState<A>>()
+        app.register_type::<AccumulatedMouseMovement>()
+            .register_type::<AccumulatedMouseScroll>()
+            .register_type::<ActionState<A>>()
             .register_type::<InputMap<A>>()
             .register_type::<ActionData>()
             .register_type::<ActionState<A>>()

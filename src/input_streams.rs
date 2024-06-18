@@ -1,13 +1,15 @@
 //! Unified input streams for working with [`bevy::input`] data.
 
-use bevy::ecs::prelude::{Event, Events, ResMut, World};
+use bevy::ecs::prelude::{Events, ResMut, World};
 use bevy::ecs::system::SystemState;
 use bevy::input::{
     gamepad::{Gamepad, GamepadAxis, GamepadButton, GamepadEvent, Gamepads},
     keyboard::{KeyCode, KeyboardInput},
-    mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel},
+    mouse::{MouseButton, MouseButtonInput},
     Axis, ButtonInput,
 };
+
+use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
 
 /// A collection of [`ButtonInput`] structs, which can be used to update an [`InputMap`](crate::input_map::InputMap).
 ///
@@ -26,10 +28,10 @@ pub struct InputStreams<'a> {
     pub keycodes: Option<&'a ButtonInput<KeyCode>>,
     /// A [`MouseButton`] [`Input`](ButtonInput) stream
     pub mouse_buttons: Option<&'a ButtonInput<MouseButton>>,
-    /// A [`MouseWheel`] event stream
-    pub mouse_wheel: Option<Vec<MouseWheel>>,
-    /// A [`MouseMotion`] event stream
-    pub mouse_motion: Vec<MouseMotion>,
+    /// The [`AccumulatedMouseScroll`] for the frame
+    pub mouse_scroll: &'a AccumulatedMouseScroll,
+    /// The [`AccumulatedMouseMotion`] for the frame
+    pub mouse_motion: &'a AccumulatedMouseMovement,
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
 }
@@ -44,11 +46,8 @@ impl<'a> InputStreams<'a> {
         let gamepads = world.resource::<Gamepads>();
         let keycodes = world.get_resource::<ButtonInput<KeyCode>>();
         let mouse_buttons = world.get_resource::<ButtonInput<MouseButton>>();
-        let mouse_wheel = world.resource::<Events<MouseWheel>>();
-        let mouse_motion = world.resource::<Events<MouseMotion>>();
-
-        let mouse_wheel: Vec<MouseWheel> = collect_events_cloned(mouse_wheel);
-        let mouse_motion: Vec<MouseMotion> = collect_events_cloned(mouse_motion);
+        let mouse_wheel = world.resource::<AccumulatedMouseScroll>();
+        let mouse_motion = world.resource::<AccumulatedMouseMovement>();
 
         InputStreams {
             gamepad_buttons,
@@ -57,20 +56,11 @@ impl<'a> InputStreams<'a> {
             gamepads,
             keycodes,
             mouse_buttons,
-            mouse_wheel: Some(mouse_wheel),
+            mouse_scroll: mouse_wheel,
             mouse_motion,
             associated_gamepad: gamepad,
         }
     }
-}
-
-/// Clones and collects the received events into a `Vec`.
-///
-/// Only events sent this frame will be collected.
-#[inline]
-fn collect_events_cloned<T: Event + Clone>(events: &Events<T>) -> Vec<T> {
-    // We only want to look at the events that were sent this frame
-    events.iter_current_update_events().cloned().collect()
 }
 
 /// A mutable collection of [`ButtonInput`] structs, which can be used for mocking user inputs.
@@ -99,10 +89,10 @@ pub struct MutableInputStreams<'a> {
     pub mouse_buttons: &'a mut ButtonInput<MouseButton>,
     /// Events used for mocking [`MouseButton`] inputs
     pub mouse_button_events: &'a mut Events<MouseButtonInput>,
-    /// A [`MouseWheel`] event stream
-    pub mouse_wheel: &'a mut Events<MouseWheel>,
-    /// A [`MouseMotion`] event stream
-    pub mouse_motion: &'a mut Events<MouseMotion>,
+    /// The [`AccumulatedMouseScroll`] for the frame
+    pub mouse_scroll: &'a mut AccumulatedMouseScroll,
+    /// The [`AccumulatedMouseMotion`] for the frame
+    pub mouse_motion: &'a mut AccumulatedMouseMovement,
 
     /// The [`Gamepad`] that this struct will detect inputs from
     pub associated_gamepad: Option<Gamepad>,
@@ -121,8 +111,8 @@ impl<'a> MutableInputStreams<'a> {
             ResMut<Events<KeyboardInput>>,
             ResMut<ButtonInput<MouseButton>>,
             ResMut<Events<MouseButtonInput>>,
-            ResMut<Events<MouseWheel>>,
-            ResMut<Events<MouseMotion>>,
+            ResMut<AccumulatedMouseScroll>,
+            ResMut<AccumulatedMouseMovement>,
         )> = SystemState::new(world);
 
         let (
@@ -135,7 +125,7 @@ impl<'a> MutableInputStreams<'a> {
             keyboard_events,
             mouse_buttons,
             mouse_button_events,
-            mouse_wheel,
+            mouse_scroll,
             mouse_motion,
         ) = input_system_state.get_mut(world);
 
@@ -149,7 +139,7 @@ impl<'a> MutableInputStreams<'a> {
             keyboard_events: keyboard_events.into_inner(),
             mouse_buttons: mouse_buttons.into_inner(),
             mouse_button_events: mouse_button_events.into_inner(),
-            mouse_wheel: mouse_wheel.into_inner(),
+            mouse_scroll: mouse_scroll.into_inner(),
             mouse_motion: mouse_motion.into_inner(),
             associated_gamepad: gamepad,
         }
@@ -174,8 +164,8 @@ impl<'a> From<MutableInputStreams<'a>> for InputStreams<'a> {
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),
-            mouse_motion: collect_events_cloned(mutable_streams.mouse_motion),
+            mouse_scroll: mutable_streams.mouse_scroll,
+            mouse_motion: mutable_streams.mouse_motion,
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
@@ -190,8 +180,8 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
             gamepads: mutable_streams.gamepads,
             keycodes: Some(mutable_streams.keycodes),
             mouse_buttons: Some(mutable_streams.mouse_buttons),
-            mouse_wheel: Some(collect_events_cloned(mutable_streams.mouse_wheel)),
-            mouse_motion: collect_events_cloned(mutable_streams.mouse_motion),
+            mouse_scroll: mutable_streams.mouse_scroll,
+            mouse_motion: mutable_streams.mouse_motion,
             associated_gamepad: mutable_streams.associated_gamepad,
         }
     }
@@ -200,7 +190,6 @@ impl<'a> From<&'a MutableInputStreams<'a>> for InputStreams<'a> {
 #[cfg(test)]
 mod tests {
     use super::{InputStreams, MutableInputStreams};
-    use crate::input_streams::collect_events_cloned;
     use crate::prelude::{MockInput, QueryInput};
     use crate::user_input::ModifierKey;
     use bevy::input::InputPlugin;
@@ -231,44 +220,5 @@ mod tests {
 
         let input_streams = MutableInputStreams::from_world(app.world_mut(), None);
         assert!(InputStreams::from(&input_streams).pressed(ModifierKey::Control));
-    }
-
-    #[test]
-    fn collect_events_only_covers_this_frame() {
-        #[derive(Event, Clone)]
-        struct TestEvent;
-
-        let mut app = App::new();
-        app.add_event::<TestEvent>();
-
-        // Starts empty
-        let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.len(), 0);
-        let cloned_events = collect_events_cloned(test_events);
-        assert_eq!(cloned_events.len(), 0);
-
-        // Sending one event
-        app.update();
-        app.world_mut().send_event(TestEvent);
-        let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.len(), 1);
-        let cloned_events = collect_events_cloned(test_events);
-        assert_eq!(cloned_events.len(), 1);
-
-        // Sending two events on the next frame
-        app.update();
-        app.world_mut().send_event(TestEvent);
-        app.world_mut().send_event(TestEvent);
-        let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.len(), 3); // Events are double-buffered, so we see 1 + 2 = 3
-        let cloned_events = collect_events_cloned(test_events);
-        assert_eq!(cloned_events.len(), 2);
-
-        // Sending zero events
-        app.update();
-        let test_events = app.world().resource::<Events<TestEvent>>();
-        assert_eq!(test_events.len(), 2); // Events are double-buffered, so we see 2 + 0 = 2
-        let cloned_events = collect_events_cloned(test_events);
-        assert_eq!(cloned_events.len(), 0);
     }
 }

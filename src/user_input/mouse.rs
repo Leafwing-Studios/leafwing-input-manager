@@ -1,6 +1,7 @@
 //! Mouse inputs
 
-use bevy::prelude::{MouseButton, Reflect, Vec2};
+use bevy::input::mouse::{MouseMotion, MouseWheel};
+use bevy::prelude::{MouseButton, Reflect, Resource, Vec2};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -59,20 +60,6 @@ impl UserInput for MouseButton {
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_buttons([*self])
     }
-}
-
-/// Retrieves the total mouse displacement.
-#[must_use]
-#[inline]
-fn accumulate_mouse_movement(input_streams: &InputStreams) -> Vec2 {
-    // PERF: this summing is computed for every individual input
-    // This should probably be computed once, and then cached / read
-    // Fix upstream!
-    input_streams
-        .mouse_motion
-        .iter()
-        .map(|event| event.delta)
-        .sum()
 }
 
 /// Provides button-like behavior for mouse movement in cardinal directions.
@@ -135,8 +122,8 @@ impl UserInput for MouseMoveDirection {
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let movement = accumulate_mouse_movement(input_streams);
-        self.0.is_active(movement)
+        let mouse_movement = input_streams.mouse_motion.0;
+        self.0.is_active(mouse_movement)
     }
 
     /// Retrieves the amount of the mouse movement along the specified direction,
@@ -240,7 +227,7 @@ impl UserInput for MouseMoveAxis {
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = accumulate_mouse_movement(input_streams);
+        let movement = input_streams.mouse_motion.0;
         let value = self.axis.get_value(movement);
         self.processors
             .iter()
@@ -334,7 +321,7 @@ impl MouseMove {
     #[must_use]
     #[inline]
     fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let movement = accumulate_mouse_movement(input_streams);
+        let movement = input_streams.mouse_motion.0;
         self.processors
             .iter()
             .fold(movement, |value, processor| processor.process(value))
@@ -411,20 +398,6 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
     }
 }
 
-/// Accumulates the mouse wheel movement.
-#[must_use]
-#[inline]
-fn accumulate_wheel_movement(input_streams: &InputStreams) -> Vec2 {
-    let Some(wheel) = &input_streams.mouse_wheel else {
-        return Vec2::ZERO;
-    };
-
-    // PERF: this summing is computed for every individual input
-    // This should probably be computed once, and then cached / read
-    // Fix upstream!
-    wheel.iter().map(|event| Vec2::new(event.x, event.y)).sum()
-}
-
 /// Provides button-like behavior for mouse wheel scrolling in cardinal directions.
 ///
 /// # Behaviors
@@ -485,7 +458,7 @@ impl UserInput for MouseScrollDirection {
     #[must_use]
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let movement = accumulate_wheel_movement(input_streams);
+        let movement = input_streams.mouse_scroll.0;
         self.0.is_active(movement)
     }
 
@@ -590,7 +563,7 @@ impl UserInput for MouseScrollAxis {
     #[must_use]
     #[inline]
     fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = accumulate_wheel_movement(input_streams);
+        let movement = input_streams.mouse_scroll.0;
         let value = self.axis.get_value(movement);
         self.processors
             .iter()
@@ -683,7 +656,7 @@ impl MouseScroll {
     #[must_use]
     #[inline]
     fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let movement = accumulate_wheel_movement(input_streams);
+        let movement = input_streams.mouse_scroll.0;
         self.processors
             .iter()
             .fold(movement, |value, processor| processor.process(value))
@@ -757,6 +730,46 @@ impl WithDualAxisProcessingPipelineExt for MouseScroll {
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
         self.processors.push(processor.into());
         self
+    }
+}
+
+/// A resource that records the accumulated mouse movement for the frame.
+///
+/// These values are computed by summing the [`MouseMotion`](bevy::input::mouse::MouseMotion) events.
+///
+/// This resource is automatically added by [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
+/// Its value is updated during [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
+#[derive(Debug, Default, Resource, Reflect, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AccumulatedMouseMovement(pub Vec2);
+
+impl AccumulatedMouseMovement {
+    /// Accumulates the specified mouse movement.
+    #[inline]
+    pub fn accumulate(&mut self, event: &MouseMotion) {
+        self.0 += event.delta;
+    }
+}
+
+/// A resource that records the accumulated mouse wheel (scrolling) movement for the frame.
+///
+/// These values are computed by summing the [`MouseWheel`](bevy::input::mouse::MouseWheel) events.
+///
+/// This resource is automatically added by [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
+/// Its value is updated during [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
+#[derive(Debug, Default, Resource, Reflect, Serialize, Deserialize, Clone, PartialEq)]
+pub struct AccumulatedMouseScroll(pub Vec2);
+
+impl AccumulatedMouseScroll {
+    /// Accumulates the specified mouse wheel movement.
+    ///
+    /// # Warning
+    ///
+    /// This ignores the mouse scroll unit: all values are treated as equal.
+    /// All scrolling, no matter what window it is on, is added to the same total.
+    #[inline]
+    pub fn accumulate(&mut self, event: &MouseWheel) {
+        self.0.x += event.x;
+        self.0.y += event.y;
     }
 }
 
@@ -993,7 +1006,7 @@ mod tests {
         app.send_axis_values(MouseMoveAxis::Y, [3.0]);
         app.send_axis_values(MouseMoveAxis::Y, [2.0]);
         let inputs = InputStreams::from_world(app.world(), None);
-        assert_eq!(accumulate_mouse_movement(&inputs), Vec2::new(0.0, 5.0));
+        assert_eq!(inputs.mouse_scroll.0, Vec2::new(0.0, 5.0));
     }
 
     #[test]
@@ -1002,7 +1015,7 @@ mod tests {
         let inputs = InputStreams::from_world(app.world(), None);
         // Starts at 0
         assert_eq!(
-            accumulate_mouse_movement(&inputs),
+            inputs.mouse_scroll.0,
             Vec2::ZERO,
             "Initial movement is not zero."
         );
@@ -1013,7 +1026,7 @@ mod tests {
         let inputs = InputStreams::from_world(app.world(), None);
         // Data is read
         assert_eq!(
-            accumulate_mouse_movement(&inputs),
+            inputs.mouse_scroll.0,
             Vec2::new(0.0, 3.0),
             "Movement sent was not read correctly."
         );
@@ -1023,7 +1036,7 @@ mod tests {
         let inputs = InputStreams::from_world(app.world(), None);
         // Back to 0 for this frame
         assert_eq!(
-            accumulate_mouse_movement(&inputs),
+            inputs.mouse_scroll.0,
             Vec2::ZERO,
             "No movement was expected. Is the position in the event stream being cleared properly?"
         );

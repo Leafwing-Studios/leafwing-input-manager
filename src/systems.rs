@@ -1,5 +1,6 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
+use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
 use crate::{
     action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
     input_streams::InputStreams, Actionlike,
@@ -100,8 +101,10 @@ pub fn update_action_state<A: Actionlike>(
     gamepads: Res<Gamepads>,
     keycodes: Option<Res<ButtonInput<KeyCode>>>,
     mouse_buttons: Option<Res<ButtonInput<MouseButton>>>,
-    mut mouse_wheel: EventReader<MouseWheel>,
-    mut mouse_motion: EventReader<MouseMotion>,
+    mut mouse_wheel_events: EventReader<MouseWheel>,
+    mut mouse_motion_events: EventReader<MouseMotion>,
+    mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
+    mut mouse_motion: ResMut<AccumulatedMouseMovement>,
     clash_strategy: Res<ClashStrategy>,
     #[cfg(feature = "ui")] interactions: Query<&Interaction>,
     #[cfg(feature = "egui")] mut maybe_egui: Query<(Entity, &'static mut EguiContext)>,
@@ -109,25 +112,34 @@ pub fn update_action_state<A: Actionlike>(
     input_map: Option<Res<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
+    // Accumulate mouse scroll and motion
+    // TODO: handle this in a separate system inside of Bevy itself
+    for event in mouse_wheel_events.read() {
+        mouse_scroll.accumulate(event);
+    }
+
+    for event in mouse_motion_events.read() {
+        mouse_motion.accumulate(event);
+    }
+
     let gamepad_buttons = gamepad_buttons.into_inner();
     let gamepad_button_axes = gamepad_button_axes.into_inner();
     let gamepad_axes = gamepad_axes.into_inner();
     let gamepads = gamepads.into_inner();
     let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
     let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
-
-    let mouse_wheel: Option<Vec<MouseWheel>> = Some(mouse_wheel.read().cloned().collect());
-    let mouse_motion: Vec<MouseMotion> = mouse_motion.read().cloned().collect();
+    let mouse_scroll = mouse_scroll.into_inner();
+    let mouse_motion = mouse_motion.into_inner();
 
     // If the user clicks on a button, do not apply it to the game state
     #[cfg(feature = "ui")]
-    let (mouse_buttons, mouse_wheel) = if interactions
+    let mouse_buttons = if interactions
         .iter()
         .any(|&interaction| interaction != Interaction::None)
     {
-        (None, None)
+        None
     } else {
-        (mouse_buttons, mouse_wheel)
+        mouse_buttons
     };
 
     // If egui wants to own inputs, don't also apply them to the game state
@@ -141,12 +153,12 @@ pub fn update_action_state<A: Actionlike>(
     // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
     // so `is_pointer_over_area` is also needed.
     #[cfg(feature = "egui")]
-    let (mouse_buttons, mouse_wheel) = if maybe_egui.iter_mut().any(|(_, mut ctx)| {
+    let mouse_buttons = if maybe_egui.iter_mut().any(|(_, mut ctx)| {
         ctx.get_mut().is_pointer_over_area() || ctx.get_mut().wants_pointer_input()
     }) {
-        (None, None)
+        None
     } else {
-        (mouse_buttons, mouse_wheel)
+        mouse_buttons
     };
 
     let resources = input_map
@@ -161,8 +173,8 @@ pub fn update_action_state<A: Actionlike>(
             gamepads,
             keycodes,
             mouse_buttons,
-            mouse_wheel: mouse_wheel.clone(),
-            mouse_motion: mouse_motion.clone(),
+            mouse_scroll,
+            mouse_motion,
             associated_gamepad: input_map.gamepad(),
         };
 
