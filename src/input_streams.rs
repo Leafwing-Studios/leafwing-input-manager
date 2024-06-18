@@ -101,6 +101,16 @@ pub struct MutableInputStreams<'a> {
 impl<'a> MutableInputStreams<'a> {
     /// Construct a [`MutableInputStreams`] from the [`World`]
     pub fn from_world(world: &'a mut World, gamepad: Option<Gamepad>) -> Self {
+        // Initialize accumulated mouse movement and scroll resources if they don't exist
+        // These are special-cased because they are not initialized by the InputPlugin
+        if !world.contains_resource::<AccumulatedMouseMovement>() {
+            world.init_resource::<AccumulatedMouseMovement>();
+        }
+
+        if !world.contains_resource::<AccumulatedMouseScroll>() {
+            world.init_resource::<AccumulatedMouseScroll>();
+        }
+
         let mut input_system_state: SystemState<(
             ResMut<ButtonInput<GamepadButton>>,
             ResMut<Axis<GamepadButton>>,
