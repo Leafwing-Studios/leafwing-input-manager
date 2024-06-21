@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::action_state::ActionData;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::Buttonlike;
+use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::Actionlike;
 
 /// A Multi-Map that allows you to map actions to multiple [`Buttonlike`]s.
@@ -87,6 +87,12 @@ pub struct InputMap<A: Actionlike> {
     /// The underlying map that stores action-input mappings for [`Buttonlike`] actions.
     buttonlike_map: HashMap<A, Vec<Box<dyn Buttonlike>>>,
 
+    /// The underlying map that stores action-input mappings for [`Axislike`] actions.
+    axislike_map: HashMap<A, Vec<Box<dyn Axislike>>>,
+
+    /// The underlying map that stores action-input mappings for [`DualAxislike`] actions.
+    dualaxislike_map: HashMap<A, Vec<Box<dyn DualAxislike>>>,
+
     /// The specified [`Gamepad`] from which this map exclusively accepts input.
     associated_gamepad: Option<Gamepad>,
 }
@@ -95,6 +101,8 @@ impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
             buttonlike_map: HashMap::default(),
+            axislike_map: HashMap::default(),
+            dualaxislike_map: HashMap::default(),
             associated_gamepad: None,
         }
     }
@@ -102,7 +110,7 @@ impl<A: Actionlike> Default for InputMap<A> {
 
 // Constructors
 impl<A: Actionlike> InputMap<A> {
-    /// Creates an [`InputMap`] from an iterator over action-input bindings.
+    /// Creates an [`InputMap`] from an iterator over [`Buttonlike`] action-input bindings.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
     /// This method ensures idempotence, meaning that adding the same input
@@ -116,7 +124,7 @@ impl<A: Actionlike> InputMap<A> {
             })
     }
 
-    /// Associates an `action` with a specific `input`.
+    /// Associates an `action` with a specific [`Buttonlike`] `input`.
     /// Multiple inputs can be bound to the same action.
     ///
     /// This method ensures idempotence, meaning that adding the same input
@@ -127,7 +135,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Associates an `action` with multiple `inputs` provided by an iterator.
+    /// Associates an `action` with multiple [`Buttonlike`] `inputs` provided by an iterator.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
     /// This method ensures idempotence, meaning that adding the same input
@@ -177,7 +185,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Inserts a binding between an `action` and a specific `input`.
+    /// Inserts a binding between an `action` and a specific [`Buttonlike`] `input`.
     /// Multiple inputs can be bound to the same action.
     ///
     /// This method ensures idempotence, meaning that adding the same input
@@ -188,7 +196,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Inserts bindings between the same `action` and multiple `inputs` provided by an iterator.
+    /// Inserts bindings between the same `action` and multiple [`Buttonlike`] `inputs` provided by an iterator.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
     /// This method ensures idempotence, meaning that adding the same input
@@ -215,7 +223,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Inserts multiple action-input bindings provided by an iterator.
+    /// Inserts multiple action-input [`Buttonlike`] bindings provided by an iterator.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
     /// This method ensures idempotence, meaning that adding the same input
@@ -321,7 +329,7 @@ impl<A: Actionlike> InputMap<A> {
             .unwrap_or_default()
     }
 
-    /// Processes [`Buttonlike`] bindings for each action and generates corresponding [`ActionData`].
+    /// Processes the bindings for each action and generates corresponding [`ActionData`].
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`] and remove conflicting actions.
     #[must_use]
@@ -353,7 +361,7 @@ impl<A: Actionlike> InputMap<A> {
         self.buttonlike_map.iter()
     }
 
-    /// Returns an iterator over all registered action-input bindings.
+    /// Returns an iterator over all registered [`Buttonlike`] action-input bindings.
     pub fn bindings(&self) -> impl Iterator<Item = (&A, &dyn Buttonlike)> {
         self.buttonlike_map
             .iter()
@@ -365,13 +373,13 @@ impl<A: Actionlike> InputMap<A> {
         self.buttonlike_map.keys()
     }
 
-    /// Returns a reference to the inputs associated with the given `action`.
+    /// Returns a reference to the [`Buttonlike`] inputs associated with the given `action`.
     #[must_use]
     pub fn get(&self, action: &A) -> Option<&Vec<Box<dyn Buttonlike>>> {
         self.buttonlike_map.get(action)
     }
 
-    /// Returns a mutable reference to the inputs mapped to `action`
+    /// Returns a mutable reference to the [`Buttonlike`] inputs mapped to `action`
     #[must_use]
     pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Buttonlike>>> {
         self.buttonlike_map.get_mut(action)
