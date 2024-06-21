@@ -8,9 +8,9 @@ use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{DualAxisData, InputControlKind, UserInput};
+use crate::user_input::{Buttonlike, InputControlKind, UserInput};
 
-/// A combined input that groups multiple [`UserInput`]s together,
+/// A combined input that groups multiple [`Buttonlike`]s together,
 /// allowing you to define complex input combinations like hotkeys, shortcuts, and macros.
 ///
 /// # Warning
@@ -18,7 +18,7 @@ use crate::user_input::{DualAxisData, InputControlKind, UserInput};
 /// Adding the same input multiple times into an input chord has no effect,
 /// preventing redundant data fetching from multiple instances of the same input.
 ///
-/// When using an input chord within another input that can hold multiple [`UserInput`]s,
+/// When using an input chord within another input that can hold multiple [`Buttonlike`]s,
 /// the chord itself will always be treated as a button.
 /// Any additional functionalities it offered (like single-axis values) will be ignored in this context.
 ///
@@ -82,57 +82,57 @@ pub struct InputChord(
     // We can't use a BTreeSet because the underlying types don't impl Ord
     // We don't want to use a PetitSet here because of memory bloat
     // So a vec it is!
-    pub(crate) Vec<Box<dyn UserInput>>,
+    pub(crate) Vec<Box<dyn Buttonlike>>,
 );
 
 impl InputChord {
-    /// Creates a [`InputChord`] from multiple [`UserInput`]s, avoiding duplicates.
+    /// Creates a [`InputChord`] from multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
     ///
     /// This ensures that the same input isn't added multiple times,
     /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
-    pub fn new<U: UserInput>(inputs: impl IntoIterator<Item = U>) -> Self {
+    pub fn new<U: Buttonlike>(inputs: impl IntoIterator<Item = U>) -> Self {
         Self::default().with_multiple(inputs)
     }
 
-    /// Creates a [`InputChord`] that only contains the given [`UserInput`].
+    /// Creates a [`InputChord`] that only contains the given [`Buttonlike`].
     /// You can still use other methods to add different types of inputs into the chord.
     #[inline]
-    pub fn from_single(input: impl UserInput) -> Self {
+    pub fn from_single(input: impl Buttonlike) -> Self {
         Self::default().with(input)
     }
 
-    /// Adds the given [`UserInput`] into this chord, avoiding duplicates.
+    /// Adds the given [`Buttonlike`] into this chord, avoiding duplicates.
     ///
     /// This ensures that the same input isn't added multiple times,
     /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
-    pub fn with(mut self, input: impl UserInput) -> Self {
+    pub fn with(mut self, input: impl Buttonlike) -> Self {
         self.push_boxed_unique(Box::new(input));
         self
     }
 
-    /// Adds multiple [`UserInput`]s into this chord, avoiding duplicates.
+    /// Adds multiple [`Buttonlike`]s into this chord, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
     /// This ensures that the same input isn't added multiple times,
     /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
-    pub fn with_multiple<U: UserInput>(mut self, inputs: impl IntoIterator<Item = U>) -> Self {
+    pub fn with_multiple<U: Buttonlike>(mut self, inputs: impl IntoIterator<Item = U>) -> Self {
         for input in inputs.into_iter() {
             self.push_boxed_unique(Box::new(input));
         }
         self
     }
 
-    /// Adds the given boxed dyn [`UserInput`] to this chord, avoiding duplicates.
+    /// Adds the given boxed dyn [`Buttonlike`] to this chord, avoiding duplicates.
     ///
     /// This ensures that the same input isn't added multiple times,
     /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
-    fn push_boxed_unique(&mut self, input: Box<dyn UserInput>) {
+    fn push_boxed_unique(&mut self, input: Box<dyn Buttonlike>) {
         if !self.0.contains(&input) {
             self.0.push(input);
         }
@@ -147,58 +147,7 @@ impl UserInput for InputChord {
         InputControlKind::Button
     }
 
-    /// Checks if all the inner inputs within the chord are active simultaneously.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.0.iter().all(|input| input.pressed(input_streams))
-    }
-
-    /// Returns a single value representing the combined state of inner [`UserInput`]s within the chord.
-    ///
-    /// # Behaviors
-    ///
-    /// This function behaves differently depending on the kind of inputs contained.
-    ///
-    /// When the chord contains **one or more single-axis inputs** (e.g., mouse wheel),
-    /// this method returns the **sum** of their individual values,
-    /// allowing you to combine the effects of multiple controls into a single value.
-    ///
-    /// When the chord contains **only non-single-axis inputs** (e.g., buttons),
-    /// this method returns `0.0` when any of the input is inactive
-    /// or `1.0` when all inputs are active simultaneously.
-    /// This behavior is consistent with how buttons function as digital inputs (either on or off).
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let mut has_axis = false;
-        let mut axis_value = 0.0;
-        for input in self.0.iter() {
-            if input.kind() == InputControlKind::Axis {
-                has_axis = true;
-                axis_value += input.value(input_streams);
-            }
-        }
-
-        if has_axis {
-            axis_value
-        } else {
-            f32::from(self.pressed(input_streams))
-        }
-    }
-
-    /// Attempts to retrieve the X and Y values from the **first** inner dual-axis input within the chord.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        self.0
-            .iter()
-            .filter(|input| input.kind() == InputControlKind::DualAxis)
-            .flat_map(|input| input.axis_pair(input_streams))
-            .next()
-    }
-
-    /// Retrieves a list of simple, atomic [`UserInput`]s that compose the chord.
+    /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
     #[inline]
     fn decompose(&self) -> BasicInputs {
         let inputs = self
@@ -218,8 +167,17 @@ impl UserInput for InputChord {
     }
 }
 
-impl<U: UserInput> FromIterator<U> for InputChord {
-    /// Creates a [`InputChord`] from an iterator over multiple [`UserInput`]s, avoiding duplicates.
+impl Buttonlike for InputChord {
+    /// Checks if all the inner inputs within the chord are active simultaneously.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        self.0.iter().all(|input| input.pressed(input_streams))
+    }
+}
+
+impl<U: Buttonlike> FromIterator<U> for InputChord {
+    /// Creates a [`InputChord`] from an iterator over multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
     ///
@@ -268,7 +226,7 @@ mod tests {
     }
 
     fn check(
-        input: &impl UserInput,
+        input: &impl Buttonlike,
         input_streams: &InputStreams,
         expected_pressed: bool,
         expected_value: f32,
@@ -279,11 +237,11 @@ mod tests {
         assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
     }
 
-    fn pressed(input: &impl UserInput, input_streams: &InputStreams) {
+    fn pressed(input: &impl Buttonlike, input_streams: &InputStreams) {
         check(input, input_streams, true, 1.0, None);
     }
 
-    fn released(input: &impl UserInput, input_streams: &InputStreams) {
+    fn released(input: &impl Buttonlike, input_streams: &InputStreams) {
         check(input, input_streams, false, 0.0, None);
     }
 
@@ -303,7 +261,7 @@ mod tests {
 
         let expected_inners = required_keys
             .iter()
-            .map(|key| Box::new(*key) as Box<dyn UserInput>)
+            .map(|key| Box::new(*key) as Box<dyn Buttonlike>)
             .collect::<Vec<_>>();
         assert_eq!(chord.0, expected_inners);
 
@@ -361,11 +319,11 @@ mod tests {
 
         let expected_inners = required_keys
             .iter()
-            .map(|key| Box::new(*key) as Box<dyn UserInput>)
-            .chain(Some(Box::new(MouseScrollAxis::X) as Box<dyn UserInput>))
-            .chain(Some(Box::new(MouseScrollAxis::Y) as Box<dyn UserInput>))
-            .chain(Some(Box::new(GamepadStick::LEFT) as Box<dyn UserInput>))
-            .chain(Some(Box::new(GamepadStick::RIGHT) as Box<dyn UserInput>))
+            .map(|key| Box::new(*key) as Box<dyn Buttonlike>)
+            .chain(Some(Box::new(MouseScrollAxis::X) as Box<dyn Buttonlike>))
+            .chain(Some(Box::new(MouseScrollAxis::Y) as Box<dyn Buttonlike>))
+            .chain(Some(Box::new(GamepadStick::LEFT) as Box<dyn Buttonlike>))
+            .chain(Some(Box::new(GamepadStick::RIGHT) as Box<dyn Buttonlike>))
             .collect::<Vec<_>>();
         assert_eq!(chord.0, expected_inners);
 
