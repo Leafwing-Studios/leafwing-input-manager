@@ -309,6 +309,8 @@ mod tests {
 
     #[test]
     fn test_chord_with_buttons_and_axes() {
+        use crate::axislike::DualAxisData;
+
         let chord = InputChord::new([KeyCode::KeyA, KeyCode::KeyB])
             .with(MouseScrollAxis::X)
             .with(MouseScrollAxis::Y)
