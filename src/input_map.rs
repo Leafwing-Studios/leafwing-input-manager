@@ -4,6 +4,7 @@ use std::fmt::Debug;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
+use bevy::log::warn;
 use bevy::prelude::{Component, Gamepad, Reflect, Resource};
 use bevy::utils::HashMap;
 use itertools::Itertools;
@@ -15,7 +16,13 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike, InputControlKind};
 use crate::Actionlike;
 
-/// A Multi-Map that allows you to map actions to multiple [`Buttonlike`]s.
+/// A Multi-Map that allows you to map actions to multiple [`UserInputs`]s,
+/// whether they are [`Buttonlike`], [`Axislike`] or [`DualAxislike`].
+///
+/// When inserting a binding, the [`UserInputKind`] of the action variant much match that of the input type.
+/// Use [`InputMap::insert`] to insert buttonlike inputs,
+/// [`InputMap::insert_axis`] to insert axislike inputs,
+/// and [`InputMap::insert_dual_axis`] to insert dual-axislike inputs.
 ///
 /// # Many-to-One Mapping
 ///
@@ -214,6 +221,16 @@ impl<A: Actionlike> InputMap<A> {
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
+        if action.input_control_kind() != InputControlKind::Button {
+            warn!(
+                "Cannot map a buttonlike input for action {:?} of kind {:?}",
+                action,
+                action.input_control_kind()
+            );
+
+            return self;
+        }
+
         self.insert_boxed(action, Box::new(button));
         self
     }
@@ -225,6 +242,16 @@ impl<A: Actionlike> InputMap<A> {
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
+        if action.input_control_kind() != InputControlKind::Axis {
+            warn!(
+                "Cannot map a axislike input for action {:?} of kind {:?}",
+                action,
+                action.input_control_kind()
+            );
+
+            return self;
+        }
+
         let axis = Box::new(axis) as Box<dyn Axislike>;
         if let Some(bindings) = self.axislike_map.get_mut(&action) {
             if !bindings.contains(&axis) {
@@ -243,6 +270,16 @@ impl<A: Actionlike> InputMap<A> {
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
+        if action.input_control_kind() != InputControlKind::DualAxis {
+            warn!(
+                "Cannot map a axislike input for action {:?} of kind {:?}",
+                action,
+                action.input_control_kind()
+            );
+
+            return self;
+        }
+
         let dual_axis = Box::new(dual_axis) as Box<dyn DualAxislike>;
         if let Some(bindings) = self.dual_axislike_map.get_mut(&action) {
             if !bindings.contains(&dual_axis) {
