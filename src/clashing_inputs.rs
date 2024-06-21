@@ -6,7 +6,7 @@ use bevy::prelude::Resource;
 use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::action_state::ButtonDatum;
+use crate::action_state::ButtonData;
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
 use crate::user_input::{Buttonlike, UserInput};
@@ -148,7 +148,7 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        action_data: &mut HashMap<A, ButtonDatum>,
+        action_data: &mut HashMap<A, ButtonData>,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
@@ -181,7 +181,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        action_data: &HashMap<A, ButtonDatum>,
+        action_data: &HashMap<A, ButtonData>,
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
@@ -531,7 +531,7 @@ mod tests {
             app.update();
 
             let mut action_data = HashMap::new();
-            let mut action_datum = ButtonDatum::default();
+            let mut action_datum = ButtonData::default();
             action_datum.state.press();
 
             action_data.insert(One, action_datum.clone());
@@ -562,7 +562,7 @@ mod tests {
             app.update();
 
             let mut action_data = HashMap::new();
-            let mut action_datum = ButtonDatum::default();
+            let mut action_datum = ButtonData::default();
             action_datum.state.press();
             action_data.insert(CtrlUp, action_datum.clone());
             action_data.insert(MoveDPad, action_datum.clone());

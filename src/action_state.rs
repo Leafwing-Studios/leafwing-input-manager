@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// If a button is released, its `reasons_pressed` should be empty.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct ButtonDatum {
+pub struct ButtonData {
     /// Is the action pressed or released?
     pub state: ButtonState,
     /// The `state` of the action in the `Main` schedule
@@ -49,7 +49,7 @@ pub struct ButtonDatum {
     pub disabled: bool,
 }
 
-impl ButtonDatum {
+impl ButtonData {
     /// Is the action currently pressed?
     #[inline]
     #[must_use]
@@ -81,7 +81,7 @@ impl ButtonDatum {
 
 /// The raw data for an [`ActionState`] corresponding to a single virtual axis.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct AxisDatum {
+pub struct AxisData {
     /// How far the axis is currently pressed
     pub value: ButtonState,
     /// The `value` of the action in the `Main` schedule
@@ -96,7 +96,7 @@ pub struct AxisDatum {
 
 /// The raw data for an [`ActionState`] corresponding to a pair of virtual axes.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct DualAxisDatum {
+pub struct DualAxisData {
     /// The XY coordinates of the axis
     pub pair: Vec2,
     /// The `pair` of the action in the `Main` schedule
@@ -157,11 +157,11 @@ pub struct DualAxisDatum {
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ButtonData`] of each action
-    button_data: HashMap<A, ButtonDatum>,
+    button_data: HashMap<A, ButtonData>,
     /// The [`AxisData`] of each action
-    axis_data: HashMap<A, AxisDatum>,
+    axis_data: HashMap<A, AxisData>,
     /// The [`Vec2`] of each action
-    dual_axis_data: HashMap<A, DualAxisDatum>,
+    dual_axis_data: HashMap<A, DualAxisData>,
 }
 
 // The derive does not work unless A: Default,
@@ -233,7 +233,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
-    pub fn update(&mut self, button_data: HashMap<A, ButtonDatum>) {
+    pub fn update(&mut self, button_data: HashMap<A, ButtonData>) {
         for (action, button_datum) in self.button_data.iter_mut() {
             if !button_data.contains_key(action) {
                 button_datum.state.release();
@@ -316,50 +316,50 @@ impl<A: Actionlike> ActionState<A> {
         });
     }
 
-    /// A reference of the [`ButtonDatum`] corresponding to the `action` if triggered.
+    /// A reference of the [`ButtonData`] corresponding to the `action` if triggered.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     ///
     /// # Caution
     ///
-    /// To access the [`ButtonDatum`] regardless of whether the `action` has been triggered,
+    /// To access the [`ButtonData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// # Returns
     ///
-    /// - `Some(ButtonDatum)` if it exists.
+    /// - `Some(ButtonData)` if it exists.
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
-    pub fn button_data(&self, action: &A) -> Option<&ButtonDatum> {
+    pub fn button_data(&self, action: &A) -> Option<&ButtonData> {
         self.button_data.get(action)
     }
 
-    /// A mutable reference of the [`ButtonDatum`] corresponding to the `action` if triggered.
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action` if triggered.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     ///
     /// # Caution
     ///
-    /// - To access the [`ButtonDatum`] regardless of whether the `action` has been triggered,
+    /// - To access the [`ButtonData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
-    /// - To insert a default [`ButtonDatum`] if it doesn't exist,
+    /// - To insert a default [`ButtonData`] if it doesn't exist,
     /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
     ///
     /// # Returns
     ///
-    /// - `Some(ButtonDatum)` if it exists.
+    /// - `Some(ButtonData)` if it exists.
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
-    pub fn button_data_mut(&mut self, action: &A) -> Option<&mut ButtonDatum> {
+    pub fn button_data_mut(&mut self, action: &A) -> Option<&mut ButtonData> {
         self.button_data.get_mut(action)
     }
 
-    /// A mutable reference of the [`ButtonDatum`] corresponding to the `action`.
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`ActionData`] for you,
@@ -369,11 +369,11 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
-    pub fn button_data_mut_or_default(&mut self, action: &A) -> &mut ButtonDatum {
+    pub fn button_data_mut_or_default(&mut self, action: &A) -> &mut ButtonData {
         self.button_data
             .raw_entry_mut()
             .from_key(action)
-            .or_insert_with(|| (action.clone(), ButtonDatum::default()))
+            .or_insert_with(|| (action.clone(), ButtonData::default()))
             .1
     }
 
@@ -443,12 +443,12 @@ impl<A: Actionlike> ActionState<A> {
             .map(|pair| Vec2::new(pair.x.clamp(-1.0, 1.0), pair.y.clamp(-1.0, 1.0)))
     }
 
-    /// Manually sets the [`ButtonDatum`] of the corresponding `action`
+    /// Manually sets the [`ButtonData`] of the corresponding `action`
     ///
     /// You should almost always use more direct methods, as they are simpler and less error-prone.
     ///
     /// However, this method can be useful for testing,
-    /// or when transferring [`ButtonDatum`] between action states.
+    /// or when transferring [`ButtonData`] between action states.
     ///
     /// # Example
     /// ```rust
@@ -480,7 +480,7 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// ```
     #[inline]
-    pub fn set_button_data(&mut self, action: A, data: ButtonDatum) {
+    pub fn set_button_data(&mut self, action: A, data: ButtonData) {
         self.button_data.insert(action, data);
     }
 
@@ -602,7 +602,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = match self.button_data_mut(action) {
             Some(action_data) => action_data,
             None => {
-                self.set_button_data(action.clone(), ButtonDatum::default());
+                self.set_button_data(action.clone(), ButtonData::default());
                 self.button_data_mut(action).unwrap()
             }
         };
@@ -634,7 +634,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = match self.button_data_mut(action) {
             Some(action_data) => action_data,
             None => {
-                self.set_button_data(action.clone(), ButtonDatum::default());
+                self.set_button_data(action.clone(), ButtonData::default());
                 self.button_data_mut(action).unwrap()
             }
         };

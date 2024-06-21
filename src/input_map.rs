@@ -10,7 +10,7 @@ use bevy::utils::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::action_state::ButtonDatum;
+use crate::action_state::ButtonData;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
@@ -432,12 +432,12 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> HashMap<A, ButtonDatum> {
+    ) -> HashMap<A, ButtonData> {
         let mut action_data = HashMap::new();
 
         // Generate the raw action presses
         for (action, _input_bindings) in self.iter() {
-            let action_datum = ButtonDatum::default();
+            let action_datum = ButtonData::default();
 
             action_data.insert(action.clone(), action_datum);
         }

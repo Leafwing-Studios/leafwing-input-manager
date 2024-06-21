@@ -34,6 +34,7 @@
 - removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
 - removed `MockInput::send_input` methods, in favor of new input mocking APIs (see 'Usability: MockInput' for details).
 - `DualAxisData` has been removed, and replaced with a simple `Vec2` throughout
+  - a new type with the `DualAxisData` name has been added, as a parallel to `ButtonData` and `AxisData`
 - made the dependency on bevy's `bevy_gilrs` feature optional.
   - it is still enabled by leafwing-input-manager's default features.
   - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
