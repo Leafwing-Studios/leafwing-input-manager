@@ -17,8 +17,6 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     quote! {
         impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
             fn input_control_kind(&self) -> #crate_path::InputControlKind {
-                    // FIXME: parse the enum variants to determine the kind of input control
-                    // Variants holding a f32 value are axislike, Vec2 values are dual-axislike, and all others are buttonlike
                     #crate_path::InputControlKind::Button
             }
         }
