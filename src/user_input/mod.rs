@@ -83,7 +83,6 @@ use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
-use serde::{Deserialize, Serialize};
 
 use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;

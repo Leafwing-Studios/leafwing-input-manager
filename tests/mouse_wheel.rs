@@ -148,10 +148,11 @@ fn mouse_scroll_buttonlike_cancels() {
 #[test]
 fn mouse_scroll_single_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([
-        (AxislikeTestAction::X, MouseScrollAxis::X),
-        (AxislikeTestAction::Y, MouseScrollAxis::Y),
-    ]));
+    app.insert_resource(
+        InputMap::default()
+            .with_axis(AxislikeTestAction::X, MouseScrollAxis::X)
+            .with_axis(AxislikeTestAction::Y, MouseScrollAxis::Y),
+    );
 
     // +X
     let input = MouseScrollAxis::X;
@@ -199,10 +200,9 @@ fn mouse_scroll_single_axis() {
 #[test]
 fn mouse_scroll_dual_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        AxislikeTestAction::XY,
-        MouseScroll::default(),
-    )]));
+    app.insert_resource(
+        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseScroll::default()),
+    );
 
     let input = MouseScroll::default();
     app.send_axis_values(input, [5.0, 0.0]);
@@ -221,10 +221,9 @@ fn mouse_scroll_dual_axis() {
 #[test]
 fn mouse_scroll_discrete() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        AxislikeTestAction::XY,
-        MouseScroll::default().digital(),
-    )]));
+    app.insert_resource(
+        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseScroll::default()),
+    );
 
     let input = MouseScroll::default();
     app.send_axis_values(input, [0.0, -2.0]);

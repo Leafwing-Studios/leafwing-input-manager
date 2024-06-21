@@ -31,11 +31,20 @@ fn main() {
 }
 
 // ----------------------------- Player Action Input Handling -----------------------------
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum PlayerAction {
     Move,
     Look,
     Shoot,
+}
+
+impl Actionlike for PlayerAction {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            PlayerAction::Move | PlayerAction::Look => InputControlKind::DualAxis,
+            PlayerAction::Shoot => InputControlKind::Button,
+        }
+    }
 }
 
 impl PlayerAction {
@@ -44,13 +53,13 @@ impl PlayerAction {
         let mut input_map = InputMap::default();
 
         // Default gamepad input bindings
-        input_map.insert(Self::Move, GamepadStick::LEFT);
-        input_map.insert(Self::Look, GamepadStick::RIGHT);
+        input_map.insert_dual_axis(Self::Move, GamepadStick::LEFT);
+        input_map.insert_dual_axis(Self::Look, GamepadStick::RIGHT);
         input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
 
         // Default kbm input bindings
-        input_map.insert(Self::Move, KeyboardVirtualDPad::WASD);
-        input_map.insert(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert_dual_axis(Self::Move, KeyboardVirtualDPad::WASD);
+        input_map.insert_dual_axis(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
         input_map.insert(Self::Shoot, MouseButton::Left);
 
         input_map

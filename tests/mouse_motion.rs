@@ -45,7 +45,7 @@ fn test_app() -> App {
 #[test]
 fn raw_mouse_move_events() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(AxislikeTestAction::X, MouseMoveAxis::Y)]));
+    app.insert_resource(InputMap::default().with_axis(AxislikeTestAction::X, MouseMoveAxis::Y));
 
     let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
     events.send(MouseMotion {
@@ -147,10 +147,11 @@ fn mouse_move_buttonlike_cancels() {
 #[test]
 fn mouse_move_single_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([
-        (AxislikeTestAction::X, MouseMoveAxis::X),
-        (AxislikeTestAction::Y, MouseMoveAxis::Y),
-    ]));
+    app.insert_resource(
+        InputMap::default()
+            .with_axis(AxislikeTestAction::X, MouseMoveAxis::X)
+            .with_axis(AxislikeTestAction::Y, MouseMoveAxis::Y),
+    );
 
     // +X
     let input = MouseMoveAxis::X;
@@ -198,10 +199,9 @@ fn mouse_move_single_axis() {
 #[test]
 fn mouse_move_dual_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        AxislikeTestAction::XY,
-        MouseMove::default(),
-    )]));
+    app.insert_resource(
+        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseMove::default()),
+    );
 
     let input = MouseMove::default();
     app.send_axis_values(input, [5.0, 0.0]);
@@ -220,10 +220,9 @@ fn mouse_move_dual_axis() {
 #[test]
 fn mouse_move_discrete() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        AxislikeTestAction::XY,
-        MouseMove::default().digital(),
-    )]));
+    app.insert_resource(
+        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseMove::default().digital()),
+    );
 
     let input = MouseMove::default();
     app.send_axis_values(input, [0.0, -2.0]);
@@ -247,9 +246,9 @@ fn mouse_drag() {
 
     let mut input_map = InputMap::default();
 
-    input_map.insert(
+    input_map.insert_dual_axis(
         AxislikeTestAction::XY,
-        ButtonlikeChord::from_single(MouseMove::default()).with(MouseButton::Right),
+        DualAxislikeChord::new(MouseButton::Right, MouseMove::default()),
     );
 
     app.insert_resource(input_map);
