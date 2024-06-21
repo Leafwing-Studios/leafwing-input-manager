@@ -886,26 +886,6 @@ mod tests {
         app
     }
 
-    fn check(
-        input: &impl UserInput,
-        input_streams: &InputStreams,
-        expected_pressed: bool,
-        expected_value: f32,
-        expected_axis_pair: Option<DualAxisData>,
-    ) {
-        assert_eq!(input.pressed(input_streams), expected_pressed);
-        assert_eq!(input.value(input_streams), expected_value);
-        assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
-    }
-
-    fn pressed(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, true, 1.0, None);
-    }
-
-    fn released(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, false, 0.0, None);
-    }
-
     #[test]
     fn test_gamepad_axes() {
         let left_up = GamepadControlDirection::LEFT_UP;
@@ -951,18 +931,19 @@ mod tests {
         assert_eq!(right_y.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
+        let zeros = DualAxisData::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        released(&left_x, &inputs);
-        released(&left_y, &inputs);
-        released(&right_y, &inputs);
-        check(&left, &inputs, false, 0.0, zeros);
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert_eq!(left_up.pressed(&inputs), false);
+        assert_eq!(left_down.pressed(&inputs), false);
+        assert_eq!(right_up.pressed(&inputs), false);
+        assert_eq!(left_x.value(&inputs), 0.0);
+        assert_eq!(left_y.value(&inputs), 0.0);
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), zeros);
+        assert_eq!(right.axis_pair(&inputs), zeros);
 
         // Left stick moves upward
         let data = DualAxisData::new(0.0, 1.0);
@@ -970,14 +951,15 @@ mod tests {
         app.press_input(GamepadControlDirection::LEFT_UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        released(&left_x, &inputs);
-        check(&left_y, &inputs, true, data.y(), None);
-        released(&right_y, &inputs);
-        check(&left, &inputs, true, data.length(), Some(data));
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert_eq!(left_up.pressed(&inputs), true);
+        assert_eq!(left_down.pressed(&inputs), false);
+        assert_eq!(right_up.pressed(&inputs), false);
+        assert_eq!(left_x.value(&inputs), 0.0);
+        assert_eq!(left_y.value(&inputs), 1.0);
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), data);
+        assert_eq!(right.axis_pair(&inputs), zeros);
 
         // Set Y-axis of left stick to 0.6
         let data = DualAxisData::new(0.0, 0.6);
@@ -985,14 +967,15 @@ mod tests {
         app.send_axis_values(GamepadControlAxis::LEFT_Y, [data.y()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        released(&left_x, &inputs);
-        check(&left_y, &inputs, true, data.y(), None);
-        released(&right_y, &inputs);
-        check(&left, &inputs, true, data.length(), Some(data));
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert_eq!(left_up.pressed(&inputs), true);
+        assert_eq!(left_down.pressed(&inputs), false);
+        assert_eq!(right_up.pressed(&inputs), false);
+        assert_eq!(left_x.value(&inputs), 0.0);
+        assert_eq!(left_y.value(&inputs), 0.6);
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), data);
+        assert_eq!(right.axis_pair(&inputs), zeros);
 
         // Set left stick to (0.6, 0.4)
         let data = DualAxisData::new(0.6, 0.4);
@@ -1000,14 +983,15 @@ mod tests {
         app.send_axis_values(GamepadStick::LEFT, [data.x(), data.y()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        check(&left_x, &inputs, true, data.x(), None);
-        check(&left_y, &inputs, true, data.y(), None);
-        released(&right_y, &inputs);
-        check(&left, &inputs, true, data.length(), Some(data));
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert_eq!(left_up.pressed(&inputs), true);
+        assert_eq!(left_down.pressed(&inputs), false);
+        assert_eq!(right_up.pressed(&inputs), false);
+        assert_eq!(left_x.value(&inputs), data.x());
+        assert_eq!(left_y.value(&inputs), data.y());
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), data);
+        assert_eq!(right.axis_pair(&inputs), zeros);
     }
 
     #[test]
@@ -1049,17 +1033,18 @@ mod tests {
         assert_eq!(dpad.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
+        let zeros = DualAxisData::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        released(&right, &inputs);
-        released(&x_axis, &inputs);
-        released(&y_axis, &inputs);
-        check(&dpad, &inputs, false, 0.0, zeros);
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(down.pressed(&inputs), false);
+        assert_eq!(right.pressed(&inputs), false);
+        assert_eq!(x_axis.value(&inputs), 0.0);
+        assert_eq!(y_axis.value(&inputs), 0.0);
+        assert_eq!(dpad.axis_pair(&inputs), zeros);
 
         // Press DPadLeft
         let data = DualAxisData::new(1.0, 0.0);
@@ -1067,13 +1052,14 @@ mod tests {
         app.press_input(GamepadButtonType::DPadLeft);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        pressed(&right, &inputs);
-        check(&x_axis, &inputs, true, data.x(), None);
-        released(&y_axis, &inputs);
-        check(&dpad, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), true);
+        assert_eq!(down.pressed(&inputs), false);
+        assert_eq!(right.pressed(&inputs), false);
+        assert_eq!(x_axis.value(&inputs), 1.0);
+        assert_eq!(y_axis.value(&inputs), 0.0);
+        assert_eq!(dpad.axis_pair(&inputs), data);
 
         // Set the X-axis to 0.6
         let data = DualAxisData::new(0.6, 0.0);
@@ -1081,13 +1067,14 @@ mod tests {
         app.send_axis_values(GamepadVirtualAxis::DPAD_X, [data.x()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        pressed(&right, &inputs);
-        check(&x_axis, &inputs, true, data.x(), None);
-        released(&y_axis, &inputs);
-        check(&dpad, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), true);
+        assert_eq!(down.pressed(&inputs), false);
+        assert_eq!(right.pressed(&inputs), false);
+        assert_eq!(x_axis.value(&inputs), 0.6);
+        assert_eq!(y_axis.value(&inputs), 0.0);
+        assert_eq!(dpad.axis_pair(&inputs), data);
 
         // Set the axes to (0.6, 0.4)
         let data = DualAxisData::new(0.6, 0.4);
@@ -1095,12 +1082,13 @@ mod tests {
         app.send_axis_values(GamepadVirtualDPad::DPAD, [data.x(), data.y()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        pressed(&right, &inputs);
-        check(&x_axis, &inputs, true, data.x(), None);
-        check(&y_axis, &inputs, true, data.y(), None);
-        check(&dpad, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), true);
+        assert_eq!(down.pressed(&inputs), false);
+        assert_eq!(right.pressed(&inputs), false);
+        assert_eq!(x_axis.value(&inputs), data.x());
+        assert_eq!(y_axis.value(&inputs), data.y());
+        assert_eq!(dpad.axis_pair(&inputs), data);
     }
 }

@@ -717,26 +717,6 @@ mod tests {
         app
     }
 
-    fn check(
-        input: &impl UserInput,
-        input_streams: &InputStreams,
-        expected_pressed: bool,
-        expected_value: f32,
-        expected_axis_pair: Option<DualAxisData>,
-    ) {
-        assert_eq!(input.pressed(input_streams), expected_pressed);
-        assert_eq!(input.value(input_streams), expected_value);
-        assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
-    }
-
-    fn pressed(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, true, 1.0, None);
-    }
-
-    fn released(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, false, 0.0, None);
-    }
-
     #[test]
     fn test_mouse_button() {
         let left = MouseButton::Left;
@@ -755,36 +735,40 @@ mod tests {
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left, &inputs);
-        released(&middle, &inputs);
-        released(&right, &inputs);
+
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(middle.pressed(&inputs), false);
+        assert_eq!(right.pressed(&inputs), false);
 
         // Press left
         let mut app = test_app();
         app.press_input(MouseButton::Left);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left, &inputs);
-        released(&middle, &inputs);
-        released(&right, &inputs);
+
+        assert_eq!(left.pressed(&inputs), true);
+        assert_eq!(middle.pressed(&inputs), false);
+        assert_eq!(right.pressed(&inputs), false);
 
         // Press middle
         let mut app = test_app();
         app.press_input(MouseButton::Middle);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left, &inputs);
-        pressed(&middle, &inputs);
-        released(&right, &inputs);
+
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(middle.pressed(&inputs), true);
+        assert_eq!(right.pressed(&inputs), false);
 
         // Press right
         let mut app = test_app();
         app.press_input(MouseButton::Right);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left, &inputs);
-        released(&middle, &inputs);
-        pressed(&right, &inputs);
+
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(middle.pressed(&inputs), false);
+        assert_eq!(right.pressed(&inputs), true);
     }
 
     #[test]
@@ -805,13 +789,13 @@ mod tests {
         assert_eq!(mouse_move.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_move_up, &inputs);
-        released(&mouse_move_y, &inputs);
-        check(&mouse_move, &inputs, false, 0.0, zeros);
+
+        assert_eq!(mouse_move_up.pressed(&inputs), false);
+        assert_eq!(mouse_move_y.value(&inputs), 0.0);
+        assert_eq!(mouse_move.axis_pair(&inputs), DualAxisData::new(0.0, 0.0));
 
         // Move left
         let data = DualAxisData::new(-1.0, 0.0);
@@ -819,9 +803,10 @@ mod tests {
         app.press_input(MouseMoveDirection::LEFT);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_move_up, &inputs);
-        released(&mouse_move_y, &inputs);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_move_up.pressed(&inputs), false);
+        assert_eq!(mouse_move_y.value(&inputs), 0.0);
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Move up
         let data = DualAxisData::new(0.0, 1.0);
@@ -829,9 +814,10 @@ mod tests {
         app.press_input(MouseMoveDirection::UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_move_up.pressed(&inputs), true);
+        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Move down
         let data = DualAxisData::new(0.0, -1.0);
@@ -839,9 +825,10 @@ mod tests {
         app.press_input(MouseMoveDirection::DOWN);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_move_up.pressed(&inputs), false);
+        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Set changes in movement on the Y-axis to 3.0
         let data = DualAxisData::new(0.0, 3.0);
@@ -849,9 +836,10 @@ mod tests {
         app.send_axis_values(MouseMoveAxis::Y, [data.y()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_move_up.pressed(&inputs), true);
+        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Set changes in movement to (2.0, 3.0)
         let data = DualAxisData::new(2.0, 3.0);
@@ -859,9 +847,10 @@ mod tests {
         app.send_axis_values(MouseMove::default(), [data.x(), data.y()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_move_up.pressed(&inputs), true);
+        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
     }
 
     #[test]
@@ -882,13 +871,13 @@ mod tests {
         assert_eq!(mouse_scroll.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_scroll_up, &inputs);
-        released(&mouse_scroll_y, &inputs);
-        check(&mouse_scroll, &inputs, false, 0.0, zeros);
+
+        assert_eq!(mouse_scroll_up.pressed(&inputs), false);
+        assert_eq!(mouse_scroll_y.value(&inputs), 0.0);
+        assert_eq!(mouse_scroll.axis_pair(&inputs), DualAxisData::new(0.0, 0.0));
 
         // Move up
         let data = DualAxisData::new(0.0, 1.0);
@@ -896,9 +885,10 @@ mod tests {
         app.press_input(MouseScrollDirection::UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_scroll_up.pressed(&inputs), true);
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Scroll down
         let data = DualAxisData::new(0.0, -1.0);
@@ -906,9 +896,10 @@ mod tests {
         app.press_input(MouseScrollDirection::DOWN);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_scroll_up.pressed(&inputs), false);
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Set changes in scrolling on the Y-axis to 3.0
         let data = DualAxisData::new(0.0, 3.0);
@@ -916,9 +907,10 @@ mod tests {
         app.send_axis_values(MouseScrollAxis::Y, [data.y()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_scroll_up.pressed(&inputs), true);
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Set changes in scrolling to (2.0, 3.0)
         let data = DualAxisData::new(2.0, 3.0);
@@ -926,9 +918,10 @@ mod tests {
         app.send_axis_values(MouseScroll::default(), [data.x(), data.y()]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(mouse_scroll_up.pressed(&inputs), true);
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
     }
 
     #[test]

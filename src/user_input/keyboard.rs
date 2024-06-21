@@ -534,26 +534,6 @@ mod tests {
         app
     }
 
-    fn check(
-        input: &impl UserInput,
-        input_streams: &InputStreams,
-        expected_pressed: bool,
-        expected_value: f32,
-        expected_axis_pair: Option<DualAxisData>,
-    ) {
-        assert_eq!(input.pressed(input_streams), expected_pressed);
-        assert_eq!(input.value(input_streams), expected_value);
-        assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
-    }
-
-    fn pressed(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, true, 1.0, None);
-    }
-
-    fn released(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, false, 0.0, None);
-    }
-
     #[test]
     fn test_keyboard_input() {
         let up = KeyCode::ArrowUp;
@@ -585,15 +565,16 @@ mod tests {
         assert_eq!(arrows.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
+        let zeros = DualAxisData::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(alt.pressed(&inputs), false);
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press arrow up
         let data = DualAxisData::new(0.0, 1.0);
@@ -601,11 +582,12 @@ mod tests {
         app.press_input(KeyCode::ArrowUp);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        check(&arrow_y, &inputs, true, data.y(), None);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(up.pressed(&inputs), true);
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(alt.pressed(&inputs), false);
+        assert_eq!(arrow_y.value(&inputs), data.y());
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow down
         let data = DualAxisData::new(0.0, -1.0);
@@ -613,11 +595,12 @@ mod tests {
         app.press_input(KeyCode::ArrowDown);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        check(&arrow_y, &inputs, true, data.y(), None);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(alt.pressed(&inputs), false);
+        assert_eq!(arrow_y.value(&inputs), data.y());
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow left
         let data = DualAxisData::new(-1.0, 0.0);
@@ -625,11 +608,12 @@ mod tests {
         app.press_input(KeyCode::ArrowLeft);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        pressed(&left, &inputs);
-        released(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), true);
+        assert_eq!(alt.pressed(&inputs), false);
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow down and arrow up
         let mut app = test_app();
@@ -637,11 +621,12 @@ mod tests {
         app.press_input(KeyCode::ArrowUp);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert_eq!(up.pressed(&inputs), true);
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(alt.pressed(&inputs), false);
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press arrow left and arrow up
         let data = DualAxisData::new(-1.0, 1.0);
@@ -650,32 +635,35 @@ mod tests {
         app.press_input(KeyCode::ArrowUp);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        pressed(&left, &inputs);
-        released(&alt, &inputs);
-        check(&arrow_y, &inputs, true, data.y(), None);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert_eq!(up.pressed(&inputs), true);
+        assert_eq!(left.pressed(&inputs), true);
+        assert_eq!(alt.pressed(&inputs), false);
+        assert_eq!(arrow_y.value(&inputs), data.y());
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press left Alt
         let mut app = test_app();
         app.press_input(KeyCode::AltLeft);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        pressed(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(alt.pressed(&inputs), true);
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press right Alt
         let mut app = test_app();
         app.press_input(KeyCode::AltRight);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        pressed(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert_eq!(up.pressed(&inputs), false);
+        assert_eq!(left.pressed(&inputs), false);
+        assert_eq!(alt.pressed(&inputs), true);
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
     }
 }
