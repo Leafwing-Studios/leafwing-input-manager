@@ -406,6 +406,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Keeps the allocated memory for reuse.
     pub fn clear(&mut self) {
         self.buttonlike_map.clear();
+        self.axislike_map.clear();
+        self.dualaxislike_map.clear();
     }
 }
 
@@ -414,6 +416,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Clears all input bindings associated with the `action`.
     pub fn clear_action(&mut self, action: &A) {
         self.buttonlike_map.remove(action);
+        self.axislike_map.remove(action);
+        self.dualaxislike_map.remove(action);
     }
 
     /// Removes the input for the `action` at the provided index.
