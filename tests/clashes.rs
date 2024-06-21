@@ -50,12 +50,12 @@ fn spawn_input_map(mut commands: Commands) {
 
     input_map.insert(One, Digit1);
     input_map.insert(Two, Digit2);
-    input_map.insert(OneAndTwo, InputChord::new([Digit1, Digit2]));
-    input_map.insert(TwoAndThree, InputChord::new([Digit2, Digit3]));
-    input_map.insert(OneAndTwoAndThree, InputChord::new([Digit1, Digit2, Digit3]));
-    input_map.insert(CtrlOne, InputChord::new([ControlLeft, Digit1]));
-    input_map.insert(AltOne, InputChord::new([AltLeft, Digit1]));
-    input_map.insert(CtrlAltOne, InputChord::new([ControlLeft, AltLeft, Digit1]));
+    input_map.insert(OneAndTwo, ButtonlikeChord::new([Digit1, Digit2]));
+    input_map.insert(TwoAndThree, ButtonlikeChord::new([Digit2, Digit3]));
+    input_map.insert(OneAndTwoAndThree, ButtonlikeChord::new([Digit1, Digit2, Digit3]));
+    input_map.insert(CtrlOne, ButtonlikeChord::new([ControlLeft, Digit1]));
+    input_map.insert(AltOne, ButtonlikeChord::new([AltLeft, Digit1]));
+    input_map.insert(CtrlAltOne, ButtonlikeChord::new([ControlLeft, AltLeft, Digit1]));
 
     commands.spawn(input_map);
 }

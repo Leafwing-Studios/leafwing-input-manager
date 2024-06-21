@@ -746,7 +746,7 @@ mod tests {
     use crate::input_mocking::MockInput;
     use crate::input_streams::InputStreams;
     use crate::plugin::AccumulatorPlugin;
-    use crate::prelude::InputChord;
+    use crate::prelude::ButtonlikeChord;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
     use bevy::utils::{Duration, Instant};
@@ -838,7 +838,7 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert(Action::One, Digit1);
         input_map.insert(Action::Two, Digit2);
-        input_map.insert(Action::OneAndTwo, InputChord::new([Digit1, Digit2]));
+        input_map.insert(Action::OneAndTwo, ButtonlikeChord::new([Digit1, Digit2]));
 
         let mut app = App::new();
         app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);

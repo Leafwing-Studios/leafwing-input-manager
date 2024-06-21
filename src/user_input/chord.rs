@@ -76,7 +76,7 @@ use crate::user_input::{Buttonlike, InputControlKind, UserInput};
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
-pub struct InputChord(
+pub struct ButtonlikeChord(
     // Note: We can't use a HashSet here because of
     // https://users.rust-lang.org/t/hash-not-implemented-why-cant-it-be-derived/92416/8
     // We can't use a BTreeSet because the underlying types don't impl Ord
@@ -85,7 +85,7 @@ pub struct InputChord(
     pub(crate) Vec<Box<dyn Buttonlike>>,
 );
 
-impl InputChord {
+impl ButtonlikeChord {
     /// Creates a [`InputChord`] from multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
@@ -140,7 +140,7 @@ impl InputChord {
 }
 
 #[serde_typetag]
-impl UserInput for InputChord {
+impl UserInput for ButtonlikeChord {
     /// [`InputChord`] acts as a virtual button.
     #[inline]
     fn kind(&self) -> InputControlKind {
@@ -167,7 +167,7 @@ impl UserInput for InputChord {
     }
 }
 
-impl Buttonlike for InputChord {
+impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
     #[inline]
@@ -176,7 +176,7 @@ impl Buttonlike for InputChord {
     }
 }
 
-impl<U: Buttonlike> FromIterator<U> for InputChord {
+impl<U: Buttonlike> FromIterator<U> for ButtonlikeChord {
     /// Creates a [`InputChord`] from an iterator over multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
@@ -248,7 +248,7 @@ mod tests {
 
     #[test]
     fn test_chord_with_buttons_only() {
-        let chord = InputChord::new([KeyCode::KeyC, KeyCode::KeyH])
+        let chord = ButtonlikeChord::new([KeyCode::KeyC, KeyCode::KeyH])
             .with(KeyCode::KeyO)
             .with_multiple([KeyCode::KeyR, KeyCode::KeyD]);
 
@@ -312,7 +312,7 @@ mod tests {
     fn test_chord_with_buttons_and_axes() {
         use crate::axislike::DualAxisData;
 
-        let chord = InputChord::new([KeyCode::KeyA, KeyCode::KeyB])
+        let chord = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB])
             .with(MouseScrollAxis::X)
             .with(MouseScrollAxis::Y)
             .with(GamepadStick::LEFT)

@@ -337,7 +337,7 @@ mod tests {
     use super::*;
     use crate as leafwing_input_manager;
     use crate::prelude::KeyboardVirtualDPad;
-    use crate::user_input::InputChord;
+    use crate::user_input::ButtonlikeChord;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
@@ -360,14 +360,20 @@ mod tests {
 
         input_map.insert(One, Digit1);
         input_map.insert(Two, Digit2);
-        input_map.insert(OneAndTwo, InputChord::new([Digit1, Digit2]));
-        input_map.insert(TwoAndThree, InputChord::new([Digit2, Digit3]));
-        input_map.insert(OneAndTwoAndThree, InputChord::new([Digit1, Digit2, Digit3]));
-        input_map.insert(CtrlOne, InputChord::new([ControlLeft, Digit1]));
-        input_map.insert(AltOne, InputChord::new([AltLeft, Digit1]));
-        input_map.insert(CtrlAltOne, InputChord::new([ControlLeft, AltLeft, Digit1]));
+        input_map.insert(OneAndTwo, ButtonlikeChord::new([Digit1, Digit2]));
+        input_map.insert(TwoAndThree, ButtonlikeChord::new([Digit2, Digit3]));
+        input_map.insert(
+            OneAndTwoAndThree,
+            ButtonlikeChord::new([Digit1, Digit2, Digit3]),
+        );
+        input_map.insert(CtrlOne, ButtonlikeChord::new([ControlLeft, Digit1]));
+        input_map.insert(AltOne, ButtonlikeChord::new([AltLeft, Digit1]));
+        input_map.insert(
+            CtrlAltOne,
+            ButtonlikeChord::new([ControlLeft, AltLeft, Digit1]),
+        );
         input_map.insert(MoveDPad, KeyboardVirtualDPad::ARROW_KEYS);
-        input_map.insert(CtrlUp, InputChord::new([ControlLeft, ArrowUp]));
+        input_map.insert(CtrlUp, ButtonlikeChord::new([ControlLeft, ArrowUp]));
 
         input_map
     }
@@ -388,13 +394,13 @@ mod tests {
             let a = KeyA;
             let b = KeyB;
             let c = KeyC;
-            let ab = InputChord::new([KeyA, KeyB]);
-            let bc = InputChord::new([KeyB, KeyC]);
-            let abc = InputChord::new([KeyA, KeyB, KeyC]);
+            let ab = ButtonlikeChord::new([KeyA, KeyB]);
+            let bc = ButtonlikeChord::new([KeyB, KeyC]);
+            let abc = ButtonlikeChord::new([KeyA, KeyB, KeyC]);
             let axyz_dpad = KeyboardVirtualDPad::new(KeyA, KeyX, KeyY, KeyZ);
             let abcd_dpad = KeyboardVirtualDPad::WASD;
 
-            let ctrl_up = InputChord::new([ArrowUp, ControlLeft]);
+            let ctrl_up = ButtonlikeChord::new([ArrowUp, ControlLeft]);
             let directions_dpad = KeyboardVirtualDPad::ARROW_KEYS;
 
             assert!(!test_input_clash(a, b));
@@ -419,7 +425,7 @@ mod tests {
                 action_a: One,
                 action_b: OneAndTwo,
                 inputs_a: vec![Box::new(Digit1)],
-                inputs_b: vec![Box::new(InputChord::new([Digit1, Digit2]))],
+                inputs_b: vec![Box::new(ButtonlikeChord::new([Digit1, Digit2]))],
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -435,8 +441,8 @@ mod tests {
             let correct_clash = Clash {
                 action_a: OneAndTwoAndThree,
                 action_b: OneAndTwo,
-                inputs_a: vec![Box::new(InputChord::new([Digit1, Digit2, Digit3]))],
-                inputs_b: vec![Box::new(InputChord::new([Digit1, Digit2]))],
+                inputs_a: vec![Box::new(ButtonlikeChord::new([Digit1, Digit2, Digit3]))],
+                inputs_b: vec![Box::new(ButtonlikeChord::new([Digit1, Digit2]))],
             };
 
             assert_eq!(observed_clash, correct_clash);

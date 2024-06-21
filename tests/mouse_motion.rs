@@ -249,7 +249,7 @@ fn mouse_drag() {
 
     input_map.insert(
         AxislikeTestAction::XY,
-        InputChord::from_single(MouseMove::default()).with(MouseButton::Right),
+        ButtonlikeChord::from_single(MouseMove::default()).with(MouseButton::Right),
     );
 
     app.insert_resource(input_map);

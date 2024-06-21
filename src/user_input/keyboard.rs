@@ -13,7 +13,7 @@ use crate::input_processing::{
 };
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{InputChord, InputControlKind, UserInput};
+use crate::user_input::{ButtonlikeChord, InputControlKind, UserInput};
 
 use super::{Axislike, Buttonlike, DualAxislike};
 
@@ -112,8 +112,8 @@ impl ModifierKey {
 
     /// Create an [`InputChord`] that includes this [`ModifierKey`] and the given `input`.
     #[inline]
-    pub fn with(&self, other: impl Buttonlike) -> InputChord {
-        InputChord::from_single(*self).with(other)
+    pub fn with(&self, other: impl Buttonlike) -> ButtonlikeChord {
+        ButtonlikeChord::from_single(*self).with(other)
     }
 }
 
