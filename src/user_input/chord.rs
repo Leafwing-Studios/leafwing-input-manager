@@ -306,7 +306,6 @@ mod tests {
     use bevy::prelude::*;
 
     use super::*;
-    use crate::axislike::DualAxisData;
     use crate::plugin::AccumulatorPlugin;
     use crate::prelude::*;
 
@@ -332,26 +331,6 @@ mod tests {
         // Ensure that the connection event is flushed through
         app.update();
         app
-    }
-
-    fn check(
-        input: &impl Buttonlike,
-        input_streams: &InputStreams,
-        expected_pressed: bool,
-        expected_value: f32,
-        expected_axis_pair: Option<DualAxisData>,
-    ) {
-        assert_eq!(input.pressed(input_streams), expected_pressed);
-        assert_eq!(input.value(input_streams), expected_value);
-        assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
-    }
-
-    fn pressed(input: &impl Buttonlike, input_streams: &InputStreams) {
-        check(input, input_streams, true, 1.0, None);
-    }
-
-    fn released(input: &impl Buttonlike, input_streams: &InputStreams) {
-        check(input, input_streams, false, 0.0, None);
     }
 
     #[test]
@@ -381,7 +360,7 @@ mod tests {
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&chord, &inputs);
+        assert_eq!(chord.pressed(&inputs), false);
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
@@ -390,7 +369,7 @@ mod tests {
         }
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&chord, &inputs);
+        assert_eq!(chord.pressed(&inputs), true);
 
         // Some required keys pressed, but not all required keys for the chord,
         // resulting in a released chord with a value of zero.
@@ -401,7 +380,7 @@ mod tests {
             }
             app.update();
             let inputs = InputStreams::from_world(app.world(), None);
-            released(&chord, &inputs);
+            assert_eq!(chord.pressed(&inputs), false);
         }
 
         // Five keys pressed, but not all required keys for the chord,
@@ -413,6 +392,6 @@ mod tests {
         app.press_input(KeyCode::KeyB);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&chord, &inputs);
+        assert_eq!(chord.pressed(&inputs), false);
     }
 }
