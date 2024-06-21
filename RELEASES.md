@@ -4,12 +4,20 @@
 
 ### Breaking Changes
 
-- removed `UserInput` and `InputKind` enums in favor of the new `UserInput` trait and its impls (see 'Enhancements: New Inputs' for details).
+- removed `UserInput` and `InputKind` enums in favor of the new `UserInput` trait and its specialized variants: `Buttonlike`, `Axislike` and `DualAxislike`
   - renamed `Modifier` enum to `ModifierKey`.
   - by default, all input events are unprocessed now, using `With*ProcessingPipelineExt` methods to configure your preferred processing steps.
   - applied clashing check to continuous mouse inputs, for example:
     - `MouseScrollAxis::Y` will clash with `MouseScrollDirection::UP` and `MouseScrollDirection::DOWN`.
     - `MouseMove` will clash with all the two axes and the four directions.
+- there is now a clear division between buttonlike, axislike and dualaxislike data
+  - each action in an `Actionlike` enum now has a specific `UserInputKind`, mapping it to one of these three categories
+  - if you are storing non-buttonlike actions (e.g. movement) inside of your Actionlike enum, you must manually implement the trait
+  - pressed / released state can only be accessed for buttonlike data: invalid requests will always return released
+  - `f32` values can only be accessed for axislike data: invalid requests will always return 0.0
+  - 2-dimensional `DualAxisData` can only be accessed for dualaxislike data: invalid requests will always return (0.0, 0.0)
+  - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_axis` method
+  - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_dual_axis` method
 - refactored the method signatures of `InputMap` to fit the new input types.
 - removed `InputMap::insert_chord` and `InputMap::insert_modified` due to their limited applicability within the type system.
   - the new `InputChord` constructors and builders allow you to define chords with guaranteed type safety.
@@ -30,32 +38,32 @@
 
 ### Enhancements
 
-#### New Inputs
+#### Trait-based input design
 
-- added `UserInput` trait.
+- added the `UserInput` trait, which can be divided into three subtraits: `Buttonlike`, `Axislike` and `DualAxislike`
 - added `UserInput` impls for gamepad input events:
   - implemented `UserInput` for Bevy’s `GamepadAxisType`-related inputs.
-    - `GamepadStick`: Continuous or discrete movement events of the left or right gamepad stick along both X and Y axes.
-    - `GamepadControlAxis`: Continuous or discrete movement events of a `GamepadAxisType`.
-    - `GamepadControlDirection`: Discrete movement direction events of a `GamepadAxisType`, treated as a button press.
+    - `GamepadStick`: `DualAxislike`, continuous or discrete movement events of the left or right gamepad stick along both X and Y axes.
+    - `GamepadControlAxis`: `Axislike`, Continuous or discrete movement events of a `GamepadAxisType`.
+    - `GamepadControlDirection`: `Buttonlike`, Discrete movement direction events of a `GamepadAxisType`, treated as a button press.
   - implemented `UserInput` for Bevy’s `GamepadButtonType` directly.
-  - added `GamepadVirtualAxis`, similar to the old `UserInput::VirtualAxis` using two `GamepadButtonType`s.
-  - added `GamepadVirtualDPad`, similar to the old `UserInput::VirtualDPad` using four `GamepadButtonType`s.
+  - added `GamepadVirtualAxis`, which implements `Axislike`, similar to the old `UserInput::VirtualAxis` using two `GamepadButtonType`s.
+  - added `GamepadVirtualDPad`, which implements `DualAxislike`, similar to the old `UserInput::VirtualDPad` using four `GamepadButtonType`s.
 - added `UserInput` impls for keyboard inputs:
-  - implemented `UserInput` for Bevy’s `KeyCode` directly.
-  - implemented `UserInput` for `ModifierKey`.
-  - added `KeyboardVirtualAxis`, similar to the old `UserInput::VirtualAxis` using two `KeyCode`s.
-  - added `KeyboardVirtualDPad`, similar to the old `UserInput::VirtualDPad` using four `KeyCode`s.
+  - implemented `Buttonlike` for `KeyCode` and `ModifierKey`
+  - implemented `Buttonlike` for `ModifierKey`.
+  - added `KeyboardVirtualAxis`, which implements `Axislike`, similar to the old `UserInput::VirtualAxis` using two `KeyCode`s.
+  - added `KeyboardVirtualDPad` which implements `DualAxislike`, similar to the old `UserInput::VirtualDPad` using four `KeyCode`s.
 - added `UserInput` impls for mouse inputs:
   - implemented `UserInput` for movement-related inputs.
-    - `MouseMove`: Continuous or discrete movement events of the mouse both X and Y axes.
-    - `MouseMoveAxis`: Continuous or discrete movement events of the mouse on an axis, similar to the old `SingleAxis::mouse_motion_*`.
-    - `MouseMoveDirection`: Discrete movement direction events of the mouse on an axis, similar to the old `MouseMotionDirection`.
+    - `MouseMove`: `DualAxislike`, continuous or discrete movement events of the mouse both X and Y axes.
+    - `MouseMoveAxis`: `Axislike`, continuous or discrete movement events of the mouse on an axis, similar to the old `SingleAxis::mouse_motion_*`.
+    - `MouseMoveDirection`: `Buttonlike`, discrete movement direction events of the mouse on an axis, similar to the old `MouseMotionDirection`.
   - implemented `UserInput` for wheel-related inputs.
-    - `MouseScroll`: Continuous or discrete movement events of the mouse wheel both X and Y axes.
-    - `MouseScrollAxis`: Continuous or discrete movement events of the mouse wheel on an axis, similar to the old `SingleAxis::mouse_wheel_*`.
-    - `MouseScrollDirection`: Discrete movement direction events of the mouse wheel on an axis, similar to the old `MouseWheelDirection`.
-- added `InputChord` for combining multiple inputs, similar to the old `UserInput::Chord`.
+    - `MouseScroll`: `DualAxislike`, continuous or discrete movement events of the mouse wheel both X and Y axes.
+    - `MouseScrollAxis`: `Axislike`, continuous or discrete movement events of the mouse wheel on an axis, similar to the old `SingleAxis::mouse_wheel_*`.
+    - `MouseScrollDirection`: `ButtonLike`, discrete movement direction events of the mouse wheel on an axis, similar to the old `MouseWheelDirection`.
+- added `ButtonlikeChord`, `AxislikeChord` and `DualAxislikeChord` for combining multiple inputs, similar to the old `UserInput::Chord`.
 
 ##### Migration Guide
 
