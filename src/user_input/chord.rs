@@ -210,11 +210,7 @@ impl UserInput for AxislikeChord {
     /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        let button_input = self.button.to_user_input();
-        let axis_input = self.axis.to_user_input();
-        let inputs = vec![button_input, axis_input];
-
-        BasicInputs::Group(inputs)
+        BasicInputs::compose(self.button.decompose(), self.axis.decompose())
     }
 
     /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
@@ -270,11 +266,7 @@ impl UserInput for DualAxislikeChord {
     /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        let button_input = self.button.to_user_input();
-        let dual_axis_input = self.dual_axis.to_user_input();
-        let inputs = vec![button_input, dual_axis_input];
-
-        BasicInputs::Group(inputs)
+        BasicInputs::compose(self.button.decompose(), self.dual_axis.decompose())
     }
 
     /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.

@@ -72,6 +72,17 @@ impl BasicInputs {
         }
     }
 
+    ///  Create a [`BasicInputs::Composite`] from two existing [`BasicInputs`].
+    pub fn compose(self, other: BasicInputs) -> Self {
+        let combined_inputs = self
+            .inputs()
+            .into_iter()
+            .chain(other.inputs().into_iter())
+            .collect();
+
+        BasicInputs::Composite(combined_inputs)
+    }
+
     /// Returns the number of the logical [`UserInput`]s that make up the input.
     #[allow(clippy::len_without_is_empty)]
     #[inline]
