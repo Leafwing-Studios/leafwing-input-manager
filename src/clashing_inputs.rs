@@ -595,7 +595,7 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            for (action, action_data) in action_data.iter() {
+            for (action, action_data) in action_data.button_actions.iter() {
                 if *action == CtrlOne || *action == OneAndTwo {
                     assert!(action_data.state.pressed());
                 } else {

@@ -10,7 +10,7 @@ use bevy::utils::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::action_state::ButtonData;
+use crate::action_state::{AxisData, ButtonData, DualAxisData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
@@ -419,6 +419,7 @@ impl<A: Actionlike> InputMap<A> {
         clash_strategy: ClashStrategy,
     ) -> bool {
         self.process_actions(input_streams, clash_strategy)
+            .button_actions
             .get(action)
             .map(|datum| datum.state.pressed())
             .unwrap_or_default()
@@ -432,7 +433,7 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
-    ) -> HashMap<A, ButtonData> {
+    ) -> UpdatedActions<A> {
         let mut action_data = HashMap::new();
 
         // Generate the raw action presses
@@ -447,6 +448,18 @@ impl<A: Actionlike> InputMap<A> {
 
         action_data
     }
+}
+
+/// The output returned by [`InputMap::process_actions`],
+/// used by [`ActionState::update`](crate::action_state::ActionState) to update the state of each action.
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct UpdatedActions<A: Actionlike> {
+    /// The updated state of each buttonlike action.
+    pub button_actions: HashMap<A, ButtonData>,
+    /// The updated state of each axislike action.
+    pub axis_actions: HashMap<A, AxisData>,
+    /// The updated state of each dual-axislike action.
+    pub dual_axis_actions: HashMap<A, DualAxisData>,
 }
 
 // Utilities

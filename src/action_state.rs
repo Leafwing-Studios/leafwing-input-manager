@@ -1,10 +1,10 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::action_diff::ActionDiff;
 use crate::buttonlike::ButtonState;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::Actionlike;
+use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 
 use bevy::ecs::component::Component;
 use bevy::math::Vec2;
@@ -224,18 +224,13 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
-    pub fn update(
-        &mut self,
-        button_data: HashMap<A, ButtonData>,
-        axis_data: HashMap<A, AxisData>,
-        dual_axis_data: HashMap<A, DualAxisData>,
-    ) {
+    pub fn update(&mut self, updated_actions: UpdatedActions<A>) {
         for (action, button_datum) in self.button_data.iter_mut() {
-            if !button_data.contains_key(action) {
+            if !updated_actions.button_actions.contains_key(action) {
                 button_datum.state.release();
             }
         }
-        for (action, button_datum) in button_data {
+        for (action, button_datum) in updated_actions.button_actions {
             // Avoid multiple mut borrows, make the compiler happy
             if self.button_data.contains_key(&action) {
                 match button_datum.state {
@@ -249,11 +244,11 @@ impl<A: Actionlike> ActionState<A> {
             }
         }
 
-        for (action, axis_datum) in axis_data.into_iter() {
+        for (action, axis_datum) in updated_actions.axis_actions.into_iter() {
             self.axis_data.insert(action, axis_datum);
         }
 
-        for (action, dual_axis_datum) in dual_axis_data.into_iter() {
+        for (action, dual_axis_datum) in updated_actions.dual_axis_actions.into_iter() {
             self.dual_axis_data.insert(action, dual_axis_datum);
         }
     }
