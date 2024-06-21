@@ -6,7 +6,7 @@ use bevy::{
 };
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use leafwing_input_manager::{
-    action_state::ButtonData,
+    action_state::ButtonDatum,
     input_streams::InputStreams,
     prelude::{ClashStrategy, InputMap, MockInput},
     Actionlike,
@@ -60,7 +60,7 @@ fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
 fn which_pressed(
     input_streams: &InputStreams,
     clash_strategy: ClashStrategy,
-) -> HashMap<TestAction, ButtonData> {
+) -> HashMap<TestAction, ButtonDatum> {
     let input_map = construct_input_map_from_iter();
     input_map.process_actions(input_streams, clash_strategy)
 }

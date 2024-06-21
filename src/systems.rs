@@ -216,7 +216,7 @@ pub fn generate_action_diffs<A: Actionlike>(
     for (maybe_entity, action_state) in action_state_iter {
         let mut diffs = vec![];
         for action in action_state.get_just_pressed() {
-            let Some(action_data) = action_state.action_data(&action) else {
+            let Some(action_data) = action_state.button_data(&action) else {
                 warn!("Action in ActionDiff has no data: was it generated correctly?");
                 continue;
             };
@@ -254,7 +254,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                 continue;
             }
 
-            let Some(action_data) = action_state.action_data(&action) else {
+            let Some(action_data) = action_state.button_data(&action) else {
                 warn!("Action in ActionState has no data: was it generated correctly?");
                 continue;
             };

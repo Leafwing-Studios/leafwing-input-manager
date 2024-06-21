@@ -231,7 +231,7 @@ fn test_consume_in_fixed_update() {
         app.world()
             .get_resource::<ActionState<TestAction>>()
             .unwrap()
-            .action_data(&TestAction::Up)
+            .button_data(&TestAction::Up)
             .unwrap()
             .consumed,
     );

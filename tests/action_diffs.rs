@@ -137,7 +137,7 @@ fn generate_binary_action_diffs() {
         Update,
         pay_da_bills(|mut action_state| {
             action_state
-                .action_data_mut(&Action::PayTheBills)
+                .button_data_mut(&Action::PayTheBills)
                 .unwrap()
                 .value = 1.;
         }),
@@ -202,7 +202,7 @@ fn generate_value_action_diffs() {
         Update,
         pay_da_bills(move |mut action_state| {
             action_state
-                .action_data_mut(&Action::PayTheBills)
+                .button_data_mut(&Action::PayTheBills)
                 .unwrap()
                 .value = input_value;
         }),
@@ -270,7 +270,7 @@ fn generate_axis_action_diffs() {
         Update,
         pay_da_bills(move |mut action_state| {
             action_state
-                .action_data_mut(&Action::PayTheBills)
+                .button_data_mut(&Action::PayTheBills)
                 .unwrap()
                 .axis_pair = Some(DualAxisData::from_xy(input_axis_pair));
         }),

@@ -150,7 +150,7 @@ fn player_mouse_look(
         let diff = (p - player_position).xz();
         if diff.length_squared() > 1e-3f32 {
             // Get the mutable action data to set the axis
-            let action_data = action_state.action_data_mut_or_default(&PlayerAction::Look);
+            let action_data = action_state.button_data_mut_or_default(&PlayerAction::Look);
 
             // Flipping y sign here to be consistent with gamepad input.
             // We could also invert the gamepad y-axis
