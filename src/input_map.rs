@@ -10,7 +10,6 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::action_state::ActionData;
-use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
 use crate::user_input::Buttonlike;
@@ -334,24 +333,8 @@ impl<A: Actionlike> InputMap<A> {
         let mut action_data = HashMap::new();
 
         // Generate the raw action presses
-        for (action, input_bindings) in self.iter() {
-            let mut action_datum = ActionData::default();
-
-            for input in input_bindings {
-                // Merge the axis pair into action datum
-                if let Some(axis_pair) = input.axis_pair(input_streams) {
-                    action_datum.axis_pair = action_datum
-                        .axis_pair
-                        .map_or(Some(axis_pair), |current_axis_pair| {
-                            Some(current_axis_pair.merged_with(axis_pair))
-                        });
-                }
-
-                if input.pressed(input_streams) {
-                    action_datum.state = ButtonState::JustPressed;
-                    action_datum.value += input.value(input_streams);
-                }
-            }
+        for (action, _input_bindings) in self.iter() {
+            let action_datum = ActionData::default();
 
             action_data.insert(action.clone(), action_datum);
         }
