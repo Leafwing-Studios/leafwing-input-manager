@@ -372,7 +372,7 @@ mod tests {
             CtrlAltOne,
             ButtonlikeChord::new([ControlLeft, AltLeft, Digit1]),
         );
-        input_map.insert(MoveDPad, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert_dual_axis(MoveDPad, KeyboardVirtualDPad::ARROW_KEYS);
         input_map.insert(CtrlUp, ButtonlikeChord::new([ControlLeft, ArrowUp]));
 
         input_map
