@@ -229,7 +229,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                 previous_axis_pairs
                     .entry(action)
                     .or_default()
-                    .insert(maybe_entity, axis_pair.xy());
+                    .insert(maybe_entity, axis_pair);
             } else {
                 let value = action_data.value;
 
@@ -260,7 +260,7 @@ pub fn generate_action_diffs<A: Actionlike>(
             };
 
             if let Some(axis_pair) = action_data.axis_pair {
-                let current_value = axis_pair.xy();
+                let current_value = axis_pair;
                 let values = previous_axis_pairs.get_mut(&action).unwrap();
 
                 let existing_value = values.get(&maybe_entity);

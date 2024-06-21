@@ -1,11 +1,11 @@
 //! This module contains [`ButtonlikeChord`] and its impls.
 
+use bevy::math::Vec2;
 use bevy::prelude::Reflect;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
@@ -281,11 +281,11 @@ impl UserInput for DualAxislikeChord {
 }
 
 impl DualAxislike for DualAxislikeChord {
-    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         if self.button.pressed(input_streams) {
             self.dual_axis.axis_pair(input_streams)
         } else {
-            DualAxisData::default()
+            Vec2::ZERO
         }
     }
 }

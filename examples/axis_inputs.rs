@@ -63,8 +63,8 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
         let axis_pair = action_state.clamped_axis_pair(&Action::Move).unwrap();
         println!("Move:");
         println!("   distance: {}", axis_pair.length());
-        println!("          x: {}", axis_pair.x());
-        println!("          y: {}", axis_pair.y());
+        println!("          x: {}", axis_pair.x);
+        println!("          y: {}", axis_pair.y);
     }
 
     if action_state.pressed(&Action::Throttle) {

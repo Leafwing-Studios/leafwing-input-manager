@@ -7,7 +7,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::{AxisDirection, DualAxisData};
+use crate::axislike::AxisDirection;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -397,9 +397,8 @@ impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
-        let value = self.processed_value(input_streams);
-        DualAxisData::from_xy(value)
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -822,9 +821,8 @@ impl DualAxislike for GamepadVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
-        let value = self.processed_value(input_streams);
-        DualAxisData::from_xy(value)
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -932,7 +930,6 @@ mod tests {
         assert_eq!(right_y.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = DualAxisData::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
@@ -943,11 +940,11 @@ mod tests {
         assert_eq!(left_x.value(&inputs), 0.0);
         assert_eq!(left_y.value(&inputs), 0.0);
         assert_eq!(right_y.value(&inputs), 0.0);
-        assert_eq!(left.axis_pair(&inputs), zeros);
-        assert_eq!(right.axis_pair(&inputs), zeros);
+        assert_eq!(left.axis_pair(&inputs), Vec2::ZERO);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
 
         // Left stick moves upward
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(GamepadControlDirection::LEFT_UP);
         app.update();
@@ -960,12 +957,12 @@ mod tests {
         assert_eq!(left_y.value(&inputs), 1.0);
         assert_eq!(right_y.value(&inputs), 0.0);
         assert_eq!(left.axis_pair(&inputs), data);
-        assert_eq!(right.axis_pair(&inputs), zeros);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
 
         // Set Y-axis of left stick to 0.6
-        let data = DualAxisData::new(0.0, 0.6);
+        let data = Vec2::new(0.0, 0.6);
         let mut app = test_app();
-        app.send_axis_values(GamepadControlAxis::LEFT_Y, [data.y()]);
+        app.send_axis_values(GamepadControlAxis::LEFT_Y, [data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -976,23 +973,23 @@ mod tests {
         assert_eq!(left_y.value(&inputs), 0.6);
         assert_eq!(right_y.value(&inputs), 0.0);
         assert_eq!(left.axis_pair(&inputs), data);
-        assert_eq!(right.axis_pair(&inputs), zeros);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
 
         // Set left stick to (0.6, 0.4)
-        let data = DualAxisData::new(0.6, 0.4);
+        let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
-        app.send_axis_values(GamepadStick::LEFT, [data.x(), data.y()]);
+        app.send_axis_values(GamepadStick::LEFT, [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(left_up.pressed(&inputs), true);
         assert_eq!(left_down.pressed(&inputs), false);
         assert_eq!(right_up.pressed(&inputs), false);
-        assert_eq!(left_x.value(&inputs), data.x());
-        assert_eq!(left_y.value(&inputs), data.y());
+        assert_eq!(left_x.value(&inputs), data.x);
+        assert_eq!(left_y.value(&inputs), data.y);
         assert_eq!(right_y.value(&inputs), 0.0);
         assert_eq!(left.axis_pair(&inputs), data);
-        assert_eq!(right.axis_pair(&inputs), zeros);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
     }
 
     #[test]
@@ -1034,7 +1031,7 @@ mod tests {
         assert_eq!(dpad.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = DualAxisData::new(0.0, 0.0);
+        let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
@@ -1048,7 +1045,7 @@ mod tests {
         assert_eq!(dpad.axis_pair(&inputs), zeros);
 
         // Press DPadLeft
-        let data = DualAxisData::new(1.0, 0.0);
+        let data = Vec2::new(1.0, 0.0);
         let mut app = test_app();
         app.press_input(GamepadButtonType::DPadLeft);
         app.update();
@@ -1063,9 +1060,9 @@ mod tests {
         assert_eq!(dpad.axis_pair(&inputs), data);
 
         // Set the X-axis to 0.6
-        let data = DualAxisData::new(0.6, 0.0);
+        let data = Vec2::new(0.6, 0.0);
         let mut app = test_app();
-        app.send_axis_values(GamepadVirtualAxis::DPAD_X, [data.x()]);
+        app.send_axis_values(GamepadVirtualAxis::DPAD_X, [data.x]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -1078,9 +1075,9 @@ mod tests {
         assert_eq!(dpad.axis_pair(&inputs), data);
 
         // Set the axes to (0.6, 0.4)
-        let data = DualAxisData::new(0.6, 0.4);
+        let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
-        app.send_axis_values(GamepadVirtualDPad::DPAD, [data.x(), data.y()]);
+        app.send_axis_values(GamepadVirtualDPad::DPAD, [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -1088,8 +1085,8 @@ mod tests {
         assert_eq!(left.pressed(&inputs), true);
         assert_eq!(down.pressed(&inputs), false);
         assert_eq!(right.pressed(&inputs), false);
-        assert_eq!(x_axis.value(&inputs), data.x());
-        assert_eq!(y_axis.value(&inputs), data.y());
+        assert_eq!(x_axis.value(&inputs), data.x);
+        assert_eq!(y_axis.value(&inputs), data.y);
         assert_eq!(dpad.axis_pair(&inputs), data);
     }
 }

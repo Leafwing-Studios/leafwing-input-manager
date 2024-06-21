@@ -3,7 +3,6 @@ use bevy::input::gamepad::{
 };
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
@@ -245,7 +244,7 @@ fn game_pad_dual_axis_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        Vec2::new(0.0, 0.0)
     );
 
     // Test that an input outside the dual-axis deadzone is not filtered out.
@@ -258,7 +257,7 @@ fn game_pad_dual_axis_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.006_154);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(1.0, 0.11111112)
+        Vec2::new(1.0, 0.11111112)
     );
 
     // Test that each axis of the dual-axis deadzone is filtered independently.
@@ -271,7 +270,7 @@ fn game_pad_dual_axis_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.7777778);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.7777778, 0.0)
+        Vec2::new(0.7777778, 0.0)
     );
 }
 
@@ -293,7 +292,7 @@ fn game_pad_circle_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        Vec2::new(0.0, 0.0)
     );
 
     // Test that an input outside the circle deadzone is not filtered out, assuming values of 0.1
@@ -306,7 +305,7 @@ fn game_pad_circle_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.11111112);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.11111112, 0.0)
+        Vec2::new(0.11111112, 0.0)
     );
 }
 
@@ -328,7 +327,7 @@ fn test_zero_dual_axis_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        Vec2::new(0.0, 0.0)
     );
 }
 
@@ -350,7 +349,7 @@ fn test_zero_circle_deadzone() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        Vec2::new(0.0, 0.0)
     );
 }
 
@@ -373,6 +372,6 @@ fn game_pad_virtual_dpad() {
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
         // This should be a unit length, because we're working with a VirtualDPad
-        DualAxisData::new(-1.0, 0.0)
+        Vec2::new(-1.0, 0.0)
     );
 }

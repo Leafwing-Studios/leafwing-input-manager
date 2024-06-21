@@ -5,7 +5,6 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -491,9 +490,8 @@ impl DualAxislike for KeyboardVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
-        let value = self.processed_value(input_streams);
-        DualAxisData::from_xy(value)
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -566,7 +564,7 @@ mod tests {
         assert_eq!(arrows.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = DualAxisData::new(0.0, 0.0);
+        let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
@@ -578,7 +576,7 @@ mod tests {
         assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press arrow up
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowUp);
         app.update();
@@ -587,11 +585,11 @@ mod tests {
         assert_eq!(up.pressed(&inputs), true);
         assert_eq!(left.pressed(&inputs), false);
         assert_eq!(alt.pressed(&inputs), false);
-        assert_eq!(arrow_y.value(&inputs), data.y());
+        assert_eq!(arrow_y.value(&inputs), data.y);
         assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow down
-        let data = DualAxisData::new(0.0, -1.0);
+        let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowDown);
         app.update();
@@ -600,11 +598,11 @@ mod tests {
         assert_eq!(up.pressed(&inputs), false);
         assert_eq!(left.pressed(&inputs), false);
         assert_eq!(alt.pressed(&inputs), false);
-        assert_eq!(arrow_y.value(&inputs), data.y());
+        assert_eq!(arrow_y.value(&inputs), data.y);
         assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow left
-        let data = DualAxisData::new(-1.0, 0.0);
+        let data = Vec2::new(-1.0, 0.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowLeft);
         app.update();
@@ -630,7 +628,7 @@ mod tests {
         assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press arrow left and arrow up
-        let data = DualAxisData::new(-1.0, 1.0);
+        let data = Vec2::new(-1.0, 1.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowLeft);
         app.press_input(KeyCode::ArrowUp);
@@ -640,7 +638,7 @@ mod tests {
         assert_eq!(up.pressed(&inputs), true);
         assert_eq!(left.pressed(&inputs), true);
         assert_eq!(alt.pressed(&inputs), false);
-        assert_eq!(arrow_y.value(&inputs), data.y());
+        assert_eq!(arrow_y.value(&inputs), data.y);
         assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press left Alt

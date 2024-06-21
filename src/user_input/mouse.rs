@@ -6,7 +6,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::{DualAxisData, DualAxisDirection, DualAxisType};
+use crate::axislike::{DualAxisDirection, DualAxisType};
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::*;
 use crate::input_streams::InputStreams;
@@ -322,8 +322,8 @@ impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
-        DualAxisData::from_xy(self.processed_value(input_streams))
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -623,8 +623,8 @@ impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
-        DualAxisData::from_xy(self.processed_value(input_streams))
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -795,10 +795,10 @@ mod tests {
 
         assert_eq!(mouse_move_up.pressed(&inputs), false);
         assert_eq!(mouse_move_y.value(&inputs), 0.0);
-        assert_eq!(mouse_move.axis_pair(&inputs), DualAxisData::new(0.0, 0.0));
+        assert_eq!(mouse_move.axis_pair(&inputs), Vec2::new(0.0, 0.0));
 
         // Move left
-        let data = DualAxisData::new(-1.0, 0.0);
+        let data = Vec2::new(-1.0, 0.0);
         let mut app = test_app();
         app.press_input(MouseMoveDirection::LEFT);
         app.update();
@@ -809,47 +809,47 @@ mod tests {
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Move up
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(MouseMoveDirection::UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_move_up.pressed(&inputs), true);
-        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Move down
-        let data = DualAxisData::new(0.0, -1.0);
+        let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
         app.press_input(MouseMoveDirection::DOWN);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_move_up.pressed(&inputs), false);
-        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Set changes in movement on the Y-axis to 3.0
-        let data = DualAxisData::new(0.0, 3.0);
+        let data = Vec2::new(0.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseMoveAxis::Y, [data.y()]);
+        app.send_axis_values(MouseMoveAxis::Y, [data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_move_up.pressed(&inputs), true);
-        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Set changes in movement to (2.0, 3.0)
-        let data = DualAxisData::new(2.0, 3.0);
+        let data = Vec2::new(2.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseMove::default(), [data.x(), data.y()]);
+        app.send_axis_values(MouseMove::default(), [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_move_up.pressed(&inputs), true);
-        assert_eq!(mouse_move_y.value(&inputs), data.y());
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
     }
 
@@ -877,50 +877,50 @@ mod tests {
 
         assert_eq!(mouse_scroll_up.pressed(&inputs), false);
         assert_eq!(mouse_scroll_y.value(&inputs), 0.0);
-        assert_eq!(mouse_scroll.axis_pair(&inputs), DualAxisData::new(0.0, 0.0));
+        assert_eq!(mouse_scroll.axis_pair(&inputs), Vec2::new(0.0, 0.0));
 
         // Move up
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(MouseScrollDirection::UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_scroll_up.pressed(&inputs), true);
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Scroll down
-        let data = DualAxisData::new(0.0, -1.0);
+        let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
         app.press_input(MouseScrollDirection::DOWN);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_scroll_up.pressed(&inputs), false);
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Set changes in scrolling on the Y-axis to 3.0
-        let data = DualAxisData::new(0.0, 3.0);
+        let data = Vec2::new(0.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseScrollAxis::Y, [data.y()]);
+        app.send_axis_values(MouseScrollAxis::Y, [data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_scroll_up.pressed(&inputs), true);
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Set changes in scrolling to (2.0, 3.0)
-        let data = DualAxisData::new(2.0, 3.0);
+        let data = Vec2::new(2.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseScroll::default(), [data.x(), data.y()]);
+        app.send_axis_values(MouseScroll::default(), [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
         assert_eq!(mouse_scroll_up.pressed(&inputs), true);
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y());
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
     }
 

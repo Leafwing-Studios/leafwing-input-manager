@@ -23,7 +23,6 @@ use bevy::ecs::{component::Component, query::With, system::Query};
 #[cfg(feature = "ui")]
 use bevy::ui::Interaction;
 
-use crate::axislike::DualAxisData;
 use crate::input_streams::{InputStreams, MutableInputStreams};
 use crate::user_input::*;
 
@@ -230,7 +229,7 @@ pub trait QueryInput {
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> DualAxisData;
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2;
 
     /// Retrieves the values on the axes represented by the `input` on the specified [`Gamepad`].
     ///
@@ -240,7 +239,7 @@ pub trait QueryInput {
         &self,
         input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> DualAxisData;
+    ) -> Vec2;
 }
 
 /// Send fake UI interaction for testing purposes.
@@ -468,7 +467,7 @@ impl QueryInput for InputStreams<'_> {
     }
 
     #[inline]
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> DualAxisData {
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
         input.axis_pair(self)
     }
 
@@ -476,7 +475,7 @@ impl QueryInput for InputStreams<'_> {
         &self,
         input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> DualAxisData {
+    ) -> Vec2 {
         let mut input_streams = self.clone();
         input_streams.associated_gamepad = gamepad;
 
@@ -588,7 +587,7 @@ impl QueryInput for World {
         input_streams.read_axis_value(input)
     }
 
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> DualAxisData {
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
         self.read_dual_axis_values_on_gamepad(input, None)
     }
 
@@ -596,7 +595,7 @@ impl QueryInput for World {
         &self,
         input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> DualAxisData {
+    ) -> Vec2 {
         let input_streams = InputStreams::from_world(self, gamepad);
 
         input_streams.read_dual_axis_values(input)
@@ -671,7 +670,7 @@ impl QueryInput for App {
         self.world().read_axis_value(input)
     }
 
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> DualAxisData {
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
         self.world().read_dual_axis_values(input)
     }
 
@@ -679,7 +678,7 @@ impl QueryInput for App {
         &self,
         input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> DualAxisData {
+    ) -> Vec2 {
         self.world()
             .read_dual_axis_values_on_gamepad(input, gamepad)
     }
@@ -698,7 +697,6 @@ impl MockUIInteraction for App {
 
 #[cfg(test)]
 mod test {
-    use crate::axislike::DualAxisData;
     use crate::input_mocking::{MockInput, QueryInput};
     use crate::plugin::AccumulatorPlugin;
     use crate::user_input::*;
@@ -706,6 +704,7 @@ mod test {
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
     use bevy::input::InputPlugin;
+    use bevy::math::VectorSpace;
     use bevy::prelude::*;
 
     fn test_app() -> App {
@@ -807,11 +806,11 @@ mod test {
         // Mouse axes should be inactive by default (no scroll or movement)
         assert_eq!(
             app.read_dual_axis_values(MouseMove::default()),
-            DualAxisData::default()
+            Vec2::default()
         );
         assert_eq!(
             app.read_dual_axis_values(MouseScroll::default()),
-            DualAxisData::default()
+            Vec2::default()
         );
 
         // Send a simulated mouse scroll event with a value of 3 (positive for up)
@@ -824,7 +823,7 @@ mod test {
         assert_eq!(app.read_axis_value(MouseScrollAxis::Y), 3.0);
         assert_eq!(
             app.read_dual_axis_values(MouseScroll::default()),
-            DualAxisData::from_xy(Vec2::new(0.0, 3.0)),
+            Vec2::new(0.0, 3.0),
         );
 
         // Send a simulated mouse movement event with a delta of (3.0, 2.0)
@@ -834,14 +833,14 @@ mod test {
         // Verify the mouse motion axes reflects the simulated movement
         assert_eq!(
             app.read_dual_axis_values(MouseScroll::default()),
-            DualAxisData::from_xy(Vec2::new(3.0, 2.0)),
+            Vec2::new(3.0, 2.0),
         );
 
         // Mouse input data is typically reset every frame
         // Verify other axes aren't affected
         assert_eq!(
             app.read_dual_axis_values(MouseMove::default()),
-            DualAxisData::default()
+            Vec2::default()
         );
 
         // Test that resetting inputs works
@@ -852,7 +851,7 @@ mod test {
         assert_eq!(app.read_axis_value(MouseScrollAxis::Y), 0.0);
         assert_eq!(
             app.read_dual_axis_values(MouseScroll::default()),
-            DualAxisData::from_xy(Vec2::new(0.0, 0.0)),
+            Vec2::ZERO,
         );
     }
 

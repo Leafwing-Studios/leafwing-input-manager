@@ -79,12 +79,12 @@
 
 use std::fmt::Debug;
 
+use bevy::math::Vec2;
 use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
 
-use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
@@ -116,7 +116,7 @@ mod trait_serde;
 /// use serde::{Deserialize, Serialize};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::input_streams::InputStreams;
-/// use leafwing_input_manager::axislike::{DualAxisType, DualAxisData};
+/// use leafwing_input_manager::axislike::{DualAxisType, Vec2};
 /// use leafwing_input_manager::raw_inputs::RawInputs;
 /// use leafwing_input_manager::clashing_inputs::BasicInputs;
 ///
@@ -148,7 +148,7 @@ mod trait_serde;
 ///         5.0
 ///     }
 ///
-///     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
+///     fn axis_pair(&self, input_streams: &InputStreams) -> Option<Vec2> {
 ///         // Gets the values of this input along the X and Y axes (if applicable).
 ///         //
 ///         // This input only represents movement on the Y-axis,
@@ -212,5 +212,5 @@ pub trait Axislike: UserInput {
 /// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
 pub trait DualAxislike: UserInput {
     /// Gets the values of this input along the X and Y axes (if applicable).
-    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData;
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2;
 }

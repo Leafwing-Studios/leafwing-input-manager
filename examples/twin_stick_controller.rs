@@ -9,7 +9,7 @@
 use bevy::{
     input::gamepad::GamepadEvent, input::keyboard::KeyboardInput, prelude::*, window::PrimaryWindow,
 };
-use leafwing_input_manager::{axislike::DualAxisData, prelude::*};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()
@@ -154,7 +154,7 @@ fn player_mouse_look(
 
             // Flipping y sign here to be consistent with gamepad input.
             // We could also invert the gamepad y-axis
-            action_data.axis_pair = Some(DualAxisData::new(diff.x, -diff.y));
+            action_data.axis_pair = Some(Vec2::new(diff.x, -diff.y));
 
             // Press the look action, so we can check that it is active
             action_state.press(&PlayerAction::Look);

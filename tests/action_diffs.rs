@@ -1,6 +1,6 @@
 use bevy::{input::InputPlugin, prelude::*};
 use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
-use leafwing_input_manager::{axislike::DualAxisData, prelude::*, systems::generate_action_diffs};
+use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
@@ -272,7 +272,7 @@ fn generate_axis_action_diffs() {
             action_state
                 .button_data_mut(&Action::PayTheBills)
                 .unwrap()
-                .axis_pair = Some(DualAxisData::from_xy(input_axis_pair));
+                .axis_pair = Some(input_axis_pair);
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)

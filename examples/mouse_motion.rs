@@ -45,6 +45,6 @@ fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), W
 
     // Because we're moving the camera, not the object, we want to pan in the opposite direction.
     // However, UI coordinates are inverted on the y-axis, so we need to flip y a second time.
-    camera_transform.translation.x -= CAMERA_PAN_RATE * camera_pan_vector.x();
-    camera_transform.translation.y += CAMERA_PAN_RATE * camera_pan_vector.y();
+    camera_transform.translation.x -= CAMERA_PAN_RATE * camera_pan_vector.x;
+    camera_transform.translation.y += CAMERA_PAN_RATE * camera_pan_vector.y;
 }

@@ -1,7 +1,6 @@
 use bevy::input::mouse::MouseMotion;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
@@ -213,7 +212,7 @@ fn mouse_move_dual_axis() {
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 5.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(5.0, 0.0)
+        Vec2::new(5.0, 0.0)
     );
 }
 
@@ -236,7 +235,7 @@ fn mouse_move_discrete() {
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
         // This should be a unit length, because we're working with a VirtualDPad
-        DualAxisData::new(0.0, -1.0)
+        Vec2::new(0.0, -1.0)
     );
 }
 
@@ -263,6 +262,6 @@ fn mouse_drag() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
-        Some(DualAxisData::new(5.0, 0.0))
+        Some(Vec2::new(5.0, 0.0))
     );
 }

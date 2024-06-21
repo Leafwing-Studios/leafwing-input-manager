@@ -1,10 +1,10 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
 use crate::action_diff::ActionDiff;
+use crate::buttonlike::ButtonState;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::Actionlike;
-use crate::{axislike::DualAxisData, buttonlike::ButtonState};
 
 use bevy::ecs::component::Component;
 use bevy::math::Vec2;
@@ -33,8 +33,8 @@ pub struct ButtonDatum {
     /// **Warning:** this value may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs.
     pub value: f32,
-    /// The [`DualAxisData`] of the binding that triggered the action.
-    pub axis_pair: Option<DualAxisData>,
+    /// The dual axis data of the binding that triggered the action.
+    pub axis_pair: Option<Vec2>,
     /// When was the button pressed / released, and how long has it been held for?
     #[cfg(feature = "timing")]
     pub timing: Timing,
@@ -160,7 +160,7 @@ pub struct ActionState<A: Actionlike> {
     button_data: HashMap<A, ButtonDatum>,
     /// The [`AxisData`] of each action
     axis_data: HashMap<A, AxisDatum>,
-    /// The [`DualAxisData`] of each action
+    /// The [`Vec2`] of each action
     dual_axis_data: HashMap<A, DualAxisDatum>,
 }
 
@@ -389,7 +389,7 @@ impl<A: Actionlike> ActionState<A> {
     /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
     /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
     /// repository.
-    /// - Dual axis inputs will return the magnitude of its [`DualAxisData`] and will be in the range
+    /// - Dual axis inputs will return the magnitude of its [`Vec2`] and will be in the range
     /// `0.0..=1.0`.
     /// - Chord inputs will return the value of its first input.
     ///
@@ -419,9 +419,9 @@ impl<A: Actionlike> ActionState<A> {
         self.value(action).clamp(-1., 1.)
     }
 
-    /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
+    /// Get the [`Vec2`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only events that represent dual-axis control provide an [`DualAxisData`],
+    /// Only events that represent dual-axis control provide an [`Vec2`],
     /// and this will return [`None`] for other events.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
@@ -432,15 +432,15 @@ impl<A: Actionlike> ActionState<A> {
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
-    pub fn axis_pair(&self, action: &A) -> Option<DualAxisData> {
+    pub fn axis_pair(&self, action: &A) -> Option<Vec2> {
         let action_data = self.button_data(action)?;
         action_data.axis_pair
     }
 
-    /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
-    pub fn clamped_axis_pair(&self, action: &A) -> Option<DualAxisData> {
+    /// Get the [`Vec2`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    pub fn clamped_axis_pair(&self, action: &A) -> Option<Vec2> {
         self.axis_pair(action)
-            .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
+            .map(|pair| Vec2::new(pair.x.clamp(-1.0, 1.0), pair.y.clamp(-1.0, 1.0)))
     }
 
     /// Manually sets the [`ButtonDatum`] of the corresponding `action`
@@ -788,7 +788,7 @@ impl<A: Actionlike> ActionState<A> {
                 self.press(action);
                 let action_data = self.button_data_mut(action).unwrap();
                 // Pressing will initialize the ActionData if it doesn't exist
-                action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
+                action_data.axis_pair = Some(*axis_pair);
                 action_data.value = axis_pair.length();
             }
         };
