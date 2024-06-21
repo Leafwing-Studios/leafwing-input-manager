@@ -14,11 +14,11 @@ use bevy::utils::Duration;
 use bevy::utils::{HashMap, Instant};
 use serde::{Deserialize, Serialize};
 
-/// Metadata about an [`Actionlike`] action
+/// Metadata about an [`Buttonlike`] action
 ///
 /// If a button is released, its `reasons_pressed` should be empty.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct ActionData {
+pub struct ButtonData {
     /// Is the action pressed or released?
     pub state: ButtonState,
     /// The `state` of the action in the `Main` schedule
@@ -48,7 +48,7 @@ pub struct ActionData {
     pub disabled: bool,
 }
 
-impl ActionData {
+impl ButtonData {
     /// Is the action currently pressed?
     #[inline]
     #[must_use]
@@ -126,7 +126,7 @@ impl ActionData {
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
     /// The [`ActionData`] of each action
-    action_data: HashMap<A, ActionData>,
+    action_data: HashMap<A, ButtonData>,
 }
 
 // The derive does not work unless A: Default,
@@ -168,7 +168,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
-    pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
+    pub fn update(&mut self, action_data: HashMap<A, ButtonData>) {
         for (action, action_datum) in self.action_data.iter_mut() {
             if !action_data.contains_key(action) {
                 action_datum.state.release();
@@ -267,7 +267,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
-    pub fn action_data(&self, action: &A) -> Option<&ActionData> {
+    pub fn action_data(&self, action: &A) -> Option<&ButtonData> {
         self.action_data.get(action)
     }
 
@@ -290,7 +290,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
-    pub fn action_data_mut(&mut self, action: &A) -> Option<&mut ActionData> {
+    pub fn action_data_mut(&mut self, action: &A) -> Option<&mut ButtonData> {
         self.action_data.get_mut(action)
     }
 
@@ -304,11 +304,11 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
-    pub fn action_data_mut_or_default(&mut self, action: &A) -> &mut ActionData {
+    pub fn action_data_mut_or_default(&mut self, action: &A) -> &mut ButtonData {
         self.action_data
             .raw_entry_mut()
             .from_key(action)
-            .or_insert_with(|| (action.clone(), ActionData::default()))
+            .or_insert_with(|| (action.clone(), ButtonData::default()))
             .1
     }
 
@@ -415,7 +415,7 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// ```
     #[inline]
-    pub fn set_action_data(&mut self, action: A, data: ActionData) {
+    pub fn set_action_data(&mut self, action: A, data: ButtonData) {
         self.action_data.insert(action, data);
     }
 
@@ -537,7 +537,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = match self.action_data_mut(action) {
             Some(action_data) => action_data,
             None => {
-                self.set_action_data(action.clone(), ActionData::default());
+                self.set_action_data(action.clone(), ButtonData::default());
                 self.action_data_mut(action).unwrap()
             }
         };
@@ -569,7 +569,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = match self.action_data_mut(action) {
             Some(action_data) => action_data,
             None => {
-                self.set_action_data(action.clone(), ActionData::default());
+                self.set_action_data(action.clone(), ButtonData::default());
                 self.action_data_mut(action).unwrap()
             }
         };

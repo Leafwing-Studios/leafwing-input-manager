@@ -15,6 +15,7 @@
   - if you are storing non-buttonlike actions (e.g. movement) inside of your Actionlike enum, you must manually implement the trait
   - pressed / released state can only be accessed for buttonlike data: invalid requests will always return released
   - `f32` values can only be accessed for axislike data: invalid requests will always return 0.0
+  - `ActionData` has been renamed to `ButtonData`, and no longer holds a `value` or `DualAxisData`
   - 2-dimensional `DualAxisData` can only be accessed for dualaxislike data: invalid requests will always return (0.0, 0.0)
   - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_axis` method
   - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_dual_axis` method
