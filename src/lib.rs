@@ -7,6 +7,7 @@ use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
 use std::hash::Hash;
+use user_input::InputControlKind;
 
 pub mod action_diff;
 pub mod action_state;
@@ -82,6 +83,8 @@ pub mod prelude {
 pub trait Actionlike:
     Eq + Hash + Send + Sync + Clone + Reflect + TypePath + FromReflect + 'static
 {
+    /// Returns the kind of input control this action represents: buttonlike, axislike, or dual-axislike.
+    fn input_control_kind(&self) -> InputControlKind;
 }
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
