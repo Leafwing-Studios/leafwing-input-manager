@@ -13,7 +13,8 @@ use crate::input_processing::{
 };
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{ButtonlikeChord, InputControlKind, UserInput};
+use crate::user_input::{ButtonlikeChord, UserInput};
+use crate::InputControlKind;
 
 use super::{Axislike, Buttonlike, DualAxislike};
 

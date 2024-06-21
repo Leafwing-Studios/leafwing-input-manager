@@ -6,9 +6,9 @@ use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
+use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::hash::Hash;
-use user_input::InputControlKind;
 
 pub mod action_diff;
 pub mod action_state;
@@ -149,4 +149,26 @@ impl<A: Actionlike> InputManagerBundle<A> {
             action_state: ActionState::default(),
         }
     }
+}
+
+/// Classifies [`UserInput`]s and [`Actionlike`](crate::Actionlike) actions based on their behavior (buttons, analog axes, etc.).
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub enum InputControlKind {
+    /// A single input with binary state (active or inactive), typically a button press (on or off).
+    ///
+    /// Corresponds to [`Buttonlike`] inputs.
+    Button,
+
+    /// A single analog or digital input, often used for range controls like a thumb stick on a gamepad or mouse wheel,
+    /// providing a value within a min-max range.
+    ///
+    /// Corresponds to [`Axislike`] inputs.
+    Axis,
+
+    /// A combination of two axis-like inputs, often used for directional controls like a D-pad on a gamepad,
+    /// providing separate values for the X and Y axes.
+    ///
+    /// Corresponds to [`DualAxislike`] inputs.
+    DualAxis,
 }

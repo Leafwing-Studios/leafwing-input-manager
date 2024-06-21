@@ -9,7 +9,8 @@ use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{Buttonlike, InputControlKind, UserInput};
+use crate::user_input::{Buttonlike, UserInput};
+use crate::InputControlKind;
 
 use super::{Axislike, DualAxislike};
 

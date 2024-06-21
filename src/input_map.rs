@@ -13,8 +13,8 @@ use serde::{Deserialize, Serialize};
 use crate::action_state::ActionData;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::{Axislike, Buttonlike, DualAxislike, InputControlKind};
-use crate::Actionlike;
+use crate::user_input::{Axislike, Buttonlike, DualAxislike};
+use crate::{Actionlike, InputControlKind};
 
 /// A Multi-Map that allows you to map actions to multiple [`UserInputs`]s,
 /// whether they are [`Buttonlike`], [`Axislike`] or [`DualAxislike`].
