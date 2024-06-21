@@ -275,14 +275,14 @@ fn resolve_clash<A: Actionlike>(
     input_streams: &InputStreams,
 ) -> Option<A> {
     // Figure out why the actions are pressed
-    let reasons_a_is_pressed: Vec<&dyn UserInput> = clash
+    let reasons_a_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_a
         .iter()
         .filter(|input| input.pressed(input_streams))
         .map(|input| input.as_ref())
         .collect();
 
-    let reasons_b_is_pressed: Vec<&dyn UserInput> = clash
+    let reasons_b_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_b
         .iter()
         .filter(|input| input.pressed(input_streams))
