@@ -1,38 +1,26 @@
-//! This module contains [`InputChord`] and its impls.
+//! This module contains [`ButtonlikeChord`] and its impls.
 
 use bevy::prelude::Reflect;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
+use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
 use crate::user_input::{Buttonlike, InputControlKind, UserInput};
 
+use super::{Axislike, DualAxislike};
+
 /// A combined input that groups multiple [`Buttonlike`]s together,
 /// allowing you to define complex input combinations like hotkeys, shortcuts, and macros.
-///
-/// # Warning
-///
-/// Adding the same input multiple times into an input chord has no effect,
-/// preventing redundant data fetching from multiple instances of the same input.
-///
-/// When using an input chord within another input that can hold multiple [`Buttonlike`]s,
-/// the chord itself will always be treated as a button.
-/// Any additional functionalities it offered (like single-axis values) will be ignored in this context.
 ///
 /// # Behaviors
 ///
 /// - Activation: All included inputs must be active simultaneously.
-/// - Single-Axis Value:
-///   - If the chord has single-axis inputs, their values are summed into a single value.
-///   - Otherwise, it acts like a button (`1.0` when active and `0.0` when inactive).
-/// - Dual-Axis Value: Retrieves the values only from the *first* included dual-axis input (others ignored).
 /// - Deduplication: Adding duplicate inputs within a chord will ignore the extras,
 ///     preventing redundant data fetching.
-/// - Nesting: Using an input chord within another multi-input element treats it as a single button,
-///     ignoring its individual functionalities (like single-axis values).
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -44,7 +32,7 @@ use crate::user_input::{Buttonlike, InputControlKind, UserInput};
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Define a chord using A and B keys
-/// let input = InputChord::new([KeyCode::KeyA, KeyCode::KeyB]);
+/// let input = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB]);
 ///
 /// // Pressing only one key doesn't activate the input
 /// app.press_input(KeyCode::KeyA);
@@ -86,7 +74,7 @@ pub struct ButtonlikeChord(
 );
 
 impl ButtonlikeChord {
-    /// Creates a [`InputChord`] from multiple [`Buttonlike`]s, avoiding duplicates.
+    /// Creates a [`ButtonlikeChord`] from multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
     ///
@@ -97,7 +85,7 @@ impl ButtonlikeChord {
         Self::default().with_multiple(inputs)
     }
 
-    /// Creates a [`InputChord`] that only contains the given [`Buttonlike`].
+    /// Creates a [`ButtonlikeChord`] that only contains the given [`Buttonlike`].
     /// You can still use other methods to add different types of inputs into the chord.
     #[inline]
     pub fn from_single(input: impl Buttonlike) -> Self {
@@ -141,7 +129,7 @@ impl ButtonlikeChord {
 
 #[serde_typetag]
 impl UserInput for ButtonlikeChord {
-    /// [`InputChord`] acts as a virtual button.
+    /// [`ButtonlikeChord`] acts as a virtual button.
     #[inline]
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
@@ -177,7 +165,7 @@ impl Buttonlike for ButtonlikeChord {
 }
 
 impl<U: Buttonlike> FromIterator<U> for ButtonlikeChord {
-    /// Creates a [`InputChord`] from an iterator over multiple [`Buttonlike`]s, avoiding duplicates.
+    /// Creates a [`ButtonlikeChord`] from an iterator over multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
     ///
@@ -186,6 +174,126 @@ impl<U: Buttonlike> FromIterator<U> for ButtonlikeChord {
     #[inline]
     fn from_iter<T: IntoIterator<Item = U>>(iter: T) -> Self {
         Self::default().with_multiple(iter)
+    }
+}
+
+/// A combined input that groups a [`Buttonlike`] and a [`Axislike`] together,
+/// allowing you to only read the axis value when the button is pressed.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct AxislikeChord {
+    /// The button that must be pressed to read the axis value.
+    pub button: Box<dyn Buttonlike>,
+    /// The axis value that is read when the button is pressed.
+    pub axis: Box<dyn Axislike>,
+}
+
+impl AxislikeChord {
+    /// Creates a new [`AxislikeChord`] from the given [`Buttonlike`] and [`Axislike`].
+    #[inline]
+    pub fn new(button: impl Buttonlike, axis: impl Axislike) -> Self {
+        Self {
+            button: Box::new(button),
+            axis: Box::new(axis),
+        }
+    }
+}
+
+#[serde_typetag]
+impl UserInput for AxislikeChord {
+    /// [`AxislikeChord`] acts as a virtual axis.
+    #[inline]
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Axis
+    }
+
+    /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
+    #[inline]
+    fn decompose(&self) -> BasicInputs {
+        let button_input = self.button.to_user_input();
+        let axis_input = self.axis.to_user_input();
+        let inputs = vec![button_input, axis_input];
+
+        BasicInputs::Group(inputs)
+    }
+
+    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        let raw_button_input = self.button.raw_inputs();
+        let raw_axis_input = self.axis.raw_inputs();
+
+        raw_button_input.merge_input(&raw_axis_input)
+    }
+}
+
+impl Axislike for AxislikeChord {
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        if self.button.pressed(input_streams) {
+            self.axis.value(input_streams)
+        } else {
+            0.0
+        }
+    }
+}
+
+/// A combined input that groups a [`Buttonlike`] and a [`DualAxislike`] together,
+/// allowing you to only read the dual axis data when the button is pressed.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct DualAxislikeChord {
+    /// The button that must be pressed to read the axis value.
+    pub button: Box<dyn Buttonlike>,
+    /// The dual axis data that is read when the button is pressed.
+    pub dual_axis: Box<dyn DualAxislike>,
+}
+
+impl DualAxislikeChord {
+    /// Creates a new [`AxislikeChord`] from the given [`Buttonlike`] and [`Axislike`].
+    #[inline]
+    pub fn new(button: impl Buttonlike, dual_axis: impl DualAxislike) -> Self {
+        Self {
+            button: Box::new(button),
+            dual_axis: Box::new(dual_axis),
+        }
+    }
+}
+
+#[serde_typetag]
+impl UserInput for DualAxislikeChord {
+    /// [`DualAxislikeChord`] acts as a virtual dual-axis.
+    #[inline]
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::DualAxis
+    }
+
+    /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
+    #[inline]
+    fn decompose(&self) -> BasicInputs {
+        let button_input = self.button.to_user_input();
+        let dual_axis_input = self.dual_axis.to_user_input();
+        let inputs = vec![button_input, dual_axis_input];
+
+        BasicInputs::Group(inputs)
+    }
+
+    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        let raw_button_input = self.button.raw_inputs();
+        let raw_axis_input = self.dual_axis.raw_inputs();
+
+        raw_button_input.merge_input(&raw_axis_input)
+    }
+}
+
+impl DualAxislike for DualAxislikeChord {
+    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
+        if self.button.pressed(input_streams) {
+            self.dual_axis.axis_pair(input_streams)
+        } else {
+            DualAxisData::default()
+        }
     }
 }
 
