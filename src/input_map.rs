@@ -13,25 +13,25 @@ use crate::action_state::ActionData;
 use crate::buttonlike::ButtonState;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::UserInput;
+use crate::user_input::Buttonlike;
 use crate::Actionlike;
 
-/// A Multi-Map that allows you to map actions to multiple [`UserInput`]s.
+/// A Multi-Map that allows you to map actions to multiple [`Buttonlike`]s.
 ///
 /// # Many-to-One Mapping
 ///
-/// You can associate multiple [`UserInput`]s (e.g., keyboard keys, mouse buttons, gamepad buttons)
+/// You can associate multiple [`Buttonlike`]s (e.g., keyboard keys, mouse buttons, gamepad buttons)
 /// with a single action, simplifying handling complex input combinations for the same action.
 /// Duplicate associations are ignored.
 ///
 /// # One-to-Many Mapping
 ///
-/// A single [`UserInput`] can be mapped to multiple actions simultaneously.
+/// A single [`Buttonlike`] can be mapped to multiple actions simultaneously.
 /// This allows flexibility in defining alternative ways to trigger an action.
 ///
 /// # Clash Resolution
 ///
-/// By default, the [`InputMap`] prioritizes larger [`UserInput`] combinations to trigger actions.
+/// By default, the [`InputMap`] prioritizes larger [`Buttonlike`] combinations to trigger actions.
 /// This means if two actions share some inputs, and one action requires all the inputs
 /// of the other plus additional ones; only the larger combination will be registered.
 ///
@@ -86,7 +86,7 @@ use crate::Actionlike;
 #[cfg_attr(feature = "asset", derive(Asset))]
 pub struct InputMap<A: Actionlike> {
     /// The underlying map that stores action-input mappings.
-    map: HashMap<A, Vec<Box<dyn UserInput>>>,
+    map: HashMap<A, Vec<Box<dyn Buttonlike>>>,
 
     /// The specified [`Gamepad`] from which this map exclusively accepts input.
     associated_gamepad: Option<Gamepad>,
@@ -109,7 +109,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn new(bindings: impl IntoIterator<Item = (A, impl UserInput)>) -> Self {
+    pub fn new(bindings: impl IntoIterator<Item = (A, impl Buttonlike)>) -> Self {
         bindings
             .into_iter()
             .fold(Self::default(), |map, (action, input)| {
@@ -123,7 +123,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn with(mut self, action: A, input: impl UserInput) -> Self {
+    pub fn with(mut self, action: A, input: impl Buttonlike) -> Self {
         self.insert(action, input);
         self
     }
@@ -137,7 +137,7 @@ impl<A: Actionlike> InputMap<A> {
     pub fn with_one_to_many(
         mut self,
         action: A,
-        inputs: impl IntoIterator<Item = impl UserInput>,
+        inputs: impl IntoIterator<Item = impl Buttonlike>,
     ) -> Self {
         self.insert_one_to_many(action, inputs);
         self
@@ -151,7 +151,7 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn with_multiple(
         mut self,
-        bindings: impl IntoIterator<Item = (A, impl UserInput)>,
+        bindings: impl IntoIterator<Item = (A, impl Buttonlike)>,
     ) -> Self {
         self.insert_multiple(bindings);
         self
@@ -160,13 +160,13 @@ impl<A: Actionlike> InputMap<A> {
 
 // Insertion
 impl<A: Actionlike> InputMap<A> {
-    /// Inserts a binding between an `action` and a specific boxed dyn [`UserInput`].
+    /// Inserts a binding between an `action` and a specific boxed dyn [`Buttonlike`].
     /// Multiple inputs can be bound to the same action.
     ///
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    fn insert_boxed(&mut self, action: A, input: Box<dyn UserInput>) -> &mut Self {
+    fn insert_boxed(&mut self, action: A, input: Box<dyn Buttonlike>) -> &mut Self {
         if let Some(bindings) = self.map.get_mut(&action) {
             if !bindings.contains(&input) {
                 bindings.push(input);
@@ -184,7 +184,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn insert(&mut self, action: A, input: impl UserInput) -> &mut Self {
+    pub fn insert(&mut self, action: A, input: impl Buttonlike) -> &mut Self {
         self.insert_boxed(action, Box::new(input));
         self
     }
@@ -198,11 +198,11 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_one_to_many(
         &mut self,
         action: A,
-        inputs: impl IntoIterator<Item = impl UserInput>,
+        inputs: impl IntoIterator<Item = impl Buttonlike>,
     ) -> &mut Self {
         let inputs = inputs
             .into_iter()
-            .map(|input| Box::new(input) as Box<dyn UserInput>);
+            .map(|input| Box::new(input) as Box<dyn Buttonlike>);
         if let Some(bindings) = self.map.get_mut(&action) {
             for input in inputs {
                 if !bindings.contains(&input) {
@@ -223,7 +223,7 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn insert_multiple(
         &mut self,
-        bindings: impl IntoIterator<Item = (A, impl UserInput)>,
+        bindings: impl IntoIterator<Item = (A, impl Buttonlike)>,
     ) -> &mut Self {
         for (action, input) in bindings.into_iter() {
             self.insert(action, input);
@@ -305,7 +305,7 @@ impl<A: Actionlike> InputMap<A> {
 
 // Check whether actions are pressed
 impl<A: Actionlike> InputMap<A> {
-    /// Checks if the `action` are currently pressed by any of the associated [`UserInput`]s.
+    /// Checks if the `action` are currently pressed by any of the associated [`Buttonlike`]s.
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`] and remove conflicting actions.
     #[must_use]
@@ -321,7 +321,7 @@ impl<A: Actionlike> InputMap<A> {
             .unwrap_or_default()
     }
 
-    /// Processes [`UserInput`] bindings for each action and generates corresponding [`ActionData`].
+    /// Processes [`Buttonlike`] bindings for each action and generates corresponding [`ActionData`].
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`] and remove conflicting actions.
     #[must_use]
@@ -365,12 +365,12 @@ impl<A: Actionlike> InputMap<A> {
 // Utilities
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over all registered actions with their input bindings.
-    pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn UserInput>>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn Buttonlike>>)> {
         self.map.iter()
     }
 
     /// Returns an iterator over all registered action-input bindings.
-    pub fn bindings(&self) -> impl Iterator<Item = (&A, &dyn UserInput)> {
+    pub fn bindings(&self) -> impl Iterator<Item = (&A, &dyn Buttonlike)> {
         self.map
             .iter()
             .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
@@ -383,13 +383,13 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Returns a reference to the inputs associated with the given `action`.
     #[must_use]
-    pub fn get(&self, action: &A) -> Option<&Vec<Box<dyn UserInput>>> {
+    pub fn get(&self, action: &A) -> Option<&Vec<Box<dyn Buttonlike>>> {
         self.map.get(action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
-    pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn UserInput>>> {
+    pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Buttonlike>>> {
         self.map.get_mut(action)
     }
 
@@ -424,7 +424,7 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action` at the provided index.
     ///
     /// Returns `Some(input)` if found.
-    pub fn remove_at(&mut self, action: &A, index: usize) -> Option<Box<dyn UserInput>> {
+    pub fn remove_at(&mut self, action: &A, index: usize) -> Option<Box<dyn Buttonlike>> {
         let input_bindings = self.map.get_mut(action)?;
         (input_bindings.len() > index).then(|| input_bindings.remove(index))
     }
@@ -432,17 +432,17 @@ impl<A: Actionlike> InputMap<A> {
     /// Removes the input for the `action` if it exists
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
-    pub fn remove(&mut self, action: &A, input: impl UserInput) -> Option<usize> {
+    pub fn remove(&mut self, action: &A, input: impl Buttonlike) -> Option<usize> {
         let bindings = self.map.get_mut(action)?;
-        let boxed_input: Box<dyn UserInput> = Box::new(input);
+        let boxed_input: Box<dyn Buttonlike> = Box::new(input);
         let index = bindings.iter().position(|input| input == &boxed_input)?;
         bindings.remove(index);
         Some(index)
     }
 }
 
-impl<A: Actionlike, U: UserInput> From<HashMap<A, Vec<U>>> for InputMap<A> {
-    /// Converts a [`HashMap`] mapping actions to multiple [`UserInput`]s into an [`InputMap`].
+impl<A: Actionlike, U: Buttonlike> From<HashMap<A, Vec<U>>> for InputMap<A> {
+    /// Converts a [`HashMap`] mapping actions to multiple [`Buttonlike`]s into an [`InputMap`].
     ///
     /// # Examples
     ///
@@ -477,7 +477,7 @@ impl<A: Actionlike, U: UserInput> From<HashMap<A, Vec<U>>> for InputMap<A> {
     }
 }
 
-impl<A: Actionlike, U: UserInput> FromIterator<(A, U)> for InputMap<A> {
+impl<A: Actionlike, U: Buttonlike> FromIterator<(A, U)> for InputMap<A> {
     fn from_iter<T: IntoIterator<Item = (A, U)>>(iter: T) -> Self {
         let mut input_map = Self::default();
         for (action, input) in iter.into_iter() {
@@ -531,24 +531,27 @@ mod tests {
                 (Action::Hide, KeyCode::ControlRight),
             ]);
 
-        let expected_bindings: HashMap<Box<dyn UserInput>, Action> = HashMap::from([
-            (Box::new(KeyCode::KeyW) as Box<dyn UserInput>, Action::Run),
+        let expected_bindings: HashMap<Box<dyn Buttonlike>, Action> = HashMap::from([
+            (Box::new(KeyCode::KeyW) as Box<dyn Buttonlike>, Action::Run),
             (
-                Box::new(KeyCode::ShiftLeft) as Box<dyn UserInput>,
+                Box::new(KeyCode::ShiftLeft) as Box<dyn Buttonlike>,
                 Action::Run,
             ),
-            (Box::new(KeyCode::KeyR) as Box<dyn UserInput>, Action::Run),
+            (Box::new(KeyCode::KeyR) as Box<dyn Buttonlike>, Action::Run),
             (
-                Box::new(KeyCode::ShiftRight) as Box<dyn UserInput>,
+                Box::new(KeyCode::ShiftRight) as Box<dyn Buttonlike>,
                 Action::Run,
             ),
-            (Box::new(KeyCode::Space) as Box<dyn UserInput>, Action::Jump),
             (
-                Box::new(KeyCode::ControlLeft) as Box<dyn UserInput>,
+                Box::new(KeyCode::Space) as Box<dyn Buttonlike>,
+                Action::Jump,
+            ),
+            (
+                Box::new(KeyCode::ControlLeft) as Box<dyn Buttonlike>,
                 Action::Hide,
             ),
             (
-                Box::new(KeyCode::ControlRight) as Box<dyn UserInput>,
+                Box::new(KeyCode::ControlRight) as Box<dyn Buttonlike>,
                 Action::Hide,
             ),
         ]);
@@ -566,7 +569,7 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert(Action::Run, KeyCode::Space);
 
-        let expected: Vec<Box<dyn UserInput>> = vec![Box::new(KeyCode::Space)];
+        let expected: Vec<Box<dyn Buttonlike>> = vec![Box::new(KeyCode::Space)];
         assert_eq!(input_map.get(&Action::Run), Some(&expected));
 
         // Duplicate insertions should not change anything
@@ -582,7 +585,7 @@ mod tests {
         input_map.insert(Action::Run, KeyCode::Space);
         input_map.insert(Action::Run, KeyCode::Enter);
 
-        let expected: Vec<Box<dyn UserInput>> =
+        let expected: Vec<Box<dyn Buttonlike>> =
             vec![Box::new(KeyCode::Space), Box::new(KeyCode::Enter)];
         assert_eq!(input_map.get(&Action::Run), Some(&expected));
     }

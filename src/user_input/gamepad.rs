@@ -17,6 +17,8 @@ use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
 use crate::user_input::{InputControlKind, UserInput};
 
+use super::{Axislike, Buttonlike, DualAxislike};
+
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
 #[inline]
@@ -131,29 +133,6 @@ impl UserInput for GamepadControlDirection {
         InputControlKind::Button
     }
 
-    /// Checks if there is any recent stick movement along the specified direction.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let value = read_axis_value(input_streams, self.axis);
-        self.side.is_active(value)
-    }
-
-    /// Retrieves the amount of the stick movement along the specified direction,
-    /// returning `0.0` for no movement and `1.0` for full movement.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`GamepadControlDirection`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`GamepadControlDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -164,6 +143,16 @@ impl UserInput for GamepadControlDirection {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_control_directions([*self])
+    }
+}
+
+impl Buttonlike for GamepadControlDirection {
+    /// Checks if there is any recent stick movement along the specified direction.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        let value = read_axis_value(input_streams, self.axis);
+        self.side.is_active(value)
     }
 }
 
@@ -252,30 +241,6 @@ impl UserInput for GamepadControlAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
-    }
-
-    /// Retrieves the current value of this axis after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let value = read_axis_value(input_streams, self.axis);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`GamepadControlAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`GamepadControlAxis`] represents a composition of two [`GamepadControlDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -289,6 +254,18 @@ impl UserInput for GamepadControlAxis {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_axes([self.axis])
+    }
+}
+
+impl Axislike for GamepadControlAxis {
+    /// Retrieves the current value of this axis after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        let value = read_axis_value(input_streams, self.axis);
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -397,29 +374,6 @@ impl UserInput for GamepadStick {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this stick has a non-zero magnitude.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the magnitude of the value from this stick after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let value = self.processed_value(input_streams);
-        value.length()
-    }
-
-    /// Retrieves the current X and Y values of this stick after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let value = self.processed_value(input_streams);
-        Some(DualAxisData::from_xy(value))
-    }
-
     /// [`GamepadStick`] represents a composition of four [`GamepadControlDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -435,6 +389,16 @@ impl UserInput for GamepadStick {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_axes([self.x, self.y])
+    }
+}
+
+impl DualAxislike for GamepadStick {
+    /// Retrieves the current X and Y values of this stick after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
+        let value = self.processed_value(input_streams);
+        DualAxisData::from_xy(value)
     }
 }
 
@@ -519,36 +483,6 @@ impl UserInput for GamepadButtonType {
         InputControlKind::Button
     }
 
-    /// Checks if the specified button is currently pressed down.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        if let Some(gamepad) = input_streams.associated_gamepad {
-            button_pressed(input_streams, gamepad, *self)
-        } else {
-            button_pressed_any(input_streams, *self)
-        }
-    }
-
-    /// Retrieves the strength of the button press for the specified button.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        if let Some(gamepad) = input_streams.associated_gamepad {
-            button_value(input_streams, gamepad, *self)
-                .unwrap_or_else(|| f32::from(button_pressed(input_streams, gamepad, *self)))
-        } else {
-            button_value_any(input_streams, *self)
-        }
-    }
-
-    /// Always returns [`None`] as [`GamepadButtonType`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// Creates a [`BasicInputs`] that only contains the [`GamepadButtonType`] itself,
     /// as it represents a simple physical button.
     #[inline]
@@ -560,6 +494,19 @@ impl UserInput for GamepadButtonType {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_buttons([*self])
+    }
+}
+
+impl Buttonlike for GamepadButtonType {
+    /// Checks if the specified button is currently pressed down.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        if let Some(gamepad) = input_streams.associated_gamepad {
+            button_pressed(input_streams, gamepad, *self)
+        } else {
+            button_pressed_any(input_streams, *self)
+        }
     }
 }
 
@@ -663,13 +610,20 @@ impl UserInput for GamepadVirtualAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value after processing by the associated processors.
-    #[must_use]
+    /// Returns the two [`GamepadButtonType`]s used by this axis.
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
     }
 
+    /// Creates a [`RawInputs`] from two [`GamepadButtonType`]s used by this axis.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_gamepad_buttons([self.negative, self.positive])
+    }
+}
+
+impl Axislike for GamepadVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
@@ -686,25 +640,6 @@ impl UserInput for GamepadVirtualAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`GamepadVirtualAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
-    /// Returns the two [`GamepadButtonType`]s used by this axis.
-    #[inline]
-    fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
-    }
-
-    /// Creates a [`RawInputs`] from two [`GamepadButtonType`]s used by this axis.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_buttons([self.negative, self.positive])
     }
 }
 
@@ -864,28 +799,6 @@ impl UserInput for GamepadVirtualDPad {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let value = self.processed_value(input_streams);
-        Some(DualAxisData::from_xy(value))
-    }
-
     /// Returns the four [`GamepadButtonType`]s used by this D-pad.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -901,6 +814,16 @@ impl UserInput for GamepadVirtualDPad {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_buttons([self.up, self.down, self.left, self.right])
+    }
+}
+
+impl DualAxislike for GamepadVirtualDPad {
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
+        let value = self.processed_value(input_streams);
+        DualAxisData::from_xy(value)
     }
 }
 

@@ -15,6 +15,8 @@ use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
 use crate::user_input::{InputChord, InputControlKind, UserInput};
 
+use super::{Axislike, Buttonlike, DualAxislike};
+
 // Built-in support for Bevy's KeyCode
 #[serde_typetag]
 impl UserInput for KeyCode {
@@ -22,30 +24,6 @@ impl UserInput for KeyCode {
     #[inline]
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
-    }
-
-    /// Checks if the specified key is currently pressed down.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keys| keys.pressed(*self))
-    }
-
-    /// Retrieves the strength of the key press for the specified key,
-    /// returning `0.0` for no press and `1.0` for a currently pressed key.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`KeyCode`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
     }
 
     /// Returns a [`BasicInputs`] that only contains the [`KeyCode`] itself,
@@ -59,6 +37,17 @@ impl UserInput for KeyCode {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_keycodes([*self])
+    }
+}
+
+impl Buttonlike for KeyCode {
+    /// Checks if the specified key is currently pressed down.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        input_streams
+            .keycodes
+            .is_some_and(|keys| keys.pressed(*self))
     }
 }
 
@@ -136,30 +125,6 @@ impl UserInput for ModifierKey {
         InputControlKind::Button
     }
 
-    /// Checks if the specified modifier key is currently pressed down.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keycodes| keycodes.any_pressed(self.keycodes()))
-    }
-
-    /// Gets the strength of the key press for the specified modifier key,
-    /// returning `0.0` for no press and `1.0` for a currently pressed key.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`ModifierKey`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// Returns the two [`KeyCode`]s used by this [`ModifierKey`].
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -170,6 +135,17 @@ impl UserInput for ModifierKey {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_keycodes(self.keycodes())
+    }
+}
+
+impl Buttonlike for ModifierKey {
+    /// Checks if the specified modifier key is currently pressed down.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        input_streams
+            .keycodes
+            .is_some_and(|keycodes| keycodes.any_pressed(self.keycodes()))
     }
 }
 
@@ -301,13 +277,20 @@ impl UserInput for KeyboardVirtualAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value after processing by the associated processors.
-    #[must_use]
+    /// [`KeyboardVirtualAxis`] represents a compositions of two [`KeyCode`]s.
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.negative)])
     }
 
+    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this axis.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_keycodes([self.negative, self.positive])
+    }
+}
+
+impl Axislike for KeyboardVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
@@ -322,25 +305,6 @@ impl UserInput for KeyboardVirtualAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`KeyboardVirtualAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
-    /// [`KeyboardVirtualAxis`] represents a compositions of two [`KeyCode`]s.
-    #[inline]
-    fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.negative)])
-    }
-
-    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this axis.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes([self.negative, self.positive])
     }
 }
 
@@ -504,28 +468,6 @@ impl UserInput for KeyboardVirtualDPad {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let value = self.processed_value(input_streams);
-        Some(DualAxisData::from_xy(value))
-    }
-
     /// [`KeyboardVirtualDPad`] represents a compositions of four [`KeyCode`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -541,6 +483,16 @@ impl UserInput for KeyboardVirtualDPad {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_keycodes([self.up, self.down, self.left, self.right])
+    }
+}
+
+impl DualAxislike for KeyboardVirtualDPad {
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
+        let value = self.processed_value(input_streams);
+        DualAxisData::from_xy(value)
     }
 }
 

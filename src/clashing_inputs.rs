@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::action_state::ActionData;
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
-use crate::user_input::UserInput;
+use crate::user_input::{Buttonlike, UserInput};
 use crate::Actionlike;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
@@ -219,8 +219,8 @@ impl<A: Actionlike> InputMap<A> {
 pub(crate) struct Clash<A: Actionlike> {
     action_a: A,
     action_b: A,
-    inputs_a: Vec<Box<dyn UserInput>>,
-    inputs_b: Vec<Box<dyn UserInput>>,
+    inputs_a: Vec<Box<dyn Buttonlike>>,
+    inputs_b: Vec<Box<dyn Buttonlike>>,
 }
 
 impl<A: Actionlike> Clash<A> {

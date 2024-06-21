@@ -13,6 +13,8 @@ use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
 use crate::user_input::{InputControlKind, UserInput};
 
+use super::{Axislike, Buttonlike, DualAxislike};
+
 // Built-in support for Bevy's MouseButton
 #[serde_typetag]
 impl UserInput for MouseButton {
@@ -20,32 +22,6 @@ impl UserInput for MouseButton {
     #[inline]
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
-    }
-
-    /// Checks if the specified button is currently pressed down.
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .mouse_buttons
-            .is_some_and(|buttons| buttons.pressed(*self))
-    }
-
-    /// Retrieves the strength of the button press for the specified button.
-    ///
-    /// # Returns
-    ///
-    /// - `1.0` if the button is currently pressed down, indicating an active input.
-    /// - `0.0` if the button is not pressed, signifying no input.
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`MouseButton`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
     }
 
     /// Returns a [`BasicInputs`] that only contains the [`MouseButton`] itself,
@@ -59,6 +35,16 @@ impl UserInput for MouseButton {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_buttons([*self])
+    }
+}
+
+impl Buttonlike for MouseButton {
+    /// Checks if the specified button is currently pressed down.
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        input_streams
+            .mouse_buttons
+            .is_some_and(|buttons| buttons.pressed(*self))
     }
 }
 
@@ -119,29 +105,6 @@ impl UserInput for MouseMoveDirection {
         InputControlKind::Button
     }
 
-    /// Checks if there is any recent mouse movement along the specified direction.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let mouse_movement = input_streams.mouse_motion.0;
-        self.0.is_active(mouse_movement)
-    }
-
-    /// Retrieves the amount of the mouse movement along the specified direction,
-    /// returning `0.0` for no movement and `1.0` for full movement.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`MouseMoveDirection`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseMoveDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -152,6 +115,16 @@ impl UserInput for MouseMoveDirection {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_move_directions([*self])
+    }
+}
+
+impl Buttonlike for MouseMoveDirection {
+    /// Checks if there is any recent mouse movement along the specified direction.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        let mouse_movement = input_streams.mouse_motion.0;
+        self.0.is_active(mouse_movement)
     }
 }
 
@@ -217,32 +190,6 @@ impl UserInput for MouseMoveAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if there is any recent mouse movement along the specified axis.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
-    }
-
-    /// Retrieves the amount of the mouse movement along the specified axis
-    /// after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = input_streams.mouse_motion.0;
-        let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`MouseMoveAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseMoveAxis`] represents a composition of two [`MouseMoveDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -256,6 +203,20 @@ impl UserInput for MouseMoveAxis {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_move_axes([self.axis])
+    }
+}
+
+impl Axislike for MouseMoveAxis {
+    /// Retrieves the amount of the mouse movement along the specified axis
+    /// after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        let movement = input_streams.mouse_motion.0;
+        let value = self.axis.get_value(movement);
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -339,27 +300,6 @@ impl UserInput for MouseMove {
         InputControlKind::DualAxis
     }
 
-    /// Checks if there is any recent mouse movement.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the amount of the mouse movement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the mouse displacement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        Some(DualAxisData::from_xy(self.processed_value(input_streams)))
-    }
-
     /// [`MouseMove`] represents a composition of four [`MouseMoveDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -375,6 +315,15 @@ impl UserInput for MouseMove {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_move_axes(DualAxisType::axes())
+    }
+}
+
+impl DualAxislike for MouseMove {
+    /// Retrieves the mouse displacement after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
+        DualAxisData::from_xy(self.processed_value(input_streams))
     }
 }
 
@@ -458,29 +407,6 @@ impl UserInput for MouseScrollDirection {
         InputControlKind::Button
     }
 
-    /// Checks if there is any recent mouse wheel movement along the specified direction.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let movement = input_streams.mouse_scroll.0;
-        self.0.is_active(movement)
-    }
-
-    /// Retrieves the magnitude of the mouse wheel movement along the specified direction,
-    /// returning `0.0` for no movement and `1.0` for full movement.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`MouseScrollDirection`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseScrollDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -491,6 +417,16 @@ impl UserInput for MouseScrollDirection {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_scroll_directions([*self])
+    }
+}
+
+impl Buttonlike for MouseScrollDirection {
+    /// Checks if there is any recent mouse wheel movement along the specified direction.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        let movement = input_streams.mouse_scroll.0;
+        self.0.is_active(movement)
     }
 }
 
@@ -556,32 +492,6 @@ impl UserInput for MouseScrollAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if there is any recent mouse wheel movement along the specified axis.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
-    }
-
-    /// Retrieves the amount of the mouse wheel movement along the specified axis
-    /// after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = input_streams.mouse_scroll.0;
-        let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`MouseScrollAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseScrollAxis`] represents a composition of two [`MouseScrollDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -595,6 +505,20 @@ impl UserInput for MouseScrollAxis {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_scroll_axes([self.axis])
+    }
+}
+
+impl Axislike for MouseScrollAxis {
+    /// Retrieves the amount of the mouse wheel movement along the specified axis
+    /// after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        let movement = input_streams.mouse_scroll.0;
+        let value = self.axis.get_value(movement);
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -677,27 +601,6 @@ impl UserInput for MouseScroll {
         InputControlKind::DualAxis
     }
 
-    /// Checks if there is any recent mouse wheel movement.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the amount of the mouse wheel movement on both axes after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        Some(DualAxisData::from_xy(self.processed_value(input_streams)))
-    }
-
     /// [`MouseScroll`] represents a composition of four [`MouseScrollDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -713,6 +616,15 @@ impl UserInput for MouseScroll {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_scroll_axes(DualAxisType::axes())
+    }
+}
+
+impl DualAxislike for MouseScroll {
+    /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData {
+        DualAxisData::from_xy(self.processed_value(input_streams))
     }
 }
 
