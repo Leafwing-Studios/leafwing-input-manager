@@ -208,21 +208,6 @@ pub trait UserInput:
     /// Defines the kind of behavior that the input should be.
     fn kind(&self) -> InputControlKind;
 
-    /// Checks if the input is currently active.
-    fn pressed(&self, input_streams: &InputStreams) -> bool;
-
-    /// Retrieves the current value of the input.
-    fn value(&self, input_streams: &InputStreams) -> f32;
-
-    /// Attempts to retrieve the current [`DualAxisData`] of the input if applicable.
-    ///
-    /// This method is intended for inputs that represent movement on two axes.
-    /// However, some input types (e.g., buttons, mouse scroll) don't inherently provide separate X and Y information.
-    ///
-    /// For inputs that don't represent dual-axis input, there is no need to override this method.
-    /// The default implementation will always return [`None`].
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData>;
-
     /// Returns the most basic inputs that make up this input.
     ///
     /// For inputs that represent a simple, atomic control,
@@ -231,6 +216,29 @@ pub trait UserInput:
 
     /// Returns the raw input events that make up this input.
     fn raw_inputs(&self) -> RawInputs;
+}
+
+/// A trait used for buttonlike user inputs, which can be pressed or released.
+pub trait Buttonlike: UserInput {
+    /// Checks if the input is currently active.
+    fn pressed(&self, input_streams: &InputStreams) -> bool;
+
+    /// Checks if the input is currently inactive.
+    fn released(&self, input_streams: &InputStreams) -> bool {
+        !self.pressed(input_streams)
+    }
+}
+
+/// A trait used for axis-like user inputs, which provide a continuous value.
+pub trait Axislike: UserInput {
+    /// Gets the current value of the input as an `f32`.
+    fn value(&self, input_streams: &InputStreams) -> f32;
+}
+
+/// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
+pub trait DualAxislike: UserInput {
+    /// Gets the values of this input along the X and Y axes (if applicable).
+    fn axis_pair(&self, input_streams: &InputStreams) -> DualAxisData;
 }
 
 dyn_clone::clone_trait_object!(UserInput);
