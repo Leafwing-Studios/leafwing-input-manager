@@ -85,8 +85,8 @@ use crate::Actionlike;
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 pub struct InputMap<A: Actionlike> {
-    /// The underlying map that stores action-input mappings.
-    map: HashMap<A, Vec<Box<dyn Buttonlike>>>,
+    /// The underlying map that stores action-input mappings for [`Buttonlike`] actions.
+    buttonlike_map: HashMap<A, Vec<Box<dyn Buttonlike>>>,
 
     /// The specified [`Gamepad`] from which this map exclusively accepts input.
     associated_gamepad: Option<Gamepad>,
@@ -95,7 +95,7 @@ pub struct InputMap<A: Actionlike> {
 impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
-            map: HashMap::default(),
+            buttonlike_map: HashMap::default(),
             associated_gamepad: None,
         }
     }
@@ -167,12 +167,12 @@ impl<A: Actionlike> InputMap<A> {
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
     fn insert_boxed(&mut self, action: A, input: Box<dyn Buttonlike>) -> &mut Self {
-        if let Some(bindings) = self.map.get_mut(&action) {
+        if let Some(bindings) = self.buttonlike_map.get_mut(&action) {
             if !bindings.contains(&input) {
                 bindings.push(input);
             }
         } else {
-            self.map.insert(action, vec![input]);
+            self.buttonlike_map.insert(action, vec![input]);
         }
 
         self
@@ -203,14 +203,15 @@ impl<A: Actionlike> InputMap<A> {
         let inputs = inputs
             .into_iter()
             .map(|input| Box::new(input) as Box<dyn Buttonlike>);
-        if let Some(bindings) = self.map.get_mut(&action) {
+        if let Some(bindings) = self.buttonlike_map.get_mut(&action) {
             for input in inputs {
                 if !bindings.contains(&input) {
                     bindings.push(input);
                 }
             }
         } else {
-            self.map.insert(action, inputs.unique().collect());
+            self.buttonlike_map
+                .insert(action, inputs.unique().collect());
         }
         self
     }
@@ -240,7 +241,7 @@ impl<A: Actionlike> InputMap<A> {
             self.clear_gamepad();
         }
 
-        for (other_action, other_inputs) in other.map.iter() {
+        for (other_action, other_inputs) in other.buttonlike_map.iter() {
             for other_input in other_inputs.iter().cloned() {
                 self.insert_boxed(other_action.clone(), other_input);
             }
@@ -366,37 +367,40 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over all registered actions with their input bindings.
     pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn Buttonlike>>)> {
-        self.map.iter()
+        self.buttonlike_map.iter()
     }
 
     /// Returns an iterator over all registered action-input bindings.
     pub fn bindings(&self) -> impl Iterator<Item = (&A, &dyn Buttonlike)> {
-        self.map
+        self.buttonlike_map
             .iter()
             .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
     }
 
     /// Returns an iterator over all registered actions.
     pub fn actions(&self) -> impl Iterator<Item = &A> {
-        self.map.keys()
+        self.buttonlike_map.keys()
     }
 
     /// Returns a reference to the inputs associated with the given `action`.
     #[must_use]
     pub fn get(&self, action: &A) -> Option<&Vec<Box<dyn Buttonlike>>> {
-        self.map.get(action)
+        self.buttonlike_map.get(action)
     }
 
     /// Returns a mutable reference to the inputs mapped to `action`
     #[must_use]
     pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Buttonlike>>> {
-        self.map.get_mut(action)
+        self.buttonlike_map.get_mut(action)
     }
 
     /// Count the total number of registered input bindings.
     #[must_use]
     pub fn len(&self) -> usize {
-        self.map.values().map(|inputs| inputs.len()).sum()
+        self.buttonlike_map
+            .values()
+            .map(|inputs| inputs.len())
+            .sum()
     }
 
     /// Returns `true` if the map contains no action-input bindings.
@@ -410,7 +414,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Keeps the allocated memory for reuse.
     pub fn clear(&mut self) {
-        self.map.clear();
+        self.buttonlike_map.clear();
     }
 }
 
@@ -418,14 +422,14 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Clears all input bindings associated with the `action`.
     pub fn clear_action(&mut self, action: &A) {
-        self.map.remove(action);
+        self.buttonlike_map.remove(action);
     }
 
     /// Removes the input for the `action` at the provided index.
     ///
     /// Returns `Some(input)` if found.
     pub fn remove_at(&mut self, action: &A, index: usize) -> Option<Box<dyn Buttonlike>> {
-        let input_bindings = self.map.get_mut(action)?;
+        let input_bindings = self.buttonlike_map.get_mut(action)?;
         (input_bindings.len() > index).then(|| input_bindings.remove(index))
     }
 
@@ -433,7 +437,7 @@ impl<A: Actionlike> InputMap<A> {
     ///
     /// Returns [`Some`] with index if the input was found, or [`None`] if no matching input was found.
     pub fn remove(&mut self, action: &A, input: impl Buttonlike) -> Option<usize> {
-        let bindings = self.map.get_mut(action)?;
+        let bindings = self.buttonlike_map.get_mut(action)?;
         let boxed_input: Box<dyn Buttonlike> = Box::new(input);
         let index = bindings.iter().position(|input| input == &boxed_input)?;
         bindings.remove(index);
