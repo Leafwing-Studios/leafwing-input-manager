@@ -94,6 +94,7 @@ pub use self::chord::*;
 pub use self::gamepad::*;
 pub use self::keyboard::*;
 pub use self::mouse::*;
+pub use self::trait_serde::RegisterUserInput;
 
 pub mod chord;
 pub mod gamepad;

@@ -11,11 +11,23 @@ use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
 
 use crate::typetag::RegisterTypeTag;
 
-use super::UserInput;
+use super::{Axislike, Buttonlike, DualAxislike, UserInput};
 
 /// Registry of deserializers for [`UserInput`]s.
-static mut INPUT_REGISTRY: Lazy<RwLock<MapRegistry<dyn UserInput>>> =
+static mut USER_INPUT_REGISTRY: Lazy<RwLock<MapRegistry<dyn UserInput>>> =
     Lazy::new(|| RwLock::new(MapRegistry::new("UserInput")));
+
+/// Registry of deserializers for [`Buttonlike`]s.
+static mut BUTTONLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn Buttonlike>>> =
+    Lazy::new(|| RwLock::new(MapRegistry::new("Buttonlike")));
+
+/// Registry of deserializers for [`Axislike`]s.
+static mut AXISLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn Axislike>>> =
+    Lazy::new(|| RwLock::new(MapRegistry::new("Axislike")));
+
+/// Registry of deserializers for [`DualAxislike`]s.
+static mut DUAL_AXISLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn DualAxislike>>> =
+    Lazy::new(|| RwLock::new(MapRegistry::new("DualAxislike")));
 
 /// A trait for registering a specific [`UserInput`].
 pub trait RegisterUserInput {
@@ -30,7 +42,7 @@ impl RegisterUserInput for App {
     where
         T: RegisterTypeTag<'de, dyn UserInput> + GetTypeRegistration,
     {
-        let mut registry = unsafe { INPUT_REGISTRY.write().unwrap() };
+        let mut registry = unsafe { USER_INPUT_REGISTRY.write().unwrap() };
         T::register_typetag(&mut registry);
         self.register_type::<T>();
         self
@@ -59,7 +71,7 @@ mod user_input {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { INPUT_REGISTRY.read().unwrap() };
+            let registry = unsafe { USER_INPUT_REGISTRY.read().unwrap() };
             registry.deserialize_trait_object(deserializer)
         }
     }
@@ -89,7 +101,7 @@ mod buttonlike {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { INPUT_REGISTRY.read().unwrap() };
+            let registry = unsafe { BUTTONLIKE_REGISTRY.read().unwrap() };
             registry.deserialize_trait_object(deserializer)
         }
     }
@@ -119,7 +131,7 @@ mod axislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { INPUT_REGISTRY.read().unwrap() };
+            let registry = unsafe { AXISLIKE_REGISTRY.read().unwrap() };
             registry.deserialize_trait_object(deserializer)
         }
     }
@@ -149,7 +161,7 @@ mod dualaxislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { INPUT_REGISTRY.read().unwrap() };
+            let registry = unsafe { DUAL_AXISLIKE_REGISTRY.read().unwrap() };
             registry.deserialize_trait_object(deserializer)
         }
     }
