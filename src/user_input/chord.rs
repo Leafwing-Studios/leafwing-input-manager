@@ -198,6 +198,7 @@ mod tests {
     use bevy::prelude::*;
 
     use super::*;
+    use crate::axislike::DualAxisData;
     use crate::plugin::AccumulatorPlugin;
     use crate::prelude::*;
 
