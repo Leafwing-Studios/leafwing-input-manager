@@ -704,7 +704,6 @@ mod test {
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
     use bevy::input::InputPlugin;
-    use bevy::math::VectorSpace;
     use bevy::prelude::*;
 
     fn test_app() -> App {
