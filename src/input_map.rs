@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use crate::action_state::ActionData;
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
-use crate::user_input::{Axislike, Buttonlike, DualAxislike};
+use crate::user_input::{Axislike, Buttonlike, DualAxislike, InputControlKind};
 use crate::Actionlike;
 
 /// A Multi-Map that allows you to map actions to multiple [`Buttonlike`]s.
@@ -91,7 +91,7 @@ pub struct InputMap<A: Actionlike> {
     axislike_map: HashMap<A, Vec<Box<dyn Axislike>>>,
 
     /// The underlying map that stores action-input mappings for [`DualAxislike`] actions.
-    dualaxislike_map: HashMap<A, Vec<Box<dyn DualAxislike>>>,
+    dual_axislike_map: HashMap<A, Vec<Box<dyn DualAxislike>>>,
 
     /// The specified [`Gamepad`] from which this map exclusively accepts input.
     associated_gamepad: Option<Gamepad>,
@@ -102,7 +102,7 @@ impl<A: Actionlike> Default for InputMap<A> {
         InputMap {
             buttonlike_map: HashMap::default(),
             axislike_map: HashMap::default(),
-            dualaxislike_map: HashMap::default(),
+            dual_axislike_map: HashMap::default(),
             associated_gamepad: None,
         }
     }
@@ -130,8 +130,30 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn with(mut self, action: A, input: impl Buttonlike) -> Self {
-        self.insert(action, input);
+    pub fn with(mut self, action: A, button: impl Buttonlike) -> Self {
+        self.insert(action, button);
+        self
+    }
+
+    /// Associates an `action` with a specific [`Axislike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn with_axis(mut self, action: A, axis: impl Axislike) -> Self {
+        self.insert_axis(action, axis);
+        self
+    }
+
+    /// Associates an `action` with a specific [`DualAxislike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn with_dualaxis(mut self, action: A, axis: impl DualAxislike) -> Self {
+        self.insert_dual_axis(action, axis);
         self
     }
 
@@ -173,13 +195,13 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    fn insert_boxed(&mut self, action: A, input: Box<dyn Buttonlike>) -> &mut Self {
+    fn insert_boxed(&mut self, action: A, button: Box<dyn Buttonlike>) -> &mut Self {
         if let Some(bindings) = self.buttonlike_map.get_mut(&action) {
-            if !bindings.contains(&input) {
-                bindings.push(input);
+            if !bindings.contains(&button) {
+                bindings.push(button);
             }
         } else {
-            self.buttonlike_map.insert(action, vec![input]);
+            self.buttonlike_map.insert(action, vec![button]);
         }
 
         self
@@ -191,8 +213,44 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn insert(&mut self, action: A, input: impl Buttonlike) -> &mut Self {
-        self.insert_boxed(action, Box::new(input));
+    pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
+        self.insert_boxed(action, Box::new(button));
+        self
+    }
+
+    /// Inserts a binding between an `action` and a specific [`Axislike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
+        let axis = Box::new(axis) as Box<dyn Axislike>;
+        if let Some(bindings) = self.axislike_map.get_mut(&action) {
+            if !bindings.contains(&axis) {
+                bindings.push(axis);
+            }
+        } else {
+            self.axislike_map.insert(action, vec![axis]);
+        }
+        self
+    }
+
+    /// Inserts a binding between an `action` and a specific [`Axislike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
+        let dual_axis = Box::new(dual_axis) as Box<dyn DualAxislike>;
+        if let Some(bindings) = self.dual_axislike_map.get_mut(&action) {
+            if !bindings.contains(&dual_axis) {
+                bindings.push(dual_axis);
+            }
+        } else {
+            self.dual_axislike_map.insert(action, vec![dual_axis]);
+        }
         self
     }
 
@@ -402,12 +460,10 @@ impl<A: Actionlike> InputMap<A> {
     }
 
     /// Clears the map, removing all action-input bindings.
-    ///
-    /// Keeps the allocated memory for reuse.
     pub fn clear(&mut self) {
         self.buttonlike_map.clear();
         self.axislike_map.clear();
-        self.dualaxislike_map.clear();
+        self.dual_axislike_map.clear();
     }
 }
 
@@ -415,17 +471,56 @@ impl<A: Actionlike> InputMap<A> {
 impl<A: Actionlike> InputMap<A> {
     /// Clears all input bindings associated with the `action`.
     pub fn clear_action(&mut self, action: &A) {
-        self.buttonlike_map.remove(action);
-        self.axislike_map.remove(action);
-        self.dualaxislike_map.remove(action);
+        match action.input_control_kind() {
+            InputControlKind::Button => {
+                self.buttonlike_map.remove(action);
+            }
+            InputControlKind::Axis => {
+                self.axislike_map.remove(action);
+            }
+            InputControlKind::DualAxis => {
+                self.dual_axislike_map.remove(action);
+            }
+        }
     }
 
     /// Removes the input for the `action` at the provided index.
     ///
-    /// Returns `Some(input)` if found.
-    pub fn remove_at(&mut self, action: &A, index: usize) -> Option<Box<dyn Buttonlike>> {
-        let input_bindings = self.buttonlike_map.get_mut(action)?;
-        (input_bindings.len() > index).then(|| input_bindings.remove(index))
+    /// Returns `Some(())` if the input was found and removed, or `None` if no matching input was found.
+    ///
+    /// # Note
+    ///
+    /// The original input cannot be returned, as the trait object may differ based on the [`InputControlKind`].
+    pub fn remove_at(&mut self, action: &A, index: usize) -> Option<()> {
+        match action.input_control_kind() {
+            InputControlKind::Button => {
+                let input_bindings = self.buttonlike_map.get_mut(action)?;
+                if input_bindings.len() > index {
+                    input_bindings.remove(index);
+                    Some(())
+                } else {
+                    None
+                }
+            }
+            InputControlKind::Axis => {
+                let input_bindings = self.axislike_map.get_mut(action)?;
+                if input_bindings.len() > index {
+                    input_bindings.remove(index);
+                    Some(())
+                } else {
+                    None
+                }
+            }
+            InputControlKind::DualAxis => {
+                let input_bindings = self.dual_axislike_map.get_mut(action)?;
+                if input_bindings.len() > index {
+                    input_bindings.remove(index);
+                    Some(())
+                } else {
+                    None
+                }
+            }
+        }
     }
 
     /// Removes the input for the `action` if it exists
