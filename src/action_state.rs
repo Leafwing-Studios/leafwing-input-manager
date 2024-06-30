@@ -168,6 +168,27 @@ impl<A: Actionlike> Default for ActionState<A> {
 }
 
 impl<A: Actionlike> ActionState<A> {
+    /// Returns a reference to the complete [`ButtonData`] for all actions.
+    #[inline]
+    #[must_use]
+    pub fn all_button_data(&self) -> &HashMap<A, ButtonData> {
+        &self.button_data
+    }
+
+    /// Returns a reference to the complete [`AxisData`] for all actions.
+    #[inline]
+    #[must_use]
+    pub fn all_axis_data(&self) -> &HashMap<A, AxisData> {
+        &self.axis_data
+    }
+
+    /// Returns a reference to the complete [`DualAxisData`] for all actions.
+    #[inline]
+    #[must_use]
+    pub fn all_dual_axis_data(&self) -> &HashMap<A, DualAxisData> {
+        &self.dual_axis_data
+    }
+
     /// We are about to enter the `Main` schedule, so we:
     /// - save all the changes applied to `state` into the `fixed_update_state`
     /// - switch to loading the `update_state`
