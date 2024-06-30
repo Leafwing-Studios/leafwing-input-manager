@@ -425,9 +425,12 @@ impl<A: Actionlike> InputMap<A> {
             .unwrap_or_default()
     }
 
-    /// Processes the bindings for each action and generates corresponding [`ActionData`].
+    /// Determines the correct state for each action according to provided [`InputStreams`].
     ///
-    /// Accounts for clashing inputs according to the [`ClashStrategy`] and remove conflicting actions.
+    /// This method uses the input bindings for each action to determine how to parse the input data,
+    /// and generates corresponding [`ButtonData`], [`AxisData`] and [`DualAxisData`].
+    ///
+    /// For [`Buttonlike`] actions, this accounts for clashing inputs according to the [`ClashStrategy`] and removes conflicting actions.
     #[must_use]
     pub fn process_actions(
         &self,
@@ -435,12 +438,27 @@ impl<A: Actionlike> InputMap<A> {
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
         let mut button_actions = HashMap::new();
+        let mut axis_actions = HashMap::new();
+        let mut dual_axis_actions = HashMap::new();
 
-        // Generate the raw action presses
+        // Generate the base action data for each action
+        todo!("Actually check if buttons are pressed.");
         for (action, _input_bindings) in self.iter_buttonlike() {
             let action_datum = ButtonData::default();
 
             button_actions.insert(action.clone(), action_datum);
+        }
+
+        for (action, _input_bindings) in self.iter_axislike() {
+            let action_datum = AxisData::default();
+
+            axis_actions.insert(action.clone(), action_datum);
+        }
+
+        for (action, _input_bindings) in self.iter_dual_axislike() {
+            let action_datum = DualAxisData::default();
+
+            dual_axis_actions.insert(action.clone(), action_datum);
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
