@@ -569,9 +569,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), false);
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(alt.pressed(&inputs), false);
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), 0.0);
         assert_eq!(arrows.axis_pair(&inputs), zeros);
 
@@ -582,9 +582,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), true);
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(alt.pressed(&inputs), false);
+        assert!(up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), data.y);
         assert_eq!(arrows.axis_pair(&inputs), data);
 
@@ -595,9 +595,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), false);
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(alt.pressed(&inputs), false);
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), data.y);
         assert_eq!(arrows.axis_pair(&inputs), data);
 
@@ -608,9 +608,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), false);
-        assert_eq!(left.pressed(&inputs), true);
-        assert_eq!(alt.pressed(&inputs), false);
+        assert!(!up.pressed(&inputs));
+        assert!(left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), 0.0);
         assert_eq!(arrows.axis_pair(&inputs), data);
 
@@ -621,9 +621,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), true);
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(alt.pressed(&inputs), false);
+        assert!(up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), 0.0);
         assert_eq!(arrows.axis_pair(&inputs), zeros);
 
@@ -635,9 +635,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), true);
-        assert_eq!(left.pressed(&inputs), true);
-        assert_eq!(alt.pressed(&inputs), false);
+        assert!(up.pressed(&inputs));
+        assert!(left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), data.y);
         assert_eq!(arrows.axis_pair(&inputs), data);
 
@@ -647,9 +647,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), false);
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(alt.pressed(&inputs), true);
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), 0.0);
         assert_eq!(arrows.axis_pair(&inputs), zeros);
 
@@ -659,9 +659,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(up.pressed(&inputs), false);
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(alt.pressed(&inputs), true);
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(alt.pressed(&inputs));
         assert_eq!(arrow_y.value(&inputs), 0.0);
         assert_eq!(arrows.axis_pair(&inputs), zeros);
     }

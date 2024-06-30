@@ -353,7 +353,7 @@ mod tests {
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        assert_eq!(chord.pressed(&inputs), false);
+        assert!(!chord.pressed(&inputs));
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
@@ -362,7 +362,7 @@ mod tests {
         }
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        assert_eq!(chord.pressed(&inputs), true);
+        assert!(chord.pressed(&inputs));
 
         // Some required keys pressed, but not all required keys for the chord,
         // resulting in a released chord with a value of zero.
@@ -373,7 +373,7 @@ mod tests {
             }
             app.update();
             let inputs = InputStreams::from_world(app.world(), None);
-            assert_eq!(chord.pressed(&inputs), false);
+            assert!(!chord.pressed(&inputs));
         }
 
         // Five keys pressed, but not all required keys for the chord,
@@ -385,6 +385,6 @@ mod tests {
         app.press_input(KeyCode::KeyB);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        assert_eq!(chord.pressed(&inputs), false);
+        assert!(!chord.pressed(&inputs));
     }
 }

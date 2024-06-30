@@ -736,9 +736,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(middle.pressed(&inputs), false);
-        assert_eq!(right.pressed(&inputs), false);
+        assert!(!left.pressed(&inputs));
+        assert!(!middle.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
 
         // Press left
         let mut app = test_app();
@@ -746,9 +746,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(left.pressed(&inputs), true);
-        assert_eq!(middle.pressed(&inputs), false);
-        assert_eq!(right.pressed(&inputs), false);
+        assert!(left.pressed(&inputs));
+        assert!(!middle.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
 
         // Press middle
         let mut app = test_app();
@@ -756,9 +756,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(middle.pressed(&inputs), true);
-        assert_eq!(right.pressed(&inputs), false);
+        assert!(!left.pressed(&inputs));
+        assert!(middle.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
 
         // Press right
         let mut app = test_app();
@@ -766,9 +766,9 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(left.pressed(&inputs), false);
-        assert_eq!(middle.pressed(&inputs), false);
-        assert_eq!(right.pressed(&inputs), true);
+        assert!(!left.pressed(&inputs));
+        assert!(!middle.pressed(&inputs));
+        assert!(right.pressed(&inputs));
     }
 
     #[test]
@@ -793,7 +793,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_move_up.pressed(&inputs), false);
+        assert!(!mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), 0.0);
         assert_eq!(mouse_move.axis_pair(&inputs), Vec2::new(0.0, 0.0));
 
@@ -804,7 +804,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_move_up.pressed(&inputs), false);
+        assert!(!mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), 0.0);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
@@ -815,7 +815,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_move_up.pressed(&inputs), true);
+        assert!(mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
@@ -826,7 +826,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_move_up.pressed(&inputs), false);
+        assert!(!mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
@@ -837,7 +837,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_move_up.pressed(&inputs), true);
+        assert!(mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
 
@@ -848,7 +848,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_move_up.pressed(&inputs), true);
+        assert!(mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
         assert_eq!(mouse_move.axis_pair(&inputs), data);
     }
@@ -875,7 +875,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_scroll_up.pressed(&inputs), false);
+        assert!(!mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), 0.0);
         assert_eq!(mouse_scroll.axis_pair(&inputs), Vec2::new(0.0, 0.0));
 
@@ -886,7 +886,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_scroll_up.pressed(&inputs), true);
+        assert!(mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
@@ -897,7 +897,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_scroll_up.pressed(&inputs), false);
+        assert!(!mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
@@ -908,7 +908,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_scroll_up.pressed(&inputs), true);
+        assert!(mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
@@ -919,7 +919,7 @@ mod tests {
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
-        assert_eq!(mouse_scroll_up.pressed(&inputs), true);
+        assert!(mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
         assert_eq!(mouse_scroll.axis_pair(&inputs), data);
     }

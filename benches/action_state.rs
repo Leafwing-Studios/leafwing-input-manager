@@ -1,6 +1,5 @@
 use bevy::{prelude::Reflect, utils::HashMap};
 use criterion::{criterion_group, criterion_main, Criterion};
-#[cfg(feature = "timing")]
 use leafwing_input_manager::{input_map::UpdatedActions, prelude::ActionState, Actionlike};
 
 #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]

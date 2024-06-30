@@ -89,7 +89,7 @@ impl BasicInputs {
         let combined_inputs = self
             .inputs()
             .into_iter()
-            .chain(other.inputs().into_iter())
+            .chain(other.inputs())
             .collect();
 
         BasicInputs::Composite(combined_inputs)
