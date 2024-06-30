@@ -25,7 +25,7 @@ fn setup(mut commands: Commands) {
     // This will capture the total continuous value, for direct use.
     // Note that you can also use discrete gesture-like motion,
     // via the `MouseMoveDirection` enum.
-    let input_map = InputMap::default().with_dualaxis(CameraMovement::Pan, MouseMove::default());
+    let input_map = InputMap::default().with_dual_axis(CameraMovement::Pan, MouseMove::default());
     commands
         .spawn(Camera2dBundle::default())
         .insert(InputManagerBundle::with_map(input_map));

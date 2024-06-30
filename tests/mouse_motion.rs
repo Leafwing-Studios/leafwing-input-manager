@@ -199,7 +199,7 @@ fn mouse_move_single_axis() {
 fn mouse_move_dual_axis() {
     let mut app = test_app();
     app.insert_resource(
-        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseMove::default()),
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseMove::default()),
     );
 
     let input = MouseMove::default();
@@ -220,7 +220,7 @@ fn mouse_move_dual_axis() {
 fn mouse_move_discrete() {
     let mut app = test_app();
     app.insert_resource(
-        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseMove::default().digital()),
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseMove::default().digital()),
     );
 
     let input = MouseMove::default();

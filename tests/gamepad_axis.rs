@@ -229,7 +229,7 @@ fn game_pad_single_axis_inverted() {
 #[test]
 fn game_pad_dual_axis_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dualaxis(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_deadzone_symmetric(0.1),
     ));
@@ -277,7 +277,7 @@ fn game_pad_dual_axis_deadzone() {
 #[test]
 fn game_pad_circle_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dualaxis(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_circle_deadzone(0.1),
     ));
@@ -312,7 +312,7 @@ fn game_pad_circle_deadzone() {
 #[test]
 fn test_zero_dual_axis_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dualaxis(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_deadzone_symmetric(0.0),
     ));
@@ -334,7 +334,7 @@ fn test_zero_dual_axis_deadzone() {
 #[test]
 fn test_zero_circle_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dualaxis(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_circle_deadzone(0.0),
     ));
@@ -358,7 +358,7 @@ fn test_zero_circle_deadzone() {
 fn game_pad_virtual_dpad() {
     let mut app = test_app();
     app.insert_resource(
-        InputMap::default().with_dualaxis(AxislikeTestAction::XY, GamepadVirtualDPad::DPAD),
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, GamepadVirtualDPad::DPAD),
     );
 
     app.press_input(GamepadButtonType::DPadLeft);

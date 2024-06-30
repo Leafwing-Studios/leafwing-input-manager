@@ -159,7 +159,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn with_dualaxis(mut self, action: A, axis: impl DualAxislike) -> Self {
+    pub fn with_dual_axis(mut self, action: A, axis: impl DualAxislike) -> Self {
         self.insert_dual_axis(action, axis);
         self
     }

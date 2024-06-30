@@ -200,7 +200,7 @@ fn mouse_scroll_single_axis() {
 fn mouse_scroll_dual_axis() {
     let mut app = test_app();
     app.insert_resource(
-        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseScroll::default()),
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseScroll::default()),
     );
 
     let input = MouseScroll::default();
@@ -221,7 +221,7 @@ fn mouse_scroll_dual_axis() {
 fn mouse_scroll_discrete() {
     let mut app = test_app();
     app.insert_resource(
-        InputMap::default().with_dualaxis(AxislikeTestAction::XY, MouseScroll::default()),
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseScroll::default()),
     );
 
     let input = MouseScroll::default();
