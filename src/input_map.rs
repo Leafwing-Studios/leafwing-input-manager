@@ -431,6 +431,9 @@ impl<A: Actionlike> InputMap<A> {
     /// and generates corresponding [`ButtonData`], [`AxisData`] and [`DualAxisData`].
     ///
     /// For [`Buttonlike`] actions, this accounts for clashing inputs according to the [`ClashStrategy`] and removes conflicting actions.
+    ///
+    /// [`Buttonlike`] inputs will be pressed if any of the associated inputs are pressed.
+    /// [`Axislike`] and [`DualAxislike`] inputs will be the sum of all associated inputs.
     #[must_use]
     pub fn process_actions(
         &self,
@@ -442,11 +445,35 @@ impl<A: Actionlike> InputMap<A> {
         let mut dual_axis_actions = HashMap::new();
 
         // Generate the base action data for each action
-        for (action, _input_bindings) in self.iter_buttonlike() {}
+        for (action, _input_bindings) in self.iter_buttonlike() {
+            let mut final_state = false;
+            for binding in _input_bindings {
+                if binding.pressed(input_streams) {
+                    final_state = true;
+                    break;
+                }
+            }
 
-        for (action, _input_bindings) in self.iter_axislike() {}
+            button_actions.insert(action.clone(), final_state);
+        }
 
-        for (action, _input_bindings) in self.iter_dual_axislike() {}
+        for (action, _input_bindings) in self.iter_axislike() {
+            let mut final_value = 0.0;
+            for binding in _input_bindings {
+                final_value += binding.value(input_streams);
+            }
+
+            axis_actions.insert(action.clone(), final_value);
+        }
+
+        for (action, _input_bindings) in self.iter_dual_axislike() {
+            let mut final_value = Vec2::ZERO;
+            for binding in _input_bindings {
+                final_value += binding.axis_pair(input_streams);
+            }
+
+            dual_axis_actions.insert(action.clone(), final_value);
+        }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
         self.handle_clashes(&mut button_actions, input_streams, clash_strategy);
