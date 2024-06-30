@@ -582,7 +582,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Warning
     ///
-    /// This value will be 0. if the action has never been pressed or released.
+    /// This value will be 0. by default,
+    /// even if the action is not a axislike action.
     pub fn clamped_value(&self, action: &A) -> f32 {
         self.value(action).clamp(-1., 1.)
     }
@@ -597,18 +598,26 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Warning
     ///
+    /// This value will be [`Vec2::ZERO`] by default,
+    /// even if the action is not a dual-axislike action.
+    ///
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
-    pub fn axis_pair(&self, action: &A) -> Option<Vec2> {
-        let action_data = self.dual_axis_data(action)?;
-        Some(action_data.pair)
+    pub fn axis_pair(&self, action: &A) -> Vec2 {
+        let action_data = self.dual_axis_data(action);
+        action_data.map_or(Vec2::ZERO, |action_data| action_data.pair)
     }
 
     /// Get the [`Vec2`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
-    pub fn clamped_axis_pair(&self, action: &A) -> Option<Vec2> {
-        self.axis_pair(action)
-            .map(|pair| Vec2::new(pair.x.clamp(-1.0, 1.0), pair.y.clamp(-1.0, 1.0)))
+    ///  
+    /// # Warning
+    ///
+    /// This value will be [`Vec2::ZERO`] by default,
+    /// even if the action is not a dual-axislike action.
+    pub fn clamped_axis_pair(&self, action: &A) -> Vec2 {
+        let pair = self.axis_pair(action);
+        Vec2::new(pair.x.clamp(-1.0, 1.0), pair.y.clamp(-1.0, 1.0))
     }
 
     /// Manually sets the [`ButtonData`] of the corresponding `action`
@@ -819,6 +828,11 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Is this `action` currently pressed?
+    ///
+    /// # Warning
+    ///
+    /// This value will be `false` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
@@ -826,6 +840,11 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    ///
+    /// # Warning
+    ///
+    /// This value will be `false` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
@@ -835,6 +854,11 @@ impl<A: Actionlike> ActionState<A> {
     /// Is this `action` currently released?
     ///
     /// This is always the logical negation of [pressed](ActionState::pressed)
+    ///
+    /// # Warning
+    ///
+    /// This value will be `true` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
@@ -845,6 +869,11 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Was this `action` released since the last time [tick](ActionState::tick) was called?
+    ///
+    /// # Warning
+    ///
+    /// This value will be `true` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {

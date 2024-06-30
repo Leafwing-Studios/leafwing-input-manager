@@ -96,6 +96,7 @@
 - `ActionDiff::AxisPairChanged` is now `ActionDiff::DualAxisChanged`.
 - `InputMap::iter` has been split into `iter_buttonlike`, `iter_axislike` and `iter_dual_axislike`.
   - The same split has been done for `InputMap::bindings` and `InputMap::actions`.
+- `ActionState::axis_pair` and `AxisState::clamped_axis_pair` now return a plain `Vec2` rather than an `Option<Vec2>` for consistency with their single axis and buttonlike brethren.
 
 #### Input Processors
 
