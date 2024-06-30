@@ -46,18 +46,27 @@ impl ClashStrategy {
     }
 }
 
-/// The basic inputs that make up a [`UserInput`].
+/// A flat list of the inputs that make up a [`UserInput`].
+///
+/// This is used to check for potential clashes between actions,
+/// where one action is a strict subset of another.
 #[derive(Debug, Clone)]
 #[must_use]
 pub enum BasicInputs {
     /// The input consists of a single, fundamental [`UserInput`].
-    /// In most cases, the input simply holds itself.
+    ///
+    /// For example, a single key press.
     Simple(Box<dyn UserInput>),
 
-    /// The input consists of multiple independent [`UserInput`]s.
+    /// The input can be triggered by multiple independent [`UserInput`]s,
+    /// but is still fundamentally considered a single input.
+    ///
+    /// For example, a virtual D-Pad is only one input, but can be triggered by multiple keys.
     Composite(Vec<Box<dyn UserInput>>),
 
     /// The input represents one or more independent [`UserInput`] types.
+    ///
+    /// For example, a chorded input is a group of multiple keys that must be pressed together.
     Group(Vec<Box<dyn UserInput>>),
 }
 
