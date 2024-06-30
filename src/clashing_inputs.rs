@@ -161,14 +161,14 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        action_data: &mut HashMap<A, ButtonData>,
+        button_data: &mut HashMap<A, ButtonData>,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
-        for clash in self.get_clashes(action_data, input_streams) {
+        for clash in self.get_clashes(button_data, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
-                action_data.remove(&culled_action);
+                button_data.remove(&culled_action);
             }
         }
     }
@@ -177,8 +177,8 @@ impl<A: Actionlike> InputMap<A> {
     pub(crate) fn possible_clashes(&self) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
-        for action_a in self.actions() {
-            for action_b in self.actions() {
+        for action_a in self.buttonlike_actions() {
+            for action_b in self.buttonlike_actions() {
                 if let Some(clash) = self.possible_clash(action_a, action_b) {
                     clashes.push(clash);
                 }

@@ -92,8 +92,10 @@
   - `KeyboardVirtualDPad` for four keys.
   - `MouseMove::default().digital()` for discrete mouse movement.
   - `MouseScroll::default().digital()` for discrete mouse wheel movement.
-- `ActionDiff::ValueChanged` is now `ActionDiff::AxisChanged`
-- `ActionDiff::AxisPairChanged` is now `ActionDiff::DualAxisChanged`
+- `ActionDiff::ValueChanged` is now `ActionDiff::AxisChanged`.
+- `ActionDiff::AxisPairChanged` is now `ActionDiff::DualAxisChanged`.
+- `InputMap::iter` has been split into `iter_buttonlike`, `iter_axislike` and `iter_dual_axislike`.
+  - The same split has been done for `InputMap::bindings` and `InputMap::actions`.
 
 #### Input Processors
 

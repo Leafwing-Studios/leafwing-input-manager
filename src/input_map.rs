@@ -434,19 +434,23 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
-        let mut action_data = HashMap::new();
+        let mut button_actions = HashMap::new();
 
         // Generate the raw action presses
-        for (action, _input_bindings) in self.iter() {
+        for (action, _input_bindings) in self.iter_buttonlike() {
             let action_datum = ButtonData::default();
 
-            action_data.insert(action.clone(), action_datum);
+            button_actions.insert(action.clone(), action_datum);
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut action_data, input_streams, clash_strategy);
+        self.handle_clashes(&mut button_actions, input_streams, clash_strategy);
 
-        action_data
+        UpdatedActions {
+            button_actions,
+            axis_actions,
+            dual_axis_actions,
+        }
     }
 }
 
@@ -464,21 +468,55 @@ pub struct UpdatedActions<A: Actionlike> {
 
 // Utilities
 impl<A: Actionlike> InputMap<A> {
-    /// Returns an iterator over all registered actions with their input bindings.
-    pub fn iter(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn Buttonlike>>)> {
+    /// Returns an iterator over all registered [`Buttonlike`] actions with their input bindings.
+    pub fn iter_buttonlike(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn Buttonlike>>)> {
         self.buttonlike_map.iter()
     }
 
+    /// Returns an iterator over all registered [`Axislike`] actions with their input bindings.
+    pub fn iter_axislike(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn Axislike>>)> {
+        self.axislike_map.iter()
+    }
+
+    /// Returns an iterator over all registered [`DualAxislike`] actions with their input bindings.
+    pub fn iter_dual_axislike(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn DualAxislike>>)> {
+        self.dual_axislike_map.iter()
+    }
+
     /// Returns an iterator over all registered [`Buttonlike`] action-input bindings.
-    pub fn bindings(&self) -> impl Iterator<Item = (&A, &dyn Buttonlike)> {
+    pub fn buttonlike_bindings(&self) -> impl Iterator<Item = (&A, &dyn Buttonlike)> {
         self.buttonlike_map
             .iter()
             .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
     }
 
-    /// Returns an iterator over all registered actions.
-    pub fn actions(&self) -> impl Iterator<Item = &A> {
+    /// Returns an iterator over all registered [`Axislike`] action-input bindings.
+    pub fn axislike_bindings(&self) -> impl Iterator<Item = (&A, &dyn Axislike)> {
+        self.axislike_map
+            .iter()
+            .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
+    }
+
+    /// Returns an iterator over all registered [`DualAxislike`] action-input bindings.
+    pub fn dual_axislike_bindings(&self) -> impl Iterator<Item = (&A, &dyn DualAxislike)> {
+        self.dual_axislike_map
+            .iter()
+            .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
+    }
+
+    /// Returns an iterator over all registered [`Buttonlike`] actions.
+    pub fn buttonlike_actions(&self) -> impl Iterator<Item = &A> {
         self.buttonlike_map.keys()
+    }
+
+    /// Returns an iterator over all registered [`Axislike`] actions.
+    pub fn axislike_actions(&self) -> impl Iterator<Item = &A> {
+        self.axislike_map.keys()
+    }
+
+    /// Returns an iterator over all registered [`DualAxislike`] actions.
+    pub fn dual_axislike_actions(&self) -> impl Iterator<Item = &A> {
+        self.dual_axislike_map.keys()
     }
 
     /// Returns a reference to the [`Buttonlike`] inputs associated with the given `action`.
@@ -700,7 +738,7 @@ mod tests {
             ),
         ]);
 
-        for (action, input) in input_map.bindings() {
+        for (action, input) in input_map.buttonlike_bindings() {
             let expected_action = expected_bindings.get(input).unwrap();
             assert_eq!(expected_action, action);
         }
