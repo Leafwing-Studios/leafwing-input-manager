@@ -41,6 +41,28 @@ pub struct ButtonData {
 }
 
 impl ButtonData {
+    /// The default data for a button that was just pressed.
+    pub const JUST_PRESSED: Self = Self {
+        state: ButtonState::JustPressed,
+        update_state: ButtonState::JustPressed,
+        fixed_update_state: ButtonState::JustPressed,
+        #[cfg(feature = "timing")]
+        timing: Timing::NEW,
+        consumed: false,
+        disabled: false,
+    };
+
+    /// The default data for a button that was just released.
+    pub const JUST_RELEASED: Self = Self {
+        state: ButtonState::JustReleased,
+        update_state: ButtonState::JustReleased,
+        fixed_update_state: ButtonState::JustReleased,
+        #[cfg(feature = "timing")]
+        timing: Timing::NEW,
+        consumed: false,
+        disabled: false,
+    };
+
     /// Is the action currently pressed?
     #[inline]
     #[must_use]
@@ -241,7 +263,7 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
+    /// Updates the [`ActionState`] based on the provided [`UpdatedActions`].
     ///
     /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
@@ -252,25 +274,45 @@ impl<A: Actionlike> ActionState<A> {
             }
         }
         for (action, button_datum) in updated_actions.button_actions {
-            // Avoid multiple mut borrows, make the compiler happy
             if self.button_data.contains_key(&action) {
-                match button_datum.state {
-                    ButtonState::JustPressed => self.press(&action),
-                    ButtonState::Pressed => self.press(&action),
-                    ButtonState::JustReleased => self.release(&action),
-                    ButtonState::Released => self.release(&action),
+                match button_datum {
+                    true => self.press(&action),
+                    false => self.release(&action),
                 }
             } else {
-                self.button_data.insert(action, button_datum.clone());
+                match button_datum {
+                    true => self.button_data.insert(action, ButtonData::JUST_PRESSED),
+                    false => self.button_data.insert(action, ButtonData::JUST_RELEASED),
+                };
             }
         }
 
         for (action, axis_datum) in updated_actions.axis_actions.into_iter() {
-            self.axis_data.insert(action, axis_datum);
+            if self.axis_data.contains_key(&action) {
+                self.axis_data.get_mut(&action).unwrap().value = axis_datum;
+            } else {
+                self.axis_data.insert(
+                    action,
+                    AxisData {
+                        value: axis_datum,
+                        ..Default::default()
+                    },
+                );
+            }
         }
 
         for (action, dual_axis_datum) in updated_actions.dual_axis_actions.into_iter() {
-            self.dual_axis_data.insert(action, dual_axis_datum);
+            if self.dual_axis_data.contains_key(&action) {
+                self.dual_axis_data.get_mut(&action).unwrap().pair = dual_axis_datum;
+            } else {
+                self.dual_axis_data.insert(
+                    action,
+                    DualAxisData {
+                        pair: dual_axis_datum,
+                        ..Default::default()
+                    },
+                );
+            }
         }
     }
 

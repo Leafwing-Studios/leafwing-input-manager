@@ -10,7 +10,6 @@ use bevy::prelude::Resource;
 use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::action_state::ButtonData;
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
 use crate::user_input::{Buttonlike, UserInput};
@@ -161,7 +160,7 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        button_data: &mut HashMap<A, ButtonData>,
+        button_data: &mut HashMap<A, bool>,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
@@ -194,20 +193,25 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        action_data: &HashMap<A, ButtonData>,
+        action_data: &HashMap<A, bool>,
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
         // We can limit our search to the cached set of possibly clashing actions
         for clash in self.possible_clashes() {
-            let pressed = |action: &A| -> bool {
-                matches!(action_data.get(action), Some(data) if data.state.pressed())
-            };
+            let pressed_a = action_data
+                .get(&clash.action_a)
+                .copied()
+                .unwrap_or_default();
+            let pressed_b = action_data
+                .get(&clash.action_b)
+                .copied()
+                .unwrap_or_default();
 
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
-            if pressed(&clash.action_a) && pressed(&clash.action_b) {
+            if pressed_a && pressed_b {
                 // Check if the potential clash occurred based on the pressed inputs
                 if let Some(clash) = check_clash(&clash, input_streams) {
                     clashes.push(clash)
@@ -543,24 +547,22 @@ mod tests {
             app.press_input(Digit2);
             app.update();
 
-            let mut action_data = HashMap::new();
-            let mut action_datum = ButtonData::default();
-            action_datum.state.press();
+            let mut button_data = HashMap::new();
 
-            action_data.insert(One, action_datum.clone());
-            action_data.insert(Two, action_datum.clone());
-            action_data.insert(OneAndTwo, action_datum.clone());
+            button_data.insert(One, true);
+            button_data.insert(Two, true);
+            button_data.insert(OneAndTwo, true);
 
             input_map.handle_clashes(
-                &mut action_data,
+                &mut button_data,
                 &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
             let mut expected = HashMap::new();
-            expected.insert(OneAndTwo, action_datum.clone());
+            expected.insert(OneAndTwo, true);
 
-            assert_eq!(action_data, expected);
+            assert_eq!(button_data, expected);
         }
 
         // Checks that a clash between a VirtualDPad and a chord chooses the chord
@@ -574,22 +576,20 @@ mod tests {
             app.press_input(ArrowUp);
             app.update();
 
-            let mut action_data = HashMap::new();
-            let mut action_datum = ButtonData::default();
-            action_datum.state.press();
-            action_data.insert(CtrlUp, action_datum.clone());
-            action_data.insert(MoveDPad, action_datum.clone());
+            let mut button_data = HashMap::new();
+            button_data.insert(CtrlUp, true);
+            button_data.insert(MoveDPad, true);
 
             input_map.handle_clashes(
-                &mut action_data,
+                &mut button_data,
                 &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
             let mut expected = HashMap::new();
-            expected.insert(CtrlUp, action_datum);
+            expected.insert(CtrlUp, true);
 
-            assert_eq!(action_data, expected);
+            assert_eq!(button_data, expected);
         }
 
         #[test]
@@ -608,11 +608,11 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            for (action, action_data) in action_data.button_actions.iter() {
+            for (action, button_pressed) in action_data.button_actions.iter() {
                 if *action == CtrlOne || *action == OneAndTwo {
-                    assert!(action_data.state.pressed());
+                    assert!(button_pressed);
                 } else {
-                    assert!(action_data.state.released());
+                    assert!(!button_pressed);
                 }
             }
         }

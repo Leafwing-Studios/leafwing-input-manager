@@ -25,6 +25,15 @@ pub struct Timing {
     pub previous_duration: Duration,
 }
 
+impl Timing {
+    /// The default timing for a button that has not been pressed or released
+    pub const NEW: Timing = Timing {
+        instant_started: None,
+        current_duration: Duration::ZERO,
+        previous_duration: Duration::ZERO,
+    };
+}
+
 impl PartialOrd for Timing {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.current_duration.partial_cmp(&other.current_duration)

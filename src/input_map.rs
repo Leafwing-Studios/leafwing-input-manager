@@ -5,12 +5,12 @@ use std::fmt::Debug;
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
 use bevy::log::warn;
+use bevy::math::Vec2;
 use bevy::prelude::{Component, Gamepad, Reflect, Resource};
 use bevy::utils::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::action_state::{AxisData, ButtonData, DualAxisData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
@@ -421,7 +421,7 @@ impl<A: Actionlike> InputMap<A> {
         self.process_actions(input_streams, clash_strategy)
             .button_actions
             .get(action)
-            .map(|datum| datum.state.pressed())
+            .map(|button_pressed| *button_pressed)
             .unwrap_or_default()
     }
 
@@ -442,24 +442,11 @@ impl<A: Actionlike> InputMap<A> {
         let mut dual_axis_actions = HashMap::new();
 
         // Generate the base action data for each action
-        todo!("Actually check if buttons are pressed.");
-        for (action, _input_bindings) in self.iter_buttonlike() {
-            let action_datum = ButtonData::default();
+        for (action, _input_bindings) in self.iter_buttonlike() {}
 
-            button_actions.insert(action.clone(), action_datum);
-        }
+        for (action, _input_bindings) in self.iter_axislike() {}
 
-        for (action, _input_bindings) in self.iter_axislike() {
-            let action_datum = AxisData::default();
-
-            axis_actions.insert(action.clone(), action_datum);
-        }
-
-        for (action, _input_bindings) in self.iter_dual_axislike() {
-            let action_datum = DualAxisData::default();
-
-            dual_axis_actions.insert(action.clone(), action_datum);
-        }
+        for (action, _input_bindings) in self.iter_dual_axislike() {}
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
         self.handle_clashes(&mut button_actions, input_streams, clash_strategy);
@@ -477,11 +464,11 @@ impl<A: Actionlike> InputMap<A> {
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct UpdatedActions<A: Actionlike> {
     /// The updated state of each buttonlike action.
-    pub button_actions: HashMap<A, ButtonData>,
+    pub button_actions: HashMap<A, bool>,
     /// The updated state of each axislike action.
-    pub axis_actions: HashMap<A, AxisData>,
+    pub axis_actions: HashMap<A, f32>,
     /// The updated state of each dual-axislike action.
-    pub dual_axis_actions: HashMap<A, DualAxisData>,
+    pub dual_axis_actions: HashMap<A, Vec2>,
 }
 
 // Utilities
