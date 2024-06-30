@@ -66,10 +66,7 @@ fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
     if action_state.pressed(&PlayerAction::Run) {
         println!(
             "Moving in direction {}",
-            action_state
-                .clamped_axis_pair(&PlayerAction::Run)
-                .unwrap()
-                .xy()
+            action_state.clamped_axis_pair(&PlayerAction::Run).xy()
         );
     }
 

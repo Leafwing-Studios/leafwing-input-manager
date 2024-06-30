@@ -41,7 +41,7 @@ fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), W
 
     let (mut camera_transform, action_state) = query.single_mut();
 
-    let camera_pan_vector = action_state.axis_pair(&CameraMovement::Pan).unwrap();
+    let camera_pan_vector = action_state.axis_pair(&CameraMovement::Pan);
 
     // Because we're moving the camera, not the object, we want to pan in the opposite direction.
     // However, UI coordinates are inverted on the y-axis, so we need to flip y a second time.

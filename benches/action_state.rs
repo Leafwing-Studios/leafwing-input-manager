@@ -1,11 +1,7 @@
 use bevy::{prelude::Reflect, utils::HashMap};
 use criterion::{criterion_group, criterion_main, Criterion};
 #[cfg(feature = "timing")]
-use leafwing_input_manager::timing::Timing;
-use leafwing_input_manager::{
-    action_state::ButtonData, buttonlike::ButtonState, input_map::UpdatedActions,
-    prelude::ActionState, Actionlike,
-};
+use leafwing_input_manager::{input_map::UpdatedActions, prelude::ActionState, Actionlike};
 
 #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 enum TestAction {
@@ -59,25 +55,17 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("released", |b| b.iter(|| released(&action_state)));
     c.bench_function("just_released", |b| b.iter(|| just_released(&action_state)));
 
-    let action_data: HashMap<TestAction, ButtonData> = TestAction::variants()
-        .map(|action| {
-            (
-                action,
-                ButtonData {
-                    state: ButtonState::JustPressed,
-                    update_state: ButtonState::Released,
-                    fixed_update_state: ButtonState::Released,
-                    #[cfg(feature = "timing")]
-                    timing: Timing::default(),
-                    consumed: false,
-                    disabled: false,
-                },
-            )
-        })
+    let button_actions: HashMap<TestAction, bool> = TestAction::variants()
+        .map(|action| (action, true))
         .collect();
 
+    let updated_actions = UpdatedActions {
+        button_actions,
+        ..Default::default()
+    };
+
     c.bench_function("update", |b| {
-        b.iter(|| update(action_state.clone(), action_data.clone()))
+        b.iter(|| update(action_state.clone(), updated_actions.clone()))
     });
 }
 

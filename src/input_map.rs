@@ -488,7 +488,7 @@ impl<A: Actionlike> InputMap<A> {
 
 /// The output returned by [`InputMap::process_actions`],
 /// used by [`ActionState::update`](crate::action_state::ActionState) to update the state of each action.
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct UpdatedActions<A: Actionlike> {
     /// The updated state of each buttonlike action.
     pub button_actions: HashMap<A, bool>,
@@ -496,6 +496,16 @@ pub struct UpdatedActions<A: Actionlike> {
     pub axis_actions: HashMap<A, f32>,
     /// The updated state of each dual-axislike action.
     pub dual_axis_actions: HashMap<A, Vec2>,
+}
+
+impl<A: Actionlike> Default for UpdatedActions<A> {
+    fn default() -> Self {
+        Self {
+            button_actions: Default::default(),
+            axis_actions: Default::default(),
+            dual_axis_actions: Default::default(),
+        }
+    }
 }
 
 // Utilities

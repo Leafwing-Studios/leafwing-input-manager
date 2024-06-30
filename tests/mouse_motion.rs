@@ -211,7 +211,7 @@ fn mouse_move_dual_axis() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 5.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(5.0, 0.0)
     );
 }
@@ -233,7 +233,7 @@ fn mouse_move_discrete() {
     // This should be a unit length, because we're working with a VirtualDPad
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         // This should be a unit length, because we're working with a VirtualDPad
         Vec2::new(0.0, -1.0)
     );
@@ -262,6 +262,6 @@ fn mouse_drag() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
-        Some(Vec2::new(5.0, 0.0))
+        Vec2::new(5.0, 0.0)
     );
 }

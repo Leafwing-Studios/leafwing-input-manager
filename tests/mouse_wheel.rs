@@ -212,7 +212,7 @@ fn mouse_scroll_dual_axis() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 5.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(5.0, 0.0)
     );
 }
@@ -234,7 +234,7 @@ fn mouse_scroll_discrete() {
     // This should be a unit length, because we're working with a VirtualDPad
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         // This should be a unit length, because we're working with a VirtualDPad
         Vec2::new(0.0, -1.0)
     );

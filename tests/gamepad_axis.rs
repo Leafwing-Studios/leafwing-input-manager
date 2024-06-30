@@ -243,7 +243,7 @@ fn game_pad_dual_axis_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
     );
 
@@ -256,7 +256,7 @@ fn game_pad_dual_axis_deadzone() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.006_154);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(1.0, 0.11111112)
     );
 
@@ -269,7 +269,7 @@ fn game_pad_dual_axis_deadzone() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.7777778);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.7777778, 0.0)
     );
 }
@@ -291,7 +291,7 @@ fn game_pad_circle_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
     );
 
@@ -304,7 +304,7 @@ fn game_pad_circle_deadzone() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.11111112);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.11111112, 0.0)
     );
 }
@@ -326,7 +326,7 @@ fn test_zero_dual_axis_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
     );
 }
@@ -348,7 +348,7 @@ fn test_zero_circle_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
     );
 }
@@ -370,7 +370,7 @@ fn game_pad_virtual_dpad() {
     // This should be a unit length, because we're working with a VirtualDPad
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         // This should be a unit length, because we're working with a VirtualDPad
         Vec2::new(-1.0, 0.0)
     );

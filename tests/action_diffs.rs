@@ -107,21 +107,17 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
         ActionDiff::Released { action } => {
             assert!(action_state.released(&action));
             assert_eq!(action_state.value(&action), 0.);
-            assert!(action_state.axis_pair(&action).is_none());
+            assert_eq!(action_state.axis_pair(&action), Vec2::ZERO);
         }
         ActionDiff::AxisChanged { action, value } => {
             assert!(action_state.pressed(&action));
             assert_eq!(action_state.value(&action), value);
         }
         ActionDiff::DualAxisChanged { action, axis_pair } => {
+            let axis_pair_data = action_state.axis_pair(&action);
             assert!(action_state.pressed(&action));
-            match action_state.axis_pair(&action) {
-                Some(axis_pair_data) => {
-                    assert_eq!(axis_pair_data.xy(), axis_pair);
-                    assert_eq!(action_state.value(&action), axis_pair_data.xy().length());
-                }
-                None => panic!("Expected an `AxisPair` variant. Received none."),
-            }
+            assert_eq!(axis_pair_data.xy(), axis_pair);
+            assert_eq!(action_state.value(&action), axis_pair_data.xy().length());
         }
     }
 }
@@ -136,10 +132,7 @@ fn generate_binary_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(|mut action_state| {
-            action_state
-                .button_data_mut(&Action::PayTheBills)
-                .unwrap()
-                .value = 1.;
+            action_state.press(&Action::PayTheBills);
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>);
@@ -191,74 +184,6 @@ fn generate_binary_action_diffs() {
 }
 
 #[test]
-fn generate_value_action_diffs() {
-    let input_value = 0.5;
-    let mut app = create_app();
-    let entity = app
-        .world_mut()
-        .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(app.world());
-    app.add_systems(
-        Update,
-        pay_da_bills(move |mut action_state| {
-            action_state
-                .button_data_mut(&Action::PayTheBills)
-                .unwrap()
-                .value = input_value;
-        }),
-    )
-    .add_systems(PostUpdate, generate_action_diffs::<Action>)
-    .add_event::<ActionDiffEvent<Action>>();
-
-    app.update();
-
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::AxisChanged { action, value } => {
-                assert_eq!(action, Action::PayTheBills);
-                assert_eq!(value, input_value);
-            }
-            ActionDiff::Released { .. } => {
-                panic!("Expected a `ValueChanged` variant got a `Released` variant")
-            }
-            ActionDiff::Pressed { .. } => {
-                panic!("Expected a `ValueChanged` variant got a `Pressed` variant")
-            }
-            ActionDiff::DualAxisChanged { .. } => {
-                panic!("Expected a `ValueChanged` variant got a `AxisPairChanged` variant")
-            }
-        }
-    });
-
-    app.update();
-
-    assert_has_no_action_diffs(&mut app);
-
-    app.update();
-
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Released { action } => {
-                assert_eq!(action, Action::PayTheBills);
-            }
-            ActionDiff::Pressed { .. } => {
-                panic!("Expected a `Released` variant got a `Pressed` variant")
-            }
-            ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `ValueChanged` variant")
-            }
-            ActionDiff::DualAxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `AxisPairChanged` variant")
-            }
-        }
-    });
-}
-
-#[test]
 fn generate_axis_action_diffs() {
     let input_axis_pair = Vec2 { x: 5., y: 8. };
     let mut app = create_app();
@@ -270,9 +195,9 @@ fn generate_axis_action_diffs() {
         Update,
         pay_da_bills(move |mut action_state| {
             action_state
-                .button_data_mut(&Action::PayTheBills)
+                .dual_axis_data_mut(&Action::PayTheBills)
                 .unwrap()
-                .axis_pair = Some(input_axis_pair);
+                .pair = input_axis_pair;
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)
