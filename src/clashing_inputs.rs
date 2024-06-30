@@ -1,4 +1,8 @@
 //! Handles clashing inputs into a [`InputMap`] in a configurable fashion.
+//!
+//! [`Buttonlike`] actions can clash, if one is a strict subset of the other.
+//! For example, the user might have bound `Ctrl + S` to save, and `S` to move down.
+//! If the user presses `Ctrl + S`, the input manager should not also trigger the `S` action.
 
 use std::cmp::Ordering;
 
@@ -152,7 +156,7 @@ impl BasicInputs {
 }
 
 impl<A: Actionlike> InputMap<A> {
-    /// Resolve clashing inputs, removing action presses that have been overruled
+    /// Resolve clashing button-like inputs, removing action presses that have been overruled
     ///
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
