@@ -3,7 +3,8 @@ use criterion::{criterion_group, criterion_main, Criterion};
 #[cfg(feature = "timing")]
 use leafwing_input_manager::timing::Timing;
 use leafwing_input_manager::{
-    action_state::ButtonData, buttonlike::ButtonState, prelude::ActionState, Actionlike,
+    action_state::ButtonData, buttonlike::ButtonState, input_map::UpdatedActions,
+    prelude::ActionState, Actionlike,
 };
 
 #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
@@ -43,7 +44,7 @@ fn just_released(action_state: &ActionState<TestAction>) -> bool {
     action_state.just_released(&TestAction::A)
 }
 
-fn update(mut action_state: ActionState<TestAction>, action_data: HashMap<TestAction, ButtonData>) {
+fn update(mut action_state: ActionState<TestAction>, action_data: UpdatedActions<TestAction>) {
     action_state.update(action_data);
 }
 
@@ -66,8 +67,6 @@ fn criterion_benchmark(c: &mut Criterion) {
                     state: ButtonState::JustPressed,
                     update_state: ButtonState::Released,
                     fixed_update_state: ButtonState::Released,
-                    value: 0.0,
-                    axis_pair: None,
                     #[cfg(feature = "timing")]
                     timing: Timing::default(),
                     consumed: false,
