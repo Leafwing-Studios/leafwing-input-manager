@@ -877,18 +877,16 @@ impl<A: Actionlike> ActionState<A> {
             }
             ActionDiff::Released { action } => {
                 self.release(action);
-                // Releasing will initialize the ActionData if it doesn't exist
-                let action_data = self.button_data_mut(action).unwrap();
-                action_data.axis_pair = None;
             }
             ActionDiff::ValueChanged { action, value } => {
-                self.press(action);
+                let axis_data = self.axis_data_mut(action).unwrap();
+                // Pressing will initialize the ActionData if it doesn't exist
+                axis_data.value = *value;
             }
             ActionDiff::AxisPairChanged { action, axis_pair } => {
-                self.press(action);
-                let action_data = self.button_data_mut(action).unwrap();
+                let axis_data = self.dual_axis_data_mut(action).unwrap();
                 // Pressing will initialize the ActionData if it doesn't exist
-                action_data.axis_pair = Some(*axis_pair);
+                axis_data.pair = *axis_pair;
             }
         };
     }
