@@ -7,7 +7,6 @@ use crate::{
 };
 
 use bevy::ecs::prelude::*;
-use bevy::log::error;
 use bevy::utils::HashSet;
 use bevy::{
     input::{
@@ -16,7 +15,6 @@ use bevy::{
         mouse::{MouseButton, MouseMotion, MouseWheel},
         Axis, ButtonInput,
     },
-    log::warn,
     math::Vec2,
     time::{Real, Time},
     utils::{HashMap, Instant},
@@ -225,7 +223,7 @@ impl<A: Actionlike> SummarizedActionState<A> {
     /// Returns a list of all entities that are contained within this data structure.
     ///
     /// This includes the global / resource state, using [`Entity::PLACEHOLDER`].
-    fn all_entities(&self) -> HashSet<Entity> {
+    pub fn all_entities(&self) -> HashSet<Entity> {
         let mut entities = HashSet::new();
         let button_entities = self.button_state_map.keys();
         let axis_entities = self.axis_state_map.keys();
@@ -298,65 +296,75 @@ impl<A: Actionlike> SummarizedActionState<A> {
         }
     }
 
-    /// Generates an [`ActionDiff`] for a single action.
+    /// Generates an [`ActionDiff`] for button data,
+    /// if the button has changed state.
     ///
-    /// Previous values should be assumed to be default if they were not present.
-    pub fn single_action_diff(
+    ///
+    /// Previous values will be treated as default if they were not present.
+    pub fn button_diff(
         action: A,
-        previous_button: bool,
+        previous_button: Option<bool>,
         current_button: Option<bool>,
-        previous_axis: f32,
+    ) -> Option<ActionDiff<A>> {
+        let previous_button = previous_button.unwrap_or_default();
+        let current_button = current_button?;
+
+        if previous_button != current_button {
+            if current_button {
+                Some(ActionDiff::Pressed { action })
+            } else {
+                Some(ActionDiff::Released { action })
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Generates an [`ActionDiff`] for axis data,
+    /// if the axis has changed state.
+    ///
+    /// Previous values will be treated as default if they were not present.
+    pub fn axis_diff(
+        action: A,
+        previous_axis: Option<f32>,
         current_axis: Option<f32>,
-        previous_dual_axis: Vec2,
+    ) -> Option<ActionDiff<A>> {
+        let previous_axis = previous_axis.unwrap_or_default();
+        let current_axis = current_axis?;
+
+        if previous_axis != current_axis {
+            Some(ActionDiff::AxisChanged {
+                action,
+                value: current_axis,
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Generates an [`ActionDiff`] for dual axis data,
+    /// if the dual axis has changed state.
+    pub fn dual_axis_diff(
+        action: A,
+        previous_dual_axis: Option<Vec2>,
         current_dual_axis: Option<Vec2>,
     ) -> Option<ActionDiff<A>> {
-        match (current_button, current_axis, current_dual_axis) {
-            (None, None, None) => {
-                error!("Action {action:?} has no input data");
-                None
-            }
-            (Some(current_button), None, None) => {
-                if previous_button != current_button {
-                    if current_button {
-                        Some(ActionDiff::Pressed { action })
-                    } else {
-                        Some(ActionDiff::Released { action })
-                    }
-                } else {
-                    None
-                }
-            }
-            (None, Some(current_axis), None) => {
-                if previous_axis != current_axis {
-                    Some(ActionDiff::AxisChanged {
-                        action,
-                        value: current_axis,
-                    })
-                } else {
-                    None
-                }
-            }
-            (None, None, Some(current_dual_axis)) => {
-                if previous_dual_axis != current_dual_axis {
-                    Some(ActionDiff::AxisPairChanged {
-                        action,
-                        axis_pair: current_dual_axis,
-                    })
-                } else {
-                    None
-                }
-            }
-            _ => {
-                error!("Action {action:?} has multiple input data");
-                None
-            }
+        let previous_dual_axis = previous_dual_axis.unwrap_or_default();
+        let current_dual_axis = current_dual_axis?;
+
+        if previous_dual_axis != current_dual_axis {
+            Some(ActionDiff::DualAxisChanged {
+                action,
+                axis_pair: current_dual_axis,
+            })
+        } else {
+            None
         }
     }
 
     /// Generates all [`ActionDiff`]s for a single entity.
     pub fn entity_diffs(
         &self,
-        entity: Entity,
         previous_button_state: Option<&HashMap<A, bool>>,
         current_button_state: Option<&HashMap<A, bool>>,
         previous_axis_state: Option<&HashMap<A, f32>>,
@@ -364,6 +372,53 @@ impl<A: Actionlike> SummarizedActionState<A> {
         previous_dual_axis_state: Option<&HashMap<A, Vec2>>,
         current_dual_axis_state: Option<&HashMap<A, Vec2>>,
     ) -> Vec<ActionDiff<A>> {
+        let mut action_diffs = Vec::new();
+
+        if let Some(current_button_state) = current_button_state {
+            for (action, current_button) in current_button_state {
+                let previous_button = previous_button_state
+                    .and_then(|previous_button_state| previous_button_state.get(action))
+                    .copied();
+
+                if let Some(diff) =
+                    Self::button_diff(action.clone(), previous_button, Some(*current_button))
+                {
+                    action_diffs.push(diff);
+                }
+            }
+        }
+
+        if let Some(current_axis_state) = current_axis_state {
+            for (action, current_axis) in current_axis_state {
+                let previous_axis = previous_axis_state
+                    .and_then(|previous_axis_state| previous_axis_state.get(action))
+                    .copied();
+
+                if let Some(diff) =
+                    Self::axis_diff(action.clone(), previous_axis, Some(*current_axis))
+                {
+                    action_diffs.push(diff);
+                }
+            }
+        }
+
+        if let Some(current_dual_axis_state) = current_dual_axis_state {
+            for (action, current_dual_axis) in current_dual_axis_state {
+                let previous_dual_axis = previous_dual_axis_state
+                    .and_then(|previous_dual_axis_state| previous_dual_axis_state.get(action))
+                    .copied();
+
+                if let Some(diff) = Self::dual_axis_diff(
+                    action.clone(),
+                    previous_dual_axis,
+                    Some(*current_dual_axis),
+                ) {
+                    action_diffs.push(diff);
+                }
+            }
+        }
+
+        action_diffs
     }
 
     /// Compares the current frame to the previous frame, generates [`ActionDiff`]s and then sends them as batched [`ActionDiffEvent`]s.
@@ -383,7 +438,6 @@ impl<A: Actionlike> SummarizedActionState<A> {
             let current_dual_axis_state = self.dual_axis_state_map.get(&entity);
 
             let action_diffs = self.entity_diffs(
-                entity,
                 previous_button_state,
                 current_button_state,
                 previous_axis_state,

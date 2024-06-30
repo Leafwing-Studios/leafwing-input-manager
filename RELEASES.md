@@ -93,6 +93,7 @@
   - `MouseMove::default().digital()` for discrete mouse movement.
   - `MouseScroll::default().digital()` for discrete mouse wheel movement.
 - `ActionDiff::ValueChanged` is now `ActionDiff::AxisChanged`
+- `ActionDiff::AxisPairChanged` is now `ActionDiff::DualAxisChanged`
 
 #### Input Processors
 

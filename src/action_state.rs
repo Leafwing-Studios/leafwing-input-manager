@@ -904,7 +904,7 @@ impl<A: Actionlike> ActionState<A> {
                 // Pressing will initialize the ActionData if it doesn't exist
                 axis_data.value = *value;
             }
-            ActionDiff::AxisPairChanged { action, axis_pair } => {
+            ActionDiff::DualAxisChanged { action, axis_pair } => {
                 let axis_data = self.dual_axis_data_mut(action).unwrap();
                 // Pressing will initialize the ActionData if it doesn't exist
                 axis_data.pair = *axis_pair;
