@@ -184,7 +184,7 @@ fn frame_with_two_fixed_timestep() {
     check_fixed_update_just_pressed_count(&mut app, 1);
     reset_counters(&mut app);
 
-    // Frame 2: the FixedUpdate schedule should run twice, but the buttton is not just_pressed anymore
+    // Frame 2: the FixedUpdate schedule should run twice, but the button is not just_pressed anymore
     app.update();
     check_update_just_pressed_count(&mut app, 0);
     check_fixed_update_run_count(&mut app, 2);
@@ -231,7 +231,7 @@ fn test_consume_in_fixed_update() {
         app.world()
             .get_resource::<ActionState<TestAction>>()
             .unwrap()
-            .all_button_data(&TestAction::Up)
+            .button_data(&TestAction::Up)
             .unwrap()
             .consumed,
     );
