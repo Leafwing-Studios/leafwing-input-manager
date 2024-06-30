@@ -878,7 +878,7 @@ impl<A: Actionlike> ActionState<A> {
             ActionDiff::Released { action } => {
                 self.release(action);
             }
-            ActionDiff::ValueChanged { action, value } => {
+            ActionDiff::AxisChanged { action, value } => {
                 let axis_data = self.axis_data_mut(action).unwrap();
                 // Pressing will initialize the ActionData if it doesn't exist
                 axis_data.value = *value;

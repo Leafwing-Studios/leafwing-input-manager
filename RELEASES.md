@@ -92,6 +92,7 @@
   - `KeyboardVirtualDPad` for four keys.
   - `MouseMove::default().digital()` for discrete mouse movement.
   - `MouseScroll::default().digital()` for discrete mouse wheel movement.
+- `ActionDiff::ValueChanged` is now `ActionDiff::AxisChanged`
 
 #### Input Processors
 

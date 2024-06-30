@@ -238,7 +238,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                         action: action.clone(),
                     }
                 } else {
-                    ActionDiff::ValueChanged {
+                    ActionDiff::AxisChanged {
                         action: action.clone(),
                         value,
                     }
@@ -276,7 +276,7 @@ pub fn generate_action_diffs<A: Actionlike>(
                 let values = previous_values.get_mut(&action).unwrap();
 
                 if !matches!(values.get(&maybe_entity), Some(value) if *value == current_value) {
-                    diffs.push(ActionDiff::ValueChanged {
+                    diffs.push(ActionDiff::AxisChanged {
                         action: action.clone(),
                         value: current_value,
                     });
