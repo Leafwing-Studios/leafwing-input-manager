@@ -12,11 +12,20 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum PlayerAction {
     Run,
     Jump,
     UseItem,
+}
+
+impl Actionlike for PlayerAction {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            PlayerAction::Run => InputControlKind::DualAxis,
+            _ => InputControlKind::Button,
+        }
+    }
 }
 
 impl PlayerAction {
@@ -25,12 +34,12 @@ impl PlayerAction {
         let mut input_map = InputMap::default();
 
         // Default gamepad input bindings
-        input_map.insert(Self::Run, GamepadStick::LEFT);
+        input_map.insert_dual_axis(Self::Run, GamepadStick::LEFT);
         input_map.insert(Self::Jump, GamepadButtonType::South);
         input_map.insert(Self::UseItem, GamepadButtonType::RightTrigger2);
 
         // Default kbm input bindings
-        input_map.insert(Self::Run, KeyboardVirtualDPad::WASD);
+        input_map.insert_dual_axis(Self::Run, KeyboardVirtualDPad::WASD);
         input_map.insert(Self::Jump, KeyCode::Space);
         input_map.insert(Self::UseItem, MouseButton::Left);
 
@@ -57,10 +66,7 @@ fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
     if action_state.pressed(&PlayerAction::Run) {
         println!(
             "Moving in direction {}",
-            action_state
-                .clamped_axis_pair(&PlayerAction::Run)
-                .unwrap()
-                .xy()
+            action_state.clamped_axis_pair(&PlayerAction::Run).xy()
         );
     }
 

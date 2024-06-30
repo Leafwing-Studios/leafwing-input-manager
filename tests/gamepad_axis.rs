@@ -3,7 +3,6 @@ use bevy::input::gamepad::{
 };
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
-use leafwing_input_manager::axislike::DualAxisData;
 use leafwing_input_manager::prelude::*;
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
@@ -14,11 +13,20 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum AxislikeTestAction {
     X,
     Y,
     XY,
+}
+
+impl Actionlike for AxislikeTestAction {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            AxislikeTestAction::X | AxislikeTestAction::Y => InputControlKind::Axis,
+            AxislikeTestAction::XY => InputControlKind::DualAxis,
+        }
+    }
 }
 
 fn test_app() -> App {
@@ -51,10 +59,10 @@ fn test_app() -> App {
 #[test]
 fn raw_gamepad_axis_events() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
+    app.insert_resource(InputMap::default().with_axis(
         ButtonlikeTestAction::Up,
         GamepadControlAxis::RIGHT_X.with_deadzone_symmetric(0.1),
-    )]));
+    ));
 
     let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     events.send(GamepadEvent::Axis(GamepadAxisChangedEvent {
@@ -102,16 +110,17 @@ fn game_pad_dual_axis_mocking() {
 #[test]
 fn game_pad_single_axis() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([
-        (
-            AxislikeTestAction::X,
-            GamepadControlAxis::LEFT_X.with_deadzone_symmetric(0.1),
-        ),
-        (
-            AxislikeTestAction::Y,
-            GamepadControlAxis::LEFT_Y.with_deadzone_symmetric(0.1),
-        ),
-    ]));
+    app.insert_resource(
+        InputMap::default()
+            .with_axis(
+                AxislikeTestAction::X,
+                GamepadControlAxis::LEFT_X.with_deadzone_symmetric(0.1),
+            )
+            .with_axis(
+                AxislikeTestAction::Y,
+                GamepadControlAxis::LEFT_Y.with_deadzone_symmetric(0.1),
+            ),
+    );
 
     // +X
     let input = GamepadControlAxis::LEFT_X;
@@ -168,20 +177,21 @@ fn game_pad_single_axis() {
 #[test]
 fn game_pad_single_axis_inverted() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([
-        (
-            AxislikeTestAction::X,
-            GamepadControlAxis::LEFT_X
-                .with_deadzone_symmetric(0.1)
-                .inverted(),
-        ),
-        (
-            AxislikeTestAction::Y,
-            GamepadControlAxis::LEFT_Y
-                .with_deadzone_symmetric(0.1)
-                .inverted(),
-        ),
-    ]));
+    app.insert_resource(
+        InputMap::default()
+            .with_axis(
+                AxislikeTestAction::X,
+                GamepadControlAxis::LEFT_X
+                    .with_deadzone_symmetric(0.1)
+                    .inverted(),
+            )
+            .with_axis(
+                AxislikeTestAction::Y,
+                GamepadControlAxis::LEFT_Y
+                    .with_deadzone_symmetric(0.1)
+                    .inverted(),
+            ),
+    );
 
     // +X
     let input = GamepadControlAxis::LEFT_X;
@@ -219,10 +229,10 @@ fn game_pad_single_axis_inverted() {
 #[test]
 fn game_pad_dual_axis_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_deadzone_symmetric(0.1),
-    )]));
+    ));
 
     // Test that an input inside the dual-axis deadzone is filtered out.
     let input = GamepadStick::LEFT;
@@ -233,8 +243,8 @@ fn game_pad_dual_axis_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        action_state.axis_pair(&AxislikeTestAction::XY),
+        Vec2::new(0.0, 0.0)
     );
 
     // Test that an input outside the dual-axis deadzone is not filtered out.
@@ -246,8 +256,8 @@ fn game_pad_dual_axis_deadzone() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.006_154);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(1.0, 0.11111112)
+        action_state.axis_pair(&AxislikeTestAction::XY),
+        Vec2::new(1.0, 0.11111112)
     );
 
     // Test that each axis of the dual-axis deadzone is filtered independently.
@@ -259,18 +269,18 @@ fn game_pad_dual_axis_deadzone() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.7777778);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.7777778, 0.0)
+        action_state.axis_pair(&AxislikeTestAction::XY),
+        Vec2::new(0.7777778, 0.0)
     );
 }
 
 #[test]
 fn game_pad_circle_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_circle_deadzone(0.1),
-    )]));
+    ));
 
     // Test that an input inside the circle deadzone is filtered out, assuming values of 0.1
     let input = GamepadStick::LEFT;
@@ -281,8 +291,8 @@ fn game_pad_circle_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        action_state.axis_pair(&AxislikeTestAction::XY),
+        Vec2::new(0.0, 0.0)
     );
 
     // Test that an input outside the circle deadzone is not filtered out, assuming values of 0.1
@@ -294,18 +304,18 @@ fn game_pad_circle_deadzone() {
     assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.11111112);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.11111112, 0.0)
+        action_state.axis_pair(&AxislikeTestAction::XY),
+        Vec2::new(0.11111112, 0.0)
     );
 }
 
 #[test]
 fn test_zero_dual_axis_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_deadzone_symmetric(0.0),
-    )]));
+    ));
 
     // Test that an input of zero will be `None` even with no deadzone.
     let input = GamepadStick::LEFT;
@@ -316,18 +326,18 @@ fn test_zero_dual_axis_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        action_state.axis_pair(&AxislikeTestAction::XY),
+        Vec2::new(0.0, 0.0)
     );
 }
 
 #[test]
 fn test_zero_circle_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
+    app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_circle_deadzone(0.0),
-    )]));
+    ));
 
     // Test that an input of zero will be `None` even with no deadzone.
     let input = GamepadStick::LEFT;
@@ -338,8 +348,8 @@ fn test_zero_circle_deadzone() {
     assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
-        DualAxisData::new(0.0, 0.0)
+        action_state.axis_pair(&AxislikeTestAction::XY),
+        Vec2::new(0.0, 0.0)
     );
 }
 
@@ -347,10 +357,9 @@ fn test_zero_circle_deadzone() {
 #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
 fn game_pad_virtual_dpad() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        AxislikeTestAction::XY,
-        GamepadVirtualDPad::DPAD,
-    )]));
+    app.insert_resource(
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, GamepadVirtualDPad::DPAD),
+    );
 
     app.press_input(GamepadButtonType::DPadLeft);
     app.update();
@@ -361,8 +370,8 @@ fn game_pad_virtual_dpad() {
     // This should be a unit length, because we're working with a VirtualDPad
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY).unwrap(),
+        action_state.axis_pair(&AxislikeTestAction::XY),
         // This should be a unit length, because we're working with a VirtualDPad
-        DualAxisData::new(-1.0, 0.0)
+        Vec2::new(-1.0, 0.0)
     );
 }

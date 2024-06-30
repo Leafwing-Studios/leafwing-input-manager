@@ -1,4 +1,8 @@
 //! Handles clashing inputs into a [`InputMap`] in a configurable fashion.
+//!
+//! [`Buttonlike`] actions can clash, if one is a strict subset of the other.
+//! For example, the user might have bound `Ctrl + S` to save, and `S` to move down.
+//! If the user presses `Ctrl + S`, the input manager should not also trigger the `S` action.
 
 use std::cmp::Ordering;
 
@@ -6,10 +10,9 @@ use bevy::prelude::Resource;
 use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::action_state::ActionData;
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
-use crate::user_input::UserInput;
+use crate::user_input::{Buttonlike, UserInput};
 use crate::Actionlike;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
@@ -46,18 +49,27 @@ impl ClashStrategy {
     }
 }
 
-/// The basic inputs that make up a [`UserInput`].
+/// A flat list of the inputs that make up a [`UserInput`].
+///
+/// This is used to check for potential clashes between actions,
+/// where one action is a strict subset of another.
 #[derive(Debug, Clone)]
 #[must_use]
 pub enum BasicInputs {
     /// The input consists of a single, fundamental [`UserInput`].
-    /// In most cases, the input simply holds itself.
+    ///
+    /// For example, a single key press.
     Simple(Box<dyn UserInput>),
 
-    /// The input consists of multiple independent [`UserInput`]s.
+    /// The input can be triggered by multiple independent [`UserInput`]s,
+    /// but is still fundamentally considered a single input.
+    ///
+    /// For example, a virtual D-Pad is only one input, but can be triggered by multiple keys.
     Composite(Vec<Box<dyn UserInput>>),
 
     /// The input represents one or more independent [`UserInput`] types.
+    ///
+    /// For example, a chorded input is a group of multiple keys that must be pressed together.
     Group(Vec<Box<dyn UserInput>>),
 }
 
@@ -70,6 +82,17 @@ impl BasicInputs {
             Self::Composite(inputs) => inputs,
             Self::Group(inputs) => inputs,
         }
+    }
+
+    ///  Create a [`BasicInputs::Composite`] from two existing [`BasicInputs`].
+    pub fn compose(self, other: BasicInputs) -> Self {
+        let combined_inputs = self
+            .inputs()
+            .into_iter()
+            .chain(other.inputs())
+            .collect();
+
+        BasicInputs::Composite(combined_inputs)
     }
 
     /// Returns the number of the logical [`UserInput`]s that make up the input.
@@ -132,19 +155,19 @@ impl BasicInputs {
 }
 
 impl<A: Actionlike> InputMap<A> {
-    /// Resolve clashing inputs, removing action presses that have been overruled
+    /// Resolve clashing button-like inputs, removing action presses that have been overruled
     ///
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        action_data: &mut HashMap<A, ActionData>,
+        button_data: &mut HashMap<A, bool>,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
-        for clash in self.get_clashes(action_data, input_streams) {
+        for clash in self.get_clashes(button_data, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
-                action_data.remove(&culled_action);
+                button_data.remove(&culled_action);
             }
         }
     }
@@ -153,8 +176,8 @@ impl<A: Actionlike> InputMap<A> {
     pub(crate) fn possible_clashes(&self) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
-        for action_a in self.actions() {
-            for action_b in self.actions() {
+        for action_a in self.buttonlike_actions() {
+            for action_b in self.buttonlike_actions() {
                 if let Some(clash) = self.possible_clash(action_a, action_b) {
                     clashes.push(clash);
                 }
@@ -170,20 +193,25 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        action_data: &HashMap<A, ActionData>,
+        action_data: &HashMap<A, bool>,
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
         // We can limit our search to the cached set of possibly clashing actions
         for clash in self.possible_clashes() {
-            let pressed = |action: &A| -> bool {
-                matches!(action_data.get(action), Some(data) if data.state.pressed())
-            };
+            let pressed_a = action_data
+                .get(&clash.action_a)
+                .copied()
+                .unwrap_or_default();
+            let pressed_b = action_data
+                .get(&clash.action_b)
+                .copied()
+                .unwrap_or_default();
 
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
-            if pressed(&clash.action_a) && pressed(&clash.action_b) {
+            if pressed_a && pressed_b {
                 // Check if the potential clash occurred based on the pressed inputs
                 if let Some(clash) = check_clash(&clash, input_streams) {
                     clashes.push(clash)
@@ -219,8 +247,8 @@ impl<A: Actionlike> InputMap<A> {
 pub(crate) struct Clash<A: Actionlike> {
     action_a: A,
     action_b: A,
-    inputs_a: Vec<Box<dyn UserInput>>,
-    inputs_b: Vec<Box<dyn UserInput>>,
+    inputs_a: Vec<Box<dyn Buttonlike>>,
+    inputs_b: Vec<Box<dyn Buttonlike>>,
 }
 
 impl<A: Actionlike> Clash<A> {
@@ -275,14 +303,14 @@ fn resolve_clash<A: Actionlike>(
     input_streams: &InputStreams,
 ) -> Option<A> {
     // Figure out why the actions are pressed
-    let reasons_a_is_pressed: Vec<&dyn UserInput> = clash
+    let reasons_a_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_a
         .iter()
         .filter(|input| input.pressed(input_streams))
         .map(|input| input.as_ref())
         .collect();
 
-    let reasons_b_is_pressed: Vec<&dyn UserInput> = clash
+    let reasons_b_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_b
         .iter()
         .filter(|input| input.pressed(input_streams))
@@ -337,7 +365,7 @@ mod tests {
     use super::*;
     use crate as leafwing_input_manager;
     use crate::prelude::KeyboardVirtualDPad;
-    use crate::user_input::InputChord;
+    use crate::user_input::ButtonlikeChord;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
@@ -360,14 +388,20 @@ mod tests {
 
         input_map.insert(One, Digit1);
         input_map.insert(Two, Digit2);
-        input_map.insert(OneAndTwo, InputChord::new([Digit1, Digit2]));
-        input_map.insert(TwoAndThree, InputChord::new([Digit2, Digit3]));
-        input_map.insert(OneAndTwoAndThree, InputChord::new([Digit1, Digit2, Digit3]));
-        input_map.insert(CtrlOne, InputChord::new([ControlLeft, Digit1]));
-        input_map.insert(AltOne, InputChord::new([AltLeft, Digit1]));
-        input_map.insert(CtrlAltOne, InputChord::new([ControlLeft, AltLeft, Digit1]));
-        input_map.insert(MoveDPad, KeyboardVirtualDPad::ARROW_KEYS);
-        input_map.insert(CtrlUp, InputChord::new([ControlLeft, ArrowUp]));
+        input_map.insert(OneAndTwo, ButtonlikeChord::new([Digit1, Digit2]));
+        input_map.insert(TwoAndThree, ButtonlikeChord::new([Digit2, Digit3]));
+        input_map.insert(
+            OneAndTwoAndThree,
+            ButtonlikeChord::new([Digit1, Digit2, Digit3]),
+        );
+        input_map.insert(CtrlOne, ButtonlikeChord::new([ControlLeft, Digit1]));
+        input_map.insert(AltOne, ButtonlikeChord::new([AltLeft, Digit1]));
+        input_map.insert(
+            CtrlAltOne,
+            ButtonlikeChord::new([ControlLeft, AltLeft, Digit1]),
+        );
+        input_map.insert_dual_axis(MoveDPad, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert(CtrlUp, ButtonlikeChord::new([ControlLeft, ArrowUp]));
 
         input_map
     }
@@ -388,13 +422,13 @@ mod tests {
             let a = KeyA;
             let b = KeyB;
             let c = KeyC;
-            let ab = InputChord::new([KeyA, KeyB]);
-            let bc = InputChord::new([KeyB, KeyC]);
-            let abc = InputChord::new([KeyA, KeyB, KeyC]);
+            let ab = ButtonlikeChord::new([KeyA, KeyB]);
+            let bc = ButtonlikeChord::new([KeyB, KeyC]);
+            let abc = ButtonlikeChord::new([KeyA, KeyB, KeyC]);
             let axyz_dpad = KeyboardVirtualDPad::new(KeyA, KeyX, KeyY, KeyZ);
             let abcd_dpad = KeyboardVirtualDPad::WASD;
 
-            let ctrl_up = InputChord::new([ArrowUp, ControlLeft]);
+            let ctrl_up = ButtonlikeChord::new([ArrowUp, ControlLeft]);
             let directions_dpad = KeyboardVirtualDPad::ARROW_KEYS;
 
             assert!(!test_input_clash(a, b));
@@ -419,7 +453,7 @@ mod tests {
                 action_a: One,
                 action_b: OneAndTwo,
                 inputs_a: vec![Box::new(Digit1)],
-                inputs_b: vec![Box::new(InputChord::new([Digit1, Digit2]))],
+                inputs_b: vec![Box::new(ButtonlikeChord::new([Digit1, Digit2]))],
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -435,8 +469,8 @@ mod tests {
             let correct_clash = Clash {
                 action_a: OneAndTwoAndThree,
                 action_b: OneAndTwo,
-                inputs_a: vec![Box::new(InputChord::new([Digit1, Digit2, Digit3]))],
-                inputs_b: vec![Box::new(InputChord::new([Digit1, Digit2]))],
+                inputs_a: vec![Box::new(ButtonlikeChord::new([Digit1, Digit2, Digit3]))],
+                inputs_b: vec![Box::new(ButtonlikeChord::new([Digit1, Digit2]))],
             };
 
             assert_eq!(observed_clash, correct_clash);
@@ -513,24 +547,22 @@ mod tests {
             app.press_input(Digit2);
             app.update();
 
-            let mut action_data = HashMap::new();
-            let mut action_datum = ActionData::default();
-            action_datum.state.press();
+            let mut button_data = HashMap::new();
 
-            action_data.insert(One, action_datum.clone());
-            action_data.insert(Two, action_datum.clone());
-            action_data.insert(OneAndTwo, action_datum.clone());
+            button_data.insert(One, true);
+            button_data.insert(Two, true);
+            button_data.insert(OneAndTwo, true);
 
             input_map.handle_clashes(
-                &mut action_data,
+                &mut button_data,
                 &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
             let mut expected = HashMap::new();
-            expected.insert(OneAndTwo, action_datum.clone());
+            expected.insert(OneAndTwo, true);
 
-            assert_eq!(action_data, expected);
+            assert_eq!(button_data, expected);
         }
 
         // Checks that a clash between a VirtualDPad and a chord chooses the chord
@@ -544,22 +576,20 @@ mod tests {
             app.press_input(ArrowUp);
             app.update();
 
-            let mut action_data = HashMap::new();
-            let mut action_datum = ActionData::default();
-            action_datum.state.press();
-            action_data.insert(CtrlUp, action_datum.clone());
-            action_data.insert(MoveDPad, action_datum.clone());
+            let mut button_data = HashMap::new();
+            button_data.insert(CtrlUp, true);
+            button_data.insert(MoveDPad, true);
 
             input_map.handle_clashes(
-                &mut action_data,
+                &mut button_data,
                 &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
             let mut expected = HashMap::new();
-            expected.insert(CtrlUp, action_datum);
+            expected.insert(CtrlUp, true);
 
-            assert_eq!(action_data, expected);
+            assert_eq!(button_data, expected);
         }
 
         #[test]
@@ -578,11 +608,11 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            for (action, action_data) in action_data.iter() {
+            for (action, button_pressed) in action_data.button_actions.iter() {
                 if *action == CtrlOne || *action == OneAndTwo {
-                    assert!(action_data.state.pressed());
+                    assert!(button_pressed);
                 } else {
-                    assert!(action_data.state.released());
+                    assert!(!button_pressed);
                 }
             }
         }

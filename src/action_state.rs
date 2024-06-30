@@ -1,12 +1,13 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::action_diff::ActionDiff;
+use crate::buttonlike::ButtonState;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::Actionlike;
-use crate::{axislike::DualAxisData, buttonlike::ButtonState};
+use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 
 use bevy::ecs::component::Component;
+use bevy::math::Vec2;
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
 #[cfg(feature = "timing")]
@@ -14,26 +15,17 @@ use bevy::utils::Duration;
 use bevy::utils::{HashMap, Instant};
 use serde::{Deserialize, Serialize};
 
-/// Metadata about an [`Actionlike`] action
+/// Metadata about an [`Buttonlike`] action
 ///
 /// If a button is released, its `reasons_pressed` should be empty.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct ActionData {
+pub struct ButtonData {
     /// Is the action pressed or released?
     pub state: ButtonState,
     /// The `state` of the action in the `Main` schedule
     pub update_state: ButtonState,
     /// The `state` of the action in the `FixedMain` schedule
     pub fixed_update_state: ButtonState,
-    /// The "value" of the binding that triggered the action.
-    ///
-    /// See [`ActionState::value`] for more details.
-    ///
-    /// **Warning:** this value may not be bounded as you might expect.
-    /// Consider clamping this to account for multiple triggering inputs.
-    pub value: f32,
-    /// The [`DualAxisData`] of the binding that triggered the action.
-    pub axis_pair: Option<DualAxisData>,
     /// When was the button pressed / released, and how long has it been held for?
     #[cfg(feature = "timing")]
     pub timing: Timing,
@@ -48,7 +40,29 @@ pub struct ActionData {
     pub disabled: bool,
 }
 
-impl ActionData {
+impl ButtonData {
+    /// The default data for a button that was just pressed.
+    pub const JUST_PRESSED: Self = Self {
+        state: ButtonState::JustPressed,
+        update_state: ButtonState::JustPressed,
+        fixed_update_state: ButtonState::JustPressed,
+        #[cfg(feature = "timing")]
+        timing: Timing::NEW,
+        consumed: false,
+        disabled: false,
+    };
+
+    /// The default data for a button that was just released.
+    pub const JUST_RELEASED: Self = Self {
+        state: ButtonState::JustReleased,
+        update_state: ButtonState::JustReleased,
+        fixed_update_state: ButtonState::JustReleased,
+        #[cfg(feature = "timing")]
+        timing: Timing::NEW,
+        consumed: false,
+        disabled: false,
+    };
+
     /// Is the action currently pressed?
     #[inline]
     #[must_use]
@@ -76,6 +90,36 @@ impl ActionData {
     pub fn just_released(&self) -> bool {
         !self.disabled && self.state.just_released()
     }
+}
+
+/// The raw data for an [`ActionState`] corresponding to a single virtual axis.
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
+pub struct AxisData {
+    /// How far the axis is currently pressed
+    pub value: f32,
+    /// The `value` of the action in the `Main` schedule
+    pub update_value: f32,
+    /// The `value` of the action in the `FixedMain` schedule
+    pub fixed_update_value: f32,
+    /// Is the action disabled?
+    ///
+    /// While disabled, an action will always return 0, regardless of its actual state.
+    pub disabled: bool,
+}
+
+/// The raw data for an [`ActionState`] corresponding to a pair of virtual axes.
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
+pub struct DualAxisData {
+    /// The XY coordinates of the axis
+    pub pair: Vec2,
+    /// The `pair` of the action in the `Main` schedule
+    pub update_pair: Vec2,
+    /// The `value` of the action in the `FixedMain` schedule
+    pub fixed_update_pair: Vec2,
+    /// Is the action disabled?
+    ///
+    /// While disabled, an action will always return 0, regardless of its actual state.
+    pub disabled: bool,
 }
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
@@ -125,8 +169,12 @@ impl ActionData {
 /// ```
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
-    /// The [`ActionData`] of each action
-    action_data: HashMap<A, ActionData>,
+    /// The [`ButtonData`] of each action
+    button_data: HashMap<A, ButtonData>,
+    /// The [`AxisData`] of each action
+    axis_data: HashMap<A, AxisData>,
+    /// The [`Vec2`] of each action
+    dual_axis_data: HashMap<A, DualAxisData>,
 }
 
 // The derive does not work unless A: Default,
@@ -134,21 +182,58 @@ pub struct ActionState<A: Actionlike> {
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> Self {
         Self {
-            action_data: HashMap::default(),
+            button_data: HashMap::default(),
+            axis_data: HashMap::default(),
+            dual_axis_data: HashMap::default(),
         }
     }
 }
 
 impl<A: Actionlike> ActionState<A> {
+    /// Returns a reference to the complete [`ButtonData`] for all actions.
+    #[inline]
+    #[must_use]
+    pub fn all_button_data(&self) -> &HashMap<A, ButtonData> {
+        &self.button_data
+    }
+
+    /// Returns a reference to the complete [`AxisData`] for all actions.
+    #[inline]
+    #[must_use]
+    pub fn all_axis_data(&self) -> &HashMap<A, AxisData> {
+        &self.axis_data
+    }
+
+    /// Returns a reference to the complete [`DualAxisData`] for all actions.
+    #[inline]
+    #[must_use]
+    pub fn all_dual_axis_data(&self) -> &HashMap<A, DualAxisData> {
+        &self.dual_axis_data
+    }
+
     /// We are about to enter the `Main` schedule, so we:
     /// - save all the changes applied to `state` into the `fixed_update_state`
     /// - switch to loading the `update_state`
     pub(crate) fn swap_to_update_state(&mut self) {
-        for (_action, action_datum) in self.action_data.iter_mut() {
+        for (_action, action_datum) in self.button_data.iter_mut() {
             // save the changes applied to `state` into `fixed_update_state`
             action_datum.fixed_update_state = action_datum.state;
             // switch to loading the `update_state` into `state`
             action_datum.state = action_datum.update_state;
+        }
+
+        for (_action, action_datum) in self.axis_data.iter_mut() {
+            // save the changes applied to `state` into `fixed_update_state`
+            action_datum.fixed_update_value = action_datum.value;
+            // switch to loading the `update_state` into `state`
+            action_datum.value = action_datum.update_value;
+        }
+
+        for (_action, action_datum) in self.dual_axis_data.iter_mut() {
+            // save the changes applied to `state` into `fixed_update_state`
+            action_datum.fixed_update_pair = action_datum.pair;
+            // switch to loading the `update_state` into `state`
+            action_datum.pair = action_datum.update_pair;
         }
     }
 
@@ -156,39 +241,77 @@ impl<A: Actionlike> ActionState<A> {
     /// - save all the changes applied to `state` into the `update_state`
     /// - switch to loading the `fixed_update_state`
     pub(crate) fn swap_to_fixed_update_state(&mut self) {
-        for (_action, action_datum) in self.action_data.iter_mut() {
+        for (_action, action_datum) in self.button_data.iter_mut() {
             // save the changes applied to `state` into `update_state`
             action_datum.update_state = action_datum.state;
             // switch to loading the `fixed_update_state` into `state`
             action_datum.state = action_datum.fixed_update_state;
         }
+
+        for (_action, action_datum) in self.axis_data.iter_mut() {
+            // save the changes applied to `state` into `update_state`
+            action_datum.update_value = action_datum.value;
+            // switch to loading the `fixed_update_state` into `state`
+            action_datum.value = action_datum.fixed_update_value;
+        }
+
+        for (_action, action_datum) in self.dual_axis_data.iter_mut() {
+            // save the changes applied to `state` into `update_state`
+            action_datum.update_pair = action_datum.pair;
+            // switch to loading the `fixed_update_state` into `state`
+            action_datum.pair = action_datum.fixed_update_pair;
+        }
     }
 
-    /// Updates the [`ActionState`] based on a vector of [`ActionData`], ordered by [`Actionlike::id`](Actionlike).
+    /// Updates the [`ActionState`] based on the provided [`UpdatedActions`].
     ///
-    /// The `action_data` is typically constructed from [`InputMap::which_pressed`](crate::input_map::InputMap),
+    /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
-    pub fn update(&mut self, action_data: HashMap<A, ActionData>) {
-        for (action, action_datum) in self.action_data.iter_mut() {
-            if !action_data.contains_key(action) {
-                action_datum.state.release();
+    pub fn update(&mut self, updated_actions: UpdatedActions<A>) {
+        for (action, button_datum) in self.button_data.iter_mut() {
+            if !updated_actions.button_actions.contains_key(action) {
+                button_datum.state.release();
             }
         }
-        for (action, action_datum) in action_data {
-            // Avoid multiple mut borrows, make the compiler happy
-            if self.action_data.contains_key(&action) {
-                match action_datum.state {
-                    ButtonState::JustPressed => self.press(&action),
-                    ButtonState::Pressed => self.press(&action),
-                    ButtonState::JustReleased => self.release(&action),
-                    ButtonState::Released => self.release(&action),
+        for (action, button_datum) in updated_actions.button_actions {
+            if self.button_data.contains_key(&action) {
+                match button_datum {
+                    true => self.press(&action),
+                    false => self.release(&action),
                 }
-
-                let current_data = self.action_data.get_mut(&action).unwrap();
-                current_data.axis_pair = action_datum.axis_pair;
-                current_data.value = action_datum.value;
             } else {
-                self.action_data.insert(action, action_datum.clone());
+                match button_datum {
+                    true => self.button_data.insert(action, ButtonData::JUST_PRESSED),
+                    false => self.button_data.insert(action, ButtonData::JUST_RELEASED),
+                };
+            }
+        }
+
+        for (action, axis_datum) in updated_actions.axis_actions.into_iter() {
+            if self.axis_data.contains_key(&action) {
+                self.axis_data.get_mut(&action).unwrap().value = axis_datum;
+            } else {
+                self.axis_data.insert(
+                    action,
+                    AxisData {
+                        value: axis_datum,
+                        ..Default::default()
+                    },
+                );
+            }
+        }
+
+        for (action, dual_axis_datum) in updated_actions.dual_axis_actions.into_iter() {
+            if self.dual_axis_data.contains_key(&action) {
+                self.dual_axis_data.get_mut(&action).unwrap().pair = dual_axis_datum;
+            } else {
+                self.dual_axis_data.insert(
+                    action,
+                    DualAxisData {
+                        pair: dual_axis_datum,
+                        ..Default::default()
+                    },
+                );
             }
         }
     }
@@ -239,11 +362,11 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     pub fn tick(&mut self, _current_instant: Instant, _previous_instant: Instant) {
         // Advanced the ButtonState
-        self.action_data.values_mut().for_each(|ad| ad.state.tick());
+        self.button_data.values_mut().for_each(|ad| ad.state.tick());
 
         // Advance the Timings if the feature is enabled
         #[cfg(feature = "timing")]
-        self.action_data.values_mut().for_each(|ad| {
+        self.button_data.values_mut().for_each(|ad| {
             // Durations should not advance while actions are consumed
             if !ad.consumed {
                 ad.timing.tick(_current_instant, _previous_instant);
@@ -251,50 +374,50 @@ impl<A: Actionlike> ActionState<A> {
         });
     }
 
-    /// A reference of the [`ActionData`] corresponding to the `action` if triggered.
+    /// A reference of the [`ButtonData`] corresponding to the `action` if triggered.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     ///
     /// # Caution
     ///
-    /// To access the [`ActionData`] regardless of whether the `action` has been triggered,
+    /// To access the [`ButtonData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// # Returns
     ///
-    /// - `Some(ActionData)` if it exists.
+    /// - `Some(ButtonData)` if it exists.
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
-    pub fn action_data(&self, action: &A) -> Option<&ActionData> {
-        self.action_data.get(action)
+    pub fn button_data(&self, action: &A) -> Option<&ButtonData> {
+        self.button_data.get(action)
     }
 
-    /// A mutable reference of the [`ActionData`] corresponding to the `action` if triggered.
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action` if triggered.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     ///
     /// # Caution
     ///
-    /// - To access the [`ActionData`] regardless of whether the `action` has been triggered,
+    /// - To access the [`ButtonData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
-    /// - To insert a default [`ActionData`] if it doesn't exist,
+    /// - To insert a default [`ButtonData`] if it doesn't exist,
     /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
     ///
     /// # Returns
     ///
-    /// - `Some(ActionData)` if it exists.
+    /// - `Some(ButtonData)` if it exists.
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
-    pub fn action_data_mut(&mut self, action: &A) -> Option<&mut ActionData> {
-        self.action_data.get_mut(action)
+    pub fn button_data_mut(&mut self, action: &A) -> Option<&mut ButtonData> {
+        self.button_data.get_mut(action)
     }
 
-    /// A mutable reference of the [`ActionData`] corresponding to the `action`.
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`ActionData`] for you,
@@ -304,11 +427,121 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
-    pub fn action_data_mut_or_default(&mut self, action: &A) -> &mut ActionData {
-        self.action_data
+    pub fn button_data_mut_or_default(&mut self, action: &A) -> &mut ButtonData {
+        self.button_data
             .raw_entry_mut()
             .from_key(action)
-            .or_insert_with(|| (action.clone(), ActionData::default()))
+            .or_insert_with(|| (action.clone(), ButtonData::default()))
+            .1
+    }
+
+    /// A reference of the [`AxisData`] corresponding to the `action` if triggered.
+    ///
+    /// # Caution
+    ///
+    /// To access the [`AxisData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// # Returns
+    ///
+    /// - `Some(AxisData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    pub fn axis_data(&self, action: &A) -> Option<&AxisData> {
+        self.axis_data.get(action)
+    }
+
+    /// A mutable reference of the [`AxisData`] corresponding to the `action` if triggered.
+    ///
+    /// # Caution
+    ///
+    /// - To access the [`AxisData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// - To insert a default [`AxisData`] if it doesn't exist,
+    /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(AxisData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    pub fn axis_data_mut(&mut self, action: &A) -> Option<&mut AxisData> {
+        self.axis_data.get_mut(action)
+    }
+
+    /// A mutable reference of the [`AxisData`] corresponding to the `action`.
+    ///
+    /// If the `action` has no data yet (because the `action` has not been triggered),
+    /// this method will create and insert a default [`ActionData`] for you,
+    /// avoiding potential errors from unwrapping [`None`].
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    #[inline]
+    #[must_use]
+    pub fn axis_data_mut_or_default(&mut self, action: &A) -> &mut AxisData {
+        self.axis_data
+            .raw_entry_mut()
+            .from_key(action)
+            .or_insert_with(|| (action.clone(), AxisData::default()))
+            .1
+    }
+
+    /// A reference of the [`DualAxisData`] corresponding to the `action` if triggered.
+    ///
+    /// # Caution
+    ///
+    /// To access the [`DualAxisData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// # Returns
+    ///
+    /// - `Some(DualAxisData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    pub fn dual_axis_data(&self, action: &A) -> Option<&DualAxisData> {
+        self.dual_axis_data.get(action)
+    }
+
+    /// A mutable reference of the [`DualAxisData`] corresponding to the `action` if triggered.
+    ///
+    /// # Caution
+    ///
+    /// - To access the [`DualAxisData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// - To insert a default [`ButtonData`] if it doesn't exist,
+    /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ButtonData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    pub fn dual_axis_data_mut(&mut self, action: &A) -> Option<&mut DualAxisData> {
+        self.dual_axis_data.get_mut(action)
+    }
+
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
+    ///
+    /// If the `action` has no data yet (because the `action` has not been triggered),
+    /// this method will create and insert a default [`ActionData`] for you,
+    /// avoiding potential errors from unwrapping [`None`].
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    #[inline]
+    #[must_use]
+    pub fn dual_axis_data_mut_or_default(&mut self, action: &A) -> &mut DualAxisData {
+        self.dual_axis_data
+            .raw_entry_mut()
+            .from_key(action)
+            .or_insert_with(|| (action.clone(), DualAxisData::default()))
             .1
     }
 
@@ -324,7 +557,7 @@ impl<A: Actionlike> ActionState<A> {
     /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
     /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
     /// repository.
-    /// - Dual axis inputs will return the magnitude of its [`DualAxisData`] and will be in the range
+    /// - Dual axis inputs will return the magnitude of its [`Vec2`] and will be in the range
     /// `0.0..=1.0`.
     /// - Chord inputs will return the value of its first input.
     ///
@@ -339,8 +572,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_value`](Self::clamped_value) method instead.
     pub fn value(&self, action: &A) -> f32 {
-        match self.action_data(action) {
-            Some(action_data) => action_data.value,
+        match self.axis_data(action) {
+            Some(axis_data) => axis_data.value,
             None => 0.0,
         }
     }
@@ -349,14 +582,15 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Warning
     ///
-    /// This value will be 0. if the action has never been pressed or released.
+    /// This value will be 0. by default,
+    /// even if the action is not a axislike action.
     pub fn clamped_value(&self, action: &A) -> f32 {
         self.value(action).clamp(-1., 1.)
     }
 
-    /// Get the [`DualAxisData`] from the binding that triggered the corresponding `action`.
+    /// Get the [`Vec2`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only events that represent dual-axis control provide an [`DualAxisData`],
+    /// Only events that represent dual-axis control provide an [`Vec2`],
     /// and this will return [`None`] for other events.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
@@ -364,26 +598,34 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Warning
     ///
+    /// This value will be [`Vec2::ZERO`] by default,
+    /// even if the action is not a dual-axislike action.
+    ///
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
-    pub fn axis_pair(&self, action: &A) -> Option<DualAxisData> {
-        let action_data = self.action_data(action)?;
-        action_data.axis_pair
+    pub fn axis_pair(&self, action: &A) -> Vec2 {
+        let action_data = self.dual_axis_data(action);
+        action_data.map_or(Vec2::ZERO, |action_data| action_data.pair)
     }
 
-    /// Get the [`DualAxisData`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
-    pub fn clamped_axis_pair(&self, action: &A) -> Option<DualAxisData> {
-        self.axis_pair(action)
-            .map(|pair| DualAxisData::new(pair.x().clamp(-1.0, 1.0), pair.y().clamp(-1.0, 1.0)))
+    /// Get the [`Vec2`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    ///  
+    /// # Warning
+    ///
+    /// This value will be [`Vec2::ZERO`] by default,
+    /// even if the action is not a dual-axislike action.
+    pub fn clamped_axis_pair(&self, action: &A) -> Vec2 {
+        let pair = self.axis_pair(action);
+        Vec2::new(pair.x.clamp(-1.0, 1.0), pair.y.clamp(-1.0, 1.0))
     }
 
-    /// Manually sets the [`ActionData`] of the corresponding `action`
+    /// Manually sets the [`ButtonData`] of the corresponding `action`
     ///
     /// You should almost always use more direct methods, as they are simpler and less error-prone.
     ///
     /// However, this method can be useful for testing,
-    /// or when transferring [`ActionData`] between action states.
+    /// or when transferring [`ButtonData`] between action states.
     ///
     /// # Example
     /// ```rust
@@ -415,8 +657,8 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// ```
     #[inline]
-    pub fn set_action_data(&mut self, action: A, data: ActionData) {
-        self.action_data.insert(action, data);
+    pub fn set_button_data(&mut self, action: A, data: ButtonData) {
+        self.button_data.insert(action, data);
     }
 
     /// Press the `action`
@@ -425,7 +667,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: &A) {
-        let action_data = self.action_data_mut_or_default(action);
+        let action_data = self.button_data_mut_or_default(action);
 
         // Consumed actions cannot be pressed until they are released
         if action_data.consumed {
@@ -446,7 +688,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: &A) {
-        let action_data = self.action_data_mut_or_default(action);
+        let action_data = self.button_data_mut_or_default(action);
 
         // Once released, consumed actions can be pressed again
         action_data.consumed = false;
@@ -507,7 +749,7 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn consume(&mut self, action: &A) {
-        let action_data = self.action_data_mut_or_default(action);
+        let action_data = self.button_data_mut_or_default(action);
 
         // This is the only difference from action_state.release(&action)
         action_data.consumed = true;
@@ -528,17 +770,17 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn consumed(&self, action: &A) -> bool {
-        matches!(self.action_data(action), Some(action_data) if action_data.consumed)
+        matches!(self.button_data(action), Some(action_data) if action_data.consumed)
     }
 
     /// Disables the `action`
     #[inline]
     pub fn disable(&mut self, action: &A) {
-        let action_data = match self.action_data_mut(action) {
+        let action_data = match self.button_data_mut(action) {
             Some(action_data) => action_data,
             None => {
-                self.set_action_data(action.clone(), ActionData::default());
-                self.action_data_mut(action).unwrap()
+                self.set_button_data(action.clone(), ButtonData::default());
+                self.button_data_mut(action).unwrap()
             }
         };
 
@@ -557,7 +799,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn disabled(&mut self, action: &A) -> bool {
-        match self.action_data(action) {
+        match self.button_data(action) {
             Some(action_data) => action_data.disabled,
             None => false,
         }
@@ -566,11 +808,11 @@ impl<A: Actionlike> ActionState<A> {
     /// Enables the `action`
     #[inline]
     pub fn enable(&mut self, action: &A) {
-        let action_data = match self.action_data_mut(action) {
+        let action_data = match self.button_data_mut(action) {
             Some(action_data) => action_data,
             None => {
-                self.set_action_data(action.clone(), ActionData::default());
-                self.action_data_mut(action).unwrap()
+                self.set_button_data(action.clone(), ButtonData::default());
+                self.button_data_mut(action).unwrap()
             }
         };
 
@@ -586,42 +828,62 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Is this `action` currently pressed?
+    ///
+    /// # Warning
+    ///
+    /// This value will be `false` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
-        matches!(self.action_data(action), Some(action_data) if action_data.pressed())
+        matches!(self.button_data(action), Some(action_data) if action_data.pressed())
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
+    ///
+    /// # Warning
+    ///
+    /// This value will be `false` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
-        matches!(self.action_data(action), Some(action_data) if action_data.just_pressed())
+        matches!(self.button_data(action), Some(action_data) if action_data.just_pressed())
     }
 
     /// Is this `action` currently released?
     ///
     /// This is always the logical negation of [pressed](ActionState::pressed)
+    ///
+    /// # Warning
+    ///
+    /// This value will be `true` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
-        match self.action_data(action) {
+        match self.button_data(action) {
             Some(action_data) => action_data.released(),
             None => true,
         }
     }
 
     /// Was this `action` released since the last time [tick](ActionState::tick) was called?
+    ///
+    /// # Warning
+    ///
+    /// This value will be `true` by default,
+    /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
-        matches!(self.action_data(action), Some(action_data) if action_data.just_released())
+        matches!(self.button_data(action), Some(action_data) if action_data.just_released())
     }
 
     #[must_use]
     /// Which actions are currently pressed?
     pub fn get_pressed(&self) -> Vec<A> {
-        self.action_data
+        self.button_data
             .iter()
             .filter(|(_action, data)| data.pressed())
             .map(|(action, _data)| action.clone())
@@ -631,7 +893,7 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     /// Which actions were just pressed?
     pub fn get_just_pressed(&self) -> Vec<A> {
-        self.action_data
+        self.button_data
             .iter()
             .filter(|(_action, data)| data.just_pressed())
             .map(|(action, _data)| action.clone())
@@ -641,7 +903,7 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     /// Which actions are currently released?
     pub fn get_released(&self) -> Vec<A> {
-        self.action_data
+        self.button_data
             .iter()
             .filter(|(_action, data)| data.released())
             .map(|(action, _data)| action.clone())
@@ -651,7 +913,7 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     /// Which actions were just released?
     pub fn get_just_released(&self) -> Vec<A> {
-        self.action_data
+        self.button_data
             .iter()
             .filter(|(_action, data)| data.just_released())
             .map(|(action, _data)| action.clone())
@@ -670,7 +932,7 @@ impl<A: Actionlike> ActionState<A> {
     /// This will also be [`None`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
     pub fn instant_started(&self, action: &A) -> Option<Instant> {
-        let action_data = self.action_data(action)?;
+        let action_data = self.button_data(action)?;
         action_data.timing.instant_started
     }
 
@@ -679,7 +941,7 @@ impl<A: Actionlike> ActionState<A> {
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
     pub fn current_duration(&self, action: &A) -> Duration {
-        self.action_data(action)
+        self.button_data(action)
             .map(|data| data.timing.current_duration)
             .unwrap_or_default()
     }
@@ -692,7 +954,7 @@ impl<A: Actionlike> ActionState<A> {
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
     pub fn previous_duration(&self, action: &A) -> Duration {
-        self.action_data(action)
+        self.button_data(action)
             .map(|data| data.timing.previous_duration)
             .unwrap_or_default()
     }
@@ -704,27 +966,19 @@ impl<A: Actionlike> ActionState<A> {
         match action_diff {
             ActionDiff::Pressed { action } => {
                 self.press(action);
-                // Pressing will initialize the ActionData if it doesn't exist
-                self.action_data_mut(action).unwrap().value = 1.;
             }
             ActionDiff::Released { action } => {
                 self.release(action);
-                // Releasing will initialize the ActionData if it doesn't exist
-                let action_data = self.action_data_mut(action).unwrap();
-                action_data.value = 0.;
-                action_data.axis_pair = None;
             }
-            ActionDiff::ValueChanged { action, value } => {
-                self.press(action);
+            ActionDiff::AxisChanged { action, value } => {
+                let axis_data = self.axis_data_mut(action).unwrap();
                 // Pressing will initialize the ActionData if it doesn't exist
-                self.action_data_mut(action).unwrap().value = *value;
+                axis_data.value = *value;
             }
-            ActionDiff::AxisPairChanged { action, axis_pair } => {
-                self.press(action);
-                let action_data = self.action_data_mut(action).unwrap();
+            ActionDiff::DualAxisChanged { action, axis_pair } => {
+                let axis_data = self.dual_axis_data_mut(action).unwrap();
                 // Pressing will initialize the ActionData if it doesn't exist
-                action_data.axis_pair = Some(DualAxisData::from_xy(*axis_pair));
-                action_data.value = axis_pair.length();
+                axis_data.pair = *axis_pair;
             }
         };
     }
@@ -733,7 +987,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn keys(&self) -> Vec<A> {
-        self.action_data.keys().cloned().collect()
+        self.button_data.keys().cloned().collect()
     }
 }
 
@@ -746,7 +1000,7 @@ mod tests {
     use crate::input_mocking::MockInput;
     use crate::input_streams::InputStreams;
     use crate::plugin::AccumulatorPlugin;
-    use crate::prelude::InputChord;
+    use crate::prelude::ButtonlikeChord;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
     use bevy::utils::{Duration, Instant};
@@ -838,7 +1092,7 @@ mod tests {
         let mut input_map = InputMap::default();
         input_map.insert(Action::One, Digit1);
         input_map.insert(Action::Two, Digit2);
-        input_map.insert(Action::OneAndTwo, InputChord::new([Digit1, Digit2]));
+        input_map.insert(Action::OneAndTwo, ButtonlikeChord::new([Digit1, Digit2]));
 
         let mut app = App::new();
         app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);

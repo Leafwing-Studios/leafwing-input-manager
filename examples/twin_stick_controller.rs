@@ -9,7 +9,7 @@
 use bevy::{
     input::gamepad::GamepadEvent, input::keyboard::KeyboardInput, prelude::*, window::PrimaryWindow,
 };
-use leafwing_input_manager::{axislike::DualAxisData, prelude::*};
+use leafwing_input_manager::prelude::*;
 
 fn main() {
     App::new()
@@ -31,11 +31,20 @@ fn main() {
 }
 
 // ----------------------------- Player Action Input Handling -----------------------------
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 pub enum PlayerAction {
     Move,
     Look,
     Shoot,
+}
+
+impl Actionlike for PlayerAction {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            PlayerAction::Move | PlayerAction::Look => InputControlKind::DualAxis,
+            PlayerAction::Shoot => InputControlKind::Button,
+        }
+    }
 }
 
 impl PlayerAction {
@@ -44,13 +53,13 @@ impl PlayerAction {
         let mut input_map = InputMap::default();
 
         // Default gamepad input bindings
-        input_map.insert(Self::Move, GamepadStick::LEFT);
-        input_map.insert(Self::Look, GamepadStick::RIGHT);
+        input_map.insert_dual_axis(Self::Move, GamepadStick::LEFT);
+        input_map.insert_dual_axis(Self::Look, GamepadStick::RIGHT);
         input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
 
         // Default kbm input bindings
-        input_map.insert(Self::Move, KeyboardVirtualDPad::WASD);
-        input_map.insert(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert_dual_axis(Self::Move, KeyboardVirtualDPad::WASD);
+        input_map.insert_dual_axis(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
         input_map.insert(Self::Shoot, MouseButton::Left);
 
         input_map
@@ -141,11 +150,11 @@ fn player_mouse_look(
         let diff = (p - player_position).xz();
         if diff.length_squared() > 1e-3f32 {
             // Get the mutable action data to set the axis
-            let action_data = action_state.action_data_mut_or_default(&PlayerAction::Look);
+            let action_data = action_state.dual_axis_data_mut_or_default(&PlayerAction::Look);
 
             // Flipping y sign here to be consistent with gamepad input.
             // We could also invert the gamepad y-axis
-            action_data.axis_pair = Some(DualAxisData::new(diff.x, -diff.y));
+            action_data.pair = Vec2::new(diff.x, -diff.y);
 
             // Press the look action, so we can check that it is active
             action_state.press(&PlayerAction::Look);
@@ -163,21 +172,14 @@ fn control_player(
     if action_state.pressed(&PlayerAction::Move) {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
-        let move_delta = time.delta_seconds()
-            * action_state
-                .clamped_axis_pair(&PlayerAction::Move)
-                .unwrap()
-                .xy();
+        let move_delta =
+            time.delta_seconds() * action_state.clamped_axis_pair(&PlayerAction::Move).xy();
         player_transform.translation += Vec3::new(move_delta.x, 0.0, move_delta.y);
         println!("Player moved to: {}", player_transform.translation.xz());
     }
 
     if action_state.pressed(&PlayerAction::Look) {
-        let look = action_state
-            .axis_pair(&PlayerAction::Look)
-            .unwrap()
-            .xy()
-            .normalize();
+        let look = action_state.axis_pair(&PlayerAction::Look).xy().normalize();
         println!("Player looking in direction: {}", look);
     }
 

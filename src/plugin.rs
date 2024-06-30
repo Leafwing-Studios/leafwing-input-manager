@@ -13,7 +13,7 @@ use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 
-use crate::action_state::{ActionData, ActionState};
+use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
@@ -176,7 +176,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             .register_type::<AccumulatedMouseScroll>()
             .register_type::<ActionState<A>>()
             .register_type::<InputMap<A>>()
-            .register_type::<ActionData>()
+            .register_type::<ButtonData>()
             .register_type::<ActionState<A>>()
             // Inputs
             .register_user_input::<GamepadControlDirection>()

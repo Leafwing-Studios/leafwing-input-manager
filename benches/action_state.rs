@@ -1,10 +1,6 @@
 use bevy::{prelude::Reflect, utils::HashMap};
 use criterion::{criterion_group, criterion_main, Criterion};
-#[cfg(feature = "timing")]
-use leafwing_input_manager::timing::Timing;
-use leafwing_input_manager::{
-    action_state::ActionData, buttonlike::ButtonState, prelude::ActionState, Actionlike,
-};
+use leafwing_input_manager::{input_map::UpdatedActions, prelude::ActionState, Actionlike};
 
 #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 enum TestAction {
@@ -43,7 +39,7 @@ fn just_released(action_state: &ActionState<TestAction>) -> bool {
     action_state.just_released(&TestAction::A)
 }
 
-fn update(mut action_state: ActionState<TestAction>, action_data: HashMap<TestAction, ActionData>) {
+fn update(mut action_state: ActionState<TestAction>, action_data: UpdatedActions<TestAction>) {
     action_state.update(action_data);
 }
 
@@ -58,27 +54,17 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("released", |b| b.iter(|| released(&action_state)));
     c.bench_function("just_released", |b| b.iter(|| just_released(&action_state)));
 
-    let action_data: HashMap<TestAction, ActionData> = TestAction::variants()
-        .map(|action| {
-            (
-                action,
-                ActionData {
-                    state: ButtonState::JustPressed,
-                    update_state: ButtonState::Released,
-                    fixed_update_state: ButtonState::Released,
-                    value: 0.0,
-                    axis_pair: None,
-                    #[cfg(feature = "timing")]
-                    timing: Timing::default(),
-                    consumed: false,
-                    disabled: false,
-                },
-            )
-        })
+    let button_actions: HashMap<TestAction, bool> = TestAction::variants()
+        .map(|action| (action, true))
         .collect();
 
+    let updated_actions = UpdatedActions {
+        button_actions,
+        ..Default::default()
+    };
+
     c.bench_function("update", |b| {
-        b.iter(|| update(action_state.clone(), action_data.clone()))
+        b.iter(|| update(action_state.clone(), updated_actions.clone()))
     });
 }
 

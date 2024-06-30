@@ -214,35 +214,32 @@ pub trait QueryInput {
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn pressed(&self, input: impl UserInput) -> bool;
+    fn pressed(&self, input: impl Buttonlike) -> bool;
 
     /// Checks if the `input` is currently pressed or active on the specified [`Gamepad`].
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool;
+    fn pressed_on_gamepad(&self, input: impl Buttonlike, gamepad: Option<Gamepad>) -> bool;
 
-    /// Retrieves the values on all axes represented by the `input`.
-    ///
-    /// Binary inputs (e.g., keys and buttons) are treated like single-axis inputs,
-    /// typically returning a value between `0.0` (not pressed) and `1.0` (fully pressed).
+    /// Retrieves the value on the axis represented by the `input`.
+    fn read_axis_value(&self, input: impl Axislike) -> f32;
+
+    /// Retrieves the values on the axes represented by the `input`.
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32>;
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2;
 
-    /// Retrieves the values on all axes represented by the `input` on the specified [`Gamepad`].
-    ///
-    /// Binary inputs (e.g., keys and buttons) are treated like single-axis inputs,
-    /// typically returning a value between `0.0` (not pressed) and `1.0` (fully pressed).
+    /// Retrieves the values on the axes represented by the `input` on the specified [`Gamepad`].
     ///
     /// This method is intended as a convenience for testing;
     /// use an [`InputMap`](crate::input_map::InputMap) in real code.
-    fn read_axis_values_on_gamepad(
+    fn read_dual_axis_values_on_gamepad(
         &self,
-        input: impl UserInput,
+        input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> Vec<f32>;
+    ) -> Vec2;
 }
 
 /// Send fake UI interaction for testing purposes.
@@ -453,36 +450,36 @@ impl MutableInputStreams<'_> {
 
 impl QueryInput for InputStreams<'_> {
     #[inline]
-    fn pressed(&self, input: impl UserInput) -> bool {
+    fn pressed(&self, input: impl Buttonlike) -> bool {
         input.pressed(self)
     }
 
     #[inline]
-    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
+    fn pressed_on_gamepad(&self, input: impl Buttonlike, gamepad: Option<Gamepad>) -> bool {
         let mut input_streams = self.clone();
         input_streams.associated_gamepad = gamepad;
 
         input_streams.pressed(input)
     }
 
-    #[inline]
-    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
-        if let Some(data) = input.axis_pair(self) {
-            return vec![data.x(), data.y()];
-        }
-
-        vec![input.value(self)]
+    fn read_axis_value(&self, input: impl Axislike) -> f32 {
+        input.value(self)
     }
 
-    fn read_axis_values_on_gamepad(
+    #[inline]
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
+        input.axis_pair(self)
+    }
+
+    fn read_dual_axis_values_on_gamepad(
         &self,
-        input: impl UserInput,
+        input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> Vec<f32> {
+    ) -> Vec2 {
         let mut input_streams = self.clone();
         input_streams.associated_gamepad = gamepad;
 
-        input_streams.read_axis_values(input)
+        input_streams.read_dual_axis_values(input)
     }
 }
 
@@ -574,28 +571,34 @@ impl MockInput for World {
 }
 
 impl QueryInput for World {
-    fn pressed(&self, input: impl UserInput) -> bool {
+    fn pressed(&self, input: impl Buttonlike) -> bool {
         self.pressed_on_gamepad(input, None)
     }
 
-    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
+    fn pressed_on_gamepad(&self, input: impl Buttonlike, gamepad: Option<Gamepad>) -> bool {
         let input_streams = InputStreams::from_world(self, gamepad);
 
         input_streams.pressed(input)
     }
 
-    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
-        self.read_axis_values_on_gamepad(input, None)
+    fn read_axis_value(&self, input: impl Axislike) -> f32 {
+        let input_streams = InputStreams::from_world(self, None);
+
+        input_streams.read_axis_value(input)
     }
 
-    fn read_axis_values_on_gamepad(
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
+        self.read_dual_axis_values_on_gamepad(input, None)
+    }
+
+    fn read_dual_axis_values_on_gamepad(
         &self,
-        input: impl UserInput,
+        input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> Vec<f32> {
+    ) -> Vec2 {
         let input_streams = InputStreams::from_world(self, gamepad);
 
-        input_streams.read_axis_values(input)
+        input_streams.read_dual_axis_values(input)
     }
 }
 
@@ -655,24 +658,29 @@ impl MockInput for App {
 }
 
 impl QueryInput for App {
-    fn pressed(&self, input: impl UserInput) -> bool {
+    fn pressed(&self, input: impl Buttonlike) -> bool {
         self.world().pressed(input)
     }
 
-    fn pressed_on_gamepad(&self, input: impl UserInput, gamepad: Option<Gamepad>) -> bool {
+    fn pressed_on_gamepad(&self, input: impl Buttonlike, gamepad: Option<Gamepad>) -> bool {
         self.world().pressed_on_gamepad(input, gamepad)
     }
 
-    fn read_axis_values(&self, input: impl UserInput) -> Vec<f32> {
-        self.world().read_axis_values(input)
+    fn read_axis_value(&self, input: impl Axislike) -> f32 {
+        self.world().read_axis_value(input)
     }
 
-    fn read_axis_values_on_gamepad(
+    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
+        self.world().read_dual_axis_values(input)
+    }
+
+    fn read_dual_axis_values_on_gamepad(
         &self,
-        input: impl UserInput,
+        input: impl DualAxislike,
         gamepad: Option<Gamepad>,
-    ) -> Vec<f32> {
-        self.world().read_axis_values_on_gamepad(input, gamepad)
+    ) -> Vec2 {
+        self.world()
+            .read_dual_axis_values_on_gamepad(input, gamepad)
     }
 }
 
@@ -795,8 +803,14 @@ mod test {
         let mut app = test_app();
 
         // Mouse axes should be inactive by default (no scroll or movement)
-        assert_eq!(app.read_axis_values(MouseMove::default()), [0.0, 0.0]);
-        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 0.0]);
+        assert_eq!(
+            app.read_dual_axis_values(MouseMove::default()),
+            Vec2::default()
+        );
+        assert_eq!(
+            app.read_dual_axis_values(MouseScroll::default()),
+            Vec2::default()
+        );
 
         // Send a simulated mouse scroll event with a value of 3 (positive for up)
         app.send_axis_values(MouseScrollAxis::Y, [3.0]);
@@ -804,28 +818,40 @@ mod test {
 
         // Verify the mouse wheel Y axis reflects the simulated scroll
         // and the other axis isn't affected
-        assert_eq!(app.read_axis_values(MouseScrollAxis::X), [0.0]);
-        assert_eq!(app.read_axis_values(MouseScrollAxis::Y), [3.0]);
-        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 3.0]);
+        assert_eq!(app.read_axis_value(MouseScrollAxis::X), 0.0);
+        assert_eq!(app.read_axis_value(MouseScrollAxis::Y), 3.0);
+        assert_eq!(
+            app.read_dual_axis_values(MouseScroll::default()),
+            Vec2::new(0.0, 3.0),
+        );
 
         // Send a simulated mouse movement event with a delta of (3.0, 2.0)
         app.send_axis_values(MouseScroll::default(), [3.0, 2.0]);
         app.update();
 
         // Verify the mouse motion axes reflects the simulated movement
-        assert_eq!(app.read_axis_values(MouseScroll::default()), [3.0, 2.0]);
+        assert_eq!(
+            app.read_dual_axis_values(MouseScroll::default()),
+            Vec2::new(3.0, 2.0),
+        );
 
         // Mouse input data is typically reset every frame
         // Verify other axes aren't affected
-        assert_eq!(app.read_axis_values(MouseMove::default()), [0.0, 0.0]);
+        assert_eq!(
+            app.read_dual_axis_values(MouseMove::default()),
+            Vec2::default()
+        );
 
         // Test that resetting inputs works
         app.reset_inputs();
         app.update();
 
         // Verify all axes have no value after reset
-        assert_eq!(app.read_axis_values(MouseScrollAxis::Y), [0.0]);
-        assert_eq!(app.read_axis_values(MouseScroll::default()), [0.0, 0.0]);
+        assert_eq!(app.read_axis_value(MouseScrollAxis::Y), 0.0);
+        assert_eq!(
+            app.read_dual_axis_values(MouseScroll::default()),
+            Vec2::ZERO,
+        );
     }
 
     #[test]
