@@ -36,9 +36,7 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.13" }
-bevy = { version = "0.14.0-rc.3", default-features = false, features = [
-  "serialize",
-] }
+bevy = { version = "0.14", default-features = false, features = ["serialize"] }
 bevy_egui = { git = "https://github.com/Friz64/bevy_egui", branch = "bevy-0.14", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
@@ -54,7 +52,7 @@ dyn-hash = "0.2"
 once_cell = "1.19"
 
 [dev-dependencies]
-bevy = { version = "0.14.0-rc.3", default-features = false, features = [
+bevy = { version = "0.14", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
