@@ -43,7 +43,7 @@ bevy = { version = "0.14", default-features = false, features = [
   "bevy_gilrs",
 ] }
 # FIXME: remove this once bevy_egui is published
-bevy_egui = { git = "https://github.com/Friz64/bevy_egui/", branch = "bevy-0.14", optional = true }
+bevy_egui = { version = "0.28", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
@@ -63,7 +63,7 @@ bevy = { version = "0.14", default-features = false, features = [
   "x11",
   "bevy_state",
 ] }
-bevy_egui = { git = "https://github.com/Friz64/bevy_egui/", branch = "bevy-0.14" }
+bevy_egui = "0.28"
 serde_test = "1.0"
 criterion = "0.5"
 
