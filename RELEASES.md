@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.14.0 (Unreleased)
+## Version 0.15.0 (Unreleased)
 
 ### Breaking Changes
 
@@ -165,6 +165,11 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - removed the `no_ui_priority` feature. To get this behavior, now just turn off the default `ui` feature
 - removed the `orientation` module, migrating to `bevy_math::Rot2`
   - use the types provided in `bevy_math` instead
+
+## Version 0.14.0
+
+- updated to Bevy 0.14
+- this is strictly a compatibility release to ease migration; you should consider upgrading to version 0.15 when possible
 
 ## Version 0.13.3
 
