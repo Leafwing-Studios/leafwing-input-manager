@@ -420,7 +420,8 @@ impl<A: Actionlike> InputMap<A> {
     ) -> bool {
         self.process_actions(input_streams, clash_strategy)
             .button_actions
-            .get(action).copied()
+            .get(action)
+            .copied()
             .unwrap_or_default()
     }
 

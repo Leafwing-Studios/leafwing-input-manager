@@ -86,11 +86,7 @@ impl BasicInputs {
 
     ///  Create a [`BasicInputs::Composite`] from two existing [`BasicInputs`].
     pub fn compose(self, other: BasicInputs) -> Self {
-        let combined_inputs = self
-            .inputs()
-            .into_iter()
-            .chain(other.inputs())
-            .collect();
+        let combined_inputs = self.inputs().into_iter().chain(other.inputs()).collect();
 
         BasicInputs::Composite(combined_inputs)
     }
