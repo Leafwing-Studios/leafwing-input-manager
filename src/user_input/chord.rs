@@ -13,6 +13,7 @@ use crate::raw_inputs::RawInputs;
 use crate::user_input::{Buttonlike, UserInput};
 use crate::InputControlKind;
 
+use super::keyboard::ModifierKey;
 use super::{Axislike, DualAxislike};
 
 /// A combined input that groups multiple [`Buttonlike`]s together,
@@ -92,6 +93,11 @@ impl ButtonlikeChord {
     #[inline]
     pub fn from_single(input: impl Buttonlike) -> Self {
         Self::default().with(input)
+    }
+
+    /// Creates a [`ButtonlikeChord`] that combines the provided modifier and the given [`Buttonlike`].
+    pub fn modified(modifier: ModifierKey, input: impl Buttonlike) -> Self {
+        Self::default().with(modifier).with(input)
     }
 
     /// Adds the given [`Buttonlike`] into this chord, avoiding duplicates.

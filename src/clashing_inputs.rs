@@ -367,9 +367,7 @@ mod tests {
         #[test]
         fn input_types_have_right_length() {
             let simple = KeyA.decompose();
-            let modified = ButtonlikeChord::new([KeyA])
-                .with(ModifierKey::Control)
-                .decompose();
+            let modified = ButtonlikeChord::modified(ModifierKey::Control, KeyA).decompose();
             let chord = ButtonlikeChord::new([KeyA, KeyB, KeyC]).decompose();
             let group = KeyboardVirtualDPad::WASD.decompose();
 
