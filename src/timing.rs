@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 /// Stores information about when an action was pressed or released
 ///
-/// This struct is principally used as a field on [`ActionData`](crate::action_state::ActionData),
+/// This struct is principally used as a field on [`ButtonData`](crate::action_state::ButtonData),
 /// which itself lives inside an [`ActionState`](crate::action_state::ActionState).
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Reflect)]
 pub struct Timing {

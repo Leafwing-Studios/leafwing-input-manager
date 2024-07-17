@@ -16,10 +16,10 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::{Actionlike, InputControlKind};
 
-/// A Multi-Map that allows you to map actions to multiple [`UserInputs`]s,
+/// A Multi-Map that allows you to map actions to multiple [`UserInputs`](crate::user_input::UserInput)s,
 /// whether they are [`Buttonlike`], [`Axislike`] or [`DualAxislike`].
 ///
-/// When inserting a binding, the [`UserInputKind`] of the action variant much match that of the input type.
+/// When inserting a binding, the [`InputControlKind`] of the action variant must match that of the input type.
 /// Use [`InputMap::insert`] to insert buttonlike inputs,
 /// [`InputMap::insert_axis`] to insert axislike inputs,
 /// and [`InputMap::insert_dual_axis`] to insert dual-axislike inputs.
@@ -428,7 +428,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Determines the correct state for each action according to provided [`InputStreams`].
     ///
     /// This method uses the input bindings for each action to determine how to parse the input data,
-    /// and generates corresponding [`ButtonData`], [`AxisData`] and [`DualAxisData`].
+    /// and generates corresponding [`ButtonData`](crate::action_state::ButtonData),
+    /// [`AxisData`](crate::action_state::AxisData) and [`DualAxisData`](crate::action_state::DualAxisData).
     ///
     /// For [`Buttonlike`] actions, this accounts for clashing inputs according to the [`ClashStrategy`] and removes conflicting actions.
     ///

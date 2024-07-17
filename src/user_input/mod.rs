@@ -59,7 +59,7 @@
 //!
 //! ### Complex Composition
 //!
-//! - Combine multiple inputs into a virtual button using [`InputChord`].
+//! - Combine multiple inputs into a virtual button using [`ButtonlikeChord`].
 //!   - Only active if all its inner inputs are active simultaneously.
 //!   - Combine values from all inner single-axis inputs if available.
 //!   - Retrieve values from the first encountered dual-axis input within the chord.

@@ -11,7 +11,7 @@
     - `MouseScrollAxis::Y` will clash with `MouseScrollDirection::UP` and `MouseScrollDirection::DOWN`.
     - `MouseMove` will clash with all the two axes and the four directions.
 - there is now a clear division between buttonlike, axislike and dualaxislike data
-  - each action in an `Actionlike` enum now has a specific `UserInputKind`, mapping it to one of these three categories
+  - each action in an `Actionlike` enum now has a specific `InputControlKind`, mapping it to one of these three categories
   - if you are storing non-buttonlike actions (e.g. movement) inside of your Actionlike enum, you must manually implement the trait
   - pressed / released state can only be accessed for buttonlike data: invalid requests will always return released
   - `f32` values can only be accessed for axislike data: invalid requests will always return 0.0

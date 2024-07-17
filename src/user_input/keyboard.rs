@@ -110,7 +110,7 @@ impl ModifierKey {
         }
     }
 
-    /// Create an [`InputChord`] that includes this [`ModifierKey`] and the given `input`.
+    /// Create an [`ButtonlikeChord`] that includes this [`ModifierKey`] and the given `input`.
     #[inline]
     pub fn with(&self, other: impl Buttonlike) -> ButtonlikeChord {
         ButtonlikeChord::from_single(*self).with(other)

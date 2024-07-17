@@ -77,7 +77,7 @@ pub trait MockInput {
     /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
-    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`InputChord`]s.
+    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`ButtonlikeChord`]s.
     /// Axial inputs (e.g., analog thumb sticks) aren't affected.
     /// Use [`Self::send_axis_values`] for those.
     ///
@@ -102,7 +102,7 @@ pub trait MockInput {
     /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
     ///
     /// To avoid confusing adjustments, it is best to stick with straightforward button-like inputs,
-    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`InputChord`]s.
+    /// like [`KeyCode`]s, [`ModifierKey`]s, and [`ButtonlikeChord`]s.
     /// Axial inputs (e.g., analog thumb sticks) aren't affected.
     /// Use [`Self::send_axis_values_as_gamepad`] for those.
     ///

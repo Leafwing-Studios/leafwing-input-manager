@@ -15,7 +15,7 @@ use bevy::utils::Duration;
 use bevy::utils::{HashMap, Instant};
 use serde::{Deserialize, Serialize};
 
-/// Metadata about an [`Buttonlike`] action
+/// Metadata about an [`Buttonlike`](crate::user_input::Buttonlike) action
 ///
 /// If a button is released, its `reasons_pressed` should be empty.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
@@ -405,7 +405,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// - To insert a default [`ButtonData`] if it doesn't exist,
-    /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
+    /// use [`button_data_mut_or_default`](Self::button_data_mut_or_default) method.
     ///
     /// # Returns
     ///
@@ -420,7 +420,7 @@ impl<A: Actionlike> ActionState<A> {
     /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
-    /// this method will create and insert a default [`ActionData`] for you,
+    /// this method will create and insert a default [`ButtonData`] for you,
     /// avoiding potential errors from unwrapping [`None`].
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
@@ -460,7 +460,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// - To insert a default [`AxisData`] if it doesn't exist,
-    /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
+    /// use [`axis_data_mut_or_default`](Self::axis_data_mut_or_default) method.
     ///
     /// # Returns
     ///
@@ -475,7 +475,7 @@ impl<A: Actionlike> ActionState<A> {
     /// A mutable reference of the [`AxisData`] corresponding to the `action`.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
-    /// this method will create and insert a default [`ActionData`] for you,
+    /// this method will create and insert a default [`AxisData`] for you,
     /// avoiding potential errors from unwrapping [`None`].
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
@@ -515,7 +515,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// - To insert a default [`ButtonData`] if it doesn't exist,
-    /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
+    /// use [`dual_axis_data_mut_or_default`](Self::dual_axis_data_mut_or_default) method.
     ///
     /// # Returns
     ///
@@ -530,7 +530,7 @@ impl<A: Actionlike> ActionState<A> {
     /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
-    /// this method will create and insert a default [`ActionData`] for you,
+    /// this method will create and insert a default [`DualAxisData`] for you,
     /// avoiding potential errors from unwrapping [`None`].
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].

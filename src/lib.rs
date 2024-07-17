@@ -153,24 +153,24 @@ impl<A: Actionlike> InputManagerBundle<A> {
     }
 }
 
-/// Classifies [`UserInput`]s and [`Actionlike`](crate::Actionlike) actions based on their behavior (buttons, analog axes, etc.).
+/// Classifies [`UserInput`](crate::user_input::UserInput)s and [`Actionlike`] actions based on their behavior (buttons, analog axes, etc.).
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub enum InputControlKind {
     /// A single input with binary state (active or inactive), typically a button press (on or off).
     ///
-    /// Corresponds to [`Buttonlike`] inputs.
+    /// Corresponds to [`Buttonlike`](crate::user_input::Buttonlike)  inputs.
     Button,
 
     /// A single analog or digital input, often used for range controls like a thumb stick on a gamepad or mouse wheel,
     /// providing a value within a min-max range.
     ///
-    /// Corresponds to [`Axislike`] inputs.
+    /// Corresponds to [`Axislike`](crate::user_input::Axislike) inputs.
     Axis,
 
     /// A combination of two axis-like inputs, often used for directional controls like a D-pad on a gamepad,
     /// providing separate values for the X and Y axes.
     ///
-    /// Corresponds to [`DualAxislike`] inputs.
+    /// Corresponds to [`DualAxislike`](crate::user_input::DualAxislike) inputs.
     DualAxis,
 }
