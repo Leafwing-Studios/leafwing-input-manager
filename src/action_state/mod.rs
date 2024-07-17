@@ -729,7 +729,10 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
-        matches!(self.button_data(action), Some(action_data) if action_data.pressed())
+        match self.button_data(action) {
+            Some(button_data) => button_data.pressed(),
+            None => true,
+        }
     }
 
     /// Was this `action` pressed since the last time [tick](ActionState::tick) was called?
@@ -741,7 +744,10 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
-        matches!(self.button_data(action), Some(action_data) if action_data.just_pressed())
+        match self.button_data(action) {
+            Some(button_data) => button_data.just_pressed(),
+            None => true,
+        }
     }
 
     /// Is this `action` currently released?
@@ -756,7 +762,7 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
         match self.button_data(action) {
-            Some(action_data) => action_data.released(),
+            Some(button_data) => button_data.released(),
             None => true,
         }
     }
@@ -770,7 +776,10 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
-        matches!(self.button_data(action), Some(action_data) if action_data.just_released())
+        match self.button_data(action) {
+            Some(button_data) => button_data.just_released(),
+            None => true,
+        }
     }
 
     #[must_use]
