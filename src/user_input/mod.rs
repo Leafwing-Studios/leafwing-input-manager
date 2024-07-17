@@ -182,13 +182,19 @@ pub trait UserInput:
     /// Defines the kind of behavior that the input should be.
     fn kind(&self) -> InputControlKind;
 
-    /// Returns the most basic inputs that make up this input.
+    /// Returns the set of primitive inputs that make up this input.
+    ///
+    /// These inputs are used to detect clashes between different user inputs,
+    /// and are stored in a [`BasicInputs`] for easy comparison.
     ///
     /// For inputs that represent a simple, atomic control,
     /// this method should always return a [`BasicInputs::Simple`] that only contains the input itself.
     fn decompose(&self) -> BasicInputs;
 
     /// Returns the raw input events that make up this input.
+    ///
+    /// Unlike [`UserInput::decompose`], which stores boxed user inputs,
+    /// this method returns the raw input types.
     fn raw_inputs(&self) -> RawInputs;
 }
 

@@ -407,11 +407,26 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::input_mocking::MockInput;
+        use crate::{input_mocking::MockInput, prelude::ModifierKey};
         use bevy::input::InputPlugin;
         use Action::*;
 
         use super::*;
+
+        #[test]
+        fn input_types_have_right_length() {
+            let simple = KeyA.decompose();
+            let modified = ButtonlikeChord::new([KeyA])
+                .with(ModifierKey::Control)
+                .decompose();
+            let chord = ButtonlikeChord::new([KeyA, KeyB, KeyC]).decompose();
+            let group = KeyboardVirtualDPad::WASD.decompose();
+
+            assert_eq!(simple.len(), 1);
+            assert_eq!(modified.len(), 2);
+            assert_eq!(chord.len(), 3);
+            assert_eq!(group.len(), 1);
+        }
 
         #[test]
         fn clash_detection() {
