@@ -3,6 +3,7 @@
 use bevy::prelude::{
     Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Reflect, Vec2,
 };
+use bevy::utils::HashSet;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -137,7 +138,7 @@ impl UserInput for GamepadControlDirection {
     /// [`GamepadControlDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Simple(Box::new(*self))
+        BasicInputs::simple(self.clone())
     }
 
     /// Creates a [`RawInputs`] from the direction directly.
@@ -245,10 +246,11 @@ impl UserInput for GamepadControlAxis {
     /// [`GamepadControlAxis`] represents a composition of two [`GamepadControlDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![
-            Box::new(GamepadControlDirection::negative(self.axis)),
-            Box::new(GamepadControlDirection::positive(self.axis)),
-        ])
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(GamepadControlDirection::negative(self.axis)));
+        inputs.insert(Box::new(GamepadControlDirection::positive(self.axis)));
+
+        BasicInputs { inputs, length: 1 }
     }
 
     /// Creates a [`RawInputs`] from the [`GamepadAxisType`] used by the axis.
@@ -378,12 +380,13 @@ impl UserInput for GamepadStick {
     /// [`GamepadStick`] represents a composition of four [`GamepadControlDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![
-            Box::new(GamepadControlDirection::negative(self.x)),
-            Box::new(GamepadControlDirection::positive(self.x)),
-            Box::new(GamepadControlDirection::negative(self.y)),
-            Box::new(GamepadControlDirection::positive(self.y)),
-        ])
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(GamepadControlDirection::negative(self.x)));
+        inputs.insert(Box::new(GamepadControlDirection::positive(self.x)));
+        inputs.insert(Box::new(GamepadControlDirection::negative(self.y)));
+        inputs.insert(Box::new(GamepadControlDirection::positive(self.y)));
+
+        BasicInputs { inputs, length: 1 }
     }
 
     /// Creates a [`RawInputs`] from two [`GamepadAxisType`]s used by the stick.
@@ -487,7 +490,7 @@ impl UserInput for GamepadButtonType {
     /// as it represents a simple physical button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Simple(Box::new(*self))
+        BasicInputs::simple(self.clone())
     }
 
     /// Creates a [`RawInputs`] from the button directly.
@@ -613,7 +616,11 @@ impl UserInput for GamepadVirtualAxis {
     /// Returns the two [`GamepadButtonType`]s used by this axis.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(self.negative));
+        inputs.insert(Box::new(self.positive));
+
+        BasicInputs { inputs, length: 1 }
     }
 
     /// Creates a [`RawInputs`] from two [`GamepadButtonType`]s used by this axis.
@@ -802,12 +809,13 @@ impl UserInput for GamepadVirtualDPad {
     /// Returns the four [`GamepadButtonType`]s used by this D-pad.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![
-            Box::new(self.up),
-            Box::new(self.down),
-            Box::new(self.left),
-            Box::new(self.right),
-        ])
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(self.up));
+        inputs.insert(Box::new(self.down));
+        inputs.insert(Box::new(self.left));
+        inputs.insert(Box::new(self.right));
+
+        BasicInputs { inputs, length: 1 }
     }
 
     /// Creates a [`RawInputs`] from four [`GamepadButtonType`]s used by this D-pad.

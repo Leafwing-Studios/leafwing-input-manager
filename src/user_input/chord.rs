@@ -2,6 +2,7 @@
 
 use bevy::math::Vec2;
 use bevy::prelude::Reflect;
+use bevy::utils::HashSet;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -139,12 +140,15 @@ impl UserInput for ButtonlikeChord {
     /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        let inputs = self
+        let inputs: HashSet<Box<dyn UserInput>> = self
             .0
             .iter()
-            .flat_map(|input| input.decompose().inputs())
+            .flat_map(|input| input.decompose().inputs)
             .collect();
-        BasicInputs::Group(inputs)
+        BasicInputs {
+            length: inputs.len(),
+            inputs,
+        }
     }
 
     /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
@@ -211,7 +215,10 @@ impl UserInput for AxislikeChord {
     /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::compose(self.button.decompose(), self.axis.decompose())
+        let buttonlike_inputs = self.button.decompose();
+        let axislike_inputs = self.axis.decompose();
+
+        BasicInputs::merge(buttonlike_inputs, axislike_inputs)
     }
 
     /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
@@ -267,7 +274,10 @@ impl UserInput for DualAxislikeChord {
     /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::compose(self.button.decompose(), self.dual_axis.decompose())
+        let buttonlike_inputs = self.button.decompose();
+        let dual_axislike_inputs = self.dual_axis.decompose();
+
+        BasicInputs::merge(buttonlike_inputs, dual_axislike_inputs)
     }
 
     /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.

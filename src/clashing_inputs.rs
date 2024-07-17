@@ -4,9 +4,11 @@
 //! For example, the user might have bound `Ctrl + S` to save, and `S` to move down.
 //! If the user presses `Ctrl + S`, the input manager should not also trigger the `S` action.
 
+use core::hash::Hash;
 use std::cmp::Ordering;
 
 use bevy::prelude::Resource;
+use bevy::utils::hashbrown::HashSet;
 use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
@@ -55,98 +57,47 @@ impl ClashStrategy {
 /// where one action is a strict subset of another.
 #[derive(Debug, Clone)]
 #[must_use]
-pub enum BasicInputs {
-    /// The input consists of a single, fundamental [`UserInput`].
+pub struct BasicInputs {
+    /// The flattened and boxed user inputs that make up the input.
+    pub inputs: HashSet<Box<dyn UserInput>>,
+    /// The number of distinct inputs that must be pressed to trigger this input.
     ///
-    /// For example, a single key press.
-    Simple(Box<dyn UserInput>),
-
-    /// The input can be triggered by multiple independent [`UserInput`]s,
-    /// but is still fundamentally considered a single input.
+    /// # Warning
     ///
-    /// For example, a virtual D-Pad is only one input, but can be triggered by multiple keys.
-    Composite(Vec<Box<dyn UserInput>>),
-
-    /// The input represents one or more independent [`UserInput`] types.
-    ///
-    /// For example, a chorded input is a group of multiple keys that must be pressed together.
-    Group(Vec<Box<dyn UserInput>>),
+    /// This is *not* the same as the length of the `inputs` field.
+    /// Virtual D-Pads, for example, have a length of 1, but a `inputs.len` of 4,
+    /// while a chord with 4 keys has a length of 4 and a `inputs.len` of 4.
+    pub length: usize,
 }
 
 impl BasicInputs {
-    /// Returns a list of the underlying [`UserInput`]s.
+    /// Create a new set of basic inputs from a single user input.
     #[inline]
-    pub fn inputs(&self) -> Vec<Box<dyn UserInput>> {
-        match self.clone() {
-            Self::Simple(input) => vec![input],
-            Self::Composite(inputs) => inputs,
-            Self::Group(inputs) => inputs,
-        }
+    pub fn simple<U: UserInput + Hash + Eq>(input: U) -> Self {
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(input));
+
+        Self { inputs, length: 1 }
     }
 
-    ///  Create a [`BasicInputs::Composite`] from two existing [`BasicInputs`].
-    pub fn compose(self, other: BasicInputs) -> Self {
-        let combined_inputs = self.inputs().into_iter().chain(other.inputs()).collect();
-
-        BasicInputs::Composite(combined_inputs)
-    }
-
-    /// Returns the number of the logical [`UserInput`]s that make up the input.
-    #[allow(clippy::len_without_is_empty)]
+    /// Merge two sets of basic inputs into one.
+    ///
+    /// This will create a new set of inputs that contains all the inputs from both sets.
+    /// The total length of the new set will be the sum of the lengths of the two sets.
     #[inline]
-    pub fn len(&self) -> usize {
-        match self {
-            Self::Simple(_) => 1,
-            Self::Composite(_) => 1,
-            Self::Group(inputs) => inputs.len(),
-        }
+    pub fn merge(mut self, other: BasicInputs) -> Self {
+        self.inputs.extend(other.inputs);
+        self.length += other.length;
+
+        self
     }
 
     /// Checks if the given two [`BasicInputs`] clash with each other.
+    ///
+    /// This is true if and only if one is a non-strict subset of the other.
     #[inline]
     pub fn clashed(&self, other: &BasicInputs) -> bool {
-        match (self, other) {
-            (Self::Simple(_), Self::Simple(_)) => false,
-            (Self::Simple(self_single), Self::Group(other_group)) => {
-                other_group.len() > 1 && other_group.contains(self_single)
-            }
-            (Self::Group(self_group), Self::Simple(other_single)) => {
-                self_group.len() > 1 && self_group.contains(other_single)
-            }
-            (Self::Simple(self_single), Self::Composite(other_composite)) => {
-                other_composite.contains(self_single)
-            }
-            (Self::Composite(self_composite), Self::Simple(other_single)) => {
-                self_composite.contains(other_single)
-            }
-            (Self::Composite(self_composite), Self::Group(other_group)) => {
-                other_group.len() > 1
-                    && other_group
-                        .iter()
-                        .any(|input| self_composite.contains(input))
-            }
-            (Self::Group(self_group), Self::Composite(other_composite)) => {
-                self_group.len() > 1
-                    && self_group
-                        .iter()
-                        .any(|input| other_composite.contains(input))
-            }
-            (Self::Group(self_group), Self::Group(other_group)) => {
-                self_group.len() > 1
-                    && other_group.len() > 1
-                    && self_group != other_group
-                    && (self_group.iter().all(|input| other_group.contains(input))
-                        || other_group.iter().all(|input| self_group.contains(input)))
-            }
-            (Self::Composite(self_composite), Self::Composite(other_composite)) => {
-                other_composite
-                    .iter()
-                    .any(|input| self_composite.contains(input))
-                    || self_composite
-                        .iter()
-                        .any(|input| other_composite.contains(input))
-            }
-        }
+        self.inputs.is_subset(&other.inputs) || other.inputs.is_subset(&self.inputs)
     }
 }
 
@@ -332,13 +283,13 @@ fn resolve_clash<A: Actionlike>(
         ClashStrategy::PrioritizeLongest => {
             let longest_a: usize = reasons_a_is_pressed
                 .iter()
-                .map(|input| input.decompose().len())
+                .map(|input| input.decompose().length)
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
             let longest_b: usize = reasons_b_is_pressed
                 .iter()
-                .map(|input| input.decompose().len())
+                .map(|input| input.decompose().length)
                 .reduce(|a, b| a.max(b))
                 .unwrap_or_default();
 
@@ -422,10 +373,10 @@ mod tests {
             let chord = ButtonlikeChord::new([KeyA, KeyB, KeyC]).decompose();
             let group = KeyboardVirtualDPad::WASD.decompose();
 
-            assert_eq!(simple.len(), 1);
-            assert_eq!(modified.len(), 2);
-            assert_eq!(chord.len(), 3);
-            assert_eq!(group.len(), 1);
+            assert_eq!(simple.length, 1);
+            assert_eq!(modified.length, 2);
+            assert_eq!(chord.length, 3);
+            assert_eq!(group.length, 1);
         }
 
         #[test]

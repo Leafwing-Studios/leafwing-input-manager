@@ -1,6 +1,7 @@
 //! Keyboard inputs
 
 use bevy::prelude::{KeyCode, Reflect, Vec2};
+use bevy::utils::HashSet;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -30,7 +31,7 @@ impl UserInput for KeyCode {
     /// as it represents a simple physical button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Simple(Box::new(*self))
+        BasicInputs::simple(self.clone())
     }
 
     /// Creates a [`RawInputs`] from the key directly.
@@ -128,7 +129,11 @@ impl UserInput for ModifierKey {
     /// Returns the two [`KeyCode`]s used by this [`ModifierKey`].
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![Box::new(self.left()), Box::new(self.right())])
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(self.left()));
+        inputs.insert(Box::new(self.right()));
+
+        BasicInputs { inputs, length: 1 }
     }
 
     /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this [`ModifierKey`].
@@ -280,7 +285,11 @@ impl UserInput for KeyboardVirtualAxis {
     /// [`KeyboardVirtualAxis`] represents a compositions of two [`KeyCode`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.negative)])
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(self.negative));
+        inputs.insert(Box::new(self.positive));
+
+        BasicInputs { inputs, length: 1 }
     }
 
     /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this axis.
@@ -471,12 +480,13 @@ impl UserInput for KeyboardVirtualDPad {
     /// [`KeyboardVirtualDPad`] represents a compositions of four [`KeyCode`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![
-            Box::new(self.up),
-            Box::new(self.down),
-            Box::new(self.left),
-            Box::new(self.right),
-        ])
+        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
+        inputs.insert(Box::new(self.up));
+        inputs.insert(Box::new(self.down));
+        inputs.insert(Box::new(self.left));
+        inputs.insert(Box::new(self.right));
+
+        BasicInputs { inputs, length: 1 }
     }
 
     /// Creates a [`RawInputs`] from four [`KeyCode`]s used by this D-pad.
