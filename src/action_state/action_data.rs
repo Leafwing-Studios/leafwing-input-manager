@@ -21,7 +21,7 @@ pub struct ButtonData {
     /// When was the button pressed / released, and how long has it been held for?
     #[cfg(feature = "timing")]
     pub timing: Timing,
-    /// Was this action consumed by [`ActionState::consume`]?
+    /// Was this action consumed by [`ActionState::consume`](super::ActionState::consume)?
     ///
     /// Actions that are consumed cannot be pressed again until they are explicitly released.
     /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
@@ -99,7 +99,7 @@ impl ButtonData {
     }
 }
 
-/// The raw data for an [`ActionState`] corresponding to a single virtual axis.
+/// The raw data for an [`ActionState`](super::ActionState) corresponding to a single virtual axis.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct AxisData {
     /// How far the axis is currently pressed
@@ -114,7 +114,7 @@ pub struct AxisData {
     pub disabled: bool,
 }
 
-/// The raw data for an [`ActionState`] corresponding to a pair of virtual axes.
+/// The raw data for an [`ActionState`](super::ActionState)  corresponding to a pair of virtual axes.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct DualAxisData {
     /// The XY coordinates of the axis

@@ -208,9 +208,10 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Advances the time for all actions
+    /// Advances the time for all actions,
+    /// transitioning them from `just_pressed` to `pressed`, and `just_released` to `released`.
     ///
-    /// The underlying [`Timing`] and [`ButtonState`] will be advanced according to the `current_instant`.
+    /// If the `timing` feature flag is enabled, the underlying timing and action data will be advanced according to the `current_instant`.
     /// - if no [`Instant`] is set, the `current_instant` will be set as the initial time at which the button was pressed / released
     /// - the [`Duration`] will advance to reflect elapsed time
     ///
