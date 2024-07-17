@@ -161,11 +161,6 @@ impl<A: Actionlike> ActionState<A> {
     /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
     pub fn update(&mut self, updated_actions: UpdatedActions<A>) {
-        for (action, button_datum) in self.button_data.iter_mut() {
-            if !updated_actions.button_actions.contains_key(action) {
-                button_datum.state.release();
-            }
-        }
         for (action, button_datum) in updated_actions.button_actions {
             if self.button_data.contains_key(&action) {
                 match button_datum {
@@ -175,7 +170,11 @@ impl<A: Actionlike> ActionState<A> {
             } else {
                 match button_datum {
                     true => self.button_data.insert(action, ButtonData::JUST_PRESSED),
-                    false => self.button_data.insert(action, ButtonData::JUST_RELEASED),
+                    // Buttons should start in a released state,
+                    // and should not be just pressed or just released.
+                    // This behavior helps avoid unexpected behavior with on-key-release actions
+                    // at the start of the game.
+                    false => self.button_data.insert(action, ButtonData::RELEASED),
                 };
             }
         }
@@ -771,14 +770,14 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Warning
     ///
-    /// This value will be `true` by default,
+    /// This value will be `false` by default,
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
         match self.button_data(action) {
             Some(button_data) => button_data.just_released(),
-            None => true,
+            None => false,
         }
     }
 
@@ -922,6 +921,10 @@ mod tests {
 
         // Action state
         let mut action_state = ActionState::<Action>::default();
+        println!(
+            "Default button data: {:?}",
+            action_state.button_data(&Action::Run)
+        );
 
         // Input map
         let mut input_map = InputMap::default();
@@ -930,6 +933,11 @@ mod tests {
         // Starting state
         let input_streams = InputStreams::from_world(app.world(), None);
         action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
+
+        println!(
+            "Initialized button data: {:?}",
+            action_state.button_data(&Action::Run)
+        );
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));

@@ -55,6 +55,21 @@ impl ButtonData {
         disabled: false,
     };
 
+    /// The default data for a button that is released,
+    /// but was not just released.
+    ///
+    /// This is the default state for a button,
+    /// as it avoids surprising behavior when the button is first created.
+    pub const RELEASED: Self = Self {
+        state: ButtonState::Released,
+        update_state: ButtonState::Released,
+        fixed_update_state: ButtonState::Released,
+        #[cfg(feature = "timing")]
+        timing: Timing::NEW,
+        consumed: false,
+        disabled: false,
+    };
+
     /// Is the action currently pressed?
     #[inline]
     #[must_use]
