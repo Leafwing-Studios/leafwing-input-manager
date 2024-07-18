@@ -49,40 +49,46 @@ impl ClashStrategy {
     }
 }
 
-/// A flat list of the inputs that make up a [`UserInput`].
+/// A flat list of the [`Buttonlike`] inputs that make up a [`UserInput`].
 ///
 /// This is used to check for potential clashes between actions,
 /// where one action is a strict subset of another.
 #[derive(Debug, Clone)]
 #[must_use]
 pub enum BasicInputs {
-    /// The input consists of a single, fundamental [`UserInput`].
+    /// No buttonlike inputs are involved.
+    ///
+    /// This might be used for things like a joystick axis.
+    None,
+
+    /// The input consists of a single, fundamental [`Buttonlike`] [`UserInput`].
     ///
     /// For example, a single key press.
-    Simple(Box<dyn UserInput>),
+    Simple(Box<dyn Buttonlike>),
 
-    /// The input can be triggered by multiple independent [`UserInput`]s,
+    /// The input can be triggered by multiple independent [`Buttonlike`] [`UserInput`]s,
     /// but is still fundamentally considered a single input.
     ///
     /// For example, a virtual D-Pad is only one input, but can be triggered by multiple keys.
-    Composite(Vec<Box<dyn UserInput>>),
+    Composite(Vec<Box<dyn Buttonlike>>),
 
-    /// The input represents one or more independent [`UserInput`] types.
+    /// The input represents one or more independent [`Buttonlike`] [`UserInput`] types.
     ///
     /// For example, a chorded input is a group of multiple keys that must be pressed together.
-    Chord(Vec<Box<dyn UserInput>>),
+    Chord(Vec<Box<dyn Buttonlike>>),
 }
 
 impl BasicInputs {
-    /// Returns a list of the underlying [`UserInput`]s.
+    /// Returns a list of the underlying [`Buttonlike`] [`UserInput`]s.
     ///
     /// # Warning
     ///
     /// When checking for clashes, do not use this method to compute the length of the input.
     /// Instead, use [`BasicInputs::len`], as these do not always agree.
     #[inline]
-    pub fn inputs(&self) -> Vec<Box<dyn UserInput>> {
+    pub fn inputs(&self) -> Vec<Box<dyn Buttonlike>> {
         match self.clone() {
+            Self::None => Vec::default(),
             Self::Simple(input) => vec![input],
             Self::Composite(inputs) => inputs,
             Self::Chord(inputs) => inputs,
@@ -105,6 +111,7 @@ impl BasicInputs {
     #[inline]
     pub fn len(&self) -> usize {
         match self {
+            Self::None => 0,
             Self::Simple(_) => 1,
             Self::Composite(_) => 1,
             Self::Chord(inputs) => inputs.len(),
@@ -115,6 +122,7 @@ impl BasicInputs {
     #[inline]
     pub fn clashes_with(&self, other: &BasicInputs) -> bool {
         match (self, other) {
+            (Self::None, _) | (_, Self::None) => false,
             (Self::Simple(_), Self::Simple(_)) => false,
             (Self::Simple(self_single), Self::Chord(other_group)) => {
                 other_group.len() > 1 && other_group.contains(self_single)
