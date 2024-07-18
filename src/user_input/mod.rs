@@ -239,9 +239,18 @@ pub enum UserInputWrapper {
 impl UserInput for UserInputWrapper {
     fn kind(&self) -> InputControlKind {
         match self {
-            UserInputWrapper::Button(input) => input.kind(),
-            UserInputWrapper::Axis(input) => input.kind(),
-            UserInputWrapper::DualAxis(input) => input.kind(),
+            UserInputWrapper::Button(input) => {
+                debug_assert!(input.kind() == InputControlKind::Button);
+                input.kind()
+            }
+            UserInputWrapper::Axis(input) => {
+                debug_assert!(input.kind() == InputControlKind::Axis);
+                input.kind()
+            }
+            UserInputWrapper::DualAxis(input) => {
+                debug_assert!(input.kind() == InputControlKind::DualAxis);
+                input.kind()
+            }
         }
     }
 
