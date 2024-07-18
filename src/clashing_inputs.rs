@@ -96,7 +96,7 @@ impl BasicInputs {
     ///
     /// This is true if and only if one is a non-strict subset of the other.
     #[inline]
-    pub fn clashed(&self, other: &BasicInputs) -> bool {
+    pub fn clashes_with(&self, other: &BasicInputs) -> bool {
         self.inputs.is_subset(&other.inputs) || other.inputs.is_subset(&self.inputs)
     }
 }
@@ -176,7 +176,7 @@ impl<A: Actionlike> InputMap<A> {
 
         for input_a in self.get(action_a)? {
             for input_b in self.get(action_b)? {
-                if input_a.decompose().clashed(&input_b.decompose()) {
+                if input_a.decompose().clashes_with(&input_b.decompose()) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
                 }
@@ -231,7 +231,7 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
             .filter(|&input| input.pressed(input_streams))
         {
             // If a clash was detected
-            if input_a.decompose().clashed(&input_b.decompose()) {
+            if input_a.decompose().clashes_with(&input_b.decompose()) {
                 actual_clash.inputs_a.push(input_a.clone());
                 actual_clash.inputs_b.push(input_b.clone());
             }
@@ -269,7 +269,7 @@ fn resolve_clash<A: Actionlike>(
         for reason_b in reasons_b_is_pressed.iter() {
             // If there is at least one non-clashing reason why these buttons should both be pressed,
             // we can avoid resolving the clash completely
-            if !reason_a.decompose().clashed(&reason_b.decompose()) {
+            if !reason_a.decompose().clashes_with(&reason_b.decompose()) {
                 return None;
             }
         }
@@ -353,8 +353,14 @@ mod tests {
         input_map
     }
 
-    fn test_input_clash(input_a: impl UserInput, input_b: impl UserInput) -> bool {
-        input_a.decompose().clashed(&input_b.decompose())
+    fn inputs_clash(input_a: impl UserInput, input_b: impl UserInput) -> bool {
+        let decomposed_a = input_a.decompose();
+        println!("{decomposed_a:?}");
+        let decomposed_b = input_b.decompose();
+        println!("{decomposed_b:?}");
+        let do_inputs_clash = decomposed_a.clashes_with(&decomposed_b);
+        println!("Clash: {do_inputs_clash}");
+        do_inputs_clash
     }
 
     mod basic_functionality {
@@ -399,16 +405,16 @@ mod tests {
             let ctrl_up = ButtonlikeChord::new([ArrowUp, ControlLeft]);
             let directions_dpad = KeyboardVirtualDPad::ARROW_KEYS;
 
-            assert!(!test_input_clash(a, b));
-            assert!(test_input_clash(a, ab.clone()));
-            assert!(!test_input_clash(c, ab.clone()));
-            assert!(!test_input_clash(ab.clone(), bc.clone()));
-            assert!(test_input_clash(ab.clone(), abc.clone()));
-            assert!(test_input_clash(axyz_dpad.clone(), a));
-            assert!(test_input_clash(axyz_dpad.clone(), ab.clone()));
-            assert!(!test_input_clash(axyz_dpad.clone(), bc.clone()));
-            assert!(test_input_clash(axyz_dpad.clone(), abcd_dpad.clone()));
-            assert!(test_input_clash(ctrl_up.clone(), directions_dpad.clone()));
+            assert!(!inputs_clash(a, b));
+            assert!(inputs_clash(a, ab.clone()));
+            assert!(!inputs_clash(c, ab.clone()));
+            assert!(!inputs_clash(ab.clone(), bc.clone()));
+            assert!(inputs_clash(ab.clone(), abc.clone()));
+            assert!(inputs_clash(axyz_dpad.clone(), a));
+            assert!(inputs_clash(axyz_dpad.clone(), ab.clone()));
+            assert!(!inputs_clash(axyz_dpad.clone(), bc.clone()));
+            assert!(inputs_clash(axyz_dpad.clone(), abcd_dpad.clone()));
+            assert!(inputs_clash(ctrl_up.clone(), directions_dpad.clone()));
         }
 
         #[test]
