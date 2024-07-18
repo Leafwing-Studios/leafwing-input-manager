@@ -17,11 +17,20 @@ impl ButtonlikeTestAction {
     }
 }
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum AxislikeTestAction {
     X,
     Y,
     XY,
+}
+
+impl Actionlike for AxislikeTestAction {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            AxislikeTestAction::X | AxislikeTestAction::Y => InputControlKind::Axis,
+            AxislikeTestAction::XY => InputControlKind::DualAxis,
+        }
+    }
 }
 
 fn test_app() -> App {
