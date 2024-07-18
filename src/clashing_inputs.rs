@@ -94,10 +94,14 @@ impl BasicInputs {
 
     /// Checks if the given two [`BasicInputs`] clash with each other.
     ///
-    /// This is true if and only if one is a non-strict subset of the other.
+    /// Inputs will clash if and only if the longer input is a non-strict subset of the shorter input.
     #[inline]
     pub fn clashes_with(&self, other: &BasicInputs) -> bool {
-        self.inputs.is_subset(&other.inputs) || other.inputs.is_subset(&self.inputs)
+        if self.length < other.length {
+            self.inputs.is_subset(&other.inputs)
+        } else {
+            other.inputs.is_subset(&self.inputs)
+        }
     }
 }
 
