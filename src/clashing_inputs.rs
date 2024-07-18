@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
 use crate::user_input::Buttonlike;
-use crate::Actionlike;
+use crate::{Actionlike, InputControlKind};
 
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
@@ -235,7 +235,38 @@ impl<A: Actionlike> InputMap<A> {
         clashes
     }
 
+    /// Gets the decomposed [`BasicInputs`] for each binding mapped to the given action.
+    pub fn decomposed(&self, action: &A) -> Vec<BasicInputs> {
+        match action.input_control_kind() {
+            InputControlKind::Button => {
+                let Some(buttonlike) = self.get_buttonlike(action) else {
+                    return Vec::new();
+                };
+
+                buttonlike.iter().map(|input| input.decompose()).collect()
+            }
+            InputControlKind::Axis => {
+                let Some(axislike) = self.get_axislike(action) else {
+                    return Vec::new();
+                };
+
+                axislike.iter().map(|input| input.decompose()).collect()
+            }
+            InputControlKind::DualAxis => {
+                let Some(dual_axislike) = self.get_dual_axislike(action) else {
+                    return Vec::new();
+                };
+
+                dual_axislike
+                    .iter()
+                    .map(|input| input.decompose())
+                    .collect()
+            }
+        }
+    }
+
     /// If the pair of actions could clash, how?
+    // FIXME: does not handle axis inputs. Should use the `decomposed` method instead of `get_buttonlike`
     #[must_use]
     fn possible_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
         let mut clash = Clash::new(action_a.clone(), action_b.clone());
