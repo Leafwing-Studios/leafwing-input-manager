@@ -24,12 +24,12 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     // Stores "which actions are currently activated"
-    let input_map = InputMap::new([(
+    let input_map = InputMap::default().with_dual_axis(
         Action::Move,
         // Define a virtual D-pad using four arbitrary keys.
         // You can also use GamepadVirtualDPad to create similar ones using gamepad buttons.
         KeyboardVirtualDPad::new(KeyCode::KeyW, KeyCode::KeyS, KeyCode::KeyA, KeyCode::KeyD),
-    )]);
+    );
     commands
         .spawn(InputManagerBundle::with_map(input_map))
         .insert(Player);
@@ -42,10 +42,10 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     if action_state.pressed(&Action::Move) {
         // Virtual direction pads are one of the types which return a DualAxis. The values will be
         // represented as `-1.0`, `0.0`, or `1.0` depending on the combination of buttons pressed.
-        let axis_pair = action_state.axis_pair(&Action::Move).unwrap();
+        let axis_pair = action_state.axis_pair(&Action::Move);
         println!("Move:");
         println!("   distance: {}", axis_pair.length());
-        println!("          x: {}", axis_pair.x());
-        println!("          y: {}", axis_pair.y());
+        println!("          x: {}", axis_pair.x);
+        println!("          y: {}", axis_pair.y);
     }
 }

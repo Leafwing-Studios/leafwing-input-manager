@@ -32,14 +32,14 @@ pub enum ActionDiff<A: Actionlike> {
         action: A,
     },
     /// The value of the action changed
-    ValueChanged {
+    AxisChanged {
         /// The value of the action
         action: A,
         /// The new value of the action
         value: f32,
     },
     /// The axis pair of the action changed
-    AxisPairChanged {
+    DualAxisChanged {
         /// The value of the action
         action: A,
         /// The new value of the axis

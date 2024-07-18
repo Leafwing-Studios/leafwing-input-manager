@@ -11,7 +11,7 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 enum CameraMovement {
     Zoom,
     Pan,
@@ -19,17 +19,27 @@ enum CameraMovement {
     PanRight,
 }
 
+impl Actionlike for CameraMovement {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            CameraMovement::Zoom => InputControlKind::Axis,
+            CameraMovement::Pan => InputControlKind::DualAxis,
+            CameraMovement::PanLeft | CameraMovement::PanRight => InputControlKind::Button,
+        }
+    }
+}
+
 fn setup(mut commands: Commands) {
     let input_map = InputMap::default()
         // This will capture the total continuous value, for direct use.
-        .with(CameraMovement::Zoom, MouseScrollAxis::Y)
+        .with_axis(CameraMovement::Zoom, MouseScrollAxis::Y)
         // This will return a binary button-like output.
         .with(CameraMovement::PanLeft, MouseScrollDirection::LEFT)
         .with(CameraMovement::PanRight, MouseScrollDirection::RIGHT)
         // Alternatively, you could model them as a continuous dual-axis input
-        .with(CameraMovement::Pan, MouseScroll::default())
+        .with_dual_axis(CameraMovement::Pan, MouseScroll::default())
         // Or even a digital dual-axis input!
-        .with(CameraMovement::Pan, MouseScroll::default().digital());
+        .with_dual_axis(CameraMovement::Pan, MouseScroll::default().digital());
     commands
         .spawn(Camera2dBundle::default())
         .insert(InputManagerBundle::with_map(input_map));

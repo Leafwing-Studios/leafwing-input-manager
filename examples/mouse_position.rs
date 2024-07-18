@@ -34,12 +34,12 @@ fn pan_camera(
     let (camera, camera_transform) = camera.single();
 
     // Note: Nothing is stopping us from doing this in the action update system instead!
-    if let Some(box_pan_vector) = action_state
-        .axis_pair(&BoxMovement::MousePosition)
-        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor.xy()))
-        .map(|ray| ray.origin.truncate())
-    {
-        box_transform.translation.x = box_pan_vector.x;
-        box_transform.translation.y = box_pan_vector.y;
-    }
+    let cursor_movement = action_state.axis_pair(&BoxMovement::MousePosition);
+    let ray = camera
+        .viewport_to_world(camera_transform, cursor_movement.xy())
+        .unwrap();
+    let box_pan_vector = ray.origin.truncate();
+
+    box_transform.translation.x = box_pan_vector.x;
+    box_transform.translation.y = box_pan_vector.y;
 }

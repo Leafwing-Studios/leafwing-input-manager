@@ -59,7 +59,7 @@
 //!
 //! ### Complex Composition
 //!
-//! - Combine multiple inputs into a virtual button using [`InputChord`].
+//! - Combine multiple inputs into a virtual button using [`ButtonlikeChord`].
 //!   - Only active if all its inner inputs are active simultaneously.
 //!   - Combine values from all inner single-axis inputs if available.
 //!   - Retrieve values from the first encountered dual-axis input within the chord.
@@ -77,57 +77,32 @@
 //! [`KeyCode`]: bevy::prelude::KeyCode
 //! [`MouseButton`]: bevy::prelude::MouseButton
 
-use std::any::{Any, TypeId};
-use std::fmt::{Debug, Formatter};
-use std::hash::{Hash, Hasher};
-use std::sync::RwLock;
+use std::fmt::Debug;
 
-use bevy::prelude::App;
-use bevy::reflect::utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell};
-use bevy::reflect::{
-    erased_serde, FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize,
-    ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
-    TypePath, TypeRegistration, Typed, ValueInfo,
-};
+use bevy::math::Vec2;
+use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
-use once_cell::sync::Lazy;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
+use serde::Serialize;
 
-use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::typetag::RegisterTypeTag;
+use crate::InputControlKind;
 
 pub use self::chord::*;
 pub use self::gamepad::*;
 pub use self::keyboard::*;
 pub use self::mouse::*;
+pub use self::trait_serde::RegisterUserInput;
 
 pub mod chord;
 pub mod gamepad;
 pub mod keyboard;
 pub mod mouse;
-
-/// Classifies [`UserInput`]s based on their behavior (buttons, analog axes, etc.).
-#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
-#[must_use]
-pub enum InputControlKind {
-    /// A single input with binary state (active or inactive), typically a button press (on or off).
-    Button,
-
-    /// A single analog or digital input, often used for range controls like a thumb stick on a gamepad or mouse wheel,
-    /// providing a value within a min-max range.
-    Axis,
-
-    /// A combination of two axis-like inputs, often used for directional controls like a D-pad on a gamepad,
-    /// providing separate values for the X and Y axes.
-    DualAxis,
-}
+mod trait_reflection;
+mod trait_serde;
 
 /// A trait for defining the behavior expected from different user input sources.
 ///
@@ -138,11 +113,11 @@ pub enum InputControlKind {
 /// ```rust
 /// use std::hash::{Hash, Hasher};
 /// use bevy::prelude::*;
-/// use bevy::math::FloatOrd;
+/// use bevy::math::{Vec2, FloatOrd};
 /// use serde::{Deserialize, Serialize};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::input_streams::InputStreams;
-/// use leafwing_input_manager::axislike::{DualAxisType, DualAxisData};
+/// use leafwing_input_manager::axislike::{DualAxisType};
 /// use leafwing_input_manager::raw_inputs::RawInputs;
 /// use leafwing_input_manager::clashing_inputs::BasicInputs;
 ///
@@ -159,35 +134,11 @@ pub enum InputControlKind {
 ///         InputControlKind::Axis
 ///     }
 ///
-///     fn pressed(&self, input_streams: &InputStreams) -> bool {
-///         // Checks if the input is currently active.
-///         //
-///         // Since this virtual mouse scroll always outputs a value,
-///         // it will always return `true`.
-///         true
-///     }
-///
-///     fn value(&self, input_streams: &InputStreams) -> f32 {
-///         // Gets the current value of the input as an `f32`.
-///         //
-///         // This input always represents a scroll of `5.0` on the Y-axis.
-///         5.0
-///     }
-///
-///     fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-///         // Gets the values of this input along the X and Y axes (if applicable).
-///         //
-///         // This input only represents movement on the Y-axis,
-///         // so it returns `None`.
-///         None
-///     }
-///
 ///     fn decompose(&self) -> BasicInputs {
 ///         // Gets the most basic form of this input for clashing input detection.
 ///         //
-///         // This input is a simple, atomic unit,
-///         // so it is returned as a `BasicInputs::Simple`.
-///         BasicInputs::Simple(Box::new(*self))
+///         // This input is not buttonlike, so it uses `None`.
+///         BasicInputs::None
 ///     }
 ///
 ///     fn raw_inputs(&self) -> RawInputs {
@@ -208,230 +159,90 @@ pub trait UserInput:
     /// Defines the kind of behavior that the input should be.
     fn kind(&self) -> InputControlKind;
 
-    /// Checks if the input is currently active.
-    fn pressed(&self, input_streams: &InputStreams) -> bool;
-
-    /// Retrieves the current value of the input.
-    fn value(&self, input_streams: &InputStreams) -> f32;
-
-    /// Attempts to retrieve the current [`DualAxisData`] of the input if applicable.
+    /// Returns the set of primitive inputs that make up this input.
     ///
-    /// This method is intended for inputs that represent movement on two axes.
-    /// However, some input types (e.g., buttons, mouse scroll) don't inherently provide separate X and Y information.
-    ///
-    /// For inputs that don't represent dual-axis input, there is no need to override this method.
-    /// The default implementation will always return [`None`].
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData>;
-
-    /// Returns the most basic inputs that make up this input.
+    /// These inputs are used to detect clashes between different user inputs,
+    /// and are stored in a [`BasicInputs`] for easy comparison.
     ///
     /// For inputs that represent a simple, atomic control,
     /// this method should always return a [`BasicInputs::Simple`] that only contains the input itself.
     fn decompose(&self) -> BasicInputs;
 
     /// Returns the raw input events that make up this input.
+    ///
+    /// Unlike [`UserInput::decompose`], which stores boxed user inputs,
+    /// this method returns the raw input types.
     fn raw_inputs(&self) -> RawInputs;
 }
 
-dyn_clone::clone_trait_object!(UserInput);
-dyn_eq::eq_trait_object!(UserInput);
-dyn_hash::hash_trait_object!(UserInput);
+/// A trait used for buttonlike user inputs, which can be pressed or released.
+pub trait Buttonlike: UserInput {
+    /// Checks if the input is currently active.
+    fn pressed(&self, input_streams: &InputStreams) -> bool;
 
-impl Reflect for Box<dyn UserInput> {
-    fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
-        Some(Self::type_info())
-    }
-
-    fn into_any(self: Box<Self>) -> Box<dyn Any> {
-        self
-    }
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
-
-    fn into_reflect(self: Box<Self>) -> Box<dyn Reflect> {
-        self
-    }
-
-    fn as_reflect(&self) -> &dyn Reflect {
-        self
-    }
-
-    fn as_reflect_mut(&mut self) -> &mut dyn Reflect {
-        self
-    }
-
-    fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
-        let value = value.as_any();
-        if let Some(value) = value.downcast_ref::<Self>() {
-            *self = value.clone();
-            Ok(())
-        } else {
-            Err(bevy::reflect::ApplyError::MismatchedTypes {
-                from_type: self
-                    .reflect_type_ident()
-                    .unwrap_or_default()
-                    .to_string()
-                    .into_boxed_str(),
-                to_type: self
-                    .reflect_type_ident()
-                    .unwrap_or_default()
-                    .to_string()
-                    .into_boxed_str(),
-            })
-        }
-    }
-
-    fn apply(&mut self, value: &dyn Reflect) {
-        Self::try_apply(self, value).unwrap();
-    }
-
-    fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
-        *self = value.take()?;
-        Ok(())
-    }
-
-    fn reflect_kind(&self) -> ReflectKind {
-        ReflectKind::Value
-    }
-
-    fn reflect_ref(&self) -> ReflectRef {
-        ReflectRef::Value(self)
-    }
-
-    fn reflect_mut(&mut self) -> ReflectMut {
-        ReflectMut::Value(self)
-    }
-
-    fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-        ReflectOwned::Value(self)
-    }
-
-    fn clone_value(&self) -> Box<dyn Reflect> {
-        Box::new(self.clone())
-    }
-
-    fn reflect_hash(&self) -> Option<u64> {
-        let mut hasher = reflect_hasher();
-        let type_id = TypeId::of::<Self>();
-        Hash::hash(&type_id, &mut hasher);
-        Hash::hash(self, &mut hasher);
-        Some(hasher.finish())
-    }
-
-    fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-        value
-            .as_any()
-            .downcast_ref::<Self>()
-            .map(|value| self.dyn_eq(value))
-            .or(Some(false))
-    }
-
-    fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        Debug::fmt(self, f)
+    /// Checks if the input is currently inactive.
+    fn released(&self, input_streams: &InputStreams) -> bool {
+        !self.pressed(input_streams)
     }
 }
 
-impl Typed for Box<dyn UserInput> {
-    fn type_info() -> &'static TypeInfo {
-        static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-        CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
-    }
+/// A trait used for axis-like user inputs, which provide a continuous value.
+pub trait Axislike: UserInput {
+    /// Gets the current value of the input as an `f32`.
+    fn value(&self, input_streams: &InputStreams) -> f32;
 }
 
-impl TypePath for Box<dyn UserInput> {
-    fn type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| {
-            {
-                format!("std::boxed::Box<dyn {}::UserInput>", module_path!())
+/// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
+pub trait DualAxislike: UserInput {
+    /// Gets the values of this input along the X and Y axes (if applicable).
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2;
+}
+
+/// A wrapper type to get around the lack of [trait upcasting coercion](https://github.com/rust-lang/rust/issues/65991).
+///
+/// To return a generic [`UserInput`] trait object from a function, you can use this wrapper type.
+
+#[derive(Reflect, Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+pub enum UserInputWrapper {
+    /// Wraps a [`Buttonlike`] input.
+    Button(Box<dyn Buttonlike>),
+    /// Wraps an [`Axislike`] input.
+    Axis(Box<dyn Axislike>),
+    /// Wraps a [`DualAxislike`] input.
+    DualAxis(Box<dyn DualAxislike>),
+}
+
+impl UserInput for UserInputWrapper {
+    fn kind(&self) -> InputControlKind {
+        match self {
+            UserInputWrapper::Button(input) => {
+                debug_assert!(input.kind() == InputControlKind::Button);
+                input.kind()
             }
-        })
-    }
-
-    fn short_type_path() -> &'static str {
-        static CELL: GenericTypePathCell = GenericTypePathCell::new();
-        CELL.get_or_insert::<Self, _>(|| "Box<dyn UserInput>".to_string())
-    }
-
-    fn type_ident() -> Option<&'static str> {
-        Some("Box<dyn UserInput>")
-    }
-
-    fn crate_name() -> Option<&'static str> {
-        Some(module_path!().split(':').next().unwrap())
-    }
-
-    fn module_path() -> Option<&'static str> {
-        Some(module_path!())
-    }
-}
-
-impl GetTypeRegistration for Box<dyn UserInput> {
-    fn get_type_registration() -> TypeRegistration {
-        let mut registration = TypeRegistration::of::<Self>();
-        registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-        registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-        registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
-        registration
-    }
-}
-
-impl FromReflect for Box<dyn UserInput> {
-    fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-        Some(reflect.as_any().downcast_ref::<Self>()?.clone())
-    }
-}
-
-impl<'a> Serialize for dyn UserInput + 'a {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        // Check that `UserInput` has `erased_serde::Serialize` as a super trait,
-        // preventing infinite recursion at runtime.
-        const fn __check_erased_serialize_super_trait<T: ?Sized + UserInput>() {
-            require_erased_serialize_impl::<T>();
+            UserInputWrapper::Axis(input) => {
+                debug_assert!(input.kind() == InputControlKind::Axis);
+                input.kind()
+            }
+            UserInputWrapper::DualAxis(input) => {
+                debug_assert!(input.kind() == InputControlKind::DualAxis);
+                input.kind()
+            }
         }
-        serialize_trait_object(serializer, self.reflect_short_type_path(), self)
     }
-}
 
-impl<'de> Deserialize<'de> for Box<dyn UserInput> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let registry = unsafe { INPUT_REGISTRY.read().unwrap() };
-        registry.deserialize_trait_object(deserializer)
+    fn decompose(&self) -> BasicInputs {
+        match self {
+            UserInputWrapper::Button(input) => input.decompose(),
+            UserInputWrapper::Axis(input) => input.decompose(),
+            UserInputWrapper::DualAxis(input) => input.decompose(),
+        }
     }
-}
 
-/// Registry of deserializers for [`UserInput`]s.
-static mut INPUT_REGISTRY: Lazy<RwLock<MapRegistry<dyn UserInput>>> =
-    Lazy::new(|| RwLock::new(MapRegistry::new("UserInput")));
-
-/// A trait for registering a specific [`UserInput`].
-pub trait RegisterUserInput {
-    /// Registers the specified [`UserInput`].
-    fn register_user_input<'de, T>(&mut self) -> &mut Self
-    where
-        T: RegisterTypeTag<'de, dyn UserInput> + GetTypeRegistration;
-}
-
-impl RegisterUserInput for App {
-    fn register_user_input<'de, T>(&mut self) -> &mut Self
-    where
-        T: RegisterTypeTag<'de, dyn UserInput> + GetTypeRegistration,
-    {
-        let mut registry = unsafe { INPUT_REGISTRY.write().unwrap() };
-        T::register_typetag(&mut registry);
-        self.register_type::<T>();
-        self
+    fn raw_inputs(&self) -> RawInputs {
+        match self {
+            UserInputWrapper::Button(input) => input.raw_inputs(),
+            UserInputWrapper::Axis(input) => input.raw_inputs(),
+            UserInputWrapper::DualAxis(input) => input.raw_inputs(),
+        }
     }
 }

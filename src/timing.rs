@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 /// Stores information about when an action was pressed or released
 ///
-/// This struct is principally used as a field on [`ActionData`](crate::action_state::ActionData),
+/// This struct is principally used as a field on [`ButtonData`](crate::action_state::ButtonData),
 /// which itself lives inside an [`ActionState`](crate::action_state::ActionState).
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize, Reflect)]
 pub struct Timing {
@@ -23,6 +23,15 @@ pub struct Timing {
     pub current_duration: Duration,
     /// The [`Duration`] for which the button was pressed or released before the state last changed.
     pub previous_duration: Duration,
+}
+
+impl Timing {
+    /// The default timing for a button that has not been pressed or released
+    pub const NEW: Timing = Timing {
+        instant_started: None,
+        current_duration: Duration::ZERO,
+        previous_duration: Duration::ZERO,
+    };
 }
 
 impl PartialOrd for Timing {

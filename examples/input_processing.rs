@@ -10,10 +10,19 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
     Move,
     LookAround,
+}
+
+impl Actionlike for Action {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            Action::Move => InputControlKind::DualAxis,
+            Action::LookAround => InputControlKind::DualAxis,
+        }
+    }
 }
 
 #[derive(Component)]
@@ -21,7 +30,7 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     let input_map = InputMap::default()
-        .with(
+        .with_dual_axis(
             Action::Move,
             KeyboardVirtualDPad::WASD
                 // You can configure a processing pipeline to handle axis-like user inputs.
@@ -36,7 +45,7 @@ fn spawn_player(mut commands: Commands) {
                 // Or reset the pipeline, leaving no any processing applied.
                 .reset_processing_pipeline(),
         )
-        .with(
+        .with_dual_axis(
             Action::LookAround,
             // You can also use a sequence of processors as the processing pipeline.
             MouseMove::default().replace_processing_pipeline([

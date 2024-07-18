@@ -6,12 +6,14 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::{DualAxisData, DualAxisDirection, DualAxisType};
+use crate::axislike::{DualAxisDirection, DualAxisType};
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::*;
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
 use crate::user_input::{InputControlKind, UserInput};
+
+use super::{Axislike, Buttonlike, DualAxislike};
 
 // Built-in support for Bevy's MouseButton
 #[serde_typetag]
@@ -20,32 +22,6 @@ impl UserInput for MouseButton {
     #[inline]
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
-    }
-
-    /// Checks if the specified button is currently pressed down.
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .mouse_buttons
-            .is_some_and(|buttons| buttons.pressed(*self))
-    }
-
-    /// Retrieves the strength of the button press for the specified button.
-    ///
-    /// # Returns
-    ///
-    /// - `1.0` if the button is currently pressed down, indicating an active input.
-    /// - `0.0` if the button is not pressed, signifying no input.
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`MouseButton`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
     }
 
     /// Returns a [`BasicInputs`] that only contains the [`MouseButton`] itself,
@@ -59,6 +35,16 @@ impl UserInput for MouseButton {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_buttons([*self])
+    }
+}
+
+impl Buttonlike for MouseButton {
+    /// Checks if the specified button is currently pressed down.
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        input_streams
+            .mouse_buttons
+            .is_some_and(|buttons| buttons.pressed(*self))
     }
 }
 
@@ -119,29 +105,6 @@ impl UserInput for MouseMoveDirection {
         InputControlKind::Button
     }
 
-    /// Checks if there is any recent mouse movement along the specified direction.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let mouse_movement = input_streams.mouse_motion.0;
-        self.0.is_active(mouse_movement)
-    }
-
-    /// Retrieves the amount of the mouse movement along the specified direction,
-    /// returning `0.0` for no movement and `1.0` for full movement.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`MouseMoveDirection`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseMoveDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -152,6 +115,16 @@ impl UserInput for MouseMoveDirection {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_move_directions([*self])
+    }
+}
+
+impl Buttonlike for MouseMoveDirection {
+    /// Checks if there is any recent mouse movement along the specified direction.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        let mouse_movement = input_streams.mouse_motion.0;
+        self.0.is_active(mouse_movement)
     }
 }
 
@@ -179,11 +152,11 @@ impl UserInput for MouseMoveDirection {
 /// // Movement on the chosen axis activates the input
 /// app.send_axis_values(MouseMoveAxis::Y, [1.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [1.0]);
+/// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = MouseMoveAxis::Y.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -217,32 +190,6 @@ impl UserInput for MouseMoveAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if there is any recent mouse movement along the specified axis.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
-    }
-
-    /// Retrieves the amount of the mouse movement along the specified axis
-    /// after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = input_streams.mouse_motion.0;
-        let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`MouseMoveAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseMoveAxis`] represents a composition of two [`MouseMoveDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -256,6 +203,20 @@ impl UserInput for MouseMoveAxis {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_move_axes([self.axis])
+    }
+}
+
+impl Axislike for MouseMoveAxis {
+    /// Retrieves the amount of the mouse movement along the specified axis
+    /// after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        let movement = input_streams.mouse_motion.0;
+        let value = self.axis.get_value(movement);
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -306,11 +267,11 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// // Movement on either axis activates the input
 /// app.send_axis_values(MouseMoveAxis::Y, [3.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [0.0, 3.0]);
+/// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
 /// let doubled = MouseMove::default().sensitivity_y(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [0.0, 6.0]);
+/// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 6.0));
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -339,27 +300,6 @@ impl UserInput for MouseMove {
         InputControlKind::DualAxis
     }
 
-    /// Checks if there is any recent mouse movement.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the amount of the mouse movement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the mouse displacement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        Some(DualAxisData::from_xy(self.processed_value(input_streams)))
-    }
-
     /// [`MouseMove`] represents a composition of four [`MouseMoveDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -375,6 +315,15 @@ impl UserInput for MouseMove {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_move_axes(DualAxisType::axes())
+    }
+}
+
+impl DualAxislike for MouseMove {
+    /// Retrieves the mouse displacement after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -458,29 +407,6 @@ impl UserInput for MouseScrollDirection {
         InputControlKind::Button
     }
 
-    /// Checks if there is any recent mouse wheel movement along the specified direction.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let movement = input_streams.mouse_scroll.0;
-        self.0.is_active(movement)
-    }
-
-    /// Retrieves the magnitude of the mouse wheel movement along the specified direction,
-    /// returning `0.0` for no movement and `1.0` for full movement.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`MouseScrollDirection`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseScrollDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -491,6 +417,16 @@ impl UserInput for MouseScrollDirection {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_scroll_directions([*self])
+    }
+}
+
+impl Buttonlike for MouseScrollDirection {
+    /// Checks if there is any recent mouse wheel movement along the specified direction.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        let movement = input_streams.mouse_scroll.0;
+        self.0.is_active(movement)
     }
 }
 
@@ -518,11 +454,11 @@ impl UserInput for MouseScrollDirection {
 /// // Scrolling on the chosen axis activates the input
 /// app.send_axis_values(MouseScrollAxis::Y, [1.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [1.0]);
+/// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = MouseScrollAxis::Y.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -556,32 +492,6 @@ impl UserInput for MouseScrollAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if there is any recent mouse wheel movement along the specified axis.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
-    }
-
-    /// Retrieves the amount of the mouse wheel movement along the specified axis
-    /// after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = input_streams.mouse_scroll.0;
-        let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`MouseScrollAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`MouseScrollAxis`] represents a composition of two [`MouseScrollDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -595,6 +505,20 @@ impl UserInput for MouseScrollAxis {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_scroll_axes([self.axis])
+    }
+}
+
+impl Axislike for MouseScrollAxis {
+    /// Retrieves the amount of the mouse wheel movement along the specified axis
+    /// after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        let movement = input_streams.mouse_scroll.0;
+        let value = self.axis.get_value(movement);
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -644,11 +568,11 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// // Scrolling on either axis activates the input
 /// app.send_axis_values(MouseScrollAxis::Y, [3.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [0.0, 3.0]);
+/// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
 /// let doubled = MouseScroll::default().sensitivity_y(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [0.0, 6.0]);
+/// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 6.0));
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -677,27 +601,6 @@ impl UserInput for MouseScroll {
         InputControlKind::DualAxis
     }
 
-    /// Checks if there is any recent mouse wheel movement.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the amount of the mouse wheel movement on both axes after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        Some(DualAxisData::from_xy(self.processed_value(input_streams)))
-    }
-
     /// [`MouseScroll`] represents a composition of four [`MouseScrollDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -713,6 +616,15 @@ impl UserInput for MouseScroll {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_mouse_scroll_axes(DualAxisType::axes())
+    }
+}
+
+impl DualAxislike for MouseScroll {
+    /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -805,26 +717,6 @@ mod tests {
         app
     }
 
-    fn check(
-        input: &impl UserInput,
-        input_streams: &InputStreams,
-        expected_pressed: bool,
-        expected_value: f32,
-        expected_axis_pair: Option<DualAxisData>,
-    ) {
-        assert_eq!(input.pressed(input_streams), expected_pressed);
-        assert_eq!(input.value(input_streams), expected_value);
-        assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
-    }
-
-    fn pressed(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, true, 1.0, None);
-    }
-
-    fn released(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, false, 0.0, None);
-    }
-
     #[test]
     fn test_mouse_button() {
         let left = MouseButton::Left;
@@ -843,36 +735,40 @@ mod tests {
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left, &inputs);
-        released(&middle, &inputs);
-        released(&right, &inputs);
+
+        assert!(!left.pressed(&inputs));
+        assert!(!middle.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
 
         // Press left
         let mut app = test_app();
         app.press_input(MouseButton::Left);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left, &inputs);
-        released(&middle, &inputs);
-        released(&right, &inputs);
+
+        assert!(left.pressed(&inputs));
+        assert!(!middle.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
 
         // Press middle
         let mut app = test_app();
         app.press_input(MouseButton::Middle);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left, &inputs);
-        pressed(&middle, &inputs);
-        released(&right, &inputs);
+
+        assert!(!left.pressed(&inputs));
+        assert!(middle.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
 
         // Press right
         let mut app = test_app();
         app.press_input(MouseButton::Right);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left, &inputs);
-        released(&middle, &inputs);
-        pressed(&right, &inputs);
+
+        assert!(!left.pressed(&inputs));
+        assert!(!middle.pressed(&inputs));
+        assert!(right.pressed(&inputs));
     }
 
     #[test]
@@ -893,63 +789,68 @@ mod tests {
         assert_eq!(mouse_move.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_move_up, &inputs);
-        released(&mouse_move_y, &inputs);
-        check(&mouse_move, &inputs, false, 0.0, zeros);
+
+        assert!(!mouse_move_up.pressed(&inputs));
+        assert_eq!(mouse_move_y.value(&inputs), 0.0);
+        assert_eq!(mouse_move.axis_pair(&inputs), Vec2::new(0.0, 0.0));
 
         // Move left
-        let data = DualAxisData::new(-1.0, 0.0);
+        let data = Vec2::new(-1.0, 0.0);
         let mut app = test_app();
         app.press_input(MouseMoveDirection::LEFT);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_move_up, &inputs);
-        released(&mouse_move_y, &inputs);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert!(!mouse_move_up.pressed(&inputs));
+        assert_eq!(mouse_move_y.value(&inputs), 0.0);
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Move up
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(MouseMoveDirection::UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert!(mouse_move_up.pressed(&inputs));
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Move down
-        let data = DualAxisData::new(0.0, -1.0);
+        let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
         app.press_input(MouseMoveDirection::DOWN);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert!(!mouse_move_up.pressed(&inputs));
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Set changes in movement on the Y-axis to 3.0
-        let data = DualAxisData::new(0.0, 3.0);
+        let data = Vec2::new(0.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseMoveAxis::Y, [data.y()]);
+        app.send_axis_values(MouseMoveAxis::Y, [data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert!(mouse_move_up.pressed(&inputs));
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
 
         // Set changes in movement to (2.0, 3.0)
-        let data = DualAxisData::new(2.0, 3.0);
+        let data = Vec2::new(2.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseMove::default(), [data.x(), data.y()]);
+        app.send_axis_values(MouseMove::default(), [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_move_up, &inputs);
-        check(&mouse_move_y, &inputs, true, data.y(), None);
-        check(&mouse_move, &inputs, true, data.length(), Some(data));
+
+        assert!(mouse_move_up.pressed(&inputs));
+        assert_eq!(mouse_move_y.value(&inputs), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs), data);
     }
 
     #[test]
@@ -970,53 +871,57 @@ mod tests {
         assert_eq!(mouse_scroll.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_scroll_up, &inputs);
-        released(&mouse_scroll_y, &inputs);
-        check(&mouse_scroll, &inputs, false, 0.0, zeros);
+
+        assert!(!mouse_scroll_up.pressed(&inputs));
+        assert_eq!(mouse_scroll_y.value(&inputs), 0.0);
+        assert_eq!(mouse_scroll.axis_pair(&inputs), Vec2::new(0.0, 0.0));
 
         // Move up
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(MouseScrollDirection::UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert!(mouse_scroll_up.pressed(&inputs));
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Scroll down
-        let data = DualAxisData::new(0.0, -1.0);
+        let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
         app.press_input(MouseScrollDirection::DOWN);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert!(!mouse_scroll_up.pressed(&inputs));
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Set changes in scrolling on the Y-axis to 3.0
-        let data = DualAxisData::new(0.0, 3.0);
+        let data = Vec2::new(0.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseScrollAxis::Y, [data.y()]);
+        app.send_axis_values(MouseScrollAxis::Y, [data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert!(mouse_scroll_up.pressed(&inputs));
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
 
         // Set changes in scrolling to (2.0, 3.0)
-        let data = DualAxisData::new(2.0, 3.0);
+        let data = Vec2::new(2.0, 3.0);
         let mut app = test_app();
-        app.send_axis_values(MouseScroll::default(), [data.x(), data.y()]);
+        app.send_axis_values(MouseScroll::default(), [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&mouse_scroll_up, &inputs);
-        check(&mouse_scroll_y, &inputs, true, data.y(), None);
-        check(&mouse_scroll, &inputs, true, data.length(), Some(data));
+
+        assert!(mouse_scroll_up.pressed(&inputs));
+        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
     }
 
     #[test]

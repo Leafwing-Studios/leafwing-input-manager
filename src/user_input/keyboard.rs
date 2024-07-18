@@ -5,7 +5,6 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::DualAxisData;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -13,7 +12,10 @@ use crate::input_processing::{
 };
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{InputChord, InputControlKind, UserInput};
+use crate::user_input::{ButtonlikeChord, UserInput};
+use crate::InputControlKind;
+
+use super::{Axislike, Buttonlike, DualAxislike};
 
 // Built-in support for Bevy's KeyCode
 #[serde_typetag]
@@ -22,30 +24,6 @@ impl UserInput for KeyCode {
     #[inline]
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
-    }
-
-    /// Checks if the specified key is currently pressed down.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keys| keys.pressed(*self))
-    }
-
-    /// Retrieves the strength of the key press for the specified key,
-    /// returning `0.0` for no press and `1.0` for a currently pressed key.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`KeyCode`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
     }
 
     /// Returns a [`BasicInputs`] that only contains the [`KeyCode`] itself,
@@ -59,6 +37,17 @@ impl UserInput for KeyCode {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_keycodes([*self])
+    }
+}
+
+impl Buttonlike for KeyCode {
+    /// Checks if the specified key is currently pressed down.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        input_streams
+            .keycodes
+            .is_some_and(|keys| keys.pressed(*self))
     }
 }
 
@@ -121,10 +110,10 @@ impl ModifierKey {
         }
     }
 
-    /// Create an [`InputChord`] that includes this [`ModifierKey`] and the given `input`.
+    /// Create an [`ButtonlikeChord`] that includes this [`ModifierKey`] and the given `input`.
     #[inline]
-    pub fn with(&self, other: impl UserInput) -> InputChord {
-        InputChord::from_single(*self).with(other)
+    pub fn with(&self, other: impl Buttonlike) -> ButtonlikeChord {
+        ButtonlikeChord::from_single(*self).with(other)
     }
 }
 
@@ -134,30 +123,6 @@ impl UserInput for ModifierKey {
     #[inline]
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
-    }
-
-    /// Checks if the specified modifier key is currently pressed down.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keycodes| keycodes.any_pressed(self.keycodes()))
-    }
-
-    /// Gets the strength of the key press for the specified modifier key,
-    /// returning `0.0` for no press and `1.0` for a currently pressed key.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`ModifierKey`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
     }
 
     /// Returns the two [`KeyCode`]s used by this [`ModifierKey`].
@@ -170,6 +135,17 @@ impl UserInput for ModifierKey {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_keycodes(self.keycodes())
+    }
+}
+
+impl Buttonlike for ModifierKey {
+    /// Checks if the specified modifier key is currently pressed down.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        input_streams
+            .keycodes
+            .is_some_and(|keycodes| keycodes.any_pressed(self.keycodes()))
     }
 }
 
@@ -201,11 +177,11 @@ impl UserInput for ModifierKey {
 /// // Pressing either key activates the input
 /// app.press_input(KeyCode::ArrowUp);
 /// app.update();
-/// assert_eq!(app.read_axis_values(axis), [1.0]);
+/// assert_eq!(app.read_axis_value(axis), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -301,13 +277,20 @@ impl UserInput for KeyboardVirtualAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value after processing by the associated processors.
-    #[must_use]
+    /// [`KeyboardVirtualAxis`] represents a compositions of two [`KeyCode`]s.
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.negative)])
     }
 
+    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this axis.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_keycodes([self.negative, self.positive])
+    }
+}
+
+impl Axislike for KeyboardVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
@@ -322,25 +305,6 @@ impl UserInput for KeyboardVirtualAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`KeyboardVirtualAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
-    /// [`KeyboardVirtualAxis`] represents a compositions of two [`KeyCode`]s.
-    #[inline]
-    fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.negative)])
-    }
-
-    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this axis.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes([self.negative, self.positive])
     }
 }
 
@@ -396,11 +360,11 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
 /// // Pressing an arrow key activates the corresponding axis
 /// app.press_input(KeyCode::ArrowUp);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
+/// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 1.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
 /// let doubled = KeyboardVirtualDPad::ARROW_KEYS.sensitivity_y(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [0.0, 2.0]);
+/// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 2.0));
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -504,28 +468,6 @@ impl UserInput for KeyboardVirtualDPad {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let value = self.processed_value(input_streams);
-        Some(DualAxisData::from_xy(value))
-    }
-
     /// [`KeyboardVirtualDPad`] represents a compositions of four [`KeyCode`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -541,6 +483,15 @@ impl UserInput for KeyboardVirtualDPad {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_keycodes([self.up, self.down, self.left, self.right])
+    }
+}
+
+impl DualAxislike for KeyboardVirtualDPad {
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -582,26 +533,6 @@ mod tests {
         app
     }
 
-    fn check(
-        input: &impl UserInput,
-        input_streams: &InputStreams,
-        expected_pressed: bool,
-        expected_value: f32,
-        expected_axis_pair: Option<DualAxisData>,
-    ) {
-        assert_eq!(input.pressed(input_streams), expected_pressed);
-        assert_eq!(input.value(input_streams), expected_value);
-        assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
-    }
-
-    fn pressed(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, true, 1.0, None);
-    }
-
-    fn released(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, false, 0.0, None);
-    }
-
     #[test]
     fn test_keyboard_input() {
         let up = KeyCode::ArrowUp;
@@ -633,51 +564,55 @@ mod tests {
         assert_eq!(arrows.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
+        let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press arrow up
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowUp);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        check(&arrow_y, &inputs, true, data.y(), None);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert!(up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), data.y);
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow down
-        let data = DualAxisData::new(0.0, -1.0);
+        let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowDown);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        check(&arrow_y, &inputs, true, data.y(), None);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), data.y);
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow left
-        let data = DualAxisData::new(-1.0, 0.0);
+        let data = Vec2::new(-1.0, 0.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowLeft);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        pressed(&left, &inputs);
-        released(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert!(!up.pressed(&inputs));
+        assert!(left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press arrow down and arrow up
         let mut app = test_app();
@@ -685,45 +620,49 @@ mod tests {
         app.press_input(KeyCode::ArrowUp);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        released(&left, &inputs);
-        released(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert!(up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press arrow left and arrow up
-        let data = DualAxisData::new(-1.0, 1.0);
+        let data = Vec2::new(-1.0, 1.0);
         let mut app = test_app();
         app.press_input(KeyCode::ArrowLeft);
         app.press_input(KeyCode::ArrowUp);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        pressed(&left, &inputs);
-        released(&alt, &inputs);
-        check(&arrow_y, &inputs, true, data.y(), None);
-        check(&arrows, &inputs, true, data.length(), Some(data));
+
+        assert!(up.pressed(&inputs));
+        assert!(left.pressed(&inputs));
+        assert!(!alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), data.y);
+        assert_eq!(arrows.axis_pair(&inputs), data);
 
         // Press left Alt
         let mut app = test_app();
         app.press_input(KeyCode::AltLeft);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        pressed(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
 
         // Press right Alt
         let mut app = test_app();
         app.press_input(KeyCode::AltRight);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&left, &inputs);
-        pressed(&alt, &inputs);
-        released(&arrow_y, &inputs);
-        check(&arrows, &inputs, false, 0.0, zeros);
+
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(alt.pressed(&inputs));
+        assert_eq!(arrow_y.value(&inputs), 0.0);
+        assert_eq!(arrows.axis_pair(&inputs), zeros);
     }
 }

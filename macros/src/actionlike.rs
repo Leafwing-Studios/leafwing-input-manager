@@ -15,6 +15,10 @@ pub(crate) fn actionlike_inner(ast: &DeriveInput) -> TokenStream {
     let crate_path = utils::crate_path();
 
     quote! {
-        impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {}
+        impl #impl_generics #crate_path::Actionlike for #enum_name #type_generics #where_clause {
+            fn input_control_kind(&self) -> #crate_path::InputControlKind {
+                    #crate_path::InputControlKind::Button
+            }
+        }
     }
 }

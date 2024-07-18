@@ -7,7 +7,7 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
-use crate::axislike::{AxisDirection, DualAxisData};
+use crate::axislike::AxisDirection;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -15,7 +15,10 @@ use crate::input_processing::{
 };
 use crate::input_streams::InputStreams;
 use crate::raw_inputs::RawInputs;
-use crate::user_input::{InputControlKind, UserInput};
+use crate::user_input::UserInput;
+use crate::InputControlKind;
+
+use super::{Axislike, Buttonlike, DualAxislike};
 
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
@@ -131,29 +134,6 @@ impl UserInput for GamepadControlDirection {
         InputControlKind::Button
     }
 
-    /// Checks if there is any recent stick movement along the specified direction.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let value = read_axis_value(input_streams, self.axis);
-        self.side.is_active(value)
-    }
-
-    /// Retrieves the amount of the stick movement along the specified direction,
-    /// returning `0.0` for no movement and `1.0` for full movement.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        f32::from(self.pressed(input_streams))
-    }
-
-    /// Always returns [`None`] as [`GamepadControlDirection`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`GamepadControlDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -164,6 +144,16 @@ impl UserInput for GamepadControlDirection {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_control_directions([*self])
+    }
+}
+
+impl Buttonlike for GamepadControlDirection {
+    /// Checks if there is any recent stick movement along the specified direction.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        let value = read_axis_value(input_streams, self.axis);
+        self.side.is_active(value)
     }
 }
 
@@ -194,11 +184,11 @@ impl UserInput for GamepadControlDirection {
 /// // Movement on the chosen axis activates the input
 /// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [1.0]);
+/// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = GamepadControlAxis::LEFT_Y.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -252,30 +242,6 @@ impl UserInput for GamepadControlAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
-    }
-
-    /// Retrieves the current value of this axis after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let value = read_axis_value(input_streams, self.axis);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`GamepadControlAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// [`GamepadControlAxis`] represents a composition of two [`GamepadControlDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -289,6 +255,18 @@ impl UserInput for GamepadControlAxis {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_axes([self.axis])
+    }
+}
+
+impl Axislike for GamepadControlAxis {
+    /// Retrieves the current value of this axis after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        let value = read_axis_value(input_streams, self.axis);
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 }
 
@@ -397,29 +375,6 @@ impl UserInput for GamepadStick {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this stick has a non-zero magnitude.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the magnitude of the value from this stick after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let value = self.processed_value(input_streams);
-        value.length()
-    }
-
-    /// Retrieves the current X and Y values of this stick after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let value = self.processed_value(input_streams);
-        Some(DualAxisData::from_xy(value))
-    }
-
     /// [`GamepadStick`] represents a composition of four [`GamepadControlDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -435,6 +390,15 @@ impl UserInput for GamepadStick {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_axes([self.x, self.y])
+    }
+}
+
+impl DualAxislike for GamepadStick {
+    /// Retrieves the current X and Y values of this stick after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -519,36 +483,6 @@ impl UserInput for GamepadButtonType {
         InputControlKind::Button
     }
 
-    /// Checks if the specified button is currently pressed down.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        if let Some(gamepad) = input_streams.associated_gamepad {
-            button_pressed(input_streams, gamepad, *self)
-        } else {
-            button_pressed_any(input_streams, *self)
-        }
-    }
-
-    /// Retrieves the strength of the button press for the specified button.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        if let Some(gamepad) = input_streams.associated_gamepad {
-            button_value(input_streams, gamepad, *self)
-                .unwrap_or_else(|| f32::from(button_pressed(input_streams, gamepad, *self)))
-        } else {
-            button_value_any(input_streams, *self)
-        }
-    }
-
-    /// Always returns [`None`] as [`GamepadButtonType`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
     /// Creates a [`BasicInputs`] that only contains the [`GamepadButtonType`] itself,
     /// as it represents a simple physical button.
     #[inline]
@@ -560,6 +494,19 @@ impl UserInput for GamepadButtonType {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_buttons([*self])
+    }
+}
+
+impl Buttonlike for GamepadButtonType {
+    /// Checks if the specified button is currently pressed down.
+    #[must_use]
+    #[inline]
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        if let Some(gamepad) = input_streams.associated_gamepad {
+            button_pressed(input_streams, gamepad, *self)
+        } else {
+            button_pressed_any(input_streams, *self)
+        }
     }
 }
 
@@ -663,13 +610,20 @@ impl UserInput for GamepadVirtualAxis {
         InputControlKind::Axis
     }
 
-    /// Checks if this axis has a non-zero value after processing by the associated processors.
-    #[must_use]
+    /// Returns the two [`GamepadButtonType`]s used by this axis.
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.value(input_streams) != 0.0
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
     }
 
+    /// Creates a [`RawInputs`] from two [`GamepadButtonType`]s used by this axis.
+    #[inline]
+    fn raw_inputs(&self) -> RawInputs {
+        RawInputs::from_gamepad_buttons([self.negative, self.positive])
+    }
+}
+
+impl Axislike for GamepadVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
@@ -686,25 +640,6 @@ impl UserInput for GamepadVirtualAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
-    }
-
-    /// Always returns [`None`] as [`GamepadVirtualAxis`] doesn't represent dual-axis input.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, _input_streams: &InputStreams) -> Option<DualAxisData> {
-        None
-    }
-
-    /// Returns the two [`GamepadButtonType`]s used by this axis.
-    #[inline]
-    fn decompose(&self) -> BasicInputs {
-        BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
-    }
-
-    /// Creates a [`RawInputs`] from two [`GamepadButtonType`]s used by this axis.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_buttons([self.negative, self.positive])
     }
 }
 
@@ -864,28 +799,6 @@ impl UserInput for GamepadVirtualDPad {
         InputControlKind::DualAxis
     }
 
-    /// Checks if this D-pad has a non-zero magnitude after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.processed_value(input_streams) != Vec2::ZERO
-    }
-
-    /// Retrieves the magnitude of the value from this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        self.processed_value(input_streams).length()
-    }
-
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Option<DualAxisData> {
-        let value = self.processed_value(input_streams);
-        Some(DualAxisData::from_xy(value))
-    }
-
     /// Returns the four [`GamepadButtonType`]s used by this D-pad.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -901,6 +814,15 @@ impl UserInput for GamepadVirtualDPad {
     #[inline]
     fn raw_inputs(&self) -> RawInputs {
         RawInputs::from_gamepad_buttons([self.up, self.down, self.left, self.right])
+    }
+}
+
+impl DualAxislike for GamepadVirtualDPad {
+    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
+    #[must_use]
+    #[inline]
+    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
+        self.processed_value(input_streams)
     }
 }
 
@@ -963,26 +885,6 @@ mod tests {
         app
     }
 
-    fn check(
-        input: &impl UserInput,
-        input_streams: &InputStreams,
-        expected_pressed: bool,
-        expected_value: f32,
-        expected_axis_pair: Option<DualAxisData>,
-    ) {
-        assert_eq!(input.pressed(input_streams), expected_pressed);
-        assert_eq!(input.value(input_streams), expected_value);
-        assert_eq!(input.axis_pair(input_streams), expected_axis_pair);
-    }
-
-    fn pressed(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, true, 1.0, None);
-    }
-
-    fn released(input: &impl UserInput, input_streams: &InputStreams) {
-        check(input, input_streams, false, 0.0, None);
-    }
-
     #[test]
     fn test_gamepad_axes() {
         let left_up = GamepadControlDirection::LEFT_UP;
@@ -1028,63 +930,66 @@ mod tests {
         assert_eq!(right_y.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        released(&left_x, &inputs);
-        released(&left_y, &inputs);
-        released(&right_y, &inputs);
-        check(&left, &inputs, false, 0.0, zeros);
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert!(!left_up.pressed(&inputs));
+        assert!(!left_down.pressed(&inputs));
+        assert!(!right_up.pressed(&inputs));
+        assert_eq!(left_x.value(&inputs), 0.0);
+        assert_eq!(left_y.value(&inputs), 0.0);
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), Vec2::ZERO);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
 
         // Left stick moves upward
-        let data = DualAxisData::new(0.0, 1.0);
+        let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         app.press_input(GamepadControlDirection::LEFT_UP);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        released(&left_x, &inputs);
-        check(&left_y, &inputs, true, data.y(), None);
-        released(&right_y, &inputs);
-        check(&left, &inputs, true, data.length(), Some(data));
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert!(left_up.pressed(&inputs));
+        assert!(!left_down.pressed(&inputs));
+        assert!(!right_up.pressed(&inputs));
+        assert_eq!(left_x.value(&inputs), 0.0);
+        assert_eq!(left_y.value(&inputs), 1.0);
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), data);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
 
         // Set Y-axis of left stick to 0.6
-        let data = DualAxisData::new(0.0, 0.6);
+        let data = Vec2::new(0.0, 0.6);
         let mut app = test_app();
-        app.send_axis_values(GamepadControlAxis::LEFT_Y, [data.y()]);
+        app.send_axis_values(GamepadControlAxis::LEFT_Y, [data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        released(&left_x, &inputs);
-        check(&left_y, &inputs, true, data.y(), None);
-        released(&right_y, &inputs);
-        check(&left, &inputs, true, data.length(), Some(data));
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert!(left_up.pressed(&inputs));
+        assert!(!left_down.pressed(&inputs));
+        assert!(!right_up.pressed(&inputs));
+        assert_eq!(left_x.value(&inputs), 0.0);
+        assert_eq!(left_y.value(&inputs), 0.6);
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), data);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
 
         // Set left stick to (0.6, 0.4)
-        let data = DualAxisData::new(0.6, 0.4);
+        let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
-        app.send_axis_values(GamepadStick::LEFT, [data.x(), data.y()]);
+        app.send_axis_values(GamepadStick::LEFT, [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&left_up, &inputs);
-        released(&left_down, &inputs);
-        released(&right_up, &inputs);
-        check(&left_x, &inputs, true, data.x(), None);
-        check(&left_y, &inputs, true, data.y(), None);
-        released(&right_y, &inputs);
-        check(&left, &inputs, true, data.length(), Some(data));
-        check(&right, &inputs, false, 0.0, zeros);
+
+        assert!(left_up.pressed(&inputs));
+        assert!(!left_down.pressed(&inputs));
+        assert!(!right_up.pressed(&inputs));
+        assert_eq!(left_x.value(&inputs), data.x);
+        assert_eq!(left_y.value(&inputs), data.y);
+        assert_eq!(right_y.value(&inputs), 0.0);
+        assert_eq!(left.axis_pair(&inputs), data);
+        assert_eq!(right.axis_pair(&inputs), Vec2::ZERO);
     }
 
     #[test]
@@ -1126,58 +1031,62 @@ mod tests {
         assert_eq!(dpad.raw_inputs(), raw_inputs);
 
         // No inputs
-        let zeros = Some(DualAxisData::new(0.0, 0.0));
+        let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        released(&right, &inputs);
-        released(&x_axis, &inputs);
-        released(&y_axis, &inputs);
-        check(&dpad, &inputs, false, 0.0, zeros);
+
+        assert!(!up.pressed(&inputs));
+        assert!(!left.pressed(&inputs));
+        assert!(!down.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
+        assert_eq!(x_axis.value(&inputs), 0.0);
+        assert_eq!(y_axis.value(&inputs), 0.0);
+        assert_eq!(dpad.axis_pair(&inputs), zeros);
 
         // Press DPadLeft
-        let data = DualAxisData::new(1.0, 0.0);
+        let data = Vec2::new(1.0, 0.0);
         let mut app = test_app();
         app.press_input(GamepadButtonType::DPadLeft);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        pressed(&right, &inputs);
-        check(&x_axis, &inputs, true, data.x(), None);
-        released(&y_axis, &inputs);
-        check(&dpad, &inputs, true, data.length(), Some(data));
+
+        assert!(!up.pressed(&inputs));
+        assert!(left.pressed(&inputs));
+        assert!(!down.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
+        assert_eq!(x_axis.value(&inputs), 1.0);
+        assert_eq!(y_axis.value(&inputs), 0.0);
+        assert_eq!(dpad.axis_pair(&inputs), data);
 
         // Set the X-axis to 0.6
-        let data = DualAxisData::new(0.6, 0.0);
+        let data = Vec2::new(0.6, 0.0);
         let mut app = test_app();
-        app.send_axis_values(GamepadVirtualAxis::DPAD_X, [data.x()]);
+        app.send_axis_values(GamepadVirtualAxis::DPAD_X, [data.x]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        released(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        pressed(&right, &inputs);
-        check(&x_axis, &inputs, true, data.x(), None);
-        released(&y_axis, &inputs);
-        check(&dpad, &inputs, true, data.length(), Some(data));
+
+        assert!(!up.pressed(&inputs));
+        assert!(left.pressed(&inputs));
+        assert!(!down.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
+        assert_eq!(x_axis.value(&inputs), 0.6);
+        assert_eq!(y_axis.value(&inputs), 0.0);
+        assert_eq!(dpad.axis_pair(&inputs), data);
 
         // Set the axes to (0.6, 0.4)
-        let data = DualAxisData::new(0.6, 0.4);
+        let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
-        app.send_axis_values(GamepadVirtualDPad::DPAD, [data.x(), data.y()]);
+        app.send_axis_values(GamepadVirtualDPad::DPAD, [data.x, data.y]);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
-        pressed(&up, &inputs);
-        released(&down, &inputs);
-        released(&left, &inputs);
-        pressed(&right, &inputs);
-        check(&x_axis, &inputs, true, data.x(), None);
-        check(&y_axis, &inputs, true, data.y(), None);
-        check(&dpad, &inputs, true, data.length(), Some(data));
+
+        assert!(!up.pressed(&inputs));
+        assert!(left.pressed(&inputs));
+        assert!(!down.pressed(&inputs));
+        assert!(!right.pressed(&inputs));
+        assert_eq!(x_axis.value(&inputs), data.x);
+        assert_eq!(y_axis.value(&inputs), data.y);
+        assert_eq!(dpad.axis_pair(&inputs), data);
     }
 }

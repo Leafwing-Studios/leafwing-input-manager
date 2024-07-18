@@ -6,6 +6,8 @@ use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
 use bevy::reflect::{FromReflect, Reflect, TypePath};
+use serde::{Deserialize, Serialize};
+use std::fmt::Debug;
 use std::hash::Hash;
 
 pub mod action_diff;
@@ -32,6 +34,8 @@ pub use leafwing_input_manager_macros::Actionlike;
 
 /// Everything you need to get started
 pub mod prelude {
+    pub use crate::InputControlKind;
+
     pub use crate::action_state::ActionState;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
@@ -49,7 +53,7 @@ pub mod prelude {
 
 /// Allows a type to be used as a gameplay action in an input-agnostic fashion
 ///
-/// Actions are modelled as "virtual buttons", cleanly abstracting over messy, customizable inputs
+/// Actions are modelled as "virtual buttons" (or axes), cleanly abstracting over messy, customizable inputs
 /// in a way that can be easily consumed by your game logic.
 ///
 /// This trait should be implemented on the `A` type that you want to pass into [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
@@ -59,12 +63,17 @@ pub mod prelude {
 /// While `Copy` is not a required trait bound,
 /// users are strongly encouraged to derive `Copy` on these enums whenever possible to improve ergonomics.
 ///
-/// # Example
+/// # Warning
+///
+/// The derive macro for this trait assumes that all actions are buttonlike.
+/// If you have axislike or dual-axislike actions, you will need to implement this trait manually.
+///
+/// # Examples
 /// ```rust
 /// use bevy::prelude::Reflect;
 /// use leafwing_input_manager::Actionlike;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Reflect)]
+/// #[derive(Actionlike, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Up,
@@ -79,9 +88,38 @@ pub mod prelude {
 ///    Ultimate,
 /// }
 /// ```
+///
+/// ```rust
+/// use bevy::prelude::Reflect;
+/// use leafwing_input_manager::Actionlike;
+/// use leafwing_input_manager::InputControlKind;
+///
+/// #[derive(PartialEq, Debug, Eq, Clone, Copy, Hash, Reflect)]
+/// enum PlayerAction {
+///    // Movement
+///    Movement,
+///    // Abilities
+///    Ability1,
+///    Ability2,
+///    Ability3,
+///    Ability4,
+///    Ultimate,
+/// }
+///
+/// impl Actionlike for PlayerAction {
+///     fn input_control_kind(&self) -> InputControlKind {
+///         match self {
+///            PlayerAction::Movement => InputControlKind::DualAxis,
+///            _ => InputControlKind::Button,
+///         }
+///     }
+/// }
+/// ```
 pub trait Actionlike:
-    Eq + Hash + Send + Sync + Clone + Reflect + TypePath + FromReflect + 'static
+    Debug + Eq + Hash + Send + Sync + Clone + Reflect + TypePath + FromReflect + 'static
 {
+    /// Returns the kind of input control this action represents: buttonlike, axislike, or dual-axislike.
+    fn input_control_kind(&self) -> InputControlKind;
 }
 
 /// This [`Bundle`] allows entities to collect and interpret inputs from across input sources
@@ -113,4 +151,26 @@ impl<A: Actionlike> InputManagerBundle<A> {
             action_state: ActionState::default(),
         }
     }
+}
+
+/// Classifies [`UserInput`](crate::user_input::UserInput)s and [`Actionlike`] actions based on their behavior (buttons, analog axes, etc.).
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub enum InputControlKind {
+    /// A single input with binary state (active or inactive), typically a button press (on or off).
+    ///
+    /// Corresponds to [`Buttonlike`](crate::user_input::Buttonlike)  inputs.
+    Button,
+
+    /// A single analog or digital input, often used for range controls like a thumb stick on a gamepad or mouse wheel,
+    /// providing a value within a min-max range.
+    ///
+    /// Corresponds to [`Axislike`](crate::user_input::Axislike) inputs.
+    Axis,
+
+    /// A combination of two axis-like inputs, often used for directional controls like a D-pad on a gamepad,
+    /// providing separate values for the X and Y axes.
+    ///
+    /// Corresponds to [`DualAxislike`](crate::user_input::DualAxislike) inputs.
+    DualAxis,
 }

@@ -2,85 +2,48 @@
 
 ## Version 0.15.0 (Unreleased)
 
-### Breaking Changes
-
-- removed `UserInput` and `InputKind` enums in favor of the new `UserInput` trait and its impls (see 'Enhancements: New Inputs' for details).
-  - renamed `Modifier` enum to `ModifierKey`.
-  - by default, all input events are unprocessed now, using `With*ProcessingPipelineExt` methods to configure your preferred processing steps.
-  - applied clashing check to continuous mouse inputs, for example:
-    - `MouseScrollAxis::Y` will clash with `MouseScrollDirection::UP` and `MouseScrollDirection::DOWN`.
-    - `MouseMove` will clash with all the two axes and the four directions.
-- refactored the method signatures of `InputMap` to fit the new input types.
-- removed `InputMap::insert_chord` and `InputMap::insert_modified` due to their limited applicability within the type system.
-  - the new `InputChord` constructors and builders allow you to define chords with guaranteed type safety.
-  - the new `ModifierKey::with` method simplifies the creation of input chords that include the modifier and your desired input.
-- the `timing` field of the `ActionData` is now disabled by default. Timing information will only be collected
-  if the `timing` feature is enabled. It is disabled by default because most games don't require timing information.
-  (how long a button was pressed for)
-- removed `ToggleActions` resource in favor of new methods on `ActionState`: `disable_all`, `disable(action)`, `enable_all`, `enable(action)`, and `disabled(action)`.
-- removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
-- renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
-- removed `DeadZoneShape` in favor of new dead zone processors (see 'Enhancements: Input Processors' for details).
-- refactored the fields and methods of `RawInputs` to fit the new input types.
-- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
-- removed `MockInput::send_input` methods, in favor of new input mocking APIs (see 'Usability: MockInput' for details).
-- made the dependency on bevy's `bevy_gilrs` feature optional.
-  - it is still enabled by leafwing-input-manager's default features.
-  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
-
 ### Enhancements
 
-#### New Inputs
+#### Trait-based input design
 
-- added `UserInput` trait.
+- added the `UserInput` trait, which can be divided into three subtraits: `Buttonlike`, `Axislike` and `DualAxislike`
+  - the `InputControlKind` for each action can be set via the new `Actionlike::input_control_kind` method. The derive will assume that all actions are buttonlike.
+  - many methods such as `get` on `InputMap` and `ActionState` have been split into three variants, one for each kind of input
+- there is now a clear division between buttonlike, axislike and dualaxislike data
+  - each action in an `Actionlike` enum now has a specific `InputControlKind`, mapping it to one of these three categories
+  - if you are storing non-buttonlike actions (e.g. movement) inside of your Actionlike enum, you must manually implement the trait
+  - pressed / released state can only be accessed for buttonlike data: invalid requests will always return released
+  - `f32` values can only be accessed for axislike data: invalid requests will always return 0.0
+  - `ActionData` has been renamed to `ButtonData`, and no longer holds a `value` or `DualAxisData`
+  - 2-dimensional `DualAxisData` can only be accessed for dualaxislike data: invalid requests will always return (0.0, 0.0)
+  - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_axis` method
+  - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_dual_axis` method
+
+#### More inputs
+
 - added `UserInput` impls for gamepad input events:
   - implemented `UserInput` for Bevy’s `GamepadAxisType`-related inputs.
-    - `GamepadStick`: Continuous or discrete movement events of the left or right gamepad stick along both X and Y axes.
-    - `GamepadControlAxis`: Continuous or discrete movement events of a `GamepadAxisType`.
-    - `GamepadControlDirection`: Discrete movement direction events of a `GamepadAxisType`, treated as a button press.
+    - `GamepadStick`: `DualAxislike`, continuous or discrete movement events of the left or right gamepad stick along both X and Y axes.
+    - `GamepadControlAxis`: `Axislike`, Continuous or discrete movement events of a `GamepadAxisType`.
+    - `GamepadControlDirection`: `Buttonlike`, Discrete movement direction events of a `GamepadAxisType`, treated as a button press.
   - implemented `UserInput` for Bevy’s `GamepadButtonType` directly.
-  - added `GamepadVirtualAxis`, similar to the old `UserInput::VirtualAxis` using two `GamepadButtonType`s.
-  - added `GamepadVirtualDPad`, similar to the old `UserInput::VirtualDPad` using four `GamepadButtonType`s.
+  - added `GamepadVirtualAxis`, which implements `Axislike`, similar to the old `UserInput::VirtualAxis` using two `GamepadButtonType`s.
+  - added `GamepadVirtualDPad`, which implements `DualAxislike`, similar to the old `UserInput::VirtualDPad` using four `GamepadButtonType`s.
 - added `UserInput` impls for keyboard inputs:
-  - implemented `UserInput` for Bevy’s `KeyCode` directly.
-  - implemented `UserInput` for `ModifierKey`.
-  - added `KeyboardVirtualAxis`, similar to the old `UserInput::VirtualAxis` using two `KeyCode`s.
-  - added `KeyboardVirtualDPad`, similar to the old `UserInput::VirtualDPad` using four `KeyCode`s.
+  - implemented `Buttonlike` for `KeyCode` and `ModifierKey`
+  - implemented `Buttonlike` for `ModifierKey`.
+  - added `KeyboardVirtualAxis`, which implements `Axislike`, similar to the old `UserInput::VirtualAxis` using two `KeyCode`s.
+  - added `KeyboardVirtualDPad` which implements `DualAxislike`, similar to the old `UserInput::VirtualDPad` using four `KeyCode`s.
 - added `UserInput` impls for mouse inputs:
   - implemented `UserInput` for movement-related inputs.
-    - `MouseMove`: Continuous or discrete movement events of the mouse both X and Y axes.
-    - `MouseMoveAxis`: Continuous or discrete movement events of the mouse on an axis, similar to the old `SingleAxis::mouse_motion_*`.
-    - `MouseMoveDirection`: Discrete movement direction events of the mouse on an axis, similar to the old `MouseMotionDirection`.
+    - `MouseMove`: `DualAxislike`, continuous or discrete movement events of the mouse both X and Y axes.
+    - `MouseMoveAxis`: `Axislike`, continuous or discrete movement events of the mouse on an axis, similar to the old `SingleAxis::mouse_motion_*`.
+    - `MouseMoveDirection`: `Buttonlike`, discrete movement direction events of the mouse on an axis, similar to the old `MouseMotionDirection`.
   - implemented `UserInput` for wheel-related inputs.
-    - `MouseScroll`: Continuous or discrete movement events of the mouse wheel both X and Y axes.
-    - `MouseScrollAxis`: Continuous or discrete movement events of the mouse wheel on an axis, similar to the old `SingleAxis::mouse_wheel_*`.
-    - `MouseScrollDirection`: Discrete movement direction events of the mouse wheel on an axis, similar to the old `MouseWheelDirection`.
-- added `InputChord` for combining multiple inputs, similar to the old `UserInput::Chord`.
-
-##### Migration Guide
-
-- the old `SingleAxis` is now:
-  - `GamepadControlAxis` for gamepad axes.
-  - `MouseMoveAxis::X` and `MouseMoveAxis::Y` for continuous mouse movement.
-  - `MouseScrollAxis::X` and `MouseScrollAxis::Y` for continuous mouse wheel movement.
-- the old `DualAxis` is now:
-  - `GamepadStick` for gamepad sticks.
-  - `MouseMove::default()` for continuous mouse movement.
-  - `MouseScroll::default()` for continuous mouse wheel movement.
-- the old `Modifier` is now `ModifierKey`.
-- the old `MouseMotionDirection` is now `MouseMoveDirection`.
-- the old `MouseWheelDirection` is now `MouseScrollDirection`.
-- the old `UserInput::Chord` is now `InputChord`.
-- the old `UserInput::VirtualAxis` is now:
-  - `GamepadVirtualAxis` for four gamepad buttons.
-  - `KeyboardVirtualAxis` for four keys.
-  - `MouseMoveAxis::X.digital()` and `MouseMoveAxis::Y.digital()` for discrete mouse movement.
-  - `MouseScrollAxis::X.digital()` and `MouseScrollAxis::Y.digital()` for discrete mouse wheel movement.
-- the old `UserInput::VirtualDPad` is now:
-  - `GamepadVirtualDPad` for four gamepad buttons.
-  - `KeyboardVirtualDPad` for four keys.
-  - `MouseMove::default().digital()` for discrete mouse movement.
-  - `MouseScroll::default().digital()` for discrete mouse wheel movement.
+    - `MouseScroll`: `DualAxislike`, continuous or discrete movement events of the mouse wheel both X and Y axes.
+    - `MouseScrollAxis`: `Axislike`, continuous or discrete movement events of the mouse wheel on an axis, similar to the old `SingleAxis::mouse_wheel_*`.
+    - `MouseScrollDirection`: `ButtonLike`, discrete movement direction events of the mouse wheel on an axis, similar to the old `MouseWheelDirection`.
+- added `ButtonlikeChord`, `AxislikeChord` and `DualAxislikeChord` for combining multiple inputs, similar to the old `UserInput::Chord`.
 
 #### Input Processors
 
@@ -130,10 +93,13 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - `fn with_one_to_many(mut self, action: A, inputs: impl IntoIterator<Item = impl UserInput>)`.
   - `fn with_multiple(mut self, bindings: impl IntoIterator<Item = (A, impl UserInput)>) -> Self`.
   - `fn with_gamepad(mut self, gamepad: Gamepad) -> Self`.
-
 - added new iterators over `InputMap<A>`:
   - `actions(&self) -> impl Iterator<Item = &A>` for iterating over all registered actions.
   - `bindings(&self) -> impl Iterator<Item = (&A, &dyn UserInput)>` for iterating over all registered action-input bindings.
+
+#### ActionState
+
+- removed `ToggleActions` resource in favor of new methods on `ActionState`: `disable_all`, `disable(action)`, `enable_all`, `enable(action)`, and `disabled(action)`.
 
 ### MockInput
 
@@ -145,10 +111,10 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ### QueryInput
 
-- added new methods for the `QueryInput` trait.
-  - `fn read_axis_values(&self, input: impl UserInput) -> Vec<f32>` to read the values on all axes represented by an input.
-  - as well as methods for a specific gamepad.
-- implemented the methods for `InputStreams`, `World`, and `App`.
+- added new methods for the `QueryInput` trait
+  - `fn read_axis_value` and `read_dual_axis_values`
+  - as well as methods for working with a specific gamepad
+- implemented the methods for `InputStreams`, `World`, and `App`
 
 ### Bugs
 
@@ -156,6 +122,9 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
 - inputs are now handled correctly in the `FixedUpdate` schedule! Previously, the `ActionState`s were only updated in the `PreUpdate` schedule, so you could have situations where an action was marked as `just_pressed` multiple times in a row (if the `FixedUpdate` schedule ran multiple times in a frame) or was missed entirely (if the `FixedUpdate` schedule ran 0 times in a frame).
 - Mouse motion and mouse scroll are now computed more efficiently and reliably, through the use of the new `AccumulatedMouseMovement` and `AccumulatedMouseScroll` resources.
+- the `timing` field of the `ActionData` is now disabled by default. Timing information will only be collected
+  if the `timing` feature is enabled. It is disabled by default because most games don't require timing information.
+  (how long a button was pressed for)
 
 ### Tech debt
 
@@ -165,6 +134,50 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - removed the `no_ui_priority` feature. To get this behavior, now just turn off the default `ui` feature
 - removed the `orientation` module, migrating to `bevy_math::Rot2`
   - use the types provided in `bevy_math` instead
+
+### Migration Guide
+
+- renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
+- the old `SingleAxis` is now:
+  - `GamepadControlAxis` for gamepad axes.
+  - `MouseMoveAxis::X` and `MouseMoveAxis::Y` for continuous mouse movement.
+  - `MouseScrollAxis::X` and `MouseScrollAxis::Y` for continuous mouse wheel movement.
+- the old `DualAxis` is now:
+  - `GamepadStick` for gamepad sticks.
+  - `MouseMove::default()` for continuous mouse movement.
+  - `MouseScroll::default()` for continuous mouse wheel movement.
+- the old `Modifier` is now `ModifierKey`.
+- the old `MouseMotionDirection` is now `MouseMoveDirection`.
+- the old `MouseWheelDirection` is now `MouseScrollDirection`.
+- the old `UserInput::Chord` is now `InputChord`.
+- the old `UserInput::VirtualAxis` is now:
+  - `GamepadVirtualAxis` for four gamepad buttons.
+  - `KeyboardVirtualAxis` for four keys.
+  - `MouseMoveAxis::X.digital()` and `MouseMoveAxis::Y.digital()` for discrete mouse movement.
+  - `MouseScrollAxis::X.digital()` and `MouseScrollAxis::Y.digital()` for discrete mouse wheel movement.
+- the old `UserInput::VirtualDPad` is now:
+  - `GamepadVirtualDPad` for four gamepad buttons.
+  - `KeyboardVirtualDPad` for four keys.
+  - `MouseMove::default().digital()` for discrete mouse movement.
+  - `MouseScroll::default().digital()` for discrete mouse wheel movement.
+- `ActionDiff::ValueChanged` is now `ActionDiff::AxisChanged`.
+- `ActionDiff::AxisPairChanged` is now `ActionDiff::DualAxisChanged`.
+- `InputMap::iter` has been split into `iter_buttonlike`, `iter_axislike` and `iter_dual_axislike`.
+  - The same split has been done for `InputMap::bindings` and `InputMap::actions`.
+- `ActionState::axis_pair` and `AxisState::clamped_axis_pair` now return a plain `Vec2` rather than an `Option<Vec2>` for consistency with their single axis and buttonlike brethren.
+- `BasicInputs::clashed` is now `BasicInput::clashes_with` to improve clarity
+- `BasicInputs::Group` is now `BasicInputs::Chord` to improve clarity
+- `BasicInputs` now only tracks buttonlike user inputs, and a new `None` variant has been added
+- Bevy's `bevy_gilrs` feature is now optional.
+  - it is still enabled by leafwing-input-manager's default features.
+  - if you're using leafwing-input-manager with `default_features = false`, you can readd it by adding `bevy/bevy_gilrs` as a dependency.
+- removed `InputMap::build` method in favor of new fluent builder pattern (see 'Usability: InputMap' for details).
+- removed `DeadZoneShape` in favor of new dead zone processors (see 'Enhancements: Input Processors' for details).
+- refactored the fields and methods of `RawInputs` to fit the new input types.
+- removed `Direction` type in favor of `bevy::math::primitives::Direction2d`.
+- removed `MockInput::send_input` methods, in favor of new input mocking APIs (see 'Usability: MockInput' for details).
+- `DualAxisData` has been removed, and replaced with a simple `Vec2` throughout
+  - a new type with the `DualAxisData` name has been added, as a parallel to `ButtonData` and `AxisData`
 
 ## Version 0.14.0
 
@@ -503,7 +516,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - This could not accurately represent more complex compound input types.
 - `ButtonKind` was renamed to `InputKind` to reflect the new non-button input types.
 - Renamed `AxisPair` to `DualAxisData`.
-  - `DualAxisData::new` now takes two `f32` values for ergonomic reasons.
+  - `Vec2::new` now takes two `f32` values for ergonomic reasons.
   - Use `DualAxisData::from_xy` to construct this directly from a `Vec2` as before.
 - Rotation is now measured from the positive x axis in a counterclockwise direction. This applies to both `Rotation` and `Direction`.
   - This increases consistency with `glam` and makes trigonometry easier.
