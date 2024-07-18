@@ -221,6 +221,13 @@ impl<A: Actionlike> InputMap<A> {
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
+        debug_assert!(
+            action.input_control_kind() == InputControlKind::Button,
+            "Cannot map a buttonlike input for action {:?} of kind {:?}",
+            action,
+            action.input_control_kind()
+        );
+
         if action.input_control_kind() != InputControlKind::Button {
             error!(
                 "Cannot map a buttonlike input for action {:?} of kind {:?}",
@@ -242,6 +249,13 @@ impl<A: Actionlike> InputMap<A> {
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
+        debug_assert!(
+            action.input_control_kind() == InputControlKind::Axis,
+            "Cannot map a axislike input for action {:?} of kind {:?}",
+            action,
+            action.input_control_kind()
+        );
+
         if action.input_control_kind() != InputControlKind::Axis {
             error!(
                 "Cannot map a axislike input for action {:?} of kind {:?}",
@@ -270,6 +284,13 @@ impl<A: Actionlike> InputMap<A> {
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
+        debug_assert!(
+            action.input_control_kind() == InputControlKind::DualAxis,
+            "Cannot map a axislike input for action {:?} of kind {:?}",
+            action,
+            action.input_control_kind()
+        );
+
         if action.input_control_kind() != InputControlKind::DualAxis {
             error!(
                 "Cannot map a axislike input for action {:?} of kind {:?}",

@@ -373,14 +373,12 @@ mod tests {
     use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use bevy::prelude::Reflect;
-    use leafwing_input_manager_macros::Actionlike;
 
     use super::*;
-    use crate as leafwing_input_manager;
     use crate::prelude::{KeyboardVirtualDPad, UserInput};
     use crate::user_input::ButtonlikeChord;
 
-    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+    #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
         One,
         Two,
@@ -392,6 +390,15 @@ mod tests {
         CtrlAltOne,
         MoveDPad,
         CtrlUp,
+    }
+
+    impl Actionlike for Action {
+        fn input_control_kind(&self) -> crate::InputControlKind {
+            match self {
+                Self::MoveDPad => crate::InputControlKind::DualAxis,
+                _ => crate::InputControlKind::Button,
+            }
+        }
     }
 
     fn test_input_map() -> InputMap<Action> {
@@ -625,7 +632,7 @@ mod tests {
             // Double-check that the two input bindings clash
             let chord_input = input_map.get_buttonlike(&CtrlUp).unwrap().first().unwrap();
             let dpad_input = input_map
-                .get_buttonlike(&MoveDPad)
+                .get_dual_axislike(&MoveDPad)
                 .unwrap()
                 .first()
                 .unwrap();
@@ -633,6 +640,11 @@ mod tests {
             assert!(chord_input
                 .decompose()
                 .clashes_with(&dpad_input.decompose()));
+
+            // Triple check that the inputs are clashing
+            input_map
+                .possible_clash(&CtrlUp, &MoveDPad)
+                .expect("Clash not detected");
 
             // Double check that the chord is longer than the DPad
             assert!(chord_input.decompose().len() > dpad_input.decompose().len());
