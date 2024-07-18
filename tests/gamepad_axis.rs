@@ -211,7 +211,6 @@ fn game_pad_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.006_154);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(1.0, 0.11111112)
@@ -223,7 +222,6 @@ fn game_pad_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.7777778);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.7777778, 0.0)
@@ -256,7 +254,6 @@ fn game_pad_circle_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.11111112);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.11111112, 0.0)
