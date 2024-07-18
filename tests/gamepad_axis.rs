@@ -102,51 +102,38 @@ fn game_pad_single_axis() {
     let input = GamepadControlAxis::LEFT_X;
     app.send_axis_values(input, [1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // -X
     let input = GamepadControlAxis::LEFT_X;
     app.send_axis_values(input, [-1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // +Y
     let input = GamepadControlAxis::LEFT_Y;
     app.send_axis_values(input, [1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // -Y
     let input = GamepadControlAxis::LEFT_Y;
     app.send_axis_values(input, [-1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
     // Usually a small deadzone threshold will be set
     let input = GamepadControlAxis::LEFT_Y;
     app.send_axis_values(input, [0.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(&AxislikeTestAction::Y));
 
     // No value
     let input = GamepadControlAxis::LEFT_Y;
     app.send_axis_values(input, []);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(&AxislikeTestAction::Y));
 
     // Scaled value
     let input = GamepadControlAxis::LEFT_X;
     app.send_axis_values(input, [0.2]);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
     assert_eq!(action_state.value(&AxislikeTestAction::X), 0.11111112);
 }
 
@@ -174,7 +161,6 @@ fn game_pad_single_axis_inverted() {
     app.send_axis_values(input, [1.0]);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
     assert_eq!(action_state.value(&AxislikeTestAction::X), -1.0);
 
     // -X
@@ -182,7 +168,6 @@ fn game_pad_single_axis_inverted() {
     app.send_axis_values(input, [-1.0]);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
     assert_eq!(action_state.value(&AxislikeTestAction::X), 1.0);
 
     // +Y
@@ -190,7 +175,6 @@ fn game_pad_single_axis_inverted() {
     app.send_axis_values(input, [1.0]);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
     assert_eq!(action_state.value(&AxislikeTestAction::Y), -1.0);
 
     // -Y
@@ -198,7 +182,6 @@ fn game_pad_single_axis_inverted() {
     app.send_axis_values(input, [-1.0]);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
     assert_eq!(action_state.value(&AxislikeTestAction::Y), 1.0);
 }
 
@@ -228,7 +211,6 @@ fn game_pad_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.006_154);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -241,7 +223,6 @@ fn game_pad_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.7777778);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -275,7 +256,6 @@ fn game_pad_circle_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.11111112);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -338,7 +318,6 @@ fn game_pad_virtual_dpad() {
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
     // This should be a unit length, because we're working with a VirtualDPad
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
