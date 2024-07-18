@@ -56,7 +56,7 @@ fn test_app() -> App {
 
 #[test]
 #[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
-fn game_pad_single_axis_mocking() {
+fn gamepad_single_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     assert_eq!(events.drain().count(), 0);
@@ -70,7 +70,7 @@ fn game_pad_single_axis_mocking() {
 
 #[test]
 #[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
-fn game_pad_dual_axis_mocking() {
+fn gamepad_dual_axis_mocking() {
     let mut app = test_app();
     let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     assert_eq!(events.drain().count(), 0);
@@ -84,7 +84,7 @@ fn game_pad_dual_axis_mocking() {
 }
 
 #[test]
-fn game_pad_single_axis() {
+fn gamepad_single_axis() {
     let mut app = test_app();
     app.insert_resource(
         InputMap::default()
@@ -138,7 +138,7 @@ fn game_pad_single_axis() {
 }
 
 #[test]
-fn game_pad_single_axis_inverted() {
+fn gamepad_single_axis_inverted() {
     let mut app = test_app();
     app.insert_resource(
         InputMap::default()
@@ -186,7 +186,7 @@ fn game_pad_single_axis_inverted() {
 }
 
 #[test]
-fn game_pad_dual_axis_deadzone() {
+fn gamepad_dual_axis_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
@@ -199,7 +199,6 @@ fn game_pad_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -229,7 +228,7 @@ fn game_pad_dual_axis_deadzone() {
 }
 
 #[test]
-fn game_pad_circle_deadzone() {
+fn gamepad_circle_deadzone() {
     let mut app = test_app();
     app.insert_resource(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
@@ -242,7 +241,6 @@ fn game_pad_circle_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -274,7 +272,6 @@ fn test_zero_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -295,7 +292,6 @@ fn test_zero_circle_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -304,7 +300,7 @@ fn test_zero_circle_deadzone() {
 
 #[test]
 #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
-fn game_pad_virtual_dpad() {
+fn gamepad_virtual_dpad() {
     let mut app = test_app();
     app.insert_resource(
         InputMap::default().with_dual_axis(AxislikeTestAction::XY, GamepadVirtualDPad::DPAD),
@@ -316,7 +312,6 @@ fn game_pad_virtual_dpad() {
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
     // This should be a unit length, because we're working with a VirtualDPad
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         // This should be a unit length, because we're working with a VirtualDPad
