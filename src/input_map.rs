@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
-use bevy::log::warn;
+use bevy::log::error;
 use bevy::math::Vec2;
 use bevy::prelude::{Component, Gamepad, Reflect, Resource};
 use bevy::utils::HashMap;
@@ -222,7 +222,7 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
         if action.input_control_kind() != InputControlKind::Button {
-            warn!(
+            error!(
                 "Cannot map a buttonlike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
@@ -243,7 +243,7 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
         if action.input_control_kind() != InputControlKind::Axis {
-            warn!(
+            error!(
                 "Cannot map a axislike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
@@ -271,7 +271,7 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
         if action.input_control_kind() != InputControlKind::DualAxis {
-            warn!(
+            error!(
                 "Cannot map a axislike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
