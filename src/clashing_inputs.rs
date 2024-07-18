@@ -367,13 +367,21 @@ mod tests {
         #[test]
         fn input_types_have_right_length() {
             let simple = KeyA.decompose();
-            let modified = ButtonlikeChord::modified(ModifierKey::Control, KeyA).decompose();
-            let chord = ButtonlikeChord::new([KeyA, KeyB, KeyC]).decompose();
-            let group = KeyboardVirtualDPad::WASD.decompose();
-
             assert_eq!(simple.length, 1);
-            assert_eq!(modified.length, 2);
+
+            let empty_chord = ButtonlikeChord::default().decompose();
+            assert_eq!(empty_chord.length, 0);
+
+            let chord = ButtonlikeChord::new([KeyA, KeyB, KeyC]).decompose();
             assert_eq!(chord.length, 3);
+
+            let modifier = ModifierKey::Control.decompose();
+            assert_eq!(modifier.length, 1);
+
+            let modified_chord = ButtonlikeChord::modified(ModifierKey::Control, KeyA).decompose();
+            assert_eq!(modified_chord.length, 2);
+
+            let group = KeyboardVirtualDPad::WASD.decompose();
             assert_eq!(group.length, 1);
         }
 

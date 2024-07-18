@@ -144,17 +144,19 @@ impl UserInput for ButtonlikeChord {
     }
 
     /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
+    ///
+    /// The length of the basic inputs is the sum of the lengths of the inner inputs.
     #[inline]
     fn decompose(&self) -> BasicInputs {
+        // PERF: we can probably avoid decomposing twice by storing the decomposed inputs
+        let length = self.0.iter().map(|input| input.decompose().length).sum();
         let inputs: HashSet<Box<dyn UserInput>> = self
             .0
             .iter()
             .flat_map(|input| input.decompose().inputs)
             .collect();
-        BasicInputs {
-            length: inputs.len(),
-            inputs,
-        }
+
+        BasicInputs { length, inputs }
     }
 
     /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
