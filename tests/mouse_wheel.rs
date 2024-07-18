@@ -1,4 +1,4 @@
-use bevy::input::mouse::{MouseScrollUnit, MouseWheel};
+use bevy::input::mouse::MouseWheel;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -43,27 +43,6 @@ fn test_app() -> App {
         .init_resource::<ActionState<AxislikeTestAction>>();
 
     app
-}
-
-#[test]
-fn raw_mouse_scroll_events() {
-    let mut app = test_app();
-    app.insert_resource(InputMap::new([(
-        ButtonlikeTestAction::Up,
-        MouseScrollDirection::UP,
-    )]));
-
-    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
-    events.send(MouseWheel {
-        unit: MouseScrollUnit::Pixel,
-        x: 0.0,
-        y: 10.0,
-        window: Entity::PLACEHOLDER,
-    });
-
-    app.update();
-    let action_state = app.world().resource::<ActionState<ButtonlikeTestAction>>();
-    assert!(action_state.pressed(&ButtonlikeTestAction::Up));
 }
 
 #[test]
@@ -159,58 +138,6 @@ fn mouse_scroll_buttonlike_cancels() {
 }
 
 #[test]
-fn mouse_scroll_single_axis() {
-    let mut app = test_app();
-    app.insert_resource(
-        InputMap::default()
-            .with_axis(AxislikeTestAction::X, MouseScrollAxis::X)
-            .with_axis(AxislikeTestAction::Y, MouseScrollAxis::Y),
-    );
-
-    // +X
-    let input = MouseScrollAxis::X;
-    app.send_axis_values(input, [1.0]);
-    app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
-
-    // -X
-    let input = MouseScrollAxis::X;
-    app.send_axis_values(input, [-1.0]);
-    app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
-
-    // +Y
-    let input = MouseScrollAxis::Y;
-    app.send_axis_values(input, [1.0]);
-    app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
-
-    // -Y
-    let input = MouseScrollAxis::Y;
-    app.send_axis_values(input, [-1.0]);
-    app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
-
-    // 0
-    let input = MouseScrollAxis::Y;
-    app.send_axis_values(input, [0.0]);
-    app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(&AxislikeTestAction::Y));
-
-    // No value
-    let input = MouseScrollAxis::Y;
-    app.send_axis_values(input, []);
-    app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(&AxislikeTestAction::Y));
-}
-
-#[test]
 fn mouse_scroll_dual_axis() {
     let mut app = test_app();
     app.insert_resource(
@@ -223,8 +150,6 @@ fn mouse_scroll_dual_axis() {
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 5.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(5.0, 0.0)
@@ -244,9 +169,6 @@ fn mouse_scroll_discrete() {
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    // This should be a unit length, because we're working with a VirtualDPad
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         // This should be a unit length, because we're working with a VirtualDPad

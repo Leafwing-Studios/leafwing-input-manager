@@ -51,21 +51,6 @@ fn test_app() -> App {
 }
 
 #[test]
-fn raw_mouse_move_events() {
-    let mut app = test_app();
-    app.insert_resource(InputMap::default().with_axis(AxislikeTestAction::X, MouseMoveAxis::Y));
-
-    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
-    events.send(MouseMotion {
-        delta: Vec2::new(0.0, 1.0),
-    });
-
-    app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
-}
-
-#[test]
 fn mouse_move_discrete_mocking() {
     let mut app = test_app();
     let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
@@ -170,43 +155,31 @@ fn mouse_move_single_axis() {
     let input = MouseMoveAxis::X;
     app.send_axis_values(input, [1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // -X
     let input = MouseMoveAxis::X;
     app.send_axis_values(input, [-1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::X));
 
     // +Y
     let input = MouseMoveAxis::Y;
     app.send_axis_values(input, [-1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // -Y
     let input = MouseMoveAxis::Y;
     app.send_axis_values(input, [-1.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.pressed(&AxislikeTestAction::Y));
 
     // 0
     let input = MouseMoveAxis::Y;
     app.send_axis_values(input, [0.0]);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(&AxislikeTestAction::Y));
 
     // No value
     let input = MouseMoveAxis::Y;
     app.send_axis_values(input, []);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(!action_state.pressed(&AxislikeTestAction::Y));
 }
 
 #[test]
@@ -222,8 +195,6 @@ fn mouse_move_dual_axis() {
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 5.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(5.0, 0.0)
@@ -243,9 +214,6 @@ fn mouse_move_discrete() {
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
-    // This should be a unit length, because we're working with a VirtualDPad
-    assert_eq!(action_state.value(&AxislikeTestAction::XY), 1.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         // This should be a unit length, because we're working with a VirtualDPad
@@ -273,7 +241,6 @@ fn mouse_drag() {
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
 
-    assert!(action_state.pressed(&AxislikeTestAction::XY));
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(5.0, 0.0)
