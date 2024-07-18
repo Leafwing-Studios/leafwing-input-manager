@@ -98,6 +98,7 @@
   - The same split has been done for `InputMap::bindings` and `InputMap::actions`.
 - `ActionState::axis_pair` and `AxisState::clamped_axis_pair` now return a plain `Vec2` rather than an `Option<Vec2>` for consistency with their single axis and buttonlike brethren.
 - `BasicInputs::clashed` is now `BasicInput::clashes_with` to improve clarity
+- `BasicInputs::Group` is now `BasicInputs::Chord` to improve clarity
 
 #### Input Processors
 

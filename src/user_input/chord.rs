@@ -152,7 +152,7 @@ impl UserInput for ButtonlikeChord {
             .iter()
             .flat_map(|input| input.decompose().inputs())
             .collect();
-        BasicInputs::Group(inputs)
+        BasicInputs::Chord(inputs)
     }
 
     /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.

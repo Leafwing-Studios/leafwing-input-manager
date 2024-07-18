@@ -70,7 +70,7 @@ pub enum BasicInputs {
     /// The input represents one or more independent [`UserInput`] types.
     ///
     /// For example, a chorded input is a group of multiple keys that must be pressed together.
-    Group(Vec<Box<dyn UserInput>>),
+    Chord(Vec<Box<dyn UserInput>>),
 }
 
 impl BasicInputs {
@@ -80,7 +80,7 @@ impl BasicInputs {
         match self.clone() {
             Self::Simple(input) => vec![input],
             Self::Composite(inputs) => inputs,
-            Self::Group(inputs) => inputs,
+            Self::Chord(inputs) => inputs,
         }
     }
 
@@ -98,7 +98,7 @@ impl BasicInputs {
         match self {
             Self::Simple(_) => 1,
             Self::Composite(_) => 1,
-            Self::Group(inputs) => inputs.len(),
+            Self::Chord(inputs) => inputs.len(),
         }
     }
 
@@ -107,10 +107,10 @@ impl BasicInputs {
     pub fn clashes_with(&self, other: &BasicInputs) -> bool {
         match (self, other) {
             (Self::Simple(_), Self::Simple(_)) => false,
-            (Self::Simple(self_single), Self::Group(other_group)) => {
+            (Self::Simple(self_single), Self::Chord(other_group)) => {
                 other_group.len() > 1 && other_group.contains(self_single)
             }
-            (Self::Group(self_group), Self::Simple(other_single)) => {
+            (Self::Chord(self_group), Self::Simple(other_single)) => {
                 self_group.len() > 1 && self_group.contains(other_single)
             }
             (Self::Simple(self_single), Self::Composite(other_composite)) => {
@@ -119,19 +119,19 @@ impl BasicInputs {
             (Self::Composite(self_composite), Self::Simple(other_single)) => {
                 self_composite.contains(other_single)
             }
-            (Self::Composite(self_composite), Self::Group(other_group)) => {
+            (Self::Composite(self_composite), Self::Chord(other_group)) => {
                 other_group.len() > 1
                     && other_group
                         .iter()
                         .any(|input| self_composite.contains(input))
             }
-            (Self::Group(self_group), Self::Composite(other_composite)) => {
+            (Self::Chord(self_group), Self::Composite(other_composite)) => {
                 self_group.len() > 1
                     && self_group
                         .iter()
                         .any(|input| other_composite.contains(input))
             }
-            (Self::Group(self_group), Self::Group(other_group)) => {
+            (Self::Chord(self_group), Self::Chord(other_group)) => {
                 self_group.len() > 1
                     && other_group.len() > 1
                     && self_group != other_group
