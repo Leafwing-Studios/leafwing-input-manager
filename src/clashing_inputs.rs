@@ -12,12 +12,12 @@ use serde::{Deserialize, Serialize};
 
 use crate::input_map::InputMap;
 use crate::input_streams::InputStreams;
-use crate::user_input::{Buttonlike, UserInput};
+use crate::user_input::Buttonlike;
 use crate::Actionlike;
 
 /// How should clashing inputs by handled by an [`InputMap`]?
 ///
-/// Inputs "clash" if and only if one [`UserInput`] is a strict subset of the other.
+/// Inputs "clash" if and only if the [`Buttonlike`] components of one user input is a strict subset of the other.
 /// For example:
 ///
 /// - `S` and `W`: does not clash
@@ -377,7 +377,7 @@ mod tests {
 
     use super::*;
     use crate as leafwing_input_manager;
-    use crate::prelude::KeyboardVirtualDPad;
+    use crate::prelude::{KeyboardVirtualDPad, UserInput};
     use crate::user_input::ButtonlikeChord;
 
     #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
