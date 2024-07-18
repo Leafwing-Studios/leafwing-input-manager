@@ -2,7 +2,6 @@
 
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::prelude::{MouseButton, Reflect, Resource, Vec2};
-use bevy::utils::HashSet;
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -29,7 +28,7 @@ impl UserInput for MouseButton {
     /// as it represents a simple physical button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::simple(self.clone())
+        BasicInputs::Simple(Box::new(*self))
     }
 
     /// Creates a [`RawInputs`] from the button directly.
@@ -109,7 +108,7 @@ impl UserInput for MouseMoveDirection {
     /// [`MouseMoveDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::simple(self.clone())
+        BasicInputs::Simple(Box::new(*self))
     }
 
     /// Creates a [`RawInputs`] from the direction directly.
@@ -194,11 +193,10 @@ impl UserInput for MouseMoveAxis {
     /// [`MouseMoveAxis`] represents a composition of two [`MouseMoveDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
-        inputs.insert(Box::new(MouseMoveDirection(self.axis.negative())));
-        inputs.insert(Box::new(MouseMoveDirection(self.axis.positive())));
-
-        BasicInputs { inputs, length: 1 }
+        BasicInputs::Composite(vec![
+            Box::new(MouseMoveDirection(self.axis.negative())),
+            Box::new(MouseMoveDirection(self.axis.positive())),
+        ])
     }
 
     /// Creates a [`RawInputs`] from the [`DualAxisType`] used by the axis.
@@ -305,13 +303,12 @@ impl UserInput for MouseMove {
     /// [`MouseMove`] represents a composition of four [`MouseMoveDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
-        inputs.insert(Box::new(MouseMoveDirection::UP));
-        inputs.insert(Box::new(MouseMoveDirection::DOWN));
-        inputs.insert(Box::new(MouseMoveDirection::LEFT));
-        inputs.insert(Box::new(MouseMoveDirection::RIGHT));
-
-        BasicInputs { inputs, length: 1 }
+        BasicInputs::Composite(vec![
+            Box::new(MouseMoveDirection::UP),
+            Box::new(MouseMoveDirection::DOWN),
+            Box::new(MouseMoveDirection::LEFT),
+            Box::new(MouseMoveDirection::RIGHT),
+        ])
     }
 
     /// Creates a [`RawInputs`] from two [`DualAxisType`]s used by the input.
@@ -413,7 +410,7 @@ impl UserInput for MouseScrollDirection {
     /// [`MouseScrollDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::simple(self.clone())
+        BasicInputs::Simple(Box::new(*self))
     }
 
     /// Creates a [`RawInputs`] from the direction directly.
@@ -498,10 +495,10 @@ impl UserInput for MouseScrollAxis {
     /// [`MouseScrollAxis`] represents a composition of two [`MouseScrollDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
-        inputs.insert(Box::new(MouseScrollDirection(self.axis.negative())));
-        inputs.insert(Box::new(MouseScrollDirection(self.axis.positive())));
-        BasicInputs { inputs, length: 1 }
+        BasicInputs::Composite(vec![
+            Box::new(MouseScrollDirection(self.axis.negative())),
+            Box::new(MouseScrollDirection(self.axis.positive())),
+        ])
     }
 
     /// Creates a [`RawInputs`] from the [`DualAxisType`] used by the axis.
@@ -607,13 +604,12 @@ impl UserInput for MouseScroll {
     /// [`MouseScroll`] represents a composition of four [`MouseScrollDirection`]s.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        let mut inputs: HashSet<Box<dyn UserInput>> = HashSet::new();
-        inputs.insert(Box::new(MouseScrollDirection::UP));
-        inputs.insert(Box::new(MouseScrollDirection::DOWN));
-        inputs.insert(Box::new(MouseScrollDirection::LEFT));
-        inputs.insert(Box::new(MouseScrollDirection::RIGHT));
-
-        BasicInputs { inputs, length: 1 }
+        BasicInputs::Composite(vec![
+            Box::new(MouseScrollDirection::UP),
+            Box::new(MouseScrollDirection::DOWN),
+            Box::new(MouseScrollDirection::LEFT),
+            Box::new(MouseScrollDirection::RIGHT),
+        ])
     }
 
     /// Creates a [`RawInputs`] from two [`DualAxisType`] used by the input.
