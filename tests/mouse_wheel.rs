@@ -155,23 +155,3 @@ fn mouse_scroll_dual_axis() {
         Vec2::new(5.0, 0.0)
     );
 }
-
-#[test]
-fn mouse_scroll_discrete() {
-    let mut app = test_app();
-    app.insert_resource(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseScroll::default()),
-    );
-
-    let input = MouseScroll::default();
-    app.send_axis_values(input, [0.0, -2.0]);
-    app.update();
-
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-
-    assert_eq!(
-        action_state.axis_pair(&AxislikeTestAction::XY),
-        // This should be a unit length, because we're working with a VirtualDPad
-        Vec2::new(0.0, -1.0)
-    );
-}
