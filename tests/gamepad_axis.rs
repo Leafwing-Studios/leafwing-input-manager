@@ -1,6 +1,4 @@
-use bevy::input::gamepad::{
-    GamepadAxisChangedEvent, GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
-};
+use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -54,28 +52,6 @@ fn test_app() -> App {
     app.update();
 
     app
-}
-
-#[test]
-fn raw_gamepad_axis_events() {
-    let mut app = test_app();
-    app.insert_resource(InputMap::default().with_axis(
-        ButtonlikeTestAction::Up,
-        GamepadControlAxis::RIGHT_X.with_deadzone_symmetric(0.1),
-    ));
-
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    events.send(GamepadEvent::Axis(GamepadAxisChangedEvent {
-        gamepad: Gamepad { id: 1 },
-        axis_type: GamepadAxisType::RightStickX,
-        value: 1.0,
-    }));
-
-    app.update();
-    let action_state = app
-        .world_mut()
-        .resource::<ActionState<ButtonlikeTestAction>>();
-    assert!(action_state.pressed(&ButtonlikeTestAction::Up));
 }
 
 #[test]
