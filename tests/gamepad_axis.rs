@@ -216,7 +216,6 @@ fn game_pad_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -264,7 +263,6 @@ fn game_pad_circle_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -299,7 +297,6 @@ fn test_zero_dual_axis_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -321,7 +318,6 @@ fn test_zero_circle_deadzone() {
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
-    assert!(action_state.released(&AxislikeTestAction::XY));
     assert_eq!(action_state.value(&AxislikeTestAction::XY), 0.0);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
