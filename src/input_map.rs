@@ -327,6 +327,8 @@ impl<A: Actionlike> InputMap<A> {
     /// Inserts bindings between the same `action` and multiple [`Buttonlike`] `inputs` provided by an iterator.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     ///
+    /// To insert a chord, such as Control + A, use a [`ButtonlikeChord`](crate::user_input::ButtonlikeChord).
+    ///
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]

@@ -1,7 +1,7 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
-use crate::Actionlike;
 use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
+use crate::{Actionlike, InputControlKind};
 
 use bevy::ecs::component::Component;
 use bevy::math::Vec2;
@@ -342,6 +342,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn axis_data(&self, action: &A) -> Option<&AxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
+
         self.axis_data.get(action)
     }
 
@@ -362,6 +364,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn axis_data_mut(&mut self, action: &A) -> Option<&mut AxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
+
         self.axis_data.get_mut(action)
     }
 
@@ -376,6 +380,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn axis_data_mut_or_default(&mut self, action: &A) -> &mut AxisData {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
+
         self.axis_data
             .raw_entry_mut()
             .from_key(action)
@@ -397,6 +403,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn dual_axis_data(&self, action: &A) -> Option<&DualAxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
+
         self.dual_axis_data.get(action)
     }
 
@@ -417,6 +425,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn dual_axis_data_mut(&mut self, action: &A) -> Option<&mut DualAxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
+
         self.dual_axis_data.get_mut(action)
     }
 
@@ -431,6 +441,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn dual_axis_data_mut_or_default(&mut self, action: &A) -> &mut DualAxisData {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
+
         self.dual_axis_data
             .raw_entry_mut()
             .from_key(action)
@@ -465,6 +477,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_value`](Self::clamped_value) method instead.
     pub fn value(&self, action: &A) -> f32 {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
+
         match self.axis_data(action) {
             Some(axis_data) => axis_data.value,
             None => 0.0,
@@ -498,6 +512,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
     pub fn axis_pair(&self, action: &A) -> Vec2 {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
+
         let action_data = self.dual_axis_data(action);
         action_data.map_or(Vec2::ZERO, |action_data| action_data.pair)
     }
@@ -551,6 +567,8 @@ impl<A: Actionlike> ActionState<A> {
     /// ```
     #[inline]
     pub fn set_button_data(&mut self, action: A, data: ButtonData) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         self.button_data.insert(action, data);
     }
 
@@ -560,6 +578,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn press(&mut self, action: &A) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         let action_data = self.button_data_mut_or_default(action);
 
         // Consumed actions cannot be pressed until they are released
@@ -581,6 +601,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
     pub fn release(&mut self, action: &A) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         let action_data = self.button_data_mut_or_default(action);
 
         // Once released, consumed actions can be pressed again
@@ -594,9 +616,11 @@ impl<A: Actionlike> ActionState<A> {
         action_data.state.release();
     }
 
-    /// Releases all actions
+    /// Releases all [`Buttonlike`] actions
     pub fn release_all(&mut self) {
-        for action in self.keys() {
+        // Collect out to avoid angering the borrow checker
+        let buttonlike_actions = self.button_data.keys().cloned().collect::<Vec<A>>();
+        for action in buttonlike_actions {
             self.release(&action);
         }
     }
@@ -729,6 +753,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn pressed(&self, action: &A) -> bool {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         match self.button_data(action) {
             Some(button_data) => button_data.pressed(),
             None => true,
@@ -744,6 +770,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         match self.button_data(action) {
             Some(button_data) => button_data.just_pressed(),
             None => true,
@@ -761,6 +789,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn released(&self, action: &A) -> bool {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         match self.button_data(action) {
             Some(button_data) => button_data.released(),
             None => true,
@@ -776,6 +806,8 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         match self.button_data(action) {
             Some(button_data) => button_data.just_released(),
             None => false,
@@ -834,8 +866,10 @@ impl<A: Actionlike> ActionState<A> {
     /// This will also be [`None`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
     pub fn instant_started(&self, action: &A) -> Option<Instant> {
-        let action_data = self.button_data(action)?;
-        action_data.timing.instant_started
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
+        let button_data = self.button_data(action)?;
+        button_data.timing.instant_started
     }
 
     /// The [`Duration`] for which the action has been held or released
@@ -843,6 +877,8 @@ impl<A: Actionlike> ActionState<A> {
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
     pub fn current_duration(&self, action: &A) -> Duration {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         self.button_data(action)
             .map(|data| data.timing.current_duration)
             .unwrap_or_default()
@@ -856,6 +892,8 @@ impl<A: Actionlike> ActionState<A> {
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
     pub fn previous_duration(&self, action: &A) -> Duration {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
         self.button_data(action)
             .map(|data| data.timing.previous_duration)
             .unwrap_or_default()
