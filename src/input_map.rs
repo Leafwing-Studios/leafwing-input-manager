@@ -597,7 +597,7 @@ impl<A: Actionlike> InputMap<A> {
         self.dual_axislike_map.keys()
     }
 
-    /// Returns a reference to the [`UserInput`] inputs associated with the given `action`.
+    /// Returns a reference to the [`UserInput`](crate::user_input::UserInput) inputs associated with the given `action`.
     ///
     /// # Warning
     ///

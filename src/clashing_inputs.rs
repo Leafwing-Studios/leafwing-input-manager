@@ -49,7 +49,7 @@ impl ClashStrategy {
     }
 }
 
-/// A flat list of the [`Buttonlike`] inputs that make up a [`UserInput`].
+/// A flat list of the [`Buttonlike`] inputs that make up a [`UserInput`](crate::user_input::UserInput).
 ///
 /// This is used to check for potential clashes between actions,
 /// where one action is a strict subset of another.
@@ -61,25 +61,25 @@ pub enum BasicInputs {
     /// This might be used for things like a joystick axis.
     None,
 
-    /// The input consists of a single, fundamental [`Buttonlike`] [`UserInput`].
+    /// The input consists of a single, fundamental [`Buttonlike`] [`UserInput`](crate::user_input::UserInput).
     ///
     /// For example, a single key press.
     Simple(Box<dyn Buttonlike>),
 
-    /// The input can be triggered by multiple independent [`Buttonlike`] [`UserInput`]s,
+    /// The input can be triggered by multiple independent [`Buttonlike`] [`UserInput`](crate::user_input::UserInput)s,
     /// but is still fundamentally considered a single input.
     ///
     /// For example, a virtual D-Pad is only one input, but can be triggered by multiple keys.
     Composite(Vec<Box<dyn Buttonlike>>),
 
-    /// The input represents one or more independent [`Buttonlike`] [`UserInput`] types.
+    /// The input represents one or more independent [`Buttonlike`] [`UserInput`](crate::user_input::UserInput) types.
     ///
     /// For example, a chorded input is a group of multiple keys that must be pressed together.
     Chord(Vec<Box<dyn Buttonlike>>),
 }
 
 impl BasicInputs {
-    /// Returns a list of the underlying [`Buttonlike`] [`UserInput`]s.
+    /// Returns a list of the underlying [`Buttonlike`] [`UserInput`](crate::user_input::UserInput)s.
     ///
     /// # Warning
     ///
@@ -102,7 +102,7 @@ impl BasicInputs {
         BasicInputs::Composite(combined_inputs)
     }
 
-    /// Returns the number of the logical [`UserInput`]s that make up the input.
+    /// Returns the number of the logical [`Buttonlike`] [`UserInput`](crate::user_input::UserInput)s that make up the input.
     ///
     /// A single key press is one input, while a chorded input is multiple inputs.
     /// A composite input is still considered one input, even if it can be triggered by multiple keys,
@@ -202,7 +202,7 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Gets the set of clashing action-input pairs
     ///
-    /// Returns both the action and [`UserInput`]s for each clashing set
+    /// Returns both the action and [`UserInput`](crate::user_input::UserInput)s for each clashing set
     #[must_use]
     fn get_clashes(
         &self,

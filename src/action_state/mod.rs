@@ -616,7 +616,7 @@ impl<A: Actionlike> ActionState<A> {
         action_data.state.release();
     }
 
-    /// Releases all [`Buttonlike`] actions
+    /// Releases all [`Buttonlike`](crate::user_input::Buttonlike) actions
     pub fn release_all(&mut self) {
         // Collect out to avoid angering the borrow checker
         let buttonlike_actions = self.button_data.keys().cloned().collect::<Vec<A>>();
