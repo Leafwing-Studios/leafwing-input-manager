@@ -75,6 +75,11 @@ pub enum BasicInputs {
 
 impl BasicInputs {
     /// Returns a list of the underlying [`UserInput`]s.
+    ///
+    /// # Warning
+    ///
+    /// When checking for clashes, do not use this method to compute the length of the input.
+    /// Instead, use [`BasicInputs::len`], as these do not always agree.
     #[inline]
     pub fn inputs(&self) -> Vec<Box<dyn UserInput>> {
         match self.clone() {
@@ -92,6 +97,10 @@ impl BasicInputs {
     }
 
     /// Returns the number of the logical [`UserInput`]s that make up the input.
+    ///
+    /// A single key press is one input, while a chorded input is multiple inputs.
+    /// A composite input is still considered one input, even if it can be triggered by multiple keys,
+    /// as only one input need actually be pressed.
     #[allow(clippy::len_without_is_empty)]
     #[inline]
     pub fn len(&self) -> usize {
