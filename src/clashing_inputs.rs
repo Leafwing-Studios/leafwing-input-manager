@@ -616,9 +616,22 @@ mod tests {
             app.press_input(ArrowUp);
             app.update();
 
+            // Both the DPad and the chord are pressed,
+            // because we've sent the inputs for both
             let mut button_data = HashMap::new();
             button_data.insert(CtrlUp, true);
             button_data.insert(MoveDPad, true);
+
+            // Double-check that the two input bindings clash
+            let chord_input = input_map.get(&CtrlUp).unwrap().first().unwrap();
+            let dpad_input = input_map.get(&MoveDPad).unwrap().first().unwrap();
+
+            assert!(chord_input
+                .decompose()
+                .clashes_with(&dpad_input.decompose()));
+
+            // Double check that the chord is longer than the DPad
+            assert!(chord_input.decompose().len() > dpad_input.decompose().len());
 
             input_map.handle_clashes(
                 &mut button_data,
@@ -626,6 +639,8 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
+            // Only the chord should be pressed,
+            // because it is longer than the DPad
             let mut expected = HashMap::new();
             expected.insert(CtrlUp, true);
 
