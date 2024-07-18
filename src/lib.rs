@@ -73,7 +73,7 @@ pub mod prelude {
 /// use bevy::prelude::Reflect;
 /// use leafwing_input_manager::Actionlike;
 ///
-/// #[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Reflect)]
+/// #[derive(Actionlike, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Up,
@@ -92,9 +92,9 @@ pub mod prelude {
 /// ```rust
 /// use bevy::prelude::Reflect;
 /// use leafwing_input_manager::Actionlike;
-/// use leafwing_input_manager::user_input::InputControlKind;
+/// use leafwing_input_manager::InputControlKind;
 ///
-/// #[derive(PartialEq, Eq, Clone, Copy, Hash, Reflect)]
+/// #[derive(PartialEq, Debug, Eq, Clone, Copy, Hash, Reflect)]
 /// enum PlayerAction {
 ///    // Movement
 ///    Movement,

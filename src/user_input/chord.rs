@@ -45,24 +45,6 @@ use super::{Axislike, DualAxislike};
 /// app.press_input(KeyCode::KeyB);
 /// app.update();
 /// assert!(app.pressed(input.clone()));
-///
-/// // Define a new chord with both axes for mouse movement.
-/// let input = input.with_multiple([MouseMoveAxis::X, MouseMoveAxis::Y]);
-///
-/// // Note that this chord only reports a combined single-axis value.
-/// // because it constructed from two single-axis inputs, not one dual-axis input.
-/// app.send_axis_values(MouseMove::default(), [2.0, 3.0]);
-/// app.update();
-/// assert_eq!(app.read_axis_values(input.clone()), [5.0]);
-///
-/// // Define a new chord with two dual-axis inputs.
-/// let input = input.with(MouseMove::default()).with(MouseScroll::default());
-///
-/// // Note that this chord only reports the value from the first included dual-axis input.
-/// app.send_axis_values(MouseMove::default(), [2.0, 3.0]);
-/// app.send_axis_values(MouseScroll::default(), [4.0, 5.0]);
-/// app.update();
-/// assert_eq!(app.read_axis_values(input), [2.0, 3.0]);
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]

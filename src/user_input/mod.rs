@@ -113,11 +113,11 @@ mod trait_serde;
 /// ```rust
 /// use std::hash::{Hash, Hasher};
 /// use bevy::prelude::*;
-/// use bevy::math::FloatOrd;
+/// use bevy::math::{Vec2, FloatOrd};
 /// use serde::{Deserialize, Serialize};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::input_streams::InputStreams;
-/// use leafwing_input_manager::axislike::{DualAxisType, Vec2};
+/// use leafwing_input_manager::axislike::{DualAxisType};
 /// use leafwing_input_manager::raw_inputs::RawInputs;
 /// use leafwing_input_manager::clashing_inputs::BasicInputs;
 ///
@@ -134,35 +134,11 @@ mod trait_serde;
 ///         InputControlKind::Axis
 ///     }
 ///
-///     fn pressed(&self, input_streams: &InputStreams) -> bool {
-///         // Checks if the input is currently active.
-///         //
-///         // Since this virtual mouse scroll always outputs a value,
-///         // it will always return `true`.
-///         true
-///     }
-///
-///     fn value(&self, input_streams: &InputStreams) -> f32 {
-///         // Gets the current value of the input as an `f32`.
-///         //
-///         // This input always represents a scroll of `5.0` on the Y-axis.
-///         5.0
-///     }
-///
-///     fn axis_pair(&self, input_streams: &InputStreams) -> Option<Vec2> {
-///         // Gets the values of this input along the X and Y axes (if applicable).
-///         //
-///         // This input only represents movement on the Y-axis,
-///         // so it returns `None`.
-///         None
-///     }
-///
 ///     fn decompose(&self) -> BasicInputs {
 ///         // Gets the most basic form of this input for clashing input detection.
 ///         //
-///         // This input is a simple, atomic unit,
-///         // so it is returned as a `BasicInputs::Simple`.
-///         BasicInputs::Simple(Box::new(*self))
+///         // This input is not buttonlike, so it uses `None`.
+///         BasicInputs::None
 ///     }
 ///
 ///     fn raw_inputs(&self) -> RawInputs {

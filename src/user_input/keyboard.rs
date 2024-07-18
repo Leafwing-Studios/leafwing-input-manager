@@ -177,11 +177,11 @@ impl Buttonlike for ModifierKey {
 /// // Pressing either key activates the input
 /// app.press_input(KeyCode::ArrowUp);
 /// app.update();
-/// assert_eq!(app.read_axis_values(axis), [1.0]);
+/// assert_eq!(app.read_axis_value(axis), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -360,11 +360,11 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
 /// // Pressing an arrow key activates the corresponding axis
 /// app.press_input(KeyCode::ArrowUp);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
+/// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 1.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
 /// let doubled = KeyboardVirtualDPad::ARROW_KEYS.sensitivity_y(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [0.0, 2.0]);
+/// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 2.0));
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]

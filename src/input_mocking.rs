@@ -55,7 +55,7 @@ use crate::user_input::*;
 ///
 /// // Or use chords to press multiple keys at the same time!
 /// let bevy = [KeyCode::KeyB, KeyCode::KeyE, KeyCode::KeyV, KeyCode::KeyY];
-/// app.press_input(InputChord::new(bevy));
+/// app.press_input(ButtonlikeChord::new(bevy));
 ///
 /// // Send values to an axis.
 /// app.send_axis_values(MouseScrollAxis::Y, [5.0]);
@@ -202,10 +202,10 @@ pub trait MockInput {
 /// let pressed = app.pressed(KeyCode::KeyB);
 ///
 /// // Read the current vertical mouse scroll value.
-/// let value = app.read_axis_values(MouseScrollAxis::Y);
+/// let value = app.read_axis_value(MouseScrollAxis::Y);
 ///
 /// // Read the current changes in relative mouse X and Y coordinates.
-/// let values = app.read_axis_values(MouseMove::default());
+/// let values = app.read_dual_axis_values(MouseMove::default());
 /// let x = values[0];
 /// let y = values[1];
 /// ```

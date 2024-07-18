@@ -541,12 +541,12 @@ impl<A: Actionlike> ActionState<A> {
     /// let mut action_state = ActionState::<Action>::default();
     ///
     /// // Extract the state from the ability slot
-    /// let slot_1_state = ability_slot_state.action_data(&AbilitySlot::Slot1);
+    /// let slot_1_state = ability_slot_state.button_data(&AbilitySlot::Slot1);
     ///
     /// // And transfer it to the actual ability that we care about
     /// // without losing timing information
     /// if let Some(state) = slot_1_state {
-    ///    action_state.set_action_data(Action::Run, state.clone());
+    ///    action_state.set_button_data(Action::Run, state.clone());
     /// }
     /// ```
     #[inline]

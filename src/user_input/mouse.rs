@@ -152,11 +152,11 @@ impl Buttonlike for MouseMoveDirection {
 /// // Movement on the chosen axis activates the input
 /// app.send_axis_values(MouseMoveAxis::Y, [1.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [1.0]);
+/// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = MouseMoveAxis::Y.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -267,11 +267,11 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// // Movement on either axis activates the input
 /// app.send_axis_values(MouseMoveAxis::Y, [3.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [0.0, 3.0]);
+/// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
 /// let doubled = MouseMove::default().sensitivity_y(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [0.0, 6.0]);
+/// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 6.0));
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -454,11 +454,11 @@ impl Buttonlike for MouseScrollDirection {
 /// // Scrolling on the chosen axis activates the input
 /// app.send_axis_values(MouseScrollAxis::Y, [1.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [1.0]);
+/// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = MouseScrollAxis::Y.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -568,11 +568,11 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// // Scrolling on either axis activates the input
 /// app.send_axis_values(MouseScrollAxis::Y, [3.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [0.0, 3.0]);
+/// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
 /// let doubled = MouseScroll::default().sensitivity_y(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [0.0, 6.0]);
+/// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 6.0));
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]

@@ -184,11 +184,11 @@ impl Buttonlike for GamepadControlDirection {
 /// // Movement on the chosen axis activates the input
 /// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
 /// app.update();
-/// assert_eq!(app.read_axis_values(input), [1.0]);
+/// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
 /// let doubled = GamepadControlAxis::LEFT_Y.sensitivity(2.0);
-/// assert_eq!(app.read_axis_values(doubled), [2.0]);
+/// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]

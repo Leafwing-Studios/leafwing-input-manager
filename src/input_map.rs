@@ -53,14 +53,25 @@ use crate::{Actionlike, InputControlKind};
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::user_input::InputControlKind;
+/// use leafwing_input_manager::InputControlKind;
 ///
 /// // Define your actions.
-/// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+/// #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 /// enum Action {
 ///     Move,
 ///     Run,
 ///     Jump,
+/// }
+///
+/// // Because our actions aren't all Buttonlike, we can't derive Actionlike.
+/// impl Actionlike for Action {
+///     // Record what kind of inputs make sense for each action.
+///     fn input_control_kind(&self) -> InputControlKind {
+///         match self {
+///             Action::Move => InputControlKind::DualAxis,
+///             Action::Run | Action::Jump => InputControlKind::Button,
+///         }
+///     }
 /// }
 ///
 /// // Create an InputMap from an iterable,
@@ -75,8 +86,8 @@ use crate::{Actionlike, InputControlKind};
 ///     (Action::Jump, KeyCode::Space),
 /// ])
 /// // Associate actions with other input types.
-/// .with(Action::Move, KeyboardVirtualDPad::WASD)
-/// .with(Action::Move, GamepadStick::LEFT)
+/// .with_dual_axis(Action::Move, KeyboardVirtualDPad::WASD)
+/// .with_dual_axis(Action::Move, GamepadStick::LEFT)
 /// // Associate an action with multiple inputs at once.
 /// .with_one_to_many(Action::Jump, [KeyCode::KeyJ, KeyCode::KeyU]);
 ///
@@ -757,7 +768,7 @@ impl<A: Actionlike, U: Buttonlike> From<HashMap<A, Vec<U>>> for InputMap<A> {
     /// use bevy::utils::HashMap;
     /// use leafwing_input_manager::prelude::*;
     ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    /// #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     /// enum Action {
     ///     Run,
     ///     Jump,

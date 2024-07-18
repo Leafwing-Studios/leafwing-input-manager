@@ -166,10 +166,10 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ### QueryInput
 
-- added new methods for the `QueryInput` trait.
-  - `fn read_axis_values(&self, input: impl UserInput) -> Vec<f32>` to read the values on all axes represented by an input.
-  - as well as methods for a specific gamepad.
-- implemented the methods for `InputStreams`, `World`, and `App`.
+- added new methods for the `QueryInput` trait
+  - `fn read_axis_value` and `read_dual_axis_values`
+  - as well as methods for working with a specific gamepad
+- implemented the methods for `InputStreams`, `World`, and `App`
 
 ### Bugs
 
