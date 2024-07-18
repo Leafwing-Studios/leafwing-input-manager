@@ -564,14 +564,32 @@ impl<A: Actionlike> InputMap<A> {
 
     /// Returns a reference to the [`Buttonlike`] inputs associated with the given `action`.
     #[must_use]
-    pub fn get(&self, action: &A) -> Option<&Vec<Box<dyn Buttonlike>>> {
+    pub fn get_buttonlike(&self, action: &A) -> Option<&Vec<Box<dyn Buttonlike>>> {
         self.buttonlike_map.get(action)
     }
 
     /// Returns a mutable reference to the [`Buttonlike`] inputs mapped to `action`
     #[must_use]
-    pub fn get_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Buttonlike>>> {
+    pub fn get_buttonlike_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Buttonlike>>> {
         self.buttonlike_map.get_mut(action)
+    }
+
+    /// Returns a reference to the [`Axislike`] inputs associated with the given `action`.
+    #[must_use]
+    pub fn get_axislike(&self, action: &A) -> Option<&Vec<Box<dyn Axislike>>> {
+        self.axislike_map.get(action)
+    }
+
+    /// Returns a mutable reference to the [`Axislike`] inputs mapped to `action`
+    #[must_use]
+    pub fn get_axislike_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Axislike>>> {
+        self.axislike_map.get_mut(action)
+    }
+
+    /// Returns a reference to the [`DualAxislike`] inputs associated with the given `action`.
+    #[must_use]
+    pub fn get_dual_axislike(&self, action: &A) -> Option<&Vec<Box<dyn DualAxislike>>> {
+        self.dual_axislike_map.get(action)
     }
 
     /// Count the total number of registered input bindings.
@@ -795,11 +813,11 @@ mod tests {
         input_map.insert(Action::Run, KeyCode::Space);
 
         let expected: Vec<Box<dyn Buttonlike>> = vec![Box::new(KeyCode::Space)];
-        assert_eq!(input_map.get(&Action::Run), Some(&expected));
+        assert_eq!(input_map.get_buttonlike(&Action::Run), Some(&expected));
 
         // Duplicate insertions should not change anything
         input_map.insert(Action::Run, KeyCode::Space);
-        assert_eq!(input_map.get(&Action::Run), Some(&expected));
+        assert_eq!(input_map.get_buttonlike(&Action::Run), Some(&expected));
     }
 
     #[test]
@@ -812,7 +830,7 @@ mod tests {
 
         let expected: Vec<Box<dyn Buttonlike>> =
             vec![Box::new(KeyCode::Space), Box::new(KeyCode::Enter)];
-        assert_eq!(input_map.get(&Action::Run), Some(&expected));
+        assert_eq!(input_map.get_buttonlike(&Action::Run), Some(&expected));
     }
 
     #[test]

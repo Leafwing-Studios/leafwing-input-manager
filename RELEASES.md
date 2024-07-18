@@ -44,6 +44,8 @@
 #### Trait-based input design
 
 - added the `UserInput` trait, which can be divided into three subtraits: `Buttonlike`, `Axislike` and `DualAxislike`
+  - the `InputControlKind` for each action can be set via the new `Actionlike::input_control_kind` method. The derive will assume that all actions are buttonlike.
+  - many methods such as `get` on `InputMap` and `ActionState` have been split into three variants, one for each kind of input
 - added `UserInput` impls for gamepad input events:
   - implemented `UserInput` for Bevy’s `GamepadAxisType`-related inputs.
     - `GamepadStick`: `DualAxislike`, continuous or discrete movement events of the left or right gamepad stick along both X and Y axes.

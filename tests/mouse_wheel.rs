@@ -109,7 +109,7 @@ fn mouse_scroll_buttonlike() {
     for action in ButtonlikeTestAction::variants() {
         let input_map = app.world().resource::<InputMap<ButtonlikeTestAction>>();
         // Get the first associated input
-        let input = input_map.get(action).unwrap().first().unwrap().clone();
+        let input = input_map.get_buttonlike(action).unwrap().first().unwrap().clone();
         let direction = Reflect::as_any(input.as_ref())
             .downcast_ref::<MouseScrollDirection>()
             .unwrap();

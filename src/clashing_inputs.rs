@@ -240,8 +240,8 @@ impl<A: Actionlike> InputMap<A> {
     fn possible_clash(&self, action_a: &A, action_b: &A) -> Option<Clash<A>> {
         let mut clash = Clash::new(action_a.clone(), action_b.clone());
 
-        for input_a in self.get(action_a)? {
-            for input_b in self.get(action_b)? {
+        for input_a in self.get_buttonlike(action_a)? {
+            for input_b in self.get_buttonlike(action_b)? {
                 if input_a.decompose().clashes_with(&input_b.decompose()) {
                     clash.inputs_a.push(input_a.clone());
                     clash.inputs_b.push(input_b.clone());
@@ -623,8 +623,12 @@ mod tests {
             button_data.insert(MoveDPad, true);
 
             // Double-check that the two input bindings clash
-            let chord_input = input_map.get(&CtrlUp).unwrap().first().unwrap();
-            let dpad_input = input_map.get(&MoveDPad).unwrap().first().unwrap();
+            let chord_input = input_map.get_buttonlike(&CtrlUp).unwrap().first().unwrap();
+            let dpad_input = input_map
+                .get_buttonlike(&MoveDPad)
+                .unwrap()
+                .first()
+                .unwrap();
 
             assert!(chord_input
                 .decompose()
