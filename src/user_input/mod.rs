@@ -84,6 +84,7 @@ use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
+use serde::Serialize;
 
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
@@ -219,4 +220,44 @@ pub trait Axislike: UserInput {
 pub trait DualAxislike: UserInput {
     /// Gets the values of this input along the X and Y axes (if applicable).
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2;
+}
+
+/// A wrapper type to get around the lack of [trait upcasting coercion](https://github.com/rust-lang/rust/issues/65991).
+///
+/// To return a generic [`UserInput`] trait object from a function, you can use this wrapper type.
+
+#[derive(Reflect, Debug, Clone, PartialEq, Eq, Hash, Serialize)]
+pub enum UserInputWrapper {
+    /// Wraps a [`Buttonlike`] input.
+    Button(Box<dyn Buttonlike>),
+    /// Wraps an [`Axislike`] input.
+    Axis(Box<dyn Axislike>),
+    /// Wraps a [`DualAxislike`] input.
+    DualAxis(Box<dyn DualAxislike>),
+}
+
+impl UserInput for UserInputWrapper {
+    fn kind(&self) -> InputControlKind {
+        match self {
+            UserInputWrapper::Button(input) => input.kind(),
+            UserInputWrapper::Axis(input) => input.kind(),
+            UserInputWrapper::DualAxis(input) => input.kind(),
+        }
+    }
+
+    fn decompose(&self) -> BasicInputs {
+        match self {
+            UserInputWrapper::Button(input) => input.decompose(),
+            UserInputWrapper::Axis(input) => input.decompose(),
+            UserInputWrapper::DualAxis(input) => input.decompose(),
+        }
+    }
+
+    fn raw_inputs(&self) -> RawInputs {
+        match self {
+            UserInputWrapper::Button(input) => input.raw_inputs(),
+            UserInputWrapper::Axis(input) => input.raw_inputs(),
+            UserInputWrapper::DualAxis(input) => input.raw_inputs(),
+        }
+    }
 }

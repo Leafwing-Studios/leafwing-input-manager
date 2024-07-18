@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_streams::InputStreams;
+use crate::prelude::UserInputWrapper;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::{Actionlike, InputControlKind};
 
@@ -581,6 +582,47 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over all registered [`DualAxislike`] actions.
     pub fn dual_axislike_actions(&self) -> impl Iterator<Item = &A> {
         self.dual_axislike_map.keys()
+    }
+
+    /// Returns a reference to the [`UserInput`] inputs associated with the given `action`.
+    ///
+    /// # Warning
+    ///
+    /// Unlike the other `get` methods, this method is forced to clone the inputs
+    /// due to the lack of [trait upcasting coercion](https://github.com/rust-lang/rust/issues/65991).
+    ///
+    /// As a result, no equivalent `get_mut` method is provided.
+    #[must_use]
+    pub fn get(&self, action: &A) -> Option<Vec<UserInputWrapper>> {
+        match action.input_control_kind() {
+            InputControlKind::Button => {
+                let buttonlike = self.buttonlike_map.get(action)?;
+                Some(
+                    buttonlike
+                        .iter()
+                        .map(|input| UserInputWrapper::Button(input.clone()))
+                        .collect(),
+                )
+            }
+            InputControlKind::Axis => {
+                let buttonlike = self.axislike_map.get(action)?;
+                Some(
+                    buttonlike
+                        .iter()
+                        .map(|input| UserInputWrapper::Axis(input.clone()))
+                        .collect(),
+                )
+            }
+            InputControlKind::DualAxis => {
+                let buttonlike = self.dual_axislike_map.get(action)?;
+                Some(
+                    buttonlike
+                        .iter()
+                        .map(|input| UserInputWrapper::DualAxis(input.clone()))
+                        .collect(),
+                )
+            }
+        }
     }
 
     /// Returns a reference to the [`Buttonlike`] inputs associated with the given `action`.
