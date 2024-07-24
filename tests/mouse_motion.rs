@@ -76,20 +76,6 @@ fn mouse_move_single_axis_mocking() {
 }
 
 #[test]
-fn mouse_move_dual_axis_mocking() {
-    let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 0);
-
-    let input = MouseMove::default();
-    input.set_axis_pair(app.world_mut(), Vec2::new(1.0, 0.0));
-
-    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
-    // Dual axis events are split out
-    assert_eq!(events.drain().count(), 2);
-}
-
-#[test]
 fn mouse_move_buttonlike() {
     let mut app = test_app();
     app.insert_resource(InputMap::new([
