@@ -62,7 +62,7 @@ fn gamepad_single_axis_mocking() {
     assert_eq!(events.drain().count(), 0);
 
     let input = GamepadControlAxis::LEFT_X;
-    input.set_value(&mut app.world_mut(), -1.0);
+    input.set_value(app.world_mut(), -1.0);
 
     let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     assert_eq!(events.drain().count(), 1);
@@ -100,33 +100,33 @@ fn gamepad_single_axis() {
 
     // +X
     let input = GamepadControlAxis::LEFT_X;
-    input.set_value(&mut app.world_mut(), 1.0);
+    input.set_value(app.world_mut(), 1.0);
     app.update();
 
     // -X
     let input = GamepadControlAxis::LEFT_X;
-    input.set_value(&mut app.world_mut(), -1.0);
+    input.set_value(app.world_mut(), -1.0);
     app.update();
 
     // +Y
     let input = GamepadControlAxis::LEFT_Y;
-    input.set_value(&mut app.world_mut(), 1.0);
+    input.set_value(app.world_mut(), 1.0);
     app.update();
 
     // -Y
     let input = GamepadControlAxis::LEFT_Y;
-    input.set_value(&mut app.world_mut(), -1.0);
+    input.set_value(app.world_mut(), -1.0);
     app.update();
 
     // 0
     // Usually a small deadzone threshold will be set
     let input = GamepadControlAxis::LEFT_Y;
-    input.set_value(&mut app.world_mut(), 0.0);
+    input.set_value(app.world_mut(), 0.0);
     app.update();
 
     // Scaled value
     let input = GamepadControlAxis::LEFT_X;
-    input.set_value(&mut app.world_mut(), 0.2);
+    input.set_value(app.world_mut(), 0.2);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert_eq!(action_state.value(&AxislikeTestAction::X), 0.11111112);
@@ -153,28 +153,28 @@ fn gamepad_single_axis_inverted() {
 
     // +X
     let input = GamepadControlAxis::LEFT_X;
-    input.set_value(&mut app.world_mut(), 1.0);
+    input.set_value(app.world_mut(), 1.0);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert_eq!(action_state.value(&AxislikeTestAction::X), -1.0);
 
     // -X
     let input = GamepadControlAxis::LEFT_X;
-    input.set_value(&mut app.world_mut(), -1.0);
+    input.set_value(app.world_mut(), -1.0);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert_eq!(action_state.value(&AxislikeTestAction::X), 1.0);
 
     // +Y
     let input = GamepadControlAxis::LEFT_Y;
-    input.set_value(&mut app.world_mut(), 1.0);
+    input.set_value(app.world_mut(), 1.0);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert_eq!(action_state.value(&AxislikeTestAction::Y), -1.0);
 
     // -Y
     let input = GamepadControlAxis::LEFT_Y;
-    input.set_value(&mut app.world_mut(), -1.0);
+    input.set_value(app.world_mut(), -1.0);
     app.update();
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
     assert_eq!(action_state.value(&AxislikeTestAction::Y), 1.0);
