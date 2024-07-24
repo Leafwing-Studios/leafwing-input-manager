@@ -246,6 +246,14 @@ impl Axislike for AxislikeChord {
             0.0
         }
     }
+
+    fn set_value(&self, world: &mut World, value: f32) {
+        self.axis.set_value(world, value);
+    }
+
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+        self.axis.set_value_as_gamepad(world, value, gamepad);
+    }
 }
 
 /// A combined input that groups a [`Buttonlike`] and a [`DualAxislike`] together,

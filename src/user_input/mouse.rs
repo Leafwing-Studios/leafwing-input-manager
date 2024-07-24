@@ -262,6 +262,17 @@ impl Axislike for MouseMoveAxis {
             .iter()
             .fold(value, |value, processor| processor.process(value))
     }
+
+    /// Sends a [`MouseMotion`] event along the appropriate axis with the specified value.
+    fn set_value(&self, world: &mut World, value: f32) {
+        let event = MouseMotion {
+            delta: match self.axis {
+                DualAxisType::X => Vec2::new(value, 0.0),
+                DualAxisType::Y => Vec2::new(0.0, value),
+            },
+        };
+        world.resource_mut::<Events<MouseMotion>>().send(event);
+    }
 }
 
 impl WithAxisProcessingPipelineExt for MouseMoveAxis {
@@ -585,6 +596,28 @@ impl Axislike for MouseScrollAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
+    }
+
+    /// Sends a [`MouseWheel`] event along the appropriate axis with the specified value in pixels.
+    ///
+    /// # Note
+    /// The `window` field will be filled with a placeholder value.
+    fn set_value(&self, world: &mut World, value: f32) {
+        let event = MouseWheel {
+            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            x: if self.axis == DualAxisType::X {
+                value
+            } else {
+                0.0
+            },
+            y: if self.axis == DualAxisType::Y {
+                value
+            } else {
+                0.0
+            },
+            window: Entity::PLACEHOLDER,
+        };
+        world.resource_mut::<Events<MouseWheel>>().send(event);
     }
 }
 

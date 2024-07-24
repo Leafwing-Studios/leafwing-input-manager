@@ -361,6 +361,18 @@ impl Axislike for KeyboardVirtualAxis {
             .iter()
             .fold(value, |value, processor| processor.process(value))
     }
+
+    /// Sends a [`KeyboardInput`] event on the provided [`Gamepad`].
+    ///
+    /// If the value is negative, the negative button is pressed.
+    /// If the value is positive, the positive button is pressed.
+    fn set_value(&self, world: &mut World, value: f32) {
+        if value < 0.0 {
+            self.negative.press(world);
+        } else {
+            self.positive.press(world);
+        }
+    }
 }
 
 impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {

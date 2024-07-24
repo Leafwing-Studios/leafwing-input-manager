@@ -306,6 +306,18 @@ impl Axislike for GamepadControlAxis {
             .iter()
             .fold(value, |value, processor| processor.process(value))
     }
+
+    /// Sends a [`GamepadEvent::Axis`] event with the specified value on the provided [`Gamepad`].
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.axis,
+            value,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
 }
 
 impl WithAxisProcessingPipelineExt for GamepadControlAxis {
@@ -702,6 +714,18 @@ impl Axislike for GamepadVirtualAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event on the provided [`Gamepad`].
+    ///
+    /// If the value is negative, the negative button is pressed.
+    /// If the value is positive, the positive button is pressed.
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+        if value < 0.0 {
+            self.negative.press_as_gamepad(world, gamepad);
+        } else {
+            self.positive.press_as_gamepad(world, gamepad);
+        }
     }
 }
 

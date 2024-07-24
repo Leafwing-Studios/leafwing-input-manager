@@ -229,6 +229,25 @@ pub trait Buttonlike: UserInput {
 pub trait Axislike: UserInput {
     /// Gets the current value of the input as an `f32`.
     fn value(&self, input_streams: &InputStreams) -> f32;
+
+    /// Simulate an axis-like input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Axislike::set_value_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn set_value(&self, world: &mut World, value: f32) {
+        self.set_value_as_gamepad(world, value, None);
+    }
+
+    /// Simulate an axis-like input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Axislike::set_value`] if not overridden,
+    /// as is the case for things like a mouse wheel.
+    ///
+    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Gamepad>) {
+        self.set_value(world, value);
+    }
 }
 
 /// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
