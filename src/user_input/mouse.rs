@@ -92,12 +92,12 @@ impl Buttonlike for MouseButton {
 /// let input = MouseMoveDirection::UP;
 ///
 /// // Movement in the opposite direction doesn't activate the input
-/// app.send_axis_values(MouseMoveAxis::Y, [-5.0]);
+/// MouseMoveAxis::Y.set_value(app.world_mut(), -5.0);
 /// app.update();
 /// assert!(!app.pressed(input));
 ///
 /// // Movement in the chosen direction activates the input
-/// app.send_axis_values(MouseMoveAxis::Y, [5.0]);
+/// MouseMoveAxis::Y.set_value(app.world_mut(), 5.0);
 /// app.update();
 /// assert!(app.pressed(input));
 /// ```
@@ -181,7 +181,7 @@ impl Buttonlike for MouseMoveDirection {
 /// let input = MouseMoveAxis::Y;
 ///
 /// // Movement on the chosen axis activates the input
-/// app.send_axis_values(MouseMoveAxis::Y, [1.0]);
+/// MouseMoveAxis::Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_value(input), 1.0);
 ///
@@ -301,7 +301,7 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// let input = MouseMove::default();
 ///
 /// // Movement on either axis activates the input
-/// app.send_axis_values(MouseMoveAxis::Y, [3.0]);
+/// MouseMoveAxis::Y.set_value(app.world_mut(), 3.0);
 /// app.update();
 /// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///
@@ -409,12 +409,12 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// let input = MouseScrollDirection::UP;
 ///
 /// // Scrolling in the opposite direction doesn't activate the input
-/// app.send_axis_values(MouseScrollAxis::Y, [-5.0]);
+/// MouseScrollAxis::Y.set_value(app.world_mut(), -5.0);
 /// app.update();
 /// assert!(!app.pressed(input));
 ///
 /// // Scrolling in the chosen direction activates the input
-/// app.send_axis_values(MouseScrollAxis::Y, [5.0]);
+/// MouseScrollAxis::Y.set_value(app.world_mut(), 5.0);
 /// app.update();
 /// assert!(app.pressed(input));
 /// ```
@@ -505,7 +505,7 @@ impl Buttonlike for MouseScrollDirection {
 /// let input = MouseScrollAxis::Y;
 ///
 /// // Scrolling on the chosen axis activates the input
-/// app.send_axis_values(MouseScrollAxis::Y, [1.0]);
+/// MouseScrollAxis::Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_value(input), 1.0);
 ///
@@ -635,7 +635,7 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// let input = MouseScroll::default();
 ///
 /// // Scrolling on either axis activates the input
-/// app.send_axis_values(MouseScrollAxis::Y, [3.0]);
+/// MouseScrollAxis::Y.set_value(app.world_mut(), 3.0);
 /// app.update();
 /// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///

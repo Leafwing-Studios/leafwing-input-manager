@@ -80,12 +80,12 @@ fn read_axis_value(input_streams: &InputStreams, axis: GamepadAxisType) -> f32 {
 /// let input = GamepadControlDirection::LEFT_UP;
 ///
 /// // Movement in the opposite direction doesn't activate the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [-1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), -1.0);
 /// app.update();
 /// assert!(!app.pressed(input));
 ///
 /// // Movement in the chosen direction activates the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert!(app.pressed(input));
 /// ```
@@ -213,7 +213,7 @@ impl Buttonlike for GamepadControlDirection {
 /// let input = GamepadControlAxis::LEFT_Y;
 ///
 /// // Movement on the chosen axis activates the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_value(input), 1.0);
 ///
@@ -356,7 +356,7 @@ impl WithAxisProcessingPipelineExt for GamepadControlAxis {
 /// let input = GamepadStick::LEFT;
 ///
 /// // Movement on either axis activates the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
 ///

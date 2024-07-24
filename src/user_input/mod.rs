@@ -34,11 +34,6 @@
 //! [`UserInput`]s use the method [`UserInput::decompose`] returning a [`BasicInputs`]
 //! used for clashing detection, see [clashing input check](crate::clashing_inputs) for details.
 //!
-//! ## Raw Input Events
-//!
-//! [`UserInput`]s use the method [`UserInput::raw_inputs`] returning a [`RawInputs`]
-//! used for sending fake input events, see [input mocking](crate::input_mocking::MockInput) for details.
-//!
 //! ## Built-in Inputs
 //!
 //! ### Gamepad Inputs
@@ -118,7 +113,6 @@ mod trait_serde;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::input_streams::InputStreams;
 /// use leafwing_input_manager::axislike::{DualAxisType};
-/// use leafwing_input_manager::raw_inputs::RawInputs;
 /// use leafwing_input_manager::clashing_inputs::BasicInputs;
 ///
 /// #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]

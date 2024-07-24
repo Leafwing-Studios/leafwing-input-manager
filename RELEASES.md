@@ -104,7 +104,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 ### MockInput
 
 - `MockInput`, `RawInputs` and `MutableInputStreams` have been removed in favor of methods on the `Buttonlike`, `Axislike` and `DualAxislike` traits
-- rather than calling `app.press_input(KeyCode::Space)` for example, call `KeyCode::Space.press(app.world_mut())`
+  - for example, rather than `app.press_input(KeyCode::Space)` call `KeyCode::Space.press(app.world_mut())`
 
 ### QueryInput
 
