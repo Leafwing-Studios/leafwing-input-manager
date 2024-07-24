@@ -468,7 +468,7 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::prelude::ModifierKey;
+        use crate::prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey};
         use bevy::input::InputPlugin;
         use Action::*;
 
@@ -572,6 +572,8 @@ mod tests {
         fn resolve_prioritize_longest() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
+            app.init_resource::<AccumulatedMouseMovement>();
+            app.init_resource::<AccumulatedMouseScroll>();
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
@@ -620,6 +622,8 @@ mod tests {
         fn handle_clashes() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
+            app.init_resource::<AccumulatedMouseMovement>();
+            app.init_resource::<AccumulatedMouseScroll>();
             let input_map = test_input_map();
 
             Digit1.press(app.world_mut());
@@ -650,6 +654,8 @@ mod tests {
         fn handle_clashes_dpad_chord() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
+            app.init_resource::<AccumulatedMouseMovement>();
+            app.init_resource::<AccumulatedMouseScroll>();
             let input_map = test_input_map();
 
             ControlLeft.press(app.world_mut());
@@ -700,6 +706,8 @@ mod tests {
         fn which_pressed() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
+            app.init_resource::<AccumulatedMouseMovement>();
+            app.init_resource::<AccumulatedMouseScroll>();
             let input_map = test_input_map();
 
             Digit1.press(app.world_mut());
