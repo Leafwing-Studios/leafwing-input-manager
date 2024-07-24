@@ -180,7 +180,7 @@ pub trait Buttonlike: UserInput {
     /// This method defaults to calling [`Buttonlike::press`] if not overridden,
     /// as is the case for things like mouse buttons and keyboard keys.
     ///
-    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
     fn press_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
         self.press(world);
@@ -199,7 +199,7 @@ pub trait Buttonlike: UserInput {
     /// This method defaults to calling [`Buttonlike:release`] if not overridden,
     /// as is the case for things like mouse buttons and keyboard keys.
     ///
-    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
     fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
         self.press(world);
@@ -224,7 +224,7 @@ pub trait Axislike: UserInput {
     /// This method defaults to calling [`Axislike::set_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
     ///
-    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Gamepad>) {
         self.set_value(world, value);
@@ -249,7 +249,7 @@ pub trait DualAxislike: UserInput {
     /// This method defaults to calling [`DualAxislike::set_axis_pair`] if not overridden,
     /// as is the case for things like a mouse wheel.
     ///
-    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
     fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Gamepad>) {
         self.set_axis_pair(world, value);
