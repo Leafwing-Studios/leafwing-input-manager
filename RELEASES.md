@@ -101,17 +101,11 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 - removed `ToggleActions` resource in favor of new methods on `ActionState`: `disable_all`, `disable(action)`, `enable_all`, `enable(action)`, and `disabled(action)`.
 
-### MockInput
+### Input mocking
 
 - `MockInput`, `RawInputs` and `MutableInputStreams` have been removed in favor of methods on the `Buttonlike`, `Axislike` and `DualAxislike` traits
   - for example, rather than `app.press_input(KeyCode::Space)` call `KeyCode::Space.press(app.world_mut())`
-
-### QueryInput
-
-- added new methods for the `QueryInput` trait
-  - `fn read_axis_value` and `read_dual_axis_values`
-  - as well as methods for working with a specific gamepad
-- implemented the methods for `InputStreams`, `World`, and `App`
+- existing methods for quickly checking the value of buttons and axes have been moved to the `FetchUserInput` trait and retained for testing purposes
 
 ### Bugs
 

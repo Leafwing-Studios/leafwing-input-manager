@@ -96,6 +96,7 @@ pub mod chord;
 pub mod gamepad;
 pub mod keyboard;
 pub mod mouse;
+pub mod testing_utils;
 mod trait_reflection;
 mod trait_serde;
 

@@ -28,6 +28,7 @@ use super::{Axislike, DualAxislike};
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
@@ -36,7 +37,7 @@ use super::{Axislike, DualAxislike};
 /// let input = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB]);
 ///
 /// // Pressing only one key doesn't activate the input
-/// KeyCode::A.press(app.world_mut());
+/// KeyCode::KeyA.press(app.world_mut());
 /// app.update();
 /// assert!(!app.pressed(input.clone()));
 ///

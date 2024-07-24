@@ -84,6 +84,7 @@ impl Buttonlike for MouseButton {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
@@ -173,6 +174,7 @@ impl Buttonlike for MouseMoveDirection {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
@@ -294,6 +296,7 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
@@ -401,6 +404,7 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
@@ -497,6 +501,7 @@ impl Buttonlike for MouseScrollDirection {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
@@ -628,6 +633,7 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));

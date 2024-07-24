@@ -209,6 +209,7 @@ impl Buttonlike for ModifierKey {
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins(InputPlugin);
@@ -399,6 +400,7 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins(InputPlugin);
