@@ -36,12 +36,13 @@ use super::{Axislike, DualAxislike};
 /// let input = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB]);
 ///
 /// // Pressing only one key doesn't activate the input
-/// app.press_input(KeyCode::KeyA);
+/// KeyCode::A.press(app.world_mut());
 /// app.update();
 /// assert!(!app.pressed(input.clone()));
 ///
 /// // Pressing both keys activates the input
-/// app.press_input(KeyCode::KeyB);
+/// KeyCode::A.press(app.world_mut());
+/// KeyCode::B.press(app.world_mut());
 /// app.update();
 /// assert!(app.pressed(input.clone()));
 /// ```

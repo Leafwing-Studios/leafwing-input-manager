@@ -608,7 +608,7 @@ impl Buttonlike for GamepadButtonType {
 /// let axis = GamepadVirtualAxis::DPAD_Y;
 ///
 /// // Pressing either button activates the input
-/// app.press_input(GamepadButtonType::DPadUp);
+/// GamepadButtonType::DPadUp.press(app.world_mut());
 /// app.update();
 /// assert_eq!(app.read_axis_values(axis), [1.0]);
 ///
@@ -772,7 +772,7 @@ impl WithAxisProcessingPipelineExt for GamepadVirtualAxis {
 /// let input = GamepadVirtualDPad::DPAD;
 ///
 /// // Pressing a D-pad button activates the corresponding axis
-/// app.press_input(GamepadButtonType::DPadUp);
+/// GamepadButtonType::DPadUp.press(app.world_mut());
 /// app.update();
 /// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
 ///

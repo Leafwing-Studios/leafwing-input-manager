@@ -217,7 +217,7 @@ impl Buttonlike for ModifierKey {
 /// let axis = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS;
 ///
 /// // Pressing either key activates the input
-/// app.press_input(KeyCode::ArrowUp);
+/// KeyCode::ArrowUp.press(app.world_mut());
 /// app.update();
 /// assert_eq!(app.read_axis_value(axis), 1.0);
 ///
@@ -407,7 +407,7 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
 /// let input = KeyboardVirtualDPad::ARROW_KEYS;
 ///
 /// // Pressing an arrow key activates the corresponding axis
-/// app.press_input(KeyCode::ArrowUp);
+/// KeyCode::ArrowUp.press(app.world_mut());
 /// app.update();
 /// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 1.0));
 ///
