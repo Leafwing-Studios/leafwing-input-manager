@@ -71,7 +71,7 @@ fn disable_input() {
         .add_systems(PreUpdate, respect_fades);
 
     // Press F to pay respects
-    app.press_input(KeyCode::KeyF);
+    KeyCode::KeyF.press(app.world_mut());
     app.update();
     let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(true));
@@ -98,7 +98,7 @@ fn disable_input() {
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
-    app.press_input(KeyCode::KeyF);
+    KeyCode::KeyF.press(app.world_mut());
     app.update();
     let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
@@ -134,7 +134,7 @@ fn release_when_input_map_removed() {
         .add_systems(PreUpdate, respect_fades);
 
     // Press F to pay respects
-    app.press_input(KeyCode::KeyF);
+    KeyCode::KeyF.press(app.world_mut());
     app.update();
     let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(true));
@@ -150,7 +150,7 @@ fn release_when_input_map_removed() {
     assert_eq!(*respect, Respect(false));
 
     // And even pressing F cannot bring it back
-    app.press_input(KeyCode::KeyF);
+    KeyCode::KeyF.press(app.world_mut());
     app.update();
     let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(false));
@@ -194,7 +194,7 @@ fn duration() {
     app.update();
 
     // Press
-    app.press_input(KeyCode::KeyF);
+    KeyCode::KeyF.press(app.world_mut());
 
     // Hold
     std::thread::sleep(2 * RESPECTFUL_DURATION);

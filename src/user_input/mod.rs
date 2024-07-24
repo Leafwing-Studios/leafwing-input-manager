@@ -89,7 +89,6 @@ use serde::Serialize;
 
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
-use crate::raw_inputs::RawInputs;
 use crate::InputControlKind;
 
 pub use self::chord::*;
@@ -141,13 +140,6 @@ mod trait_serde;
 ///         // This input is not buttonlike, so it uses `None`.
 ///         BasicInputs::None
 ///     }
-///
-///     fn raw_inputs(&self) -> RawInputs {
-///         // Defines the raw input events used for simulating this input.
-///         //
-///         // This input simulates a mouse scroll event on the Y-axis.
-///         RawInputs::from_mouse_scroll_axes([DualAxisType::Y])
-///     }
 /// }
 ///
 /// // Remember to register your input - it will ensure everything works smoothly!
@@ -168,12 +160,6 @@ pub trait UserInput:
     /// For inputs that represent a simple, atomic control,
     /// this method should always return a [`BasicInputs::Simple`] that only contains the input itself.
     fn decompose(&self) -> BasicInputs;
-
-    /// Returns the raw input events that make up this input.
-    ///
-    /// Unlike [`UserInput::decompose`], which stores boxed user inputs,
-    /// this method returns the raw input types.
-    fn raw_inputs(&self) -> RawInputs;
 }
 
 /// A trait used for buttonlike user inputs, which can be pressed or released.
@@ -312,14 +298,6 @@ impl UserInput for UserInputWrapper {
             UserInputWrapper::Button(input) => input.decompose(),
             UserInputWrapper::Axis(input) => input.decompose(),
             UserInputWrapper::DualAxis(input) => input.decompose(),
-        }
-    }
-
-    fn raw_inputs(&self) -> RawInputs {
-        match self {
-            UserInputWrapper::Button(input) => input.raw_inputs(),
-            UserInputWrapper::Axis(input) => input.raw_inputs(),
-            UserInputWrapper::DualAxis(input) => input.raw_inputs(),
         }
     }
 }

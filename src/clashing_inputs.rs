@@ -468,7 +468,7 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::{input_mocking::MockInput, prelude::ModifierKey};
+        use crate::prelude::ModifierKey;
         use bevy::input::InputPlugin;
         use Action::*;
 
@@ -575,8 +575,8 @@ mod tests {
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
-            app.press_input(Digit1);
-            app.press_input(Digit2);
+            Digit1.press(app.world_mut());
+            Digit2.press(app.world_mut());
             app.update();
 
             assert_eq!(
@@ -601,7 +601,7 @@ mod tests {
             let chord_clash = input_map
                 .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
                 .unwrap();
-            app.press_input(Digit3);
+            Digit3.press(app.world_mut());
             app.update();
 
             let input_streams = InputStreams::from_world(app.world(), None);
@@ -622,8 +622,8 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.press_input(Digit1);
-            app.press_input(Digit2);
+            Digit1.press(app.world_mut());
+            Digit2.press(app.world_mut());
             app.update();
 
             let mut button_data = HashMap::new();
@@ -652,8 +652,8 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.press_input(ControlLeft);
-            app.press_input(ArrowUp);
+            ControlLeft.press(app.world_mut());
+            ArrowUp.press(app.world_mut());
             app.update();
 
             // Both the DPad and the chord are pressed,
@@ -702,9 +702,9 @@ mod tests {
             app.add_plugins(InputPlugin);
             let input_map = test_input_map();
 
-            app.press_input(Digit1);
-            app.press_input(Digit2);
-            app.press_input(ControlLeft);
+            Digit1.press(app.world_mut());
+            Digit2.press(app.world_mut());
+            ControlLeft.press(app.world_mut());
             app.update();
 
             let action_data = input_map.process_actions(

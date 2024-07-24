@@ -4,8 +4,8 @@ use bevy::time::TimeUpdateStrategy;
 use bevy::MinimalPlugins;
 use leafwing_input_manager::action_state::ActionState;
 use leafwing_input_manager::input_map::InputMap;
-use leafwing_input_manager::input_mocking::MockInput;
 use leafwing_input_manager::plugin::{InputManagerPlugin, InputManagerSystem};
+use leafwing_input_manager::prelude::Buttonlike;
 use leafwing_input_manager_macros::Actionlike;
 use std::time::Duration;
 
@@ -129,7 +129,7 @@ fn check_update_just_pressed_count(app: &mut App, expected: usize) {
 fn frame_without_fixed_timestep() {
     let mut app = build_app(Duration::from_millis(10), Duration::from_millis(9));
 
-    app.press_input(KeyCode::ArrowUp);
+    KeyCode::ArrowUp.press(app.world_mut());
 
     // Frame 1: button is just_pressed and the FixedUpdate schedule does not run
     app.update();
@@ -174,7 +174,7 @@ fn frame_without_fixed_timestep() {
 fn frame_with_two_fixed_timestep() {
     let mut app = build_app(Duration::from_millis(4), Duration::from_millis(9));
 
-    app.press_input(KeyCode::ArrowUp);
+    KeyCode::ArrowUp.press(app.world_mut());
 
     // Frame 1: the FixedUpdate schedule should run twice, but the button should be just_pressed only once
     // in FixedUpdate
@@ -217,7 +217,7 @@ fn test_consume_in_fixed_update() {
         },
     );
 
-    app.press_input(KeyCode::ArrowUp);
+    KeyCode::ArrowUp.press(app.world_mut());
 
     // Frame 1: the FixedUpdate schedule should run once and the button should be just_pressed only once
     app.update();
@@ -243,7 +243,7 @@ fn test_consume_in_fixed_update() {
 fn test_consume_in_update() {
     let mut app = build_app(Duration::from_millis(5), Duration::from_millis(5));
 
-    app.press_input(KeyCode::ArrowUp);
+    KeyCode::ArrowUp.press(app.world_mut());
     fn consume_action(mut action: ResMut<ActionState<TestAction>>) {
         action.consume(&TestAction::Up);
     }

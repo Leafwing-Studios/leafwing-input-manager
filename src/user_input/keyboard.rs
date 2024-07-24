@@ -13,7 +13,6 @@ use crate::input_processing::{
     WithDualAxisProcessingPipelineExt,
 };
 use crate::input_streams::InputStreams;
-use crate::raw_inputs::RawInputs;
 use crate::user_input::{ButtonlikeChord, UserInput};
 use crate::InputControlKind;
 
@@ -33,12 +32,6 @@ impl UserInput for KeyCode {
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Simple(Box::new(*self))
-    }
-
-    /// Creates a [`RawInputs`] from the key directly.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes([*self])
     }
 }
 
@@ -161,12 +154,6 @@ impl UserInput for ModifierKey {
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![Box::new(self.left()), Box::new(self.right())])
-    }
-
-    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this [`ModifierKey`].
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes(self.keycodes())
     }
 }
 
@@ -336,12 +323,6 @@ impl UserInput for KeyboardVirtualAxis {
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.negative)])
-    }
-
-    /// Creates a [`RawInputs`] from two [`KeyCode`]s used by this axis.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes([self.negative, self.positive])
     }
 }
 
@@ -546,12 +527,6 @@ impl UserInput for KeyboardVirtualDPad {
             Box::new(self.right),
         ])
     }
-
-    /// Creates a [`RawInputs`] from four [`KeyCode`]s used by this D-pad.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_keycodes([self.up, self.down, self.left, self.right])
-    }
 }
 
 impl DualAxislike for KeyboardVirtualDPad {
@@ -604,9 +579,7 @@ impl WithDualAxisProcessingPipelineExt for KeyboardVirtualDPad {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input_mocking::MockInput;
     use crate::plugin::AccumulatorPlugin;
-    use crate::raw_inputs::RawInputs;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
@@ -620,31 +593,18 @@ mod tests {
     fn test_keyboard_input() {
         let up = KeyCode::ArrowUp;
         assert_eq!(up.kind(), InputControlKind::Button);
-        assert_eq!(up.raw_inputs(), RawInputs::from_keycodes([up]));
 
         let left = KeyCode::ArrowLeft;
         assert_eq!(left.kind(), InputControlKind::Button);
-        assert_eq!(left.raw_inputs(), RawInputs::from_keycodes([left]));
 
         let alt = ModifierKey::Alt;
         assert_eq!(alt.kind(), InputControlKind::Button);
-        let alt_raw_inputs = RawInputs::from_keycodes([KeyCode::AltLeft, KeyCode::AltRight]);
-        assert_eq!(alt.raw_inputs(), alt_raw_inputs);
 
         let arrow_y = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS;
         assert_eq!(arrow_y.kind(), InputControlKind::Axis);
-        let raw_inputs = RawInputs::from_keycodes([KeyCode::ArrowDown, KeyCode::ArrowUp]);
-        assert_eq!(arrow_y.raw_inputs(), raw_inputs);
 
         let arrows = KeyboardVirtualDPad::ARROW_KEYS;
         assert_eq!(arrows.kind(), InputControlKind::DualAxis);
-        let raw_inputs = RawInputs::from_keycodes([
-            KeyCode::ArrowUp,
-            KeyCode::ArrowDown,
-            KeyCode::ArrowLeft,
-            KeyCode::ArrowRight,
-        ]);
-        assert_eq!(arrows.raw_inputs(), raw_inputs);
 
         // No inputs
         let zeros = Vec2::new(0.0, 0.0);
@@ -661,7 +621,7 @@ mod tests {
         // Press arrow up
         let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
-        app.press_input(KeyCode::ArrowUp);
+        KeyCode::ArrowUp.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -674,7 +634,7 @@ mod tests {
         // Press arrow down
         let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
-        app.press_input(KeyCode::ArrowDown);
+        KeyCode::ArrowDown.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -687,7 +647,7 @@ mod tests {
         // Press arrow left
         let data = Vec2::new(-1.0, 0.0);
         let mut app = test_app();
-        app.press_input(KeyCode::ArrowLeft);
+        KeyCode::ArrowLeft.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -699,8 +659,8 @@ mod tests {
 
         // Press arrow down and arrow up
         let mut app = test_app();
-        app.press_input(KeyCode::ArrowDown);
-        app.press_input(KeyCode::ArrowUp);
+        KeyCode::ArrowDown.press(app.world_mut());
+        KeyCode::ArrowUp.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -713,8 +673,8 @@ mod tests {
         // Press arrow left and arrow up
         let data = Vec2::new(-1.0, 1.0);
         let mut app = test_app();
-        app.press_input(KeyCode::ArrowLeft);
-        app.press_input(KeyCode::ArrowUp);
+        KeyCode::ArrowLeft.press(app.world_mut());
+        KeyCode::ArrowUp.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -726,7 +686,7 @@ mod tests {
 
         // Press left Alt
         let mut app = test_app();
-        app.press_input(KeyCode::AltLeft);
+        KeyCode::AltLeft.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -738,7 +698,7 @@ mod tests {
 
         // Press right Alt
         let mut app = test_app();
-        app.press_input(KeyCode::AltRight);
+        KeyCode::AltRight.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 

@@ -103,11 +103,8 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ### MockInput
 
-- added new methods for the `MockInput` trait.
-  - `fn press_input(&self, input: impl UserInput)` for simulating button and key presses.
-  - `fn send_axis_values(&self, input: impl UserInput, values: impl IntoIterator<Item = f32>)` for sending value changed events to each axis represented by the input.
-  - as well as methods for a specific gamepad.
-- implemented the methods for `MutableInputStreams`, `World`, and `App`.
+- `MockInput`, `RawInputs` and `MutableInputStreams` have been removed in favor of methods on the `Buttonlike`, `Axislike` and `DualAxislike` traits
+- rather than calling `app.press_input(KeyCode::Space)` for example, call `KeyCode::Space.press(app.world_mut())`
 
 ### QueryInput
 

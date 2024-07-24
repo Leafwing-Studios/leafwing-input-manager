@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
-use crate::raw_inputs::RawInputs;
 use crate::user_input::{Buttonlike, UserInput};
 use crate::InputControlKind;
 
@@ -136,14 +135,6 @@ impl UserInput for ButtonlikeChord {
             .collect();
         BasicInputs::Chord(inputs)
     }
-
-    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        self.0.iter().fold(RawInputs::default(), |inputs, next| {
-            inputs.merge_input(&next.raw_inputs())
-        })
-    }
 }
 
 impl Buttonlike for ButtonlikeChord {
@@ -227,15 +218,6 @@ impl UserInput for AxislikeChord {
     fn decompose(&self) -> BasicInputs {
         BasicInputs::compose(self.button.decompose(), self.axis.decompose())
     }
-
-    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        let raw_button_input = self.button.raw_inputs();
-        let raw_axis_input = self.axis.raw_inputs();
-
-        raw_button_input.merge_input(&raw_axis_input)
-    }
 }
 
 impl Axislike for AxislikeChord {
@@ -290,15 +272,6 @@ impl UserInput for DualAxislikeChord {
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::compose(self.button.decompose(), self.dual_axis.decompose())
-    }
-
-    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        let raw_button_input = self.button.raw_inputs();
-        let raw_axis_input = self.dual_axis.raw_inputs();
-
-        raw_button_input.merge_input(&raw_axis_input)
     }
 }
 
@@ -382,9 +355,6 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(chord.0, expected_inners);
 
-        let expected_raw_inputs = RawInputs::from_keycodes(required_keys);
-        assert_eq!(chord.raw_inputs(), expected_raw_inputs);
-
         // No keys pressed, resulting in a released chord with a value of zero.
         let mut app = test_app();
         app.update();
@@ -394,7 +364,7 @@ mod tests {
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
         for key in required_keys {
-            app.press_input(key);
+            key.press(app.world_mut());
         }
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
@@ -405,7 +375,7 @@ mod tests {
         for i in 1..=4 {
             let mut app = test_app();
             for key in required_keys.iter().take(i) {
-                app.press_input(*key);
+                key.press(app.world_mut());
             }
             app.update();
             let inputs = InputStreams::from_world(app.world(), None);
@@ -416,9 +386,9 @@ mod tests {
         // resulting in a released chord with a value of zero.
         let mut app = test_app();
         for key in required_keys.iter().take(4) {
-            app.press_input(*key);
+            key.press(app.world_mut());
         }
-        app.press_input(KeyCode::KeyB);
+        KeyCode::KeyB.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
         assert!(!chord.pressed(&inputs));

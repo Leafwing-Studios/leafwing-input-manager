@@ -937,10 +937,9 @@ mod tests {
     use crate::action_state::ActionState;
     use crate::clashing_inputs::ClashStrategy;
     use crate::input_map::InputMap;
-    use crate::input_mocking::MockInput;
     use crate::input_streams::InputStreams;
     use crate::plugin::AccumulatorPlugin;
-    use crate::prelude::ButtonlikeChord;
+    use crate::prelude::{Buttonlike, ButtonlikeChord};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
     use bevy::utils::{Duration, Instant};
@@ -984,7 +983,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Pressing
-        app.press_input(KeyCode::KeyR);
+        KeyCode::KeyR.press(app.world_mut());
         // Process the input events into Input<KeyCode> data
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
@@ -1006,7 +1005,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Releasing
-        app.release_input(KeyCode::KeyR);
+        KeyCode::KeyR.release(app.world_mut());
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
 
@@ -1059,7 +1058,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing One
-        app.press_input(Digit1);
+        Digit1.press(app.world_mut());
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
 
@@ -1080,7 +1079,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing Two
-        app.press_input(Digit2);
+        Digit2.press(app.world_mut());
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
 

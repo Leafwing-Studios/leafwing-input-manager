@@ -69,8 +69,8 @@ fn main() {
     client_app.update();
 
     // Sending inputs to the client
-    client_app.press_input(KeyCode::Space);
-    client_app.press_input(MouseButton::Left);
+    KeyCode::Space.press(client_app.world_mut());
+    MouseButton::Left.press(client_app.world_mut());
 
     // These are converted into actions when the client_app's `Schedule` runs
     client_app.update();
@@ -94,7 +94,6 @@ fn main() {
     assert!(player_state.pressed(&FpsAction::Shoot));
 
     // If we wait a tick, the buttons will be released
-    client_app.reset_inputs();
     client_app.update();
     let mut player_state_query = client_app.world_mut().query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(client_app.world()).next().unwrap();
