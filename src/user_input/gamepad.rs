@@ -450,6 +450,25 @@ impl DualAxislike for GamepadStick {
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         self.processed_value(input_streams)
     }
+
+    /// Sends a [`GamepadEvent::Axis`] event with the specified values on the provided [`Gamepad`].
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.x,
+            value: value.x,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.y,
+            value: value.y,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
 }
 
 impl WithDualAxisProcessingPipelineExt for GamepadStick {
@@ -720,10 +739,11 @@ impl Axislike for GamepadVirtualAxis {
     ///
     /// If the value is negative, the negative button is pressed.
     /// If the value is positive, the positive button is pressed.
+    /// If the value is zero, neither button is pressed.
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
         if value < 0.0 {
             self.negative.press_as_gamepad(world, gamepad);
-        } else {
+        } else if value > 0.0 {
             self.positive.press_as_gamepad(world, gamepad);
         }
     }
@@ -909,6 +929,21 @@ impl DualAxislike for GamepadVirtualDPad {
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         self.processed_value(input_streams)
+    }
+
+    /// Presses the corresponding buttons on the provided [`Gamepad`] based on the quadrant of the given value.
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Gamepad>) {
+        if value.x < 0.0 {
+            self.left.press_as_gamepad(world, None);
+        } else if value.x > 0.0 {
+            self.right.press_as_gamepad(world, None);
+        }
+
+        if value.y < 0.0 {
+            self.down.press_as_gamepad(world, None);
+        } else if value.y > 0.0 {
+            self.up.press_as_gamepad(world, None);
+        }
     }
 }
 

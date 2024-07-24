@@ -310,6 +310,20 @@ impl DualAxislike for DualAxislikeChord {
             Vec2::ZERO
         }
     }
+
+    fn set_axis_pair(&self, world: &mut World, axis_pair: Vec2) {
+        self.dual_axis.set_axis_pair(world, axis_pair);
+    }
+
+    fn set_axis_pair_as_gamepad(
+        &self,
+        world: &mut World,
+        axis_pair: Vec2,
+        gamepad: Option<Gamepad>,
+    ) {
+        self.dual_axis
+            .set_axis_pair_as_gamepad(world, axis_pair, gamepad);
+    }
 }
 
 #[cfg(test)]

@@ -380,6 +380,13 @@ impl DualAxislike for MouseMove {
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         self.processed_value(input_streams)
     }
+
+    /// Sends a [`MouseMotion`] event with the specified displacement.
+    fn set_axis_pair(&self, world: &mut World, value: Vec2) {
+        world
+            .resource_mut::<Events<MouseMotion>>()
+            .send(MouseMotion { delta: value });
+    }
 }
 
 impl WithDualAxisProcessingPipelineExt for MouseMove {
@@ -724,6 +731,19 @@ impl DualAxislike for MouseScroll {
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         self.processed_value(input_streams)
+    }
+
+    /// Sends a [`MouseWheel`] event with the specified displacement in pixels.
+    ///
+    /// # Note
+    /// The `window` field will be filled with a placeholder value.
+    fn set_axis_pair(&self, world: &mut World, value: Vec2) {
+        world.resource_mut::<Events<MouseWheel>>().send(MouseWheel {
+            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            x: value.x,
+            y: value.y,
+            window: Entity::PLACEHOLDER,
+        });
     }
 }
 

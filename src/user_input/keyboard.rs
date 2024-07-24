@@ -366,10 +366,11 @@ impl Axislike for KeyboardVirtualAxis {
     ///
     /// If the value is negative, the negative button is pressed.
     /// If the value is positive, the positive button is pressed.
+    /// If the value is zero, neither button is pressed.
     fn set_value(&self, world: &mut World, value: f32) {
         if value < 0.0 {
             self.negative.press(world);
-        } else {
+        } else if value > 0.0 {
             self.positive.press(world);
         }
     }
@@ -559,6 +560,21 @@ impl DualAxislike for KeyboardVirtualDPad {
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         self.processed_value(input_streams)
+    }
+
+    /// Presses the corresponding buttons on the provided [`Gamepad`] based on the quadrant of the given value.
+    fn set_axis_pair(&self, world: &mut World, value: Vec2) {
+        if value.x < 0.0 {
+            self.left.press(world);
+        } else if value.x > 0.0 {
+            self.right.press(world);
+        }
+
+        if value.y < 0.0 {
+            self.down.press(world);
+        } else if value.y > 0.0 {
+            self.up.press(world);
+        }
     }
 }
 

@@ -254,6 +254,25 @@ pub trait Axislike: UserInput {
 pub trait DualAxislike: UserInput {
     /// Gets the values of this input along the X and Y axes (if applicable).
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2;
+
+    /// Simulate a dual-axis-like input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`DualAxislike::set_axis_pair_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn set_axis_pair(&self, world: &mut World, value: Vec2) {
+        self.set_axis_pair_as_gamepad(world, value, None);
+    }
+
+    /// Simulate a dual-axis-like input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`DualAxislike::set_axis_pair`] if not overridden,
+    /// as is the case for things like a mouse wheel.
+    ///
+    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Gamepad>) {
+        self.set_axis_pair(world, value);
+    }
 }
 
 /// A wrapper type to get around the lack of [trait upcasting coercion](https://github.com/rust-lang/rust/issues/65991).
