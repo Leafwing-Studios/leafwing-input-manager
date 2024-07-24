@@ -80,6 +80,7 @@
 use std::fmt::Debug;
 
 use bevy::math::Vec2;
+use bevy::prelude::{Gamepad, World};
 use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
@@ -183,6 +184,44 @@ pub trait Buttonlike: UserInput {
     /// Checks if the input is currently inactive.
     fn released(&self, input_streams: &InputStreams) -> bool {
         !self.pressed(input_streams)
+    }
+
+    /// Simulates a press of the buttonlike input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Buttonlike::press_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn press(&self, world: &mut World) {
+        self.press_as_gamepad(world, None);
+    }
+
+    /// Simulate a press of the buttonlike input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Buttonlike::press`] if not overridden,
+    /// as is the case for things like mouse buttons and keyboard keys.
+    ///
+    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn press_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+        self.press(world);
+    }
+
+    /// Simulates a release of the buttonlike input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Buttonlike::release_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn release(&self, world: &mut World) {
+        self.press_as_gamepad(world, None);
+    }
+
+    /// Simulate a release of the buttonlike input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Buttonlike:release`] if not overridden,
+    /// as is the case for things like mouse buttons and keyboard keys.
+    ///
+    /// Use [`find_gamepad`](gamepad::find_gamepad) inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+        self.press(world);
     }
 }
 

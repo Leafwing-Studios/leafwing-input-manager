@@ -1,7 +1,9 @@
 //! Gamepad inputs
 
+use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::prelude::{
-    Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Reflect, Vec2,
+    Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
+    Reflect, Vec2, World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
@@ -19,6 +21,18 @@ use crate::user_input::UserInput;
 use crate::InputControlKind;
 
 use super::{Axislike, Buttonlike, DualAxislike};
+
+/// Retrieves the first connected gamepad.
+///
+/// If no gamepad is connected, a synthetic gamepad with an ID of 0 is returned.
+#[must_use]
+pub fn find_gamepad(world: &World) -> Gamepad {
+    world
+        .resource::<Gamepads>()
+        .iter()
+        .next()
+        .unwrap_or(Gamepad { id: 0 })
+}
 
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
@@ -80,10 +94,10 @@ fn read_axis_value(input_streams: &InputStreams, axis: GamepadAxisType) -> f32 {
 #[must_use]
 pub struct GamepadControlDirection {
     /// The axis that this input tracks.
-    pub(crate) axis: GamepadAxisType,
+    pub axis: GamepadAxisType,
 
     /// The direction of the axis to monitor (positive or negative).
-    pub(crate) side: AxisDirection,
+    pub side: AxisDirection,
 }
 
 impl GamepadControlDirection {
@@ -154,6 +168,30 @@ impl Buttonlike for GamepadControlDirection {
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         let value = read_axis_value(input_streams, self.axis);
         self.side.is_active(value)
+    }
+
+    /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided [`Gamepad`].
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.axis,
+            value: self.side.full_active_value(),
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+
+    /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 0.0 for the specified direction.
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.axis,
+            value: 0.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
 }
 
@@ -507,6 +545,30 @@ impl Buttonlike for GamepadButtonType {
         } else {
             button_pressed_any(input_streams, *self)
         }
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad,
+            button_type: *self,
+            value: 1.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad,
+            button_type: *self,
+            value: 0.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
 }
 

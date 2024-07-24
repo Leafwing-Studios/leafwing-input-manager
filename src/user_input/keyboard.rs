@@ -1,6 +1,8 @@
 //! Keyboard inputs
 
-use bevy::prelude::{KeyCode, Reflect, Vec2};
+use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
+use bevy::input::ButtonState;
+use bevy::prelude::{Entity, Events, KeyCode, Reflect, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -48,6 +50,36 @@ impl Buttonlike for KeyCode {
         input_streams
             .keycodes
             .is_some_and(|keys| keys.pressed(*self))
+    }
+
+    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
+    ///
+    /// # Note
+    ///
+    /// The `logical_key` and `window` fields will be filled with placeholder values.
+    fn press(&self, world: &mut World) {
+        let mut events = world.resource_mut::<Events<KeyboardInput>>();
+        events.send(KeyboardInput {
+            key_code: *self,
+            logical_key: Key::Unidentified(NativeKey::Unidentified),
+            state: ButtonState::Pressed,
+            window: Entity::PLACEHOLDER,
+        });
+    }
+
+    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Released`].
+    ///
+    /// # Note
+    ///
+    /// The `logical_key` and `window` fields will be filled with placeholder values.
+    fn release(&self, world: &mut World) {
+        let mut events = world.resource_mut::<Events<KeyboardInput>>();
+        events.send(KeyboardInput {
+            key_code: *self,
+            logical_key: Key::Unidentified(NativeKey::Unidentified),
+            state: ButtonState::Released,
+            window: Entity::PLACEHOLDER,
+        });
     }
 }
 
@@ -146,6 +178,29 @@ impl Buttonlike for ModifierKey {
         input_streams
             .keycodes
             .is_some_and(|keycodes| keycodes.any_pressed(self.keycodes()))
+    }
+
+    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
+    ///
+    /// The left and right keys will be pressed simultaneously.
+    ///
+    /// # Note
+    ///
+    /// The `logical_key` and `window` fields will be filled with placeholder values.
+    fn press(&self, world: &mut World) {
+        self.left().press(world);
+        self.right().press(world);
+    }
+
+    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Released`].
+    ///
+    /// The left and right keys will be released simultaneously.
+    /// # Note
+    ///
+    /// The `logical_key` and `window` fields will be filled with placeholder values.
+    fn release(&self, world: &mut World) {
+        self.left().release(world);
+        self.right().release(world);
     }
 }
 

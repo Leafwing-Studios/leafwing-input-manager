@@ -1,7 +1,7 @@
 //! This module contains [`ButtonlikeChord`] and its impls.
 
 use bevy::math::Vec2;
-use bevy::prelude::Reflect;
+use bevy::prelude::{Gamepad, Reflect, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -152,6 +152,30 @@ impl Buttonlike for ButtonlikeChord {
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         self.0.iter().all(|input| input.pressed(input_streams))
+    }
+
+    fn press(&self, world: &mut World) {
+        for input in &self.0 {
+            input.press(world);
+        }
+    }
+
+    fn release(&self, world: &mut World) {
+        for input in &self.0 {
+            input.release(world);
+        }
+    }
+
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        for input in &self.0 {
+            input.press_as_gamepad(world, gamepad);
+        }
+    }
+
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        for input in &self.0 {
+            input.release_as_gamepad(world, gamepad);
+        }
     }
 }
 

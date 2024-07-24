@@ -1,7 +1,8 @@
 //! Mouse inputs
 
-use bevy::input::mouse::{MouseMotion, MouseWheel};
-use bevy::prelude::{MouseButton, Reflect, Resource, Vec2};
+use bevy::input::mouse::{MouseButtonInput, MouseMotion, MouseWheel};
+use bevy::input::ButtonState;
+use bevy::prelude::{Entity, Events, MouseButton, Reflect, Resource, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -46,6 +47,34 @@ impl Buttonlike for MouseButton {
             .mouse_buttons
             .is_some_and(|buttons| buttons.pressed(*self))
     }
+
+    /// Sends a fake [`MouseButtonInput`] event to the world with [`ButtonState::Pressed`].
+    ///
+    /// # Note
+    ///
+    /// The `window` field will be filled with a placeholder value.
+    fn press(&self, world: &mut World) {
+        let mut events = world.resource_mut::<Events<MouseButtonInput>>();
+        events.send(MouseButtonInput {
+            button: *self,
+            state: ButtonState::Pressed,
+            window: Entity::PLACEHOLDER,
+        });
+    }
+
+    /// Sends a fake [`MouseButtonInput`] event to the world with [`ButtonState::Released`].
+    ///
+    /// # Note
+    ///
+    /// The `window` field will be filled with a placeholder value.
+    fn release(&self, world: &mut World) {
+        let mut events = world.resource_mut::<Events<MouseButtonInput>>();
+        events.send(MouseButtonInput {
+            button: *self,
+            state: ButtonState::Released,
+            window: Entity::PLACEHOLDER,
+        });
+    }
 }
 
 /// Provides button-like behavior for mouse movement in cardinal directions.
@@ -81,7 +110,7 @@ impl Buttonlike for MouseButton {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
-pub struct MouseMoveDirection(pub(crate) DualAxisDirection);
+pub struct MouseMoveDirection(pub DualAxisDirection);
 
 impl MouseMoveDirection {
     /// Movement in the upward direction.
@@ -126,6 +155,21 @@ impl Buttonlike for MouseMoveDirection {
         let mouse_movement = input_streams.mouse_motion.0;
         self.0.is_active(mouse_movement)
     }
+
+    /// Sends a [`MouseMotion`] event with a magnitude of 1.0 in the direction defined by `self`.
+    fn press(&self, world: &mut World) {
+        world
+            .resource_mut::<Events<MouseMotion>>()
+            .send(MouseMotion {
+                delta: self.0.full_active_value(),
+            });
+    }
+
+    /// This method has no effect.
+    ///
+    /// As mouse movement directions are determined based on the recent change in mouse position,
+    /// no action other than waiting for the next frame is necessary to release the input.
+    fn release(&self, _world: &mut World) {}
 }
 
 /// Relative changes in position of mouse movement on a single axis (X or Y).
@@ -162,7 +206,7 @@ impl Buttonlike for MouseMoveDirection {
 #[must_use]
 pub struct MouseMoveAxis {
     /// The specified axis that this input tracks.
-    pub(crate) axis: DualAxisType,
+    pub axis: DualAxisType,
 
     /// A processing pipeline that handles input values.
     pub(crate) processors: Vec<AxisProcessor>,
@@ -383,7 +427,7 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
-pub struct MouseScrollDirection(pub(crate) DualAxisDirection);
+pub struct MouseScrollDirection(pub DualAxisDirection);
 
 impl MouseScrollDirection {
     /// Movement in the upward direction.
@@ -428,6 +472,28 @@ impl Buttonlike for MouseScrollDirection {
         let movement = input_streams.mouse_scroll.0;
         self.0.is_active(movement)
     }
+
+    /// Sends a [`MouseWheel`] event with a magnitude of 1.0 px in the direction defined by `self`.
+    ///
+    /// # Note
+    ///
+    /// The `window` field will be filled with a placeholder value.
+    fn press(&self, world: &mut World) {
+        let vec = self.0.full_active_value();
+
+        world.resource_mut::<Events<MouseWheel>>().send(MouseWheel {
+            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            x: vec.x,
+            y: vec.y,
+            window: Entity::PLACEHOLDER,
+        });
+    }
+
+    /// This method has no effect.
+    ///
+    /// As mouse scroll directions are determined based on the recent change in mouse scrolling,
+    /// no action other than waiting for the next frame is necessary to release the input.
+    fn release(&self, _world: &mut World) {}
 }
 
 /// Amount of mouse wheel scrolling on a single axis (X or Y).
@@ -464,7 +530,7 @@ impl Buttonlike for MouseScrollDirection {
 #[must_use]
 pub struct MouseScrollAxis {
     /// The axis that this input tracks.
-    pub(crate) axis: DualAxisType,
+    pub axis: DualAxisType,
 
     /// A processing pipeline that handles input values.
     pub(crate) processors: Vec<AxisProcessor>,
