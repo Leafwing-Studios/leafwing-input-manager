@@ -96,7 +96,7 @@ pub trait MockInput {
     /// pressing a [`GamepadButtonType`] has no effect
     /// because Bevy currently disregards all external [`GamepadButtonChangedEvent`] events.
     /// See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
-    fn press_input(&mut self, input: impl UserInput);
+    fn press_input(&mut self, input: impl Buttonlike);
 
     /// Simulates an activated event for the given `input`, using the specified `gamepad`,
     /// pressing all buttons and keys in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
@@ -116,7 +116,7 @@ pub trait MockInput {
     /// pressing a [`GamepadButtonType`] has no effect
     /// because Bevy currently disregards all external [`GamepadButtonChangedEvent`] events.
     /// See <https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516> for more details.
-    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>);
+    fn press_input_as_gamepad(&mut self, input: impl Buttonlike, gamepad: Option<Gamepad>);
 
     /// Simulates axis value changed events for the given `input`.
     /// Each value in the `values` iterator corresponds to an axis in the [`RawInputs`](crate::raw_inputs::RawInputs) of the `input`.
@@ -164,10 +164,10 @@ pub trait MockInput {
     ///
     /// Gamepad input is sent by the first registered controller.
     /// If no controllers are found, it is silently ignored.
-    fn release_input(&mut self, input: impl UserInput);
+    fn release_input(&mut self, input: impl Buttonlike);
 
     /// Simulates a released or deactivated event for the given `input`, using the specified `gamepad`.
-    fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>);
+    fn release_input_as_gamepad(&mut self, input: impl Buttonlike, gamepad: Option<Gamepad>);
 
     /// Resets all inputs in the [`MutableInputStreams`] to their default state.
     ///
@@ -257,11 +257,11 @@ pub trait MockUIInteraction {
 }
 
 impl MockInput for MutableInputStreams<'_> {
-    fn press_input(&mut self, input: impl UserInput) {
+    fn press_input(&mut self, input: impl Buttonlike) {
         self.press_input_as_gamepad(input, self.guess_gamepad());
     }
 
-    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
+    fn press_input_as_gamepad(&mut self, input: impl Buttonlike, gamepad: Option<Gamepad>) {
         let raw_inputs = input.raw_inputs();
 
         // Press KeyCode
@@ -336,7 +336,7 @@ impl MockInput for MutableInputStreams<'_> {
         }
     }
 
-    fn release_input(&mut self, input: impl UserInput) {
+    fn release_input(&mut self, input: impl Buttonlike) {
         self.release_input_as_gamepad(input, self.guess_gamepad())
     }
 
@@ -484,13 +484,13 @@ impl QueryInput for InputStreams<'_> {
 }
 
 impl MockInput for World {
-    fn press_input(&mut self, input: impl UserInput) {
+    fn press_input(&mut self, input: impl Buttonlike) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, None);
 
         mutable_input_streams.press_input(input);
     }
 
-    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
+    fn press_input_as_gamepad(&mut self, input: impl Buttonlike, gamepad: Option<Gamepad>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.press_input_as_gamepad(input, gamepad);
@@ -513,13 +513,13 @@ impl MockInput for World {
         mutable_input_streams.send_axis_values(input, values);
     }
 
-    fn release_input(&mut self, input: impl UserInput) {
+    fn release_input(&mut self, input: impl Buttonlike) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, None);
 
         mutable_input_streams.release_input(input);
     }
 
-    fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
+    fn release_input_as_gamepad(&mut self, input: impl Buttonlike, gamepad: Option<Gamepad>) {
         let mut mutable_input_streams = MutableInputStreams::from_world(self, gamepad);
 
         mutable_input_streams.release_input_as_gamepad(input, gamepad);
@@ -622,11 +622,11 @@ impl MockUIInteraction for World {
 }
 
 impl MockInput for App {
-    fn press_input(&mut self, input: impl UserInput) {
+    fn press_input(&mut self, input: impl Buttonlike) {
         self.world_mut().press_input(input);
     }
 
-    fn press_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
+    fn press_input_as_gamepad(&mut self, input: impl Buttonlike, gamepad: Option<Gamepad>) {
         self.world_mut().press_input_as_gamepad(input, gamepad);
     }
 
@@ -644,11 +644,11 @@ impl MockInput for App {
             .send_axis_values_as_gamepad(input, values, gamepad);
     }
 
-    fn release_input(&mut self, input: impl UserInput) {
+    fn release_input(&mut self, input: impl Buttonlike) {
         self.world_mut().release_input(input);
     }
 
-    fn release_input_as_gamepad(&mut self, input: impl UserInput, gamepad: Option<Gamepad>) {
+    fn release_input_as_gamepad(&mut self, input: impl Buttonlike, gamepad: Option<Gamepad>) {
         self.world_mut().release_input_as_gamepad(input, gamepad);
     }
 
