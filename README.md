@@ -16,7 +16,7 @@ and a single input can result in multiple actions being triggered, which can be 
 
 | Bevy | leafwing-input-manager |
 | ---- | ---------------------- |
-| 0.14 | 0.14                   |
+| 0.14 | 0.14..0.15             |
 | 0.13 | 0.13                   |
 | 0.12 | 0.11..0.12             |
 | 0.11 | 0.10                   |
@@ -27,6 +27,7 @@ and a single input can result in multiple actions being triggered, which can be 
 
 - Full keyboard, mouse and joystick support for button-like and axis inputs
 - Dual axis support for analog inputs from gamepads and joysticks
+  - Expressive and easy-to-use axis processing for deadzones, sensitivity and clamping
 - Bind arbitrary button inputs into virtual D-Pads
 - Effortlessly wire UI buttons to game state with one simple component!
   - When clicked, your button will press the appropriate action on the corresponding entity
@@ -37,13 +38,12 @@ and a single input can result in multiple actions being triggered, which can be 
 - Ergonomic insertion API that seamlessly blends multiple input types for you
   - Can't decide between `input_map.insert(Action::Jump, KeyCode::Space)` and `input_map.insert(Action::Jump, GamepadButtonType::South)`? Have both!
 - Full support for arbitrary button combinations: chord your heart out.
-  - `input_map.insert(Action::Console, InputChord::new([KeyCode::ControlLeft, KeyCode::Shift, KeyCode::KeyC]))`
+  - `input_map.insert(Action::Console, ButtonlikeChord::new([KeyCode::ControlLeft, KeyCode::Shift, KeyCode::KeyC]))`
 - Sophisticated input disambiguation with the `ClashStrategy` enum: stop triggering individual buttons when you meant to press a chord!
 - Create an arbitrary number of strongly typed disjoint action sets by adding multiple copies of this plugin: decouple your camera and player state
 - Local multiplayer support: freely bind keys to distinct entities, rather than worrying about singular global state
 - Networked multiplayer support: serializable structs, and a space-conscious `ActionDiff` representation to send on the wire
 - Powerful and easy-to-use input mocking API for integration testing your Bevy applications
-  - `app.press_input(KeyCode::KeyB)` or `world.press_input(UserInput::chord([KeyCode::KeyB, KeyCode::KeyE, KeyCode::KeyV, KeyCode::KeyY])`
 - Control which state this plugin is active in: stop wandering around while in a menu!
 - Leafwing Studio's trademark `#![forbid(missing_docs)]`
 
