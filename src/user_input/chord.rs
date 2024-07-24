@@ -41,8 +41,8 @@ use super::{Axislike, DualAxislike};
 /// assert!(!app.pressed(input.clone()));
 ///
 /// // Pressing both keys activates the input
-/// KeyCode::A.press(app.world_mut());
-/// KeyCode::B.press(app.world_mut());
+/// KeyCode::KeyA.press(app.world_mut());
+/// KeyCode::KeyB.press(app.world_mut());
 /// app.update();
 /// assert!(app.pressed(input.clone()));
 /// ```
