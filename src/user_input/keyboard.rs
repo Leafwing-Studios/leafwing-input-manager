@@ -210,9 +210,10 @@ impl Buttonlike for ModifierKey {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Define a virtual Y-axis using arrow "up" and "down" keys
 /// let axis = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS;
@@ -401,9 +402,10 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
+/// use leafwing_input_manager::plugin::AccumulatorPlugin;
 ///
 /// let mut app = App::new();
-/// app.add_plugins(InputPlugin);
+/// app.add_plugins((InputPlugin, AccumulatorPlugin));
 ///
 /// // Define a virtual D-pad using the arrow keys
 /// let input = KeyboardVirtualDPad::ARROW_KEYS;
