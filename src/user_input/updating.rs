@@ -39,10 +39,10 @@ impl CentralInputStore {
     /// Registers a new kind of input.
     ///
     /// This will allow the input to be updated based on the state of the world,
-    /// by adding the [`UpdatableUserInput::compute`] system to [`InputManagerSystem::Update`] during [`PreUpdate`].
+    /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Update`] during [`PreUpdate`].
     ///
     /// This method has no effect if the input kind has already been registered.
-    pub fn register_input_kind<I: UpdatableUserInput>(&mut self, app: &mut App) {
+    pub fn register_input_kind<I: UpdatableInput>(&mut self, app: &mut App) {
         // Ensure this method is idempotent.
         if self.registered_input_kinds.contains(&TypeId::of::<I>()) {
             return;
@@ -193,9 +193,17 @@ enum UpdatedValues {
 
 /// A trait that enables user input to be updated based on the state of the world.
 ///
-/// This subtrait of [`UserInput`] is only used during plugin setup;
-/// all other uses should use the object-safe [`UserInput`] trait instead.
-pub trait UpdatableUserInput: UserInput {
+/// This trait is intended to be used for the values stored inside of [`CentralInputStore`].
+/// For the actual user inputs that you might bind actions to, use [`UserInput`] instead.
+///
+/// The values of [`UserInput`] will be computed by calling the methods on [`CentralInputStore`],
+/// and so the [`UpdatableInput`] trait is only needed when defining new kinds of input that we can
+/// derive user-facing inputs from.
+///
+/// In simple cases, a type will be both [`UserInput`] and [`UpdatableInput`],
+/// however when configuration is needed (such as for processed axes or virtual d-pads),
+/// two distinct types must be used.
+pub trait UpdatableInput: 'static {
     /// The resource data that must be fetched from the world in order to update the user input.
     ///
     /// # Panics
