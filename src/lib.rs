@@ -37,7 +37,6 @@ pub mod prelude {
     pub use crate::action_state::ActionState;
     pub use crate::clashing_inputs::ClashStrategy;
     pub use crate::input_map::InputMap;
-    #[cfg(feature = "ui")]
     pub use crate::input_processing::*;
     pub use crate::user_input::*;
 
