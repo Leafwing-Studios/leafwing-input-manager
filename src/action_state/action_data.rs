@@ -1,5 +1,7 @@
 //! Contains types used to store the state of the actions held in an [`ActionState`](super::ActionState).
 
+use std::time::Instant;
+
 use bevy::{math::Vec2, reflect::Reflect};
 use serde::{Deserialize, Serialize};
 
@@ -33,6 +35,23 @@ impl ActionData {
             },
         }
     }
+
+    /// Ticks the action data, updating the state of the action.
+    pub fn tick(&mut self, _current_instant: Instant, _previous_instant: Instant) {
+        match self.kind_data {
+            ActionKindData::Button(ref mut data) => {
+                data.state.tick();
+
+                #[cfg(feature = "timing")]
+                // Durations should not advance while actions are consumed
+                if !data.consumed {
+                    data.timing.tick(_current_instant, _previous_instant);
+                }
+            }
+            ActionKindData::Axis(ref mut _data) => {}
+            ActionKindData::DualAxis(ref mut _data) => {}
+        }
+    }
 }
 
 /// A wrapper over the various forms of data that an action can take.
@@ -44,6 +63,46 @@ pub enum ActionKindData {
     Axis(AxisData),
     /// The data for a dual-axis-like action.
     DualAxis(DualAxisData),
+}
+
+impl ActionKindData {
+    pub(super) fn swap_to_update_state(&mut self) {
+        // save the changes applied to `state` into `fixed_update_state`
+        // switch to loading the `update_state` into `state`
+        match self {
+            Self::Button(data) => {
+                data.fixed_update_state = data.state;
+                data.state = data.update_state;
+            }
+            Self::Axis(data) => {
+                data.fixed_update_value = data.value;
+                data.value = data.update_value;
+            }
+            Self::DualAxis(data) => {
+                data.fixed_update_pair = data.pair;
+                data.pair = data.update_pair;
+            }
+        }
+    }
+
+    pub(super) fn swap_to_fixed_update_state(&mut self) {
+        // save the changes applied to `state` into `update_state`
+        // switch to loading the `fixed_update_state` into `state`
+        match self {
+            Self::Button(data) => {
+                data.update_state = data.state;
+                data.state = data.fixed_update_state;
+            }
+            Self::Axis(data) => {
+                data.update_value = data.value;
+                data.value = data.fixed_update_value;
+            }
+            Self::DualAxis(data) => {
+                data.update_pair = data.pair;
+                data.pair = data.fixed_update_pair;
+            }
+        }
+    }
 }
 
 /// Metadata about an [`Buttonlike`](crate::user_input::Buttonlike) action

@@ -7,10 +7,9 @@
 use std::cmp::Ordering;
 
 use bevy::prelude::Resource;
-use bevy::utils::HashMap;
 use serde::{Deserialize, Serialize};
 
-use crate::input_map::InputMap;
+use crate::input_map::{InputMap, UpdatedActions};
 use crate::input_streams::InputStreams;
 use crate::user_input::Buttonlike;
 use crate::{Actionlike, InputControlKind};
@@ -173,14 +172,14 @@ impl<A: Actionlike> InputMap<A> {
     /// The `usize` stored in `pressed_actions` corresponds to `Actionlike::index`
     pub fn handle_clashes(
         &self,
-        button_data: &mut HashMap<A, bool>,
+        updated_actions: &mut UpdatedActions<A>,
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) {
-        for clash in self.get_clashes(button_data, input_streams) {
+        for clash in self.get_clashes(updated_actions, input_streams) {
             // Remove the action in the pair that was overruled, if any
             if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
-                button_data.remove(&culled_action);
+                updated_actions.remove(&culled_action);
             }
         }
     }
@@ -206,21 +205,15 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     fn get_clashes(
         &self,
-        action_data: &HashMap<A, bool>,
+        updated_actions: &UpdatedActions<A>,
         input_streams: &InputStreams,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
         // We can limit our search to the cached set of possibly clashing actions
         for clash in self.possible_clashes() {
-            let pressed_a = action_data
-                .get(&clash.action_a)
-                .copied()
-                .unwrap_or_default();
-            let pressed_b = action_data
-                .get(&clash.action_b)
-                .copied()
-                .unwrap_or_default();
+            let pressed_a = updated_actions.pressed(&clash.action_a);
+            let pressed_b = updated_actions.pressed(&clash.action_b);
 
             // Clashes can only occur if both actions were triggered
             // This is not strictly necessary, but saves work
@@ -468,7 +461,10 @@ mod tests {
     }
 
     mod basic_functionality {
-        use crate::prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey};
+        use crate::{
+            input_map::UpdatedValue,
+            prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey},
+        };
         use bevy::input::InputPlugin;
         use Action::*;
 
@@ -630,22 +626,22 @@ mod tests {
             Digit2.press(app.world_mut());
             app.update();
 
-            let mut button_data = HashMap::new();
+            let mut updated_actions = UpdatedActions::default();
 
-            button_data.insert(One, true);
-            button_data.insert(Two, true);
-            button_data.insert(OneAndTwo, true);
+            updated_actions.insert(One, UpdatedValue::Button(true));
+            updated_actions.insert(Two, UpdatedValue::Button(true));
+            updated_actions.insert(OneAndTwo, UpdatedValue::Button(true));
 
             input_map.handle_clashes(
-                &mut button_data,
+                &mut updated_actions,
                 &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
-            let mut expected = HashMap::new();
-            expected.insert(OneAndTwo, true);
+            let mut expected = UpdatedActions::default();
+            expected.insert(OneAndTwo, UpdatedValue::Button(true));
 
-            assert_eq!(button_data, expected);
+            assert_eq!(updated_actions, expected);
         }
 
         // Checks that a clash between a VirtualDPad and a chord chooses the chord
@@ -664,9 +660,9 @@ mod tests {
 
             // Both the DPad and the chord are pressed,
             // because we've sent the inputs for both
-            let mut button_data = HashMap::new();
-            button_data.insert(CtrlUp, true);
-            button_data.insert(MoveDPad, true);
+            let mut updated_actions = UpdatedActions::default();
+            updated_actions.insert(CtrlUp, UpdatedValue::Button(true));
+            updated_actions.insert(MoveDPad, UpdatedValue::Button(true));
 
             // Double-check that the two input bindings clash
             let chord_input = input_map.get_buttonlike(&CtrlUp).unwrap().first().unwrap();
@@ -689,17 +685,17 @@ mod tests {
             assert!(chord_input.decompose().len() > dpad_input.decompose().len());
 
             input_map.handle_clashes(
-                &mut button_data,
+                &mut updated_actions,
                 &InputStreams::from_world(app.world(), None),
                 ClashStrategy::PrioritizeLongest,
             );
 
             // Only the chord should be pressed,
             // because it is longer than the DPad
-            let mut expected = HashMap::new();
-            expected.insert(CtrlUp, true);
+            let mut expected = UpdatedActions::default();
+            expected.insert(CtrlUp, UpdatedValue::Button(true));
 
-            assert_eq!(button_data, expected);
+            assert_eq!(updated_actions, expected);
         }
 
         #[test]
@@ -720,11 +716,11 @@ mod tests {
                 ClashStrategy::PrioritizeLongest,
             );
 
-            for (action, button_pressed) in action_data.button_actions.iter() {
+            for (action, &updated_value) in action_data.iter() {
                 if *action == CtrlOne || *action == OneAndTwo {
-                    assert!(button_pressed);
+                    assert_eq!(updated_value, UpdatedValue::Button(true));
                 } else {
-                    assert!(!button_pressed);
+                    assert_eq!(updated_value, UpdatedValue::Button(false));
                 }
             }
         }
