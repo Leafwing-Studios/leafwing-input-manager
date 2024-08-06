@@ -11,7 +11,7 @@ use bevy::{
 
 use crate::plugin::InputManagerSystem;
 
-use super::{Axislike, Buttonlike, DualAxislike};
+use super::{Axislike, Buttonlike, DualAxislike, MouseMove, MouseScroll};
 
 /// An overarching store for all user input.
 ///
@@ -51,12 +51,10 @@ impl CentralInputStore {
         self.register_input_kind::<MouseButton>(app);
         self.register_input_kind::<GamepadButton>(app);
 
-        /*
         // Dualaxislike
         self.register_input_kind::<MouseMove>(app);
         self.register_input_kind::<MouseScroll>(app);
-        self.register_input_kind::<GamepadStick>(app);
-        */
+        //self.register_input_kind::<GamepadStick>(app);
     }
 
     /// Clears all existing values.
@@ -160,6 +158,10 @@ impl CentralInputStore {
     }
 }
 
+/// A map of values that have been updated during the current frame.
+///
+/// The key should be the default form of the input if there is no need to differentiate between possible inputs of the same type,
+/// and the value should be the updated value fetched from [`UpdatableInput::SourceData`].
 #[derive(Debug)]
 enum UpdatedValues {
     Buttonlike(HashMap<Box<dyn Buttonlike>, bool>),

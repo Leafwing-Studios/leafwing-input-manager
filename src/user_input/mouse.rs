@@ -345,6 +345,17 @@ impl MouseMove {
     }
 }
 
+impl UpdatableInput for MouseMove {
+    type SourceData = AccumulatedMouseMovement;
+
+    fn compute(
+        mut central_input_store: ResMut<CentralInputStore>,
+        source_data: Res<Self::SourceData>,
+    ) {
+        central_input_store.update_dualaxislike(Self::default(), source_data.0);
+    }
+}
+
 #[serde_typetag]
 impl UserInput for MouseMove {
     /// [`MouseMove`] acts as a dual-axis input.
@@ -679,6 +690,17 @@ impl MouseScroll {
         self.processors
             .iter()
             .fold(movement, |value, processor| processor.process(value))
+    }
+}
+
+impl UpdatableInput for MouseScroll {
+    type SourceData = AccumulatedMouseScroll;
+
+    fn compute(
+        mut central_input_store: ResMut<CentralInputStore>,
+        source_data: Res<Self::SourceData>,
+    ) {
+        central_input_store.update_dualaxislike(Self::default(), source_data.0);
     }
 }
 
