@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use bevy::asset::Asset;
 use bevy::log::error;
 use bevy::math::Vec2;
-use bevy::prelude::{Component, Gamepad, Reflect, Resource};
+use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Reflect, Resource};
 use bevy::utils::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
@@ -453,11 +453,16 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        self.process_actions(input_streams, clash_strategy)
-            .button_actions
-            .get(action)
-            .copied()
-            .unwrap_or_default()
+        let processed_actions = self.process_actions(input_streams, clash_strategy);
+
+        let Some(updated_value) = processed_actions.get(action) else {
+            return false;
+        };
+
+        match updated_value {
+            UpdatedValue::Button(state) => *state,
+            _ => false,
+        }
     }
 
     /// Determines the correct state for each action according to provided [`InputStreams`].
@@ -476,9 +481,7 @@ impl<A: Actionlike> InputMap<A> {
         input_streams: &InputStreams,
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
-        let mut button_actions = HashMap::new();
-        let mut axis_actions = HashMap::new();
-        let mut dual_axis_actions = HashMap::new();
+        let mut updated_actions = UpdatedActions::default();
 
         // Generate the base action data for each action
         for (action, _input_bindings) in self.iter_buttonlike() {
@@ -490,7 +493,7 @@ impl<A: Actionlike> InputMap<A> {
                 }
             }
 
-            button_actions.insert(action.clone(), final_state);
+            updated_actions.insert(action.clone(), UpdatedValue::Button(final_state));
         }
 
         for (action, _input_bindings) in self.iter_axislike() {
@@ -499,7 +502,7 @@ impl<A: Actionlike> InputMap<A> {
                 final_value += binding.value(input_streams);
             }
 
-            axis_actions.insert(action.clone(), final_value);
+            updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
         }
 
         for (action, _input_bindings) in self.iter_dual_axislike() {
@@ -508,39 +511,47 @@ impl<A: Actionlike> InputMap<A> {
                 final_value += binding.axis_pair(input_streams);
             }
 
-            dual_axis_actions.insert(action.clone(), final_value);
+            updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut button_actions, input_streams, clash_strategy);
+        self.handle_clashes(&mut updated_actions, input_streams, clash_strategy);
 
-        UpdatedActions {
-            button_actions,
-            axis_actions,
-            dual_axis_actions,
-        }
+        updated_actions
     }
 }
 
 /// The output returned by [`InputMap::process_actions`],
 /// used by [`ActionState::update`](crate::action_state::ActionState) to update the state of each action.
-#[derive(Debug, Clone, PartialEq)]
-pub struct UpdatedActions<A: Actionlike> {
-    /// The updated state of each buttonlike action.
-    pub button_actions: HashMap<A, bool>,
-    /// The updated state of each axislike action.
-    pub axis_actions: HashMap<A, f32>,
-    /// The updated state of each dual-axislike action.
-    pub dual_axis_actions: HashMap<A, Vec2>,
+#[derive(Debug, Clone, PartialEq, Deref, DerefMut)]
+pub struct UpdatedActions<A: Actionlike>(pub HashMap<A, UpdatedValue>);
+
+impl<A: Actionlike> UpdatedActions<A> {
+    /// Returns `true` if the action is both buttonlike and pressed.
+    pub fn pressed(&self, action: &A) -> bool {
+        match self.0.get(action) {
+            Some(UpdatedValue::Button(state)) => *state,
+            _ => false,
+        }
+    }
+}
+
+/// An enum representing the updated value of an action.
+///
+/// Used in [`UpdatedActions`] to store the updated state of each action.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum UpdatedValue {
+    /// A buttonlike action that was pressed or released.
+    Button(bool),
+    /// An axislike action that was updated.
+    Axis(f32),
+    /// A dual-axislike action that was updated.
+    DualAxis(Vec2),
 }
 
 impl<A: Actionlike> Default for UpdatedActions<A> {
     fn default() -> Self {
-        Self {
-            button_actions: Default::default(),
-            axis_actions: Default::default(),
-            dual_axis_actions: Default::default(),
-        }
+        Self(HashMap::default())
     }
 }
 

@@ -1,5 +1,6 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
+use crate::action_state::ActionKindData;
 use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
 use crate::{
     action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
@@ -250,16 +251,18 @@ impl<A: Actionlike> SummarizedActionState<A> {
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
 
-            for (action, button_data) in global_action_state.all_button_data() {
-                per_entity_button_state.insert(action.clone(), button_data.pressed());
-            }
-
-            for (action, axis_data) in global_action_state.all_axis_data() {
-                per_entity_axis_state.insert(action.clone(), axis_data.value);
-            }
-
-            for (action, dual_axis_data) in global_action_state.all_dual_axis_data() {
-                per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
+            for (action, action_data) in global_action_state.all_action_data() {
+                match &action_data.kind_data {
+                    ActionKindData::Button(button_data) => {
+                        per_entity_button_state.insert(action.clone(), button_data.pressed());
+                    }
+                    ActionKindData::Axis(axis_data) => {
+                        per_entity_axis_state.insert(action.clone(), axis_data.value);
+                    }
+                    ActionKindData::DualAxis(dual_axis_data) => {
+                        per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
+                    }
+                }
             }
 
             button_state_map.insert(Entity::PLACEHOLDER, per_entity_button_state);
@@ -272,16 +275,18 @@ impl<A: Actionlike> SummarizedActionState<A> {
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
 
-            for (action, button_data) in action_state.all_button_data() {
-                per_entity_button_state.insert(action.clone(), button_data.pressed());
-            }
-
-            for (action, axis_data) in action_state.all_axis_data() {
-                per_entity_axis_state.insert(action.clone(), axis_data.value);
-            }
-
-            for (action, dual_axis_data) in action_state.all_dual_axis_data() {
-                per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
+            for (action, action_data) in action_state.all_action_data() {
+                match &action_data.kind_data {
+                    ActionKindData::Button(button_data) => {
+                        per_entity_button_state.insert(action.clone(), button_data.pressed());
+                    }
+                    ActionKindData::Axis(axis_data) => {
+                        per_entity_axis_state.insert(action.clone(), axis_data.value);
+                    }
+                    ActionKindData::DualAxis(dual_axis_data) => {
+                        per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
+                    }
+                }
             }
 
             button_state_map.insert(entity, per_entity_button_state);
