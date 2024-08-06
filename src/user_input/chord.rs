@@ -7,11 +7,11 @@ use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
-use crate::input_streams::InputStreams;
 use crate::user_input::{Buttonlike, UserInput};
 use crate::InputControlKind;
 
 use super::keyboard::ModifierKey;
+use super::updating::CentralInputStore;
 use super::{Axislike, DualAxislike};
 
 /// A combined input that groups multiple [`Buttonlike`]s together,
@@ -143,8 +143,8 @@ impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.0.iter().all(|input| input.pressed(input_streams))
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        self.0.iter().all(|input| input.pressed(input_store))
     }
 
     fn press(&self, world: &mut World) {
@@ -223,9 +223,9 @@ impl UserInput for AxislikeChord {
 }
 
 impl Axislike for AxislikeChord {
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        if self.button.pressed(input_streams) {
-            self.axis.value(input_streams)
+    fn value(&self, input_store: &CentralInputStore) -> f32 {
+        if self.button.pressed(input_store) {
+            self.axis.value(input_store)
         } else {
             0.0
         }
@@ -278,9 +278,9 @@ impl UserInput for DualAxislikeChord {
 }
 
 impl DualAxislike for DualAxislikeChord {
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        if self.button.pressed(input_streams) {
-            self.dual_axis.axis_pair(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+        if self.button.pressed(input_store) {
+            self.dual_axis.axis_pair(input_store)
         } else {
             Vec2::ZERO
         }
@@ -360,7 +360,7 @@ mod tests {
         // No keys pressed, resulting in a released chord with a value of zero.
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
         assert!(!chord.pressed(&inputs));
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
@@ -369,7 +369,7 @@ mod tests {
             key.press(app.world_mut());
         }
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
         assert!(chord.pressed(&inputs));
 
         // Some required keys pressed, but not all required keys for the chord,
@@ -380,7 +380,7 @@ mod tests {
                 key.press(app.world_mut());
             }
             app.update();
-            let inputs = InputStreams::from_world(app.world(), None);
+            let inputs = CentralInputStore::from_world(app.world_mut());
             assert!(!chord.pressed(&inputs));
         }
 
@@ -392,7 +392,7 @@ mod tests {
         }
         KeyCode::KeyB.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
         assert!(!chord.pressed(&inputs));
     }
 }

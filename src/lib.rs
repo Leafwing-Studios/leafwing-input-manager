@@ -18,7 +18,6 @@ pub mod clashing_inputs;
 pub mod common_conditions;
 pub mod input_map;
 pub mod input_processing;
-pub mod input_streams;
 pub mod plugin;
 pub mod systems;
 

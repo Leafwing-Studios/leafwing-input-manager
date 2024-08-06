@@ -10,7 +10,6 @@ use crate as leafwing_input_manager;
 use crate::axislike::{DualAxisDirection, DualAxisType};
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::*;
-use crate::input_streams::InputStreams;
 use crate::user_input::{InputControlKind, UserInput};
 
 use super::updating::{CentralInputStore, UpdatableInput};
@@ -49,10 +48,8 @@ impl UpdatableInput for MouseButton {
 impl Buttonlike for MouseButton {
     /// Checks if the specified button is currently pressed down.
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .mouse_buttons
-            .is_some_and(|buttons| buttons.pressed(*self))
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        input_store.pressed(self)
     }
 
     /// Sends a fake [`MouseButtonInput`] event to the world with [`ButtonState::Pressed`].
@@ -153,8 +150,8 @@ impl Buttonlike for MouseMoveDirection {
     /// Checks if there is any recent mouse movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let mouse_movement = input_streams.mouse_motion.0;
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        let mouse_movement = input_store.pair(&MouseMove::default());
         self.0.is_active(mouse_movement)
     }
 
@@ -252,8 +249,8 @@ impl Axislike for MouseMoveAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = input_streams.mouse_motion.0;
+    fn value(&self, input_store: &CentralInputStore) -> f32 {
+        let movement = input_store.pair(&MouseMove::default());
         let value = self.axis.get_value(movement);
         self.processors
             .iter()
@@ -337,8 +334,8 @@ impl MouseMove {
     /// Retrieves the current X and Y values of the movement after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let movement = input_streams.mouse_motion.0;
+    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
+        let movement = input_store.pair(&MouseMove::default());
         self.processors
             .iter()
             .fold(movement, |value, processor| processor.process(value))
@@ -380,8 +377,8 @@ impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        self.processed_value(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+        self.processed_value(input_store)
     }
 
     /// Sends a [`MouseMotion`] event with the specified displacement.
@@ -484,8 +481,8 @@ impl Buttonlike for MouseScrollDirection {
     /// Checks if there is any recent mouse wheel movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let movement = input_streams.mouse_scroll.0;
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        let movement = input_store.pair(&MouseScroll::default());
         self.0.is_active(movement)
     }
 
@@ -590,8 +587,8 @@ impl Axislike for MouseScrollAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let movement = input_streams.mouse_scroll.0;
+    fn value(&self, input_store: &CentralInputStore) -> f32 {
+        let movement = input_store.pair(&MouseScroll::default());
         let value = self.axis.get_value(movement);
         self.processors
             .iter()
@@ -685,8 +682,8 @@ impl MouseScroll {
     /// Retrieves the current X and Y values of the movement after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let movement = input_streams.mouse_scroll.0;
+    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
+        let movement = input_store.pair(&MouseScroll::default());
         self.processors
             .iter()
             .fold(movement, |value, processor| processor.process(value))
@@ -728,8 +725,8 @@ impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        self.processed_value(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+        self.processed_value(input_store)
     }
 
     /// Sends a [`MouseWheel`] event with the specified displacement in pixels.
@@ -848,7 +845,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!left.pressed(&inputs));
         assert!(!middle.pressed(&inputs));
@@ -858,7 +855,7 @@ mod tests {
         let mut app = test_app();
         MouseButton::Left.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(left.pressed(&inputs));
         assert!(!middle.pressed(&inputs));
@@ -868,7 +865,7 @@ mod tests {
         let mut app = test_app();
         MouseButton::Middle.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!left.pressed(&inputs));
         assert!(middle.pressed(&inputs));
@@ -878,7 +875,7 @@ mod tests {
         let mut app = test_app();
         MouseButton::Right.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!left.pressed(&inputs));
         assert!(!middle.pressed(&inputs));
@@ -899,7 +896,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), 0.0);
@@ -910,7 +907,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveDirection::LEFT.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), 0.0);
@@ -921,7 +918,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveDirection::UP.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
@@ -932,7 +929,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveDirection::DOWN.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
@@ -943,7 +940,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveAxis::Y.set_value(app.world_mut(), data.y);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
@@ -954,7 +951,7 @@ mod tests {
         let mut app = test_app();
         MouseMove::default().set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(mouse_move_up.pressed(&inputs));
         assert_eq!(mouse_move_y.value(&inputs), data.y);
@@ -974,7 +971,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), 0.0);
@@ -985,7 +982,7 @@ mod tests {
         let mut app = test_app();
         MouseScrollDirection::UP.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
@@ -996,7 +993,7 @@ mod tests {
         let mut app = test_app();
         MouseScrollDirection::DOWN.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
@@ -1007,7 +1004,7 @@ mod tests {
         let mut app = test_app();
         MouseScrollAxis::Y.set_value(app.world_mut(), data.y);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
@@ -1018,7 +1015,7 @@ mod tests {
         let mut app = test_app();
         MouseScroll::default().set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(mouse_scroll_up.pressed(&inputs));
         assert_eq!(mouse_scroll_y.value(&inputs), data.y);
@@ -1046,17 +1043,17 @@ mod tests {
         let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMovement>();
         assert_eq!(accumulated_mouse_movement.0, Vec2::new(0.0, 5.0));
 
-        let inputs = InputStreams::from_world(app.world(), None);
-        assert_eq!(inputs.mouse_motion.0, Vec2::new(0.0, 5.0));
+        let inputs = CentralInputStore::from_world(app.world_mut());
+        assert_eq!(inputs.pair(&MouseMove::default()), Vec2::new(0.0, 5.0));
     }
 
     #[test]
     fn multiple_frames_accumulate_mouse_movement() {
         let mut app = test_app();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
         // Starts at 0
         assert_eq!(
-            inputs.mouse_motion.0,
+            inputs.pair(&MouseMove::default()),
             Vec2::ZERO,
             "Initial movement is not zero."
         );
@@ -1066,20 +1063,20 @@ mod tests {
         // Wait for the events to be processed
         app.update();
 
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
         // Data is read
         assert_eq!(
-            inputs.mouse_motion.0,
+            inputs.pair(&MouseMove::default()),
             Vec2::new(0.0, 3.0),
             "Movement sent was not read correctly."
         );
 
         // Do nothing
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
         // Back to 0 for this frame
         assert_eq!(
-            inputs.mouse_motion.0,
+            inputs.pair(&MouseMove::default()),
             Vec2::ZERO,
             "No movement was expected. Is the position in the event stream being cleared properly?"
         );

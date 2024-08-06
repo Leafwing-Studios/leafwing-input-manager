@@ -81,9 +81,9 @@ use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
 use serde::Serialize;
+use updating::CentralInputStore;
 
 use crate::clashing_inputs::BasicInputs;
-use crate::input_streams::InputStreams;
 use crate::InputControlKind;
 
 pub use self::chord::*;
@@ -113,7 +113,7 @@ pub mod updating;
 /// use bevy::math::{Vec2, FloatOrd};
 /// use serde::{Deserialize, Serialize};
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::input_streams::InputStreams;
+/// use leafwing_input_manager::input_store::InputStreams;
 /// use leafwing_input_manager::axislike::{DualAxisType};
 /// use leafwing_input_manager::clashing_inputs::BasicInputs;
 ///
@@ -161,11 +161,11 @@ pub trait UserInput:
 /// A trait used for buttonlike user inputs, which can be pressed or released.
 pub trait Buttonlike: UserInput {
     /// Checks if the input is currently active.
-    fn pressed(&self, input_streams: &InputStreams) -> bool;
+    fn pressed(&self, input_store: &CentralInputStore) -> bool;
 
     /// Checks if the input is currently inactive.
-    fn released(&self, input_streams: &InputStreams) -> bool {
-        !self.pressed(input_streams)
+    fn released(&self, input_store: &CentralInputStore) -> bool {
+        !self.pressed(input_store)
     }
 
     /// Simulates a press of the buttonlike input by sending the appropriate event.
@@ -210,7 +210,7 @@ pub trait Buttonlike: UserInput {
 /// A trait used for axis-like user inputs, which provide a continuous value.
 pub trait Axislike: UserInput {
     /// Gets the current value of the input as an `f32`.
-    fn value(&self, input_streams: &InputStreams) -> f32;
+    fn value(&self, input_store: &CentralInputStore) -> f32;
 
     /// Simulate an axis-like input by sending the appropriate event.
     ///
@@ -235,7 +235,7 @@ pub trait Axislike: UserInput {
 /// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
 pub trait DualAxislike: UserInput {
     /// Gets the values of this input along the X and Y axes (if applicable).
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2;
+    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2;
 
     /// Simulate a dual-axis-like input by sending the appropriate event.
     ///

@@ -12,7 +12,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
-use crate::input_streams::InputStreams;
+use crate::prelude::updating::CentralInputStore;
 use crate::prelude::UserInputWrapper;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::{Actionlike, InputControlKind};
@@ -450,10 +450,10 @@ impl<A: Actionlike> InputMap<A> {
     pub fn pressed(
         &self,
         action: &A,
-        input_streams: &InputStreams,
+        input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let processed_actions = self.process_actions(input_streams, clash_strategy);
+        let processed_actions = self.process_actions(input_store, clash_strategy);
 
         let Some(updated_value) = processed_actions.get(action) else {
             return false;
@@ -478,7 +478,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn process_actions(
         &self,
-        input_streams: &InputStreams,
+        input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
         let mut updated_actions = UpdatedActions::default();
@@ -487,7 +487,7 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_buttonlike() {
             let mut final_state = false;
             for binding in _input_bindings {
-                if binding.pressed(input_streams) {
+                if binding.pressed(input_store) {
                     final_state = true;
                     break;
                 }
@@ -499,7 +499,7 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_axislike() {
             let mut final_value = 0.0;
             for binding in _input_bindings {
-                final_value += binding.value(input_streams);
+                final_value += binding.value(input_store);
             }
 
             updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
@@ -508,14 +508,14 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_dual_axislike() {
             let mut final_value = Vec2::ZERO;
             for binding in _input_bindings {
-                final_value += binding.axis_pair(input_streams);
+                final_value += binding.axis_pair(input_store);
             }
 
             updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut updated_actions, input_streams, clash_strategy);
+        self.handle_clashes(&mut updated_actions, input_store, clash_strategy);
 
         updated_actions
     }

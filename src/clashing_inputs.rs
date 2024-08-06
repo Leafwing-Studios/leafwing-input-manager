@@ -10,7 +10,7 @@ use bevy::prelude::Resource;
 use serde::{Deserialize, Serialize};
 
 use crate::input_map::{InputMap, UpdatedActions};
-use crate::input_streams::InputStreams;
+use crate::prelude::updating::CentralInputStore;
 use crate::user_input::Buttonlike;
 use crate::{Actionlike, InputControlKind};
 
@@ -173,12 +173,12 @@ impl<A: Actionlike> InputMap<A> {
     pub fn handle_clashes(
         &self,
         updated_actions: &mut UpdatedActions<A>,
-        input_streams: &InputStreams,
+        input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) {
-        for clash in self.get_clashes(updated_actions, input_streams) {
+        for clash in self.get_clashes(updated_actions, input_store) {
             // Remove the action in the pair that was overruled, if any
-            if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_streams) {
+            if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_store) {
                 updated_actions.remove(&culled_action);
             }
         }
@@ -206,7 +206,7 @@ impl<A: Actionlike> InputMap<A> {
     fn get_clashes(
         &self,
         updated_actions: &UpdatedActions<A>,
-        input_streams: &InputStreams,
+        input_store: &CentralInputStore,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -219,7 +219,7 @@ impl<A: Actionlike> InputMap<A> {
             // This is not strictly necessary, but saves work
             if pressed_a && pressed_b {
                 // Check if the potential clash occurred based on the pressed inputs
-                if let Some(clash) = check_clash(&clash, input_streams) {
+                if let Some(clash) = check_clash(&clash, input_store) {
                     clashes.push(clash)
                 }
             }
@@ -301,24 +301,27 @@ impl<A: Actionlike> Clash<A> {
     }
 }
 
-/// Given the `input_streams`, does the provided clash actually occur?
+/// Given the `input_store`, does the provided clash actually occur?
 ///
 /// Returns `Some(clash)` if they are clashing, and `None` if they are not.
 #[must_use]
-fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) -> Option<Clash<A>> {
+fn check_clash<A: Actionlike>(
+    clash: &Clash<A>,
+    input_store: &CentralInputStore,
+) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = clash.clone();
 
     // For all inputs actually pressed that match action A
     for input_a in clash
         .inputs_a
         .iter()
-        .filter(|&input| input.pressed(input_streams))
+        .filter(|&input| input.pressed(input_store))
     {
         // For all inputs actually pressed that match action B
         for input_b in clash
             .inputs_b
             .iter()
-            .filter(|&input| input.pressed(input_streams))
+            .filter(|&input| input.pressed(input_store))
         {
             // If a clash was detected
             if input_a.decompose().clashes_with(&input_b.decompose()) {
@@ -337,20 +340,20 @@ fn check_clash<A: Actionlike>(clash: &Clash<A>, input_streams: &InputStreams) ->
 fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: ClashStrategy,
-    input_streams: &InputStreams,
+    input_store: &CentralInputStore,
 ) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_a
         .iter()
-        .filter(|input| input.pressed(input_streams))
+        .filter(|input| input.pressed(input_store))
         .map(|input| input.as_ref())
         .collect();
 
     let reasons_b_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_b
         .iter()
-        .filter(|input| input.pressed(input_streams))
+        .filter(|input| input.pressed(input_store))
         .map(|input| input.as_ref())
         .collect();
 
@@ -581,7 +584,7 @@ mod tests {
                 resolve_clash(
                     &simple_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &InputStreams::from_world(app.world(), None),
+                    &CentralInputStore::from_world(app.world_mut()),
                 ),
                 Some(One)
             );
@@ -591,7 +594,7 @@ mod tests {
                 resolve_clash(
                     &reversed_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &InputStreams::from_world(app.world(), None),
+                    &CentralInputStore::from_world(app.world_mut()),
                 ),
                 Some(One)
             );
@@ -602,14 +605,10 @@ mod tests {
             Digit3.press(app.world_mut());
             app.update();
 
-            let input_streams = InputStreams::from_world(app.world(), None);
+            let input_store = CentralInputStore::from_world(app.world_mut());
 
             assert_eq!(
-                resolve_clash(
-                    &chord_clash,
-                    ClashStrategy::PrioritizeLongest,
-                    &input_streams,
-                ),
+                resolve_clash(&chord_clash, ClashStrategy::PrioritizeLongest, &input_store,),
                 Some(OneAndTwo)
             );
         }
@@ -634,7 +633,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut updated_actions,
-                &InputStreams::from_world(app.world(), None),
+                &CentralInputStore::from_world(app.world_mut()),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -686,7 +685,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut updated_actions,
-                &InputStreams::from_world(app.world(), None),
+                &CentralInputStore::from_world(app.world_mut()),
                 ClashStrategy::PrioritizeLongest,
             );
 
@@ -712,7 +711,7 @@ mod tests {
             app.update();
 
             let action_data = input_map.process_actions(
-                &InputStreams::from_world(app.world(), None),
+                &CentralInputStore::from_world(app.world_mut()),
                 ClashStrategy::PrioritizeLongest,
             );
 

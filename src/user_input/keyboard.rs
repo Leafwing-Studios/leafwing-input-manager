@@ -12,7 +12,6 @@ use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
     WithDualAxisProcessingPipelineExt,
 };
-use crate::input_streams::InputStreams;
 use crate::user_input::{ButtonlikeChord, UserInput};
 use crate::InputControlKind;
 
@@ -53,10 +52,8 @@ impl Buttonlike for KeyCode {
     /// Checks if the specified key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keys| keys.pressed(*self))
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        input_store.pressed(self)
     }
 
     /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
@@ -175,10 +172,8 @@ impl Buttonlike for ModifierKey {
     /// Checks if the specified modifier key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keycodes| keycodes.any_pressed(self.keycodes()))
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        input_store.pressed(&self.left()) || input_store.pressed(&self.right())
     }
 
     /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
@@ -346,13 +341,9 @@ impl Axislike for KeyboardVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let Some(keycodes) = input_streams.keycodes else {
-            return 0.0;
-        };
-
-        let negative = f32::from(keycodes.pressed(self.negative));
-        let positive = f32::from(keycodes.pressed(self.positive));
+    fn value(&self, input_store: &CentralInputStore) -> f32 {
+        let negative = f32::from(input_store.pressed(&self.negative));
+        let positive = f32::from(input_store.pressed(&self.positive));
         let value = positive - negative;
         self.processors
             .iter()
@@ -511,15 +502,11 @@ impl KeyboardVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let Some(keycodes) = input_streams.keycodes else {
-            return Vec2::ZERO;
-        };
-
-        let up = f32::from(keycodes.pressed(self.up));
-        let down = f32::from(keycodes.pressed(self.down));
-        let left = f32::from(keycodes.pressed(self.left));
-        let right = f32::from(keycodes.pressed(self.right));
+    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
+        let up = f32::from(input_store.pressed(&self.up));
+        let down = f32::from(input_store.pressed(&self.down));
+        let left = f32::from(input_store.pressed(&self.left));
+        let right = f32::from(input_store.pressed(&self.right));
         let value = Vec2::new(right - left, up - down);
         self.processors
             .iter()
@@ -551,8 +538,8 @@ impl DualAxislike for KeyboardVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        self.processed_value(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+        self.processed_value(input_store)
     }
 
     /// Presses the corresponding buttons based on the quadrant of the given value.
@@ -628,7 +615,7 @@ mod tests {
         let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(!left.pressed(&inputs));
@@ -641,7 +628,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(up.pressed(&inputs));
         assert!(!left.pressed(&inputs));
@@ -654,7 +641,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::ArrowDown.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(!left.pressed(&inputs));
@@ -667,7 +654,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::ArrowLeft.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(left.pressed(&inputs));
@@ -680,7 +667,7 @@ mod tests {
         KeyCode::ArrowDown.press(app.world_mut());
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(up.pressed(&inputs));
         assert!(!left.pressed(&inputs));
@@ -694,7 +681,7 @@ mod tests {
         KeyCode::ArrowLeft.press(app.world_mut());
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(up.pressed(&inputs));
         assert!(left.pressed(&inputs));
@@ -706,7 +693,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::AltLeft.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(!left.pressed(&inputs));
@@ -718,7 +705,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::AltRight.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(!left.pressed(&inputs));

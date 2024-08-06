@@ -8,7 +8,7 @@ use leafwing_input_manager::input_map::UpdatedActions;
 use leafwing_input_manager::plugin::AccumulatorPlugin;
 use leafwing_input_manager::prelude::Buttonlike;
 use leafwing_input_manager::{
-    input_streams::InputStreams,
+    input_store::InputStreams,
     prelude::{ClashStrategy, InputMap},
     Actionlike,
 };
@@ -59,11 +59,11 @@ fn construct_input_map_from_chained_calls() -> InputMap<TestAction> {
 }
 
 fn which_pressed(
-    input_streams: &InputStreams,
+    input_store: &CentralInputStore,
     clash_strategy: ClashStrategy,
 ) -> UpdatedActions<TestAction> {
     let input_map = construct_input_map_from_iter();
-    input_map.process_actions(input_streams, clash_strategy)
+    input_map.process_actions(input_store, clash_strategy)
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -82,11 +82,11 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     KeyCode::KeyB.press(app.world_mut());
     app.update();
 
-    let input_streams = InputStreams::from_world(app.world(), None);
+    let input_store = CentralInputStore::from_world(app.world_mut());
 
     for clash_strategy in ClashStrategy::variants() {
         which_pressed_group.bench_function(format!("{:?}", clash_strategy), |b| {
-            b.iter(|| which_pressed(&input_streams, *clash_strategy))
+            b.iter(|| which_pressed(&input_store, *clash_strategy))
         });
     }
     which_pressed_group.finish();

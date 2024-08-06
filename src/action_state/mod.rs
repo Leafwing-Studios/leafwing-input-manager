@@ -984,8 +984,8 @@ mod tests {
     use crate::action_state::ActionState;
     use crate::clashing_inputs::ClashStrategy;
     use crate::input_map::InputMap;
-    use crate::input_streams::InputStreams;
     use crate::plugin::AccumulatorPlugin;
+    use crate::prelude::updating::CentralInputStore;
     use crate::prelude::{Buttonlike, ButtonlikeChord};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
@@ -1016,8 +1016,8 @@ mod tests {
         input_map.insert(Action::Run, KeyCode::KeyR);
 
         // Starting state
-        let input_streams = InputStreams::from_world(app.world(), None);
-        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
+        let input_store = CentralInputStore::from_world(app.world_mut());
+        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
 
         println!(
             "Initialized button data: {:?}",
@@ -1033,9 +1033,9 @@ mod tests {
         KeyCode::KeyR.press(app.world_mut());
         // Process the input events into Input<KeyCode> data
         app.update();
-        let input_streams = InputStreams::from_world(app.world(), None);
+        let input_store = CentralInputStore::from_world(app.world_mut());
 
-        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(action_state.just_pressed(&Action::Run));
@@ -1044,7 +1044,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1054,9 +1054,9 @@ mod tests {
         // Releasing
         KeyCode::KeyR.release(app.world_mut());
         app.update();
-        let input_streams = InputStreams::from_world(app.world(), None);
+        let input_store = CentralInputStore::from_world(app.world_mut());
 
-        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1065,7 +1065,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.process_actions(&input_streams, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1097,9 +1097,9 @@ mod tests {
         let mut action_state = ActionState::<Action>::default();
 
         // Starting state
-        let input_streams = InputStreams::from_world(app.world(), None);
+        let input_store = CentralInputStore::from_world(app.world_mut());
         action_state
-            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
         assert!(action_state.released(&Action::One));
         assert!(action_state.released(&Action::Two));
         assert!(action_state.released(&Action::OneAndTwo));
@@ -1107,10 +1107,10 @@ mod tests {
         // Pressing One
         Digit1.press(app.world_mut());
         app.update();
-        let input_streams = InputStreams::from_world(app.world(), None);
+        let input_store = CentralInputStore::from_world(app.world_mut());
 
         action_state
-            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
 
         assert!(action_state.pressed(&Action::One));
         assert!(action_state.released(&Action::Two));
@@ -1119,7 +1119,7 @@ mod tests {
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state
-            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
 
         assert!(action_state.pressed(&Action::One));
         assert!(action_state.released(&Action::Two));
@@ -1128,10 +1128,10 @@ mod tests {
         // Pressing Two
         Digit2.press(app.world_mut());
         app.update();
-        let input_streams = InputStreams::from_world(app.world(), None);
+        let input_store = CentralInputStore::from_world(app.world_mut());
 
         action_state
-            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
 
         // Now only the longest OneAndTwo has been pressed,
         // while both One and Two have been released
@@ -1142,7 +1142,7 @@ mod tests {
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state
-            .update(input_map.process_actions(&input_streams, ClashStrategy::PrioritizeLongest));
+            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
 
         assert!(action_state.released(&Action::One));
         assert!(action_state.released(&Action::Two));

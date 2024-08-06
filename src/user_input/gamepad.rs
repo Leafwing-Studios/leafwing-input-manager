@@ -16,7 +16,6 @@ use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
     WithDualAxisProcessingPipelineExt,
 };
-use crate::input_streams::InputStreams;
 use crate::user_input::UserInput;
 use crate::InputControlKind;
 
@@ -38,22 +37,9 @@ pub fn find_gamepad(world: &World) -> Gamepad {
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
 #[inline]
-fn read_axis_value(input_streams: &InputStreams, axis: GamepadAxisType) -> f32 {
-    let gamepad_value_self = |gamepad: Gamepad| -> Option<f32> {
-        let axis = GamepadAxis::new(gamepad, axis);
-        input_streams.gamepad_axes.get(axis)
-    };
-
-    if let Some(gamepad) = input_streams.associated_gamepad {
-        gamepad_value_self(gamepad).unwrap_or_default()
-    } else {
-        input_streams
-            .gamepads
-            .iter()
-            .filter_map(gamepad_value_self)
-            .find(|value| *value != 0.0)
-            .unwrap_or_default()
-    }
+fn read_axis_value(input_store: &CentralInputStore, axis: GamepadAxisType) -> f32 {
+    let axis = GamepadAxis::new(gamepad, axis);
+    input_store.value(&axis)
 }
 
 /// Provides button-like behavior for a specific direction on a [`GamepadAxisType`].
@@ -160,8 +146,8 @@ impl Buttonlike for GamepadControlDirection {
     /// Checks if there is any recent stick movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        let value = read_axis_value(input_streams, self.axis);
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        let value = read_axis_value(input_store, self.axis);
         self.side.is_active(value)
     }
 
@@ -222,8 +208,8 @@ impl UserInput for GamepadAxis {
 }
 
 impl Axislike for GamepadAxis {
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        read_axis_value(input_streams, self.axis_type)
+    fn value(&self, input_store: &CentralInputStore) -> f32 {
+        read_axis_value(input_store, self.axis_type)
     }
 }
 
@@ -326,8 +312,8 @@ impl Axislike for GamepadControlAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let value = read_axis_value(input_streams, self.axis);
+    fn value(&self, input_store: &CentralInputStore) -> f32 {
+        let value = read_axis_value(input_store, self.axis);
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
@@ -434,9 +420,9 @@ impl GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let x = read_axis_value(input_streams, self.x);
-        let y = read_axis_value(input_streams, self.y);
+    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
+        let x = read_axis_value(input_store, self.x);
+        let y = read_axis_value(input_store, self.y);
         self.processors
             .iter()
             .fold(Vec2::new(x, y), |value, processor| processor.process(value))
@@ -467,8 +453,8 @@ impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        self.processed_value(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+        self.processed_value(input_store)
     }
 
     /// Sends a [`GamepadEvent::Axis`] event with the specified values on the provided [`Gamepad`].
@@ -518,29 +504,29 @@ impl WithDualAxisProcessingPipelineExt for GamepadStick {
 #[must_use]
 #[inline]
 fn button_pressed(
-    input_streams: &InputStreams,
+    input_store: &CentralInputStore,
     gamepad: Gamepad,
     button: GamepadButtonType,
 ) -> bool {
     let button = GamepadButton::new(gamepad, button);
-    input_streams.gamepad_buttons.pressed(button)
+    input_store.pressed(&button)
 }
 
 /// Checks if the given [`GamepadButtonType`] is currently pressed.
 #[must_use]
 #[inline]
-fn button_pressed_any(input_streams: &InputStreams, button: GamepadButtonType) -> bool {
-    input_streams
+fn button_pressed_any(input_store: &CentralInputStore, button: GamepadButtonType) -> bool {
+    input_store
         .gamepads
         .iter()
-        .any(|gamepad| button_pressed(input_streams, gamepad, button))
+        .any(|gamepad| button_pressed(input_store, gamepad, button))
 }
 
 /// Retrieves the current value of the given [`GamepadButtonType`].
 #[must_use]
 #[inline]
 fn button_value(
-    input_streams: &InputStreams,
+    input_store: &CentralInputStore,
     gamepad: Gamepad,
     button: GamepadButtonType,
 ) -> Option<f32> {
@@ -548,19 +534,19 @@ fn button_value(
     // because the upstream bevy::input still waffles about whether triggers are buttons or axes.
     // So, we consider the axes for consistency with other gamepad axes (e.g., thumb sticks).
     let button = GamepadButton::new(gamepad, button);
-    input_streams.gamepad_button_axes.get(button)
+    input_store.gamepad_button_axes.get(button)
 }
 
 /// Retrieves the current value of the given [`GamepadButtonType`] on any connected gamepad.
 #[must_use]
 #[inline]
-fn button_value_any(input_streams: &InputStreams, button: GamepadButtonType) -> f32 {
-    for gamepad in input_streams.gamepads.iter() {
-        if let Some(value) = button_value(input_streams, gamepad, button) {
+fn button_value_any(input_store: &CentralInputStore, button: GamepadButtonType) -> f32 {
+    for gamepad in input_store.gamepads.iter() {
+        if let Some(value) = button_value(input_store, gamepad, button) {
             return value;
         }
     }
-    f32::from(button_pressed_any(input_streams, button))
+    f32::from(button_pressed_any(input_store, button))
 }
 
 impl UpdatableInput for GamepadButton {
@@ -590,8 +576,8 @@ impl UserInput for GamepadButton {
 }
 
 impl Buttonlike for GamepadButton {
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        button_pressed(input_streams, self.gamepad, self.button_type)
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        button_pressed(input_store, self.gamepad, self.button_type)
     }
 
     fn press(&self, world: &mut World) {
@@ -634,11 +620,11 @@ impl Buttonlike for GamepadButtonType {
     /// Checks if the specified button is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        if let Some(gamepad) = input_streams.associated_gamepad {
-            button_pressed(input_streams, gamepad, *self)
+    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+        if let Some(gamepad) = input_store.associated_gamepad {
+            button_pressed(input_store, gamepad, *self)
         } else {
-            button_pressed_any(input_streams, *self)
+            button_pressed_any(input_store, *self)
         }
     }
 
@@ -778,14 +764,14 @@ impl Axislike for GamepadVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let value = if let Some(gamepad) = input_streams.associated_gamepad {
-            let negative = button_value(input_streams, gamepad, self.negative).unwrap_or_default();
-            let positive = button_value(input_streams, gamepad, self.positive).unwrap_or_default();
+    fn value(&self, input_store: &CentralInputStore) -> f32 {
+        let value = if let Some(gamepad) = input_store.associated_gamepad {
+            let negative = button_value(input_store, gamepad, self.negative).unwrap_or_default();
+            let positive = button_value(input_store, gamepad, self.positive).unwrap_or_default();
             positive - negative
         } else {
-            let negative = button_value_any(input_streams, self.negative);
-            let positive = button_value_any(input_streams, self.positive);
+            let negative = button_value_any(input_store, self.negative);
+            let positive = button_value_any(input_store, self.positive);
             positive - negative
         };
         self.processors
@@ -935,18 +921,18 @@ impl GamepadVirtualDPad {
 
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[inline]
-    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let value = if let Some(gamepad) = input_streams.associated_gamepad {
-            let up = button_value(input_streams, gamepad, self.up).unwrap_or_default();
-            let down = button_value(input_streams, gamepad, self.down).unwrap_or_default();
-            let left = button_value(input_streams, gamepad, self.left).unwrap_or_default();
-            let right = button_value(input_streams, gamepad, self.right).unwrap_or_default();
+    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
+        let value = if let Some(gamepad) = input_store.associated_gamepad {
+            let up = button_value(input_store, gamepad, self.up).unwrap_or_default();
+            let down = button_value(input_store, gamepad, self.down).unwrap_or_default();
+            let left = button_value(input_store, gamepad, self.left).unwrap_or_default();
+            let right = button_value(input_store, gamepad, self.right).unwrap_or_default();
             Vec2::new(right - left, up - down)
         } else {
-            let up = button_value_any(input_streams, self.up);
-            let down = button_value_any(input_streams, self.down);
-            let left = button_value_any(input_streams, self.left);
-            let right = button_value_any(input_streams, self.right);
+            let up = button_value_any(input_store, self.up);
+            let down = button_value_any(input_store, self.down);
+            let left = button_value_any(input_store, self.left);
+            let right = button_value_any(input_store, self.right);
             Vec2::new(right - left, up - down)
         };
         self.processors
@@ -979,8 +965,8 @@ impl DualAxislike for GamepadVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        self.processed_value(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+        self.processed_value(input_store)
     }
 
     /// Presses the corresponding buttons on the provided [`Gamepad`] based on the quadrant of the given value.
@@ -1088,7 +1074,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!left_up.pressed(&inputs));
         assert!(!left_down.pressed(&inputs));
@@ -1104,7 +1090,7 @@ mod tests {
         let mut app = test_app();
         GamepadControlDirection::LEFT_UP.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(left_up.pressed(&inputs));
         assert!(!left_down.pressed(&inputs));
@@ -1120,7 +1106,7 @@ mod tests {
         let mut app = test_app();
         GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), data.y);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(left_up.pressed(&inputs));
         assert!(!left_down.pressed(&inputs));
@@ -1136,7 +1122,7 @@ mod tests {
         let mut app = test_app();
         GamepadStick::LEFT.set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(left_up.pressed(&inputs));
         assert!(!left_down.pressed(&inputs));
@@ -1176,7 +1162,7 @@ mod tests {
         let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(!left.pressed(&inputs));
@@ -1191,7 +1177,7 @@ mod tests {
         let mut app = test_app();
         GamepadButtonType::DPadLeft.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(left.pressed(&inputs));
@@ -1206,7 +1192,7 @@ mod tests {
         let mut app = test_app();
         GamepadVirtualAxis::DPAD_X.set_value(app.world_mut(), data.x);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(left.pressed(&inputs));
@@ -1221,7 +1207,7 @@ mod tests {
         let mut app = test_app();
         GamepadVirtualDPad::DPAD.set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = CentralInputStore::from_world(app.world_mut());
 
         assert!(!up.pressed(&inputs));
         assert!(left.pressed(&inputs));

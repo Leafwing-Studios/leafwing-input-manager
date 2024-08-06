@@ -2,7 +2,7 @@ use bevy::ecs::system::SystemState;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
-use leafwing_input_manager::input_streams::InputStreams;
+use leafwing_input_manager::input_store::InputStreams;
 use leafwing_input_manager::prelude::*;
 
 fn test_app() -> App {
@@ -96,12 +96,12 @@ impl ClashTestExt for App {
         for action in Action::variants() {
             if pressed_actions.contains(action) {
                 assert!(
-                    input_map.pressed(action, &InputStreams::from_world(self.world(), None), clash_strategy),
+                    input_map.pressed(action, &CentralInputStore::from_world(self.world(), None), clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(action, &InputStreams::from_world(self.world(), None), clash_strategy),
+                    !input_map.pressed(action, &CentralInputStore::from_world(self.world(), None), clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }

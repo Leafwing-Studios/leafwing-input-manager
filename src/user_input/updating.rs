@@ -7,6 +7,7 @@ use bevy::{
     math::Vec2,
     prelude::{
         GamepadAxis, GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
+        World,
     },
     utils::{HashMap, HashSet},
 };
@@ -162,6 +163,15 @@ impl CentralInputStore {
             .get(dualaxislike)
             .copied()
             .unwrap_or(Vec2::ZERO)
+    }
+
+    /// Quickly generates a [`CentralInputStore`] from the current state of the world.
+    ///
+    /// This is primarily useful for testing purposes.
+    pub fn from_world(world: &mut World) -> Self {
+        world.init_resource::<Self>();
+
+        world.remove_resource::<Self>().unwrap()
     }
 }
 
