@@ -99,6 +99,7 @@ pub mod mouse;
 pub mod testing_utils;
 mod trait_reflection;
 mod trait_serde;
+pub mod updating;
 
 /// A trait for defining the behavior expected from different user input sources.
 ///

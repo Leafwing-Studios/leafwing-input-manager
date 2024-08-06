@@ -12,6 +12,7 @@ use bevy::reflect::TypePath;
 use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
+use updating::CentralInputStore;
 
 use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
@@ -99,6 +100,10 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 // TODO: this should be part of `bevy_input`
                 if !app.is_plugin_added::<AccumulatorPlugin>() {
                     app.add_plugins(AccumulatorPlugin);
+                }
+
+                if !app.is_plugin_added::<CentralInputStorePlugin>() {
+                    app.add_plugins(CentralInputStorePlugin);
                 }
 
                 // Main schedule
@@ -262,5 +267,22 @@ impl Plugin for AccumulatorPlugin {
                 .after(InputSystem)
                 .before(InputManagerSystem::Update),
         );
+    }
+}
+
+/// A plugin that keeps track of all inputs in a central store.
+///
+/// This plugin is added by default by [`InputManagerPlugin`],
+/// and will register all of the standard [`UserInput`]s.
+///
+/// To add more inputs, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+pub struct CentralInputStorePlugin;
+
+impl Plugin for CentralInputStorePlugin {
+    fn build(&self, app: &mut App) {
+        let mut central_input_store = CentralInputStore::default();
+        central_input_store.register_standard_input_kinds(app);
+
+        app.insert_resource(central_input_store);
     }
 }
