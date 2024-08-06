@@ -51,7 +51,8 @@ fn mouse_scroll_discrete_mocking() {
     let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 0);
 
-    app.press_input(MouseScrollDirection::UP);
+    MouseScrollDirection::UP.press(app.world_mut());
+
     let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
 
     assert_eq!(events.drain().count(), 1);
@@ -64,24 +65,10 @@ fn mouse_scroll_single_axis_mocking() {
     assert_eq!(events.drain().count(), 0);
 
     let input = MouseScrollAxis::X;
-    app.send_axis_values(input, [-1.0]);
+    input.set_value(app.world_mut(), -1.0);
 
     let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
     assert_eq!(events.drain().count(), 1);
-}
-
-#[test]
-fn mouse_scroll_dual_axis_mocking() {
-    let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
-    assert_eq!(events.drain().count(), 0);
-
-    let input = MouseScroll::default();
-    app.send_axis_values(input, [-1.0]);
-
-    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
-    // Dual axis events are split out
-    assert_eq!(events.drain().count(), 2);
 }
 
 #[test]
@@ -107,7 +94,7 @@ fn mouse_scroll_buttonlike() {
             .downcast_ref::<MouseScrollDirection>()
             .unwrap();
 
-        app.press_input(*direction);
+        direction.press(app.world_mut());
         app.update();
 
         let action_state = app.world().resource::<ActionState<ButtonlikeTestAction>>();
@@ -125,8 +112,8 @@ fn mouse_scroll_buttonlike_cancels() {
         (ButtonlikeTestAction::Right, MouseScrollDirection::RIGHT),
     ]));
 
-    app.press_input(MouseScrollDirection::UP);
-    app.press_input(MouseScrollDirection::DOWN);
+    MouseScrollDirection::UP.press(app.world_mut());
+    MouseScrollDirection::DOWN.press(app.world_mut());
 
     // Correctly flushes the world
     app.update();
@@ -145,7 +132,7 @@ fn mouse_scroll_dual_axis() {
     );
 
     let input = MouseScroll::default();
-    app.send_axis_values(input, [5.0, 0.0]);
+    input.set_axis_pair(app.world_mut(), Vec2::new(5.0, 0.0));
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();

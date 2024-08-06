@@ -117,8 +117,8 @@ fn two_inputs_clash_handling() {
     let mut app = test_app();
 
     // Two inputs
-    app.press_input(Digit1);
-    app.press_input(Digit2);
+    Digit1.press(app.world_mut());
+    Digit2.press(app.world_mut());
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, Two, OneAndTwo]);
@@ -133,10 +133,9 @@ fn three_inputs_clash_handling() {
     let mut app = test_app();
 
     // Three inputs
-    app.reset_inputs();
-    app.press_input(Digit1);
-    app.press_input(Digit2);
-    app.press_input(Digit3);
+    Digit1.press(app.world_mut());
+    Digit2.press(app.world_mut());
+    Digit3.press(app.world_mut());
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -154,11 +153,11 @@ fn modifier_clash_handling() {
     let mut app = test_app();
 
     // Modifier
-    app.reset_inputs();
-    app.press_input(Digit1);
-    app.press_input(Digit2);
-    app.press_input(Digit3);
-    app.press_input(ControlLeft);
+    Digit1.press(app.world_mut());
+    Digit2.press(app.world_mut());
+    Digit3.press(app.world_mut());
+    ControlLeft.press(app.world_mut());
+
     app.update();
 
     app.assert_input_map_actions_eq(
@@ -179,10 +178,9 @@ fn multiple_modifiers_clash_handling() {
     let mut app = test_app();
 
     // Multiple modifiers
-    app.reset_inputs();
-    app.press_input(Digit1);
-    app.press_input(ControlLeft);
-    app.press_input(AltLeft);
+    Digit1.press(app.world_mut());
+    ControlLeft.press(app.world_mut());
+    AltLeft.press(app.world_mut());
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [One, CtrlOne, AltOne, CtrlAltOne]);
@@ -197,9 +195,8 @@ fn action_order_clash_handling() {
     let mut app = test_app();
 
     // Action order
-    app.reset_inputs();
-    app.press_input(Digit3);
-    app.press_input(Digit2);
+    Digit3.press(app.world_mut());
+    Digit2.press(app.world_mut());
     app.update();
 
     app.assert_input_map_actions_eq(ClashStrategy::PressAll, [Two, TwoAndThree]);

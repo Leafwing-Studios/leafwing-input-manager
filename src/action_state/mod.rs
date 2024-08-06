@@ -294,10 +294,10 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Caution
     ///
-    /// - To access the [`ButtonData`] regardless of whether the `action` has been triggered,
+    /// To access the [`ButtonData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
-    /// - To insert a default [`ButtonData`] if it doesn't exist,
+    /// To insert a default [`ButtonData`] if it doesn't exist,
     /// use [`button_data_mut_or_default`](Self::button_data_mut_or_default) method.
     ///
     /// # Returns
@@ -351,10 +351,10 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Caution
     ///
-    /// - To access the [`AxisData`] regardless of whether the `action` has been triggered,
+    /// To access the [`AxisData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
-    /// - To insert a default [`AxisData`] if it doesn't exist,
+    /// To insert a default [`AxisData`] if it doesn't exist,
     /// use [`axis_data_mut_or_default`](Self::axis_data_mut_or_default) method.
     ///
     /// # Returns
@@ -412,10 +412,10 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Caution
     ///
-    /// - To access the [`DualAxisData`] regardless of whether the `action` has been triggered,
+    /// To access the [`DualAxisData`] regardless of whether the `action` has been triggered,
     /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
-    /// - To insert a default [`ButtonData`] if it doesn't exist,
+    /// To insert a default [`ButtonData`] if it doesn't exist,
     /// use [`dual_axis_data_mut_or_default`](Self::dual_axis_data_mut_or_default) method.
     ///
     /// # Returns
@@ -454,16 +454,11 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// Different kinds of bindings have different ways of calculating the value:
     ///
-    /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of
-    /// `1.0` when the button is pressed.
+    /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of `1.0` when the button is pressed.
     /// - Some axes, such as an analog stick, will have a value in the range `[-1.0, 1.0]`.
     /// - Some axes, such as a variable trigger, will have a value in the range `[0.0, 1.0]`.
-    /// - Some buttons will also return a value in the range `[0.0, 1.0]`, such as analog gamepad
-    /// triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/RT
-    /// triggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the
-    /// repository.
-    /// - Dual axis inputs will return the magnitude of its [`Vec2`] and will be in the range
-    /// `0.0..=1.0`.
+    /// - Some buttons will also return a value in the range `[0.0, 1.0]`, such as analog gamepad triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/Rtriggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the repository.
+    /// - Dual axis inputs will return the magnitude of its [`Vec2`] and will be in the range `0.0..=1.0`.
     /// - Chord inputs will return the value of its first input.
     ///
     /// If multiple inputs trigger the same game action at the same time, the value of each
@@ -937,10 +932,9 @@ mod tests {
     use crate::action_state::ActionState;
     use crate::clashing_inputs::ClashStrategy;
     use crate::input_map::InputMap;
-    use crate::input_mocking::MockInput;
     use crate::input_streams::InputStreams;
     use crate::plugin::AccumulatorPlugin;
-    use crate::prelude::ButtonlikeChord;
+    use crate::prelude::{Buttonlike, ButtonlikeChord};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
     use bevy::utils::{Duration, Instant};
@@ -984,7 +978,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Pressing
-        app.press_input(KeyCode::KeyR);
+        KeyCode::KeyR.press(app.world_mut());
         // Process the input events into Input<KeyCode> data
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
@@ -1006,7 +1000,7 @@ mod tests {
         assert!(!action_state.just_released(&Action::Run));
 
         // Releasing
-        app.release_input(KeyCode::KeyR);
+        KeyCode::KeyR.release(app.world_mut());
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
 
@@ -1059,7 +1053,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing One
-        app.press_input(Digit1);
+        Digit1.press(app.world_mut());
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
 
@@ -1080,7 +1074,7 @@ mod tests {
         assert!(action_state.released(&Action::OneAndTwo));
 
         // Pressing Two
-        app.press_input(Digit2);
+        Digit2.press(app.world_mut());
         app.update();
         let input_streams = InputStreams::from_world(app.world(), None);
 

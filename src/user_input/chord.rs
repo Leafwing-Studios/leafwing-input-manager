@@ -1,14 +1,13 @@
 //! This module contains [`ButtonlikeChord`] and its impls.
 
 use bevy::math::Vec2;
-use bevy::prelude::Reflect;
+use bevy::prelude::{Gamepad, Reflect, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
-use crate::raw_inputs::RawInputs;
 use crate::user_input::{Buttonlike, UserInput};
 use crate::InputControlKind;
 
@@ -29,6 +28,7 @@ use super::{Axislike, DualAxislike};
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 /// use leafwing_input_manager::prelude::*;
+/// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, AccumulatorPlugin));
@@ -37,12 +37,13 @@ use super::{Axislike, DualAxislike};
 /// let input = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB]);
 ///
 /// // Pressing only one key doesn't activate the input
-/// app.press_input(KeyCode::KeyA);
+/// KeyCode::KeyA.press(app.world_mut());
 /// app.update();
 /// assert!(!app.pressed(input.clone()));
 ///
 /// // Pressing both keys activates the input
-/// app.press_input(KeyCode::KeyB);
+/// KeyCode::KeyA.press(app.world_mut());
+/// KeyCode::KeyB.press(app.world_mut());
 /// app.update();
 /// assert!(app.pressed(input.clone()));
 /// ```
@@ -136,14 +137,6 @@ impl UserInput for ButtonlikeChord {
             .collect();
         BasicInputs::Chord(inputs)
     }
-
-    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        self.0.iter().fold(RawInputs::default(), |inputs, next| {
-            inputs.merge_input(&next.raw_inputs())
-        })
-    }
 }
 
 impl Buttonlike for ButtonlikeChord {
@@ -152,6 +145,30 @@ impl Buttonlike for ButtonlikeChord {
     #[inline]
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         self.0.iter().all(|input| input.pressed(input_streams))
+    }
+
+    fn press(&self, world: &mut World) {
+        for input in &self.0 {
+            input.press(world);
+        }
+    }
+
+    fn release(&self, world: &mut World) {
+        for input in &self.0 {
+            input.release(world);
+        }
+    }
+
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        for input in &self.0 {
+            input.press_as_gamepad(world, gamepad);
+        }
+    }
+
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        for input in &self.0 {
+            input.release_as_gamepad(world, gamepad);
+        }
     }
 }
 
@@ -203,15 +220,6 @@ impl UserInput for AxislikeChord {
     fn decompose(&self) -> BasicInputs {
         BasicInputs::compose(self.button.decompose(), self.axis.decompose())
     }
-
-    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        let raw_button_input = self.button.raw_inputs();
-        let raw_axis_input = self.axis.raw_inputs();
-
-        raw_button_input.merge_input(&raw_axis_input)
-    }
 }
 
 impl Axislike for AxislikeChord {
@@ -221,6 +229,14 @@ impl Axislike for AxislikeChord {
         } else {
             0.0
         }
+    }
+
+    fn set_value(&self, world: &mut World, value: f32) {
+        self.axis.set_value(world, value);
+    }
+
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+        self.axis.set_value_as_gamepad(world, value, gamepad);
     }
 }
 
@@ -259,15 +275,6 @@ impl UserInput for DualAxislikeChord {
     fn decompose(&self) -> BasicInputs {
         BasicInputs::compose(self.button.decompose(), self.dual_axis.decompose())
     }
-
-    /// Returns the [`RawInputs`] that combines the raw input events of all inner inputs.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        let raw_button_input = self.button.raw_inputs();
-        let raw_axis_input = self.dual_axis.raw_inputs();
-
-        raw_button_input.merge_input(&raw_axis_input)
-    }
 }
 
 impl DualAxislike for DualAxislikeChord {
@@ -277,6 +284,20 @@ impl DualAxislike for DualAxislikeChord {
         } else {
             Vec2::ZERO
         }
+    }
+
+    fn set_axis_pair(&self, world: &mut World, axis_pair: Vec2) {
+        self.dual_axis.set_axis_pair(world, axis_pair);
+    }
+
+    fn set_axis_pair_as_gamepad(
+        &self,
+        world: &mut World,
+        axis_pair: Vec2,
+        gamepad: Option<Gamepad>,
+    ) {
+        self.dual_axis
+            .set_axis_pair_as_gamepad(world, axis_pair, gamepad);
     }
 }
 
@@ -336,9 +357,6 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(chord.0, expected_inners);
 
-        let expected_raw_inputs = RawInputs::from_keycodes(required_keys);
-        assert_eq!(chord.raw_inputs(), expected_raw_inputs);
-
         // No keys pressed, resulting in a released chord with a value of zero.
         let mut app = test_app();
         app.update();
@@ -348,7 +366,7 @@ mod tests {
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
         for key in required_keys {
-            app.press_input(key);
+            key.press(app.world_mut());
         }
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
@@ -359,7 +377,7 @@ mod tests {
         for i in 1..=4 {
             let mut app = test_app();
             for key in required_keys.iter().take(i) {
-                app.press_input(*key);
+                key.press(app.world_mut());
             }
             app.update();
             let inputs = InputStreams::from_world(app.world(), None);
@@ -370,9 +388,9 @@ mod tests {
         // resulting in a released chord with a value of zero.
         let mut app = test_app();
         for key in required_keys.iter().take(4) {
-            app.press_input(*key);
+            key.press(app.world_mut());
         }
-        app.press_input(KeyCode::KeyB);
+        KeyCode::KeyB.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
         assert!(!chord.pressed(&inputs));

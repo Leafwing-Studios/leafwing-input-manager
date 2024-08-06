@@ -34,11 +34,6 @@
 //! [`UserInput`]s use the method [`UserInput::decompose`] returning a [`BasicInputs`]
 //! used for clashing detection, see [clashing input check](crate::clashing_inputs) for details.
 //!
-//! ## Raw Input Events
-//!
-//! [`UserInput`]s use the method [`UserInput::raw_inputs`] returning a [`RawInputs`]
-//! used for sending fake input events, see [input mocking](crate::input_mocking::MockInput) for details.
-//!
 //! ## Built-in Inputs
 //!
 //! ### Gamepad Inputs
@@ -80,6 +75,7 @@
 use std::fmt::Debug;
 
 use bevy::math::Vec2;
+use bevy::prelude::{Gamepad, World};
 use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
@@ -88,7 +84,6 @@ use serde::Serialize;
 
 use crate::clashing_inputs::BasicInputs;
 use crate::input_streams::InputStreams;
-use crate::raw_inputs::RawInputs;
 use crate::InputControlKind;
 
 pub use self::chord::*;
@@ -101,6 +96,7 @@ pub mod chord;
 pub mod gamepad;
 pub mod keyboard;
 pub mod mouse;
+pub mod testing_utils;
 mod trait_reflection;
 mod trait_serde;
 
@@ -118,7 +114,6 @@ mod trait_serde;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::input_streams::InputStreams;
 /// use leafwing_input_manager::axislike::{DualAxisType};
-/// use leafwing_input_manager::raw_inputs::RawInputs;
 /// use leafwing_input_manager::clashing_inputs::BasicInputs;
 ///
 /// #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
@@ -140,13 +135,6 @@ mod trait_serde;
 ///         // This input is not buttonlike, so it uses `None`.
 ///         BasicInputs::None
 ///     }
-///
-///     fn raw_inputs(&self) -> RawInputs {
-///         // Defines the raw input events used for simulating this input.
-///         //
-///         // This input simulates a mouse scroll event on the Y-axis.
-///         RawInputs::from_mouse_scroll_axes([DualAxisType::Y])
-///     }
 /// }
 ///
 /// // Remember to register your input - it will ensure everything works smoothly!
@@ -167,12 +155,6 @@ pub trait UserInput:
     /// For inputs that represent a simple, atomic control,
     /// this method should always return a [`BasicInputs::Simple`] that only contains the input itself.
     fn decompose(&self) -> BasicInputs;
-
-    /// Returns the raw input events that make up this input.
-    ///
-    /// Unlike [`UserInput::decompose`], which stores boxed user inputs,
-    /// this method returns the raw input types.
-    fn raw_inputs(&self) -> RawInputs;
 }
 
 /// A trait used for buttonlike user inputs, which can be pressed or released.
@@ -184,18 +166,94 @@ pub trait Buttonlike: UserInput {
     fn released(&self, input_streams: &InputStreams) -> bool {
         !self.pressed(input_streams)
     }
+
+    /// Simulates a press of the buttonlike input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Buttonlike::press_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn press(&self, world: &mut World) {
+        self.press_as_gamepad(world, None);
+    }
+
+    /// Simulate a press of the buttonlike input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Buttonlike::press`] if not overridden,
+    /// as is the case for things like mouse buttons and keyboard keys.
+    ///
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn press_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+        self.press(world);
+    }
+
+    /// Simulates a release of the buttonlike input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Buttonlike::release_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn release(&self, world: &mut World) {
+        self.release_as_gamepad(world, None);
+    }
+
+    /// Simulate a release of the buttonlike input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Buttonlike::release`] if not overridden,
+    /// as is the case for things like mouse buttons and keyboard keys.
+    ///
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+        self.release(world);
+    }
 }
 
 /// A trait used for axis-like user inputs, which provide a continuous value.
 pub trait Axislike: UserInput {
     /// Gets the current value of the input as an `f32`.
     fn value(&self, input_streams: &InputStreams) -> f32;
+
+    /// Simulate an axis-like input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Axislike::set_value_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn set_value(&self, world: &mut World, value: f32) {
+        self.set_value_as_gamepad(world, value, None);
+    }
+
+    /// Simulate an axis-like input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Axislike::set_value`] if not overridden,
+    /// as is the case for things like a mouse wheel.
+    ///
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Gamepad>) {
+        self.set_value(world, value);
+    }
 }
 
 /// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
 pub trait DualAxislike: UserInput {
     /// Gets the values of this input along the X and Y axes (if applicable).
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2;
+
+    /// Simulate a dual-axis-like input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`DualAxislike::set_axis_pair_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn set_axis_pair(&self, world: &mut World, value: Vec2) {
+        self.set_axis_pair_as_gamepad(world, value, None);
+    }
+
+    /// Simulate a dual-axis-like input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`DualAxislike::set_axis_pair`] if not overridden,
+    /// as is the case for things like a mouse wheel.
+    ///
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Gamepad>) {
+        self.set_axis_pair(world, value);
+    }
 }
 
 /// A wrapper type to get around the lack of [trait upcasting coercion](https://github.com/rust-lang/rust/issues/65991).
@@ -235,14 +293,6 @@ impl UserInput for UserInputWrapper {
             UserInputWrapper::Button(input) => input.decompose(),
             UserInputWrapper::Axis(input) => input.decompose(),
             UserInputWrapper::DualAxis(input) => input.decompose(),
-        }
-    }
-
-    fn raw_inputs(&self) -> RawInputs {
-        match self {
-            UserInputWrapper::Button(input) => input.raw_inputs(),
-            UserInputWrapper::Axis(input) => input.raw_inputs(),
-            UserInputWrapper::DualAxis(input) => input.raw_inputs(),
         }
     }
 }

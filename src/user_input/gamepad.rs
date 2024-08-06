@@ -1,7 +1,9 @@
 //! Gamepad inputs
 
+use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::prelude::{
-    Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Reflect, Vec2,
+    Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
+    Reflect, Vec2, World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
@@ -14,11 +16,22 @@ use crate::input_processing::{
     WithDualAxisProcessingPipelineExt,
 };
 use crate::input_streams::InputStreams;
-use crate::raw_inputs::RawInputs;
 use crate::user_input::UserInput;
 use crate::InputControlKind;
 
 use super::{Axislike, Buttonlike, DualAxislike};
+
+/// Retrieves the first connected gamepad.
+///
+/// If no gamepad is connected, a synthetic gamepad with an ID of 0 is returned.
+#[must_use]
+pub fn find_gamepad(world: &World) -> Gamepad {
+    world
+        .resource::<Gamepads>()
+        .iter()
+        .next()
+        .unwrap_or(Gamepad { id: 0 })
+}
 
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
@@ -67,12 +80,12 @@ fn read_axis_value(input_streams: &InputStreams, axis: GamepadAxisType) -> f32 {
 /// let input = GamepadControlDirection::LEFT_UP;
 ///
 /// // Movement in the opposite direction doesn't activate the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [-1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), -1.0);
 /// app.update();
 /// assert!(!app.pressed(input));
 ///
 /// // Movement in the chosen direction activates the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert!(app.pressed(input));
 /// ```
@@ -80,10 +93,10 @@ fn read_axis_value(input_streams: &InputStreams, axis: GamepadAxisType) -> f32 {
 #[must_use]
 pub struct GamepadControlDirection {
     /// The axis that this input tracks.
-    pub(crate) axis: GamepadAxisType,
+    pub axis: GamepadAxisType,
 
     /// The direction of the axis to monitor (positive or negative).
-    pub(crate) side: AxisDirection,
+    pub side: AxisDirection,
 }
 
 impl GamepadControlDirection {
@@ -139,12 +152,6 @@ impl UserInput for GamepadControlDirection {
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Simple(Box::new(*self))
     }
-
-    /// Creates a [`RawInputs`] from the direction directly.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_control_directions([*self])
-    }
 }
 
 impl Buttonlike for GamepadControlDirection {
@@ -154,6 +161,30 @@ impl Buttonlike for GamepadControlDirection {
     fn pressed(&self, input_streams: &InputStreams) -> bool {
         let value = read_axis_value(input_streams, self.axis);
         self.side.is_active(value)
+    }
+
+    /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided [`Gamepad`].
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.axis,
+            value: self.side.full_active_value(),
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+
+    /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 0.0 for the specified direction.
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.axis,
+            value: 0.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
 }
 
@@ -182,7 +213,7 @@ impl Buttonlike for GamepadControlDirection {
 /// let input = GamepadControlAxis::LEFT_Y;
 ///
 /// // Movement on the chosen axis activates the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_value(input), 1.0);
 ///
@@ -250,12 +281,6 @@ impl UserInput for GamepadControlAxis {
             Box::new(GamepadControlDirection::positive(self.axis)),
         ])
     }
-
-    /// Creates a [`RawInputs`] from the [`GamepadAxisType`] used by the axis.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_axes([self.axis])
-    }
 }
 
 impl Axislike for GamepadControlAxis {
@@ -267,6 +292,18 @@ impl Axislike for GamepadControlAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
+    }
+
+    /// Sends a [`GamepadEvent::Axis`] event with the specified value on the provided [`Gamepad`].
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.axis,
+            value,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
 }
 
@@ -319,7 +356,7 @@ impl WithAxisProcessingPipelineExt for GamepadControlAxis {
 /// let input = GamepadStick::LEFT;
 ///
 /// // Movement on either axis activates the input
-/// app.send_axis_values(GamepadControlAxis::LEFT_Y, [1.0]);
+/// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
 ///
@@ -385,12 +422,6 @@ impl UserInput for GamepadStick {
             Box::new(GamepadControlDirection::positive(self.y)),
         ])
     }
-
-    /// Creates a [`RawInputs`] from two [`GamepadAxisType`]s used by the stick.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_axes([self.x, self.y])
-    }
 }
 
 impl DualAxislike for GamepadStick {
@@ -399,6 +430,25 @@ impl DualAxislike for GamepadStick {
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         self.processed_value(input_streams)
+    }
+
+    /// Sends a [`GamepadEvent::Axis`] event with the specified values on the provided [`Gamepad`].
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.x,
+            value: value.x,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+
+        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+            gamepad,
+            axis_type: self.y,
+            value: value.y,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
 }
 
@@ -489,12 +539,6 @@ impl UserInput for GamepadButtonType {
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Simple(Box::new(*self))
     }
-
-    /// Creates a [`RawInputs`] from the button directly.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_buttons([*self])
-    }
 }
 
 impl Buttonlike for GamepadButtonType {
@@ -507,6 +551,30 @@ impl Buttonlike for GamepadButtonType {
         } else {
             button_pressed_any(input_streams, *self)
         }
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad,
+            button_type: *self,
+            value: 1.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad,
+            button_type: *self,
+            value: 0.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
 }
 
@@ -540,7 +608,7 @@ impl Buttonlike for GamepadButtonType {
 /// let axis = GamepadVirtualAxis::DPAD_Y;
 ///
 /// // Pressing either button activates the input
-/// app.press_input(GamepadButtonType::DPadUp);
+/// GamepadButtonType::DPadUp.press(app.world_mut());
 /// app.update();
 /// assert_eq!(app.read_axis_values(axis), [1.0]);
 ///
@@ -615,12 +683,6 @@ impl UserInput for GamepadVirtualAxis {
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![Box::new(self.negative), Box::new(self.positive)])
     }
-
-    /// Creates a [`RawInputs`] from two [`GamepadButtonType`]s used by this axis.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_buttons([self.negative, self.positive])
-    }
 }
 
 impl Axislike for GamepadVirtualAxis {
@@ -640,6 +702,19 @@ impl Axislike for GamepadVirtualAxis {
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event on the provided [`Gamepad`].
+    ///
+    /// If the value is negative, the negative button is pressed.
+    /// If the value is positive, the positive button is pressed.
+    /// If the value is zero, neither button is pressed.
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+        if value < 0.0 {
+            self.negative.press_as_gamepad(world, gamepad);
+        } else if value > 0.0 {
+            self.positive.press_as_gamepad(world, gamepad);
+        }
     }
 }
 
@@ -697,7 +772,7 @@ impl WithAxisProcessingPipelineExt for GamepadVirtualAxis {
 /// let input = GamepadVirtualDPad::DPAD;
 ///
 /// // Pressing a D-pad button activates the corresponding axis
-/// app.press_input(GamepadButtonType::DPadUp);
+/// GamepadButtonType::DPadUp.press(app.world_mut());
 /// app.update();
 /// assert_eq!(app.read_axis_values(input), [0.0, 1.0]);
 ///
@@ -809,12 +884,6 @@ impl UserInput for GamepadVirtualDPad {
             Box::new(self.right),
         ])
     }
-
-    /// Creates a [`RawInputs`] from four [`GamepadButtonType`]s used by this D-pad.
-    #[inline]
-    fn raw_inputs(&self) -> RawInputs {
-        RawInputs::from_gamepad_buttons([self.up, self.down, self.left, self.right])
-    }
 }
 
 impl DualAxislike for GamepadVirtualDPad {
@@ -823,6 +892,21 @@ impl DualAxislike for GamepadVirtualDPad {
     #[inline]
     fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
         self.processed_value(input_streams)
+    }
+
+    /// Presses the corresponding buttons on the provided [`Gamepad`] based on the quadrant of the given value.
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Gamepad>) {
+        if value.x < 0.0 {
+            self.left.press_as_gamepad(world, None);
+        } else if value.x > 0.0 {
+            self.right.press_as_gamepad(world, None);
+        }
+
+        if value.y < 0.0 {
+            self.down.press_as_gamepad(world, None);
+        } else if value.y > 0.0 {
+            self.up.press_as_gamepad(world, None);
+        }
     }
 }
 
@@ -852,7 +936,6 @@ impl WithDualAxisProcessingPipelineExt for GamepadVirtualDPad {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input_mocking::MockInput;
     use crate::plugin::AccumulatorPlugin;
     use bevy::input::gamepad::{
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
@@ -889,45 +972,29 @@ mod tests {
     fn test_gamepad_axes() {
         let left_up = GamepadControlDirection::LEFT_UP;
         assert_eq!(left_up.kind(), InputControlKind::Button);
-        let raw_inputs = RawInputs::from_gamepad_control_directions([left_up]);
-        assert_eq!(left_up.raw_inputs(), raw_inputs);
 
         // The opposite of left up
         let left_down = GamepadControlDirection::LEFT_DOWN;
         assert_eq!(left_down.kind(), InputControlKind::Button);
-        let raw_inputs = RawInputs::from_gamepad_control_directions([left_up]);
-        assert_eq!(left_up.raw_inputs(), raw_inputs);
 
         let left_x = GamepadControlAxis::LEFT_X;
         assert_eq!(left_x.kind(), InputControlKind::Axis);
-        let raw_inputs = RawInputs::from_gamepad_axes([left_x.axis]);
-        assert_eq!(left_x.raw_inputs(), raw_inputs);
 
         let left_y = GamepadControlAxis::LEFT_Y;
         assert_eq!(left_y.kind(), InputControlKind::Axis);
-        let raw_inputs = RawInputs::from_gamepad_axes([left_y.axis]);
-        assert_eq!(left_y.raw_inputs(), raw_inputs);
 
         let left = GamepadStick::LEFT;
         assert_eq!(left.kind(), InputControlKind::DualAxis);
-        let raw_inputs = RawInputs::from_gamepad_axes([left.x, left.y]);
-        assert_eq!(left.raw_inputs(), raw_inputs);
 
         // Up; but for the other stick
         let right_up = GamepadControlDirection::RIGHT_DOWN;
         assert_eq!(right_up.kind(), InputControlKind::Button);
-        let raw_inputs = RawInputs::from_gamepad_control_directions([right_up]);
-        assert_eq!(right_up.raw_inputs(), raw_inputs);
 
         let right_y = GamepadControlAxis::RIGHT_Y;
         assert_eq!(right_y.kind(), InputControlKind::Axis);
-        let raw_inputs = RawInputs::from_gamepad_axes([right_y.axis]);
-        assert_eq!(right_y.raw_inputs(), raw_inputs);
 
         let right = GamepadStick::RIGHT;
         assert_eq!(right.kind(), InputControlKind::DualAxis);
-        let raw_inputs = RawInputs::from_gamepad_axes([right_y.axis]);
-        assert_eq!(right_y.raw_inputs(), raw_inputs);
 
         // No inputs
         let mut app = test_app();
@@ -946,7 +1013,7 @@ mod tests {
         // Left stick moves upward
         let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
-        app.press_input(GamepadControlDirection::LEFT_UP);
+        GamepadControlDirection::LEFT_UP.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -962,7 +1029,7 @@ mod tests {
         // Set Y-axis of left stick to 0.6
         let data = Vec2::new(0.0, 0.6);
         let mut app = test_app();
-        app.send_axis_values(GamepadControlAxis::LEFT_Y, [data.y]);
+        GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), data.y);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -978,7 +1045,7 @@ mod tests {
         // Set left stick to (0.6, 0.4)
         let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
-        app.send_axis_values(GamepadStick::LEFT, [data.x, data.y]);
+        GamepadStick::LEFT.set_axis_pair(app.world_mut(), data);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -997,38 +1064,24 @@ mod tests {
     fn test_gamepad_buttons() {
         let up = GamepadButtonType::DPadUp;
         assert_eq!(up.kind(), InputControlKind::Button);
-        let raw_inputs = RawInputs::from_gamepad_buttons([up]);
-        assert_eq!(up.raw_inputs(), raw_inputs);
 
         let left = GamepadButtonType::DPadLeft;
         assert_eq!(left.kind(), InputControlKind::Button);
-        let raw_inputs = RawInputs::from_gamepad_buttons([left]);
-        assert_eq!(left.raw_inputs(), raw_inputs);
 
         let down = GamepadButtonType::DPadDown;
         assert_eq!(left.kind(), InputControlKind::Button);
-        let raw_inputs = RawInputs::from_gamepad_buttons([down]);
-        assert_eq!(down.raw_inputs(), raw_inputs);
 
         let right = GamepadButtonType::DPadRight;
         assert_eq!(left.kind(), InputControlKind::Button);
-        let raw_inputs = RawInputs::from_gamepad_buttons([right]);
-        assert_eq!(right.raw_inputs(), raw_inputs);
 
         let x_axis = GamepadVirtualAxis::DPAD_X;
         assert_eq!(x_axis.kind(), InputControlKind::Axis);
-        let raw_inputs = RawInputs::from_gamepad_buttons([left, right]);
-        assert_eq!(x_axis.raw_inputs(), raw_inputs);
 
         let y_axis = GamepadVirtualAxis::DPAD_Y;
         assert_eq!(y_axis.kind(), InputControlKind::Axis);
-        let raw_inputs = RawInputs::from_gamepad_buttons([down, up]);
-        assert_eq!(y_axis.raw_inputs(), raw_inputs);
 
         let dpad = GamepadVirtualDPad::DPAD;
         assert_eq!(dpad.kind(), InputControlKind::DualAxis);
-        let raw_inputs = RawInputs::from_gamepad_buttons([up, down, left, right]);
-        assert_eq!(dpad.raw_inputs(), raw_inputs);
 
         // No inputs
         let zeros = Vec2::new(0.0, 0.0);
@@ -1047,7 +1100,7 @@ mod tests {
         // Press DPadLeft
         let data = Vec2::new(1.0, 0.0);
         let mut app = test_app();
-        app.press_input(GamepadButtonType::DPadLeft);
+        GamepadButtonType::DPadLeft.press(app.world_mut());
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -1062,7 +1115,7 @@ mod tests {
         // Set the X-axis to 0.6
         let data = Vec2::new(0.6, 0.0);
         let mut app = test_app();
-        app.send_axis_values(GamepadVirtualAxis::DPAD_X, [data.x]);
+        GamepadVirtualAxis::DPAD_X.set_value(app.world_mut(), data.x);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
@@ -1077,7 +1130,7 @@ mod tests {
         // Set the axes to (0.6, 0.4)
         let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
-        app.send_axis_values(GamepadVirtualDPad::DPAD, [data.x, data.y]);
+        GamepadVirtualDPad::DPAD.set_axis_pair(app.world_mut(), data);
         app.update();
         let inputs = InputStreams::from_world(app.world(), None);
 
