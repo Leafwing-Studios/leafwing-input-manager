@@ -26,12 +26,8 @@ use super::{Axislike, Buttonlike, DualAxislike};
 ///
 /// If no gamepad is connected, a synthetic gamepad with an ID of 0 is returned.
 #[must_use]
-pub fn find_gamepad(world: &World) -> Gamepad {
-    world
-        .resource::<Gamepads>()
-        .iter()
-        .next()
-        .unwrap_or(Gamepad { id: 0 })
+pub fn find_gamepad(gamepads: &Gamepads) -> Gamepad {
+    gamepads.iter().next().unwrap_or(Gamepad { id: 0 })
 }
 
 /// Retrieves the current value of the specified `axis`.
@@ -153,7 +149,7 @@ impl Buttonlike for GamepadControlDirection {
 
     /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided [`Gamepad`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
         let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
             gamepad,
@@ -165,7 +161,7 @@ impl Buttonlike for GamepadControlDirection {
 
     /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 0.0 for the specified direction.
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
         let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
             gamepad,
@@ -321,7 +317,7 @@ impl Axislike for GamepadControlAxis {
 
     /// Sends a [`GamepadEvent::Axis`] event with the specified value on the provided [`Gamepad`].
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
         let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
             gamepad,
@@ -459,7 +455,7 @@ impl DualAxislike for GamepadStick {
 
     /// Sends a [`GamepadEvent::Axis`] event with the specified values on the provided [`Gamepad`].
     fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
         let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
             gamepad,
@@ -630,7 +626,7 @@ impl Buttonlike for GamepadButtonType {
 
     /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
         let event = GamepadEvent::Button(GamepadButtonChangedEvent {
             gamepad,
@@ -642,7 +638,7 @@ impl Buttonlike for GamepadButtonType {
 
     /// Sends a [`GamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world));
+        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
         let event = GamepadEvent::Button(GamepadButtonChangedEvent {
             gamepad,
