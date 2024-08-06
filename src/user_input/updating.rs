@@ -7,6 +7,7 @@ use bevy::{
     math::Vec2,
     prelude::{
         Gamepad, GamepadButtonType, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
+        SystemSet,
     },
     utils::{HashMap, HashSet},
 };
@@ -38,8 +39,8 @@ impl CentralInputStore {
     /// Registers a new kind of input.
     ///
     /// This will allow the input to be updated based on the state of the world,
-    /// by adding the [`UpdatableUserInput::update`] system to [`InputManagerSystem::Update`]
-    /// during [`PreUpdate`].
+    /// by adding the [`UpdatableUserInput::update`] system to one of the [`InputUpdateSystem`] sets,
+    /// and thus to [`InputManagerSystem::Update`] during [`PreUpdate`].
     ///
     /// This method has no effect if the input kind has already been registered.
     pub fn register_input_kind<I: UpdatableUserInput>(&mut self, app: &mut App) {
@@ -49,7 +50,7 @@ impl CentralInputStore {
         }
 
         self.registered_input_kinds.insert(TypeId::of::<I>());
-        app.add_systems(PreUpdate, I::update.in_set(InputManagerSystem::Update));
+        app.add_systems(PreUpdate, I::update.in_set(I::SYSTEM_SET));
     }
 
     /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
@@ -191,8 +192,6 @@ enum UpdatedValues {
     Dualaxislike(HashMap<Box<dyn DualAxislike>, Vec2>),
 }
 
-impl CentralInputStore {}
-
 /// A trait that enables user input to be updated based on the state of the world.
 ///
 /// This subtrait of [`UserInput`] is only used during plugin setup;
@@ -205,6 +204,9 @@ pub trait UpdatableUserInput: UserInput {
     /// This type cannot be [`CentralInputStore`], as that would cause mutable aliasing and panic at runtime.
     type SourceData: Resource;
 
+    /// The system set that this system belongs to.
+    const SYSTEM_SET: InputUpdateSystem;
+
     /// A system that updates the central store of user input based on the state of the world.
     ///
     /// When defining these systems, use the `update` methods on [`CentralInputStore`] to store the new values.
@@ -213,4 +215,22 @@ pub trait UpdatableUserInput: UserInput {
     ///
     /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
     fn update(central_input_store: ResMut<CentralInputStore>, source_data: Res<Self::SourceData>);
+}
+
+/// More granular system sets that belong to [`InputManagerSystem::Update`].
+///
+/// These system sets will run sequentially: primitive systems first, then derived systems, then chord systems.
+///
+/// # Note
+///
+/// These system sets are configured in the [`CentralInputStorePlugin`](crate::plugin::CentralInputStorePlugin).
+/// If this plugin is not added, these systems will be unordered, with unpredictable results.
+#[derive(Debug, Clone, Eq, PartialEq, Hash, SystemSet)]
+pub enum InputUpdateSystem {
+    /// Updates that read directly from the value of other resources.
+    Primitive,
+    /// Updates that read from the value of other user inputs.
+    Derived,
+    /// Updates that combine multiple user inputs into a single value.
+    Chord,
 }

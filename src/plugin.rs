@@ -12,7 +12,7 @@ use bevy::reflect::TypePath;
 use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
-use updating::CentralInputStore;
+use updating::{CentralInputStore, InputUpdateSystem};
 
 use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
@@ -233,7 +233,9 @@ pub enum InputManagerSystem {
     Tick,
     /// Accumulates various input event streams into a total delta for the frame.
     Accumulate,
-    /// Collects input data to update the [`ActionState`]
+    /// Collects input data to update the [`ActionState`].
+    ///
+    /// See [`UpdateableUserInput`](crate::user_input::updating) for more information.
     Update,
     /// Manually control the [`ActionState`]
     ///
@@ -284,5 +286,21 @@ impl Plugin for CentralInputStorePlugin {
         central_input_store.register_standard_input_kinds(app);
 
         app.insert_resource(central_input_store);
+        app.configure_sets(
+            PreUpdate,
+            InputUpdateSystem::Primitive
+                .before(InputUpdateSystem::Derived)
+                .in_set(InputManagerSystem::Update),
+        );
+        app.configure_sets(
+            PreUpdate,
+            InputUpdateSystem::Derived
+                .before(InputUpdateSystem::Chord)
+                .in_set(InputManagerSystem::Update),
+        );
+        app.configure_sets(
+            PreUpdate,
+            InputUpdateSystem::Chord.in_set(InputManagerSystem::Update),
+        );
     }
 }
