@@ -39,8 +39,7 @@ impl CentralInputStore {
     /// Registers a new kind of input.
     ///
     /// This will allow the input to be updated based on the state of the world,
-    /// by adding the [`UpdatableUserInput::compute`] system to one of the [`InputUpdateSystem`] sets,
-    /// and thus to [`InputManagerSystem::Update`] during [`PreUpdate`].
+    /// by adding the [`UpdatableUserInput::compute`] system to [`InputManagerSystem::Update`] during [`PreUpdate`].
     ///
     /// This method has no effect if the input kind has already been registered.
     pub fn register_input_kind<I: UpdatableUserInput>(&mut self, app: &mut App) {
@@ -50,7 +49,7 @@ impl CentralInputStore {
         }
 
         self.registered_input_kinds.insert(TypeId::of::<I>());
-        app.add_systems(PreUpdate, I::compute.in_set(I::SYSTEM_SET));
+        app.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Update));
     }
 
     /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
@@ -199,20 +198,10 @@ enum UpdatedValues {
 pub trait UpdatableUserInput: UserInput {
     /// The resource data that must be fetched from the world in order to update the user input.
     ///
-    /// If your system does not need any additional data, you can use [`DummyResource`] as a placeholder,
-    /// which will be initialized by [`CentralInputStorePlugin`](crate::plugin::CentralInputStorePlugin) to avoid panicking.
-    /// Ideally one could use `()`, but that requires a [change to Bevy itself](https://github.com/bevyengine/bevy/issues/14640).
-    ///
-    /// Input types that are derived from other inputs should generally not need additional data,
-    /// as they can be computed directly from the [`CentralInputStore`].
-    ///
     /// # Panics
     ///
     /// This type cannot be [`CentralInputStore`], as that would cause mutable aliasing and panic at runtime.
     type SourceData: Resource;
-
-    /// The system set that this system belongs to.
-    const SYSTEM_SET: InputUpdateSystem;
 
     /// A system that updates the central store of user input based on the state of the world.
     ///
@@ -223,25 +212,3 @@ pub trait UpdatableUserInput: UserInput {
     /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
     fn compute(central_input_store: ResMut<CentralInputStore>, source_data: Res<Self::SourceData>);
 }
-
-/// More granular system sets that belong to [`InputManagerSystem::Update`].
-///
-/// These system sets will run sequentially: primitive systems first, then derived systems, then chord systems.
-///
-/// # Note
-///
-/// These system sets are configured in the [`CentralInputStorePlugin`](crate::plugin::CentralInputStorePlugin).
-/// If this plugin is not added, these systems will be unordered, with unpredictable results.
-#[derive(Debug, Clone, Eq, PartialEq, Hash, SystemSet)]
-pub enum InputUpdateSystem {
-    /// Updates that read directly from the value of other resources.
-    Primitive,
-    /// Updates that read from the value of other user inputs.
-    Derived,
-    /// Updates that combine multiple user inputs into a single value.
-    Chord,
-}
-
-/// A dummy resource that can be used as a placeholder for [`UpdatableUserInput::SourceData`].
-#[derive(Resource, Default)]
-pub struct DummyResource;

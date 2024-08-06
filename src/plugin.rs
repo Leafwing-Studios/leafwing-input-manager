@@ -12,7 +12,7 @@ use bevy::reflect::TypePath;
 use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
-use updating::{CentralInputStore, DummyResource, InputUpdateSystem};
+use updating::CentralInputStore;
 
 use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
@@ -282,27 +282,9 @@ pub struct CentralInputStorePlugin;
 
 impl Plugin for CentralInputStorePlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<DummyResource>();
-
         let mut central_input_store = CentralInputStore::default();
         central_input_store.register_standard_input_kinds(app);
 
         app.insert_resource(central_input_store);
-        app.configure_sets(
-            PreUpdate,
-            InputUpdateSystem::Primitive
-                .before(InputUpdateSystem::Derived)
-                .in_set(InputManagerSystem::Update),
-        );
-        app.configure_sets(
-            PreUpdate,
-            InputUpdateSystem::Derived
-                .before(InputUpdateSystem::Chord)
-                .in_set(InputManagerSystem::Update),
-        );
-        app.configure_sets(
-            PreUpdate,
-            InputUpdateSystem::Chord.in_set(InputManagerSystem::Update),
-        );
     }
 }
