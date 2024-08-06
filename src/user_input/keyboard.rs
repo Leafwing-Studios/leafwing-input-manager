@@ -1,8 +1,8 @@
 //! Keyboard inputs
 
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
-use bevy::input::ButtonState;
-use bevy::prelude::{Entity, Events, KeyCode, Reflect, Vec2, World};
+use bevy::input::{ButtonInput, ButtonState};
+use bevy::prelude::{Entity, Events, KeyCode, Reflect, Res, ResMut, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +16,7 @@ use crate::input_streams::InputStreams;
 use crate::user_input::{ButtonlikeChord, UserInput};
 use crate::InputControlKind;
 
+use super::updating::{CentralInputStore, UpdatableInput};
 use super::{Axislike, Buttonlike, DualAxislike};
 
 // Built-in support for Bevy's KeyCode
@@ -32,6 +33,19 @@ impl UserInput for KeyCode {
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Simple(Box::new(*self))
+    }
+}
+
+impl UpdatableInput for KeyCode {
+    type SourceData = ButtonInput<KeyCode>;
+
+    fn compute(
+        mut central_input_store: ResMut<CentralInputStore>,
+        source_data: Res<Self::SourceData>,
+    ) {
+        for key in source_data.get_pressed() {
+            central_input_store.update_buttonlike(*key, true);
+        }
     }
 }
 

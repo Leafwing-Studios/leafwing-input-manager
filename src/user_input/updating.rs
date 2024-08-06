@@ -5,21 +5,13 @@ use std::any::TypeId;
 use bevy::{
     app::{App, PreUpdate},
     math::Vec2,
-    prelude::{
-        Gamepad, GamepadButtonType, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
-        SystemSet,
-    },
+    prelude::{IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource},
     utils::{HashMap, HashSet},
 };
 
 use crate::plugin::InputManagerSystem;
 
-use super::{
-    Axislike, AxislikeChord, Buttonlike, ButtonlikeChord, DualAxislike, DualAxislikeChord,
-    GamepadControlAxis, GamepadControlDirection, GamepadStick, GamepadVirtualAxis,
-    GamepadVirtualDPad, KeyboardVirtualAxis, KeyboardVirtualDPad, ModifierKey, MouseMoveAxis,
-    MouseMoveDirection, MouseScrollAxis, MouseScrollDirection, UserInput,
-};
+use super::{Axislike, Buttonlike, DualAxislike};
 
 /// An overarching store for all user input.
 ///
@@ -54,32 +46,16 @@ impl CentralInputStore {
 
     /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
     pub fn register_standard_input_kinds(&mut self, app: &mut App) {
-        /*
         // Buttonlike
         self.register_input_kind::<KeyCode>(app);
-        self.register_input_kind::<ModifierKey>(app);
         self.register_input_kind::<MouseButton>(app);
-        self.register_input_kind::<MouseMoveDirection>(app);
-        self.register_input_kind::<MouseScrollDirection>(app);
-        self.register_input_kind::<GamepadButtonType>(app);
-        self.register_input_kind::<GamepadControlDirection>(app);
-        self.register_input_kind::<ButtonlikeChord>(app);
+        //self.register_input_kind::<GamepadButton>(app);
 
-        // Axislike
-        self.register_input_kind::<KeyboardVirtualAxis>(app);
-        self.register_input_kind::<MouseMoveAxis>(app);
-        self.register_input_kind::<MouseScrollAxis>(app);
-        self.register_input_kind::<GamepadVirtualAxis>(app);
-        self.register_input_kind::<GamepadControlAxis>(app);
-        self.register_input_kind::<AxislikeChord>(app);
-
+        /*
         // Dualaxislike
-        self.register_input_kind::<KeyboardVirtualDPad>(app);
         self.register_input_kind::<MouseMove>(app);
         self.register_input_kind::<MouseScroll>(app);
-        self.register_input_kind::<GamepadVirtualDPad>(app);
         self.register_input_kind::<GamepadStick>(app);
-        self.register_input_kind::<DualAxislikeChord>(app);
         */
     }
 
@@ -209,6 +185,7 @@ pub trait UpdatableInput: 'static {
     /// # Panics
     ///
     /// This type cannot be [`CentralInputStore`], as that would cause mutable aliasing and panic at runtime.
+    // TODO: Ideally this should be a `SystemParam` for more flexibility.
     type SourceData: Resource;
 
     /// A system that updates the central store of user input based on the state of the world.
