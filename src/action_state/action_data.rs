@@ -7,6 +7,15 @@ use crate::buttonlike::ButtonState;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 
+/// The shared data about the state of an action.
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
+pub struct ActionData {
+    /// Whether or not the action is disabled.
+    ///
+    /// While disabled, buttons will always report as released, and axes will always report as 0.
+    pub disabled: bool,
+}
+
 /// Metadata about an [`Buttonlike`](crate::user_input::Buttonlike) action
 ///
 /// If a button is released, its `reasons_pressed` should be empty.

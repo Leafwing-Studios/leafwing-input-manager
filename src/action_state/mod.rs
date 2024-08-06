@@ -62,6 +62,8 @@ pub use action_data::*;
 /// ```
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
+    /// The shared action data for each action
+    action_data: HashMap<A, ActionData>,
     /// The [`ButtonData`] of each action
     button_data: HashMap<A, ButtonData>,
     /// The [`AxisData`] of each action
@@ -75,6 +77,7 @@ pub struct ActionState<A: Actionlike> {
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> Self {
         Self {
+            action_data: HashMap::default(),
             button_data: HashMap::default(),
             axis_data: HashMap::default(),
             dual_axis_data: HashMap::default(),
