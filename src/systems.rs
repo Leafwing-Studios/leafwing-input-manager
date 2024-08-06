@@ -484,7 +484,7 @@ pub fn release_on_input_map_removed<A: Actionlike>(
 ) {
     let mut iter = action_state_query.iter_many_mut(removed_components.read());
     while let Some(mut action_state) = iter.fetch_next() {
-        action_state.release_all();
+        action_state.reset_all();
     }
 
     // Detect when an InputMap resource is removed.
@@ -496,7 +496,7 @@ pub fn release_on_input_map_removed<A: Actionlike>(
         // so we know the input map was removed.
 
         if let Some(mut action_state) = action_state_resource {
-            action_state.release_all();
+            action_state.reset_all();
         }
 
         // Reset our local so our removal detection is only triggered once.

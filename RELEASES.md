@@ -84,6 +84,12 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - implemented `WithAxisProcessingPipelineExt` to manage processors for `SingleAxis` and `VirtualAxis`, integrating the common processing configuration.
 - implemented `WithDualAxisProcessingPipelineExt` to manage processors for `DualAxis` and `VirtualDpad`, integrating the common processing configuration.
 
+#### Better disabling
+
+- Actions can now be disabled at both the individual action and `ActionState` level
+- Disabling actions now resets their value, exposed via the `ActionState::reset` method
+- `ActionState::release_all` has been renamed to `ActionState::reset_all` and now resets the values of `Axislike` and `DualAxislike` actions
+
 ### Usability
 
 #### InputMap
