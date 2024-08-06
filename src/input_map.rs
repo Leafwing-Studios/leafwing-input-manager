@@ -6,14 +6,14 @@ use std::fmt::Debug;
 use bevy::asset::Asset;
 use bevy::log::error;
 use bevy::math::Vec2;
-use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Reflect, Resource};
+use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Gamepads, Reflect, Resource};
 use bevy::utils::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
-use crate::prelude::UserInputWrapper;
+use crate::prelude::{find_gamepad, UserInputWrapper};
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::{Actionlike, InputControlKind};
 
@@ -453,7 +453,8 @@ impl<A: Actionlike> InputMap<A> {
         input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let processed_actions = self.process_actions(input_store, clash_strategy);
+        let processed_actions =
+            self.process_actions(&Gamepads::default(), input_store, clash_strategy);
 
         let Some(updated_value) = processed_actions.get(action) else {
             return false;
@@ -478,10 +479,12 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn process_actions(
         &self,
+        gamepads: &Gamepads,
         input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
         let mut updated_actions = UpdatedActions::default();
+        let gamepad = self.associated_gamepad.unwrap_or(find_gamepad(gamepads));
 
         // Generate the base action data for each action
         for (action, _input_bindings) in self.iter_buttonlike() {

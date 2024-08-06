@@ -468,7 +468,7 @@ mod tests {
             input_map::UpdatedValue,
             prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey},
         };
-        use bevy::{input::InputPlugin, math::Vec2};
+        use bevy::{input::InputPlugin, math::Vec2, prelude::Gamepads};
         use Action::*;
 
         use super::*;
@@ -711,6 +711,7 @@ mod tests {
             app.update();
 
             let action_data = input_map.process_actions(
+                &Gamepads::default(),
                 &CentralInputStore::from_world(app.world_mut()),
                 ClashStrategy::PrioritizeLongest,
             );

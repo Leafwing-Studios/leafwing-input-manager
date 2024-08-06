@@ -8,6 +8,7 @@ use crate::{
 };
 
 use bevy::ecs::prelude::*;
+use bevy::prelude::Gamepads;
 use bevy::utils::HashSet;
 use bevy::{
     input::{
@@ -120,6 +121,7 @@ pub fn accumulate_mouse_scroll(
 pub fn update_action_state<A: Actionlike>(
     input_store: Res<CentralInputStore>,
     clash_strategy: Res<ClashStrategy>,
+    gamepads: Res<Gamepads>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
@@ -129,7 +131,7 @@ pub fn update_action_state<A: Actionlike>(
         .map(|(input_map, action_state)| (Mut::from(action_state), input_map.into_inner()));
 
     for (mut action_state, input_map) in query.iter_mut().chain(resources) {
-        action_state.update(input_map.process_actions(&input_store, *clash_strategy));
+        action_state.update(input_map.process_actions(&gamepads, &input_store, *clash_strategy));
     }
 }
 

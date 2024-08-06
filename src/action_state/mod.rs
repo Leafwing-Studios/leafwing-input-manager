@@ -1017,7 +1017,11 @@ mod tests {
 
         // Starting state
         let input_store = CentralInputStore::from_world(app.world_mut());
-        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PressAll,
+        ));
 
         println!(
             "Initialized button data: {:?}",
@@ -1035,7 +1039,11 @@ mod tests {
         app.update();
         let input_store = CentralInputStore::from_world(app.world_mut());
 
-        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PressAll,
+        ));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(action_state.just_pressed(&Action::Run));
@@ -1044,7 +1052,11 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PressAll,
+        ));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1056,7 +1068,11 @@ mod tests {
         app.update();
         let input_store = CentralInputStore::from_world(app.world_mut());
 
-        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PressAll,
+        ));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1065,7 +1081,11 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.process_actions(&input_store, ClashStrategy::PressAll));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PressAll,
+        ));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1098,8 +1118,11 @@ mod tests {
 
         // Starting state
         let input_store = CentralInputStore::from_world(app.world_mut());
-        action_state
-            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PrioritizeLongest,
+        ));
         assert!(action_state.released(&Action::One));
         assert!(action_state.released(&Action::Two));
         assert!(action_state.released(&Action::OneAndTwo));
@@ -1109,8 +1132,11 @@ mod tests {
         app.update();
         let input_store = CentralInputStore::from_world(app.world_mut());
 
-        action_state
-            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PrioritizeLongest,
+        ));
 
         assert!(action_state.pressed(&Action::One));
         assert!(action_state.released(&Action::Two));
@@ -1118,8 +1144,11 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state
-            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PrioritizeLongest,
+        ));
 
         assert!(action_state.pressed(&Action::One));
         assert!(action_state.released(&Action::Two));
@@ -1130,8 +1159,11 @@ mod tests {
         app.update();
         let input_store = CentralInputStore::from_world(app.world_mut());
 
-        action_state
-            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PrioritizeLongest,
+        ));
 
         // Now only the longest OneAndTwo has been pressed,
         // while both One and Two have been released
@@ -1141,8 +1173,11 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state
-            .update(input_map.process_actions(&input_store, ClashStrategy::PrioritizeLongest));
+        action_state.update(input_map.process_actions(
+            &Gamepads::default(),
+            &input_store,
+            ClashStrategy::PrioritizeLongest,
+        ));
 
         assert!(action_state.released(&Action::One));
         assert!(action_state.released(&Action::Two));
