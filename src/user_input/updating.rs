@@ -35,6 +35,9 @@ impl CentralInputStore {
     /// This will allow the input to be updated based on the state of the world,
     /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Update`] during [`PreUpdate`].
     ///
+    /// To improve clarity and data consistency, only one kind of input should be registered for each new data stream:
+    /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
+    ///
     /// This method has no effect if the input kind has already been registered.
     pub fn register_input_kind<I: UpdatableInput>(&mut self, app: &mut App) {
         // Ensure this method is idempotent.
@@ -176,15 +179,17 @@ enum UpdatedValues {
 /// A trait that enables user input to be updated based on the state of the world.
 ///
 /// This trait is intended to be used for the values stored inside of [`CentralInputStore`].
-/// For the actual user inputs that you might bind actions to, use [`UserInput`] instead.
+/// For the actual user inputs that you might bind actions to, use [`UserInput`](crate::user_input::UserInput) instead.
 ///
-/// The values of [`UserInput`] will be computed by calling the methods on [`CentralInputStore`],
+/// The values of each [`UserInput`](crate::user_input::UserInput) type will be computed by calling the methods on [`CentralInputStore`],
 /// and so the [`UpdatableInput`] trait is only needed when defining new kinds of input that we can
 /// derive user-facing inputs from.
 ///
-/// In simple cases, a type will be both [`UserInput`] and [`UpdatableInput`],
+/// In simple cases, a type will be both [`UserInput`](crate::user_input::UserInput) and [`UpdatableInput`],
 /// however when configuration is needed (such as for processed axes or virtual d-pads),
 /// two distinct types must be used.
+///
+/// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
 pub trait UpdatableInput: 'static {
     /// The resource data that must be fetched from the world in order to update the user input.
     ///
