@@ -7,13 +7,29 @@ use crate::buttonlike::ButtonState;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 
-/// The shared data about the state of an action.
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
+/// Data about the state of an action.
+///
+/// Universal data about the state of the data is stored directly in this struct,
+/// while data for each kind of action (buttonlike, axislike...) is stored in the `kind_data` field.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionData {
     /// Whether or not the action is disabled.
     ///
     /// While disabled, buttons will always report as released, and axes will always report as 0.
     pub disabled: bool,
+    /// The data for the action.
+    pub kind_data: ActionKindData,
+}
+
+/// A wrapper over the various forms of data that an action can take.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Reflect)]
+pub enum ActionKindData {
+    /// The data for a button-like action.
+    Button(ButtonData),
+    /// The data for an axis-like action.
+    Axis(AxisData),
+    /// The data for a dual-axis-like action.
+    DualAxis(DualAxisData),
 }
 
 /// Metadata about an [`Buttonlike`](crate::user_input::Buttonlike) action
