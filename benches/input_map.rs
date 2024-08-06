@@ -5,6 +5,7 @@ use bevy::{
 };
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use leafwing_input_manager::input_map::UpdatedActions;
+use leafwing_input_manager::plugin::AccumulatorPlugin;
 use leafwing_input_manager::prelude::Buttonlike;
 use leafwing_input_manager::{
     input_streams::InputStreams,
@@ -76,7 +77,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     // Constructing our test app / input stream outside the timed benchmark
     let mut app = App::new();
-    app.add_plugins(InputPlugin);
+    app.add_plugins((InputPlugin, AccumulatorPlugin));
     KeyCode::KeyA.press(app.world_mut());
     KeyCode::KeyB.press(app.world_mut());
     app.update();
