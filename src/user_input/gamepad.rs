@@ -1,9 +1,10 @@
 //! Gamepad inputs
 
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
+use bevy::input::ButtonInput;
 use bevy::prelude::{
     Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
-    Reflect, Vec2, World,
+    Reflect, Res, ResMut, Vec2, World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
@@ -19,6 +20,7 @@ use crate::input_streams::InputStreams;
 use crate::user_input::UserInput;
 use crate::InputControlKind;
 
+use super::updating::{CentralInputStore, UpdatableInput};
 use super::{Axislike, Buttonlike, DualAxislike};
 
 /// Retrieves the first connected gamepad.
@@ -522,6 +524,56 @@ fn button_value_any(input_streams: &InputStreams, button: GamepadButtonType) -> 
         }
     }
     f32::from(button_pressed_any(input_streams, button))
+}
+
+impl UpdatableInput for GamepadButton {
+    type SourceData = ButtonInput<GamepadButton>;
+
+    fn compute(
+        mut central_input_store: ResMut<CentralInputStore>,
+        source_data: Res<Self::SourceData>,
+    ) {
+        for key in source_data.get_pressed() {
+            central_input_store.update_buttonlike(*key, true);
+        }
+    }
+}
+
+/// Unlike [`GamepadButtonType`], this struct represents a specific button on a specific gamepad.
+///
+/// In the majority of cases, [`GamepadButtonType`] should be used instead.
+impl UserInput for GamepadButton {
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Button
+    }
+
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Simple(Box::new(*self))
+    }
+}
+
+impl Buttonlike for GamepadButton {
+    fn pressed(&self, input_streams: &InputStreams) -> bool {
+        button_pressed(input_streams, self.gamepad, self.button_type)
+    }
+
+    fn press(&self, world: &mut World) {
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad: self.gamepad,
+            button_type: self.button_type,
+            value: 1.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+
+    fn release(&self, world: &mut World) {
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad: self.gamepad,
+            button_type: self.button_type,
+            value: 0.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
 }
 
 // Built-in support for Bevy's GamepadButtonType.

@@ -5,7 +5,7 @@ use std::any::TypeId;
 use bevy::{
     app::{App, PreUpdate},
     math::Vec2,
-    prelude::{IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource},
+    prelude::{GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource},
     utils::{HashMap, HashSet},
 };
 
@@ -49,7 +49,7 @@ impl CentralInputStore {
         // Buttonlike
         self.register_input_kind::<KeyCode>(app);
         self.register_input_kind::<MouseButton>(app);
-        //self.register_input_kind::<GamepadButton>(app);
+        self.register_input_kind::<GamepadButton>(app);
 
         /*
         // Dualaxislike
