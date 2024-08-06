@@ -191,18 +191,18 @@ pub trait Buttonlike: UserInput {
     /// This method defaults to calling [`Buttonlike::release_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
     fn release(&self, world: &mut World) {
-        self.press_as_gamepad(world, None);
+        self.release_as_gamepad(world, None);
     }
 
     /// Simulate a release of the buttonlike input, pretending to be the provided [`Gamepad`].
     ///
-    /// This method defaults to calling [`Buttonlike:release`] if not overridden,
+    /// This method defaults to calling [`Buttonlike::release`] if not overridden,
     /// as is the case for things like mouse buttons and keyboard keys.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
     fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
-        self.press(world);
+        self.release(world);
     }
 }
 

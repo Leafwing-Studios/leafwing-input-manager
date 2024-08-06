@@ -6,7 +6,7 @@ use crate::input_streams::InputStreams;
 
 use super::{Axislike, Buttonlike, DualAxislike};
 
-/// A trait used to quickly fetch the value of a given [`UserInput`].
+/// A trait used to quickly fetch the value of a given [`UserInput`](crate::user_input::UserInput).
 ///
 /// This can be useful for testing purposes.
 pub trait FetchUserInput {
