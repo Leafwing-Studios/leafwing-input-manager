@@ -270,7 +270,43 @@ impl<A: Actionlike> ActionState<A> {
         });
     }
 
-    /// A reference of the [`ButtonData`] corresponding to the `action` if triggered.
+    /// A reference to the [`ActionData`] corresponding to the `action`.
+    #[inline]
+    #[must_use]
+    pub fn action_data(&self, action: &A) -> Option<&ActionData> {
+        self.action_data.get(action)
+    }
+
+    /// A mutable reference to the [`ActionData`] corresponding to the `action`.
+    ///
+    /// To initialize the [`ActionData`] if it has not yet been triggered,
+    /// use [`action_data_mut_or_default`](Self::action_data_mut_or_default) method.
+    #[inline]
+    #[must_use]
+    pub fn action_data_mut(&mut self, action: &A) -> Option<&mut ActionData> {
+        self.action_data.get_mut(action)
+    }
+
+    /// A mutable reference to the [`ActionData`] corresponding to the `action`, initializing it if needed.
+    ///
+    /// If the `action` has no data yet (because the `action` has not been triggered),
+    /// this method will create and insert a default [`ActionData`] for you,
+    /// avoiding potential errors from unwrapping [`None`].
+    pub fn action_data_mut_or_default(&mut self, action: &A) -> &mut ActionData {
+        if self.action_data.contains_key(action) {
+            // Safe to unwrap because we just checked
+            self.action_data.get_mut(action).unwrap()
+        } else {
+            self.action_data.insert(
+                action.clone(),
+                ActionData::from_kind(action.input_control_kind()),
+            );
+            // Safe to unwrap because we just inserted
+            self.action_data_mut(action).unwrap()
+        }
+    }
+
+    /// A reference of the [`ButtonData`] corresponding to the `action`.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
@@ -290,7 +326,7 @@ impl<A: Actionlike> ActionState<A> {
         self.button_data.get(action)
     }
 
-    /// A mutable reference of the [`ButtonData`] corresponding to the `action` if triggered.
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
     ///
     /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
@@ -313,7 +349,7 @@ impl<A: Actionlike> ActionState<A> {
         self.button_data.get_mut(action)
     }
 
-    /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action`, initializing it if needed.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`ButtonData`] for you,
@@ -331,7 +367,7 @@ impl<A: Actionlike> ActionState<A> {
             .1
     }
 
-    /// A reference of the [`AxisData`] corresponding to the `action` if triggered.
+    /// A reference of the [`AxisData`] corresponding to the `action`.
     ///
     /// # Caution
     ///
@@ -350,12 +386,9 @@ impl<A: Actionlike> ActionState<A> {
         self.axis_data.get(action)
     }
 
-    /// A mutable reference of the [`AxisData`] corresponding to the `action` if triggered.
+    /// A mutable reference of the [`AxisData`] corresponding to the `action`.
     ///
     /// # Caution
-    ///
-    /// To access the [`AxisData`] regardless of whether the `action` has been triggered,
-    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// To insert a default [`AxisData`] if it doesn't exist,
     /// use [`axis_data_mut_or_default`](Self::axis_data_mut_or_default) method.
@@ -372,7 +405,7 @@ impl<A: Actionlike> ActionState<A> {
         self.axis_data.get_mut(action)
     }
 
-    /// A mutable reference of the [`AxisData`] corresponding to the `action`.
+    /// A mutable reference of the [`AxisData`] corresponding to the `action`, initializing it if needed..
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`AxisData`] for you,
@@ -392,7 +425,7 @@ impl<A: Actionlike> ActionState<A> {
             .1
     }
 
-    /// A reference of the [`DualAxisData`] corresponding to the `action` if triggered.
+    /// A reference of the [`DualAxisData`] corresponding to the `action`.
     ///
     /// # Caution
     ///
@@ -411,12 +444,9 @@ impl<A: Actionlike> ActionState<A> {
         self.dual_axis_data.get(action)
     }
 
-    /// A mutable reference of the [`DualAxisData`] corresponding to the `action` if triggered.
+    /// A mutable reference of the [`DualAxisData`] corresponding to the `action`.
     ///
     /// # Caution
-    ///
-    /// To access the [`DualAxisData`] regardless of whether the `action` has been triggered,
-    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
     ///
     /// To insert a default [`ButtonData`] if it doesn't exist,
     /// use [`dual_axis_data_mut_or_default`](Self::dual_axis_data_mut_or_default) method.
@@ -433,7 +463,7 @@ impl<A: Actionlike> ActionState<A> {
         self.dual_axis_data.get_mut(action)
     }
 
-    /// A mutable reference of the [`ButtonData`] corresponding to the `action`.
+    /// A mutable reference of the [`ButtonData`] corresponding to the `action` initializing it if needed.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`DualAxisData`] for you,
@@ -691,13 +721,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Disables the `action`
     #[inline]
     pub fn disable(&mut self, action: &A) {
-        let action_data = match self.button_data_mut(action) {
-            Some(action_data) => action_data,
-            None => {
-                self.set_button_data(action.clone(), ButtonData::default());
-                self.button_data_mut(action).unwrap()
-            }
-        };
+        let action_data = self.action_data_mut_or_default(action);
 
         action_data.disabled = true;
     }
@@ -713,8 +737,8 @@ impl<A: Actionlike> ActionState<A> {
     /// Is this `action` currently disabled?
     #[inline]
     #[must_use]
-    pub fn disabled(&mut self, action: &A) -> bool {
-        match self.button_data(action) {
+    pub fn disabled(&self, action: &A) -> bool {
+        match self.action_data(action) {
             Some(action_data) => action_data.disabled,
             None => false,
         }
@@ -723,13 +747,7 @@ impl<A: Actionlike> ActionState<A> {
     /// Enables the `action`
     #[inline]
     pub fn enable(&mut self, action: &A) {
-        let action_data = match self.button_data_mut(action) {
-            Some(action_data) => action_data,
-            None => {
-                self.set_button_data(action.clone(), ButtonData::default());
-                self.button_data_mut(action).unwrap()
-            }
-        };
+        let action_data = self.action_data_mut_or_default(action);
 
         action_data.disabled = false;
     }
@@ -753,6 +771,13 @@ impl<A: Actionlike> ActionState<A> {
     pub fn pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
+        if self
+            .action_data(action)
+            .map_or(false, |action_data| action_data.disabled)
+        {
+            return false;
+        }
+
         match self.button_data(action) {
             Some(button_data) => button_data.pressed(),
             None => true,
@@ -769,6 +794,13 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn just_pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
+        if self
+            .action_data(action)
+            .map_or(false, |action_data| action_data.disabled)
+        {
+            return false;
+        }
 
         match self.button_data(action) {
             Some(button_data) => button_data.just_pressed(),
@@ -789,6 +821,13 @@ impl<A: Actionlike> ActionState<A> {
     pub fn released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
+        if self
+            .action_data(action)
+            .map_or(false, |action_data| action_data.disabled)
+        {
+            return true;
+        }
+
         match self.button_data(action) {
             Some(button_data) => button_data.released(),
             None => true,
@@ -805,6 +844,13 @@ impl<A: Actionlike> ActionState<A> {
     #[must_use]
     pub fn just_released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
+        if self
+            .action_data(action)
+            .map_or(false, |action_data| action_data.disabled)
+        {
+            return false;
+        }
 
         match self.button_data(action) {
             Some(button_data) => button_data.just_released(),

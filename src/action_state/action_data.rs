@@ -3,9 +3,9 @@
 use bevy::{math::Vec2, reflect::Reflect};
 use serde::{Deserialize, Serialize};
 
-use crate::buttonlike::ButtonState;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
+use crate::{buttonlike::ButtonState, InputControlKind};
 
 /// Data about the state of an action.
 ///
@@ -19,6 +19,20 @@ pub struct ActionData {
     pub disabled: bool,
     /// The data for the action.
     pub kind_data: ActionKindData,
+}
+
+impl ActionData {
+    /// Constructs a new `ActionData` with default values corresponding to the given `kind_data`.
+    pub fn from_kind(input_control_kind: InputControlKind) -> Self {
+        Self {
+            disabled: false,
+            kind_data: match input_control_kind {
+                InputControlKind::Button => ActionKindData::Button(ButtonData::default()),
+                InputControlKind::Axis => ActionKindData::Axis(AxisData::default()),
+                InputControlKind::DualAxis => ActionKindData::DualAxis(DualAxisData::default()),
+            },
+        }
+    }
 }
 
 /// A wrapper over the various forms of data that an action can take.
@@ -51,10 +65,6 @@ pub struct ButtonData {
     /// Actions that are consumed cannot be pressed again until they are explicitly released.
     /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
     pub consumed: bool,
-    /// Is the action disabled?
-    ///
-    /// While disabled, an action will always report as released, regardless of its actual state.
-    pub disabled: bool,
 }
 
 impl ButtonData {
@@ -66,7 +76,6 @@ impl ButtonData {
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
         consumed: false,
-        disabled: false,
     };
 
     /// The default data for a button that was just released.
@@ -77,7 +86,6 @@ impl ButtonData {
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
         consumed: false,
-        disabled: false,
     };
 
     /// The default data for a button that is released,
@@ -92,35 +100,34 @@ impl ButtonData {
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
         consumed: false,
-        disabled: false,
     };
 
     /// Is the action currently pressed?
     #[inline]
     #[must_use]
     pub fn pressed(&self) -> bool {
-        !self.disabled && self.state.pressed()
+        self.state.pressed()
     }
 
     /// Was the action pressed since the last time it was ticked?
     #[inline]
     #[must_use]
     pub fn just_pressed(&self) -> bool {
-        !self.disabled && self.state.just_pressed()
+        self.state.just_pressed()
     }
 
     /// Is the action currently released?
     #[inline]
     #[must_use]
     pub fn released(&self) -> bool {
-        self.disabled || self.state.released()
+        self.state.released()
     }
 
     /// Was the action released since the last time it was ticked?
     #[inline]
     #[must_use]
     pub fn just_released(&self) -> bool {
-        !self.disabled && self.state.just_released()
+        self.state.just_released()
     }
 }
 
@@ -133,10 +140,6 @@ pub struct AxisData {
     pub update_value: f32,
     /// The `value` of the action in the `FixedMain` schedule
     pub fixed_update_value: f32,
-    /// Is the action disabled?
-    ///
-    /// While disabled, an action will always return 0, regardless of its actual state.
-    pub disabled: bool,
 }
 
 /// The raw data for an [`ActionState`](super::ActionState)  corresponding to a pair of virtual axes.
@@ -148,8 +151,4 @@ pub struct DualAxisData {
     pub update_pair: Vec2,
     /// The `value` of the action in the `FixedMain` schedule
     pub fixed_update_pair: Vec2,
-    /// Is the action disabled?
-    ///
-    /// While disabled, an action will always return 0, regardless of its actual state.
-    pub disabled: bool,
 }
