@@ -14,9 +14,20 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
     Move,
+}
+
+impl Actionlike for Action {
+    fn input_control_kind(&self) -> InputControlKind {
+        // We're using a match statement here
+        // because in larger projects, you will likely have
+        // different input control kinds for different actions
+        match self {
+            Action::Move => InputControlKind::DualAxis,
+        }
+    }
 }
 
 #[derive(Component)]
