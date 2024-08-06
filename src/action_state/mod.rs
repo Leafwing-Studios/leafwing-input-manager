@@ -641,7 +641,7 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// The action will be released, and will not be able to be pressed again
     /// until it would have otherwise been released by [`ActionState::release`],
-    /// [`ActionState::release_all`] or [`ActionState::update`].
+    /// [`ActionState::reset`], [`ActionState::reset_all`] or [`ActionState::update`].
     ///
     /// No initial instant will be recorded
     /// Instead, this is set through [`ActionState::tick()`]
