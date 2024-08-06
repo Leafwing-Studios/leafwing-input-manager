@@ -465,7 +465,7 @@ mod tests {
             input_map::UpdatedValue,
             prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey},
         };
-        use bevy::input::InputPlugin;
+        use bevy::{input::InputPlugin, math::Vec2};
         use Action::*;
 
         use super::*;
@@ -720,7 +720,11 @@ mod tests {
                 if *action == CtrlOne || *action == OneAndTwo {
                     assert_eq!(updated_value, UpdatedValue::Button(true));
                 } else {
-                    assert_eq!(updated_value, UpdatedValue::Button(false));
+                    match updated_value {
+                        UpdatedValue::Button(pressed) => assert_eq!(pressed, false),
+                        UpdatedValue::Axis(value) => assert_eq!(value, 0.0),
+                        UpdatedValue::DualAxis(pair) => assert_eq!(pair, Vec2::ZERO),
+                    }
                 }
             }
         }
