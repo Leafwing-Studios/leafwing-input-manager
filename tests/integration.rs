@@ -78,7 +78,7 @@ fn disable_input() {
 
     // Disable the global input
     let mut action_state = app.world_mut().resource_mut::<ActionState<Action>>();
-    action_state.disable_all();
+    action_state.disable_all_actions();
 
     // But the player is still paying respects
     app.update();
@@ -90,7 +90,7 @@ fn disable_input() {
         .world_mut()
         .query_filtered::<&mut ActionState<Action>, With<Player>>()
         .single_mut(app.world_mut());
-    action_state.disable_all();
+    action_state.disable_all_actions();
 
     // Now, all respect has faded
     app.update();
@@ -105,7 +105,7 @@ fn disable_input() {
 
     // Re-enable the global input
     let mut action_state = app.world_mut().resource_mut::<ActionState<Action>>();
-    action_state.enable_all();
+    action_state.enable_all_actions();
 
     // And it will start paying respects again
     app.update();

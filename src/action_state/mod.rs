@@ -20,6 +20,16 @@ pub use action_data::*;
 ///
 /// Can be used as either a resource or as a [`Component`] on entities that you wish to control directly from player input.
 ///
+/// Actions can be disabled in four different ways, with increasing granularity:
+///
+/// 1. By disabling updates to all actions using a run condition on [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
+/// 2. By disabling updates to all actions of type `A` using a run condition on [`tick_action_state::<A>`](crate::systems::tick_action_state).
+/// 3. By setting a specific action state to disabled using [`ActionState::disable`].
+/// 4. By disabling a specific action using [`ActionState::disable_action`].
+///
+/// More general mechanisms of disabling actions will cause specific mechanisms to be ignored.
+/// For example, if an entire action state is disabled, then enabling or disabling individual actions will have no effect.
+///
 /// # Example
 /// ```rust
 /// use bevy::reflect::Reflect;
@@ -63,6 +73,8 @@ pub use action_data::*;
 /// ```
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ActionState<A: Actionlike> {
+    /// Whether or not all of the actions are disabled.
+    disabled: bool,
     /// The shared action data for each action
     action_data: HashMap<A, ActionData>,
 }
@@ -72,6 +84,7 @@ pub struct ActionState<A: Actionlike> {
 impl<A: Actionlike> Default for ActionState<A> {
     fn default() -> Self {
         Self {
+            disabled: false,
             action_data: HashMap::default(),
         }
     }
@@ -107,7 +120,13 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
+    ///
+    /// If this [`ActionState`] is disabled, it will not be updated.
     pub fn update(&mut self, updated_actions: UpdatedActions<A>) {
+        if self.disabled {
+            return;
+        }
+
         for (action, updated_value) in updated_actions.iter() {
             match updated_value {
                 UpdatedValue::Button(pressed) => {
@@ -590,15 +609,31 @@ impl<A: Actionlike> ActionState<A> {
         action_data.state.release();
     }
 
-    /// Releases all [`Buttonlike`](crate::user_input::Buttonlike) actions.
-    pub fn release_all(&mut self) {
+    /// Resets an action to its default state.
+    ///
+    /// Buttons will be released, and axes will be set to 0.
+    pub fn reset(&mut self, action: &A) {
+        match action.input_control_kind() {
+            InputControlKind::Button => self.release(action),
+            InputControlKind::Axis => {
+                let axis_data = self.axis_data_mut_or_default(action);
+                axis_data.value = 0.0;
+            }
+            InputControlKind::DualAxis => {
+                let dual_axis_data = self.dual_axis_data_mut_or_default(action);
+                dual_axis_data.pair = Vec2::ZERO;
+            }
+        }
+    }
+
+    /// Releases all [`Buttonlike`](crate::user_input::Buttonlike) actions,
+    /// sets all [`Axislike`](crate::user_input::Axislike) actions to 0,
+    /// and sets all [`DualAxislike`](crate::user_input::DualAxislike) actions to [`Vec2::ZERO`].
+    pub fn reset_all(&mut self) {
         // Collect out to avoid angering the borrow checker
         let all_actions = self.action_data.keys().cloned().collect::<Vec<A>>();
-        for action in all_actions
-            .into_iter()
-            .filter(|action| action.input_control_kind() == InputControlKind::Button)
-        {
-            self.release(&action);
+        for action in all_actions.into_iter() {
+            self.reset(&action);
         }
     }
 
@@ -667,35 +702,62 @@ impl<A: Actionlike> ActionState<A> {
         matches!(self.button_data(action), Some(action_data) if action_data.consumed)
     }
 
-    /// Disables the `action`
-    #[inline]
-    pub fn disable(&mut self, action: &A) {
-        let action_data = self.action_data_mut_or_default(action);
-
-        action_data.disabled = true;
-    }
-
-    /// Disables all actions
-    #[inline]
-    pub fn disable_all(&mut self) {
-        for action in self.keys() {
-            self.disable(&action);
-        }
+    /// Is the entire [`ActionState`] currently disabled?
+    pub fn disabled(&self) -> bool {
+        self.disabled
     }
 
     /// Is this `action` currently disabled?
     #[inline]
     #[must_use]
-    pub fn disabled(&self, action: &A) -> bool {
+    pub fn action_disabled(&self, action: &A) -> bool {
+        if self.disabled {
+            return true;
+        }
+
         match self.action_data(action) {
             Some(action_data) => action_data.disabled,
             None => false,
         }
     }
 
+    /// Disables the entire [`ActionState`].
+    ///
+    /// All values will be reset to their default state.
+    #[inline]
+    pub fn disable(&mut self) {
+        self.disabled = true;
+        self.reset_all();
+    }
+
+    /// Disables the `action`.
+    ///
+    /// The action's value will be reset to its default state.
+    #[inline]
+    pub fn disable_action(&mut self, action: &A) {
+        let action_data = self.action_data_mut_or_default(action);
+
+        action_data.disabled = true;
+        self.reset(action);
+    }
+
+    /// Disables all actions
+    #[inline]
+    pub fn disable_all_actions(&mut self) {
+        for action in self.keys() {
+            self.disable_action(&action);
+        }
+    }
+
+    /// Enables the entire [`ActionState`]
+    #[inline]
+    pub fn enable(&mut self) {
+        self.disabled = false;
+    }
+
     /// Enables the `action`
     #[inline]
-    pub fn enable(&mut self, action: &A) {
+    pub fn enable_action(&mut self, action: &A) {
         let action_data = self.action_data_mut_or_default(action);
 
         action_data.disabled = false;
@@ -703,9 +765,9 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Enables all actions
     #[inline]
-    pub fn enable_all(&mut self) {
+    pub fn enable_all_actions(&mut self) {
         for action in self.keys() {
-            self.enable(&action);
+            self.enable_action(&action);
         }
     }
 
@@ -720,10 +782,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
-        if self
-            .action_data(action)
-            .map_or(false, |action_data| action_data.disabled)
-        {
+        if self.action_disabled(action) {
             return false;
         }
 
@@ -744,10 +803,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn just_pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
-        if self
-            .action_data(action)
-            .map_or(false, |action_data| action_data.disabled)
-        {
+        if self.action_disabled(action) {
             return false;
         }
 
@@ -770,10 +826,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
-        if self
-            .action_data(action)
-            .map_or(false, |action_data| action_data.disabled)
-        {
+        if self.action_disabled(action) {
             return true;
         }
 
@@ -794,10 +847,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn just_released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
-        if self
-            .action_data(action)
-            .map_or(false, |action_data| action_data.disabled)
-        {
+        if self.action_disabled(action) {
             return false;
         }
 
