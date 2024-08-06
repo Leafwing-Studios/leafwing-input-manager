@@ -5,7 +5,9 @@ use std::any::TypeId;
 use bevy::{
     app::{App, PreUpdate},
     math::Vec2,
-    prelude::{GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource},
+    prelude::{
+        GamepadAxis, GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
+    },
     utils::{HashMap, HashSet},
 };
 
@@ -51,10 +53,12 @@ impl CentralInputStore {
         self.register_input_kind::<MouseButton>(app);
         self.register_input_kind::<GamepadButton>(app);
 
+        // Axislike
+        self.register_input_kind::<GamepadAxis>(app);
+
         // Dualaxislike
         self.register_input_kind::<MouseMove>(app);
         self.register_input_kind::<MouseScroll>(app);
-        //self.register_input_kind::<GamepadStick>(app);
     }
 
     /// Clears all existing values.

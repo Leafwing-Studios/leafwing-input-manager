@@ -1,7 +1,7 @@
 //! Gamepad inputs
 
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
-use bevy::input::ButtonInput;
+use bevy::input::{Axis, ButtonInput};
 use bevy::prelude::{
     Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
     Reflect, Res, ResMut, Vec2, World,
@@ -187,6 +187,43 @@ impl Buttonlike for GamepadControlDirection {
             value: 0.0,
         });
         world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+}
+
+impl UpdatableInput for GamepadAxis {
+    type SourceData = Axis<GamepadAxis>;
+
+    fn compute(
+        mut central_input_store: ResMut<CentralInputStore>,
+        source_data: Res<Self::SourceData>,
+    ) {
+        for axis in source_data.devices() {
+            let value = source_data.get(*axis).unwrap_or_default();
+
+            central_input_store.update_axislike(*axis, value);
+        }
+    }
+}
+
+/// Unlike [`GamepadButtonType`], this struct represents a specific axis on a specific gamepad.
+///
+/// In the majority of cases, [`GamepadControlAxis`] or [`GamepadStick`] should be used instead.
+impl UserInput for GamepadAxis {
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Axis
+    }
+
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![
+            Box::new(GamepadControlDirection::negative(self.axis_type)),
+            Box::new(GamepadControlDirection::positive(self.axis_type)),
+        ])
+    }
+}
+
+impl Axislike for GamepadAxis {
+    fn value(&self, input_streams: &InputStreams) -> f32 {
+        read_axis_value(input_streams, self.axis_type)
     }
 }
 
