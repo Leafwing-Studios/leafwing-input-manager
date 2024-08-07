@@ -9,10 +9,11 @@ use bevy::{
         GamepadAxis, GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
         World,
     },
+    reflect::Reflect,
     utils::{HashMap, HashSet},
 };
 
-use crate::plugin::InputManagerSystem;
+use crate::{plugin::InputManagerSystem, InputControlKind};
 
 use super::{Axislike, Buttonlike, DualAxislike, MouseMove, MouseScroll};
 
@@ -22,7 +23,7 @@ use super::{Axislike, Buttonlike, DualAxislike, MouseMove, MouseScroll};
 /// and ensures that their values are only recomputed once per frame.
 ///
 /// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
-#[derive(Resource, Default)]
+#[derive(Resource, Default, Debug, Reflect)]
 pub struct CentralInputStore {
     /// Stores the updated values of each kind of input.
     updated_values: HashMap<TypeId, UpdatedValues>,
@@ -31,7 +32,7 @@ pub struct CentralInputStore {
 }
 
 impl CentralInputStore {
-    /// Registers a new kind of input.
+    /// Registers a new source of raw input data of a matching `kind`.
     ///
     /// This will allow the input to be updated based on the state of the world,
     /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Unify`] during [`PreUpdate`].
@@ -40,12 +41,20 @@ impl CentralInputStore {
     /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
     ///
     /// This method has no effect if the input kind has already been registered.
-    pub fn register_input_kind<I: UpdatableInput>(&mut self, app: &mut App) {
+    pub fn register_input_kind<I: UpdatableInput>(
+        &mut self,
+        kind: InputControlKind,
+        app: &mut App,
+    ) {
         // Ensure this method is idempotent.
         if self.registered_input_kinds.contains(&TypeId::of::<I>()) {
             return;
         }
 
+        self.updated_values.insert(
+            TypeId::of::<I>(),
+            UpdatedValues::from_input_control_kind(kind),
+        );
         self.registered_input_kinds.insert(TypeId::of::<I>());
         app.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
     }
@@ -53,16 +62,16 @@ impl CentralInputStore {
     /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
     pub fn register_standard_input_kinds(&mut self, app: &mut App) {
         // Buttonlike
-        self.register_input_kind::<KeyCode>(app);
-        self.register_input_kind::<MouseButton>(app);
-        self.register_input_kind::<GamepadButton>(app);
+        self.register_input_kind::<KeyCode>(InputControlKind::Button, app);
+        self.register_input_kind::<MouseButton>(InputControlKind::Button, app);
+        self.register_input_kind::<GamepadButton>(InputControlKind::Button, app);
 
         // Axislike
-        self.register_input_kind::<GamepadAxis>(app);
+        self.register_input_kind::<GamepadAxis>(InputControlKind::Axis, app);
 
         // Dualaxislike
-        self.register_input_kind::<MouseMove>(app);
-        self.register_input_kind::<MouseScroll>(app);
+        self.register_input_kind::<MouseMove>(InputControlKind::DualAxis, app);
+        self.register_input_kind::<MouseScroll>(InputControlKind::DualAxis, app);
     }
 
     /// Clears all existing values.
@@ -179,11 +188,21 @@ impl CentralInputStore {
 ///
 /// The key should be the default form of the input if there is no need to differentiate between possible inputs of the same type,
 /// and the value should be the updated value fetched from [`UpdatableInput::SourceData`].
-#[derive(Debug)]
+#[derive(Debug, Reflect)]
 enum UpdatedValues {
     Buttonlike(HashMap<Box<dyn Buttonlike>, bool>),
     Axislike(HashMap<Box<dyn Axislike>, f32>),
     Dualaxislike(HashMap<Box<dyn DualAxislike>, Vec2>),
+}
+
+impl UpdatedValues {
+    fn from_input_control_kind(kind: InputControlKind) -> Self {
+        match kind {
+            InputControlKind::Button => Self::Buttonlike(HashMap::new()),
+            InputControlKind::Axis => Self::Axislike(HashMap::new()),
+            InputControlKind::DualAxis => Self::Dualaxislike(HashMap::new()),
+        }
+    }
 }
 
 /// A trait that enables user input to be updated based on the state of the world.
@@ -217,4 +236,87 @@ pub trait UpdatableInput: 'static {
     ///
     /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
     fn compute(central_input_store: ResMut<CentralInputStore>, source_data: Res<Self::SourceData>);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use leafwing_input_manager_macros::Actionlike;
+
+    use crate as leafwing_input_manager;
+    use crate::plugin::{CentralInputStorePlugin, InputManagerPlugin};
+
+    #[derive(Actionlike, Debug, PartialEq, Eq, Hash, Clone, Reflect)]
+    enum TestAction {
+        Run,
+        Jump,
+    }
+
+    #[test]
+    fn central_input_store_is_added_by_plugins() {
+        let mut app = App::new();
+        app.add_plugins(CentralInputStorePlugin);
+        assert!(app.world().contains_resource::<CentralInputStore>());
+
+        let mut app = App::new();
+        app.add_plugins(InputManagerPlugin::<TestAction>::default());
+        assert!(app.world().contains_resource::<CentralInputStore>());
+    }
+
+    #[test]
+    fn central_input_store_contains_expected_types() {
+        let mut app = App::new();
+        app.add_plugins(CentralInputStorePlugin);
+        let central_input_store = app.world().resource::<CentralInputStore>();
+
+        dbg!(central_input_store);
+
+        // If this fails, remember to update the list of types we expect to be registered.
+        assert_eq!(central_input_store.registered_input_kinds.len(), 6);
+        assert!(central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<KeyCode>()));
+        assert!(central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<MouseButton>()));
+        assert!(central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<GamepadButton>()));
+        assert!(central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<GamepadAxis>()));
+        assert!(central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<MouseMove>()));
+        assert!(central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<MouseScroll>()));
+    }
+
+    #[test]
+    fn number_of_maps_matches_number_of_registered_input_kinds() {
+        let mut app = App::new();
+        app.add_plugins(CentralInputStorePlugin);
+        let central_input_store = app.world().resource::<CentralInputStore>();
+
+        assert_eq!(
+            central_input_store.updated_values.len(),
+            central_input_store.registered_input_kinds.len()
+        );
+    }
+
+    #[test]
+    fn plugin_registers_systems() {
+        let mut app = App::new();
+        app.add_plugins(CentralInputStorePlugin);
+        let n_input_kinds = app
+            .world()
+            .resource::<CentralInputStore>()
+            .registered_input_kinds
+            .len();
+
+        let preupdate = app.get_schedule(PreUpdate).unwrap();
+        let n_systems = preupdate.systems_len();
+        assert_eq!(n_systems, n_input_kinds);
+    }
 }
