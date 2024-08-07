@@ -64,6 +64,7 @@ fn send_action_diff(app: &mut App, action_diff: ActionDiffEvent<Action>) {
     action_diff_events.send(action_diff);
 }
 
+#[track_caller]
 fn assert_has_no_action_diffs(app: &mut App) {
     let action_diff_events = get_events::<ActionDiffEvent<Action>>(app);
     let action_diff_event_reader = &mut action_diff_events.get_reader();
@@ -75,6 +76,7 @@ fn assert_has_no_action_diffs(app: &mut App) {
     }
 }
 
+#[track_caller]
 fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffEvent<Action>)) {
     let mut action_diff_events = get_events_mut::<ActionDiffEvent<Action>>(app);
     let action_diff_event_reader = &mut action_diff_events.get_reader();
@@ -89,6 +91,7 @@ fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffEvent
     action_diff_events.clear();
 }
 
+#[track_caller]
 fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent<Action>) {
     let mut action_state_query = app.world_mut().query::<&ActionState<Action>>();
     let action_state = action_state_query.get_single(app.world()).unwrap();
@@ -119,7 +122,8 @@ fn generate_binary_action_diffs() {
     app.add_systems(
         Update,
         |frame_count: Res<FrameCount>, mut action_state_query: Query<&mut ActionState<Action>>| {
-            if frame_count.0 % 2 == 0 {
+            if frame_count.0 % 2 == 1 {
+                println!("Pressing button");
                 for mut action_state in action_state_query.iter_mut() {
                     action_state.press(&Action::Button);
                 }
@@ -134,7 +138,6 @@ fn generate_binary_action_diffs() {
         .query::<&ActionState<Action>>()
         .get(app.world(), entity)
         .unwrap();
-    dbg!(action_state);
     assert!(action_state.pressed(&Action::Button));
 
     assert_action_diff_created(&mut app, |action_diff_event| {
@@ -194,7 +197,8 @@ fn generate_axis_action_diffs() {
         Update,
         move |frame_count: Res<FrameCount>,
               mut action_state_query: Query<&mut ActionState<Action>>| {
-            if frame_count.0 % 2 == 0 {
+            if frame_count.0 % 2 == 1 {
+                println!("Setting axis pair");
                 for mut action_state in action_state_query.iter_mut() {
                     action_state.set_axis_pair(&Action::DualAxis, test_axis_pair);
                 }
@@ -210,7 +214,6 @@ fn generate_axis_action_diffs() {
         .query::<&ActionState<Action>>()
         .get(app.world(), entity)
         .unwrap();
-    dbg!(action_state);
     assert_eq!(action_state.axis_pair(&Action::DualAxis), test_axis_pair);
 
     assert_action_diff_created(&mut app, |action_diff_event| {
