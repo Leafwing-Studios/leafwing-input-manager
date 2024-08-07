@@ -137,8 +137,7 @@ pub fn update_action_state<A: Actionlike>(
 
 #[cfg(any(feature = "egui", feature = "ui"))]
 /// Filters out all inputs that are captured by the UI.
-// TODO: make this pub
-fn filter_captured_input(
+pub fn filter_captured_input(
     mut keycodes: ResMut<ButtonInput<KeyCode>>,
     mut mouse_buttons: ResMut<ButtonInput<MouseButton>>,
     #[cfg(feature = "ui")] interactions: Query<&Interaction>,
