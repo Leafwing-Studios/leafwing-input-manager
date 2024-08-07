@@ -4,26 +4,26 @@ use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
-    PayTheBills,
+    MutateEveryOtherFrame,
 }
 
 #[derive(Default)]
 struct Counter(pub u8);
 
-fn spawn_da_bills(mut commands: Commands) {
+fn spawn_test_entity(mut commands: Commands) {
     commands.spawn(ActionState::<Action>::default());
 }
 
-fn pay_da_bills(
+fn press_every_other_frame(
     mutation: impl Fn(Mut<ActionState<Action>>),
 ) -> impl Fn(Query<&mut ActionState<Action>>, Local<Counter>) {
     move |mut action_state_query: Query<&mut ActionState<Action>>, mut counter: Local<Counter>| {
         if let Ok(mut action_state) = action_state_query.get_single_mut() {
-            if !action_state.pressed(&Action::PayTheBills) {
-                action_state.press(&Action::PayTheBills);
+            if !action_state.pressed(&Action::MutateEveryOtherFrame) {
+                action_state.press(&Action::MutateEveryOtherFrame);
                 mutation(action_state);
             } else if counter.0 > 1 {
-                action_state.release(&Action::PayTheBills);
+                action_state.release(&Action::MutateEveryOtherFrame);
             }
             counter.0 += 1;
         }
@@ -52,7 +52,7 @@ fn create_app() -> App {
         InputPlugin,
         InputManagerPlugin::<Action>::default(),
     ))
-    .add_systems(Startup, spawn_da_bills)
+    .add_systems(Startup, spawn_test_entity)
     .add_event::<ActionDiffEvent<Action>>();
     app.update();
     app
@@ -131,8 +131,8 @@ fn generate_binary_action_diffs() {
         .single(app.world());
     app.add_systems(
         Update,
-        pay_da_bills(|mut action_state| {
-            action_state.press(&Action::PayTheBills);
+        press_every_other_frame(|mut action_state| {
+            action_state.press(&Action::MutateEveryOtherFrame);
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>);
@@ -144,14 +144,14 @@ fn generate_binary_action_diffs() {
         .get(app.world(), entity)
         .unwrap();
     dbg!(action_state);
-    assert!(action_state.pressed(&Action::PayTheBills));
+    assert!(action_state.pressed(&Action::MutateEveryOtherFrame));
 
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action } => {
-                assert_eq!(action, Action::PayTheBills);
+                assert_eq!(action, Action::MutateEveryOtherFrame);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `Pressed` variant got a `Released` variant")
@@ -176,7 +176,7 @@ fn generate_binary_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
-                assert_eq!(action, Action::PayTheBills);
+                assert_eq!(action, Action::MutateEveryOtherFrame);
             }
             ActionDiff::Pressed { .. } => {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
@@ -201,8 +201,8 @@ fn generate_axis_action_diffs() {
         .single(app.world());
     app.add_systems(
         Update,
-        pay_da_bills(move |mut action_state| {
-            action_state.set_axis_pair(&Action::PayTheBills, input_axis_pair)
+        press_every_other_frame(move |mut action_state| {
+            action_state.set_axis_pair(&Action::MutateEveryOtherFrame, input_axis_pair)
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)
@@ -215,7 +215,7 @@ fn generate_axis_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
-                assert_eq!(action, Action::PayTheBills);
+                assert_eq!(action, Action::MutateEveryOtherFrame);
                 assert_eq!(axis_pair, input_axis_pair);
             }
             ActionDiff::Released { .. } => {
@@ -241,7 +241,7 @@ fn generate_axis_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
-                assert_eq!(action, Action::PayTheBills);
+                assert_eq!(action, Action::MutateEveryOtherFrame);
             }
             ActionDiff::Pressed { .. } => {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
@@ -268,7 +268,7 @@ fn process_binary_action_diffs() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Pressed {
-            action: Action::PayTheBills,
+            action: Action::MutateEveryOtherFrame,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -280,7 +280,7 @@ fn process_binary_action_diffs() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::PayTheBills,
+            action: Action::MutateEveryOtherFrame,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -302,7 +302,7 @@ fn process_value_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::AxisChanged {
-            action: Action::PayTheBills,
+            action: Action::MutateEveryOtherFrame,
             value: 0.5,
         }],
     };
@@ -315,7 +315,7 @@ fn process_value_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::PayTheBills,
+            action: Action::MutateEveryOtherFrame,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -337,7 +337,7 @@ fn process_axis_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::DualAxisChanged {
-            action: Action::PayTheBills,
+            action: Action::MutateEveryOtherFrame,
             axis_pair: Vec2 { x: 1., y: 0. },
         }],
     };
@@ -350,7 +350,7 @@ fn process_axis_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::PayTheBills,
+            action: Action::MutateEveryOtherFrame,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
