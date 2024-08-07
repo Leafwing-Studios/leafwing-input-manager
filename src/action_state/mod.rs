@@ -995,8 +995,7 @@ mod tests {
     #[test]
     fn press_lifecycle() {
         let mut app = App::new();
-        app.add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+        app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 
         #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, bevy::prelude::Reflect)]
         enum Action {

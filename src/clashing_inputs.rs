@@ -471,6 +471,7 @@ mod tests {
     mod basic_functionality {
         use crate::{
             input_map::UpdatedValue,
+            plugin::{AccumulatorPlugin, CentralInputStorePlugin},
             prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey},
         };
         use bevy::{input::InputPlugin, math::Vec2, prelude::Gamepads};
@@ -575,7 +576,7 @@ mod tests {
         #[test]
         fn resolve_prioritize_longest() {
             let mut app = App::new();
-            app.add_plugins(InputPlugin);
+            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
             app.init_resource::<AccumulatedMouseMovement>();
             app.init_resource::<AccumulatedMouseScroll>();
 
@@ -630,11 +631,9 @@ mod tests {
         }
 
         #[test]
-        fn handle_clashes() {
+        fn handle_simple_clash() {
             let mut app = App::new();
-            app.add_plugins(InputPlugin);
-            app.init_resource::<AccumulatedMouseMovement>();
-            app.init_resource::<AccumulatedMouseScroll>();
+            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
             let input_map = test_input_map();
 
             Digit1.press(app.world_mut());
@@ -720,9 +719,9 @@ mod tests {
         }
 
         #[test]
-        fn which_pressed() {
+        fn check_which_pressed() {
             let mut app = App::new();
-            app.add_plugins(InputPlugin);
+            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
             app.init_resource::<AccumulatedMouseMovement>();
             app.init_resource::<AccumulatedMouseScroll>();
             let input_map = test_input_map();

@@ -980,9 +980,8 @@ mod tests {
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(MinimalPlugins)
-            .add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+        app.add_plugins(MinimalPlugins);
+        app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
