@@ -60,17 +60,26 @@ impl CentralInputStore {
     }
 
     /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
+    ///
+    /// The set of input kinds registered by this method is controlled by the features enabled:
+    /// turn off default features to avoid registering input kinds that are not needed.
     pub fn register_standard_input_kinds(&mut self, app: &mut App) {
         // Buttonlike
+        #[cfg(feature = "keyboard")]
         self.register_input_kind::<KeyCode>(InputControlKind::Button, app);
+        #[cfg(feature = "mouse")]
         self.register_input_kind::<MouseButton>(InputControlKind::Button, app);
+        #[cfg(feature = "gamepad")]
         self.register_input_kind::<GamepadButton>(InputControlKind::Button, app);
 
         // Axislike
+        #[cfg(feature = "gamepad")]
         self.register_input_kind::<GamepadAxis>(InputControlKind::Axis, app);
 
         // Dualaxislike
+        #[cfg(feature = "mouse")]
         self.register_input_kind::<MouseMove>(InputControlKind::DualAxis, app);
+        #[cfg(feature = "mouse")]
         self.register_input_kind::<MouseScroll>(InputControlKind::DualAxis, app);
     }
 

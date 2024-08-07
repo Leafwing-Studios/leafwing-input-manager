@@ -93,8 +93,11 @@ pub use self::mouse::*;
 pub use self::trait_serde::RegisterUserInput;
 
 pub mod chord;
+#[cfg(feature = "gamepad")]
 pub mod gamepad;
+#[cfg(feature = "keyboard")]
 pub mod keyboard;
+#[cfg(feature = "mouse")]
 pub mod mouse;
 pub mod testing_utils;
 mod trait_reflection;
