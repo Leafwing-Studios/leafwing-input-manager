@@ -109,7 +109,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 // Main schedule
                 app.add_systems(
                     PreUpdate,
-                    tick_action_state::<A>
+                    (tick_action_state::<A>, clear_central_input_store)
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )

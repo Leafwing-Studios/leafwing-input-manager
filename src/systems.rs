@@ -468,3 +468,9 @@ pub fn release_on_input_map_removed<A: Actionlike>(
         *input_map_resource_existed = false;
     }
 }
+
+/// Clears all values from the [`CentralInputStore`],
+/// making sure that it can read fresh inputs for the frame.
+pub fn clear_central_input_store(mut input_store: ResMut<CentralInputStore>) {
+    input_store.clear();
+}
