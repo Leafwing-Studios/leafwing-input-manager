@@ -65,7 +65,7 @@ pub struct ActionDiffEvent<A: Actionlike> {
 /// Stores the state of all actions in the current frame.
 ///
 /// Inside of the hashmap, [`Entity::PLACEHOLDER`] represents the global / resource state of the action.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct SummarizedActionState<A: Actionlike> {
     button_state_map: HashMap<Entity, HashMap<A, bool>>,
     axis_state_map: HashMap<Entity, HashMap<A, f32>>,
@@ -324,24 +324,58 @@ impl<A: Actionlike> Default for SummarizedActionState<A> {
 
 #[cfg(test)]
 mod tests {
-    use crate as leafwing_input_manager;
+    use crate::InputControlKind;
 
     use super::*;
     use bevy::{ecs::system::SystemState, prelude::*};
 
-    #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     enum TestAction {
-        A,
-        B,
-        C,
+        Button,
+        Axis,
+        DualAxis,
+    }
+
+    impl Actionlike for TestAction {
+        fn input_control_kind(&self) -> InputControlKind {
+            match self {
+                TestAction::Button => InputControlKind::Button,
+                TestAction::Axis => InputControlKind::Axis,
+                TestAction::DualAxis => InputControlKind::DualAxis,
+            }
+        }
     }
 
     fn test_action_state() -> ActionState<TestAction> {
         let mut action_state = ActionState::default();
-        action_state.press(&TestAction::A);
-        action_state.set_value(&TestAction::B, 0.5);
-        action_state.set_axis_pair(&TestAction::C, Vec2::new(0.5, 0.5));
+        action_state.press(&TestAction::Button);
+        action_state.set_value(&TestAction::Axis, 0.3);
+        action_state.set_axis_pair(&TestAction::DualAxis, Vec2::new(0.5, 0.7));
         action_state
+    }
+
+    fn expected_summary(entity: Entity) -> SummarizedActionState<TestAction> {
+        let mut button_state_map = HashMap::default();
+        let mut axis_state_map = HashMap::default();
+        let mut dual_axis_state_map = HashMap::default();
+
+        let mut global_button_state = HashMap::default();
+        global_button_state.insert(TestAction::Button, true);
+        button_state_map.insert(entity, global_button_state);
+
+        let mut global_axis_state = HashMap::default();
+        global_axis_state.insert(TestAction::Axis, 0.3);
+        axis_state_map.insert(entity, global_axis_state);
+
+        let mut global_dual_axis_state = HashMap::default();
+        global_dual_axis_state.insert(TestAction::DualAxis, Vec2::new(0.5, 0.7));
+        dual_axis_state_map.insert(entity, global_dual_axis_state);
+
+        SummarizedActionState {
+            button_state_map,
+            axis_state_map,
+            dual_axis_state_map,
+        }
     }
 
     #[test]
@@ -354,8 +388,23 @@ mod tests {
         )> = SystemState::new(&mut world);
         let (global_action_state, action_state_query) = system_state.get(&mut world);
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
+
+        // Resources use the placeholder entity
+        assert_eq!(summarized, expected_summary(Entity::PLACEHOLDER));
     }
 
     #[test]
-    fn summarize_from_component() {}
+    fn summarize_from_component() {
+        let mut world = World::new();
+        let entity = world.spawn(test_action_state()).id();
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>)>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&mut world);
+        let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
+
+        // Components use the entity
+        assert_eq!(summarized, expected_summary(entity));
+    }
 }
