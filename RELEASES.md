@@ -2,7 +2,7 @@
 
 ## Version 0.15.0 (Unreleased)
 
-### Enhancements
+### Enhancements (0.15)
 
 #### Trait-based input design
 
@@ -92,7 +92,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - Disabling actions now resets their value, exposed via the `ActionState::reset` method
 - `ActionState::release_all` has been renamed to `ActionState::reset_all` and now resets the values of `Axislike` and `DualAxislike` actions
 
-### Usability
+### Usability (0.15)
 
 #### InputMap
 
@@ -115,7 +115,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - for example, rather than `app.press_input(KeyCode::Space)` call `KeyCode::Space.press(app.world_mut())`
 - existing methods for quickly checking the value of buttons and axes have been moved to the `FetchUserInput` trait and retained for testing purposes
 
-### Bugs
+### Bugs (0.15)
 
 - fixed a bug where enabling a pressed action would read as `just_pressed`, and disabling a pressed action would read as `just_released`.
 - inputs are now handled correctly in the `FixedUpdate` schedule! Previously, the `ActionState`s were only updated in the `PreUpdate` schedule, so you could have situations where an action was marked as `just_pressed` multiple times in a row (if the `FixedUpdate` schedule ran multiple times in a frame) or was missed entirely (if the `FixedUpdate` schedule ran 0 times in a frame).
@@ -124,7 +124,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   if the `timing` feature is enabled. It is disabled by default because most games don't require timing information.
   (how long a button was pressed for)
 
-### Tech debt
+### Tech debt (0.15)
 
 - removed `ActionStateDriver` and `update_action_state_from_interaction`, which allowed actions to be pressed by `bevy_ui` buttons
   - this feature was not widely used and can be easily replicated externally
@@ -133,7 +133,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - removed the `orientation` module, migrating to `bevy_math::Rot2`
   - use the types provided in `bevy_math` instead
 
-### Migration Guide
+### Migration Guide (0.15)
 
 - renamed `InputMap::which_pressed` method to `process_actions` to better reflect its current functionality for clarity.
 - the old `SingleAxis` is now:
@@ -185,17 +185,17 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.13.3
 
-### Bugs
+### Bugs (0.13.3)
 
 - fixed a bug where `DualAxis` was being considered pressed even when its data was [0.0, 0.0].
 
-### Usability
+### Usability (0.13.3)
 
 - added `InputManagerBundle::with_map(InputMap)` allowing you to create the bundle with the given `InputMap` and default `ActionState`.
 
 ## Version 0.13.2
 
-### Usability
+### Usability (0.13.2)
 
 - added `with_threshold()` for const `SingleAxis` creation.
 - added `horizontal_gamepad_face_buttons()` and `vertical_gamepad_face_buttons()` for `VirtualAxis`, similar to `VirtualDpad::gamepad_face_buttons()`.
@@ -212,17 +212,17 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - by default, this library will prioritize `bevy::ui`.
   - if you want to disable this priority, add the newly added `no_ui_priority` feature to your configuration.
 
-### Bugs
+### Bugs (0.13.1)
 
 - fixed a bug related to missing handling for `ActionState::consumed`
 
-### Usability
+### Usability (0.13.1)
 
 - exported `ActionState::action_data_mut_or_default()`
 
 ## Version 0.13.0
 
-### Breaking Changes
+### Breaking Changes (0.13.0)
 
 - `Modifier::Win` has been renamed to `Modifier::Super`, consistent with `KeyCode::SuperLeft` and `KeyCode::SuperRight`.
 - both `KeyCode`-based logical keybindings and `ScanCode`-based physical keybindings are no longer supported; please migrate to:
@@ -234,27 +234,27 @@ Input processors allow you to create custom logic for axis-like input manipulati
     - all number keys over letters now follow the format `KeyCode::Digit<Number>`, e.g., `ScanCode::Key1` is now `KeyCode::Digit1`.
     - all arrow keys now follow the format `KeyCode::Arrow<Direction>`, e.g., `ScanCode::Up` is now `KeyCode::ArrowUp`.
 
-### Usability
+### Usability (0.13.0)
 
 - `bevy` dependency has been bumped from 0.12 to 0.13.
 - `bevy_egui` dependency has been bumped from 0.24 to 0.25.
 
 ## Version 0.12.1
 
-### Usability
+### Usability (0.12.1)
 
 - added a table detailing supported Bevy versions in the README.md
 - added a feature flag `asset` allowing optional `bevy::asset::Asset` derive for the `InputMap`
 - exported `InputKind` in `prelude` module
 
-### Bugs
+### Bugs (0.12.1)
 
 - fixed compilation issues with no-default-features
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/471) related to incorrect updating of `ActionState`.
 
 ## Version 0.12
 
-### Enhancements
+### Enhancements (0.12)
 
 - improved deadzone handling for both `DualAxis` and `SingleAxis` deadzones
   - all deadzones now scale the input so that it is continuous.
@@ -262,7 +262,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - an input that falls on the exact boundary of a deadzone is now considered inside it
 - added support in `ActionDiff` for value and axis_pair changes
 
-### Usability
+### Usability (0.12)
 
 - `InputMap`s are now constructed with `(Action, Input)` pairs, rather than `(Input, Action)` pairs, which directly matches the underlying data model
 - registered types in the reflection system
@@ -270,13 +270,13 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - added `ActionState::keys`
 - exported `VirtualAxis` in `prelude` module
 
-### Bugs
+### Bugs (0.12)
 
 - registered types in the reflection system
 - added `InputMap::clear`
 - fixed [a bug](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/430) related to incorrect axis data in `Chord` when not all buttons are pressed.
 
-### Code Quality
+### Code Quality (0.12)
 
 - all non-insertion methods now take `&A: Actionlike` rather than `A: Actionlike` to avoid pointless cloning
 - removed `multimap` dependency in favor of regular `HashMap` which allowed to derive `Reflect` for `InputMap`
@@ -301,7 +301,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 - `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
 
-### Bugs
+### Bugs (0.11.1)
 
 - A disabled `ToggleActions` of one `Action` now does not release other `Action`'s inputs.
 - `bevy_egui` integration and the `egui` feature flag have been added back with the release of `bevy_egui` 0.23.
@@ -314,7 +314,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - gamepad input mocking is not completely functional due to upstream changes: see [#407](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/407)
   - additional experiments and information would be helpful!
 
-### Breaking Changes
+### Breaking Changes (0.11)
 
 - The `UserInput::insert_at` method has been removed: build this abstraction into your input binding menus if desired.
 - `InputMap::iter()` now returns a simple iterator of (action, input) pairs
@@ -322,31 +322,31 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - The `InputMap::remove_at` API now returns `Some(removed_input)`, rather than just a `bool`.
 - The serialization format for `InputMap` has changed. You will need to re-generate your input maps if you were storing these persistently.
 
-### Enhancements
+### Enhancements (0.11)
 
 - Added `DeadZoneShape` for `DualAxis` which allows for different deadzones shapes: cross, rectangle, and ellipse.
 - Added sensitivity for `SingleAxis` and `DualAxis`, allowing you to scale mouse, keypad and gamepad inputs differently for each action.
 - Added a helper `from_keys` to `VirtualAxis` to simplify creating one from two keys
 
-### Usability
+### Usability (0.11)
 
 - Added `block_ui_interactions` feature flag; when on, mouse input won't be read if any `bevy_ui` element has an active `Interaction`.
 - Chords no longer have a max length.
 - `InputMap`, `UserInput` and all of the contained types now implement `Reflect`. As a result, the trait bound on `Actionlike` has been changed from `TypePath` to `Reflect`.
 
-### Bugs
+### Bugs (0.11)
 
 - Fixed system order ambiguity between bevy_ui and update_action_state systems
 - The input values of axis inputs in a `Chord` are now prioritized over buttons
 - Fixed unassigned `InputMaps`s not receiving input from all connected gamepads
 
-### Performance
+### Performance (0.11)
 
 - Removed the `petitset` dependency in favor of a `MultiMap` to reduce stack size of input types.
   - As a result, the `Actionlike` trait now has the additional `Hash` and `Eq` trait bounds
   - `UserInput::Chord` now stores a simple `Vec` of `InputKind`s
 
-### Docs
+### Docs (0.11)
 
 - Fixed invalid example code in README
 - Added example for setting default controls
@@ -354,60 +354,57 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.10
 
-### Usability
+### Usability (0.10)
 
 - `bevy` dependency has been bumped from 0.10 to 0.11.
 - `ActionLike` now requires Bevy's `TypePath` trait. Your actions will now need to derive `Reflect` or `TypePath`. See [bevy#7184](https://github.com/bevyengine/bevy/pull/7184)
 - `QwertyScanCode` has had its variants renamed to match bevy's `KeyCode` variants.
   See [bevy#8792](https://github.com/bevyengine/bevy/pull/8792)
+- Makes `run_if_enabled` public.
 
-### Enhancements
+### Enhancements (0.10)
 
 - Changed `entity` field of `ActionStateDriver` to `targets: ActionStateDriverTarget` with variants for 0, 1, or multiple targets, to allow for one driver
   to update multiple entities if needed.
 - Added builder-style functions to `SingleAxis`, `DualAxis`, and `VirtualDPad` that invert their output values, allowing, for example, binding inverted camera controls.
 
-### Docs
+### Docs (0.10)
 
 - Added example for driving cursor position action from another entity.
 
-### Usability
-
-- Makes `run_if_enabled` public.
-
 ## Version 0.9.3
 
-### Bugs
+### Bugs (0.9.3)
 
 - Changed `Rotation` to be stored in millionths of a degree instead of tenths of a degree in order to reduce rounding errors.
 
-### Usability
+### Usability (0.9.3)
 
 - Added `VirtualAxis::horizontal_dpad()` and `VirtualAxis::vertical_dpad()`.
 - Do not read mouse input if any `bevy_ui` element have active `Interaction`.
 
 ## Version 0.9.2
 
-### Bugs
+### Bugs (0.9.2)
 
 - Fixed `DualAxis` inputs so deadzones apply across both axes, and filter
   out-of-range values correctly.
 
 ## Version 0.9.1
 
-### Usability
+### Usability (0.9.1)
 
 - Added common run conditions for actions that mirrors input conditions in Bevy.
 
 ## Version 0.9.0
 
-### Usability
+### Usability (0.9.0)
 
 - Added `ActionState::consume_all()` to consume all actions.
 - `bevy_egui` dependency has been bumped from 0.19 to 0.20.
 - `bevy` dependency has been bumped from 0.9 to 0.10.
 
-### Enhancements
+### Enhancements (0.9.0)
 
 - Added **scan code** support, which enables you to define keybindings depending on the key position rather than the key output.
   This is useful to make the keybindings layout-independent and is commonly used for the WASD movement controls.
@@ -418,13 +415,13 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.8.0
 
-### Usability
+### Usability (0.8.0)
 
 - `bevy_egui` dependency has been bumped from 0.18 to 0.19.
 
 ## Version 0.7.2
 
-### Usability
+### Usability (0.7.2)
 
 - Added custom implementation of the `Serialize` and `Deserialize` traits for `InputMap` to make the format more human readable.
 - Added `TypeUuid` for `InputMap` to be able use it as asset without wrapper
@@ -433,36 +430,36 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.7.1
 
-### Bugs
+### Bugs (0.7.1)
 
 - `egui` feature now works correctly and more robustly if an `EguiPlugin` is not actually enabled.
 
 ## Version 0.7
 
-### Enhancements
+### Enhancements (0.7)
 
 - Added `VirtualAxis` struct that can be supplied to an `InputMap` to trigger on two direction-representing inputs. 1-dimensional equivalent to `VirtualDPad`.
 
-### Usability
+### Usability (0.7)
 
 - Added `egui` feature to not take specific input sources into account when egui is using them. For example, when the user clicks on a widget, the actions associated with the mouse will not be taken into account.
 - `InputStreams` no longer stores an `Option` to an input stream type: all fields other than `associated_gamepad` are now required. This was not useful in practice and added significant complexity.
 
 ## Version 0.6.1
 
-### Bugs
+### Bugs (0.6.1)
 
 - no longer print "real clash" due to a missed debugging statement
 
 ## Version 0.6
 
-### Enhancements
+### Enhancements (0.6)
 
 - Added the `Modifier` enum, to ergonomically capture the notion of "either control/alt/shift/windows key".
   - The corresponding `InputKind::Modifier` variant was added to match.
   - You can conveniently construct these using the `InputKind::modified` or `InputMap::insert_modified` methods.
 
-### Usability
+### Usability (0.6)
 
 - Implemented `Eq` for `Timing` and `InputMap`.
 - Held `ActionState` inputs will now be released when an `InputMap` is removed.
@@ -475,20 +472,20 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.5.2
 
-### Bug fixes
+### Bug fixes (0.5.2)
 
 - Fixed gamepad axes not filtering out inputs outside of the axis deadzone.
 - Fixed `DualAxis::right_stick()` returning the y axis for the left stick.
 
 ## Version 0.5.1
 
-### Bug fixes
+### Bug fixes (0.5.1)
 
 - removed a missed `println` statement spamming "real conflict" that had been missed
 
 ## Version 0.5
 
-### Enhancements
+### Enhancements (0.5)
 
 - Added gamepad axis support.
   - Use the new `SingleAxis` and `DualAxis` types / variants.
@@ -503,7 +500,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - a value (typically) in the range `-1.0..=1.0` for a single axis representing its analog input
   - or a value (typically) in the range `0.0..=1.0` for a dual axis representing the magnitude (length) of its vector.
 
-### Usability
+### Usability (0.5)
 
 - If no gamepad is registered to a specific `InputMap`, inputs from any gamepad in the `Gamepads` resource will be used.
 - Removed the `ActionState::reasons_pressed` API.
@@ -539,13 +536,13 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.4.1
 
-### Bug fixes
+### Bug fixes (0.4.1)
 
 - fixed a compilation error caused by mistakenly renaming the macros crate
 
 ## Version 0.4
 
-### Usability
+### Usability (0.4)
 
 - reduced required `derive_more` features
 - removed `thiserror` dependency
@@ -553,14 +550,14 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - this is a map-like struct: one presses `KeyCode::F` to `Actions::PayRespects`, not the other way around!
   - this includes the order of all paired tuples, including the returned values
 
-### Bug fixes
+### Bug fixes (0.4)
 
 - fixed serious bug that broke all functionality relating to durations that buttons were pressed or released for
   - `ActionState::tick` now takes the `Instant` of both the current and previous frame, rather than just the current
 - `InputManagerPlugin` no longer panics when time does not have a previous update
   - this is useful as it ensures `bevy_inspector_egui` compatibility!
 
-### Docs
+### Docs (0.4)
 
 - properly documented the `ToggleActions` functionality, for dynamically enabling and disabling actions
 - added doc examples to `ActionStateDriver`, which allows you to trigger actions based on entity properties
@@ -569,7 +566,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.3
 
-### Enhancements
+### Enhancements (0.3)
 
 - added `reasons_pressed` API on `ActionState`, which records the triggering inputs
   - you can use this to extract exact input information from analog inputs (like triggers or joysticks)
@@ -578,7 +575,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - added geometric primitives (`Direction` and `Rotation`) for working with rotations in 2 dimensions
   - stay tuned for first-class directional input support!
 
-### Usability
+### Usability (0.3)
 
 - if desired, users are now able to use the `ActionState` and `InputMap` structs as standalone resources
 - reverted change from by-reference to by-value APIs for `Actionlike` types
@@ -602,13 +599,13 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - use `usize` for sizes as in other Rust containers.
 - added `UserInput::raw_inputs`, which breaks down a `UserInput` into the constituent Bevy types (e.g. `KeyCode` and `MouseButton`)
 
-### Bug fixes
+### Bug fixes (0.3)
 
 - the `PartialOrd` implementation of `Timing` now correctly compares values on the basis of the current duration that the button has been held / released for
 
 ## Version 0.2
 
-### Enhancements
+### Enhancements (0.2)
 
 - configure how "clashing" inputs should be handled with the `ClashStrategy` field of your `InputMap`
   - very useful for working with modifier keys
@@ -618,7 +615,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - check out (or directly use) the `process_action_diff` and `generate_action_diff` systems to convert these to and from `ActionStates`
   - add `InputManagerPlugin::server()` to your server `App` for a stripped down version of the input management functionality
 
-### Usability
+### Usability (0.2)
 
 - `InputMap::new()` and `InputMap::insert_multiple` now accept an iterator of `(action, input)` tuples for more natural construction
 - better decoupled `InputMap` and `ActionState`, providing an `InputMap::which_pressed` API and allowing `ActionState::update` to operate based on any `HashSet<A: Actionlike>` of pressed virtual buttons that you pass in
@@ -632,7 +629,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - `Clone`, `PartialEq` and `Debug` trait impls for `ActionState`
 - `get_pressed`, `get_just_pressed`, `get_released` and `get_just_released` methods on `ActionState`, for conveniently checking many action states at once
 
-### Bug fixes
+### Bug fixes (0.2)
 
 - the `ActionState` component is no longer marked as `Changed` every frame
 - `InputManagerPlugin::run_in_state` now actually works!
@@ -640,17 +637,17 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.1.2
 
-### Usability
+### Usability (0.1.2)
 
 - added `set_state` method, allowing users to transfer `VirtualButtonState` between `ActionState` without losing `Timing` information
 
-### Bug fixes
+### Bug fixes (0.1.2)
 
 - fixed minor mistakes in documentation
 
 ## Version 0.1.1
 
-### Bug fixes
+### Bug fixes (0.1.1)
 
 - fix failed `strum` re-export; users will need to pull in the derive macro `EnumIter` themselves
   - thanks to `@Shatur` for noticing this
