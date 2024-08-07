@@ -159,6 +159,8 @@ pub fn filter_captured_input(
 /// Generates an [`Events`] stream of [`ActionDiff`] from [`ActionState`]
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
+/// Generally speaking, this should be added as part of [`PostUpdate`](bevy::prelude::PostUpdate),
+/// to ensure that all inputs have been processed and any manual actions have been sent.
 pub fn generate_action_diffs<A: Actionlike>(
     global_action_state: Option<Res<ActionState<A>>>,
     action_state_query: Query<(Entity, &ActionState<A>)>,
