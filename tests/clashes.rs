@@ -84,6 +84,7 @@ impl ClashTestExt for App {
         pressed_actions: impl IntoIterator<Item = Action>,
     ) {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions);
+        let central_input_store = CentralInputStore::from_world(self.world_mut());
         // SystemState is love, SystemState is life
         let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
             SystemState::new(self.world_mut());
@@ -96,12 +97,12 @@ impl ClashTestExt for App {
         for action in Action::variants() {
             if pressed_actions.contains(action) {
                 assert!(
-                    input_map.pressed(action, &CentralInputStore::from_world(self.world_mut()), clash_strategy),
+                    input_map.pressed(action, &central_input_store, clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(action, &CentralInputStore::from_world(self.world_mut()), clash_strategy),
+                    !input_map.pressed(action, &central_input_store, clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }
