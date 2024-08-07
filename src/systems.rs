@@ -170,6 +170,7 @@ pub fn generate_action_diffs<A: Actionlike>(
     let current_action_state =
         SummarizedActionState::summarize(global_action_state, action_state_query);
     current_action_state.send_diffs(&previous_action_state, &mut action_diff_events);
+    dbg!(&previous_action_state, &current_action_state);
     *previous_action_state = current_action_state;
 }
 

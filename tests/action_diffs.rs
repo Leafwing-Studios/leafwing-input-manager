@@ -1,4 +1,3 @@
-use bevy::core::FrameCount;
 use bevy::{input::InputPlugin, prelude::*};
 use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
 use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
@@ -119,26 +118,16 @@ fn generate_binary_action_diffs() {
         .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
         .single(app.world());
-    app.add_systems(
-        Update,
-        |frame_count: Res<FrameCount>, mut action_state_query: Query<&mut ActionState<Action>>| {
-            if frame_count.0 % 2 == 1 {
-                println!("Pressing button");
-                for mut action_state in action_state_query.iter_mut() {
-                    action_state.press(&Action::Button);
-                }
-            }
-        },
-    )
-    .add_systems(PostUpdate, generate_action_diffs::<Action>);
+    app.add_systems(PostUpdate, generate_action_diffs::<Action>);
 
-    app.update();
-    let action_state = app
+    // Press
+    let mut action_state = app
         .world_mut()
-        .query::<&ActionState<Action>>()
-        .get(app.world(), entity)
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
         .unwrap();
-    assert!(action_state.pressed(&Action::Button));
+    action_state.press(&Action::Button);
+    app.update();
 
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
@@ -159,10 +148,17 @@ fn generate_binary_action_diffs() {
         }
     });
 
+    // Hold
     app.update();
-
     assert_has_no_action_diffs(&mut app);
 
+    // Release
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.release(&Action::Button);
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_event| {
@@ -193,28 +189,17 @@ fn generate_axis_action_diffs() {
         .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
         .single(app.world());
-    app.add_systems(
-        Update,
-        move |frame_count: Res<FrameCount>,
-              mut action_state_query: Query<&mut ActionState<Action>>| {
-            if frame_count.0 % 2 == 1 {
-                println!("Setting axis pair");
-                for mut action_state in action_state_query.iter_mut() {
-                    action_state.set_axis_pair(&Action::DualAxis, test_axis_pair);
-                }
-            }
-        },
-    )
-    .add_systems(PostUpdate, generate_action_diffs::<Action>)
-    .add_event::<ActionDiffEvent<Action>>();
 
-    app.update();
-    let action_state = app
+    app.add_systems(PostUpdate, generate_action_diffs::<Action>);
+
+    // Change axis value
+    let mut action_state = app
         .world_mut()
-        .query::<&ActionState<Action>>()
-        .get(app.world(), entity)
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
         .unwrap();
-    assert_eq!(action_state.axis_pair(&Action::DualAxis), test_axis_pair);
+    action_state.set_axis_pair(&Action::DualAxis, test_axis_pair);
+    app.update();
 
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
@@ -236,18 +221,25 @@ fn generate_axis_action_diffs() {
         }
     });
 
+    // Do nothing for a frame
     app.update();
-
     assert_has_no_action_diffs(&mut app);
 
+    // Reset axis value
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.set_axis_pair(&Action::DualAxis, Vec2::ZERO);
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Released { action } => {
-                assert_eq!(action, Action::DualAxis);
+            ActionDiff::Released { .. } => {
+                panic!("Expected a `AxisPairChanged` variant got a `Released` variant")
             }
             ActionDiff::Pressed { .. } => {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
@@ -255,8 +247,9 @@ fn generate_axis_action_diffs() {
             ActionDiff::AxisChanged { .. } => {
                 panic!("Expected a `Released` variant got a `ValueChanged` variant")
             }
-            ActionDiff::DualAxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `AxisPairChanged` variant")
+            ActionDiff::DualAxisChanged { action, axis_pair } => {
+                assert_eq!(action, Action::DualAxis);
+                assert_eq!(axis_pair, Vec2::ZERO);
             }
         }
     });
