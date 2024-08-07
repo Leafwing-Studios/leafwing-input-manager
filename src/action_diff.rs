@@ -407,4 +407,34 @@ mod tests {
         // Components use the entity
         assert_eq!(summarized, expected_summary(entity));
     }
+
+    #[test]
+    fn diffs_are_sent() {
+        let mut world = World::new();
+        world.init_resource::<Events<ActionDiffEvent<TestAction>>>();
+
+        let entity = world.spawn(test_action_state()).id();
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>)>,
+            EventWriter<ActionDiffEvent<TestAction>>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query, mut action_diff_writer) =
+            system_state.get_mut(&mut world);
+        let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
+
+        let previous = SummarizedActionState::default();
+        summarized.send_diffs(&previous, &mut action_diff_writer);
+
+        let mut system_state: SystemState<EventReader<ActionDiffEvent<TestAction>>> =
+            SystemState::new(&mut world);
+        let mut event_reader = system_state.get_mut(&mut world);
+        let action_diff_events = event_reader.read().collect::<Vec<_>>();
+
+        dbg!(&action_diff_events);
+        assert_eq!(action_diff_events.len(), 1);
+        let action_diff_event = action_diff_events[0];
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 3);
+    }
 }
