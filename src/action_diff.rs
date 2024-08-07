@@ -321,3 +321,41 @@ impl<A: Actionlike> Default for SummarizedActionState<A> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate as leafwing_input_manager;
+
+    use super::*;
+    use bevy::{ecs::system::SystemState, prelude::*};
+
+    #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    enum TestAction {
+        A,
+        B,
+        C,
+    }
+
+    fn test_action_state() -> ActionState<TestAction> {
+        let mut action_state = ActionState::default();
+        action_state.press(&TestAction::A);
+        action_state.set_value(&TestAction::B, 0.5);
+        action_state.set_axis_pair(&TestAction::C, Vec2::new(0.5, 0.5));
+        action_state
+    }
+
+    #[test]
+    fn summarize_from_resource() {
+        let mut world = World::new();
+        world.insert_resource(test_action_state());
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>)>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&mut world);
+        let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
+    }
+
+    #[test]
+    fn summarize_from_component() {}
+}

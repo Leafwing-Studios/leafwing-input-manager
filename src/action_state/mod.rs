@@ -477,6 +477,14 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
+    /// Sets the value of the `action` to the provided `value`.
+    pub fn set_value(&mut self, action: &A, value: f32) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
+
+        let axis_data = self.axis_data_mut_or_default(action);
+        axis_data.value = value;
+    }
+
     /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
     ///
     /// # Warning
@@ -508,6 +516,14 @@ impl<A: Actionlike> ActionState<A> {
 
         let action_data = self.dual_axis_data(action);
         action_data.map_or(Vec2::ZERO, |action_data| action_data.pair)
+    }
+
+    /// Sets the [`Vec2`] of the `action` to the provided `pair`.
+    pub fn set_axis_pair(&mut self, action: &A, pair: Vec2) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
+
+        let dual_axis_data = self.dual_axis_data_mut_or_default(action);
+        dual_axis_data.pair = pair;
     }
 
     /// Get the [`Vec2`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
@@ -958,14 +974,10 @@ impl<A: Actionlike> ActionState<A> {
                 self.release(action);
             }
             ActionDiff::AxisChanged { action, value } => {
-                let axis_data = self.axis_data_mut(action).unwrap();
-                // Pressing will initialize the ActionData if it doesn't exist
-                axis_data.value = *value;
+                self.set_value(action, *value);
             }
             ActionDiff::DualAxisChanged { action, axis_pair } => {
-                let axis_data = self.dual_axis_data_mut(action).unwrap();
-                // Pressing will initialize the ActionData if it doesn't exist
-                axis_data.pair = *axis_pair;
+                self.set_axis_pair(action, *axis_pair);
             }
         };
     }
