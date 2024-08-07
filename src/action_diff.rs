@@ -388,7 +388,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
 
         // Resources use the placeholder entity
@@ -403,7 +403,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
 
         // Components use the entity
