@@ -988,10 +988,7 @@ mod tests {
 
         assert!(!mouse_scroll_up.pressed(inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(inputs, gamepad), 0.0);
-        assert_eq!(
-            mouse_scroll.axis_pair(inputs, gamepad),
-            Vec2::new(0.0, 0.0)
-        );
+        assert_eq!(mouse_scroll.axis_pair(inputs, gamepad), Vec2::new(0.0, 0.0));
 
         // Move up
         let data = Vec2::new(0.0, 1.0);
