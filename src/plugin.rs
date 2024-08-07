@@ -120,24 +120,39 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                     update_action_state::<A>.in_set(InputManagerSystem::Update),
                 );
 
-                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(InputSystem));
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::ManualControl.after(InputManagerSystem::Update),
+                );
+
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::Unify.after(InputManagerSystem::Filter),
+                );
+
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::Update
+                        .after(InputSystem)
+                        .after(InputManagerSystem::Unify),
+                );
 
                 #[cfg(any(feature = "egui", feature = "ui"))]
                 app.add_systems(
                     PreUpdate,
                     filter_captured_input
                         .before(update_action_state::<A>)
-                        .in_set(InputManagerSystem::Update),
+                        .in_set(InputManagerSystem::Filter),
                 );
 
                 #[cfg(feature = "egui")]
                 app.configure_sets(
                     PreUpdate,
-                    InputManagerSystem::Update.after(bevy_egui::EguiSet::ProcessInput),
+                    InputManagerSystem::Filter.after(bevy_egui::EguiSet::ProcessInput),
                 );
 
                 #[cfg(feature = "ui")]
-                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
+                app.configure_sets(PreUpdate, InputManagerSystem::Filter.after(UiSystem::Focus));
 
                 #[cfg(feature = "ui")]
                 app.configure_sets(
@@ -163,8 +178,6 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .before(run_fixed_main_schedule),
                 );
 
-                #[cfg(feature = "ui")]
-                app.configure_sets(bevy::app::FixedPreUpdate, InputManagerSystem::ManualControl);
                 app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
                 app.add_systems(
                     FixedPostUpdate,
@@ -241,6 +254,10 @@ pub enum InputManagerSystem {
     Tick,
     /// Accumulates various input event streams into a total delta for the frame.
     Accumulate,
+    /// Filters out inputs that are captured by UI elements.
+    Filter,
+    /// Gathers all of the input data into the [`CentralInputStore`] resource.
+    Unify,
     /// Collects input data to update the [`ActionState`].
     ///
     /// See [`UpdateableUserInput`](crate::user_input::updating) for more information.
@@ -275,7 +292,7 @@ impl Plugin for AccumulatorPlugin {
             PreUpdate,
             InputManagerSystem::Accumulate
                 .after(InputSystem)
-                .before(InputManagerSystem::Update),
+                .before(InputManagerSystem::Unify),
         );
     }
 }

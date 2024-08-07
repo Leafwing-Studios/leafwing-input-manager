@@ -34,7 +34,7 @@ impl CentralInputStore {
     /// Registers a new kind of input.
     ///
     /// This will allow the input to be updated based on the state of the world,
-    /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Update`] during [`PreUpdate`].
+    /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Unify`] during [`PreUpdate`].
     ///
     /// To improve clarity and data consistency, only one kind of input should be registered for each new data stream:
     /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
@@ -47,7 +47,7 @@ impl CentralInputStore {
         }
 
         self.registered_input_kinds.insert(TypeId::of::<I>());
-        app.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Update));
+        app.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
     }
 
     /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
