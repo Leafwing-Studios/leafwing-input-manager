@@ -12,7 +12,7 @@ use bevy::prelude::Gamepads;
 use bevy::utils::HashSet;
 use bevy::{
     input::{
-        mouse::{MouseButton, MouseMotion, MouseWheel},
+        mouse::{MouseMotion, MouseWheel},
         ButtonInput,
     },
     math::Vec2,
@@ -21,11 +21,6 @@ use bevy::{
 };
 
 use crate::action_diff::{ActionDiff, ActionDiffEvent};
-
-#[cfg(feature = "ui")]
-use bevy::ui::Interaction;
-#[cfg(feature = "egui")]
-use bevy_egui::EguiContext;
 
 /// We are about to enter the `Main` schedule, so we:
 /// - save all the changes applied to `state` into the `fixed_update_state`
@@ -137,16 +132,16 @@ pub fn update_action_state<A: Actionlike>(
 #[cfg(any(feature = "egui", feature = "ui"))]
 /// Filters out all inputs that are captured by the UI.
 pub fn filter_captured_input(
-    mut mouse_buttons: ResMut<ButtonInput<MouseButton>>,
-    #[cfg(feature = "ui")] interactions: Query<&Interaction>,
+    mut mouse_buttons: ResMut<ButtonInput<bevy::input::mouse::MouseButton>>,
+    #[cfg(feature = "ui")] interactions: Query<&bevy::ui::Interaction>,
     #[cfg(feature = "egui")] mut keycodes: ResMut<ButtonInput<bevy::input::keyboard::KeyCode>>,
-    #[cfg(feature = "egui")] mut egui_query: Query<&'static mut EguiContext>,
+    #[cfg(feature = "egui")] mut egui_query: Query<&'static mut bevy_egui::EguiContext>,
 ) {
     // If the user clicks on a button, do not apply it to the game state
     #[cfg(feature = "ui")]
     if interactions
         .iter()
-        .any(|&interaction| interaction != Interaction::None)
+        .any(|&interaction| interaction != bevy::ui::Interaction::None)
     {
         mouse_buttons.clear();
     }
