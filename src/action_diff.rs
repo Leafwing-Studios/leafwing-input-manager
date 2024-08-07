@@ -303,10 +303,12 @@ impl<A: Actionlike> SummarizedActionState<A> {
                 current_dual_axis_state,
             );
 
-            writer.send(ActionDiffEvent {
-                owner,
-                action_diffs,
-            });
+            if !action_diffs.is_empty() {
+                writer.send(ActionDiffEvent {
+                    owner,
+                    action_diffs,
+                });
+            }
         }
     }
 }
