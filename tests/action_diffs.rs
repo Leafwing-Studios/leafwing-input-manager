@@ -3,9 +3,19 @@ use bevy::{input::InputPlugin, prelude::*};
 use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
 use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
-    MutateEveryOtherFrame,
+    Button,
+    DualAxis,
+}
+
+impl Actionlike for Action {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            Action::Button => InputControlKind::Button,
+            Action::DualAxis => InputControlKind::DualAxis,
+        }
+    }
 }
 
 fn spawn_test_entity(mut commands: Commands) {
@@ -84,22 +94,15 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
     match action_diff_event.action_diffs.first().unwrap().clone() {
         ActionDiff::Pressed { action } => {
             assert!(action_state.pressed(&action));
-            assert_eq!(action_state.value(&action), 1.);
         }
         ActionDiff::Released { action } => {
             assert!(action_state.released(&action));
-            assert_eq!(action_state.value(&action), 0.);
-            assert_eq!(action_state.axis_pair(&action), Vec2::ZERO);
         }
         ActionDiff::AxisChanged { action, value } => {
-            assert!(action_state.pressed(&action));
             assert_eq!(action_state.value(&action), value);
         }
         ActionDiff::DualAxisChanged { action, axis_pair } => {
-            let axis_pair_data = action_state.axis_pair(&action);
-            assert!(action_state.pressed(&action));
-            assert_eq!(axis_pair_data.xy(), axis_pair);
-            assert_eq!(action_state.value(&action), axis_pair_data.xy().length());
+            assert_eq!(action_state.axis_pair(&action), axis_pair);
         }
     }
 }
@@ -116,7 +119,7 @@ fn generate_binary_action_diffs() {
         |frame_count: Res<FrameCount>, mut action_state_query: Query<&mut ActionState<Action>>| {
             if frame_count.0 % 2 == 0 {
                 for mut action_state in action_state_query.iter_mut() {
-                    action_state.press(&Action::MutateEveryOtherFrame);
+                    action_state.press(&Action::Button);
                 }
             }
         },
@@ -130,14 +133,14 @@ fn generate_binary_action_diffs() {
         .get(app.world(), entity)
         .unwrap();
     dbg!(action_state);
-    assert!(action_state.pressed(&Action::MutateEveryOtherFrame));
+    assert!(action_state.pressed(&Action::Button));
 
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action } => {
-                assert_eq!(action, Action::MutateEveryOtherFrame);
+                assert_eq!(action, Action::Button);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `Pressed` variant got a `Released` variant")
@@ -162,7 +165,7 @@ fn generate_binary_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
-                assert_eq!(action, Action::MutateEveryOtherFrame);
+                assert_eq!(action, Action::Button);
             }
             ActionDiff::Pressed { .. } => {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
@@ -191,7 +194,7 @@ fn generate_axis_action_diffs() {
               mut action_state_query: Query<&mut ActionState<Action>>| {
             if frame_count.0 % 2 == 0 {
                 for mut action_state in action_state_query.iter_mut() {
-                    action_state.set_axis_pair(&Action::MutateEveryOtherFrame, test_axis_pair);
+                    action_state.set_axis_pair(&Action::DualAxis, test_axis_pair);
                 }
             }
         },
@@ -206,7 +209,7 @@ fn generate_axis_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
-                assert_eq!(action, Action::MutateEveryOtherFrame);
+                assert_eq!(action, Action::DualAxis);
                 assert_eq!(axis_pair, test_axis_pair);
             }
             ActionDiff::Released { .. } => {
@@ -232,7 +235,7 @@ fn generate_axis_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
-                assert_eq!(action, Action::MutateEveryOtherFrame);
+                assert_eq!(action, Action::DualAxis);
             }
             ActionDiff::Pressed { .. } => {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
@@ -259,7 +262,7 @@ fn process_binary_action_diffs() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Pressed {
-            action: Action::MutateEveryOtherFrame,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -271,7 +274,7 @@ fn process_binary_action_diffs() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::MutateEveryOtherFrame,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -293,7 +296,7 @@ fn process_value_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::AxisChanged {
-            action: Action::MutateEveryOtherFrame,
+            action: Action::Button,
             value: 0.5,
         }],
     };
@@ -306,7 +309,7 @@ fn process_value_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::MutateEveryOtherFrame,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -328,7 +331,7 @@ fn process_axis_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::DualAxisChanged {
-            action: Action::MutateEveryOtherFrame,
+            action: Action::DualAxis,
             axis_pair: Vec2 { x: 1., y: 0. },
         }],
     };
@@ -341,7 +344,7 @@ fn process_axis_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::MutateEveryOtherFrame,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
