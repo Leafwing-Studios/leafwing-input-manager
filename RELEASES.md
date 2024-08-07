@@ -20,6 +20,9 @@
   - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_dual_axis` method
 - `InputStreams` has been removed in favor of an extensible `CentralInputStore` type, which you can add your own raw input kinds to
 - `RawInputs` has been removed to ensure that clashes for new raw input kinds can be handled correctly
+- each of the built-in input methods (keyboard, mouse, gamepad) is now controlled by its own feature flag
+  - disable `default-features` to avoid paying the runtime and compile time costs for input kinds your project doesn't care about
+  - the `bevy_gilrs` feature of `bevy` is now enabled via the `gamepad` feature
 
 #### More inputs
 
