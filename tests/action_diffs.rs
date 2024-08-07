@@ -205,6 +205,13 @@ fn generate_axis_action_diffs() {
     .add_event::<ActionDiffEvent<Action>>();
 
     app.update();
+    let action_state = app
+        .world_mut()
+        .query::<&ActionState<Action>>()
+        .get(app.world(), entity)
+        .unwrap();
+    dbg!(action_state);
+    assert_eq!(action_state.axis_pair(&Action::DualAxis), test_axis_pair);
 
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
