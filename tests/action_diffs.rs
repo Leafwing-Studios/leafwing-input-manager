@@ -1,3 +1,4 @@
+use bevy::core::FrameCount;
 use bevy::{input::InputPlugin, prelude::*};
 use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
 use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
@@ -7,27 +8,8 @@ enum Action {
     MutateEveryOtherFrame,
 }
 
-#[derive(Default)]
-struct Counter(pub u8);
-
 fn spawn_test_entity(mut commands: Commands) {
     commands.spawn(ActionState::<Action>::default());
-}
-
-fn press_every_other_frame(
-    mutation: impl Fn(Mut<ActionState<Action>>),
-) -> impl Fn(Query<&mut ActionState<Action>>, Local<Counter>) {
-    move |mut action_state_query: Query<&mut ActionState<Action>>, mut counter: Local<Counter>| {
-        if let Ok(mut action_state) = action_state_query.get_single_mut() {
-            if !action_state.pressed(&Action::MutateEveryOtherFrame) {
-                action_state.press(&Action::MutateEveryOtherFrame);
-                mutation(action_state);
-            } else if counter.0 > 1 {
-                action_state.release(&Action::MutateEveryOtherFrame);
-            }
-            counter.0 += 1;
-        }
-    }
 }
 
 fn process_action_diffs<A: Actionlike>(
@@ -131,9 +113,13 @@ fn generate_binary_action_diffs() {
         .single(app.world());
     app.add_systems(
         Update,
-        press_every_other_frame(|mut action_state| {
-            action_state.press(&Action::MutateEveryOtherFrame);
-        }),
+        |frame_count: Res<FrameCount>, mut action_state_query: Query<&mut ActionState<Action>>| {
+            if frame_count.0 % 2 == 0 {
+                for mut action_state in action_state_query.iter_mut() {
+                    action_state.press(&Action::MutateEveryOtherFrame);
+                }
+            }
+        },
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>);
 
@@ -193,7 +179,7 @@ fn generate_binary_action_diffs() {
 
 #[test]
 fn generate_axis_action_diffs() {
-    let input_axis_pair = Vec2 { x: 5., y: 8. };
+    let test_axis_pair = Vec2 { x: 5., y: 8. };
     let mut app = create_app();
     let entity = app
         .world_mut()
@@ -201,9 +187,14 @@ fn generate_axis_action_diffs() {
         .single(app.world());
     app.add_systems(
         Update,
-        press_every_other_frame(move |mut action_state| {
-            action_state.set_axis_pair(&Action::MutateEveryOtherFrame, input_axis_pair)
-        }),
+        move |frame_count: Res<FrameCount>,
+              mut action_state_query: Query<&mut ActionState<Action>>| {
+            if frame_count.0 % 2 == 0 {
+                for mut action_state in action_state_query.iter_mut() {
+                    action_state.set_axis_pair(&Action::MutateEveryOtherFrame, test_axis_pair);
+                }
+            }
+        },
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)
     .add_event::<ActionDiffEvent<Action>>();
@@ -216,7 +207,7 @@ fn generate_axis_action_diffs() {
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
                 assert_eq!(action, Action::MutateEveryOtherFrame);
-                assert_eq!(axis_pair, input_axis_pair);
+                assert_eq!(axis_pair, test_axis_pair);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `AxisPairChanged` variant got a `Released` variant")
