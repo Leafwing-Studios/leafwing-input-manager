@@ -176,6 +176,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - removed `MockInput::send_input` methods, in favor of new input mocking APIs (see 'Usability: MockInput' for details).
 - `DualAxisData` has been removed, and replaced with a simple `Vec2` throughout
   - a new type with the `DualAxisData` name has been added, as a parallel to `ButtonData` and `AxisData`
+- when no `associated_gamepad` is provided to an input map, `find_gamepad` will be called to attempt to search for a gamepad. Input from *any* gamepad will no longer work
 
 ## Version 0.14.0
 
