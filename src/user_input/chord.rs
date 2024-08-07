@@ -31,7 +31,7 @@ use super::{Axislike, DualAxislike};
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Define a chord using A and B keys
 /// let input = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB]);
@@ -312,14 +312,14 @@ mod tests {
     use bevy::prelude::*;
 
     use super::*;
-    use crate::plugin::AccumulatorPlugin;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
     use crate::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(InputPlugin)
-            .add_plugins(AccumulatorPlugin);
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail

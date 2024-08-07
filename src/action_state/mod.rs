@@ -984,7 +984,7 @@ mod tests {
     use crate::action_state::ActionState;
     use crate::clashing_inputs::ClashStrategy;
     use crate::input_map::InputMap;
-    use crate::plugin::AccumulatorPlugin;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
     use crate::prelude::updating::CentralInputStore;
     use crate::prelude::{Buttonlike, ButtonlikeChord};
     use bevy::input::InputPlugin;
@@ -995,7 +995,8 @@ mod tests {
     #[test]
     fn press_lifecycle() {
         let mut app = App::new();
-        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
+        app.add_plugins(InputPlugin)
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
 
         #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, bevy::prelude::Reflect)]
         enum Action {
@@ -1111,7 +1112,8 @@ mod tests {
         input_map.insert(Action::OneAndTwo, ButtonlikeChord::new([Digit1, Digit2]));
 
         let mut app = App::new();
-        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
+        app.add_plugins(InputPlugin)
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
 
         // Action state
         let mut action_state = ActionState::<Action>::default();

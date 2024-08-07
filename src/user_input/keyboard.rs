@@ -222,7 +222,7 @@ impl Buttonlike for ModifierKey {
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Define a virtual Y-axis using arrow "up" and "down" keys
 /// let axis = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS;
@@ -410,7 +410,7 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
 /// use leafwing_input_manager::plugin::AccumulatorPlugin;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Define a virtual D-pad using the arrow keys
 /// let input = KeyboardVirtualDPad::ARROW_KEYS;
@@ -584,13 +584,14 @@ impl WithDualAxisProcessingPipelineExt for KeyboardVirtualDPad {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::AccumulatorPlugin;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
+        app.add_plugins(InputPlugin)
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
         app
     }
 

@@ -971,7 +971,7 @@ impl WithDualAxisProcessingPipelineExt for GamepadVirtualDPad {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::AccumulatorPlugin;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
     use bevy::input::gamepad::{
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
@@ -982,7 +982,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(InputPlugin)
-            .add_plugins(AccumulatorPlugin);
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail

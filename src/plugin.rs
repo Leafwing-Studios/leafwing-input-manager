@@ -99,7 +99,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             Machine::Client => {
                 // TODO: this should be part of `bevy_input`
                 if !app.is_plugin_added::<AccumulatorPlugin>() {
-                    app.add_plugins(AccumulatorPlugin);
+                    app.add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
                 }
 
                 if !app.is_plugin_added::<CentralInputStorePlugin>() {

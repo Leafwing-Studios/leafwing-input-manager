@@ -100,7 +100,7 @@ impl Buttonlike for MouseButton {
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Positive Y-axis movement
 /// let input = MouseMoveDirection::UP;
@@ -190,7 +190,7 @@ impl Buttonlike for MouseMoveDirection {
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Y-axis movement
 /// let input = MouseMoveAxis::Y;
@@ -312,7 +312,7 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// let input = MouseMove::default();
 ///
@@ -431,7 +431,7 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Positive Y-axis scrolling
 /// let input = MouseScrollDirection::UP;
@@ -528,7 +528,7 @@ impl Buttonlike for MouseScrollDirection {
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Y-axis movement
 /// let input = MouseScrollAxis::Y;
@@ -660,7 +660,7 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// let input = MouseScroll::default();
 ///
@@ -823,13 +823,14 @@ impl AccumulatedMouseScroll {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::AccumulatorPlugin;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
+        app.add_plugins(InputPlugin)
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
         app
     }
 
