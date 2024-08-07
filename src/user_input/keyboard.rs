@@ -45,6 +45,10 @@ impl UpdatableInput for KeyCode {
         for key in source_data.get_pressed() {
             central_input_store.update_buttonlike(*key, true);
         }
+
+        for key in source_data.get_just_released() {
+            central_input_store.update_buttonlike(*key, false);
+        }
     }
 }
 
