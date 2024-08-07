@@ -735,7 +735,7 @@ mod tests {
                     assert_eq!(updated_value, UpdatedValue::Button(true));
                 } else {
                     match updated_value {
-                        UpdatedValue::Button(pressed) => assert_eq!(pressed, false),
+                        UpdatedValue::Button(pressed) => assert!(!pressed),
                         UpdatedValue::Axis(value) => assert_eq!(value, 0.0),
                         UpdatedValue::DualAxis(pair) => assert_eq!(pair, Vec2::ZERO),
                     }

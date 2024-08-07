@@ -12,7 +12,6 @@ use bevy::prelude::Gamepads;
 use bevy::utils::HashSet;
 use bevy::{
     input::{
-        keyboard::KeyCode,
         mouse::{MouseButton, MouseMotion, MouseWheel},
         ButtonInput,
     },
@@ -138,9 +137,9 @@ pub fn update_action_state<A: Actionlike>(
 #[cfg(any(feature = "egui", feature = "ui"))]
 /// Filters out all inputs that are captured by the UI.
 pub fn filter_captured_input(
-    mut keycodes: ResMut<ButtonInput<KeyCode>>,
     mut mouse_buttons: ResMut<ButtonInput<MouseButton>>,
     #[cfg(feature = "ui")] interactions: Query<&Interaction>,
+    #[cfg(feature = "egui")] mut keycodes: ResMut<ButtonInput<bevy::input::keyboard::KeyCode>>,
     #[cfg(feature = "egui")] mut egui_query: Query<&'static mut EguiContext>,
 ) {
     // If the user clicks on a button, do not apply it to the game state
