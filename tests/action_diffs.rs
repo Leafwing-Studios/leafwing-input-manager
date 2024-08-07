@@ -138,6 +138,14 @@ fn generate_binary_action_diffs() {
     .add_systems(PostUpdate, generate_action_diffs::<Action>);
 
     app.update();
+    let action_state = app
+        .world_mut()
+        .query::<&ActionState<Action>>()
+        .get(app.world(), entity)
+        .unwrap();
+    dbg!(action_state);
+    assert!(action_state.pressed(&Action::PayTheBills));
+
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
