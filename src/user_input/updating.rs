@@ -1,6 +1,7 @@
 //! Logic for updating user input based on the state of the world.
 
 use std::any::TypeId;
+use std::hash::Hash;
 
 use bevy::{
     app::{App, PreUpdate},
@@ -132,8 +133,8 @@ impl CentralInputStore {
     }
 
     /// Fetches the value of a [`Buttonlike`] input.
-    pub fn pressed(&self, buttonlike: &dyn Buttonlike) -> bool {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<dyn Buttonlike>()) else {
+    pub fn pressed<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> bool {
+        let Some(updated_values) = self.updated_values.get(&TypeId::of::<B>()) else {
             return false;
         };
 
@@ -141,12 +142,15 @@ impl CentralInputStore {
             panic!("Expected Buttonlike, found {:?}", updated_values);
         };
 
-        buttonlikes.get(buttonlike).copied().unwrap_or(false)
+        // PERF: surely there's a way to avoid cloning here
+        let boxed_buttonlike: Box<dyn Buttonlike> = Box::new(buttonlike.clone());
+
+        buttonlikes.get(&boxed_buttonlike).copied().unwrap_or(false)
     }
 
     /// Fetches the value of an [`Axislike`] input.
-    pub fn value(&self, axislike: &dyn Axislike) -> f32 {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<dyn Axislike>()) else {
+    pub fn value<A: Axislike + Hash + Eq + Clone>(&self, axislike: &A) -> f32 {
+        let Some(updated_values) = self.updated_values.get(&TypeId::of::<A>()) else {
             return 0.0;
         };
 
@@ -154,13 +158,15 @@ impl CentralInputStore {
             panic!("Expected Axislike, found {:?}", updated_values);
         };
 
-        axislikes.get(axislike).copied().unwrap_or(0.0)
+        // PERF: surely there's a way to avoid cloning here
+        let boxed_axislike: Box<dyn Axislike> = Box::new(axislike.clone());
+
+        axislikes.get(&boxed_axislike).copied().unwrap_or(0.0)
     }
 
     /// Fetches the value of a [`DualAxislike`] input.
-    pub fn pair(&self, dualaxislike: &dyn DualAxislike) -> Vec2 {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<dyn DualAxislike>())
-        else {
+    pub fn pair<D: DualAxislike + Hash + Eq + Clone>(&self, dualaxislike: &D) -> Vec2 {
+        let Some(updated_values) = self.updated_values.get(&TypeId::of::<D>()) else {
             return Vec2::ZERO;
         };
 
@@ -168,8 +174,11 @@ impl CentralInputStore {
             panic!("Expected DualAxislike, found {:?}", updated_values);
         };
 
+        // PERF: surely there's a way to avoid cloning here
+        let boxed_dualaxislike: Box<dyn DualAxislike> = Box::new(dualaxislike.clone());
+
         dualaxislikes
-            .get(dualaxislike)
+            .get(&boxed_dualaxislike)
             .copied()
             .unwrap_or(Vec2::ZERO)
     }
@@ -241,6 +250,8 @@ pub trait UpdatableInput: 'static {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use bevy::ecs::system::RunSystemOnce;
+    use bevy::input::ButtonInput;
     use leafwing_input_manager_macros::Actionlike;
 
     use crate as leafwing_input_manager;
@@ -318,5 +329,23 @@ mod tests {
         let preupdate = app.get_schedule(PreUpdate).unwrap();
         let n_systems = preupdate.systems_len();
         assert_eq!(n_systems, n_input_kinds);
+    }
+
+    #[test]
+    fn compute_call_updates_central_store() {
+        let mut world = World::new();
+        world.init_resource::<CentralInputStore>();
+
+        // MouseButton has a very straightforward implementation, so we can use it for testing.
+        let mut mouse_button_input = ButtonInput::<MouseButton>::default();
+        mouse_button_input.press(MouseButton::Left);
+        assert!(mouse_button_input.pressed(MouseButton::Left));
+        dbg!(&mouse_button_input);
+        world.insert_resource(mouse_button_input);
+
+        world.run_system_once(MouseButton::compute);
+        let central_input_store = world.resource::<CentralInputStore>();
+        dbg!(central_input_store);
+        assert!(central_input_store.pressed(&MouseButton::Left));
     }
 }
