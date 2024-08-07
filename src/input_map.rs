@@ -13,9 +13,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
-use crate::prelude::{find_gamepad, UserInputWrapper};
+use crate::prelude::UserInputWrapper;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::{Actionlike, InputControlKind};
+
+#[cfg(feature = "gamepad")]
+use crate::user_input::gamepad::find_gamepad;
+
+#[cfg(not(feature = "gamepad"))]
+fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
+    Gamepad::new(0)
+}
 
 /// A Multi-Map that allows you to map actions to multiple [`UserInputs`](crate::user_input::UserInput)s,
 /// whether they are [`Buttonlike`], [`Axislike`] or [`DualAxislike`].

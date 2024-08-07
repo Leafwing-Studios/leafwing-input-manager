@@ -10,7 +10,6 @@ use crate::clashing_inputs::BasicInputs;
 use crate::user_input::{Buttonlike, UserInput};
 use crate::InputControlKind;
 
-use super::keyboard::ModifierKey;
 use super::updating::CentralInputStore;
 use super::{Axislike, DualAxislike};
 
@@ -78,7 +77,8 @@ impl ButtonlikeChord {
     }
 
     /// Creates a [`ButtonlikeChord`] that combines the provided modifier and the given [`Buttonlike`].
-    pub fn modified(modifier: ModifierKey, input: impl Buttonlike) -> Self {
+    #[cfg(feature = "keyboard")]
+    pub fn modified(modifier: super::keyboard::ModifierKey, input: impl Buttonlike) -> Self {
         Self::default().with(modifier).with(input)
     }
 

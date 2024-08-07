@@ -5,9 +5,8 @@ use core::marker::PhantomData;
 use std::fmt::Debug;
 
 use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
-use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
-use bevy::prelude::{GamepadButtonType, KeyCode, PostUpdate, PreUpdate};
+use bevy::prelude::*;
 use bevy::reflect::TypePath;
 use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
@@ -18,13 +17,14 @@ use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
+#[cfg(feature = "mouse")]
 use crate::systems::{accumulate_mouse_movement, accumulate_mouse_scroll};
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
 use crate::Actionlike;
 
-/// A [`Plugin`] that collects [`ButtonInput`](bevy::input::ButtonInput) from disparate sources,
+/// A [`Plugin`] that collects [`ButtonInput`] from disparate sources,
 /// producing an [`ActionState`] that can be conveniently checked
 ///
 /// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game.
@@ -52,7 +52,7 @@ use crate::Actionlike;
 /// Complete list:
 ///
 /// - [`tick_action_state`](crate::systems::tick_action_state), which resets the `pressed` and `just_pressed` fields of the [`ActionState`] each frame
-/// - [`update_action_state`](crate::systems::update_action_state), which collects [`ButtonInput`](bevy::input::ButtonInput) resources to update the [`ActionState`]
+/// - [`update_action_state`](crate::systems::update_action_state), which collects [`ButtonInput`] resources to update the [`ActionState`]
 pub struct InputManagerPlugin<A: Actionlike> {
     _phantom: PhantomData<A>,
     machine: Machine,
@@ -198,31 +198,39 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             }
         };
 
+        #[cfg(feature = "mouse")]
         app.register_type::<AccumulatedMouseMovement>()
             .register_type::<AccumulatedMouseScroll>()
-            .register_type::<ActionState<A>>()
-            .register_type::<InputMap<A>>()
-            .register_type::<ButtonData>()
-            .register_type::<ActionState<A>>()
-            // Inputs
-            .register_user_input::<GamepadControlDirection>()
-            .register_user_input::<GamepadControlAxis>()
-            .register_user_input::<GamepadStick>()
-            .register_user_input::<GamepadButtonType>()
-            .register_user_input::<GamepadVirtualAxis>()
-            .register_user_input::<GamepadVirtualDPad>()
-            .register_user_input::<KeyCode>()
-            .register_user_input::<ModifierKey>()
-            .register_user_input::<KeyboardVirtualAxis>()
-            .register_user_input::<KeyboardVirtualDPad>()
             .register_user_input::<MouseMoveDirection>()
             .register_user_input::<MouseMoveAxis>()
             .register_user_input::<MouseMove>()
             .register_user_input::<MouseScrollDirection>()
             .register_user_input::<MouseScrollAxis>()
-            .register_user_input::<MouseScroll>()
-            // Processors
-            .register_type::<AxisProcessor>()
+            .register_user_input::<MouseScroll>();
+
+        #[cfg(feature = "keyboard")]
+        app.register_user_input::<KeyCode>()
+            .register_user_input::<ModifierKey>()
+            .register_user_input::<KeyboardVirtualAxis>()
+            .register_user_input::<KeyboardVirtualDPad>();
+
+        #[cfg(feature = "gamepad")]
+        app.register_user_input::<GamepadControlDirection>()
+            .register_user_input::<GamepadControlAxis>()
+            .register_user_input::<GamepadStick>()
+            .register_user_input::<GamepadButtonType>()
+            .register_user_input::<GamepadVirtualAxis>()
+            .register_user_input::<GamepadVirtualDPad>();
+
+        // General-purpose reflection
+        app.register_type::<ActionState<A>>()
+            .register_type::<InputMap<A>>()
+            .register_type::<ButtonData>()
+            .register_type::<ActionState<A>>()
+            .register_type::<CentralInputStore>();
+
+        // Processors
+        app.register_type::<AxisProcessor>()
             .register_type::<AxisBounds>()
             .register_type::<AxisExclusion>()
             .register_type::<AxisDeadZone>()
@@ -234,9 +242,10 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             .register_type::<DualAxisDeadZone>()
             .register_type::<CircleBounds>()
             .register_type::<CircleExclusion>()
-            .register_type::<CircleDeadZone>()
-            // Resources
-            .init_resource::<ClashStrategy>();
+            .register_type::<CircleDeadZone>();
+
+        // Resources
+        app.init_resource::<ClashStrategy>();
 
         #[cfg(feature = "timing")]
         app.register_type::<Timing>();
@@ -277,23 +286,27 @@ pub enum InputManagerSystem {
 pub struct AccumulatorPlugin;
 
 impl Plugin for AccumulatorPlugin {
+    #[allow(unused_variables)]
     fn build(&self, app: &mut App) {
-        app.init_resource::<AccumulatedMouseMovement>();
-        app.init_resource::<AccumulatedMouseScroll>();
+        #[cfg(feature = "mouse")]
+        {
+            app.init_resource::<AccumulatedMouseMovement>();
+            app.init_resource::<AccumulatedMouseScroll>();
 
-        // TODO: these should be part of bevy_input
-        app.add_systems(
-            PreUpdate,
-            (accumulate_mouse_movement, accumulate_mouse_scroll)
-                .in_set(InputManagerSystem::Accumulate),
-        );
+            // TODO: these should be part of bevy_input
+            app.add_systems(
+                PreUpdate,
+                (accumulate_mouse_movement, accumulate_mouse_scroll)
+                    .in_set(InputManagerSystem::Accumulate),
+            );
 
-        app.configure_sets(
-            PreUpdate,
-            InputManagerSystem::Accumulate
-                .after(InputSystem)
-                .before(InputManagerSystem::Unify),
-        );
+            app.configure_sets(
+                PreUpdate,
+                InputManagerSystem::Accumulate
+                    .after(InputSystem)
+                    .before(InputManagerSystem::Unify),
+            );
+        }
     }
 }
 

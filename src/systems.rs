@@ -2,7 +2,11 @@
 
 use crate::action_state::ActionKindData;
 use crate::prelude::updating::CentralInputStore;
+#[cfg(feature = "mouse")]
 use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
+#[cfg(feature = "mouse")]
+use bevy::input::mouse::{MouseMotion, MouseWheel};
+
 use crate::{
     action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap, Actionlike,
 };
@@ -11,7 +15,6 @@ use bevy::ecs::prelude::*;
 use bevy::prelude::Gamepads;
 use bevy::utils::HashSet;
 use bevy::{
-    input::mouse::{MouseMotion, MouseWheel},
     math::Vec2,
     time::{Real, Time},
     utils::{HashMap, Instant},
@@ -82,6 +85,7 @@ pub fn tick_action_state<A: Actionlike>(
 }
 
 /// Sums the[`MouseMotion`] events received since during this frame.
+#[cfg(feature = "mouse")]
 pub fn accumulate_mouse_movement(
     mut mouse_motion: ResMut<AccumulatedMouseMovement>,
     mut events: EventReader<MouseMotion>,
@@ -94,6 +98,7 @@ pub fn accumulate_mouse_movement(
 }
 
 /// Sums the [`MouseWheel`] events received since during this frame.
+#[cfg(feature = "mouse")]
 pub fn accumulate_mouse_scroll(
     mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
     mut events: EventReader<MouseWheel>,

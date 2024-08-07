@@ -6,16 +6,14 @@ use std::hash::Hash;
 use bevy::{
     app::{App, PreUpdate},
     math::Vec2,
-    prelude::{
-        GamepadAxis, GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
-    },
+    prelude::{IntoSystemConfigs, Res, ResMut, Resource},
     reflect::Reflect,
     utils::{HashMap, HashSet},
 };
 
 use crate::{plugin::InputManagerSystem, InputControlKind};
 
-use super::{Axislike, Buttonlike, DualAxislike, MouseMove, MouseScroll};
+use super::{Axislike, Buttonlike, DualAxislike};
 
 /// An overarching store for all user input.
 ///
@@ -63,24 +61,28 @@ impl CentralInputStore {
     ///
     /// The set of input kinds registered by this method is controlled by the features enabled:
     /// turn off default features to avoid registering input kinds that are not needed.
+    #[allow(unused_variables)]
     pub fn register_standard_input_kinds(&mut self, app: &mut App) {
         // Buttonlike
         #[cfg(feature = "keyboard")]
-        self.register_input_kind::<KeyCode>(InputControlKind::Button, app);
+        self.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button, app);
         #[cfg(feature = "mouse")]
-        self.register_input_kind::<MouseButton>(InputControlKind::Button, app);
+        self.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button, app);
         #[cfg(feature = "gamepad")]
-        self.register_input_kind::<GamepadButton>(InputControlKind::Button, app);
+        self.register_input_kind::<bevy::input::gamepad::GamepadButton>(
+            InputControlKind::Button,
+            app,
+        );
 
         // Axislike
         #[cfg(feature = "gamepad")]
-        self.register_input_kind::<GamepadAxis>(InputControlKind::Axis, app);
+        self.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis, app);
 
         // Dualaxislike
         #[cfg(feature = "mouse")]
-        self.register_input_kind::<MouseMove>(InputControlKind::DualAxis, app);
+        self.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis, app);
         #[cfg(feature = "mouse")]
-        self.register_input_kind::<MouseScroll>(InputControlKind::DualAxis, app);
+        self.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis, app);
     }
 
     /// Clears all existing values.
@@ -251,11 +253,12 @@ mod tests {
     use super::*;
     use bevy::ecs::system::RunSystemOnce;
     use bevy::input::ButtonInput;
-    use bevy::prelude::World;
+    use bevy::prelude::*;
     use leafwing_input_manager_macros::Actionlike;
 
     use crate as leafwing_input_manager;
     use crate::plugin::{CentralInputStorePlugin, InputManagerPlugin};
+    use crate::prelude::{MouseMove, MouseScroll};
 
     #[derive(Actionlike, Debug, PartialEq, Eq, Hash, Clone, Reflect)]
     enum TestAction {
