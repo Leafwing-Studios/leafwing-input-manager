@@ -519,12 +519,11 @@ fn button_value(
     input_store: &CentralInputStore,
     gamepad: Gamepad,
     button: GamepadButtonType,
-) -> Option<f32> {
-    // This implementation differs from `button_pressed()`
-    // because the upstream bevy::input still waffles about whether triggers are buttons or axes.
-    // So, we consider the axes for consistency with other gamepad axes (e.g., thumb sticks).
-    let button = GamepadButton::new(gamepad, button);
-    input_store.gamepad_button_axes.get(button)
+) -> f32 {
+    // TODO: consider providing more accurate data from trigger-like buttons
+    // This is part of https://github.com/Leafwing-Studios/leafwing-input-manager/issues/551
+
+    f32::from(button_pressed(input_store, gamepad, button))
 }
 
 impl UpdatableInput for GamepadButton {
@@ -740,8 +739,8 @@ impl Axislike for GamepadVirtualAxis {
     #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
-        let negative = button_value(input_store, gamepad, self.negative).unwrap_or_default();
-        let positive = button_value(input_store, gamepad, self.positive).unwrap_or_default();
+        let negative = button_value(input_store, gamepad, self.negative);
+        let positive = button_value(input_store, gamepad, self.positive);
         let value = positive - negative;
         self.processors
             .iter()
@@ -891,10 +890,10 @@ impl GamepadVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[inline]
     fn processed_value(&self, gamepad: Gamepad, input_store: &CentralInputStore) -> Vec2 {
-        let up = button_value(input_store, gamepad, self.up).unwrap_or_default();
-        let down = button_value(input_store, gamepad, self.down).unwrap_or_default();
-        let left = button_value(input_store, gamepad, self.left).unwrap_or_default();
-        let right = button_value(input_store, gamepad, self.right).unwrap_or_default();
+        let up = button_value(input_store, gamepad, self.up);
+        let down = button_value(input_store, gamepad, self.down);
+        let left = button_value(input_store, gamepad, self.left);
+        let right = button_value(input_store, gamepad, self.right);
         let value = Vec2::new(right - left, up - down);
         self.processors
             .iter()
