@@ -1038,7 +1038,6 @@ mod tests {
         let mut app = test_app();
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
-
         let gamepad = Gamepad::new(0);
 
         assert!(!left_up.pressed(&inputs, gamepad));
@@ -1053,7 +1052,7 @@ mod tests {
         // Left stick moves upward
         let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
-        GamepadControlDirection::LEFT_UP.press(app.world_mut());
+        GamepadControlDirection::LEFT_UP.press_as_gamepad(app.world_mut(), Some(gamepad));
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
@@ -1069,7 +1068,7 @@ mod tests {
         // Set Y-axis of left stick to 0.6
         let data = Vec2::new(0.0, 0.6);
         let mut app = test_app();
-        GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), data.y);
+        GamepadControlAxis::LEFT_Y.set_value_as_gamepad(app.world_mut(), data.y, Some(gamepad));
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
@@ -1085,7 +1084,7 @@ mod tests {
         // Set left stick to (0.6, 0.4)
         let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
-        GamepadStick::LEFT.set_axis_pair(app.world_mut(), data);
+        GamepadStick::LEFT.set_axis_pair_as_gamepad(app.world_mut(), data, Some(gamepad));
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
