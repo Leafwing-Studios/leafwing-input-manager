@@ -137,10 +137,10 @@ impl<A: Actionlike> ActionState<A> {
                     }
                 }
                 UpdatedValue::Axis(value) => {
-                    self.axis_data_mut_or_default(action).value = *value;
+                    self.set_value(action, *value);
                 }
                 UpdatedValue::DualAxis(pair) => {
-                    self.dual_axis_data_mut_or_default(action).pair = *pair;
+                    self.set_axis_pair(action, *pair);
                 }
             }
         }
@@ -632,12 +632,10 @@ impl<A: Actionlike> ActionState<A> {
         match action.input_control_kind() {
             InputControlKind::Button => self.release(action),
             InputControlKind::Axis => {
-                let axis_data = self.axis_data_mut_or_default(action);
-                axis_data.value = 0.0;
+                self.set_value(action, 0.0);
             }
             InputControlKind::DualAxis => {
-                let dual_axis_data = self.dual_axis_data_mut_or_default(action);
-                dual_axis_data.pair = Vec2::ZERO;
+                self.set_axis_pair(action, Vec2::ZERO);
             }
         }
     }
