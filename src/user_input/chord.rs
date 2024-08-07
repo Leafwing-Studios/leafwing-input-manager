@@ -143,8 +143,10 @@ impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore) -> bool {
-        self.0.iter().all(|input| input.pressed(input_store))
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+        self.0
+            .iter()
+            .all(|input| input.pressed(input_store, gamepad))
     }
 
     fn press(&self, world: &mut World) {
@@ -223,9 +225,9 @@ impl UserInput for AxislikeChord {
 }
 
 impl Axislike for AxislikeChord {
-    fn value(&self, input_store: &CentralInputStore) -> f32 {
-        if self.button.pressed(input_store) {
-            self.axis.value(input_store)
+    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+        if self.button.pressed(input_store, gamepad) {
+            self.axis.value(input_store, gamepad)
         } else {
             0.0
         }
@@ -278,9 +280,9 @@ impl UserInput for DualAxislikeChord {
 }
 
 impl DualAxislike for DualAxislikeChord {
-    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
-        if self.button.pressed(input_store) {
-            self.dual_axis.axis_pair(input_store)
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
+        if self.button.pressed(input_store, gamepad) {
+            self.dual_axis.axis_pair(input_store, gamepad)
         } else {
             Vec2::ZERO
         }
@@ -361,7 +363,7 @@ mod tests {
         let mut app = test_app();
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
-        assert!(!chord.pressed(&inputs));
+        assert!(!chord.pressed(&inputs, Gamepad::new(0)));
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
@@ -370,7 +372,7 @@ mod tests {
         }
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
-        assert!(chord.pressed(&inputs));
+        assert!(chord.pressed(&inputs, Gamepad::new(0)));
 
         // Some required keys pressed, but not all required keys for the chord,
         // resulting in a released chord with a value of zero.
@@ -381,7 +383,7 @@ mod tests {
             }
             app.update();
             let inputs = CentralInputStore::from_world(app.world_mut());
-            assert!(!chord.pressed(&inputs));
+            assert!(!chord.pressed(&inputs, Gamepad::new(0)));
         }
 
         // Five keys pressed, but not all required keys for the chord,
@@ -393,6 +395,6 @@ mod tests {
         KeyCode::KeyB.press(app.world_mut());
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
-        assert!(!chord.pressed(&inputs));
+        assert!(!chord.pressed(&inputs, Gamepad::new(0)));
     }
 }

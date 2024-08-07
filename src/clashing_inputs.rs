@@ -6,7 +6,7 @@
 
 use std::cmp::Ordering;
 
-use bevy::prelude::Resource;
+use bevy::prelude::{Gamepad, Resource};
 use serde::{Deserialize, Serialize};
 
 use crate::input_map::{InputMap, UpdatedActions};
@@ -175,10 +175,12 @@ impl<A: Actionlike> InputMap<A> {
         updated_actions: &mut UpdatedActions<A>,
         input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
+        gamepad: Gamepad,
     ) {
-        for clash in self.get_clashes(updated_actions, input_store) {
+        for clash in self.get_clashes(updated_actions, input_store, gamepad) {
             // Remove the action in the pair that was overruled, if any
-            if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_store) {
+            if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_store, gamepad)
+            {
                 updated_actions.remove(&culled_action);
             }
         }
@@ -207,6 +209,7 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         updated_actions: &UpdatedActions<A>,
         input_store: &CentralInputStore,
+        gamepad: Gamepad,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -219,7 +222,7 @@ impl<A: Actionlike> InputMap<A> {
             // This is not strictly necessary, but saves work
             if pressed_a && pressed_b {
                 // Check if the potential clash occurred based on the pressed inputs
-                if let Some(clash) = check_clash(&clash, input_store) {
+                if let Some(clash) = check_clash(&clash, input_store, gamepad) {
                     clashes.push(clash)
                 }
             }
@@ -308,6 +311,7 @@ impl<A: Actionlike> Clash<A> {
 fn check_clash<A: Actionlike>(
     clash: &Clash<A>,
     input_store: &CentralInputStore,
+    gamepad: Gamepad,
 ) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = clash.clone();
 
@@ -315,13 +319,13 @@ fn check_clash<A: Actionlike>(
     for input_a in clash
         .inputs_a
         .iter()
-        .filter(|&input| input.pressed(input_store))
+        .filter(|&input| input.pressed(input_store, gamepad))
     {
         // For all inputs actually pressed that match action B
         for input_b in clash
             .inputs_b
             .iter()
-            .filter(|&input| input.pressed(input_store))
+            .filter(|&input| input.pressed(input_store, gamepad))
         {
             // If a clash was detected
             if input_a.decompose().clashes_with(&input_b.decompose()) {
@@ -341,19 +345,20 @@ fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: ClashStrategy,
     input_store: &CentralInputStore,
+    gamepad: Gamepad,
 ) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_a
         .iter()
-        .filter(|input| input.pressed(input_store))
+        .filter(|input| input.pressed(input_store, gamepad))
         .map(|input| input.as_ref())
         .collect();
 
     let reasons_b_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_b
         .iter()
-        .filter(|input| input.pressed(input_store))
+        .filter(|input| input.pressed(input_store, gamepad))
         .map(|input| input.as_ref())
         .collect();
 
@@ -585,6 +590,7 @@ mod tests {
                     &simple_clash,
                     ClashStrategy::PrioritizeLongest,
                     &CentralInputStore::from_world(app.world_mut()),
+                    Gamepad::new(0),
                 ),
                 Some(One)
             );
@@ -595,6 +601,7 @@ mod tests {
                     &reversed_clash,
                     ClashStrategy::PrioritizeLongest,
                     &CentralInputStore::from_world(app.world_mut()),
+                    Gamepad::new(0),
                 ),
                 Some(One)
             );
@@ -608,7 +615,12 @@ mod tests {
             let input_store = CentralInputStore::from_world(app.world_mut());
 
             assert_eq!(
-                resolve_clash(&chord_clash, ClashStrategy::PrioritizeLongest, &input_store,),
+                resolve_clash(
+                    &chord_clash,
+                    ClashStrategy::PrioritizeLongest,
+                    &input_store,
+                    Gamepad::new(0),
+                ),
                 Some(OneAndTwo)
             );
         }
@@ -635,6 +647,7 @@ mod tests {
                 &mut updated_actions,
                 &CentralInputStore::from_world(app.world_mut()),
                 ClashStrategy::PrioritizeLongest,
+                Gamepad::new(0),
             );
 
             let mut expected = UpdatedActions::default();
@@ -687,6 +700,7 @@ mod tests {
                 &mut updated_actions,
                 &CentralInputStore::from_world(app.world_mut()),
                 ClashStrategy::PrioritizeLongest,
+                Gamepad::new(0),
             );
 
             // Only the chord should be pressed,

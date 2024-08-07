@@ -161,11 +161,11 @@ pub trait UserInput:
 /// A trait used for buttonlike user inputs, which can be pressed or released.
 pub trait Buttonlike: UserInput {
     /// Checks if the input is currently active.
-    fn pressed(&self, input_store: &CentralInputStore) -> bool;
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool;
 
     /// Checks if the input is currently inactive.
-    fn released(&self, input_store: &CentralInputStore) -> bool {
-        !self.pressed(input_store)
+    fn released(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+        !self.pressed(input_store, gamepad)
     }
 
     /// Simulates a press of the buttonlike input by sending the appropriate event.
@@ -210,7 +210,7 @@ pub trait Buttonlike: UserInput {
 /// A trait used for axis-like user inputs, which provide a continuous value.
 pub trait Axislike: UserInput {
     /// Gets the current value of the input as an `f32`.
-    fn value(&self, input_store: &CentralInputStore) -> f32;
+    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32;
 
     /// Simulate an axis-like input by sending the appropriate event.
     ///
@@ -235,7 +235,7 @@ pub trait Axislike: UserInput {
 /// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
 pub trait DualAxislike: UserInput {
     /// Gets the values of this input along the X and Y axes (if applicable).
-    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2;
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2;
 
     /// Simulate a dual-axis-like input by sending the appropriate event.
     ///

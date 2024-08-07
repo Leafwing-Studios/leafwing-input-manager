@@ -2,7 +2,9 @@
 
 use bevy::input::mouse::{MouseButtonInput, MouseMotion, MouseWheel};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{Entity, Events, MouseButton, Reflect, Res, ResMut, Resource, Vec2, World};
+use bevy::prelude::{
+    Entity, Events, Gamepad, MouseButton, Reflect, Res, ResMut, Resource, Vec2, World,
+};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -48,7 +50,7 @@ impl UpdatableInput for MouseButton {
 impl Buttonlike for MouseButton {
     /// Checks if the specified button is currently pressed down.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
         input_store.pressed(self)
     }
 
@@ -150,7 +152,7 @@ impl Buttonlike for MouseMoveDirection {
     /// Checks if there is any recent mouse movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
         let mouse_movement = input_store.pair(&MouseMove::default());
         self.0.is_active(mouse_movement)
     }
@@ -249,7 +251,7 @@ impl Axislike for MouseMoveAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
         let movement = input_store.pair(&MouseMove::default());
         let value = self.axis.get_value(movement);
         self.processors
@@ -377,7 +379,7 @@ impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
         self.processed_value(input_store)
     }
 
@@ -481,7 +483,7 @@ impl Buttonlike for MouseScrollDirection {
     /// Checks if there is any recent mouse wheel movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
         let movement = input_store.pair(&MouseScroll::default());
         self.0.is_active(movement)
     }
@@ -587,7 +589,7 @@ impl Axislike for MouseScrollAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
         let movement = input_store.pair(&MouseScroll::default());
         let value = self.axis.get_value(movement);
         self.processors
@@ -725,7 +727,7 @@ impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
         self.processed_value(input_store)
     }
 
@@ -847,9 +849,11 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!left.pressed(&inputs));
-        assert!(!middle.pressed(&inputs));
-        assert!(!right.pressed(&inputs));
+        let gamepad = Gamepad::new(0);
+
+        assert!(!left.pressed(&inputs, gamepad));
+        assert!(!middle.pressed(&inputs, gamepad));
+        assert!(!right.pressed(&inputs, gamepad));
 
         // Press left
         let mut app = test_app();
@@ -857,9 +861,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(left.pressed(&inputs));
-        assert!(!middle.pressed(&inputs));
-        assert!(!right.pressed(&inputs));
+        assert!(left.pressed(&inputs, gamepad));
+        assert!(!middle.pressed(&inputs, gamepad));
+        assert!(!right.pressed(&inputs, gamepad));
 
         // Press middle
         let mut app = test_app();
@@ -867,9 +871,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!left.pressed(&inputs));
-        assert!(middle.pressed(&inputs));
-        assert!(!right.pressed(&inputs));
+        assert!(!left.pressed(&inputs, gamepad));
+        assert!(middle.pressed(&inputs, gamepad));
+        assert!(!right.pressed(&inputs, gamepad));
 
         // Press right
         let mut app = test_app();
@@ -877,9 +881,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!left.pressed(&inputs));
-        assert!(!middle.pressed(&inputs));
-        assert!(right.pressed(&inputs));
+        assert!(!left.pressed(&inputs, gamepad));
+        assert!(!middle.pressed(&inputs, gamepad));
+        assert!(right.pressed(&inputs, gamepad));
     }
 
     #[test]
@@ -898,9 +902,11 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!mouse_move_up.pressed(&inputs));
-        assert_eq!(mouse_move_y.value(&inputs), 0.0);
-        assert_eq!(mouse_move.axis_pair(&inputs), Vec2::new(0.0, 0.0));
+        let gamepad = Gamepad::new(0);
+
+        assert!(!mouse_move_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_move_y.value(&inputs, gamepad), 0.0);
+        assert_eq!(mouse_move.axis_pair(&inputs, gamepad), Vec2::new(0.0, 0.0));
 
         // Move left
         let data = Vec2::new(-1.0, 0.0);
@@ -909,9 +915,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!mouse_move_up.pressed(&inputs));
-        assert_eq!(mouse_move_y.value(&inputs), 0.0);
-        assert_eq!(mouse_move.axis_pair(&inputs), data);
+        assert!(!mouse_move_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_move_y.value(&inputs, gamepad), 0.0);
+        assert_eq!(mouse_move.axis_pair(&inputs, gamepad), data);
 
         // Move up
         let data = Vec2::new(0.0, 1.0);
@@ -920,9 +926,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(mouse_move_up.pressed(&inputs));
-        assert_eq!(mouse_move_y.value(&inputs), data.y);
-        assert_eq!(mouse_move.axis_pair(&inputs), data);
+        assert!(mouse_move_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs, gamepad), data);
 
         // Move down
         let data = Vec2::new(0.0, -1.0);
@@ -931,9 +937,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!mouse_move_up.pressed(&inputs));
-        assert_eq!(mouse_move_y.value(&inputs), data.y);
-        assert_eq!(mouse_move.axis_pair(&inputs), data);
+        assert!(!mouse_move_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs, gamepad), data);
 
         // Set changes in movement on the Y-axis to 3.0
         let data = Vec2::new(0.0, 3.0);
@@ -942,9 +948,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(mouse_move_up.pressed(&inputs));
-        assert_eq!(mouse_move_y.value(&inputs), data.y);
-        assert_eq!(mouse_move.axis_pair(&inputs), data);
+        assert!(mouse_move_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs, gamepad), data);
 
         // Set changes in movement to (2.0, 3.0)
         let data = Vec2::new(2.0, 3.0);
@@ -953,9 +959,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(mouse_move_up.pressed(&inputs));
-        assert_eq!(mouse_move_y.value(&inputs), data.y);
-        assert_eq!(mouse_move.axis_pair(&inputs), data);
+        assert!(mouse_move_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_move.axis_pair(&inputs, gamepad), data);
     }
 
     #[test]
@@ -973,9 +979,14 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!mouse_scroll_up.pressed(&inputs));
-        assert_eq!(mouse_scroll_y.value(&inputs), 0.0);
-        assert_eq!(mouse_scroll.axis_pair(&inputs), Vec2::new(0.0, 0.0));
+        let gamepad = Gamepad::new(0);
+
+        assert!(!mouse_scroll_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_scroll_y.value(&inputs, gamepad), 0.0);
+        assert_eq!(
+            mouse_scroll.axis_pair(&inputs, gamepad),
+            Vec2::new(0.0, 0.0)
+        );
 
         // Move up
         let data = Vec2::new(0.0, 1.0);
@@ -984,9 +995,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(mouse_scroll_up.pressed(&inputs));
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
-        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
+        assert!(mouse_scroll_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs, gamepad), data);
 
         // Scroll down
         let data = Vec2::new(0.0, -1.0);
@@ -995,9 +1006,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(!mouse_scroll_up.pressed(&inputs));
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
-        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
+        assert!(!mouse_scroll_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs, gamepad), data);
 
         // Set changes in scrolling on the Y-axis to 3.0
         let data = Vec2::new(0.0, 3.0);
@@ -1006,9 +1017,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(mouse_scroll_up.pressed(&inputs));
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
-        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
+        assert!(mouse_scroll_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs, gamepad), data);
 
         // Set changes in scrolling to (2.0, 3.0)
         let data = Vec2::new(2.0, 3.0);
@@ -1017,9 +1028,9 @@ mod tests {
         app.update();
         let inputs = CentralInputStore::from_world(app.world_mut());
 
-        assert!(mouse_scroll_up.pressed(&inputs));
-        assert_eq!(mouse_scroll_y.value(&inputs), data.y);
-        assert_eq!(mouse_scroll.axis_pair(&inputs), data);
+        assert!(mouse_scroll_up.pressed(&inputs, gamepad));
+        assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
+        assert_eq!(mouse_scroll.axis_pair(&inputs, gamepad), data);
     }
 
     #[test]

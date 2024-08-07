@@ -490,7 +490,7 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_buttonlike() {
             let mut final_state = false;
             for binding in _input_bindings {
-                if binding.pressed(input_store) {
+                if binding.pressed(input_store, gamepad) {
                     final_state = true;
                     break;
                 }
@@ -502,7 +502,7 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_axislike() {
             let mut final_value = 0.0;
             for binding in _input_bindings {
-                final_value += binding.value(input_store);
+                final_value += binding.value(input_store, gamepad);
             }
 
             updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
@@ -511,14 +511,14 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_dual_axislike() {
             let mut final_value = Vec2::ZERO;
             for binding in _input_bindings {
-                final_value += binding.axis_pair(input_store);
+                final_value += binding.axis_pair(input_store, gamepad);
             }
 
             updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut updated_actions, input_store, clash_strategy);
+        self.handle_clashes(&mut updated_actions, input_store, clash_strategy, gamepad);
 
         updated_actions
     }
