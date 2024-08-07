@@ -1019,7 +1019,7 @@ mod tests {
         let input_store = app.world().resource::<CentralInputStore>();
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PressAll,
         ));
 
@@ -1041,7 +1041,7 @@ mod tests {
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PressAll,
         ));
 
@@ -1054,7 +1054,7 @@ mod tests {
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PressAll,
         ));
 
@@ -1070,7 +1070,7 @@ mod tests {
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PressAll,
         ));
 
@@ -1083,7 +1083,7 @@ mod tests {
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PressAll,
         ));
 
@@ -1121,7 +1121,7 @@ mod tests {
         let input_store = app.world().resource::<CentralInputStore>();
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PrioritizeLongest,
         ));
         assert!(action_state.released(&Action::One));
@@ -1135,7 +1135,7 @@ mod tests {
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PrioritizeLongest,
         ));
 
@@ -1147,7 +1147,7 @@ mod tests {
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PrioritizeLongest,
         ));
 
@@ -1162,7 +1162,7 @@ mod tests {
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PrioritizeLongest,
         ));
 
@@ -1176,7 +1176,7 @@ mod tests {
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
-            &input_store,
+            input_store,
             ClashStrategy::PrioritizeLongest,
         ));
 

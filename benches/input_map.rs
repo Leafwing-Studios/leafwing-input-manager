@@ -87,7 +87,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     for clash_strategy in ClashStrategy::variants() {
         which_pressed_group.bench_function(format!("{:?}", clash_strategy), |b| {
-            b.iter(|| which_pressed(&Gamepads::default(), &input_store, *clash_strategy))
+            b.iter(|| which_pressed(&Gamepads::default(), input_store, *clash_strategy))
         });
     }
     which_pressed_group.finish();

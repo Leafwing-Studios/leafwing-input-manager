@@ -30,7 +30,7 @@ impl FetchUserInput for World {
             None => Gamepad::new(0),
         };
 
-        input.pressed(&input_store, gamepad)
+        input.pressed(input_store, gamepad)
     }
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
@@ -40,7 +40,7 @@ impl FetchUserInput for World {
             None => Gamepad::new(0),
         };
 
-        input.value(&input_store, gamepad)
+        input.value(input_store, gamepad)
     }
 
     fn read_dual_axis_values(&mut self, input: impl DualAxislike) -> Vec2 {
@@ -50,7 +50,7 @@ impl FetchUserInput for World {
             None => Gamepad::new(0),
         };
 
-        input.axis_pair(&input_store, gamepad)
+        input.axis_pair(input_store, gamepad)
     }
 }
 

@@ -363,7 +363,7 @@ mod tests {
         let mut app = test_app();
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
-        assert!(!chord.pressed(&inputs, Gamepad::new(0)));
+        assert!(!chord.pressed(inputs, Gamepad::new(0)));
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
@@ -372,7 +372,7 @@ mod tests {
         }
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
-        assert!(chord.pressed(&inputs, Gamepad::new(0)));
+        assert!(chord.pressed(inputs, Gamepad::new(0)));
 
         // Some required keys pressed, but not all required keys for the chord,
         // resulting in a released chord with a value of zero.
@@ -383,7 +383,7 @@ mod tests {
             }
             app.update();
             let inputs = app.world().resource::<CentralInputStore>();
-            assert!(!chord.pressed(&inputs, Gamepad::new(0)));
+            assert!(!chord.pressed(inputs, Gamepad::new(0)));
         }
 
         // Five keys pressed, but not all required keys for the chord,
@@ -395,6 +395,6 @@ mod tests {
         KeyCode::KeyB.press(app.world_mut());
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
-        assert!(!chord.pressed(&inputs, Gamepad::new(0)));
+        assert!(!chord.pressed(inputs, Gamepad::new(0)));
     }
 }

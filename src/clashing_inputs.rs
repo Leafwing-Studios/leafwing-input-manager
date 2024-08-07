@@ -592,7 +592,7 @@ mod tests {
                 resolve_clash(
                     &simple_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &input_store,
+                    input_store,
                     Gamepad::new(0),
                 ),
                 Some(One)
@@ -605,7 +605,7 @@ mod tests {
                 resolve_clash(
                     &reversed_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &input_store,
+                    input_store,
                     Gamepad::new(0),
                 ),
                 Some(One)
@@ -623,7 +623,7 @@ mod tests {
                 resolve_clash(
                     &chord_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &input_store,
+                    input_store,
                     Gamepad::new(0),
                 ),
                 Some(OneAndTwo)
@@ -650,7 +650,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut updated_actions,
-                &input_store,
+                input_store,
                 ClashStrategy::PrioritizeLongest,
                 Gamepad::new(0),
             );
@@ -705,7 +705,7 @@ mod tests {
 
             input_map.handle_clashes(
                 &mut updated_actions,
-                &input_store,
+                input_store,
                 ClashStrategy::PrioritizeLongest,
                 Gamepad::new(0),
             );
@@ -735,7 +735,7 @@ mod tests {
 
             let action_data = input_map.process_actions(
                 &Gamepads::default(),
-                &input_store,
+                input_store,
                 ClashStrategy::PrioritizeLongest,
             );
 

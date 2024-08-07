@@ -624,11 +624,11 @@ mod tests {
 
         let gamepad = Gamepad::new(0);
 
-        assert!(!up.pressed(&inputs, gamepad));
-        assert!(!left.pressed(&inputs, gamepad));
-        assert!(!alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), zeros);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
 
         // Press arrow up
         let data = Vec2::new(0.0, 1.0);
@@ -637,11 +637,11 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(up.pressed(&inputs, gamepad));
-        assert!(!left.pressed(&inputs, gamepad));
-        assert!(!alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), data.y);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), data);
+        assert!(up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), data.y);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press arrow down
         let data = Vec2::new(0.0, -1.0);
@@ -650,11 +650,11 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs, gamepad));
-        assert!(!left.pressed(&inputs, gamepad));
-        assert!(!alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), data.y);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), data);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), data.y);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press arrow left
         let data = Vec2::new(-1.0, 0.0);
@@ -663,11 +663,11 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs, gamepad));
-        assert!(left.pressed(&inputs, gamepad));
-        assert!(!alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), data);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press arrow down and arrow up
         let mut app = test_app();
@@ -676,11 +676,11 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(up.pressed(&inputs, gamepad));
-        assert!(!left.pressed(&inputs, gamepad));
-        assert!(!alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), zeros);
+        assert!(up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
 
         // Press arrow left and arrow up
         let data = Vec2::new(-1.0, 1.0);
@@ -690,11 +690,11 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(up.pressed(&inputs, gamepad));
-        assert!(left.pressed(&inputs, gamepad));
-        assert!(!alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), data.y);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), data);
+        assert!(up.pressed(inputs, gamepad));
+        assert!(left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), data.y);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press left Alt
         let mut app = test_app();
@@ -702,11 +702,11 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs, gamepad));
-        assert!(!left.pressed(&inputs, gamepad));
-        assert!(alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), zeros);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
 
         // Press right Alt
         let mut app = test_app();
@@ -714,10 +714,10 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs, gamepad));
-        assert!(!left.pressed(&inputs, gamepad));
-        assert!(alt.pressed(&inputs, gamepad));
-        assert_eq!(arrow_y.value(&inputs, gamepad), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs, gamepad), zeros);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
     }
 }
