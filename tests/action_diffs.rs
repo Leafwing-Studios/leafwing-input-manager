@@ -194,10 +194,7 @@ fn generate_axis_action_diffs() {
     app.add_systems(
         Update,
         pay_da_bills(move |mut action_state| {
-            action_state
-                .dual_axis_data_mut(&Action::PayTheBills)
-                .unwrap()
-                .pair = input_axis_pair;
+            action_state.set_axis_pair(&Action::PayTheBills, input_axis_pair)
         }),
     )
     .add_systems(PostUpdate, generate_action_diffs::<Action>)
