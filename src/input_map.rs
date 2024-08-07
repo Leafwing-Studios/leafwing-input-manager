@@ -466,7 +466,7 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
-    /// Determines the correct state for each action according to provided [`InputStreams`].
+    /// Determines the correct state for each action according to provided [`CentralInputStore`].
     ///
     /// This method uses the input bindings for each action to determine how to parse the input data,
     /// and generates corresponding [`ButtonData`](crate::action_state::ButtonData),

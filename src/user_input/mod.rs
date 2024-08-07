@@ -113,7 +113,6 @@ pub mod updating;
 /// use bevy::math::{Vec2, FloatOrd};
 /// use serde::{Deserialize, Serialize};
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::input_store::InputStreams;
 /// use leafwing_input_manager::axislike::{DualAxisType};
 /// use leafwing_input_manager::clashing_inputs::BasicInputs;
 ///
