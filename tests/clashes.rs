@@ -84,12 +84,12 @@ impl ClashTestExt for App {
         pressed_actions: impl IntoIterator<Item = Action>,
     ) {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions);
-        let central_input_store = CentralInputStore::from_world(self.world_mut());
-        // SystemState is love, SystemState is life
-        let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
-            SystemState::new(self.world_mut());
+        let mut input_system_state: SystemState<(
+            Query<&InputMap<Action>>,
+            Res<CentralInputStore>,
+        )> = SystemState::new(self.world_mut());
 
-        let input_map_query = input_system_state.get(self.world());
+        let (input_map_query, central_input_store) = input_system_state.get(self.world());
 
         let input_map = input_map_query.single();
         let keyboard_input = self.world().resource::<ButtonInput<KeyCode>>();

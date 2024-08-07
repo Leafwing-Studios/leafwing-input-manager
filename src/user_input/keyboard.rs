@@ -616,7 +616,7 @@ mod tests {
         let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         let gamepad = Gamepad::new(0);
 
@@ -631,7 +631,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(up.pressed(&inputs, gamepad));
         assert!(!left.pressed(&inputs, gamepad));
@@ -644,7 +644,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::ArrowDown.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!up.pressed(&inputs, gamepad));
         assert!(!left.pressed(&inputs, gamepad));
@@ -657,7 +657,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::ArrowLeft.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!up.pressed(&inputs, gamepad));
         assert!(left.pressed(&inputs, gamepad));
@@ -670,7 +670,7 @@ mod tests {
         KeyCode::ArrowDown.press(app.world_mut());
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(up.pressed(&inputs, gamepad));
         assert!(!left.pressed(&inputs, gamepad));
@@ -684,7 +684,7 @@ mod tests {
         KeyCode::ArrowLeft.press(app.world_mut());
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(up.pressed(&inputs, gamepad));
         assert!(left.pressed(&inputs, gamepad));
@@ -696,7 +696,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::AltLeft.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!up.pressed(&inputs, gamepad));
         assert!(!left.pressed(&inputs, gamepad));
@@ -708,7 +708,7 @@ mod tests {
         let mut app = test_app();
         KeyCode::AltRight.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!up.pressed(&inputs, gamepad));
         assert!(!left.pressed(&inputs, gamepad));

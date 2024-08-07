@@ -1017,7 +1017,7 @@ mod tests {
         input_map.insert(Action::Run, KeyCode::KeyR);
 
         // Starting state
-        let input_store = CentralInputStore::from_world(app.world_mut());
+        let input_store = app.world().resource::<CentralInputStore>();
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
             &input_store,
@@ -1038,7 +1038,7 @@ mod tests {
         KeyCode::KeyR.press(app.world_mut());
         // Process the input events into Input<KeyCode> data
         app.update();
-        let input_store = CentralInputStore::from_world(app.world_mut());
+        let input_store = app.world().resource::<CentralInputStore>();
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
@@ -1067,7 +1067,7 @@ mod tests {
         // Releasing
         KeyCode::KeyR.release(app.world_mut());
         app.update();
-        let input_store = CentralInputStore::from_world(app.world_mut());
+        let input_store = app.world().resource::<CentralInputStore>();
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
@@ -1119,7 +1119,7 @@ mod tests {
         let mut action_state = ActionState::<Action>::default();
 
         // Starting state
-        let input_store = CentralInputStore::from_world(app.world_mut());
+        let input_store = app.world().resource::<CentralInputStore>();
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
             &input_store,
@@ -1132,7 +1132,7 @@ mod tests {
         // Pressing One
         Digit1.press(app.world_mut());
         app.update();
-        let input_store = CentralInputStore::from_world(app.world_mut());
+        let input_store = app.world().resource::<CentralInputStore>();
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),
@@ -1159,7 +1159,7 @@ mod tests {
         // Pressing Two
         Digit2.press(app.world_mut());
         app.update();
-        let input_store = CentralInputStore::from_world(app.world_mut());
+        let input_store = app.world().resource::<CentralInputStore>();
 
         action_state.update(input_map.process_actions(
             &Gamepads::default(),

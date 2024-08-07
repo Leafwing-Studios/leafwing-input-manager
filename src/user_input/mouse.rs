@@ -848,7 +848,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         let gamepad = Gamepad::new(0);
 
@@ -860,7 +860,7 @@ mod tests {
         let mut app = test_app();
         MouseButton::Left.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(left.pressed(&inputs, gamepad));
         assert!(!middle.pressed(&inputs, gamepad));
@@ -870,7 +870,7 @@ mod tests {
         let mut app = test_app();
         MouseButton::Middle.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!left.pressed(&inputs, gamepad));
         assert!(middle.pressed(&inputs, gamepad));
@@ -880,7 +880,7 @@ mod tests {
         let mut app = test_app();
         MouseButton::Right.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!left.pressed(&inputs, gamepad));
         assert!(!middle.pressed(&inputs, gamepad));
@@ -901,7 +901,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         let gamepad = Gamepad::new(0);
 
@@ -914,7 +914,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveDirection::LEFT.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!mouse_move_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_move_y.value(&inputs, gamepad), 0.0);
@@ -925,7 +925,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveDirection::UP.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(mouse_move_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
@@ -936,7 +936,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveDirection::DOWN.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!mouse_move_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
@@ -947,7 +947,7 @@ mod tests {
         let mut app = test_app();
         MouseMoveAxis::Y.set_value(app.world_mut(), data.y);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(mouse_move_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
@@ -958,7 +958,7 @@ mod tests {
         let mut app = test_app();
         MouseMove::default().set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(mouse_move_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_move_y.value(&inputs, gamepad), data.y);
@@ -978,7 +978,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         let gamepad = Gamepad::new(0);
 
@@ -994,7 +994,7 @@ mod tests {
         let mut app = test_app();
         MouseScrollDirection::UP.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(mouse_scroll_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
@@ -1005,7 +1005,7 @@ mod tests {
         let mut app = test_app();
         MouseScrollDirection::DOWN.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!mouse_scroll_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
@@ -1016,7 +1016,7 @@ mod tests {
         let mut app = test_app();
         MouseScrollAxis::Y.set_value(app.world_mut(), data.y);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(mouse_scroll_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
@@ -1027,7 +1027,7 @@ mod tests {
         let mut app = test_app();
         MouseScroll::default().set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(mouse_scroll_up.pressed(&inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(&inputs, gamepad), data.y);
@@ -1055,14 +1055,14 @@ mod tests {
         let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMovement>();
         assert_eq!(accumulated_mouse_movement.0, Vec2::new(0.0, 5.0));
 
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
         assert_eq!(inputs.pair(&MouseMove::default()), Vec2::new(0.0, 5.0));
     }
 
     #[test]
     fn multiple_frames_accumulate_mouse_movement() {
         let mut app = test_app();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
         // Starts at 0
         assert_eq!(
             inputs.pair(&MouseMove::default()),
@@ -1075,7 +1075,7 @@ mod tests {
         // Wait for the events to be processed
         app.update();
 
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
         // Data is read
         assert_eq!(
             inputs.pair(&MouseMove::default()),
@@ -1085,7 +1085,7 @@ mod tests {
 
         // Do nothing
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
         // Back to 0 for this frame
         assert_eq!(
             inputs.pair(&MouseMove::default()),

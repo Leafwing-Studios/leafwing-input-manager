@@ -585,22 +585,26 @@ mod tests {
             Digit2.press(app.world_mut());
             app.update();
 
+            let input_store = app.world().resource::<CentralInputStore>();
+
             assert_eq!(
                 resolve_clash(
                     &simple_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &CentralInputStore::from_world(app.world_mut()),
+                    &input_store,
                     Gamepad::new(0),
                 ),
                 Some(One)
             );
 
             let reversed_clash = input_map.possible_clash(&OneAndTwo, &One).unwrap();
+            let input_store = app.world().resource::<CentralInputStore>();
+
             assert_eq!(
                 resolve_clash(
                     &reversed_clash,
                     ClashStrategy::PrioritizeLongest,
-                    &CentralInputStore::from_world(app.world_mut()),
+                    &input_store,
                     Gamepad::new(0),
                 ),
                 Some(One)
@@ -612,7 +616,7 @@ mod tests {
             Digit3.press(app.world_mut());
             app.update();
 
-            let input_store = CentralInputStore::from_world(app.world_mut());
+            let input_store = app.world().resource::<CentralInputStore>();
 
             assert_eq!(
                 resolve_clash(
@@ -643,9 +647,11 @@ mod tests {
             updated_actions.insert(Two, UpdatedValue::Button(true));
             updated_actions.insert(OneAndTwo, UpdatedValue::Button(true));
 
+            let input_store = app.world().resource::<CentralInputStore>();
+
             input_map.handle_clashes(
                 &mut updated_actions,
-                &CentralInputStore::from_world(app.world_mut()),
+                &input_store,
                 ClashStrategy::PrioritizeLongest,
                 Gamepad::new(0),
             );
@@ -696,9 +702,11 @@ mod tests {
             // Double check that the chord is longer than the DPad
             assert!(chord_input.decompose().len() > dpad_input.decompose().len());
 
+            let input_store = app.world().resource::<CentralInputStore>();
+
             input_map.handle_clashes(
                 &mut updated_actions,
-                &CentralInputStore::from_world(app.world_mut()),
+                &input_store,
                 ClashStrategy::PrioritizeLongest,
                 Gamepad::new(0),
             );
@@ -724,9 +732,11 @@ mod tests {
             ControlLeft.press(app.world_mut());
             app.update();
 
+            let input_store = app.world().resource::<CentralInputStore>();
+
             let action_data = input_map.process_actions(
                 &Gamepads::default(),
-                &CentralInputStore::from_world(app.world_mut()),
+                &input_store,
                 ClashStrategy::PrioritizeLongest,
             );
 

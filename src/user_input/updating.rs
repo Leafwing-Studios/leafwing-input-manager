@@ -8,7 +8,6 @@ use bevy::{
     math::Vec2,
     prelude::{
         GamepadAxis, GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
-        World,
     },
     reflect::Reflect,
     utils::{HashMap, HashSet},
@@ -182,15 +181,6 @@ impl CentralInputStore {
             .copied()
             .unwrap_or(Vec2::ZERO)
     }
-
-    /// Quickly generates a [`CentralInputStore`] from the current state of the world.
-    ///
-    /// This is primarily useful for testing purposes.
-    pub fn from_world(world: &mut World) -> Self {
-        world.init_resource::<Self>();
-
-        world.remove_resource::<Self>().unwrap()
-    }
 }
 
 /// A map of values that have been updated during the current frame.
@@ -252,6 +242,7 @@ mod tests {
     use super::*;
     use bevy::ecs::system::RunSystemOnce;
     use bevy::input::ButtonInput;
+    use bevy::prelude::World;
     use leafwing_input_manager_macros::Actionlike;
 
     use crate as leafwing_input_manager;

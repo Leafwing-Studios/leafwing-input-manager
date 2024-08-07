@@ -24,7 +24,7 @@ pub trait FetchUserInput {
 
 impl FetchUserInput for World {
     fn read_pressed(&mut self, input: impl Buttonlike) -> bool {
-        let input_store = CentralInputStore::from_world(self);
+        let input_store = self.resource::<CentralInputStore>();
         let gamepad = match self.get_resource::<Gamepads>() {
             Some(gamepads) => find_gamepad(gamepads),
             None => Gamepad::new(0),
@@ -34,7 +34,7 @@ impl FetchUserInput for World {
     }
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
-        let input_store = CentralInputStore::from_world(self);
+        let input_store = self.resource::<CentralInputStore>();
         let gamepad = match self.get_resource::<Gamepads>() {
             Some(gamepads) => find_gamepad(gamepads),
             None => Gamepad::new(0),
@@ -44,7 +44,7 @@ impl FetchUserInput for World {
     }
 
     fn read_dual_axis_values(&mut self, input: impl DualAxislike) -> Vec2 {
-        let input_store = CentralInputStore::from_world(self);
+        let input_store = self.resource::<CentralInputStore>();
         let gamepad = match self.get_resource::<Gamepads>() {
             Some(gamepads) => find_gamepad(gamepads),
             None => Gamepad::new(0),

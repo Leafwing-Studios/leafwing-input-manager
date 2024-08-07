@@ -83,7 +83,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     KeyCode::KeyB.press(app.world_mut());
     app.update();
 
-    let input_store = CentralInputStore::from_world(app.world_mut());
+    let input_store = app.world().resource::<CentralInputStore>();
 
     for clash_strategy in ClashStrategy::variants() {
         which_pressed_group.bench_function(format!("{:?}", clash_strategy), |b| {

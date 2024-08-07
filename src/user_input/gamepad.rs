@@ -1034,7 +1034,7 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         let gamepad = Gamepad::new(0);
 
@@ -1052,7 +1052,7 @@ mod tests {
         let mut app = test_app();
         GamepadControlDirection::LEFT_UP.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(left_up.pressed(&inputs, gamepad));
         assert!(!left_down.pressed(&inputs, gamepad));
@@ -1068,7 +1068,7 @@ mod tests {
         let mut app = test_app();
         GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), data.y);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(left_up.pressed(&inputs, gamepad));
         assert!(!left_down.pressed(&inputs, gamepad));
@@ -1084,7 +1084,7 @@ mod tests {
         let mut app = test_app();
         GamepadStick::LEFT.set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(left_up.pressed(&inputs, gamepad));
         assert!(!left_down.pressed(&inputs, gamepad));
@@ -1124,7 +1124,7 @@ mod tests {
         let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         let gamepad = Gamepad::new(0);
 
@@ -1141,7 +1141,7 @@ mod tests {
         let mut app = test_app();
         GamepadButtonType::DPadLeft.press(app.world_mut());
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!up.pressed(&inputs, gamepad));
         assert!(left.pressed(&inputs, gamepad));
@@ -1156,7 +1156,7 @@ mod tests {
         let mut app = test_app();
         GamepadVirtualAxis::DPAD_X.set_value(app.world_mut(), data.x);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!up.pressed(&inputs, gamepad));
         assert!(left.pressed(&inputs, gamepad));
@@ -1171,7 +1171,7 @@ mod tests {
         let mut app = test_app();
         GamepadVirtualDPad::DPAD.set_axis_pair(app.world_mut(), data);
         app.update();
-        let inputs = CentralInputStore::from_world(app.world_mut());
+        let inputs = app.world().resource::<CentralInputStore>();
 
         assert!(!up.pressed(&inputs, gamepad));
         assert!(left.pressed(&inputs, gamepad));
