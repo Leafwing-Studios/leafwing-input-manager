@@ -1,8 +1,8 @@
 //! Keyboard inputs
 
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
-use bevy::input::ButtonState;
-use bevy::prelude::{Entity, Events, KeyCode, Reflect, Vec2, World};
+use bevy::input::{ButtonInput, ButtonState};
+use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, Res, ResMut, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -12,10 +12,10 @@ use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
     WithDualAxisProcessingPipelineExt,
 };
-use crate::input_streams::InputStreams;
 use crate::user_input::{ButtonlikeChord, UserInput};
 use crate::InputControlKind;
 
+use super::updating::{CentralInputStore, UpdatableInput};
 use super::{Axislike, Buttonlike, DualAxislike};
 
 // Built-in support for Bevy's KeyCode
@@ -35,14 +35,29 @@ impl UserInput for KeyCode {
     }
 }
 
+impl UpdatableInput for KeyCode {
+    type SourceData = ButtonInput<KeyCode>;
+
+    fn compute(
+        mut central_input_store: ResMut<CentralInputStore>,
+        source_data: Res<Self::SourceData>,
+    ) {
+        for key in source_data.get_pressed() {
+            central_input_store.update_buttonlike(*key, true);
+        }
+
+        for key in source_data.get_just_released() {
+            central_input_store.update_buttonlike(*key, false);
+        }
+    }
+}
+
 impl Buttonlike for KeyCode {
     /// Checks if the specified key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keys| keys.pressed(*self))
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+        input_store.pressed(self)
     }
 
     /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
@@ -161,10 +176,8 @@ impl Buttonlike for ModifierKey {
     /// Checks if the specified modifier key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        input_streams
-            .keycodes
-            .is_some_and(|keycodes| keycodes.any_pressed(self.keycodes()))
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+        input_store.pressed(&self.left()) || input_store.pressed(&self.right())
     }
 
     /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
@@ -210,10 +223,10 @@ impl Buttonlike for ModifierKey {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Define a virtual Y-axis using arrow "up" and "down" keys
 /// let axis = KeyboardVirtualAxis::VERTICAL_ARROW_KEYS;
@@ -332,13 +345,9 @@ impl Axislike for KeyboardVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        let Some(keycodes) = input_streams.keycodes else {
-            return 0.0;
-        };
-
-        let negative = f32::from(keycodes.pressed(self.negative));
-        let positive = f32::from(keycodes.pressed(self.positive));
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+        let negative = f32::from(input_store.pressed(&self.negative));
+        let positive = f32::from(input_store.pressed(&self.positive));
         let value = positive - negative;
         self.processors
             .iter()
@@ -402,10 +411,10 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Define a virtual D-pad using the arrow keys
 /// let input = KeyboardVirtualDPad::ARROW_KEYS;
@@ -497,15 +506,11 @@ impl KeyboardVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn processed_value(&self, input_streams: &InputStreams) -> Vec2 {
-        let Some(keycodes) = input_streams.keycodes else {
-            return Vec2::ZERO;
-        };
-
-        let up = f32::from(keycodes.pressed(self.up));
-        let down = f32::from(keycodes.pressed(self.down));
-        let left = f32::from(keycodes.pressed(self.left));
-        let right = f32::from(keycodes.pressed(self.right));
+    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
+        let up = f32::from(input_store.pressed(&self.up));
+        let down = f32::from(input_store.pressed(&self.down));
+        let left = f32::from(input_store.pressed(&self.left));
+        let right = f32::from(input_store.pressed(&self.right));
         let value = Vec2::new(right - left, up - down);
         self.processors
             .iter()
@@ -537,8 +542,8 @@ impl DualAxislike for KeyboardVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        self.processed_value(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
+        self.processed_value(input_store)
     }
 
     /// Presses the corresponding buttons based on the quadrant of the given value.
@@ -583,13 +588,14 @@ impl WithDualAxisProcessingPipelineExt for KeyboardVirtualDPad {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::AccumulatorPlugin;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
-        app.add_plugins(InputPlugin).add_plugins(AccumulatorPlugin);
+        app.add_plugins(InputPlugin)
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
         app
     }
 
@@ -614,65 +620,67 @@ mod tests {
         let zeros = Vec2::new(0.0, 0.0);
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs));
-        assert!(!left.pressed(&inputs));
-        assert!(!alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs), zeros);
+        let gamepad = Gamepad::new(0);
+
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
 
         // Press arrow up
         let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(up.pressed(&inputs));
-        assert!(!left.pressed(&inputs));
-        assert!(!alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), data.y);
-        assert_eq!(arrows.axis_pair(&inputs), data);
+        assert!(up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), data.y);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press arrow down
         let data = Vec2::new(0.0, -1.0);
         let mut app = test_app();
         KeyCode::ArrowDown.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs));
-        assert!(!left.pressed(&inputs));
-        assert!(!alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), data.y);
-        assert_eq!(arrows.axis_pair(&inputs), data);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), data.y);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press arrow left
         let data = Vec2::new(-1.0, 0.0);
         let mut app = test_app();
         KeyCode::ArrowLeft.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs));
-        assert!(left.pressed(&inputs));
-        assert!(!alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs), data);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press arrow down and arrow up
         let mut app = test_app();
         KeyCode::ArrowDown.press(app.world_mut());
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(up.pressed(&inputs));
-        assert!(!left.pressed(&inputs));
-        assert!(!alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs), zeros);
+        assert!(up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
 
         // Press arrow left and arrow up
         let data = Vec2::new(-1.0, 1.0);
@@ -680,36 +688,36 @@ mod tests {
         KeyCode::ArrowLeft.press(app.world_mut());
         KeyCode::ArrowUp.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(up.pressed(&inputs));
-        assert!(left.pressed(&inputs));
-        assert!(!alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), data.y);
-        assert_eq!(arrows.axis_pair(&inputs), data);
+        assert!(up.pressed(inputs, gamepad));
+        assert!(left.pressed(inputs, gamepad));
+        assert!(!alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), data.y);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), data);
 
         // Press left Alt
         let mut app = test_app();
         KeyCode::AltLeft.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs));
-        assert!(!left.pressed(&inputs));
-        assert!(alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs), zeros);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
 
         // Press right Alt
         let mut app = test_app();
         KeyCode::AltRight.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
+        let inputs = app.world().resource::<CentralInputStore>();
 
-        assert!(!up.pressed(&inputs));
-        assert!(!left.pressed(&inputs));
-        assert!(alt.pressed(&inputs));
-        assert_eq!(arrow_y.value(&inputs), 0.0);
-        assert_eq!(arrows.axis_pair(&inputs), zeros);
+        assert!(!up.pressed(inputs, gamepad));
+        assert!(!left.pressed(inputs, gamepad));
+        assert!(alt.pressed(inputs, gamepad));
+        assert_eq!(arrow_y.value(inputs, gamepad), 0.0);
+        assert_eq!(arrows.axis_pair(inputs, gamepad), zeros);
     }
 }

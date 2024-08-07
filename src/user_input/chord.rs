@@ -7,11 +7,11 @@ use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
-use crate::input_streams::InputStreams;
 use crate::user_input::{Buttonlike, UserInput};
 use crate::InputControlKind;
 
 use super::keyboard::ModifierKey;
+use super::updating::CentralInputStore;
 use super::{Axislike, DualAxislike};
 
 /// A combined input that groups multiple [`Buttonlike`]s together,
@@ -26,12 +26,12 @@ use super::{Axislike, DualAxislike};
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin));
+/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 ///
 /// // Define a chord using A and B keys
 /// let input = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB]);
@@ -39,13 +39,13 @@ use super::{Axislike, DualAxislike};
 /// // Pressing only one key doesn't activate the input
 /// KeyCode::KeyA.press(app.world_mut());
 /// app.update();
-/// assert!(!app.pressed(input.clone()));
+/// assert!(!app.read_pressed(input.clone()));
 ///
 /// // Pressing both keys activates the input
 /// KeyCode::KeyA.press(app.world_mut());
 /// KeyCode::KeyB.press(app.world_mut());
 /// app.update();
-/// assert!(app.pressed(input.clone()));
+/// assert!(app.read_pressed(input.clone()));
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -143,8 +143,10 @@ impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_streams: &InputStreams) -> bool {
-        self.0.iter().all(|input| input.pressed(input_streams))
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+        self.0
+            .iter()
+            .all(|input| input.pressed(input_store, gamepad))
     }
 
     fn press(&self, world: &mut World) {
@@ -223,9 +225,9 @@ impl UserInput for AxislikeChord {
 }
 
 impl Axislike for AxislikeChord {
-    fn value(&self, input_streams: &InputStreams) -> f32 {
-        if self.button.pressed(input_streams) {
-            self.axis.value(input_streams)
+    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+        if self.button.pressed(input_store, gamepad) {
+            self.axis.value(input_store, gamepad)
         } else {
             0.0
         }
@@ -278,9 +280,9 @@ impl UserInput for DualAxislikeChord {
 }
 
 impl DualAxislike for DualAxislikeChord {
-    fn axis_pair(&self, input_streams: &InputStreams) -> Vec2 {
-        if self.button.pressed(input_streams) {
-            self.dual_axis.axis_pair(input_streams)
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
+        if self.button.pressed(input_store, gamepad) {
+            self.dual_axis.axis_pair(input_store, gamepad)
         } else {
             Vec2::ZERO
         }
@@ -310,14 +312,14 @@ mod tests {
     use bevy::prelude::*;
 
     use super::*;
-    use crate::plugin::AccumulatorPlugin;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
     use crate::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(InputPlugin)
-            .add_plugins(AccumulatorPlugin);
+            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
@@ -360,8 +362,8 @@ mod tests {
         // No keys pressed, resulting in a released chord with a value of zero.
         let mut app = test_app();
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
-        assert!(!chord.pressed(&inputs));
+        let inputs = app.world().resource::<CentralInputStore>();
+        assert!(!chord.pressed(inputs, Gamepad::new(0)));
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
@@ -369,8 +371,8 @@ mod tests {
             key.press(app.world_mut());
         }
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
-        assert!(chord.pressed(&inputs));
+        let inputs = app.world().resource::<CentralInputStore>();
+        assert!(chord.pressed(inputs, Gamepad::new(0)));
 
         // Some required keys pressed, but not all required keys for the chord,
         // resulting in a released chord with a value of zero.
@@ -380,8 +382,8 @@ mod tests {
                 key.press(app.world_mut());
             }
             app.update();
-            let inputs = InputStreams::from_world(app.world(), None);
-            assert!(!chord.pressed(&inputs));
+            let inputs = app.world().resource::<CentralInputStore>();
+            assert!(!chord.pressed(inputs, Gamepad::new(0)));
         }
 
         // Five keys pressed, but not all required keys for the chord,
@@ -392,7 +394,7 @@ mod tests {
         }
         KeyCode::KeyB.press(app.world_mut());
         app.update();
-        let inputs = InputStreams::from_world(app.world(), None);
-        assert!(!chord.pressed(&inputs));
+        let inputs = app.world().resource::<CentralInputStore>();
+        assert!(!chord.pressed(inputs, Gamepad::new(0)));
     }
 }

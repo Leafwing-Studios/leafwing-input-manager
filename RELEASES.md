@@ -18,6 +18,8 @@
   - 2-dimensional `DualAxisData` can only be accessed for dualaxislike data: invalid requests will always return (0.0, 0.0)
   - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_axis` method
   - `Axislike` inputs can no longer be inserted directly into an `InputMap`: instead, use the `insert_dual_axis` method
+- `InputStreams` has been removed in favor of an extensible `CentralInputStore` type, which you can add your own raw input kinds to
+- `RawInputs` has been removed to ensure that clashes for new raw input kinds can be handled correctly
 
 #### More inputs
 
@@ -116,7 +118,6 @@ Input processors allow you to create custom logic for axis-like input manipulati
 ### Bugs
 
 - fixed a bug where enabling a pressed action would read as `just_pressed`, and disabling a pressed action would read as `just_released`.
-- fixed a bug in `InputStreams::button_pressed()` where unrelated gamepads were not filtered out when an `associated_gamepad` is defined.
 - inputs are now handled correctly in the `FixedUpdate` schedule! Previously, the `ActionState`s were only updated in the `PreUpdate` schedule, so you could have situations where an action was marked as `just_pressed` multiple times in a row (if the `FixedUpdate` schedule ran multiple times in a frame) or was missed entirely (if the `FixedUpdate` schedule ran 0 times in a frame).
 - Mouse motion and mouse scroll are now computed more efficiently and reliably, through the use of the new `AccumulatedMouseMovement` and `AccumulatedMouseScroll` resources.
 - the `timing` field of the `ActionData` is now disabled by default. Timing information will only be collected
@@ -175,6 +176,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - removed `MockInput::send_input` methods, in favor of new input mocking APIs (see 'Usability: MockInput' for details).
 - `DualAxisData` has been removed, and replaced with a simple `Vec2` throughout
   - a new type with the `DualAxisData` name has been added, as a parallel to `ButtonData` and `AxisData`
+- when no `associated_gamepad` is provided to an input map, `find_gamepad` will be called to attempt to search for a gamepad. Input from *any* gamepad will no longer work
 
 ## Version 0.14.0
 

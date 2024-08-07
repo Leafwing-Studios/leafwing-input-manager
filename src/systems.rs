@@ -1,32 +1,23 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
 use crate::action_state::ActionKindData;
+use crate::prelude::updating::CentralInputStore;
 use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
 use crate::{
-    action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
-    input_streams::InputStreams, Actionlike,
+    action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap, Actionlike,
 };
 
 use bevy::ecs::prelude::*;
+use bevy::prelude::Gamepads;
 use bevy::utils::HashSet;
 use bevy::{
-    input::{
-        gamepad::{GamepadAxis, GamepadButton, Gamepads},
-        keyboard::KeyCode,
-        mouse::{MouseButton, MouseMotion, MouseWheel},
-        Axis, ButtonInput,
-    },
+    input::mouse::{MouseMotion, MouseWheel},
     math::Vec2,
     time::{Real, Time},
     utils::{HashMap, Instant},
 };
 
 use crate::action_diff::{ActionDiff, ActionDiffEvent};
-
-#[cfg(feature = "ui")]
-use bevy::ui::Interaction;
-#[cfg(feature = "egui")]
-use bevy_egui::EguiContext;
 
 /// We are about to enter the `Main` schedule, so we:
 /// - save all the changes applied to `state` into the `fixed_update_state`
@@ -114,84 +105,57 @@ pub fn accumulate_mouse_scroll(
     }
 }
 
-/// Fetches all the relevant [`ButtonInput`] resources
+/// Fetches the [`CentralInputStore`]
 /// to update [`ActionState`] according to the [`InputMap`].
 ///
-/// Missing resources will be ignored and treated as if none of the corresponding inputs were pressed.
-#[allow(clippy::too_many_arguments)]
+/// Clashes will be resolved according to the [`ClashStrategy`] resource.
 pub fn update_action_state<A: Actionlike>(
-    gamepad_buttons: Res<ButtonInput<GamepadButton>>,
-    gamepad_button_axes: Res<Axis<GamepadButton>>,
-    gamepad_axes: Res<Axis<GamepadAxis>>,
-    gamepads: Res<Gamepads>,
-    keycodes: Option<Res<ButtonInput<KeyCode>>>,
-    mouse_buttons: Option<Res<ButtonInput<MouseButton>>>,
-    mouse_scroll: Res<AccumulatedMouseScroll>,
-    mouse_motion: Res<AccumulatedMouseMovement>,
+    input_store: Res<CentralInputStore>,
     clash_strategy: Res<ClashStrategy>,
-    #[cfg(feature = "ui")] interactions: Query<&Interaction>,
-    #[cfg(feature = "egui")] mut maybe_egui: Query<(Entity, &'static mut EguiContext)>,
+    gamepads: Res<Gamepads>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
 ) {
-    let gamepad_buttons = gamepad_buttons.into_inner();
-    let gamepad_button_axes = gamepad_button_axes.into_inner();
-    let gamepad_axes = gamepad_axes.into_inner();
-    let gamepads = gamepads.into_inner();
-    let keycodes = keycodes.map(|keycodes| keycodes.into_inner());
-    let mouse_buttons = mouse_buttons.map(|mouse_buttons| mouse_buttons.into_inner());
-    let mouse_scroll = mouse_scroll.into_inner();
-    let mouse_motion = mouse_motion.into_inner();
-
-    // If the user clicks on a button, do not apply it to the game state
-    #[cfg(feature = "ui")]
-    let mouse_buttons = if interactions
-        .iter()
-        .any(|&interaction| interaction != Interaction::None)
-    {
-        None
-    } else {
-        mouse_buttons
-    };
-
-    // If egui wants to own inputs, don't also apply them to the game state
-    #[cfg(feature = "egui")]
-    let keycodes = maybe_egui
-        .iter_mut()
-        .all(|(_, mut ctx)| !ctx.get_mut().wants_keyboard_input())
-        .then_some(keycodes)
-        .flatten();
-
-    // `wants_pointer_input` sometimes returns `false` after clicking or holding a button over a widget,
-    // so `is_pointer_over_area` is also needed.
-    #[cfg(feature = "egui")]
-    let mouse_buttons = if maybe_egui.iter_mut().any(|(_, mut ctx)| {
-        ctx.get_mut().is_pointer_over_area() || ctx.get_mut().wants_pointer_input()
-    }) {
-        None
-    } else {
-        mouse_buttons
-    };
-
     let resources = input_map
         .zip(action_state)
         .map(|(input_map, action_state)| (Mut::from(action_state), input_map.into_inner()));
 
     for (mut action_state, input_map) in query.iter_mut().chain(resources) {
-        let input_streams = InputStreams {
-            gamepad_buttons,
-            gamepad_button_axes,
-            gamepad_axes,
-            gamepads,
-            keycodes,
-            mouse_buttons,
-            mouse_scroll,
-            mouse_motion,
-            associated_gamepad: input_map.gamepad(),
-        };
+        action_state.update(input_map.process_actions(&gamepads, &input_store, *clash_strategy));
+    }
+}
 
-        action_state.update(input_map.process_actions(&input_streams, *clash_strategy));
+#[cfg(any(feature = "egui", feature = "ui"))]
+/// Filters out all inputs that are captured by the UI.
+pub fn filter_captured_input(
+    mut mouse_buttons: ResMut<bevy::input::ButtonInput<bevy::input::mouse::MouseButton>>,
+    #[cfg(feature = "ui")] interactions: Query<&bevy::ui::Interaction>,
+    #[cfg(feature = "egui")] mut keycodes: ResMut<
+        bevy::input::ButtonInput<bevy::input::keyboard::KeyCode>,
+    >,
+    #[cfg(feature = "egui")] mut egui_query: Query<&'static mut bevy_egui::EguiContext>,
+) {
+    // If the user clicks on a button, do not apply it to the game state
+    #[cfg(feature = "ui")]
+    if interactions
+        .iter()
+        .any(|&interaction| interaction != bevy::ui::Interaction::None)
+    {
+        mouse_buttons.clear();
+    }
+
+    // If egui wants to own inputs, don't also apply them to the game state
+    #[cfg(feature = "egui")]
+    for mut egui_context in egui_query.iter_mut() {
+        // Don't ask me why get doesn't exist :shrug:
+        if egui_context.get_mut().wants_pointer_input() {
+            mouse_buttons.clear();
+        }
+
+        if egui_context.get_mut().wants_keyboard_input() {
+            keycodes.clear();
+        }
     }
 }
 
@@ -502,4 +466,10 @@ pub fn release_on_input_map_removed<A: Actionlike>(
         // Reset our local so our removal detection is only triggered once.
         *input_map_resource_existed = false;
     }
+}
+
+/// Clears all values from the [`CentralInputStore`],
+/// making sure that it can read fresh inputs for the frame.
+pub fn clear_central_input_store(mut input_store: ResMut<CentralInputStore>) {
+    input_store.clear();
 }

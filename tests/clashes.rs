@@ -2,8 +2,8 @@ use bevy::ecs::system::SystemState;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::utils::HashSet;
-use leafwing_input_manager::input_streams::InputStreams;
 use leafwing_input_manager::prelude::*;
+use updating::CentralInputStore;
 
 fn test_app() -> App {
     let mut app = App::new();
@@ -84,11 +84,12 @@ impl ClashTestExt for App {
         pressed_actions: impl IntoIterator<Item = Action>,
     ) {
         let pressed_actions: HashSet<Action> = HashSet::from_iter(pressed_actions);
-        // SystemState is love, SystemState is life
-        let mut input_system_state: SystemState<Query<&InputMap<Action>>> =
-            SystemState::new(self.world_mut());
+        let mut input_system_state: SystemState<(
+            Query<&InputMap<Action>>,
+            Res<CentralInputStore>,
+        )> = SystemState::new(self.world_mut());
 
-        let input_map_query = input_system_state.get(self.world());
+        let (input_map_query, central_input_store) = input_system_state.get(self.world());
 
         let input_map = input_map_query.single();
         let keyboard_input = self.world().resource::<ButtonInput<KeyCode>>();
@@ -96,12 +97,12 @@ impl ClashTestExt for App {
         for action in Action::variants() {
             if pressed_actions.contains(action) {
                 assert!(
-                    input_map.pressed(action, &InputStreams::from_world(self.world(), None), clash_strategy),
+                    input_map.pressed(action, &central_input_store, clash_strategy),
                     "{action:?} was incorrectly not pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}."
                 );
             } else {
                 assert!(
-                    !input_map.pressed(action, &InputStreams::from_world(self.world(), None), clash_strategy),
+                    !input_map.pressed(action, &central_input_store, clash_strategy),
                     "{action:?} was incorrectly pressed for {clash_strategy:?} when `Input<KeyCode>` was \n {keyboard_input:?}"
                 );
             }

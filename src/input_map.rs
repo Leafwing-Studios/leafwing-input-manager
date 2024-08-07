@@ -6,14 +6,14 @@ use std::fmt::Debug;
 use bevy::asset::Asset;
 use bevy::log::error;
 use bevy::math::Vec2;
-use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Reflect, Resource};
+use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Gamepads, Reflect, Resource};
 use bevy::utils::HashMap;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
-use crate::input_streams::InputStreams;
-use crate::prelude::UserInputWrapper;
+use crate::prelude::updating::CentralInputStore;
+use crate::prelude::{find_gamepad, UserInputWrapper};
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::{Actionlike, InputControlKind};
 
@@ -450,10 +450,11 @@ impl<A: Actionlike> InputMap<A> {
     pub fn pressed(
         &self,
         action: &A,
-        input_streams: &InputStreams,
+        input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let processed_actions = self.process_actions(input_streams, clash_strategy);
+        let processed_actions =
+            self.process_actions(&Gamepads::default(), input_store, clash_strategy);
 
         let Some(updated_value) = processed_actions.get(action) else {
             return false;
@@ -465,7 +466,7 @@ impl<A: Actionlike> InputMap<A> {
         }
     }
 
-    /// Determines the correct state for each action according to provided [`InputStreams`].
+    /// Determines the correct state for each action according to provided [`CentralInputStore`].
     ///
     /// This method uses the input bindings for each action to determine how to parse the input data,
     /// and generates corresponding [`ButtonData`](crate::action_state::ButtonData),
@@ -478,16 +479,18 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn process_actions(
         &self,
-        input_streams: &InputStreams,
+        gamepads: &Gamepads,
+        input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
         let mut updated_actions = UpdatedActions::default();
+        let gamepad = self.associated_gamepad.unwrap_or(find_gamepad(gamepads));
 
         // Generate the base action data for each action
         for (action, _input_bindings) in self.iter_buttonlike() {
             let mut final_state = false;
             for binding in _input_bindings {
-                if binding.pressed(input_streams) {
+                if binding.pressed(input_store, gamepad) {
                     final_state = true;
                     break;
                 }
@@ -499,7 +502,7 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_axislike() {
             let mut final_value = 0.0;
             for binding in _input_bindings {
-                final_value += binding.value(input_streams);
+                final_value += binding.value(input_store, gamepad);
             }
 
             updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
@@ -508,14 +511,14 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_dual_axislike() {
             let mut final_value = Vec2::ZERO;
             for binding in _input_bindings {
-                final_value += binding.axis_pair(input_streams);
+                final_value += binding.axis_pair(input_store, gamepad);
             }
 
             updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut updated_actions, input_streams, clash_strategy);
+        self.handle_clashes(&mut updated_actions, input_store, clash_strategy, gamepad);
 
         updated_actions
     }

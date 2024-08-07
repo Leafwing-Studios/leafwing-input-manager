@@ -12,6 +12,7 @@ use bevy::reflect::TypePath;
 use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
+use updating::CentralInputStore;
 
 use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
@@ -98,13 +99,17 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             Machine::Client => {
                 // TODO: this should be part of `bevy_input`
                 if !app.is_plugin_added::<AccumulatorPlugin>() {
-                    app.add_plugins(AccumulatorPlugin);
+                    app.add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+                }
+
+                if !app.is_plugin_added::<CentralInputStorePlugin>() {
+                    app.add_plugins(CentralInputStorePlugin);
                 }
 
                 // Main schedule
                 app.add_systems(
                     PreUpdate,
-                    tick_action_state::<A>
+                    (tick_action_state::<A>, clear_central_input_store)
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
@@ -115,16 +120,39 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                     update_action_state::<A>.in_set(InputManagerSystem::Update),
                 );
 
-                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(InputSystem));
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::ManualControl.after(InputManagerSystem::Update),
+                );
+
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::Unify.after(InputManagerSystem::Filter),
+                );
+
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::Update
+                        .after(InputSystem)
+                        .after(InputManagerSystem::Unify),
+                );
+
+                #[cfg(any(feature = "egui", feature = "ui"))]
+                app.add_systems(
+                    PreUpdate,
+                    filter_captured_input
+                        .before(update_action_state::<A>)
+                        .in_set(InputManagerSystem::Filter),
+                );
 
                 #[cfg(feature = "egui")]
                 app.configure_sets(
                     PreUpdate,
-                    InputManagerSystem::Update.after(bevy_egui::EguiSet::ProcessInput),
+                    InputManagerSystem::Filter.after(bevy_egui::EguiSet::ProcessInput),
                 );
 
                 #[cfg(feature = "ui")]
-                app.configure_sets(PreUpdate, InputManagerSystem::Update.after(UiSystem::Focus));
+                app.configure_sets(PreUpdate, InputManagerSystem::Filter.after(UiSystem::Focus));
 
                 #[cfg(feature = "ui")]
                 app.configure_sets(
@@ -150,8 +178,6 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .before(run_fixed_main_schedule),
                 );
 
-                #[cfg(feature = "ui")]
-                app.configure_sets(bevy::app::FixedPreUpdate, InputManagerSystem::ManualControl);
                 app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
                 app.add_systems(
                     FixedPostUpdate,
@@ -228,7 +254,13 @@ pub enum InputManagerSystem {
     Tick,
     /// Accumulates various input event streams into a total delta for the frame.
     Accumulate,
-    /// Collects input data to update the [`ActionState`]
+    /// Filters out inputs that are captured by UI elements.
+    Filter,
+    /// Gathers all of the input data into the [`CentralInputStore`] resource.
+    Unify,
+    /// Collects input data to update the [`ActionState`].
+    ///
+    /// See [`UpdateableUserInput`](crate::user_input::updating) for more information.
     Update,
     /// Manually control the [`ActionState`]
     ///
@@ -260,7 +292,24 @@ impl Plugin for AccumulatorPlugin {
             PreUpdate,
             InputManagerSystem::Accumulate
                 .after(InputSystem)
-                .before(InputManagerSystem::Update),
+                .before(InputManagerSystem::Unify),
         );
+    }
+}
+
+/// A plugin that keeps track of all inputs in a central store.
+///
+/// This plugin is added by default by [`InputManagerPlugin`],
+/// and will register all of the standard [`UserInput`]s.
+///
+/// To add more inputs, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+pub struct CentralInputStorePlugin;
+
+impl Plugin for CentralInputStorePlugin {
+    fn build(&self, app: &mut App) {
+        let mut central_input_store = CentralInputStore::default();
+        central_input_store.register_standard_input_kinds(app);
+
+        app.insert_resource(central_input_store);
     }
 }

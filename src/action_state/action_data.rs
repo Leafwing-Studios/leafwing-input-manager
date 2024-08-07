@@ -106,8 +106,6 @@ impl ActionKindData {
 }
 
 /// Metadata about an [`Buttonlike`](crate::user_input::Buttonlike) action
-///
-/// If a button is released, its `reasons_pressed` should be empty.
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct ButtonData {
     /// Is the action pressed or released?

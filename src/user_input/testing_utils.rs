@@ -1,66 +1,69 @@
 //! Utilities for testing user input.
 
-use bevy::{app::App, math::Vec2, prelude::World};
+use bevy::{
+    app::App,
+    math::Vec2,
+    prelude::{Gamepad, Gamepads, World},
+};
 
-use crate::input_streams::InputStreams;
-
-use super::{Axislike, Buttonlike, DualAxislike};
+use super::{find_gamepad, updating::CentralInputStore, Axislike, Buttonlike, DualAxislike};
 
 /// A trait used to quickly fetch the value of a given [`UserInput`](crate::user_input::UserInput).
 ///
 /// This can be useful for testing purposes.
 pub trait FetchUserInput {
     /// Returns `true` if the given [`Buttonlike`] input is currently pressed.
-    fn pressed(&self, input: impl Buttonlike) -> bool;
+    fn read_pressed(&mut self, input: impl Buttonlike) -> bool;
 
     /// Returns the value of the given [`Axislike`] input.
-    fn read_axis_value(&self, input: impl Axislike) -> f32;
+    fn read_axis_value(&mut self, input: impl Axislike) -> f32;
 
     /// Returns the value of the given [`DualAxislike`] input.
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2;
-}
-
-impl<'a> FetchUserInput for InputStreams<'a> {
-    fn pressed(&self, input: impl Buttonlike) -> bool {
-        input.pressed(self)
-    }
-
-    fn read_axis_value(&self, input: impl Axislike) -> f32 {
-        input.value(self)
-    }
-
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
-        input.axis_pair(self)
-    }
+    fn read_dual_axis_values(&mut self, input: impl DualAxislike) -> Vec2;
 }
 
 impl FetchUserInput for World {
-    fn pressed(&self, input: impl Buttonlike) -> bool {
-        let input_streams = InputStreams::from_world(self, None);
-        input_streams.pressed(input)
+    fn read_pressed(&mut self, input: impl Buttonlike) -> bool {
+        let input_store = self.resource::<CentralInputStore>();
+        let gamepad = match self.get_resource::<Gamepads>() {
+            Some(gamepads) => find_gamepad(gamepads),
+            None => Gamepad::new(0),
+        };
+
+        input.pressed(input_store, gamepad)
     }
 
-    fn read_axis_value(&self, input: impl Axislike) -> f32 {
-        let input_streams = InputStreams::from_world(self, None);
-        input_streams.read_axis_value(input)
+    fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
+        let input_store = self.resource::<CentralInputStore>();
+        let gamepad = match self.get_resource::<Gamepads>() {
+            Some(gamepads) => find_gamepad(gamepads),
+            None => Gamepad::new(0),
+        };
+
+        input.value(input_store, gamepad)
     }
 
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
-        let input_streams = InputStreams::from_world(self, None);
-        input_streams.read_dual_axis_values(input)
+    fn read_dual_axis_values(&mut self, input: impl DualAxislike) -> Vec2 {
+        let input_store = self.resource::<CentralInputStore>();
+        let gamepad = match self.get_resource::<Gamepads>() {
+            Some(gamepads) => find_gamepad(gamepads),
+            None => Gamepad::new(0),
+        };
+
+        input.axis_pair(input_store, gamepad)
     }
 }
 
 impl FetchUserInput for App {
-    fn pressed(&self, input: impl Buttonlike) -> bool {
-        self.world().pressed(input)
+    fn read_pressed(&mut self, input: impl Buttonlike) -> bool {
+        self.world_mut().read_pressed(input)
     }
 
-    fn read_axis_value(&self, input: impl Axislike) -> f32 {
-        self.world().read_axis_value(input)
+    fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
+        self.world_mut().read_axis_value(input)
     }
 
-    fn read_dual_axis_values(&self, input: impl DualAxislike) -> Vec2 {
-        self.world().read_dual_axis_values(input)
+    fn read_dual_axis_values(&mut self, input: impl DualAxislike) -> Vec2 {
+        self.world_mut().read_dual_axis_values(input)
     }
 }

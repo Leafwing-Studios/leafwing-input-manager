@@ -48,38 +48,6 @@ fn jump_button_press_event(gamepad: Gamepad) -> GamepadEvent {
 }
 
 #[test]
-fn default_accepts_any() {
-    let mut app = create_test_app();
-
-    const FIRST_GAMEPAD: Gamepad = Gamepad { id: 1 };
-    const SECOND_GAMEPAD: Gamepad = Gamepad { id: 2 };
-
-    let input_map = InputMap::new([(MyAction::Jump, GamepadButtonType::South)]);
-    app.insert_resource(input_map);
-    app.init_resource::<ActionState<MyAction>>();
-
-    // When we press the Jump button...
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    events.send(jump_button_press_event(FIRST_GAMEPAD));
-    app.update();
-
-    // ... We should receive a Jump action!
-    let mut action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
-    assert!(action_state.pressed(&MyAction::Jump));
-
-    action_state.release(&MyAction::Jump);
-    app.update();
-
-    // This is maintained for any gamepad.
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    events.send(jump_button_press_event(SECOND_GAMEPAD));
-    app.update();
-
-    let action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
-    assert!(action_state.pressed(&MyAction::Jump));
-}
-
-#[test]
 fn accepts_preferred_gamepad() {
     let mut app = create_test_app();
 
