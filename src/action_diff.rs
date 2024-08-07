@@ -1,4 +1,4 @@
-//! Serialization-friendly representation of changes to [`ActionState`](crate::action_state::ActionState).
+//! Serialization-friendly representation of changes to [`ActionState`].
 //!
 //! These are predominantly intended for use in networked games,
 //! where the server needs to know what the players are doing.
