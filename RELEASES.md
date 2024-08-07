@@ -178,6 +178,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - a new type with the `DualAxisData` name has been added, as a parallel to `ButtonData` and `AxisData`
 - when no `associated_gamepad` is provided to an input map, `find_gamepad` will be called to attempt to search for a gamepad. Input from *any* gamepad will no longer work
 - `SummarizedActionState` is now found in the `action_diff` module
+- Axislike and DualAxislike inputs no longer send pressed / released `ActionDiff`s: only `AxisChanged` and `DualAxisChanged` events
 
 ## Version 0.14.0
 
