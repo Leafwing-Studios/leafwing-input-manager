@@ -18,10 +18,19 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ['asset', 'ui', 'bevy/bevy_gilrs']
+default = ['asset', 'ui', 'bevy/bevy_gilrs', "mouse", "keyboard", "gamepad"]
 
 # Allow support for tracking timing information about actions (how long a button was pressed, etc.)
 timing = []
+
+# Adds support for mouse-based inputs.
+mouse = []
+
+# Adds support for keyboard-based inputs.
+keyboard = []
+
+# Adds support for gamepad-based inputs.
+gamepad = []
 
 # Allow using the `InputMap` as `bevy::asset::Asset`.
 asset = ['bevy/bevy_asset']
