@@ -99,7 +99,7 @@ impl Buttonlike for MouseButton {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
@@ -112,12 +112,12 @@ impl Buttonlike for MouseButton {
 /// // Movement in the opposite direction doesn't activate the input
 /// MouseMoveAxis::Y.set_value(app.world_mut(), -5.0);
 /// app.update();
-/// assert!(!app.pressed(input));
+/// assert!(!app.read_pressed(input));
 ///
 /// // Movement in the chosen direction activates the input
 /// MouseMoveAxis::Y.set_value(app.world_mut(), 5.0);
 /// app.update();
-/// assert!(app.pressed(input));
+/// assert!(app.read_pressed(input));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -189,7 +189,7 @@ impl Buttonlike for MouseMoveDirection {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
@@ -311,7 +311,7 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
@@ -430,7 +430,7 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
@@ -443,12 +443,12 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// // Scrolling in the opposite direction doesn't activate the input
 /// MouseScrollAxis::Y.set_value(app.world_mut(), -5.0);
 /// app.update();
-/// assert!(!app.pressed(input));
+/// assert!(!app.read_pressed(input));
 ///
 /// // Scrolling in the chosen direction activates the input
 /// MouseScrollAxis::Y.set_value(app.world_mut(), 5.0);
 /// app.update();
-/// assert!(app.pressed(input));
+/// assert!(app.read_pressed(input));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
@@ -527,7 +527,7 @@ impl Buttonlike for MouseScrollDirection {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
@@ -659,7 +659,7 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///

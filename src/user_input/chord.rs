@@ -26,7 +26,7 @@ use super::{Axislike, DualAxislike};
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::AccumulatorPlugin;
+/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
@@ -39,13 +39,13 @@ use super::{Axislike, DualAxislike};
 /// // Pressing only one key doesn't activate the input
 /// KeyCode::KeyA.press(app.world_mut());
 /// app.update();
-/// assert!(!app.pressed(input.clone()));
+/// assert!(!app.read_pressed(input.clone()));
 ///
 /// // Pressing both keys activates the input
 /// KeyCode::KeyA.press(app.world_mut());
 /// KeyCode::KeyB.press(app.world_mut());
 /// app.update();
-/// assert!(app.pressed(input.clone()));
+/// assert!(app.read_pressed(input.clone()));
 /// ```
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]

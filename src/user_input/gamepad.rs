@@ -70,12 +70,12 @@ fn read_axis_value(
 /// // Movement in the opposite direction doesn't activate the input
 /// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), -1.0);
 /// app.update();
-/// assert!(!app.pressed(input));
+/// assert!(!app.read_pressed(input));
 ///
 /// // Movement in the chosen direction activates the input
 /// GamepadControlAxis::LEFT_Y.set_value(app.world_mut(), 1.0);
 /// app.update();
-/// assert!(app.pressed(input));
+/// assert!(app.read_pressed(input));
 /// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
