@@ -123,7 +123,6 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn generate_binary_action_diffs() {
     let mut app = create_app();
     let entity = app
@@ -185,7 +184,6 @@ fn generate_binary_action_diffs() {
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn generate_axis_action_diffs() {
     let input_axis_pair = Vec2 { x: 5., y: 8. };
     let mut app = create_app();
@@ -254,7 +252,6 @@ fn generate_axis_action_diffs() {
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn process_binary_action_diffs() {
     let mut app = create_app();
     let entity = app
@@ -289,7 +286,6 @@ fn process_binary_action_diffs() {
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn process_value_action_diff() {
     let mut app = create_app();
     let entity = app
@@ -325,7 +321,6 @@ fn process_value_action_diff() {
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn process_axis_action_diff() {
     let mut app = create_app();
     let entity = app
