@@ -6,6 +6,7 @@ use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
 #[derive(Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
     Button,
+    Axis,
     DualAxis,
 }
 
@@ -13,6 +14,7 @@ impl Actionlike for Action {
     fn input_control_kind(&self) -> InputControlKind {
         match self {
             Action::Button => InputControlKind::Button,
+            Action::Axis => InputControlKind::Axis,
             Action::DualAxis => InputControlKind::DualAxis,
         }
     }
@@ -296,7 +298,7 @@ fn process_value_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::AxisChanged {
-            action: Action::Button,
+            action: Action::Axis,
             value: 0.5,
         }],
     };
