@@ -802,7 +802,7 @@ impl<A: Actionlike> ActionState<A> {
 
         match self.button_data(action) {
             Some(button_data) => button_data.pressed(),
-            None => true,
+            None => false,
         }
     }
 
@@ -823,7 +823,7 @@ impl<A: Actionlike> ActionState<A> {
 
         match self.button_data(action) {
             Some(button_data) => button_data.just_pressed(),
-            None => true,
+            None => false,
         }
     }
 
@@ -1101,6 +1101,29 @@ mod tests {
         assert!(!action_state.just_pressed(&Action::Run));
         assert!(action_state.released(&Action::Run));
         assert!(!action_state.just_released(&Action::Run));
+    }
+
+    #[test]
+    fn synthetic_press() {
+        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+        enum Action {
+            One,
+            Two,
+        }
+
+        let mut action_state = ActionState::<Action>::default();
+        action_state.press(&Action::One);
+        dbg!(&action_state);
+
+        assert!(action_state.pressed(&Action::One));
+        assert!(action_state.just_pressed(&Action::One));
+        assert!(!action_state.released(&Action::One));
+        assert!(!action_state.just_released(&Action::One));
+
+        assert!(!action_state.pressed(&Action::Two));
+        assert!(!action_state.just_pressed(&Action::Two));
+        assert!(action_state.released(&Action::Two));
+        assert!(!action_state.just_released(&Action::Two));
     }
 
     #[test]
