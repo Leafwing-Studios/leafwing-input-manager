@@ -137,10 +137,10 @@ impl<A: Actionlike> ActionState<A> {
                     }
                 }
                 UpdatedValue::Axis(value) => {
-                    self.axis_data_mut_or_default(action).value = *value;
+                    self.set_value(action, *value);
                 }
                 UpdatedValue::DualAxis(pair) => {
-                    self.dual_axis_data_mut_or_default(action).pair = *pair;
+                    self.set_axis_pair(action, *pair);
                 }
             }
         }
@@ -477,6 +477,14 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
+    /// Sets the value of the `action` to the provided `value`.
+    pub fn set_value(&mut self, action: &A, value: f32) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
+
+        let axis_data = self.axis_data_mut_or_default(action);
+        axis_data.value = value;
+    }
+
     /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
     ///
     /// # Warning
@@ -508,6 +516,14 @@ impl<A: Actionlike> ActionState<A> {
 
         let action_data = self.dual_axis_data(action);
         action_data.map_or(Vec2::ZERO, |action_data| action_data.pair)
+    }
+
+    /// Sets the [`Vec2`] of the `action` to the provided `pair`.
+    pub fn set_axis_pair(&mut self, action: &A, pair: Vec2) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
+
+        let dual_axis_data = self.dual_axis_data_mut_or_default(action);
+        dual_axis_data.pair = pair;
     }
 
     /// Get the [`Vec2`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
@@ -616,12 +632,10 @@ impl<A: Actionlike> ActionState<A> {
         match action.input_control_kind() {
             InputControlKind::Button => self.release(action),
             InputControlKind::Axis => {
-                let axis_data = self.axis_data_mut_or_default(action);
-                axis_data.value = 0.0;
+                self.set_value(action, 0.0);
             }
             InputControlKind::DualAxis => {
-                let dual_axis_data = self.dual_axis_data_mut_or_default(action);
-                dual_axis_data.pair = Vec2::ZERO;
+                self.set_axis_pair(action, Vec2::ZERO);
             }
         }
     }
@@ -788,7 +802,7 @@ impl<A: Actionlike> ActionState<A> {
 
         match self.button_data(action) {
             Some(button_data) => button_data.pressed(),
-            None => true,
+            None => false,
         }
     }
 
@@ -809,7 +823,7 @@ impl<A: Actionlike> ActionState<A> {
 
         match self.button_data(action) {
             Some(button_data) => button_data.just_pressed(),
-            None => true,
+            None => false,
         }
     }
 
@@ -958,14 +972,10 @@ impl<A: Actionlike> ActionState<A> {
                 self.release(action);
             }
             ActionDiff::AxisChanged { action, value } => {
-                let axis_data = self.axis_data_mut(action).unwrap();
-                // Pressing will initialize the ActionData if it doesn't exist
-                axis_data.value = *value;
+                self.set_value(action, *value);
             }
             ActionDiff::DualAxisChanged { action, axis_pair } => {
-                let axis_data = self.dual_axis_data_mut(action).unwrap();
-                // Pressing will initialize the ActionData if it doesn't exist
-                axis_data.pair = *axis_pair;
+                self.set_axis_pair(action, *axis_pair);
             }
         };
     }
@@ -1091,6 +1101,29 @@ mod tests {
         assert!(!action_state.just_pressed(&Action::Run));
         assert!(action_state.released(&Action::Run));
         assert!(!action_state.just_released(&Action::Run));
+    }
+
+    #[test]
+    fn synthetic_press() {
+        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+        enum Action {
+            One,
+            Two,
+        }
+
+        let mut action_state = ActionState::<Action>::default();
+        action_state.press(&Action::One);
+        dbg!(&action_state);
+
+        assert!(action_state.pressed(&Action::One));
+        assert!(action_state.just_pressed(&Action::One));
+        assert!(!action_state.released(&Action::One));
+        assert!(!action_state.just_released(&Action::One));
+
+        assert!(!action_state.pressed(&Action::Two));
+        assert!(!action_state.just_pressed(&Action::Two));
+        assert!(action_state.released(&Action::Two));
+        assert!(!action_state.just_released(&Action::Two));
     }
 
     #[test]
