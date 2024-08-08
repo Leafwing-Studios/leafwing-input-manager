@@ -1,3 +1,5 @@
+#![cfg(feature = "keyboard")]
+
 use bevy::prelude::{Gamepads, Reflect};
 use bevy::{
     input::InputPlugin,

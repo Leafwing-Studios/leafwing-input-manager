@@ -1,3 +1,5 @@
+#![cfg(feature = "keyboard")]
+
 use bevy::ecs::system::SystemState;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;

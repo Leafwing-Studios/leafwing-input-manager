@@ -992,18 +992,17 @@ impl<A: Actionlike> ActionState<A> {
 mod tests {
     use crate as leafwing_input_manager;
     use crate::action_state::ActionState;
-    use crate::clashing_inputs::ClashStrategy;
-    use crate::input_map::InputMap;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
-    use crate::prelude::updating::CentralInputStore;
-    use crate::prelude::{Buttonlike, ButtonlikeChord};
-    use bevy::input::InputPlugin;
     use bevy::prelude::*;
-    use bevy::utils::{Duration, Instant};
     use leafwing_input_manager_macros::Actionlike;
 
+    #[cfg(feature = "keyboard")]
     #[test]
     fn press_lifecycle() {
+        use crate::input_map::InputMap;
+        use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+        use crate::user_input::Buttonlike;
+        use bevy::input::InputPlugin;
+
         let mut app = App::new();
         app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
 
@@ -1126,9 +1125,16 @@ mod tests {
         assert!(!action_state.just_released(&Action::Two));
     }
 
+    #[cfg(feature = "keyboard")]
     #[test]
     #[ignore = "Clashing inputs for non-buttonlike inputs is broken."]
     fn update_with_clashes_prioritizing_longest() {
+        use crate::input_map::InputMap;
+        use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+        use crate::user_input::chord::ButtonlikeChord;
+        use crate::user_input::Buttonlike;
+        use bevy::input::InputPlugin;
+
         #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
         enum Action {
             One,

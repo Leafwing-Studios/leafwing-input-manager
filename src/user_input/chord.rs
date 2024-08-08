@@ -303,17 +303,18 @@ impl DualAxislike for DualAxislikeChord {
     }
 }
 
+#[cfg(feature = "keyboard")]
 #[cfg(test)]
 mod tests {
+    use super::ButtonlikeChord;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::user_input::updating::CentralInputStore;
+    use crate::user_input::Buttonlike;
     use bevy::input::gamepad::{
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
-
-    use super::*;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
-    use crate::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();

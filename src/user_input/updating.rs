@@ -251,14 +251,10 @@ pub trait UpdatableInput: 'static {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::ecs::system::RunSystemOnce;
-    use bevy::input::ButtonInput;
-    use bevy::prelude::*;
     use leafwing_input_manager_macros::Actionlike;
 
     use crate as leafwing_input_manager;
     use crate::plugin::{CentralInputStorePlugin, InputManagerPlugin};
-    use crate::prelude::{MouseMove, MouseScroll};
 
     #[derive(Actionlike, Debug, PartialEq, Eq, Hash, Clone, Reflect)]
     enum TestAction {
@@ -275,36 +271,6 @@ mod tests {
         let mut app = App::new();
         app.add_plugins(InputManagerPlugin::<TestAction>::default());
         assert!(app.world().contains_resource::<CentralInputStore>());
-    }
-
-    #[test]
-    fn central_input_store_contains_expected_types() {
-        let mut app = App::new();
-        app.add_plugins(CentralInputStorePlugin);
-        let central_input_store = app.world().resource::<CentralInputStore>();
-
-        dbg!(central_input_store);
-
-        // If this fails, remember to update the list of types we expect to be registered.
-        assert_eq!(central_input_store.registered_input_kinds.len(), 6);
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<KeyCode>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<MouseButton>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<GamepadButton>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<GamepadAxis>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<MouseMove>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<MouseScroll>()));
     }
 
     #[test]
@@ -334,8 +300,11 @@ mod tests {
         assert_eq!(n_systems, n_input_kinds);
     }
 
+    #[cfg(feature = "mouse")]
     #[test]
     fn compute_call_updates_central_store() {
+        use bevy::ecs::system::RunSystemOnce;
+
         let mut world = World::new();
         world.init_resource::<CentralInputStore>();
 
