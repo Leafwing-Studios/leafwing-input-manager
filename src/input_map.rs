@@ -13,9 +13,17 @@ use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
-use crate::prelude::{find_gamepad, UserInputWrapper};
+use crate::prelude::UserInputWrapper;
 use crate::user_input::{Axislike, Buttonlike, DualAxislike};
 use crate::{Actionlike, InputControlKind};
+
+#[cfg(feature = "gamepad")]
+use crate::user_input::gamepad::find_gamepad;
+
+#[cfg(not(feature = "gamepad"))]
+fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
+    Gamepad::new(0)
+}
 
 /// A Multi-Map that allows you to map actions to multiple [`UserInputs`](crate::user_input::UserInput)s,
 /// whether they are [`Buttonlike`], [`Axislike`] or [`DualAxislike`].
@@ -820,6 +828,7 @@ impl<A: Actionlike, U: Buttonlike> FromIterator<(A, U)> for InputMap<A> {
     }
 }
 
+#[cfg(feature = "keyboard")]
 mod tests {
     use bevy::prelude::Reflect;
     use serde::{Deserialize, Serialize};
@@ -951,7 +960,7 @@ mod tests {
 
     #[test]
     fn merging() {
-        use bevy::input::{gamepad::GamepadButtonType, keyboard::KeyCode};
+        use bevy::input::keyboard::KeyCode;
 
         let mut input_map = InputMap::default();
         let mut default_keyboard_map = InputMap::default();
@@ -962,8 +971,8 @@ mod tests {
         );
 
         let mut default_gamepad_map = InputMap::default();
-        default_gamepad_map.insert(Action::Run, GamepadButtonType::South);
-        default_gamepad_map.insert(Action::Hide, GamepadButtonType::East);
+        default_gamepad_map.insert(Action::Run, KeyCode::Numpad0);
+        default_gamepad_map.insert(Action::Hide, KeyCode::Numpad7);
 
         // Merging works
         input_map.merge(&default_keyboard_map);
@@ -974,6 +983,7 @@ mod tests {
         assert_eq!(input_map, default_keyboard_map);
     }
 
+    #[cfg(feature = "gamepad")]
     #[test]
     fn gamepad_swapping() {
         use bevy::input::gamepad::Gamepad;

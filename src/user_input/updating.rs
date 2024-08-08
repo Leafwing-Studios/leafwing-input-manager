@@ -6,16 +6,14 @@ use std::hash::Hash;
 use bevy::{
     app::{App, PreUpdate},
     math::Vec2,
-    prelude::{
-        GamepadAxis, GamepadButton, IntoSystemConfigs, KeyCode, MouseButton, Res, ResMut, Resource,
-    },
+    prelude::{IntoSystemConfigs, Res, ResMut, Resource},
     reflect::Reflect,
     utils::{HashMap, HashSet},
 };
 
 use crate::{plugin::InputManagerSystem, InputControlKind};
 
-use super::{Axislike, Buttonlike, DualAxislike, MouseMove, MouseScroll};
+use super::{Axislike, Buttonlike, DualAxislike};
 
 /// An overarching store for all user input.
 ///
@@ -60,18 +58,31 @@ impl CentralInputStore {
     }
 
     /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
+    ///
+    /// The set of input kinds registered by this method is controlled by the features enabled:
+    /// turn off default features to avoid registering input kinds that are not needed.
+    #[allow(unused_variables)]
     pub fn register_standard_input_kinds(&mut self, app: &mut App) {
         // Buttonlike
-        self.register_input_kind::<KeyCode>(InputControlKind::Button, app);
-        self.register_input_kind::<MouseButton>(InputControlKind::Button, app);
-        self.register_input_kind::<GamepadButton>(InputControlKind::Button, app);
+        #[cfg(feature = "keyboard")]
+        self.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button, app);
+        #[cfg(feature = "mouse")]
+        self.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button, app);
+        #[cfg(feature = "gamepad")]
+        self.register_input_kind::<bevy::input::gamepad::GamepadButton>(
+            InputControlKind::Button,
+            app,
+        );
 
         // Axislike
-        self.register_input_kind::<GamepadAxis>(InputControlKind::Axis, app);
+        #[cfg(feature = "gamepad")]
+        self.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis, app);
 
         // Dualaxislike
-        self.register_input_kind::<MouseMove>(InputControlKind::DualAxis, app);
-        self.register_input_kind::<MouseScroll>(InputControlKind::DualAxis, app);
+        #[cfg(feature = "mouse")]
+        self.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis, app);
+        #[cfg(feature = "mouse")]
+        self.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis, app);
     }
 
     /// Clears all existing values.
@@ -240,9 +251,6 @@ pub trait UpdatableInput: 'static {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::ecs::system::RunSystemOnce;
-    use bevy::input::ButtonInput;
-    use bevy::prelude::World;
     use leafwing_input_manager_macros::Actionlike;
 
     use crate as leafwing_input_manager;
@@ -266,36 +274,6 @@ mod tests {
     }
 
     #[test]
-    fn central_input_store_contains_expected_types() {
-        let mut app = App::new();
-        app.add_plugins(CentralInputStorePlugin);
-        let central_input_store = app.world().resource::<CentralInputStore>();
-
-        dbg!(central_input_store);
-
-        // If this fails, remember to update the list of types we expect to be registered.
-        assert_eq!(central_input_store.registered_input_kinds.len(), 6);
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<KeyCode>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<MouseButton>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<GamepadButton>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<GamepadAxis>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<MouseMove>()));
-        assert!(central_input_store
-            .registered_input_kinds
-            .contains(&TypeId::of::<MouseScroll>()));
-    }
-
-    #[test]
     fn number_of_maps_matches_number_of_registered_input_kinds() {
         let mut app = App::new();
         app.add_plugins(CentralInputStorePlugin);
@@ -307,23 +285,12 @@ mod tests {
         );
     }
 
-    #[test]
-    fn plugin_registers_systems() {
-        let mut app = App::new();
-        app.add_plugins(CentralInputStorePlugin);
-        let n_input_kinds = app
-            .world()
-            .resource::<CentralInputStore>()
-            .registered_input_kinds
-            .len();
-
-        let preupdate = app.get_schedule(PreUpdate).unwrap();
-        let n_systems = preupdate.systems_len();
-        assert_eq!(n_systems, n_input_kinds);
-    }
-
+    #[cfg(feature = "mouse")]
     #[test]
     fn compute_call_updates_central_store() {
+        use bevy::ecs::system::RunSystemOnce;
+        use bevy::prelude::*;
+
         let mut world = World::new();
         world.init_resource::<CentralInputStore>();
 

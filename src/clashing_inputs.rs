@@ -400,6 +400,7 @@ fn resolve_clash<A: Actionlike>(
     }
 }
 
+#[cfg(feature = "keyboard")]
 #[cfg(test)]
 mod tests {
     use bevy::app::App;

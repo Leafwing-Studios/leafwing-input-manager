@@ -10,7 +10,6 @@ use crate::clashing_inputs::BasicInputs;
 use crate::user_input::{Buttonlike, UserInput};
 use crate::InputControlKind;
 
-use super::keyboard::ModifierKey;
 use super::updating::CentralInputStore;
 use super::{Axislike, DualAxislike};
 
@@ -78,7 +77,8 @@ impl ButtonlikeChord {
     }
 
     /// Creates a [`ButtonlikeChord`] that combines the provided modifier and the given [`Buttonlike`].
-    pub fn modified(modifier: ModifierKey, input: impl Buttonlike) -> Self {
+    #[cfg(feature = "keyboard")]
+    pub fn modified(modifier: super::keyboard::ModifierKey, input: impl Buttonlike) -> Self {
         Self::default().with(modifier).with(input)
     }
 
@@ -303,17 +303,18 @@ impl DualAxislike for DualAxislikeChord {
     }
 }
 
+#[cfg(feature = "keyboard")]
 #[cfg(test)]
 mod tests {
+    use super::ButtonlikeChord;
+    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::user_input::updating::CentralInputStore;
+    use crate::user_input::Buttonlike;
     use bevy::input::gamepad::{
         GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
     };
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
-
-    use super::*;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
-    use crate::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();

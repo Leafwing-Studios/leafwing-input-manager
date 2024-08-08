@@ -6,7 +6,15 @@ use bevy::{
     prelude::{Gamepad, Gamepads, World},
 };
 
-use super::{find_gamepad, updating::CentralInputStore, Axislike, Buttonlike, DualAxislike};
+use super::{updating::CentralInputStore, Axislike, Buttonlike, DualAxislike};
+
+#[cfg(feature = "gamepad")]
+use crate::user_input::gamepad::find_gamepad;
+
+#[cfg(not(feature = "gamepad"))]
+fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
+    Gamepad::new(0)
+}
 
 /// A trait used to quickly fetch the value of a given [`UserInput`](crate::user_input::UserInput).
 ///

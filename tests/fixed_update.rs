@@ -1,3 +1,5 @@
+#![cfg(feature = "keyboard")]
+
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::time::TimeUpdateStrategy;

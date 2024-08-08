@@ -1,3 +1,5 @@
+#![cfg(feature = "keyboard")]
+
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
