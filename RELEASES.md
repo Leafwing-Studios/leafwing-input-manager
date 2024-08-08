@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.15.0 (Unreleased)
+## Version 0.15.0
 
 ### Enhancements (0.15)
 
