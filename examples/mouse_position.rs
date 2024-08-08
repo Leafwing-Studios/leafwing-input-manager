@@ -10,11 +10,16 @@ fn main() {
         .run();
 }
 
-#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 enum BoxMovement {
     MousePosition,
 }
 
+impl Actionlike for BoxMovement {
+    fn input_control_kind(&self) -> InputControlKind {
+        InputControlKind::DualAxis
+    }
+}
 fn setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
