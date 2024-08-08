@@ -2,32 +2,25 @@ use bevy::{input::InputPlugin, prelude::*};
 use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
 use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
 
-#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
-    PayTheBills,
+    Button,
+    Axis,
+    DualAxis,
 }
 
-#[derive(Default)]
-struct Counter(pub u8);
-
-fn spawn_da_bills(mut commands: Commands) {
-    commands.spawn(ActionState::<Action>::default());
-}
-
-fn pay_da_bills(
-    mutation: impl Fn(Mut<ActionState<Action>>),
-) -> impl Fn(Query<&mut ActionState<Action>>, Local<Counter>) {
-    move |mut action_state_query: Query<&mut ActionState<Action>>, mut counter: Local<Counter>| {
-        if let Ok(mut action_state) = action_state_query.get_single_mut() {
-            if !action_state.pressed(&Action::PayTheBills) {
-                action_state.press(&Action::PayTheBills);
-                mutation(action_state);
-            } else if counter.0 > 1 {
-                action_state.release(&Action::PayTheBills);
-            }
-            counter.0 += 1;
+impl Actionlike for Action {
+    fn input_control_kind(&self) -> InputControlKind {
+        match self {
+            Action::Button => InputControlKind::Button,
+            Action::Axis => InputControlKind::Axis,
+            Action::DualAxis => InputControlKind::DualAxis,
         }
     }
+}
+
+fn spawn_test_entity(mut commands: Commands) {
+    commands.spawn(ActionState::<Action>::default());
 }
 
 fn process_action_diffs<A: Actionlike>(
@@ -52,7 +45,7 @@ fn create_app() -> App {
         InputPlugin,
         InputManagerPlugin::<Action>::default(),
     ))
-    .add_systems(Startup, spawn_da_bills)
+    .add_systems(Startup, spawn_test_entity)
     .add_event::<ActionDiffEvent<Action>>();
     app.update();
     app
@@ -70,6 +63,7 @@ fn send_action_diff(app: &mut App, action_diff: ActionDiffEvent<Action>) {
     action_diff_events.send(action_diff);
 }
 
+#[track_caller]
 fn assert_has_no_action_diffs(app: &mut App) {
     let action_diff_events = get_events::<ActionDiffEvent<Action>>(app);
     let action_diff_event_reader = &mut action_diff_events.get_reader();
@@ -81,6 +75,7 @@ fn assert_has_no_action_diffs(app: &mut App) {
     }
 }
 
+#[track_caller]
 fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffEvent<Action>)) {
     let mut action_diff_events = get_events_mut::<ActionDiffEvent<Action>>(app);
     let action_diff_event_reader = &mut action_diff_events.get_reader();
@@ -95,6 +90,7 @@ fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffEvent
     action_diff_events.clear();
 }
 
+#[track_caller]
 fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent<Action>) {
     let mut action_state_query = app.world_mut().query::<&ActionState<Action>>();
     let action_state = action_state_query.get_single(app.world()).unwrap();
@@ -102,49 +98,43 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
     match action_diff_event.action_diffs.first().unwrap().clone() {
         ActionDiff::Pressed { action } => {
             assert!(action_state.pressed(&action));
-            assert_eq!(action_state.value(&action), 1.);
         }
         ActionDiff::Released { action } => {
             assert!(action_state.released(&action));
-            assert_eq!(action_state.value(&action), 0.);
-            assert_eq!(action_state.axis_pair(&action), Vec2::ZERO);
         }
         ActionDiff::AxisChanged { action, value } => {
-            assert!(action_state.pressed(&action));
             assert_eq!(action_state.value(&action), value);
         }
         ActionDiff::DualAxisChanged { action, axis_pair } => {
-            let axis_pair_data = action_state.axis_pair(&action);
-            assert!(action_state.pressed(&action));
-            assert_eq!(axis_pair_data.xy(), axis_pair);
-            assert_eq!(action_state.value(&action), axis_pair_data.xy().length());
+            assert_eq!(action_state.axis_pair(&action), axis_pair);
         }
     }
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn generate_binary_action_diffs() {
     let mut app = create_app();
     let entity = app
         .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
         .single(app.world());
-    app.add_systems(
-        Update,
-        pay_da_bills(|mut action_state| {
-            action_state.press(&Action::PayTheBills);
-        }),
-    )
-    .add_systems(PostUpdate, generate_action_diffs::<Action>);
+    app.add_systems(PostUpdate, generate_action_diffs::<Action>);
 
+    // Press
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.press(&Action::Button);
     app.update();
+
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action } => {
-                assert_eq!(action, Action::PayTheBills);
+                assert_eq!(action, Action::Button);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `Pressed` variant got a `Released` variant")
@@ -158,10 +148,17 @@ fn generate_binary_action_diffs() {
         }
     });
 
+    // Hold
     app.update();
-
     assert_has_no_action_diffs(&mut app);
 
+    // Release
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.release(&Action::Button);
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_event| {
@@ -169,7 +166,7 @@ fn generate_binary_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
-                assert_eq!(action, Action::PayTheBills);
+                assert_eq!(action, Action::Button);
             }
             ActionDiff::Pressed { .. } => {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
@@ -185,26 +182,23 @@ fn generate_binary_action_diffs() {
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn generate_axis_action_diffs() {
-    let input_axis_pair = Vec2 { x: 5., y: 8. };
+    let test_axis_pair = Vec2 { x: 5., y: 8. };
     let mut app = create_app();
     let entity = app
         .world_mut()
         .query_filtered::<Entity, With<ActionState<Action>>>()
         .single(app.world());
-    app.add_systems(
-        Update,
-        pay_da_bills(move |mut action_state| {
-            action_state
-                .dual_axis_data_mut(&Action::PayTheBills)
-                .unwrap()
-                .pair = input_axis_pair;
-        }),
-    )
-    .add_systems(PostUpdate, generate_action_diffs::<Action>)
-    .add_event::<ActionDiffEvent<Action>>();
 
+    app.add_systems(PostUpdate, generate_action_diffs::<Action>);
+
+    // Change axis value
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.set_axis_pair(&Action::DualAxis, test_axis_pair);
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_event| {
@@ -212,8 +206,8 @@ fn generate_axis_action_diffs() {
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
-                assert_eq!(action, Action::PayTheBills);
-                assert_eq!(axis_pair, input_axis_pair);
+                assert_eq!(action, Action::DualAxis);
+                assert_eq!(axis_pair, test_axis_pair);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `AxisPairChanged` variant got a `Released` variant")
@@ -227,18 +221,25 @@ fn generate_axis_action_diffs() {
         }
     });
 
+    // Do nothing for a frame
     app.update();
-
     assert_has_no_action_diffs(&mut app);
 
+    // Reset axis value
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.set_axis_pair(&Action::DualAxis, Vec2::ZERO);
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_event| {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Released { action } => {
-                assert_eq!(action, Action::PayTheBills);
+            ActionDiff::Released { .. } => {
+                panic!("Expected a `AxisPairChanged` variant got a `Released` variant")
             }
             ActionDiff::Pressed { .. } => {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
@@ -246,15 +247,15 @@ fn generate_axis_action_diffs() {
             ActionDiff::AxisChanged { .. } => {
                 panic!("Expected a `Released` variant got a `ValueChanged` variant")
             }
-            ActionDiff::DualAxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `AxisPairChanged` variant")
+            ActionDiff::DualAxisChanged { action, axis_pair } => {
+                assert_eq!(action, Action::DualAxis);
+                assert_eq!(axis_pair, Vec2::ZERO);
             }
         }
     });
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn process_binary_action_diffs() {
     let mut app = create_app();
     let entity = app
@@ -266,7 +267,7 @@ fn process_binary_action_diffs() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Pressed {
-            action: Action::PayTheBills,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -278,7 +279,7 @@ fn process_binary_action_diffs() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::PayTheBills,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -289,7 +290,6 @@ fn process_binary_action_diffs() {
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn process_value_action_diff() {
     let mut app = create_app();
     let entity = app
@@ -301,7 +301,7 @@ fn process_value_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::AxisChanged {
-            action: Action::PayTheBills,
+            action: Action::Axis,
             value: 0.5,
         }],
     };
@@ -314,7 +314,7 @@ fn process_value_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::PayTheBills,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
@@ -325,7 +325,6 @@ fn process_value_action_diff() {
 }
 
 #[test]
-#[ignore = "ActionDiff support has been temporarily removed."]
 fn process_axis_action_diff() {
     let mut app = create_app();
     let entity = app
@@ -337,7 +336,7 @@ fn process_axis_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::DualAxisChanged {
-            action: Action::PayTheBills,
+            action: Action::DualAxis,
             axis_pair: Vec2 { x: 1., y: 0. },
         }],
     };
@@ -350,7 +349,7 @@ fn process_axis_action_diff() {
     let action_diff_event = ActionDiffEvent {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
-            action: Action::PayTheBills,
+            action: Action::Button,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
