@@ -94,6 +94,9 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - Actions can now be disabled at both the individual action and `ActionState` level
 - Disabling actions now resets their value, exposed via the `ActionState::reset` method
 - `ActionState::release_all` has been renamed to `ActionState::reset_all` and now resets the values of `Axislike` and `DualAxislike` actions
+- the state of actions now continues to be updated while they are disabled. However, when checked, their value is always released / zero.
+  - this ensures that holding down an action, disabling it and then re-enabling it does not trigger just-pressed
+  - the values of disabled actions can be accessed by checking their `ActionData` directly
 
 ### Usability (0.15)
 
