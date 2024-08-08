@@ -13,7 +13,6 @@ use crate::{
 use bevy::ecs::prelude::*;
 use bevy::prelude::Gamepads;
 use bevy::{
-    math::Vec2,
     time::{Real, Time},
     utils::Instant,
 };
