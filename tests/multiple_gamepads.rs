@@ -1,3 +1,5 @@
+#![cfg(feature = "gamepad")]
+
 use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
