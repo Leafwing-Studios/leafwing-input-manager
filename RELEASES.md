@@ -135,6 +135,8 @@ Input processors allow you to create custom logic for axis-like input manipulati
 - removed the `no_ui_priority` feature. To get this behavior, now just turn off the default `ui` feature
 - removed the `orientation` module, migrating to `bevy_math::Rot2`
   - use the types provided in `bevy_math` instead
+- remove action consuming (and various `consume` / `consumed` methods) to reduce complexity and avoid confusing overlap with action disabling
+  - write your own logic for cases where this was used: generally by working off of `ActionDiff` events that are consumed
 
 ### Migration Guide (0.15)
 

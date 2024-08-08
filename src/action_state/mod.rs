@@ -591,11 +591,6 @@ impl<A: Actionlike> ActionState<A> {
 
         let action_data = self.button_data_mut_or_default(action);
 
-        // Consumed actions cannot be pressed until they are released
-        if action_data.consumed {
-            return;
-        }
-
         #[cfg(feature = "timing")]
         if action_data.state.released() {
             action_data.timing.flip();
@@ -613,9 +608,6 @@ impl<A: Actionlike> ActionState<A> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
         let action_data = self.button_data_mut_or_default(action);
-
-        // Once released, consumed actions can be pressed again
-        action_data.consumed = false;
 
         #[cfg(feature = "timing")]
         if action_data.state.pressed() {
@@ -649,71 +641,6 @@ impl<A: Actionlike> ActionState<A> {
         for action in all_actions.into_iter() {
             self.reset(&action);
         }
-    }
-
-    /// Consumes the `action`
-    ///
-    /// The action will be released, and will not be able to be pressed again
-    /// until it would have otherwise been released by [`ActionState::release`],
-    /// [`ActionState::reset`], [`ActionState::reset_all`] or [`ActionState::update`].
-    ///
-    /// No initial instant will be recorded
-    /// Instead, this is set through [`ActionState::tick()`]
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use bevy::prelude::Reflect;
-    /// use leafwing_input_manager::prelude::*;
-    ///
-    /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
-    /// enum Action {
-    ///     Eat,
-    ///     Sleep,
-    /// }
-    ///
-    /// let mut action_state = ActionState::<Action>::default();
-    ///
-    /// action_state.press(&Action::Eat);
-    /// assert!(action_state.pressed(&Action::Eat));
-    ///
-    /// // Consuming actions releases them
-    /// action_state.consume(&Action::Eat);
-    /// assert!(action_state.released(&Action::Eat));
-    ///
-    /// // Doesn't work, as the action was consumed
-    /// action_state.press(&Action::Eat);
-    /// assert!(action_state.released(&Action::Eat));
-    ///
-    /// // Releasing consumed actions allows them to be pressed again
-    /// action_state.release(&Action::Eat);
-    /// action_state.press(&Action::Eat);
-    /// assert!(action_state.pressed(&Action::Eat));
-    /// ```
-    #[inline]
-    pub fn consume(&mut self, action: &A) {
-        let action_data = self.button_data_mut_or_default(action);
-
-        // This is the only difference from action_state.release(&action)
-        action_data.consumed = true;
-        action_data.state.release();
-        #[cfg(feature = "timing")]
-        action_data.timing.flip();
-    }
-
-    /// Consumes all actions
-    #[inline]
-    pub fn consume_all(&mut self) {
-        for action in self.keys() {
-            self.consume(&action);
-        }
-    }
-
-    /// Is this `action` currently consumed?
-    #[inline]
-    #[must_use]
-    pub fn consumed(&self, action: &A) -> bool {
-        matches!(self.button_data(action), Some(action_data) if action_data.consumed)
     }
 
     /// Is the entire [`ActionState`] currently disabled?

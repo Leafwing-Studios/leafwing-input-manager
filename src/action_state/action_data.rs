@@ -43,10 +43,7 @@ impl ActionData {
                 data.state.tick();
 
                 #[cfg(feature = "timing")]
-                // Durations should not advance while actions are consumed
-                if !data.consumed {
-                    data.timing.tick(_current_instant, _previous_instant);
-                }
+                data.timing.tick(_current_instant, _previous_instant);
             }
             ActionKindData::Axis(ref mut _data) => {}
             ActionKindData::DualAxis(ref mut _data) => {}
@@ -117,11 +114,6 @@ pub struct ButtonData {
     /// When was the button pressed / released, and how long has it been held for?
     #[cfg(feature = "timing")]
     pub timing: Timing,
-    /// Was this action consumed by [`ActionState::consume`](super::ActionState::consume)?
-    ///
-    /// Actions that are consumed cannot be pressed again until they are explicitly released.
-    /// This ensures that consumed actions are not immediately re-pressed by continued inputs.
-    pub consumed: bool,
 }
 
 impl ButtonData {
@@ -132,7 +124,6 @@ impl ButtonData {
         fixed_update_state: ButtonState::JustPressed,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
-        consumed: false,
     };
 
     /// The default data for a button that was just released.
@@ -142,7 +133,6 @@ impl ButtonData {
         fixed_update_state: ButtonState::JustReleased,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
-        consumed: false,
     };
 
     /// The default data for a button that is released,
@@ -156,7 +146,6 @@ impl ButtonData {
         fixed_update_state: ButtonState::Released,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
-        consumed: false,
     };
 
     /// Is the action currently pressed?
