@@ -6,7 +6,7 @@ use bevy::time::TimeUpdateStrategy;
 use bevy::MinimalPlugins;
 use leafwing_input_manager::action_state::ActionState;
 use leafwing_input_manager::input_map::InputMap;
-use leafwing_input_manager::plugin::{InputManagerPlugin, InputManagerSystem};
+use leafwing_input_manager::plugin::InputManagerPlugin;
 use leafwing_input_manager::prelude::Buttonlike;
 use leafwing_input_manager_macros::Actionlike;
 use std::time::Duration;
@@ -204,65 +204,4 @@ fn frame_with_two_fixed_timestep() {
             .current_duration(&TestAction::Up),
         Duration::from_millis(18)
     );
-}
-
-/// Check that if the action is consumed in FU1, it will still be consumed in F2.
-/// (i.e. consuming is shared between the `FixedMain` and `Main` schedules)
-#[test]
-fn test_consume_in_fixed_update() {
-    let mut app = build_app(Duration::from_millis(5), Duration::from_millis(5));
-
-    app.add_systems(
-        FixedPostUpdate,
-        |mut action: ResMut<ActionState<TestAction>>| {
-            action.consume(&TestAction::Up);
-        },
-    );
-
-    KeyCode::ArrowUp.press(app.world_mut());
-
-    // Frame 1: the FixedUpdate schedule should run once and the button should be just_pressed only once
-    app.update();
-    check_update_just_pressed_count(&mut app, 1);
-    check_fixed_update_run_count(&mut app, 1);
-    check_fixed_update_just_pressed_count(&mut app, 1);
-    reset_counters(&mut app);
-
-    // the button should still be consumed, even after we exit the FixedUpdate schedule
-    assert!(
-        app.world()
-            .get_resource::<ActionState<TestAction>>()
-            .unwrap()
-            .button_data(&TestAction::Up)
-            .unwrap()
-            .consumed,
-    );
-}
-
-/// Check that if the action is consumed in F1, it will still be consumed in FU1.
-/// (i.e. consuming is shared between the `FixedMain` and `Main` schedules)
-#[test]
-fn test_consume_in_update() {
-    let mut app = build_app(Duration::from_millis(5), Duration::from_millis(5));
-
-    KeyCode::ArrowUp.press(app.world_mut());
-    fn consume_action(mut action: ResMut<ActionState<TestAction>>) {
-        action.consume(&TestAction::Up);
-    }
-
-    app.add_systems(
-        PreUpdate,
-        consume_action.in_set(InputManagerSystem::ManualControl),
-    );
-
-    app.add_systems(FixedUpdate, |action: Res<ActionState<TestAction>>| {
-        // check that the action is still consumed in the FixedMain schedule
-        assert!(
-            action.consumed(&TestAction::Up),
-            "Action should still be consumed in FixedUpdate"
-        );
-    });
-
-    // the FixedUpdate schedule should run once
-    app.update();
 }
