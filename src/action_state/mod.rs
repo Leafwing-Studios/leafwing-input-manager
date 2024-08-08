@@ -20,6 +20,8 @@ pub use action_data::*;
 ///
 /// Can be used as either a resource or as a [`Component`] on entities that you wish to control directly from player input.
 ///
+/// # Disabling actions
+///
 /// Actions can be disabled in four different ways, with increasing granularity:
 ///
 /// 1. By disabling updates to all actions using a run condition on [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
@@ -30,7 +32,13 @@ pub use action_data::*;
 /// More general mechanisms of disabling actions will cause specific mechanisms to be ignored.
 /// For example, if an entire action state is disabled, then enabling or disabling individual actions will have no effect.
 ///
+/// Actions that are disabled will report as released (but not just released), and their values will be zero.
+/// Under the hood, their values are still updated to avoid surprising behavior when re-enabled,
+/// but they are not reported to the user using standard methods like [`ActionState::pressed`].
+/// To check the underlying values, access their [`ActionData`] directly.
+///
 /// # Example
+///
 /// ```rust
 /// use bevy::reflect::Reflect;
 /// use leafwing_input_manager::prelude::*;
@@ -121,12 +129,9 @@ impl<A: Actionlike> ActionState<A> {
     /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),
     /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
     ///
-    /// If this [`ActionState`] is disabled, it will not be updated.
+    /// Actions that are disabled will still be updated: instead, their values will be read as released / zero.
+    /// You can see their underlying values by checking their [`ActionData`] directly.
     pub fn update(&mut self, updated_actions: UpdatedActions<A>) {
-        if self.disabled {
-            return;
-        }
-
         for (action, updated_value) in updated_actions.iter() {
             match updated_value {
                 UpdatedValue::Button(pressed) => {
@@ -471,6 +476,10 @@ impl<A: Actionlike> ActionState<A> {
     pub fn value(&self, action: &A) -> f32 {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
+        if self.action_disabled(action) {
+            return 0.0;
+        }
+
         match self.axis_data(action) {
             Some(axis_data) => axis_data.value,
             None => 0.0,
@@ -513,6 +522,10 @@ impl<A: Actionlike> ActionState<A> {
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
     pub fn axis_pair(&self, action: &A) -> Vec2 {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
+
+        if self.action_disabled(action) {
+            return Vec2::ZERO;
+        }
 
         let action_data = self.dual_axis_data(action);
         action_data.map_or(Vec2::ZERO, |action_data| action_data.pair)
