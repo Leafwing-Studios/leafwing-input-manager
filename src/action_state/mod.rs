@@ -998,8 +998,12 @@ mod tests {
     #[cfg(feature = "keyboard")]
     #[test]
     fn press_lifecycle() {
+        use std::time::{Duration, Instant};
+
         use crate::input_map::InputMap;
         use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+        use crate::prelude::updating::CentralInputStore;
+        use crate::prelude::ClashStrategy;
         use crate::user_input::Buttonlike;
         use bevy::input::InputPlugin;
 
@@ -1129,11 +1133,17 @@ mod tests {
     #[test]
     #[ignore = "Clashing inputs for non-buttonlike inputs is broken."]
     fn update_with_clashes_prioritizing_longest() {
+        use std::time::{Duration, Instant};
+
         use crate::input_map::InputMap;
         use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+        use crate::prelude::updating::CentralInputStore;
+        use crate::prelude::ClashStrategy;
         use crate::user_input::chord::ButtonlikeChord;
         use crate::user_input::Buttonlike;
         use bevy::input::InputPlugin;
+        use bevy::prelude::KeyCode::*;
+        use bevy::prelude::*;
 
         #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
         enum Action {
@@ -1143,7 +1153,6 @@ mod tests {
         }
 
         // Input map
-        use bevy::prelude::KeyCode::*;
         let mut input_map = InputMap::default();
         input_map.insert(Action::One, Digit1);
         input_map.insert(Action::Two, Digit2);

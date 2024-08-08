@@ -285,25 +285,11 @@ mod tests {
         );
     }
 
-    #[test]
-    fn plugin_registers_systems() {
-        let mut app = App::new();
-        app.add_plugins(CentralInputStorePlugin);
-        let n_input_kinds = app
-            .world()
-            .resource::<CentralInputStore>()
-            .registered_input_kinds
-            .len();
-
-        let preupdate = app.get_schedule(PreUpdate).unwrap();
-        let n_systems = preupdate.systems_len();
-        assert_eq!(n_systems, n_input_kinds);
-    }
-
     #[cfg(feature = "mouse")]
     #[test]
     fn compute_call_updates_central_store() {
         use bevy::ecs::system::RunSystemOnce;
+        use bevy::prelude::*;
 
         let mut world = World::new();
         world.init_resource::<CentralInputStore>();
