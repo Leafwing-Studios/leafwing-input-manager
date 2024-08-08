@@ -117,6 +117,13 @@ fn main() {
         }
 
         if what_to_run.contains(Check::DOC_TEST) {
+            if feature_option == "--no-default-features" {
+                // Skip doc tests for no-default-features:
+                // writing sensible doc tests without being able to use any input kinds
+                // is unhelpful for the user and a waste of time for the developer.
+                continue;
+            }
+
             // Run doc tests
             cmd!(sh, "cargo test --workspace {feature_option} --doc")
                 .run()
