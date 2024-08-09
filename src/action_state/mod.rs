@@ -4,13 +4,13 @@ use crate::input_map::UpdatedValue;
 use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 use crate::{Actionlike, InputControlKind};
 
-use bevy::math::Vec2;
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
 #[cfg(feature = "timing")]
 use bevy::utils::Duration;
 use bevy::utils::{HashMap, Instant};
 use bevy::{ecs::component::Component, prelude::ReflectComponent};
+use bevy::{math::Vec2, prelude::ReflectResource};
 use serde::{Deserialize, Serialize};
 
 mod action_data;
@@ -80,7 +80,7 @@ pub use action_data::*;
 /// assert!(!action_state.just_released(&Action::Jump));
 /// ```
 #[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
-#[reflect(Component)]
+#[reflect(Resource, Component)]
 pub struct ActionState<A: Actionlike> {
     /// Whether or not all of the actions are disabled.
     disabled: bool,
