@@ -4,10 +4,10 @@ use std::fmt::Debug;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
-use bevy::log::error;
-use bevy::math::Vec2;
 use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Gamepads, Reflect, Resource};
 use bevy::utils::HashMap;
+use bevy::{log::error, prelude::ReflectComponent};
+use bevy::{math::Vec2, prelude::ReflectResource};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -110,6 +110,7 @@ fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
 /// ```
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 #[cfg_attr(feature = "asset", derive(Asset))]
+#[reflect(Resource, Component)]
 pub struct InputMap<A: Actionlike> {
     /// The underlying map that stores action-input mappings for [`Buttonlike`] actions.
     buttonlike_map: HashMap<A, Vec<Box<dyn Buttonlike>>>,
