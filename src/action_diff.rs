@@ -65,7 +65,7 @@ pub struct ActionDiffEvent<A: Actionlike> {
 /// Implements entity mapping for `ActionDiffEvent`.
 ///
 /// This allows the owner entity to be remapped when transferring event diffs
-/// between different ECS contexts (e.g. client and server).
+/// between different ECS worlds (e.g. client and server).
 impl<A: Actionlike> MapEntities for ActionDiffEvent<A> {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.owner = self.owner.map(|entity| entity_mapper.map_entity(entity));
