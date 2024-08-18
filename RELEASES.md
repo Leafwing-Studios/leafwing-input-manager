@@ -12,6 +12,10 @@
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 
+#### ActionDiffEvent
+
+- Implement `MapEntities`, which lets networking crates translate owner entity IDs between ECS worlds
+
 ## Version 0.15.0
 
 ### Enhancements (0.15)
