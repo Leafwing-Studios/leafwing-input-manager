@@ -2,6 +2,13 @@
 
 ## Version 0.15.1
 
+### Enhancements (0.15.1)
+
+#### Action diffs on filtered entities
+
+- Added the `generate_action_diffs_filtered<A, F>` system, which accepts a `QueryFilter`, so that only entities matching QueryFilter `F` (and with `ActionState<A>`) generate action diffs.
+ - To support this, `SummarizedActionState<A>` also gets a new `summarize_filtered<F>` function alongside the original `summarize`.
+
 ### Usability (0.15.1)
 
 #### InputMap
