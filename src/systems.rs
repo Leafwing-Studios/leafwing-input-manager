@@ -188,7 +188,7 @@ pub fn generate_action_diffs<A: Actionlike>(
 /// Generally speaking, this should be added as part of [`PostUpdate`](bevy::prelude::PostUpdate),
 /// to ensure that all inputs have been processed and any manual actions have been sent.
 ///
-/// This system accepts a QueryFilter to limit which entities should have action diffs generated.
+/// This system accepts a [`QueryFilter`] to limit which entities should have action diffs generated.
 pub fn generate_action_diffs_filtered<A: Actionlike, F: QueryFilter>(
     global_action_state: Option<Res<ActionState<A>>>,
     action_state_query: Query<(Entity, &ActionState<A>), F>,
