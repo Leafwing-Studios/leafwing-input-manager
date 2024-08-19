@@ -3,6 +3,7 @@
 use crate::prelude::updating::CentralInputStore;
 #[cfg(feature = "mouse")]
 use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
+use bevy::ecs::query::QueryFilter;
 #[cfg(feature = "mouse")]
 use bevy::input::mouse::{MouseMotion, MouseWheel};
 
@@ -169,6 +170,28 @@ pub fn filter_captured_input(
 pub fn generate_action_diffs<A: Actionlike>(
     global_action_state: Option<Res<ActionState<A>>>,
     action_state_query: Query<(Entity, &ActionState<A>)>,
+    previous_action_state: Local<SummarizedActionState<A>>,
+    action_diff_events: EventWriter<ActionDiffEvent<A>>,
+) {
+    generate_action_diffs_filtered::<A, ()>(
+        global_action_state,
+        action_state_query,
+        previous_action_state,
+        action_diff_events,
+    )
+}
+
+/// Generates an [`Events`] stream of [`ActionDiff`s](crate::action_diff::ActionDiff) from the [`ActionState`] of certain entities.
+///
+/// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
+/// Generally speaking, this should be added as part of [`PostUpdate`](bevy::prelude::PostUpdate),
+/// to ensure that all inputs have been processed and any manual actions have been sent.
+///
+/// This system allows for more fine-grained control over which entities' action states are considered
+/// when generating action diffs.
+pub fn generate_action_diffs_filtered<A: Actionlike, F: QueryFilter>(
+    global_action_state: Option<Res<ActionState<A>>>,
+    action_state_query: Query<(Entity, &ActionState<A>), F>,
     mut previous_action_state: Local<SummarizedActionState<A>>,
     mut action_diff_events: EventWriter<ActionDiffEvent<A>>,
 ) {

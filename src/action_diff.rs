@@ -370,6 +370,9 @@ mod tests {
         action_state
     }
 
+    #[derive(Component)]
+    struct NotSummarized;
+
     fn expected_summary(entity: Entity) -> SummarizedActionState<TestAction> {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
@@ -416,6 +419,22 @@ mod tests {
         let mut system_state: SystemState<(
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
+        let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
+
+        // Components use the entity
+        assert_eq!(summarized, expected_summary(entity));
+    }
+
+    #[test]
+    fn summarize_filtered_entities_from_component() {
+        let mut world = World::new();
+        let entity = world.spawn(test_action_state()).id();
+        let entity2 = world.spawn((test_action_state(), NotSummarized)).id();
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
         )> = SystemState::new(&mut world);
         let (global_action_state, action_state_query) = system_state.get(&world);
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
