@@ -6,9 +6,12 @@
 //! about things like keybindings or input devices.
 
 use bevy::{
-    ecs::{entity::Entity, event::Event},
+    ecs::{
+        entity::{Entity, MapEntities},
+        event::Event,
+    },
     math::Vec2,
-    prelude::{EventWriter, Query, Res},
+    prelude::{EntityMapper, EventWriter, Query, Res},
     utils::{HashMap, HashSet},
 };
 use serde::{Deserialize, Serialize};
@@ -60,6 +63,16 @@ pub struct ActionDiffEvent<A: Actionlike> {
     pub owner: Option<Entity>,
     /// The `ActionDiff` that was generated
     pub action_diffs: Vec<ActionDiff<A>>,
+}
+
+/// Implements entity mapping for `ActionDiffEvent`.
+///
+/// This allows the owner entity to be remapped when transferring event diffs
+/// between different ECS worlds (e.g. client and server).
+impl<A: Actionlike> MapEntities for ActionDiffEvent<A> {
+    fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
+        self.owner = self.owner.map(|entity| entity_mapper.map_entity(entity));
+    }
 }
 
 /// Stores the state of all actions in the current frame.
