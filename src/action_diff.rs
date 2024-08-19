@@ -9,6 +9,7 @@ use bevy::{
     ecs::{
         entity::{Entity, MapEntities},
         event::Event,
+        query::QueryFilter,
     },
     math::Vec2,
     prelude::{EntityMapper, EventWriter, Query, Res},
@@ -103,9 +104,9 @@ impl<A: Actionlike> SummarizedActionState<A> {
     }
 
     /// Captures the raw values for each action in the current frame.
-    pub fn summarize(
+    pub fn summarize<F: QueryFilter>(
         global_action_state: Option<Res<ActionState<A>>>,
-        action_state_query: Query<(Entity, &ActionState<A>)>,
+        action_state_query: Query<(Entity, &ActionState<A>), F>,
     ) -> Self {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
