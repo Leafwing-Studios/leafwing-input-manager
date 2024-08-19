@@ -6,7 +6,10 @@
 //! about things like keybindings or input devices.
 
 use bevy::{
-    ecs::{entity::{Entity, MapEntities}, event::Event},
+    ecs::{
+        entity::{Entity, MapEntities},
+        event::Event,
+    },
     math::Vec2,
     prelude::{EntityMapper, EventWriter, Query, Res},
     utils::{HashMap, HashSet},
