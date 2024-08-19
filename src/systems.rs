@@ -174,7 +174,7 @@ pub fn generate_action_diffs<A: Actionlike>(
     previous_action_state: Local<SummarizedActionState<A>>,
     action_diff_events: EventWriter<ActionDiffEvent<A>>,
 ) {
-    generate_action_diffs_filtered::<A, ()>(
+    generate_action_diffs_filtered(
         global_action_state,
         action_state_query,
         previous_action_state,
