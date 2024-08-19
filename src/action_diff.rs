@@ -103,7 +103,7 @@ impl<A: Actionlike> SummarizedActionState<A> {
         entities
     }
 
-    /// Captures the raw values for each action in the current frame
+    /// Captures the raw values for each action in the current frame, for all entities with `ActionState<A>`.
     pub fn summarize(
         global_action_state: Option<Res<ActionState<A>>>,
         action_state_query: Query<(Entity, &ActionState<A>)>,
@@ -111,7 +111,8 @@ impl<A: Actionlike> SummarizedActionState<A> {
         Self::summarize_filtered(global_action_state, action_state_query)
     }
 
-    /// Captures the raw values for each action in the current frame, for entities that match the query filter.
+    /// Captures the raw values for each action in the current frame, for entities with `ActionState<A>`
+    /// matching the query filter.
     pub fn summarize_filtered<F: QueryFilter>(
         global_action_state: Option<Res<ActionState<A>>>,
         action_state_query: Query<(Entity, &ActionState<A>), F>,
