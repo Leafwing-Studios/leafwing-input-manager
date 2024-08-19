@@ -103,8 +103,16 @@ impl<A: Actionlike> SummarizedActionState<A> {
         entities
     }
 
-    /// Captures the raw values for each action in the current frame.
-    pub fn summarize<F: QueryFilter>(
+    /// Captures the raw values for each action in the current frame
+    pub fn summarize(
+        global_action_state: Option<Res<ActionState<A>>>,
+        action_state_query: Query<(Entity, &ActionState<A>)>,
+    ) -> Self {
+        Self::summarize_filtered(global_action_state, action_state_query)
+    }
+
+    /// Captures the raw values for each action in the current frame, for entities that match the query filter.
+    pub fn summarize_filtered<F: QueryFilter>(
         global_action_state: Option<Res<ActionState<A>>>,
         action_state_query: Query<(Entity, &ActionState<A>), F>,
     ) -> Self {
@@ -438,7 +446,8 @@ mod tests {
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
         )> = SystemState::new(&mut world);
         let (global_action_state, action_state_query) = system_state.get(&world);
-        let summarized = SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+        let summarized =
+            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
 
         // Components use the entity
         assert_eq!(summarized, expected_summary(entity));
