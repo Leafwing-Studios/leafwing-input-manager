@@ -6,6 +6,7 @@ use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
 use bevy::ecs::query::QueryFilter;
 #[cfg(feature = "mouse")]
 use bevy::input::mouse::{MouseMotion, MouseWheel};
+use bevy::log::debug;
 
 use crate::{
     action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap, Actionlike,
@@ -198,7 +199,8 @@ pub fn generate_action_diffs_filtered<A: Actionlike, F: QueryFilter>(
     let current_action_state =
         SummarizedActionState::summarize(global_action_state, action_state_query);
     current_action_state.send_diffs(&previous_action_state, &mut action_diff_events);
-    dbg!(&previous_action_state, &current_action_state);
+    debug!("previous_action_state: {:?}", previous_action_state);
+    debug!("current_action_state: {:?}", current_action_state);
     *previous_action_state = current_action_state;
 }
 
