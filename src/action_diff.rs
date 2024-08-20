@@ -438,10 +438,11 @@ mod tests {
 
     #[test]
     fn summarize_filtered_entities_from_component() {
+        // Spawn two entities, one to be summarized and one to be filtered out
         let mut world = World::new();
-        // Spawn 2 entities; the 2nd one should not be summarized
         let entity = world.spawn(test_action_state()).id();
         world.spawn((test_action_state(), NotSummarized));
+
         let mut system_state: SystemState<(
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
@@ -450,7 +451,7 @@ mod tests {
         let summarized =
             SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
 
-        // Components use the entity
+        // Check that only the entity without NotSummarized was summarized
         assert_eq!(summarized, expected_summary(entity));
     }
 
