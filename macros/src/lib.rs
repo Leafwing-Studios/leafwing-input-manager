@@ -14,7 +14,7 @@ mod typetag;
 
 mod utils;
 
-#[proc_macro_derive(Actionlike)]
+#[proc_macro_derive(Actionlike, attributes(actionlike))]
 pub fn actionlike(input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(input as DeriveInput);
 

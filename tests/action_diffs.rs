@@ -2,21 +2,13 @@ use bevy::{input::InputPlugin, prelude::*};
 use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
 use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
 
-#[derive(Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
     Button,
+    #[actionlike(Axis)]
     Axis,
+    #[actionlike(DualAxis)]
     DualAxis,
-}
-
-impl Actionlike for Action {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            Action::Button => InputControlKind::Button,
-            Action::Axis => InputControlKind::Axis,
-            Action::DualAxis => InputControlKind::DualAxis,
-        }
-    }
 }
 
 fn spawn_test_entity(mut commands: Commands) {

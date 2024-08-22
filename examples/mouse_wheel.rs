@@ -11,22 +11,14 @@ fn main() {
         .run();
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
 enum CameraMovement {
+    #[actionlike(Axis)]
     Zoom,
+    #[actionlike(DualAxis)]
     Pan,
     PanLeft,
     PanRight,
-}
-
-impl Actionlike for CameraMovement {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            CameraMovement::Zoom => InputControlKind::Axis,
-            CameraMovement::Pan => InputControlKind::DualAxis,
-            CameraMovement::PanLeft | CameraMovement::PanRight => InputControlKind::Button,
-        }
-    }
 }
 
 fn setup(mut commands: Commands) {

@@ -31,20 +31,13 @@ fn main() {
 }
 
 // ----------------------------- Player Action Input Handling -----------------------------
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[actionlike(DualAxis)]
 pub enum PlayerAction {
     Move,
     Look,
+    #[actionlike(Button)]
     Shoot,
-}
-
-impl Actionlike for PlayerAction {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            PlayerAction::Move | PlayerAction::Look => InputControlKind::DualAxis,
-            PlayerAction::Shoot => InputControlKind::Button,
-        }
-    }
 }
 
 impl PlayerAction {

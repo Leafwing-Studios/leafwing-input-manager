@@ -89,8 +89,8 @@ pub mod prelude {
 /// See the document of [`InputControlKind`] for available options.
 ///
 /// ```rust
-/// use bevy::prelude::Reflect;
-/// use leafwing_input_manager::Actionlike;
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
 ///
 /// #[derive(Actionlike, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect)]
 /// #[actionlike(Axis)] // This attribute applies to all variants in the enum
