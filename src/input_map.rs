@@ -61,25 +61,14 @@ fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
 /// ```rust
 /// use bevy::prelude::*;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::InputControlKind;
 ///
 /// // Define your actions.
-/// #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+/// #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
 /// enum Action {
+///     #[actionlike(DualAxis)]
 ///     Move,
 ///     Run,
 ///     Jump,
-/// }
-///
-/// // Because our actions aren't all Buttonlike, we can't derive Actionlike.
-/// impl Actionlike for Action {
-///     // Record what kind of inputs make sense for each action.
-///     fn input_control_kind(&self) -> InputControlKind {
-///         match self {
-///             Action::Move => InputControlKind::DualAxis,
-///             Action::Run | Action::Jump => InputControlKind::Button,
-///         }
-///     }
 /// }
 ///
 /// // Create an InputMap from an iterable,
@@ -272,14 +261,14 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Axis,
-            "Cannot map a axislike input for action {:?} of kind {:?}",
+            "Cannot map an axislike input for action {:?} of kind {:?}",
             action,
             action.input_control_kind()
         );
 
         if action.input_control_kind() != InputControlKind::Axis {
             error!(
-                "Cannot map a axislike input for action {:?} of kind {:?}",
+                "Cannot map an axislike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
             );
@@ -307,14 +296,14 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::DualAxis,
-            "Cannot map a axislike input for action {:?} of kind {:?}",
+            "Cannot map an axislike input for action {:?} of kind {:?}",
             action,
             action.input_control_kind()
         );
 
         if action.input_control_kind() != InputControlKind::DualAxis {
             error!(
-                "Cannot map a axislike input for action {:?} of kind {:?}",
+                "Cannot map an axislike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
             );

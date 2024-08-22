@@ -14,21 +14,13 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum Action {
+    #[actionlike(DualAxis)]
     Move,
     Throttle,
+    #[actionlike(Axis)]
     Rudder,
-}
-
-impl Actionlike for Action {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            Action::Move => InputControlKind::DualAxis,
-            Action::Throttle => InputControlKind::Button,
-            Action::Rudder => InputControlKind::Axis,
-        }
-    }
 }
 
 #[derive(Component)]

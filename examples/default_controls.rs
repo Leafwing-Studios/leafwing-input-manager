@@ -12,20 +12,12 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum PlayerAction {
+    #[actionlike(DualAxis)]
     Run,
     Jump,
     UseItem,
-}
-
-impl Actionlike for PlayerAction {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            PlayerAction::Run => InputControlKind::DualAxis,
-            _ => InputControlKind::Button,
-        }
-    }
 }
 
 impl PlayerAction {

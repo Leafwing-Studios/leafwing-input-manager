@@ -411,7 +411,9 @@ mod tests {
     use crate::prelude::{KeyboardVirtualDPad, UserInput};
     use crate::user_input::ButtonlikeChord;
 
-    #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+    use crate as leafwing_input_manager;
+
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
         One,
         Two,
@@ -421,17 +423,9 @@ mod tests {
         CtrlOne,
         AltOne,
         CtrlAltOne,
-        MoveDPad,
         CtrlUp,
-    }
-
-    impl Actionlike for Action {
-        fn input_control_kind(&self) -> crate::InputControlKind {
-            match self {
-                Self::MoveDPad => crate::InputControlKind::DualAxis,
-                _ => crate::InputControlKind::Button,
-            }
-        }
+        #[actionlike(DualAxis)]
+        MoveDPad,
     }
 
     fn test_input_map() -> InputMap<Action> {

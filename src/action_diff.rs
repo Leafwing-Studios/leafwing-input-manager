@@ -339,26 +339,18 @@ impl<A: Actionlike> Default for SummarizedActionState<A> {
 
 #[cfg(test)]
 mod tests {
-    use crate::InputControlKind;
+    use crate as leafwing_input_manager;
 
     use super::*;
     use bevy::{ecs::system::SystemState, prelude::*};
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     enum TestAction {
         Button,
+        #[actionlike(Axis)]
         Axis,
+        #[actionlike(DualAxis)]
         DualAxis,
-    }
-
-    impl Actionlike for TestAction {
-        fn input_control_kind(&self) -> InputControlKind {
-            match self {
-                TestAction::Button => InputControlKind::Button,
-                TestAction::Axis => InputControlKind::Axis,
-                TestAction::DualAxis => InputControlKind::DualAxis,
-            }
-        }
     }
 
     fn test_action_state() -> ActionState<TestAction> {
