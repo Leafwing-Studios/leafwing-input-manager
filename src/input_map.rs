@@ -680,13 +680,18 @@ impl<A: Actionlike> InputMap<A> {
         self.dual_axislike_map.get(action)
     }
 
+    /// Returns a mutable reference to the [`DualAxislike`] inputs mapped to `action`
+    #[must_use]
+    pub fn get_dual_axislike_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn DualAxislike>>> {
+        self.dual_axislike_map.get_mut(action)
+    }
+
     /// Count the total number of registered input bindings.
     #[must_use]
     pub fn len(&self) -> usize {
-        self.buttonlike_map
-            .values()
-            .map(|inputs| inputs.len())
-            .sum()
+        self.buttonlike_map.values().map(Vec::len).sum::<usize>()
+            + self.axislike_map.values().map(Vec::len).sum::<usize>()
+            + self.dual_axislike_map.values().map(Vec::len).sum::<usize>()
     }
 
     /// Returns `true` if the map contains no action-input bindings.
