@@ -248,6 +248,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
+    #[track_caller]
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Button,
@@ -276,6 +277,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
+    #[track_caller]
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Axis,
@@ -311,6 +313,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
+    #[track_caller]
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::DualAxis,
@@ -346,6 +349,7 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
+    #[track_caller]
     pub fn insert_triple_axis(&mut self, action: A, triple_axis: impl TripleAxislike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::TripleAxis,
