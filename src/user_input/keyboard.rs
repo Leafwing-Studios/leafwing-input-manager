@@ -16,7 +16,7 @@ use crate::user_input::{ButtonlikeChord, TripleAxislike, UserInput};
 use crate::InputControlKind;
 
 use super::updating::{CentralInputStore, UpdatableInput};
-use super::{Axislike, Buttonlike, DualAxislike};
+use super::{Axislike, Buttonlike, DualAxislike, Triggerlike};
 
 // Built-in support for Bevy's KeyCode
 #[serde_typetag]
@@ -88,6 +88,22 @@ impl Buttonlike for KeyCode {
             state: ButtonState::Released,
             window: Entity::PLACEHOLDER,
         });
+    }
+}
+
+impl Triggerlike for KeyCode {
+    /// Returns `1.0` if the specified key is currently pressed down, `0.0` otherwise.
+    fn trigger_value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+        f32::from(input_store.pressed(self))
+    }
+
+    /// If the value is greater than `0.0`, press the key; otherwise release it.
+    fn set_trigger_value(&self, world: &mut World, value: f32) {
+        if value > 0.0 {
+            self.press(world);
+        } else {
+            self.release(world);
+        }
     }
 }
 
