@@ -227,7 +227,7 @@ pub trait Triggerlike: Buttonlike {
 
     /// Simulate a triggerlike input by sending the appropriate event.
     ///
-    /// This method defaults to calling [`Triggerlike::set_value_as_gamepad`] if not overridden,
+    /// This method defaults to calling [`Triggerlike::set_trigger_value_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
     fn set_trigger_value(&self, world: &mut World, value: f32) {
         self.set_trigger_value_as_gamepad(world, value, None);
@@ -235,7 +235,7 @@ pub trait Triggerlike: Buttonlike {
 
     /// Simulate a triggerlike input, pretending to be the provided [`Gamepad`].
     ///
-    /// This method defaults to calling [`Triggerlike::set_value`] if not overridden,
+    /// This method defaults to calling [`Triggerlike::set_trigger_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
