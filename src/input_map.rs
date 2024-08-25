@@ -630,18 +630,18 @@ impl<A: Actionlike> InputMap<A> {
                 )
             }
             InputControlKind::Axis => {
-                let buttonlike = self.axislike_map.get(action)?;
+                let axislike = self.axislike_map.get(action)?;
                 Some(
-                    buttonlike
+                    axislike
                         .iter()
                         .map(|input| UserInputWrapper::Axis(input.clone()))
                         .collect(),
                 )
             }
             InputControlKind::DualAxis => {
-                let buttonlike = self.dual_axislike_map.get(action)?;
+                let dual_axislike = self.dual_axislike_map.get(action)?;
                 Some(
-                    buttonlike
+                    dual_axislike
                         .iter()
                         .map(|input| UserInputWrapper::DualAxis(input.clone()))
                         .collect(),

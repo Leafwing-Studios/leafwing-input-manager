@@ -16,11 +16,10 @@ use super::{Axislike, DualAxislike};
 /// A combined input that groups multiple [`Buttonlike`]s together,
 /// allowing you to define complex input combinations like hotkeys, shortcuts, and macros.
 ///
-/// # Behaviors
+/// A chord is pressed only if all its constituent buttons are pressed simultaneously.
 ///
-/// - Activation: All included inputs must be active simultaneously.
-/// - Deduplication: Adding duplicate inputs within a chord will ignore the extras,
-///     preventing redundant data fetching.
+/// Adding duplicate buttons within a chord will ignore the extras,
+/// preventing redundant data fetching from multiple instances of the same input.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -61,9 +60,6 @@ impl ButtonlikeChord {
     /// Creates a [`ButtonlikeChord`] from multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     pub fn new<U: Buttonlike>(inputs: impl IntoIterator<Item = U>) -> Self {
         Self::default().with_multiple(inputs)
@@ -83,9 +79,6 @@ impl ButtonlikeChord {
     }
 
     /// Adds the given [`Buttonlike`] into this chord, avoiding duplicates.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     pub fn with(mut self, input: impl Buttonlike) -> Self {
         self.push_boxed_unique(Box::new(input));
@@ -94,9 +87,6 @@ impl ButtonlikeChord {
 
     /// Adds multiple [`Buttonlike`]s into this chord, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     pub fn with_multiple<U: Buttonlike>(mut self, inputs: impl IntoIterator<Item = U>) -> Self {
         for input in inputs.into_iter() {
@@ -106,9 +96,6 @@ impl ButtonlikeChord {
     }
 
     /// Adds the given boxed dyn [`Buttonlike`] to this chord, avoiding duplicates.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     fn push_boxed_unique(&mut self, input: Box<dyn Buttonlike>) {
         if !self.0.contains(&input) {
@@ -178,9 +165,6 @@ impl<U: Buttonlike> FromIterator<U> for ButtonlikeChord {
     /// Creates a [`ButtonlikeChord`] from an iterator over multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     fn from_iter<T: IntoIterator<Item = U>>(iter: T) -> Self {
         Self::default().with_multiple(iter)
@@ -247,14 +231,14 @@ impl Axislike for AxislikeChord {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct DualAxislikeChord {
-    /// The button that must be pressed to read the axis value.
+    /// The button that must be pressed to read the axis values.
     pub button: Box<dyn Buttonlike>,
     /// The dual axis data that is read when the button is pressed.
     pub dual_axis: Box<dyn DualAxislike>,
 }
 
 impl DualAxislikeChord {
-    /// Creates a new [`AxislikeChord`] from the given [`Buttonlike`] and [`Axislike`].
+    /// Creates a new [`DualAxislikeChord`] from the given [`Buttonlike`] and [`DualAxislike`].
     #[inline]
     pub fn new(button: impl Buttonlike, dual_axis: impl DualAxislike) -> Self {
         Self {

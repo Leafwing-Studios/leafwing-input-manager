@@ -81,7 +81,7 @@ pub mod prelude {
 ///
 /// # Customizing variant behavior
 ///
-/// By default, The derive macro for this trait assumes that all actions are buttonlike.
+/// By default, the derive macro for this trait assumes that all actions are buttonlike.
 ///
 /// You can customize this behavior by using the `#[actionlike]` attribute,
 /// either on the entire enum or on individual variants.
@@ -97,9 +97,9 @@ pub mod prelude {
 /// enum CameraAction {
 ///    Zoom,  // This action is controlled by axes
 ///    #[actionlike(DualAxis)]
-///    Move,  // This action is controlled by dual axes since we have overrode the default option
+///    Move,  // This action is controlled by dual axes since we have overridden the default option
 ///    #[actionlike(Button)]
-///    TakePhoto, // This action is controlled by buttons since we have override the default option
+///    TakePhoto, // This action is controlled by buttons since we have overridden the default option
 /// }
 /// ```
 pub trait Actionlike:
