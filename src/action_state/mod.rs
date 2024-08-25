@@ -662,7 +662,7 @@ impl<A: Actionlike> ActionState<A> {
         triple_axis_data.triple = triple;
     }
 
-    /// Get the [`Vec3`] associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    /// Get the [`Vec3`] associated with the corresponding `action`, clamped to the cube of values bounded by -1 and 1 on all axes.
     ///
     /// # Warning
     ///
