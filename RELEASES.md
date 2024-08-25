@@ -9,15 +9,22 @@
   - added `TripleAxislikeChord` that groups a `Buttonlike` and a `TripleAxislike` together.
   - added related variants such as:
     - `InputControlType::TripleAxis`
-    - `ActionDiff::TripleAxisChanged` 
+    - `ActionDiff::TripleAxisChanged`
+- added `Triggerlike` trait for buttonlike inputs whose values range from 0 to 1
+  - implemented `Triggerlike` for `GamepadButtonType`, `GamepadButton`, `KeyCode` and `MouseButton`
+  - typically, `GamepadButtonType` will be the `Triggerlike` used
+  - `KeyCode`, `MouseButton` and any non-trigger gamepad buttons will simply return 0 when released and 1 when pressed
+  - added related variants such as:
+    - `InputControlType::Triggerlike`
+    - `ActionDiff::TriggerChanged`
 
 ### Usability (0.15.1)
 
-#### InputMap
+#### InputMap reflection
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 
-#### Actionlike
+#### Actionlike macro improvements
 
 - added `#[actionlike]` for actions to set their input kinds, either on an enum or on its individual variants.
 
