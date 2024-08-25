@@ -587,7 +587,7 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Get the value associated with the corresponding axislike `action` if present.
+    /// Get the value associated with the corresponding triggerlike `action` if present.
     ///
     /// # Warnings
     ///
@@ -596,7 +596,7 @@ impl<A: Actionlike> ActionState<A> {
     /// typically using the [`clamped_trigger_value`](Self::clamped_trigger_value) method instead.
     #[track_caller]
     pub fn trigger_value(&self, action: &A) -> f32 {
-        debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Trigger);
 
         if self.action_disabled(action) {
             return 0.0;
@@ -606,6 +606,12 @@ impl<A: Actionlike> ActionState<A> {
             Some(axis_data) => axis_data.value,
             None => 0.0,
         }
+    }
+
+    /// Get the value associated with the corresponding trigger `action` if present, clamping to [0., 1.].
+    #[track_caller]
+    pub fn clamped_trigger_value(&self, action: &A) -> f32 {
+        self.trigger_value(action).clamp(0., 1.)
     }
 
     /// Sets the value of the triggerlike `action` to the provided `value`.
