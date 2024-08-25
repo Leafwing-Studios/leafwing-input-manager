@@ -1,13 +1,13 @@
 //! This module contains [`ButtonlikeChord`] and its impls.
 
-use bevy::math::Vec2;
+use bevy::math::{Vec2, Vec3};
 use bevy::prelude::{Gamepad, Reflect, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
-use crate::user_input::{Buttonlike, UserInput};
+use crate::user_input::{Buttonlike, TripleAxislike, UserInput};
 use crate::InputControlKind;
 
 use super::updating::CentralInputStore;
@@ -284,6 +284,67 @@ impl DualAxislike for DualAxislikeChord {
     ) {
         self.dual_axis
             .set_axis_pair_as_gamepad(world, axis_pair, gamepad);
+    }
+}
+
+/// A combined input that groups a [`Buttonlike`] and a [`TripleAxislike`] together,
+/// allowing you to only read the dual axis data when the button is pressed.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct TripleAxislikeChord {
+    /// The button that must be pressed to read the axis values.
+    pub button: Box<dyn Buttonlike>,
+    /// The triple axis data that is read when the button is pressed.
+    pub triple_axis: Box<dyn TripleAxislike>,
+}
+
+impl TripleAxislikeChord {
+    /// Creates a new [`TripleAxislikeChord`] from the given [`Buttonlike`] and [`TripleAxislike`].
+    #[inline]
+    pub fn new(button: impl Buttonlike, triple_axis: impl TripleAxislike) -> Self {
+        Self {
+            button: Box::new(button),
+            triple_axis: Box::new(triple_axis),
+        }
+    }
+}
+
+#[serde_typetag]
+impl UserInput for TripleAxislikeChord {
+    /// [`TripleAxislikeChord`] acts as a virtual triple-axis.
+    #[inline]
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::TripleAxis
+    }
+
+    /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
+    #[inline]
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::compose(self.button.decompose(), self.triple_axis.decompose())
+    }
+}
+
+impl TripleAxislike for TripleAxislikeChord {
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3 {
+        if self.button.pressed(input_store, gamepad) {
+            self.triple_axis.axis_triple(input_store, gamepad)
+        } else {
+            Vec3::ZERO
+        }
+    }
+
+    fn set_axis_triple(&self, world: &mut World, axis_triple: Vec3) {
+        self.triple_axis.set_axis_triple(world, axis_triple);
+    }
+
+    fn set_axis_triple_as_gamepad(
+        &self,
+        world: &mut World,
+        axis_triple: Vec3,
+        gamepad: Option<Gamepad>,
+    ) {
+        self.triple_axis
+            .set_axis_triple_as_gamepad(world, axis_triple, gamepad);
     }
 }
 
