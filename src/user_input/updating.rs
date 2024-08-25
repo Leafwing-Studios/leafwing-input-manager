@@ -13,7 +13,7 @@ use bevy::{
 
 use crate::{plugin::InputManagerSystem, InputControlKind};
 
-use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
+use super::{Axislike, Buttonlike, DualAxislike, Triggerlike, TripleAxislike};
 
 /// An overarching store for all user inputs.
 ///
@@ -116,6 +116,20 @@ impl CentralInputStore {
         buttonlikes.insert(Box::new(buttonlike), pressed);
     }
 
+    /// Updates the value of a [`Triggerlike`] input.
+    pub fn update_triggerlike<T: Triggerlike>(&mut self, triggerlike: T, trigger_value: f32) {
+        let updated_values = self
+            .updated_values
+            .entry(TypeId::of::<T>())
+            .or_insert_with(|| UpdatedValues::Buttonlike(HashMap::new()));
+
+        let UpdatedValues::Triggerlike(triggerlikes) = updated_values else {
+            panic!("Expected Triggerlike, found {:?}", updated_values);
+        };
+
+        triggerlikes.insert(Box::new(triggerlike), trigger_value);
+    }
+
     /// Updates the value of an [`Axislike`] input.
     pub fn update_axislike<A: Axislike>(&mut self, axislike: A, value: f32) {
         let updated_values = self
@@ -174,7 +188,27 @@ impl CentralInputStore {
         buttonlikes.get(&boxed_buttonlike).copied().unwrap_or(false)
     }
 
+    /// Fetches the value of a [`Triggerlike`] input.
+    ///
+    /// This should be between 0.0 and 1.0, where 0.0 is not pressed and 1.0 is fully pressed.
+    pub fn trigger_value<T: Triggerlike + Hash + Eq + Clone>(&self, triggerlike: &T) -> f32 {
+        let Some(updated_values) = self.updated_values.get(&TypeId::of::<T>()) else {
+            return 0.0;
+        };
+
+        let UpdatedValues::Triggerlike(triggerlikes) = updated_values else {
+            panic!("Expected Triggerlike, found {:?}", updated_values);
+        };
+
+        // PERF: surely there's a way to avoid cloning here
+        let boxed_triggerlike: Box<dyn Triggerlike> = Box::new(triggerlike.clone());
+
+        triggerlikes.get(&boxed_triggerlike).copied().unwrap_or(0.0)
+    }
+
     /// Fetches the value of an [`Axislike`] input.
+    ///
+    /// This should be between -1.0 and 1.0, where -1.0 is fully left or down and 1.0 is fully right or up.
     pub fn value<A: Axislike + Hash + Eq + Clone>(&self, axislike: &A) -> f32 {
         let Some(updated_values) = self.updated_values.get(&TypeId::of::<A>()) else {
             return 0.0;
@@ -236,7 +270,7 @@ impl CentralInputStore {
 #[derive(Debug, Reflect)]
 enum UpdatedValues {
     Buttonlike(HashMap<Box<dyn Buttonlike>, bool>),
-    Triggerlike(HashMap<Box<dyn Buttonlike>, f32>),
+    Triggerlike(HashMap<Box<dyn Triggerlike>, f32>),
     Axislike(HashMap<Box<dyn Axislike>, f32>),
     Dualaxislike(HashMap<Box<dyn DualAxislike>, Vec2>),
     Tripleaxislike(HashMap<Box<dyn TripleAxislike>, Vec3>),

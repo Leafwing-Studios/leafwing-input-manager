@@ -20,7 +20,7 @@ use crate::user_input::UserInput;
 use crate::InputControlKind;
 
 use super::updating::{CentralInputStore, UpdatableInput};
-use super::{Axislike, Buttonlike, DualAxislike};
+use super::{Axislike, Buttonlike, DualAxislike, Triggerlike};
 
 /// Retrieves the first connected gamepad.
 ///
@@ -491,6 +491,9 @@ fn button_pressed(
 }
 
 /// Retrieves the current value of the given [`GamepadButtonType`].
+///
+/// This will be 0.0 if the button is released, and 1.0 if it is pressed.
+/// Physically triggerlike buttons will return a value between 0.0 and 1.0, depending on how far the button is pressed.
 #[must_use]
 #[inline]
 fn button_value(
@@ -498,10 +501,8 @@ fn button_value(
     gamepad: Gamepad,
     button: GamepadButtonType,
 ) -> f32 {
-    // TODO: consider providing more accurate data from trigger-like buttons
-    // This is part of https://github.com/Leafwing-Studios/leafwing-input-manager/issues/551
-
-    f32::from(button_pressed(input_store, gamepad, button))
+    let button = GamepadButton::new(gamepad, button);
+    input_store.trigger_value(&button)
 }
 
 impl UpdatableInput for GamepadButton {
@@ -559,6 +560,22 @@ impl Buttonlike for GamepadButton {
     }
 }
 
+impl Triggerlike for GamepadButton {
+    /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
+    fn trigger_value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+        button_value(input_store, self.gamepad, self.button_type)
+    }
+
+    fn set_trigger_value(&self, world: &mut World, value: f32) {
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad: self.gamepad,
+            button_type: self.button_type,
+            value,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+}
+
 // Built-in support for Bevy's GamepadButtonType.
 #[serde_typetag]
 impl UserInput for GamepadButtonType {
@@ -604,6 +621,35 @@ impl Buttonlike for GamepadButtonType {
             gamepad,
             button_type: *self,
             value: 0.0,
+        });
+        world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+}
+
+impl Triggerlike for GamepadButtonType {
+    /// Retrieves the current value of the specified button.
+    ///
+    /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
+    /// Physically triggerlike buttons will return a value between 0.0 and 1.0, depending on how far the button is pressed.
+    #[must_use]
+    #[inline]
+    fn trigger_value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+        button_value(input_store, gamepad, *self)
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided [`Gamepad`].
+    fn set_trigger_value_as_gamepad(
+        &self,
+        world: &mut World,
+        value: f32,
+        gamepad: Option<Gamepad>,
+    ) {
+        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
+
+        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+            gamepad,
+            button_type: *self,
+            value,
         });
         world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
