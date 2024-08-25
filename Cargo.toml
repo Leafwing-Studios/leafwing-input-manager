@@ -79,10 +79,12 @@ bevy = { version = "0.14.0-rc.3", default-features = false, features = [
 ] }
 serde_test = "1.0"
 
+[package.metadata.docs.rs]
+all-features = true
+
 [lib]
 name = "leafwing_input_manager"
 path = "src/lib.rs"
-
 
 [[example]]
 name = "press_duration"
