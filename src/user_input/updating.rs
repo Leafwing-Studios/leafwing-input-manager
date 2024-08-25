@@ -94,6 +94,7 @@ impl CentralInputStore {
         for map in self.updated_values.values_mut() {
             match map {
                 UpdatedValues::Buttonlike(buttonlikes) => buttonlikes.clear(),
+                UpdatedValues::Triggerlike(triggerlikes) => triggerlikes.clear(),
                 UpdatedValues::Axislike(axislikes) => axislikes.clear(),
                 UpdatedValues::Dualaxislike(dualaxislikes) => dualaxislikes.clear(),
                 UpdatedValues::Tripleaxislike(tripleaxislikes) => tripleaxislikes.clear(),
@@ -235,6 +236,7 @@ impl CentralInputStore {
 #[derive(Debug, Reflect)]
 enum UpdatedValues {
     Buttonlike(HashMap<Box<dyn Buttonlike>, bool>),
+    Triggerlike(HashMap<Box<dyn Buttonlike>, f32>),
     Axislike(HashMap<Box<dyn Axislike>, f32>),
     Dualaxislike(HashMap<Box<dyn DualAxislike>, Vec2>),
     Tripleaxislike(HashMap<Box<dyn TripleAxislike>, Vec3>),
@@ -244,6 +246,7 @@ impl UpdatedValues {
     fn from_input_control_kind(kind: InputControlKind) -> Self {
         match kind {
             InputControlKind::Button => Self::Buttonlike(HashMap::new()),
+            InputControlKind::Trigger => Self::Triggerlike(HashMap::new()),
             InputControlKind::Axis => Self::Axislike(HashMap::new()),
             InputControlKind::DualAxis => Self::Dualaxislike(HashMap::new()),
             InputControlKind::TripleAxis => Self::Tripleaxislike(HashMap::new()),

@@ -11,7 +11,7 @@ use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
 
 use crate::typetag::RegisterTypeTag;
 
-use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike, UserInput};
+use super::{Axislike, Buttonlike, DualAxislike, Triggerlike, TripleAxislike, UserInput};
 
 /// Registry of deserializers for [`UserInput`]s.
 static mut USER_INPUT_REGISTRY: Lazy<RwLock<MapRegistry<dyn UserInput>>> =
@@ -20,6 +20,10 @@ static mut USER_INPUT_REGISTRY: Lazy<RwLock<MapRegistry<dyn UserInput>>> =
 /// Registry of deserializers for [`Buttonlike`]s.
 static mut BUTTONLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn Buttonlike>>> =
     Lazy::new(|| RwLock::new(MapRegistry::new("Buttonlike")));
+
+/// Registry of deserializers for [`Buttonlike`]s.
+static mut TRIGGERLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn Triggerlike>>> =
+    Lazy::new(|| RwLock::new(MapRegistry::new("Triggerlike")));
 
 /// Registry of deserializers for [`Axislike`]s.
 static mut AXISLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn Axislike>>> =
@@ -106,6 +110,36 @@ mod buttonlike {
             D: Deserializer<'de>,
         {
             let registry = unsafe { BUTTONLIKE_REGISTRY.read().unwrap() };
+            registry.deserialize_trait_object(deserializer)
+        }
+    }
+}
+
+mod triggerlike {
+    use crate::user_input::Triggerlike;
+
+    use super::*;
+
+    impl<'a> Serialize for dyn Triggerlike + 'a {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            // Check that `UserInput` has `erased_serde::Serialize` as a super trait,
+            // preventing infinite recursion at runtime.
+            const fn __check_erased_serialize_super_trait<T: ?Sized + UserInput>() {
+                require_erased_serialize_impl::<T>();
+            }
+            serialize_trait_object(serializer, self.reflect_short_type_path(), self)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for Box<dyn Triggerlike> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let registry = unsafe { TRIGGERLIKE_REGISTRY.read().unwrap() };
             registry.deserialize_trait_object(deserializer)
         }
     }

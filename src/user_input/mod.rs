@@ -338,6 +338,8 @@ pub trait TripleAxislike: UserInput {
 pub enum UserInputWrapper {
     /// Wraps a [`Buttonlike`] input.
     Button(Box<dyn Buttonlike>),
+    /// Wraps a [`Triggerlike`] input.
+    Trigger(Box<dyn Triggerlike>),
     /// Wraps an [`Axislike`] input.
     Axis(Box<dyn Axislike>),
     /// Wraps a [`DualAxislike`] input.
@@ -352,6 +354,10 @@ impl UserInput for UserInputWrapper {
         match self {
             UserInputWrapper::Button(input) => {
                 debug_assert!(input.kind() == InputControlKind::Button);
+                input.kind()
+            }
+            UserInputWrapper::Trigger(input) => {
+                debug_assert!(input.kind() == InputControlKind::Trigger);
                 input.kind()
             }
             UserInputWrapper::Axis(input) => {
@@ -372,6 +378,7 @@ impl UserInput for UserInputWrapper {
     fn decompose(&self) -> BasicInputs {
         match self {
             UserInputWrapper::Button(input) => input.decompose(),
+            UserInputWrapper::Trigger(input) => input.decompose(),
             UserInputWrapper::Axis(input) => input.decompose(),
             UserInputWrapper::DualAxis(input) => input.decompose(),
             UserInputWrapper::TripleAxis(input) => input.decompose(),

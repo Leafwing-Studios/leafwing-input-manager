@@ -124,6 +124,7 @@ impl<A: Actionlike> SummarizedActionState<A> {
 
         if let Some(global_action_state) = global_action_state {
             let mut per_entity_button_state = HashMap::default();
+            let mut per_entity_trigger_state = HashMap::default();
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
             let mut per_entity_triple_axis_state = HashMap::default();
@@ -132,6 +133,9 @@ impl<A: Actionlike> SummarizedActionState<A> {
                 match &action_data.kind_data {
                     ActionKindData::Button(button_data) => {
                         per_entity_button_state.insert(action.clone(), button_data.pressed());
+                    }
+                    ActionKindData::Trigger(trigger_data) => {
+                        per_entity_trigger_state.insert(action.clone(), trigger_data.value);
                     }
                     ActionKindData::Axis(axis_data) => {
                         per_entity_axis_state.insert(action.clone(), axis_data.value);
@@ -154,6 +158,7 @@ impl<A: Actionlike> SummarizedActionState<A> {
 
         for (entity, action_state) in action_state_query.iter() {
             let mut per_entity_button_state = HashMap::default();
+            let mut per_entity_trigger_state = HashMap::default();
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
             let mut per_entity_triple_axis_state = HashMap::default();
@@ -162,6 +167,9 @@ impl<A: Actionlike> SummarizedActionState<A> {
                 match &action_data.kind_data {
                     ActionKindData::Button(button_data) => {
                         per_entity_button_state.insert(action.clone(), button_data.pressed());
+                    }
+                    ActionKindData::Trigger(trigger_data) => {
+                        per_entity_trigger_state.insert(action.clone(), trigger_data.value);
                     }
                     ActionKindData::Axis(axis_data) => {
                         per_entity_axis_state.insert(action.clone(), axis_data.value);
@@ -372,6 +380,8 @@ mod tests {
     #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     enum TestAction {
         Button,
+        #[actionlike(Trigger)]
+        Trigger,
         #[actionlike(Axis)]
         Axis,
         #[actionlike(DualAxis)]
