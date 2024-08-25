@@ -153,7 +153,7 @@ mod user_input {
         }
 
         fn crate_name() -> Option<&'static str> {
-            Some(module_path!().split(':').next().unwrap())
+            module_path!().split(':').next()
         }
 
         fn module_path() -> Option<&'static str> {
@@ -314,7 +314,7 @@ mod buttonlike {
         }
 
         fn crate_name() -> Option<&'static str> {
-            Some(module_path!().split(':').next().unwrap())
+            module_path!().split(':').next()
         }
 
         fn module_path() -> Option<&'static str> {
@@ -475,7 +475,7 @@ mod axislike {
         }
 
         fn crate_name() -> Option<&'static str> {
-            Some(module_path!().split(':').next().unwrap())
+            module_path!().split(':').next()
         }
 
         fn module_path() -> Option<&'static str> {
@@ -636,7 +636,7 @@ mod dualaxislike {
         }
 
         fn crate_name() -> Option<&'static str> {
-            Some(module_path!().split(':').next().unwrap())
+            module_path!().split(':').next()
         }
 
         fn module_path() -> Option<&'static str> {

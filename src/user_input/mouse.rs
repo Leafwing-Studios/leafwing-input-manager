@@ -89,13 +89,6 @@ impl Buttonlike for MouseButton {
 
 /// Provides button-like behavior for mouse movement in cardinal directions.
 ///
-/// # Behaviors
-///
-/// - Activation: Only if the mouse moves in the chosen direction.
-/// - Single-Axis Value:
-///   - `1.0`: The input is currently active.
-///   - `0.0`: The input is inactive.
-///
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
@@ -179,12 +172,10 @@ impl Buttonlike for MouseMoveDirection {
 
 /// Relative changes in position of mouse movement on a single axis (X or Y).
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of movement on the chosen axis (X or Y).
-/// - Value Processing: Configure a pipeline to modify the raw value before use,
-///     see [`WithAxisProcessingPipelineExt`] for details.
-/// - Activation: Only if its value is non-zero.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -300,13 +291,10 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 
 /// Relative changes in position of mouse movement on both axes.
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of movement on both axes.
-/// - Value Processing: Configure a pipeline to modify the raw value before use,
-///     see [`WithDualAxisProcessingPipelineExt`] for details.
-/// - Activation: Only if its processed value is non-zero on either axis.
-/// - Single-Axis Value: Reports the magnitude of the processed value.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithDualAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -334,18 +322,6 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 pub struct MouseMove {
     /// A processing pipeline that handles input values.
     pub(crate) processors: Vec<DualAxisProcessor>,
-}
-
-impl MouseMove {
-    /// Retrieves the current X and Y values of the movement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
-        let movement = input_store.pair(&MouseMove::default());
-        self.processors
-            .iter()
-            .fold(movement, |value, processor| processor.process(value))
-    }
 }
 
 impl UpdatableInput for MouseMove {
@@ -384,7 +360,10 @@ impl DualAxislike for MouseMove {
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
-        self.processed_value(input_store)
+        let movement = input_store.pair(&MouseMove::default());
+        self.processors
+            .iter()
+            .fold(movement, |value, processor| processor.process(value))
     }
 
     /// Sends a [`MouseMotion`] event with the specified displacement.
@@ -419,13 +398,6 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 }
 
 /// Provides button-like behavior for mouse wheel scrolling in cardinal directions.
-///
-/// # Behaviors
-///
-/// - Activation: Only if the mouse wheel is scrolling in the chosen direction.
-/// - Single-Axis Value:
-///   - `1.0`: The input is currently active.
-///   - `0.0`: The input is inactive.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -517,12 +489,10 @@ impl Buttonlike for MouseScrollDirection {
 
 /// Amount of mouse wheel scrolling on a single axis (X or Y).
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of scrolling on the chosen axis (X or Y).
-/// - Value Processing: [`WithAxisProcessingPipelineExt`] offers methods
-///     for managing a processing pipeline that can be applied to the raw value before use.
-/// - Activation: Only if its value is non-zero.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -604,6 +574,7 @@ impl Axislike for MouseScrollAxis {
     /// Sends a [`MouseWheel`] event along the appropriate axis with the specified value in pixels.
     ///
     /// # Note
+    ///
     /// The `window` field will be filled with a placeholder value.
     fn set_value(&self, world: &mut World, value: f32) {
         let event = MouseWheel {
@@ -649,12 +620,10 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 
 /// Amount of mouse wheel scrolling on both axes.
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of scrolling on the chosen axis (X or Y).
-/// - Value Processing: [`WithAxisProcessingPipelineExt`] offers methods
-///     for managing a processing pipeline that can be applied to the raw value before use.
-/// - Activation: Only if its value is non-zero.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithDualAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -682,18 +651,6 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 pub struct MouseScroll {
     /// A processing pipeline that handles input values.
     pub(crate) processors: Vec<DualAxisProcessor>,
-}
-
-impl MouseScroll {
-    /// Retrieves the current X and Y values of the movement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
-        let movement = input_store.pair(&MouseScroll::default());
-        self.processors
-            .iter()
-            .fold(movement, |value, processor| processor.process(value))
-    }
 }
 
 impl UpdatableInput for MouseScroll {
@@ -732,7 +689,10 @@ impl DualAxislike for MouseScroll {
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
-        self.processed_value(input_store)
+        let movement = input_store.pair(&MouseScroll::default());
+        self.processors
+            .iter()
+            .fold(movement, |value, processor| processor.process(value))
     }
 
     /// Sends a [`MouseWheel`] event with the specified displacement in pixels.

@@ -401,7 +401,7 @@ impl<A: Actionlike> ActionState<A> {
 
         match self.action_data(action) {
             Some(action_data) => match action_data.kind_data {
-                ActionKindData::DualAxis(ref axis_data) => Some(axis_data),
+                ActionKindData::DualAxis(ref dual_axis_data) => Some(dual_axis_data),
                 _ => None,
             },
             None => None,
@@ -412,12 +412,12 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Caution
     ///
-    /// To insert a default [`ButtonData`] if it doesn't exist,
+    /// To insert a default [`DualAxisData`] if it doesn't exist,
     /// use [`dual_axis_data_mut_or_default`](Self::dual_axis_data_mut_or_default) method.
     ///
     /// # Returns
     ///
-    /// - `Some(ButtonData)` if it exists.
+    /// - `Some(DualAxisData)` if it exists.
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
@@ -433,7 +433,7 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// A mutable reference of the [`ButtonData`] corresponding to the `action` initializing it if needed.
+    /// A mutable reference of the [`DualAxisData`] corresponding to the `action` initializing it if needed.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`DualAxisData`] for you,
@@ -448,7 +448,7 @@ impl<A: Actionlike> ActionState<A> {
 
         let action_data = self.action_data_mut_or_default(action);
         let ActionKindData::DualAxis(ref mut dual_axis_data) = action_data.kind_data else {
-            panic!("{action:?} is not a Dual Axis");
+            panic!("{action:?} is not a DualAxis");
         };
         dual_axis_data
     }
@@ -500,14 +500,14 @@ impl<A: Actionlike> ActionState<A> {
     /// # Warning
     ///
     /// This value will be 0. by default,
-    /// even if the action is not a axislike action.
+    /// even if the action is not an axislike action.
     pub fn clamped_value(&self, action: &A) -> f32 {
         self.value(action).clamp(-1., 1.)
     }
 
     /// Get the [`Vec2`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only events that represent dual-axis control provide an [`Vec2`],
+    /// Only events that represent dual-axis control provide a [`Vec2`],
     /// and this will return [`None`] for other events.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
@@ -548,7 +548,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a dual-axislike action.
     pub fn clamped_axis_pair(&self, action: &A) -> Vec2 {
         let pair = self.axis_pair(action);
-        Vec2::new(pair.x.clamp(-1.0, 1.0), pair.y.clamp(-1.0, 1.0))
+        pair.clamp(Vec2::NEG_ONE, Vec2::ONE)
     }
 
     /// Manually sets the [`ButtonData`] of the corresponding `action`

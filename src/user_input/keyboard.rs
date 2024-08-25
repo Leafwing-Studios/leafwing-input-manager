@@ -95,13 +95,6 @@ impl Buttonlike for KeyCode {
 ///
 /// Each variant represents a pair of [`KeyCode`]s, the left and right version of the modifier key,
 /// allowing for handling modifiers regardless of which side is pressed.
-///
-/// # Behaviors
-///
-/// - Activation: Only if at least one corresponding keys is currently pressed down.
-/// - Single-Axis Value:
-///   - `1.0`: The input is currently active.
-///   - `0.0`: The input is inactive.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub enum ModifierKey {
@@ -195,6 +188,7 @@ impl Buttonlike for ModifierKey {
     /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Released`].
     ///
     /// The left and right keys will be released simultaneously.
+    ///
     /// # Note
     ///
     /// The `logical_key` and `window` fields will be filled with placeholder values.
@@ -208,15 +202,15 @@ impl Buttonlike for ModifierKey {
 /// One key represents the negative direction (left for the X-axis, down for the Y-axis),
 /// while the other represents the positive direction (right for the X-axis, up for the Y-axis).
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value:
-///   - `-1.0`: Only the negative key is currently pressed.
-///   - `1.0`: Only the positive key is currently pressed.
-///   - `0.0`: Neither key is pressed, or both are pressed simultaneously.
-/// - Value Processing: Configure a pipeline to modify the raw value before use,
-///     see [`WithAxisProcessingPipelineExt`] for details.
-/// - Activation: Only if the processed value is non-zero.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithAxisProcessingPipelineExt`] for details.
+///
+/// The raw value is determined based on the state of the associated buttons:
+/// - `-1.0` if only the negative button is currently pressed.
+/// - `1.0` if only the positive button is currently pressed.
+/// - `0.0` if neither button is pressed, or both are pressed simultaneously.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -391,20 +385,20 @@ impl WithAxisProcessingPipelineExt for KeyboardVirtualAxis {
     }
 }
 
-/// A virtual single-axis control constructed from four [`KeyCode`]s.
+/// A virtual dual-axis control constructed from four [`KeyCode`]s.
 /// Each key represents a specific direction (up, down, left, right),
 /// functioning similarly to a directional pad (D-pad) on both X and Y axes,
 /// and offering intermediate diagonals by means of two-key combinations.
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Each axis behaves as follows:
-///   - `-1.0`: Only the negative key is currently pressed (Down/Left).
-///   - `1.0`: Only the positive key is currently pressed (Up/Right).
-///   - `0.0`: Neither key is pressed, or both keys on the same axis are pressed simultaneously.
-/// - Value Processing: Configure a pipeline to modify the raw value before use,
-///     see [`WithDualAxisProcessingPipelineExt`] for details.
-/// - Activation: Only if the processed value is non-zero on either axis.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithDualAxisProcessingPipelineExt`] for details.
+///
+/// The raw axis values are determined based on the state of the associated buttons:
+/// - `-1.0` if only the negative button is currently pressed (Down/Left).
+/// - `1.0` if only the positive button is currently pressed (Up/Right).
+/// - `0.0` if neither button is pressed, or both are pressed simultaneously.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -502,20 +496,6 @@ impl KeyboardVirtualDPad {
         right: KeyCode::Numpad6,
         processors: Vec::new(),
     };
-
-    /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
-        let up = f32::from(input_store.pressed(&self.up));
-        let down = f32::from(input_store.pressed(&self.down));
-        let left = f32::from(input_store.pressed(&self.left));
-        let right = f32::from(input_store.pressed(&self.right));
-        let value = Vec2::new(right - left, up - down);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
-    }
 }
 
 #[serde_typetag]
@@ -543,7 +523,14 @@ impl DualAxislike for KeyboardVirtualDPad {
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
-        self.processed_value(input_store)
+        let up = f32::from(input_store.pressed(&self.up));
+        let down = f32::from(input_store.pressed(&self.down));
+        let left = f32::from(input_store.pressed(&self.left));
+        let right = f32::from(input_store.pressed(&self.right));
+        let value = Vec2::new(right - left, up - down);
+        self.processors
+            .iter()
+            .fold(value, |value, processor| processor.process(value))
     }
 
     /// Presses the corresponding buttons based on the quadrant of the given value.

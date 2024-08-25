@@ -15,7 +15,7 @@ use crate::{plugin::InputManagerSystem, InputControlKind};
 
 use super::{Axislike, Buttonlike, DualAxislike};
 
-/// An overarching store for all user input.
+/// An overarching store for all user inputs.
 ///
 /// This resource allows values to be updated and fetched in a single location,
 /// and ensures that their values are only recomputed once per frame.
@@ -136,7 +136,7 @@ impl CentralInputStore {
             .or_insert_with(|| UpdatedValues::Dualaxislike(HashMap::new()));
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
-            panic!("Expected Axislike, found {:?}", updated_values);
+            panic!("Expected DualAxislike, found {:?}", updated_values);
         };
 
         dualaxislikes.insert(Box::new(dualaxislike), value);
