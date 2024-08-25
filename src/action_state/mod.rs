@@ -970,6 +970,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.pressed(action))
             .collect()
     }
@@ -981,6 +982,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.just_pressed(action))
             .collect()
     }
@@ -992,6 +994,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.released(action))
             .collect()
     }
@@ -1003,6 +1006,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.just_released(action))
             .collect()
     }
