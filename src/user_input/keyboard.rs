@@ -2,7 +2,7 @@
 
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, Res, ResMut, Vec2, World};
+use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, Res, ResMut, Vec2, Vec3, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -12,7 +12,7 @@ use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
     WithDualAxisProcessingPipelineExt,
 };
-use crate::user_input::{ButtonlikeChord, UserInput};
+use crate::user_input::{ButtonlikeChord, TripleAxislike, UserInput};
 use crate::InputControlKind;
 
 use super::updating::{CentralInputStore, UpdatableInput};
@@ -569,6 +569,118 @@ impl WithDualAxisProcessingPipelineExt for KeyboardVirtualDPad {
     fn with_processor(mut self, processor: impl Into<DualAxisProcessor>) -> Self {
         self.processors.push(processor.into());
         self
+    }
+}
+
+/// A virtual triple-axis control constructed from six [`KeyCode`]s.
+/// Each key represents a specific direction (up, down, left, right, forward, backward),
+/// functioning similarly to a three-dimensional directional pad (D-pad) on all X, Y, and Z axes,
+/// and offering intermediate diagonals by means of two/three-key combinations.
+///
+/// The raw axis values are determined based on the state of the associated buttons:
+/// - `-1.0` if only the negative button is currently pressed (Down/Left/Forward).
+/// - `1.0` if only the positive button is currently pressed (Up/Right/Backward).
+/// - `0.0` if neither button is pressed, or both are pressed simultaneously.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct KeyboardVirtualDPad3D {
+    /// The key for the upward direction.
+    pub(crate) up: KeyCode,
+
+    /// The key for the downward direction.
+    pub(crate) down: KeyCode,
+
+    /// The key for the leftward direction.
+    pub(crate) left: KeyCode,
+
+    /// The key for the rightward direction.
+    pub(crate) right: KeyCode,
+
+    /// The key for the forward direction.
+    pub(crate) forward: KeyCode,
+
+    /// The key for the backward direction.
+    pub(crate) backward: KeyCode,
+}
+
+impl KeyboardVirtualDPad3D {
+    /// Creates a new [`KeyboardVirtualDPad3D`] with six given [`KeyCode`]s.
+    /// No processing is applied to raw data from the keyboard.
+    #[inline]
+    pub fn new(
+        up: KeyCode,
+        down: KeyCode,
+        left: KeyCode,
+        right: KeyCode,
+        forward: KeyCode,
+        backward: KeyCode,
+    ) -> Self {
+        Self {
+            up,
+            down,
+            left,
+            right,
+            forward,
+            backward,
+        }
+    }
+}
+
+#[serde_typetag]
+impl UserInput for KeyboardVirtualDPad3D {
+    /// [`KeyboardVirtualDPad3D`] acts as a virtual triple-axis input.
+    #[inline]
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::TripleAxis
+    }
+
+    /// [`KeyboardVirtualDPad3D`] represents a compositions of six [`KeyCode`]s.
+    #[inline]
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![
+            Box::new(self.up),
+            Box::new(self.down),
+            Box::new(self.left),
+            Box::new(self.right),
+            Box::new(self.forward),
+            Box::new(self.backward),
+        ])
+    }
+}
+
+impl TripleAxislike for KeyboardVirtualDPad3D {
+    /// Retrieves the current X, Y, and Z values of this D-pad.
+    #[must_use]
+    #[inline]
+    fn axis_triple(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec3 {
+        let up = f32::from(input_store.pressed(&self.up));
+        let down = f32::from(input_store.pressed(&self.down));
+        let left = f32::from(input_store.pressed(&self.left));
+        let right = f32::from(input_store.pressed(&self.right));
+        let forward = f32::from(input_store.pressed(&self.left));
+        let back = f32::from(input_store.pressed(&self.right));
+        Vec3::new(right - left, up - down, back - forward)
+    }
+
+    /// Presses the corresponding buttons based on the octant of the given value.
+    fn set_axis_triple(&self, world: &mut World, value: Vec3) {
+        if value.x < 0.0 {
+            self.left.press(world);
+        } else if value.x > 0.0 {
+            self.right.press(world);
+        }
+
+        if value.y < 0.0 {
+            self.down.press(world);
+        } else if value.y > 0.0 {
+            self.up.press(world);
+        }
+
+        if value.z < 0.0 {
+            self.forward.press(world);
+        } else if value.z > 0.0 {
+            self.backward.press(world);
+        }
     }
 }
 

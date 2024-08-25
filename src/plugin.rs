@@ -212,7 +212,8 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         app.register_user_input::<KeyCode>()
             .register_user_input::<ModifierKey>()
             .register_user_input::<KeyboardVirtualAxis>()
-            .register_user_input::<KeyboardVirtualDPad>();
+            .register_user_input::<KeyboardVirtualDPad>()
+            .register_user_input::<KeyboardVirtualDPad3D>();
 
         #[cfg(feature = "gamepad")]
         app.register_user_input::<GamepadControlDirection>()
@@ -225,7 +226,8 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         // Chords
         app.register_user_input::<ButtonlikeChord>()
             .register_user_input::<AxislikeChord>()
-            .register_user_input::<DualAxislikeChord>();
+            .register_user_input::<DualAxislikeChord>()
+            .register_user_input::<TripleAxislikeChord>();
 
         // General-purpose reflection
         app.register_type::<ActionState<A>>()

@@ -2,6 +2,15 @@
 
 ## Version 0.15.1
 
+### Enhancements (0.15.1)
+
+- added `TripleAxislike` trait for inputs that track all X, Y, and Z axes.
+  - added `KeyboardVirtualDPad3D` that consists of six `KeyCode`s to represent a triple-axis-like input.
+  - added `TripleAxislikeChord` that groups a `Buttonlike` and a `TripleAxislike` together.
+  - added related variants such as:
+    - `InputControlType::TripleAxis`
+    - `ActionDiff::TripleAxisChanged` 
+
 ### Usability (0.15.1)
 
 #### InputMap

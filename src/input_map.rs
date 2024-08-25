@@ -7,14 +7,17 @@ use bevy::asset::Asset;
 use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Gamepads, Reflect, Resource};
 use bevy::utils::HashMap;
 use bevy::{log::error, prelude::ReflectComponent};
-use bevy::{math::Vec2, prelude::ReflectResource};
+use bevy::{
+    math::{Vec2, Vec3},
+    prelude::ReflectResource,
+};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
 use crate::prelude::UserInputWrapper;
-use crate::user_input::{Axislike, Buttonlike, DualAxislike};
+use crate::user_input::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 use crate::{Actionlike, InputControlKind};
 
 #[cfg(feature = "gamepad")]
@@ -110,6 +113,9 @@ pub struct InputMap<A: Actionlike> {
     /// The underlying map that stores action-input mappings for [`DualAxislike`] actions.
     dual_axislike_map: HashMap<A, Vec<Box<dyn DualAxislike>>>,
 
+    /// The underlying map that stores action-input mappings for [`TripleAxislike`] actions.
+    triple_axislike_map: HashMap<A, Vec<Box<dyn TripleAxislike>>>,
+
     /// The specified [`Gamepad`] from which this map exclusively accepts input.
     associated_gamepad: Option<Gamepad>,
 }
@@ -120,6 +126,7 @@ impl<A: Actionlike> Default for InputMap<A> {
             buttonlike_map: HashMap::default(),
             axislike_map: HashMap::default(),
             dual_axislike_map: HashMap::default(),
+            triple_axislike_map: HashMap::default(),
             associated_gamepad: None,
         }
     }
@@ -169,8 +176,19 @@ impl<A: Actionlike> InputMap<A> {
     /// This method ensures idempotence, meaning that adding the same input
     /// for the same action multiple times will only result in a single binding being created.
     #[inline(always)]
-    pub fn with_dual_axis(mut self, action: A, axis: impl DualAxislike) -> Self {
-        self.insert_dual_axis(action, axis);
+    pub fn with_dual_axis(mut self, action: A, dual_axis: impl DualAxislike) -> Self {
+        self.insert_dual_axis(action, dual_axis);
+        self
+    }
+
+    /// Associates an `action` with a specific [`TripleAxislike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn with_triple_axis(mut self, action: A, triple_axis: impl TripleAxislike) -> Self {
+        self.insert_triple_axis(action, triple_axis);
         self
     }
 
@@ -233,14 +251,14 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Button,
-            "Cannot map a buttonlike input for action {:?} of kind {:?}",
+            "Cannot map a Buttonlike input for action {:?} of kind {:?}",
             action,
             action.input_control_kind()
         );
 
         if action.input_control_kind() != InputControlKind::Button {
             error!(
-                "Cannot map a buttonlike input for action {:?} of kind {:?}",
+                "Cannot map a Buttonlike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
             );
@@ -261,14 +279,14 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Axis,
-            "Cannot map an axislike input for action {:?} of kind {:?}",
+            "Cannot map an Axislike input for action {:?} of kind {:?}",
             action,
             action.input_control_kind()
         );
 
         if action.input_control_kind() != InputControlKind::Axis {
             error!(
-                "Cannot map an axislike input for action {:?} of kind {:?}",
+                "Cannot map an Axislike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
             );
@@ -287,7 +305,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Inserts a binding between an `action` and a specific [`Axislike`] `input`.
+    /// Inserts a binding between an `action` and a specific [`DualAxislike`] `input`.
     /// Multiple inputs can be bound to the same action.
     ///
     /// This method ensures idempotence, meaning that adding the same input
@@ -296,14 +314,14 @@ impl<A: Actionlike> InputMap<A> {
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::DualAxis,
-            "Cannot map an axislike input for action {:?} of kind {:?}",
+            "Cannot map a DualAxislike input for action {:?} of kind {:?}",
             action,
             action.input_control_kind()
         );
 
         if action.input_control_kind() != InputControlKind::DualAxis {
             error!(
-                "Cannot map an axislike input for action {:?} of kind {:?}",
+                "Cannot map a DualAxislike input for action {:?} of kind {:?}",
                 action,
                 action.input_control_kind()
             );
@@ -318,6 +336,41 @@ impl<A: Actionlike> InputMap<A> {
             }
         } else {
             self.dual_axislike_map.insert(action, vec![dual_axis]);
+        }
+        self
+    }
+
+    /// Inserts a binding between an `action` and a specific [`TripleAxislike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn insert_triple_axis(&mut self, action: A, triple_axis: impl TripleAxislike) -> &mut Self {
+        debug_assert!(
+            action.input_control_kind() == InputControlKind::TripleAxis,
+            "Cannot map a TripleAxislike input for action {:?} of kind {:?}",
+            action,
+            action.input_control_kind()
+        );
+
+        if action.input_control_kind() != InputControlKind::TripleAxis {
+            error!(
+                "Cannot map a TripleAxislike input for action {:?} of kind {:?}",
+                action,
+                action.input_control_kind()
+            );
+
+            return self;
+        }
+
+        let triple_axis = Box::new(triple_axis) as Box<dyn TripleAxislike>;
+        if let Some(bindings) = self.triple_axislike_map.get_mut(&action) {
+            if !bindings.contains(&triple_axis) {
+                bindings.push(triple_axis);
+            }
+        } else {
+            self.triple_axislike_map.insert(action, vec![triple_axis]);
         }
         self
     }
@@ -515,6 +568,15 @@ impl<A: Actionlike> InputMap<A> {
             updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
         }
 
+        for (action, _input_bindings) in self.iter_triple_axislike() {
+            let mut final_value = Vec3::ZERO;
+            for binding in _input_bindings {
+                final_value += binding.axis_triple(input_store, gamepad);
+            }
+
+            updated_actions.insert(action.clone(), UpdatedValue::TripleAxis(final_value));
+        }
+
         // Handle clashing inputs, possibly removing some pressed actions from the list
         self.handle_clashes(&mut updated_actions, input_store, clash_strategy, gamepad);
 
@@ -548,6 +610,8 @@ pub enum UpdatedValue {
     Axis(f32),
     /// A dual-axislike action that was updated.
     DualAxis(Vec2),
+    /// A triple-axislike action that was updated.
+    TripleAxis(Vec3),
 }
 
 impl<A: Actionlike> Default for UpdatedActions<A> {
@@ -573,6 +637,13 @@ impl<A: Actionlike> InputMap<A> {
         self.dual_axislike_map.iter()
     }
 
+    /// Returns an iterator over all registered [`TripleAxislike`] actions with their input bindings.
+    pub fn iter_triple_axislike(
+        &self,
+    ) -> impl Iterator<Item = (&A, &Vec<Box<dyn TripleAxislike>>)> {
+        self.triple_axislike_map.iter()
+    }
+
     /// Returns an iterator over all registered [`Buttonlike`] action-input bindings.
     pub fn buttonlike_bindings(&self) -> impl Iterator<Item = (&A, &dyn Buttonlike)> {
         self.buttonlike_map
@@ -594,6 +665,13 @@ impl<A: Actionlike> InputMap<A> {
             .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
     }
 
+    /// Returns an iterator over all registered [`TripleAxislike`] action-input bindings.
+    pub fn triple_axislike_bindings(&self) -> impl Iterator<Item = (&A, &dyn TripleAxislike)> {
+        self.triple_axislike_map
+            .iter()
+            .flat_map(|(action, inputs)| inputs.iter().map(move |input| (action, input.as_ref())))
+    }
+
     /// Returns an iterator over all registered [`Buttonlike`] actions.
     pub fn buttonlike_actions(&self) -> impl Iterator<Item = &A> {
         self.buttonlike_map.keys()
@@ -607,6 +685,11 @@ impl<A: Actionlike> InputMap<A> {
     /// Returns an iterator over all registered [`DualAxislike`] actions.
     pub fn dual_axislike_actions(&self) -> impl Iterator<Item = &A> {
         self.dual_axislike_map.keys()
+    }
+
+    /// Returns an iterator over all registered [`TripleAxislike`] actions.
+    pub fn triple_axislike_actions(&self) -> impl Iterator<Item = &A> {
+        self.triple_axislike_map.keys()
     }
 
     /// Returns a reference to the [`UserInput`](crate::user_input::UserInput) inputs associated with the given `action`.
@@ -644,6 +727,15 @@ impl<A: Actionlike> InputMap<A> {
                     dual_axislike
                         .iter()
                         .map(|input| UserInputWrapper::DualAxis(input.clone()))
+                        .collect(),
+                )
+            }
+            InputControlKind::TripleAxis => {
+                let triple_axislike = self.triple_axislike_map.get(action)?;
+                Some(
+                    triple_axislike
+                        .iter()
+                        .map(|input| UserInputWrapper::TripleAxis(input.clone()))
                         .collect(),
                 )
             }
@@ -686,12 +778,32 @@ impl<A: Actionlike> InputMap<A> {
         self.dual_axislike_map.get_mut(action)
     }
 
+    /// Returns a reference to the [`TripleAxislike`] inputs associated with the given `action`.
+    #[must_use]
+    pub fn get_triple_axislike(&self, action: &A) -> Option<&Vec<Box<dyn TripleAxislike>>> {
+        self.triple_axislike_map.get(action)
+    }
+
+    /// Returns a mutable reference to the [`TripleAxislike`] inputs mapped to `action`
+    #[must_use]
+    pub fn get_triple_axislike_mut(
+        &mut self,
+        action: &A,
+    ) -> Option<&mut Vec<Box<dyn TripleAxislike>>> {
+        self.triple_axislike_map.get_mut(action)
+    }
+
     /// Count the total number of registered input bindings.
     #[must_use]
     pub fn len(&self) -> usize {
         self.buttonlike_map.values().map(Vec::len).sum::<usize>()
             + self.axislike_map.values().map(Vec::len).sum::<usize>()
             + self.dual_axislike_map.values().map(Vec::len).sum::<usize>()
+            + self
+                .triple_axislike_map
+                .values()
+                .map(Vec::len)
+                .sum::<usize>()
     }
 
     /// Returns `true` if the map contains no action-input bindings.
@@ -706,6 +818,7 @@ impl<A: Actionlike> InputMap<A> {
         self.buttonlike_map.clear();
         self.axislike_map.clear();
         self.dual_axislike_map.clear();
+        self.triple_axislike_map.clear();
     }
 }
 
@@ -722,6 +835,9 @@ impl<A: Actionlike> InputMap<A> {
             }
             InputControlKind::DualAxis => {
                 self.dual_axislike_map.remove(action);
+            }
+            InputControlKind::TripleAxis => {
+                self.triple_axislike_map.remove(action);
             }
         }
     }
@@ -755,6 +871,15 @@ impl<A: Actionlike> InputMap<A> {
             }
             InputControlKind::DualAxis => {
                 let input_bindings = self.dual_axislike_map.get_mut(action)?;
+                if input_bindings.len() > index {
+                    input_bindings.remove(index);
+                    Some(())
+                } else {
+                    None
+                }
+            }
+            InputControlKind::TripleAxis => {
+                let input_bindings = self.triple_axislike_map.get_mut(action)?;
                 if input_bindings.len() > index {
                     input_bindings.remove(index);
                     Some(())

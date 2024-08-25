@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 use bevy::{
     app::{App, PreUpdate},
-    math::Vec2,
+    math::{Vec2, Vec3},
     prelude::{IntoSystemConfigs, Res, ResMut, Resource},
     reflect::Reflect,
     utils::{HashMap, HashSet},
@@ -13,7 +13,7 @@ use bevy::{
 
 use crate::{plugin::InputManagerSystem, InputControlKind};
 
-use super::{Axislike, Buttonlike, DualAxislike};
+use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 
 /// An overarching store for all user inputs.
 ///
@@ -96,6 +96,7 @@ impl CentralInputStore {
                 UpdatedValues::Buttonlike(buttonlikes) => buttonlikes.clear(),
                 UpdatedValues::Axislike(axislikes) => axislikes.clear(),
                 UpdatedValues::Dualaxislike(dualaxislikes) => dualaxislikes.clear(),
+                UpdatedValues::Tripleaxislike(tripleaxislikes) => tripleaxislikes.clear(),
             }
         }
     }
@@ -140,6 +141,20 @@ impl CentralInputStore {
         };
 
         dualaxislikes.insert(Box::new(dualaxislike), value);
+    }
+
+    /// Updates the value of a [`TripleAxislike`] input.
+    pub fn update_tripleaxislike<T: TripleAxislike>(&mut self, tripleaxislike: T, value: Vec3) {
+        let updated_values = self
+            .updated_values
+            .entry(TypeId::of::<T>())
+            .or_insert_with(|| UpdatedValues::Tripleaxislike(HashMap::new()));
+
+        let UpdatedValues::Tripleaxislike(tripleaxislikes) = updated_values else {
+            panic!("Expected TripleAxislike, found {:?}", updated_values);
+        };
+
+        tripleaxislikes.insert(Box::new(tripleaxislike), value);
     }
 
     /// Fetches the value of a [`Buttonlike`] input.
@@ -192,6 +207,25 @@ impl CentralInputStore {
             .copied()
             .unwrap_or(Vec2::ZERO)
     }
+
+    /// Fetches the value of a [`TripleAxislike`] input.
+    pub fn triple<T: TripleAxislike + Hash + Eq + Clone>(&self, tripleaxislike: &T) -> Vec3 {
+        let Some(updated_values) = self.updated_values.get(&TypeId::of::<T>()) else {
+            return Vec3::ZERO;
+        };
+
+        let UpdatedValues::Tripleaxislike(tripleaxislikes) = updated_values else {
+            panic!("Expected TripleAxislike, found {:?}", updated_values);
+        };
+
+        // PERF: surely there's a way to avoid cloning here
+        let boxed_tripleaxislike: Box<dyn TripleAxislike> = Box::new(tripleaxislike.clone());
+
+        tripleaxislikes
+            .get(&boxed_tripleaxislike)
+            .copied()
+            .unwrap_or(Vec3::ZERO)
+    }
 }
 
 /// A map of values that have been updated during the current frame.
@@ -203,6 +237,7 @@ enum UpdatedValues {
     Buttonlike(HashMap<Box<dyn Buttonlike>, bool>),
     Axislike(HashMap<Box<dyn Axislike>, f32>),
     Dualaxislike(HashMap<Box<dyn DualAxislike>, Vec2>),
+    Tripleaxislike(HashMap<Box<dyn TripleAxislike>, Vec3>),
 }
 
 impl UpdatedValues {
@@ -211,6 +246,7 @@ impl UpdatedValues {
             InputControlKind::Button => Self::Buttonlike(HashMap::new()),
             InputControlKind::Axis => Self::Axislike(HashMap::new()),
             InputControlKind::DualAxis => Self::Dualaxislike(HashMap::new()),
+            InputControlKind::TripleAxis => Self::Tripleaxislike(HashMap::new()),
         }
     }
 }

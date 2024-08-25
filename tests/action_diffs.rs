@@ -100,6 +100,12 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
         ActionDiff::DualAxisChanged { action, axis_pair } => {
             assert_eq!(action_state.axis_pair(&action), axis_pair);
         }
+        ActionDiff::TripleAxisChanged {
+            action,
+            axis_triple,
+        } => {
+            assert_eq!(action_state.axis_triple(&action), axis_triple);
+        }
     }
 }
 
@@ -137,6 +143,9 @@ fn generate_binary_action_diffs() {
             ActionDiff::DualAxisChanged { .. } => {
                 panic!("Expected a `Pressed` variant got a `DualAxisChanged` variant")
             }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `TripleAxisChanged` variant")
+            }
         }
     });
 
@@ -168,6 +177,9 @@ fn generate_binary_action_diffs() {
             }
             ActionDiff::DualAxisChanged { .. } => {
                 panic!("Expected a `Released` variant got a `DualAxisChanged` variant")
+            }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `Released` variant got a `TripleAxisChanged` variant")
             }
         }
     });
@@ -210,6 +222,9 @@ fn generate_axis_action_diffs() {
             ActionDiff::AxisChanged { .. } => {
                 panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
             }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `DualAxisChanged` variant got a `TripleAxisChanged` variant")
+            }
         }
     });
 
@@ -242,6 +257,9 @@ fn generate_axis_action_diffs() {
             }
             ActionDiff::AxisChanged { .. } => {
                 panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
+            }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `DualAxisChanged` variant got a `TripleAxisChanged` variant")
             }
         }
     });

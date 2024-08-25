@@ -160,4 +160,9 @@ pub enum InputControlKind {
     ///
     /// Corresponds to [`DualAxislike`](crate::user_input::DualAxislike) inputs.
     DualAxis,
+
+    /// A combination of three axis-like inputs, providing separate values for the X, Y and Z axes.
+    ///
+    /// Corresponds to [`TripleAxislike`](crate::user_input::TripleAxislike) inputs.
+    TripleAxis,
 }

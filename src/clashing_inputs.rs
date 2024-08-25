@@ -258,6 +258,16 @@ impl<A: Actionlike> InputMap<A> {
                     .map(|input| input.decompose())
                     .collect()
             }
+            InputControlKind::TripleAxis => {
+                let Some(triple_axislike) = self.get_triple_axislike(action) else {
+                    return Vec::new();
+                };
+
+                triple_axislike
+                    .iter()
+                    .map(|input| input.decompose())
+                    .collect()
+            }
         }
     }
 
@@ -403,7 +413,6 @@ fn resolve_clash<A: Actionlike>(
 #[cfg(feature = "keyboard")]
 #[cfg(test)]
 mod tests {
-    use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use bevy::prelude::Reflect;
 
@@ -469,7 +478,7 @@ mod tests {
             plugin::{AccumulatorPlugin, CentralInputStorePlugin},
             prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey},
         };
-        use bevy::{input::InputPlugin, math::Vec2, prelude::Gamepads};
+        use bevy::{input::InputPlugin, prelude::*};
         use Action::*;
 
         use super::*;
@@ -742,6 +751,7 @@ mod tests {
                         UpdatedValue::Button(pressed) => assert!(!pressed),
                         UpdatedValue::Axis(value) => assert_eq!(value, 0.0),
                         UpdatedValue::DualAxis(pair) => assert_eq!(pair, Vec2::ZERO),
+                        UpdatedValue::TripleAxis(triple) => assert_eq!(triple, Vec3::ZERO),
                     }
                 }
             }

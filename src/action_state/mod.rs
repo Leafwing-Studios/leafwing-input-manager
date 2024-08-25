@@ -10,7 +10,10 @@ use bevy::reflect::Reflect;
 use bevy::utils::Duration;
 use bevy::utils::{HashMap, Instant};
 use bevy::{ecs::component::Component, prelude::ReflectComponent};
-use bevy::{math::Vec2, prelude::ReflectResource};
+use bevy::{
+    math::{Vec2, Vec3},
+    prelude::ReflectResource,
+};
 use serde::{Deserialize, Serialize};
 
 mod action_data;
@@ -147,6 +150,9 @@ impl<A: Actionlike> ActionState<A> {
                 }
                 UpdatedValue::DualAxis(pair) => {
                     self.set_axis_pair(action, *pair);
+                }
+                UpdatedValue::TripleAxis(triple) => {
+                    self.set_axis_triple(action, *triple);
                 }
             }
         }
@@ -453,6 +459,76 @@ impl<A: Actionlike> ActionState<A> {
         dual_axis_data
     }
 
+    /// A reference of the [`TripleAxisData`] corresponding to the `action`.
+    ///
+    /// # Caution
+    ///
+    /// To access the [`TripleAxisData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// # Returns
+    ///
+    /// - `Some(TripleAxisData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    pub fn triple_axis_data(&self, action: &A) -> Option<&TripleAxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        match self.action_data(action) {
+            Some(action_data) => match action_data.kind_data {
+                ActionKindData::TripleAxis(ref triple_axis_data) => Some(triple_axis_data),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+
+    /// A mutable reference of the [`TripleAxisData`] corresponding to the `action`.
+    ///
+    /// # Caution
+    ///
+    /// To insert a default [`TripleAxisData`] if it doesn't exist,
+    /// use [`triple_axis_data_mut_or_default`](Self::dual_axis_data_mut_or_default) method.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ButtonData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    pub fn triple_axis_data_mut(&mut self, action: &A) -> Option<&mut TripleAxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        match self.action_data_mut(action) {
+            Some(action_data) => match &mut action_data.kind_data {
+                ActionKindData::TripleAxis(ref mut triple_axis_data) => Some(triple_axis_data),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+
+    /// A mutable reference of the [`TripleAxisData`] corresponding to the `action` initializing it if needed.
+    ///
+    /// If the `action` has no data yet (because the `action` has not been triggered),
+    /// this method will create and insert a default [`TripleAxisData`] for you,
+    /// avoiding potential errors from unwrapping [`None`].
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    #[inline]
+    #[must_use]
+    pub fn triple_axis_data_mut_or_default(&mut self, action: &A) -> &mut TripleAxisData {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        let action_data = self.action_data_mut_or_default(action);
+        let ActionKindData::TripleAxis(ref mut triple_axis_data) = action_data.kind_data else {
+            panic!("{action:?} is not a TripleAxis");
+        };
+        triple_axis_data
+    }
+
     /// Get the value associated with the corresponding `action` if present.
     ///
     /// Different kinds of bindings have different ways of calculating the value:
@@ -551,6 +627,52 @@ impl<A: Actionlike> ActionState<A> {
         pair.clamp(Vec2::NEG_ONE, Vec2::ONE)
     }
 
+    /// Get the [`Vec3`] from the binding that triggered the corresponding `action`.
+    ///
+    /// Only events that represent triple-axis control provide a [`Vec3`],
+    /// and this will return [`None`] for other events.
+    ///
+    /// If multiple inputs with an axis triple trigger the same game action at the same time, the
+    /// value of each axis triple will be added together.
+    ///
+    /// # Warning
+    ///
+    /// This value will be [`Vec3::ZERO`] by default,
+    /// even if the action is not a triple-axislike action.
+    ///
+    /// These values may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_axis_triple`](Self::clamped_axis_triple) method instead.
+    pub fn axis_triple(&self, action: &A) -> Vec3 {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        if self.action_disabled(action) {
+            return Vec3::ZERO;
+        }
+
+        let action_data = self.triple_axis_data(action);
+        action_data.map_or(Vec3::ZERO, |action_data| action_data.triple)
+    }
+
+    /// Sets the [`Vec2`] of the `action` to the provided `pair`.
+    pub fn set_axis_triple(&mut self, action: &A, triple: Vec3) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        let triple_axis_data = self.triple_axis_data_mut_or_default(action);
+        triple_axis_data.triple = triple;
+    }
+
+    /// Get the [`Vec3`] associated with the corresponding `action`, clamped to the cube of values bounded by -1 and 1 on all axes.
+    ///
+    /// # Warning
+    ///
+    /// This value will be [`Vec3::ZERO`] by default,
+    /// even if the action is not a dual-axislike action.
+    pub fn clamped_axis_triple(&self, action: &A) -> Vec3 {
+        let triple = self.axis_triple(action);
+        triple.clamp(Vec3::NEG_ONE, Vec3::ONE)
+    }
+
     /// Manually sets the [`ButtonData`] of the corresponding `action`
     ///
     /// You should almost always use more direct methods, as they are simpler and less error-prone.
@@ -643,12 +765,16 @@ impl<A: Actionlike> ActionState<A> {
             InputControlKind::DualAxis => {
                 self.set_axis_pair(action, Vec2::ZERO);
             }
+            InputControlKind::TripleAxis => {
+                self.set_axis_triple(action, Vec3::ZERO);
+            }
         }
     }
 
     /// Releases all [`Buttonlike`](crate::user_input::Buttonlike) actions,
     /// sets all [`Axislike`](crate::user_input::Axislike) actions to 0,
-    /// and sets all [`DualAxislike`](crate::user_input::DualAxislike) actions to [`Vec2::ZERO`].
+    /// sets all [`DualAxislike`](crate::user_input::DualAxislike) actions to [`Vec2::ZERO`],
+    /// and sets all [`TripleAxislike`](crate::user_input::TripleAxislike) actions to [`Vec3::ZERO`].
     pub fn reset_all(&mut self) {
         // Collect out to avoid angering the borrow checker
         let all_actions = self.action_data.keys().cloned().collect::<Vec<A>>();
@@ -917,6 +1043,12 @@ impl<A: Actionlike> ActionState<A> {
             }
             ActionDiff::DualAxisChanged { action, axis_pair } => {
                 self.set_axis_pair(action, *axis_pair);
+            }
+            ActionDiff::TripleAxisChanged {
+                action,
+                axis_triple,
+            } => {
+                self.set_axis_triple(action, *axis_triple);
             }
         };
     }

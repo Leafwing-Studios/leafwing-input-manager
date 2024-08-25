@@ -67,6 +67,9 @@
 //!   - [`GamepadVirtualDPad`] from four [`GamepadButtonType`]s.
 //!   - [`KeyboardVirtualDPad`] from four [`KeyCode`]s.
 //!
+//! - Create a virtual directional pad (D-pad) for triple-axis control:
+//!   - [`KeyboardVirtualDPad3D`] from six [`KeyCode`]s.
+//!
 //! [`GamepadAxisType`]: bevy::prelude::GamepadAxisType
 //! [`GamepadButtonType`]: bevy::prelude::GamepadButtonType
 //! [`KeyCode`]: bevy::prelude::KeyCode
@@ -74,7 +77,7 @@
 
 use std::fmt::Debug;
 
-use bevy::math::Vec2;
+use bevy::math::{Vec2, Vec3};
 use bevy::prelude::{Gamepad, World};
 use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
@@ -262,6 +265,36 @@ pub trait DualAxislike: UserInput {
     }
 }
 
+/// A trait used for triple-axis-like user inputs, which provide separate X, Y, and Z values.
+pub trait TripleAxislike: UserInput {
+    /// Gets the values of this input along the X, Y, and Z axes (if applicable).
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3;
+
+    /// Simulate a triple-axis-like input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`TripleAxislike::set_axis_triple_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn set_axis_triple(&self, world: &mut World, value: Vec3) {
+        self.set_axis_triple_as_gamepad(world, value, None);
+    }
+
+    /// Simulate a triple-axis-like input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`TripleAxislike::set_axis_triple`] if not overridden,
+    /// as is the case for things like a space mouse.
+    ///
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn set_axis_triple_as_gamepad(
+        &self,
+        world: &mut World,
+        value: Vec3,
+        _gamepad: Option<Gamepad>,
+    ) {
+        self.set_axis_triple(world, value);
+    }
+}
+
 /// A wrapper type to get around the lack of [trait upcasting coercion](https://github.com/rust-lang/rust/issues/65991).
 ///
 /// To return a generic [`UserInput`] trait object from a function, you can use this wrapper type.
@@ -274,6 +307,8 @@ pub enum UserInputWrapper {
     Axis(Box<dyn Axislike>),
     /// Wraps a [`DualAxislike`] input.
     DualAxis(Box<dyn DualAxislike>),
+    /// Wraps a [`TripleAxislike`] input.
+    TripleAxis(Box<dyn TripleAxislike>),
 }
 
 impl UserInput for UserInputWrapper {
@@ -291,6 +326,10 @@ impl UserInput for UserInputWrapper {
                 debug_assert!(input.kind() == InputControlKind::DualAxis);
                 input.kind()
             }
+            UserInputWrapper::TripleAxis(input) => {
+                debug_assert!(input.kind() == InputControlKind::TripleAxis);
+                input.kind()
+            }
         }
     }
 
@@ -299,6 +338,7 @@ impl UserInput for UserInputWrapper {
             UserInputWrapper::Button(input) => input.decompose(),
             UserInputWrapper::Axis(input) => input.decompose(),
             UserInputWrapper::DualAxis(input) => input.decompose(),
+            UserInputWrapper::TripleAxis(input) => input.decompose(),
         }
     }
 }

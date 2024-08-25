@@ -11,7 +11,7 @@ use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
 
 use crate::typetag::RegisterTypeTag;
 
-use super::{Axislike, Buttonlike, DualAxislike, UserInput};
+use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike, UserInput};
 
 /// Registry of deserializers for [`UserInput`]s.
 static mut USER_INPUT_REGISTRY: Lazy<RwLock<MapRegistry<dyn UserInput>>> =
@@ -28,6 +28,10 @@ static mut AXISLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn Axislike>>> =
 /// Registry of deserializers for [`DualAxislike`]s.
 static mut DUAL_AXISLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn DualAxislike>>> =
     Lazy::new(|| RwLock::new(MapRegistry::new("DualAxislike")));
+
+/// Registry of deserializers for [`TripleAxislike`]s.
+static mut TRIPLE_AXISLIKE_REGISTRY: Lazy<RwLock<MapRegistry<dyn TripleAxislike>>> =
+    Lazy::new(|| RwLock::new(MapRegistry::new("TripleAxislike")));
 
 /// A trait for registering a specific [`UserInput`].
 pub trait RegisterUserInput {
@@ -162,6 +166,36 @@ mod dualaxislike {
             D: Deserializer<'de>,
         {
             let registry = unsafe { DUAL_AXISLIKE_REGISTRY.read().unwrap() };
+            registry.deserialize_trait_object(deserializer)
+        }
+    }
+}
+
+mod tripleaxislike {
+    use crate::user_input::TripleAxislike;
+
+    use super::*;
+
+    impl<'a> Serialize for dyn TripleAxislike + 'a {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: Serializer,
+        {
+            // Check that `UserInput` has `erased_serde::Serialize` as a super trait,
+            // preventing infinite recursion at runtime.
+            const fn __check_erased_serialize_super_trait<T: ?Sized + UserInput>() {
+                require_erased_serialize_impl::<T>();
+            }
+            serialize_trait_object(serializer, self.reflect_short_type_path(), self)
+        }
+    }
+
+    impl<'de> Deserialize<'de> for Box<dyn TripleAxislike> {
+        fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let registry = unsafe { TRIPLE_AXISLIKE_REGISTRY.read().unwrap() };
             registry.deserialize_trait_object(deserializer)
         }
     }
