@@ -311,6 +311,7 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn button_data_mut_or_default(&mut self, action: &A) -> &mut ButtonData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -334,6 +335,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn axis_data(&self, action: &A) -> Option<&AxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -379,6 +381,7 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn axis_data_mut_or_default(&mut self, action: &A) -> &mut AxisData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -402,6 +405,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn dual_axis_data(&self, action: &A) -> Option<&DualAxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -427,6 +431,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn dual_axis_data_mut(&mut self, action: &A) -> Option<&mut DualAxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -449,6 +454,7 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn dual_axis_data_mut_or_default(&mut self, action: &A) -> &mut DualAxisData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -472,6 +478,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn triple_axis_data(&self, action: &A) -> Option<&TripleAxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
 
@@ -497,6 +504,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn triple_axis_data_mut(&mut self, action: &A) -> Option<&mut TripleAxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
 
@@ -519,6 +527,7 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn triple_axis_data_mut_or_default(&mut self, action: &A) -> &mut TripleAxisData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
 
@@ -550,6 +559,9 @@ impl<A: Actionlike> ActionState<A> {
     /// This value may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_value`](Self::clamped_value) method instead.
+    #[inline]
+    #[must_use]
+    #[track_caller]
     pub fn value(&self, action: &A) -> f32 {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -564,6 +576,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the value of the `action` to the provided `value`.
+    #[track_caller]
     pub fn set_value(&mut self, action: &A, value: f32) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -597,6 +610,8 @@ impl<A: Actionlike> ActionState<A> {
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
+    #[must_use]
+    #[track_caller]
     pub fn axis_pair(&self, action: &A) -> Vec2 {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -609,6 +624,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the [`Vec2`] of the `action` to the provided `pair`.
+    #[track_caller]
     pub fn set_axis_pair(&mut self, action: &A, pair: Vec2) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -643,6 +659,8 @@ impl<A: Actionlike> ActionState<A> {
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_triple`](Self::clamped_axis_triple) method instead.
+    #[must_use]
+    #[track_caller]
     pub fn axis_triple(&self, action: &A) -> Vec3 {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
 
@@ -655,6 +673,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the [`Vec2`] of the `action` to the provided `pair`.
+    #[track_caller]
     pub fn set_axis_triple(&mut self, action: &A, triple: Vec3) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
 
@@ -710,6 +729,7 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// ```
     #[inline]
+    #[track_caller]
     pub fn set_button_data(&mut self, action: A, data: ButtonData) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -722,6 +742,7 @@ impl<A: Actionlike> ActionState<A> {
     /// No initial instant or reasons why the button was pressed will be recorded.
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
+    #[track_caller]
     pub fn press(&mut self, action: &A) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -860,6 +881,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -881,6 +903,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn just_pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -904,6 +927,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -925,6 +949,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn just_released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -945,6 +970,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.pressed(action))
             .collect()
     }
@@ -956,6 +982,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.just_pressed(action))
             .collect()
     }
@@ -967,6 +994,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.released(action))
             .collect()
     }
@@ -978,6 +1006,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.just_released(action))
             .collect()
     }
@@ -993,6 +1022,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will also be [`None`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
+    #[must_use]
+    #[track_caller]
     pub fn instant_started(&self, action: &A) -> Option<Instant> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -1004,6 +1035,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
+    #[must_use]
+    #[track_caller]
     pub fn current_duration(&self, action: &A) -> Duration {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -1019,6 +1052,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
+    #[must_use]
+    #[track_caller]
     pub fn previous_duration(&self, action: &A) -> Duration {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 

@@ -19,7 +19,7 @@
 
 #### Actionlike
 
- - added `#[actionlike]` for actions to set their input kinds, either on an enum or on its individual variants.
+- added `#[actionlike]` for actions to set their input kinds, either on an enum or on its individual variants.
 
 #### ActionState
 
@@ -28,6 +28,10 @@
 #### ActionDiffEvent
 
 - Implement `MapEntities`, which lets networking crates translate owner entity IDs between ECS worlds
+
+### Bugs (0.15.1)
+
+- `InputMap::get_pressed` and siblings now check if the action kind is buttonlike before checking if they are pressed or released, avoiding a debug-mode panic
 
 ## Version 0.15.0
 

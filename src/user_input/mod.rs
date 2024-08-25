@@ -312,6 +312,7 @@ pub enum UserInputWrapper {
 }
 
 impl UserInput for UserInputWrapper {
+    #[track_caller]
     fn kind(&self) -> InputControlKind {
         match self {
             UserInputWrapper::Button(input) => {

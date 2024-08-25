@@ -49,15 +49,11 @@ fn spawn_player(mut commands: Commands) {
 fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
 
-    // Each action has a button-like state of its own that you can check
-    if action_state.pressed(&Action::Move) {
-        // We're working with gamepads, so we want to defensively ensure that we're using the clamped values
-        let axis_pair = action_state.clamped_axis_pair(&Action::Move);
-        println!("Move:");
-        println!("   distance: {}", axis_pair.length());
-        println!("          x: {}", axis_pair.x);
-        println!("          y: {}", axis_pair.y);
-    }
+    let axis_pair = action_state.clamped_axis_pair(&Action::Move);
+    println!("Move:");
+    println!("   distance: {}", axis_pair.length());
+    println!("          x: {}", axis_pair.x);
+    println!("          y: {}", axis_pair.y);
 
     if action_state.pressed(&Action::Throttle) {
         // Note that some gamepad buttons are also tied to axes, so even though we used a
@@ -70,8 +66,6 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
         println!("Throttle: {value}");
     }
 
-    if action_state.pressed(&Action::Rudder) {
-        let value = action_state.clamped_value(&Action::Rudder);
-        println!("Rudder: {value}");
-    }
+    let value = action_state.clamped_value(&Action::Rudder);
+    println!("Rudder: {value}");
 }
