@@ -186,13 +186,13 @@ pub struct AxisData {
     pub fixed_update_value: f32,
 }
 
-/// The raw data for an [`ActionState`](super::ActionState)  corresponding to a pair of virtual axes.
+/// The raw data for an [`ActionState`](super::ActionState) corresponding to a pair of virtual axes.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct DualAxisData {
     /// The XY coordinates of the axis
     pub pair: Vec2,
     /// The `pair` of the action in the `Main` schedule
     pub update_pair: Vec2,
-    /// The `value` of the action in the `FixedMain` schedule
+    /// The `pair` of the action in the `FixedMain` schedule
     pub fixed_update_pair: Vec2,
 }

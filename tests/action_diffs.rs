@@ -132,10 +132,10 @@ fn generate_binary_action_diffs() {
                 panic!("Expected a `Pressed` variant got a `Released` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Pressed` variant got a `ValueChanged` variant")
+                panic!("Expected a `Pressed` variant got a `AxisChanged` variant")
             }
             ActionDiff::DualAxisChanged { .. } => {
-                panic!("Expected a `Pressed` variant got a `AxisPairChanged` variant")
+                panic!("Expected a `Pressed` variant got a `DualAxisChanged` variant")
             }
         }
     });
@@ -164,10 +164,10 @@ fn generate_binary_action_diffs() {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `ValueChanged` variant")
+                panic!("Expected a `Released` variant got a `AxisChanged` variant")
             }
             ActionDiff::DualAxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `AxisPairChanged` variant")
+                panic!("Expected a `Released` variant got a `DualAxisChanged` variant")
             }
         }
     });
@@ -202,13 +202,13 @@ fn generate_axis_action_diffs() {
                 assert_eq!(axis_pair, test_axis_pair);
             }
             ActionDiff::Released { .. } => {
-                panic!("Expected a `AxisPairChanged` variant got a `Released` variant")
+                panic!("Expected a `DualAxisChanged` variant got a `Released` variant")
             }
             ActionDiff::Pressed { .. } => {
-                panic!("Expected a `AxisPairChanged` variant got a `Pressed` variant")
+                panic!("Expected a `DualAxisChanged` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `AxisPairChanged` variant got a `ValueChanged` variant")
+                panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
             }
         }
     });
@@ -230,18 +230,18 @@ fn generate_axis_action_diffs() {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Released { .. } => {
-                panic!("Expected a `AxisPairChanged` variant got a `Released` variant")
-            }
-            ActionDiff::Pressed { .. } => {
-                panic!("Expected a `Released` variant got a `Pressed` variant")
-            }
-            ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `ValueChanged` variant")
-            }
             ActionDiff::DualAxisChanged { action, axis_pair } => {
                 assert_eq!(action, Action::DualAxis);
                 assert_eq!(axis_pair, Vec2::ZERO);
+            }
+            ActionDiff::Released { .. } => {
+                panic!("Expected a `DualAxisChanged` variant got a `Released` variant")
+            }
+            ActionDiff::Pressed { .. } => {
+                panic!("Expected a `DualAxisChanged` variant got a `Pressed` variant")
+            }
+            ActionDiff::AxisChanged { .. } => {
+                panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
             }
         }
     });
