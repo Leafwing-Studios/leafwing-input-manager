@@ -22,7 +22,7 @@ use crate::{Actionlike, InputControlKind};
 /// - `S` and `W`: does not clash
 /// - `ControlLeft + S` and `S`: clashes
 /// - `S` and `S`: does not clash
-/// - `ControlLeft + S` and ` AltLeft + S`: clashes
+/// - `ControlLeft + S` and ` AltLeft + S`: does not clash
 /// - `ControlLeft + S`, `AltLeft + S` and `ControlLeft + AltLeft + S`: clashes
 ///
 /// This strategy is only used when assessing the actions and input holistically,
