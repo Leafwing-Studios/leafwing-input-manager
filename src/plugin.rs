@@ -222,6 +222,11 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             .register_user_input::<GamepadVirtualAxis>()
             .register_user_input::<GamepadVirtualDPad>();
 
+        // Chords
+        app.register_user_input::<ButtonlikeChord>()
+            .register_user_input::<AxislikeChord>()
+            .register_user_input::<DualAxislikeChord>();
+
         // General-purpose reflection
         app.register_type::<ActionState<A>>()
             .register_type::<InputMap<A>>()
