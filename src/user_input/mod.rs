@@ -215,6 +215,41 @@ pub trait Buttonlike: UserInput {
     }
 }
 
+/// A trait used for triggerlike user inputs, which can be pressed or released with a value for how much they are pressed.
+///
+/// This trait is used for inputs like triggers on gamepads, which can be pressed to varying degrees.
+pub trait Triggerlike: Buttonlike {
+    /// Gets the current value of the input as an `f32`.
+    ///
+    /// The returned value should be between `0.0` and `1.0`, with `0.0` representing the input being fully released
+    /// and `1.0` representing the input being fully pressed.
+    fn trigger_value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32;
+
+    /// Simulate a triggerlike input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Triggerlike::set_value_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    fn set_trigger_value(&self, world: &mut World, value: f32) {
+        self.set_trigger_value_as_gamepad(world, value, None);
+    }
+
+    /// Simulate a triggerlike input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Triggerlike::set_value`] if not overridden,
+    /// as is the case for things like a mouse wheel.
+    ///
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn set_trigger_value_as_gamepad(
+        &self,
+        world: &mut World,
+        value: f32,
+        _gamepad: Option<Gamepad>,
+    ) {
+        self.set_trigger_value(world, value);
+    }
+}
+
 /// A trait used for axis-like user inputs, which provide a continuous value.
 pub trait Axislike: UserInput {
     /// Gets the current value of the input as an `f32`.
