@@ -28,7 +28,7 @@
 
 - added `#[actionlike]` for actions to set their input kinds, either on an enum or on its individual variants.
 
-#### ActionState
+#### ActionState reflection
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 
