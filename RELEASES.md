@@ -15,7 +15,7 @@
   - typically, `GamepadButtonType` will be the `Triggerlike` used
   - `KeyCode`, `MouseButton` and any non-trigger gamepad buttons will simply return 0 when released and 1 when pressed
   - added related variants such as:
-    - `InputControlType::Triggerlike`
+    - `InputControlType::Trigger`
     - `ActionDiff::TriggerChanged`
 
 ### Usability (0.15.1)
