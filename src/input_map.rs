@@ -163,6 +163,17 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
+    /// Associates an `action` with a specific [`Triggerlike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    pub fn with_trigger(mut self, action: A, trigger: impl Triggerlike) -> Self {
+        self.insert_trigger(action, trigger);
+        self
+    }
+
     /// Associates an `action` with a specific [`Axislike`] `input`.
     /// Multiple inputs can be bound to the same action.
     ///
@@ -272,6 +283,42 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         self.insert_boxed(action, Box::new(button));
+        self
+    }
+
+    /// Inserts a binding between an `action` and a specific [`Triggerlike`] `input`.
+    /// Multiple inputs can be bound to the same action.
+    ///
+    /// This method ensures idempotence, meaning that adding the same input
+    /// for the same action multiple times will only result in a single binding being created.
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_trigger(&mut self, action: A, trigger: impl Triggerlike) -> &mut Self {
+        debug_assert!(
+            action.input_control_kind() == InputControlKind::Trigger,
+            "Cannot map a Triggerlike input for action {:?} of kind {:?}",
+            action,
+            action.input_control_kind()
+        );
+
+        if action.input_control_kind() != InputControlKind::Trigger {
+            error!(
+                "Cannot map a Triggerlike input for action {:?} of kind {:?}",
+                action,
+                action.input_control_kind()
+            );
+
+            return self;
+        }
+
+        let trigger = Box::new(trigger) as Box<dyn Triggerlike>;
+        if let Some(bindings) = self.triggerlike_map.get_mut(&action) {
+            if !bindings.contains(&trigger) {
+                bindings.push(trigger);
+            }
+        } else {
+            self.triggerlike_map.insert(action, vec![trigger]);
+        }
         self
     }
 
