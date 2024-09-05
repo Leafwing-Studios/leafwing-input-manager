@@ -1,5 +1,14 @@
 # Release Notes
 
+## Version 0.16.0
+
+### Usability (0.16)
+
+- made virtual axial controls more flexible, accepting any kind of `Buttonlike`
+  - removed `KeyboardVirtualAxis` and `GamepadVirtualAxis` in favor of `VirtualAxis`
+  - removed `KeyboardVirtualDPad` and `GamepadVirtualDPad` in favor of `VirtualDPad`
+  - removed `KeyboardVirtualDPad3D` in favor of `VirtualDPad3D`
+
 ## Version 0.15.1
 
 ### Enhancements (0.15.1)

@@ -320,13 +320,13 @@ mod tests {
     #[cfg(feature = "keyboard")]
     #[test]
     fn test_triple_axis_serde() {
-        use crate::prelude::{KeyboardVirtualDPad3D, TripleAxislike};
+        use crate::prelude::{TripleAxislike, VirtualDPad3D};
         use bevy::prelude::KeyCode;
         use serde_test::{assert_tokens, Token};
 
         register_input_deserializers();
 
-        let boxed_input: Box<dyn TripleAxislike> = Box::new(KeyboardVirtualDPad3D::new(
+        let boxed_input: Box<dyn TripleAxislike> = Box::new(VirtualDPad3D::new(
             KeyCode::KeyW,
             KeyCode::KeyS,
             KeyCode::KeyA,
@@ -338,41 +338,59 @@ mod tests {
             &boxed_input,
             &[
                 Token::Map { len: Some(1) },
-                Token::BorrowedStr("KeyboardVirtualDPad3D"),
+                Token::BorrowedStr("VirtualDPad3D"),
                 Token::Struct {
-                    name: "KeyboardVirtualDPad3D",
+                    name: "VirtualDPad3D",
                     len: 6,
                 },
                 Token::Str("up"),
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("KeyCode"),
                 Token::UnitVariant {
                     name: "KeyCode",
                     variant: "KeyW",
                 },
+                Token::MapEnd,
                 Token::Str("down"),
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("KeyCode"),
                 Token::UnitVariant {
                     name: "KeyCode",
                     variant: "KeyS",
                 },
+                Token::MapEnd,
                 Token::Str("left"),
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("KeyCode"),
                 Token::UnitVariant {
                     name: "KeyCode",
                     variant: "KeyA",
                 },
+                Token::MapEnd,
                 Token::Str("right"),
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("KeyCode"),
                 Token::UnitVariant {
                     name: "KeyCode",
                     variant: "KeyD",
                 },
+                Token::MapEnd,
                 Token::Str("forward"),
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("KeyCode"),
                 Token::UnitVariant {
                     name: "KeyCode",
                     variant: "KeyF",
                 },
+                Token::MapEnd,
                 Token::Str("backward"),
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("KeyCode"),
                 Token::UnitVariant {
                     name: "KeyCode",
                     variant: "KeyB",
                 },
+                Token::MapEnd,
                 Token::StructEnd,
                 Token::MapEnd,
             ],
