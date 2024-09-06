@@ -57,7 +57,7 @@ fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
     if action_state.axis_pair(&PlayerAction::Run) != Vec2::ZERO {
         println!(
             "Moving in direction {}",
-            action_state.clamped_axis_pair(&PlayerAction::Run).xy()
+            action_state.clamped_axis_pair(&PlayerAction::Run)
         );
     }
 
