@@ -241,6 +241,13 @@ impl<A: Actionlike> InputMap<A> {
 
                 buttonlike.iter().map(|input| input.decompose()).collect()
             }
+            InputControlKind::Trigger => {
+                let Some(triggerlike) = self.get_triggerlike(action) else {
+                    return Vec::new();
+                };
+
+                triggerlike.iter().map(|input| input.decompose()).collect()
+            }
             InputControlKind::Axis => {
                 let Some(axislike) = self.get_axislike(action) else {
                     return Vec::new();

@@ -32,7 +32,8 @@ impl ActionData {
             disabled: false,
             kind_data: match input_control_kind {
                 InputControlKind::Button => ActionKindData::Button(ButtonData::default()),
-                InputControlKind::Axis => ActionKindData::Axis(AxisData::default()),
+                InputControlKind::Trigger => ActionKindData::Trigger(TriggerData::default()),
+                InputControlKind::Axis => ActionKindData::Axis(TriggerData::default()),
                 InputControlKind::DualAxis => ActionKindData::DualAxis(DualAxisData::default()),
                 InputControlKind::TripleAxis => {
                     ActionKindData::TripleAxis(TripleAxisData::default())
@@ -50,6 +51,7 @@ impl ActionData {
                 #[cfg(feature = "timing")]
                 data.timing.tick(_current_instant, _previous_instant);
             }
+            ActionKindData::Trigger(ref mut _data) => {}
             ActionKindData::Axis(ref mut _data) => {}
             ActionKindData::DualAxis(ref mut _data) => {}
             ActionKindData::TripleAxis(ref mut _data) => {}
@@ -62,8 +64,10 @@ impl ActionData {
 pub enum ActionKindData {
     /// The data for a button-like action.
     Button(ButtonData),
+    /// The data for a trigger-like action.
+    Trigger(TriggerData),
     /// The data for an axis-like action.
-    Axis(AxisData),
+    Axis(TriggerData),
     /// The data for a dual-axis-like action.
     DualAxis(DualAxisData),
     /// The data for a triple-axis-like action.
@@ -78,6 +82,10 @@ impl ActionKindData {
             Self::Button(data) => {
                 data.fixed_update_state = data.state;
                 data.state = data.update_state;
+            }
+            Self::Trigger(data) => {
+                data.fixed_update_value = data.value;
+                data.value = data.update_value;
             }
             Self::Axis(data) => {
                 data.fixed_update_value = data.value;
@@ -101,6 +109,10 @@ impl ActionKindData {
             Self::Button(data) => {
                 data.update_state = data.state;
                 data.state = data.fixed_update_state;
+            }
+            Self::Trigger(data) => {
+                data.update_value = data.value;
+                data.value = data.fixed_update_value;
             }
             Self::Axis(data) => {
                 data.update_value = data.value;
@@ -191,6 +203,17 @@ impl ButtonData {
     pub fn just_released(&self) -> bool {
         self.state.just_released()
     }
+}
+
+/// The raw data for an [`ActionState`](super::ActionState) corresponding to a trigger-style input.
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
+pub struct TriggerData {
+    /// How far the axis is currently pressed
+    pub value: f32,
+    /// The `value` of the action in the `Main` schedule
+    pub update_value: f32,
+    /// The `value` of the action in the `FixedMain` schedule
+    pub fixed_update_value: f32,
 }
 
 /// The raw data for an [`ActionState`](super::ActionState) corresponding to a single virtual axis.
