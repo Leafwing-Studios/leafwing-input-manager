@@ -11,7 +11,8 @@ pub trait RegisterTypeTag<'de, T: ?Sized> {
     fn register_typetag(registry: &mut InfallibleMapRegistry<T>);
 }
 
-/// An infallible [`Registry`] that allows multiple registrations of deserializers.
+/// An infallible version of [`MapRegistry`](serde_flexitos::MapRegistry)
+/// that allows multiple registrations of deserializers.
 pub struct InfallibleMapRegistry<O: ?Sized, I = &'static str> {
     deserialize_fns: BTreeMap<I, Option<DeserializeFn<O>>>,
     trait_object_name: &'static str,
