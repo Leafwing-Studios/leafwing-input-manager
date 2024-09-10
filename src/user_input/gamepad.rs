@@ -119,7 +119,6 @@ impl GamepadControlDirection {
     pub const RIGHT_RIGHT: Self = Self::positive(GamepadAxisType::RightStickX);
 }
 
-#[serde_typetag]
 impl UserInput for GamepadControlDirection {
     /// [`GamepadControlDirection`] acts as a virtual button.
     #[inline]
@@ -134,6 +133,7 @@ impl UserInput for GamepadControlDirection {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for GamepadControlDirection {
     /// Checks if there is any recent stick movement along the specified direction.
     #[must_use]
@@ -199,6 +199,7 @@ impl UserInput for GamepadAxis {
     }
 }
 
+#[serde_typetag]
 impl Axislike for GamepadAxis {
     fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
         read_axis_value(input_store, gamepad, self.axis_type)
@@ -279,7 +280,6 @@ impl GamepadControlAxis {
     pub const RIGHT_Z: Self = Self::new(GamepadAxisType::RightZ);
 }
 
-#[serde_typetag]
 impl UserInput for GamepadControlAxis {
     /// [`GamepadControlAxis`] acts as an axis input.
     #[inline]
@@ -297,6 +297,7 @@ impl UserInput for GamepadControlAxis {
     }
 }
 
+#[serde_typetag]
 impl Axislike for GamepadControlAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
@@ -403,7 +404,6 @@ impl GamepadStick {
     };
 }
 
-#[serde_typetag]
 impl UserInput for GamepadStick {
     /// [`GamepadStick`] acts as a dual-axis input.
     #[inline]
@@ -423,6 +423,7 @@ impl UserInput for GamepadStick {
     }
 }
 
+#[serde_typetag]
 impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[must_use]
@@ -534,6 +535,7 @@ impl UserInput for GamepadButton {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for GamepadButton {
     /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
     fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
@@ -560,7 +562,6 @@ impl Buttonlike for GamepadButton {
 }
 
 // Built-in support for Bevy's GamepadButtonType.
-#[serde_typetag]
 impl UserInput for GamepadButtonType {
     /// [`GamepadButtonType`] acts as a button.
     #[inline]
@@ -576,6 +577,7 @@ impl UserInput for GamepadButtonType {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for GamepadButtonType {
     /// Checks if the specified button is currently pressed down.
     #[must_use]
@@ -700,7 +702,6 @@ impl GamepadVirtualAxis {
     pub const ACTION_PAD_Y: Self = Self::new(GamepadButtonType::South, GamepadButtonType::North);
 }
 
-#[serde_typetag]
 impl UserInput for GamepadVirtualAxis {
     /// [`GamepadVirtualAxis`] acts as an axis input.
     #[inline]
@@ -715,6 +716,7 @@ impl UserInput for GamepadVirtualAxis {
     }
 }
 
+#[serde_typetag]
 impl Axislike for GamepadVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
@@ -868,7 +870,6 @@ impl GamepadVirtualDPad {
     );
 }
 
-#[serde_typetag]
 impl UserInput for GamepadVirtualDPad {
     /// [`GamepadVirtualDPad`] acts as a dual-axis input.
     #[inline]
@@ -888,6 +889,7 @@ impl UserInput for GamepadVirtualDPad {
     }
 }
 
+#[serde_typetag]
 impl DualAxislike for GamepadVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]

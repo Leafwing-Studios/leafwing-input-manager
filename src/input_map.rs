@@ -957,24 +957,17 @@ mod tests {
     use crate as leafwing_input_manager;
     use crate::prelude::*;
 
-    #[derive(
-        Actionlike,
-        Serialize,
-        Deserialize,
-        Clone,
-        Copy,
-        PartialEq,
-        Eq,
-        PartialOrd,
-        Ord,
-        Hash,
-        Debug,
-        Reflect,
-    )]
+    #[derive(Actionlike, Serialize, Deserialize, Clone, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
         Run,
         Jump,
         Hide,
+        #[actionlike(Axis)]
+        Axis,
+        #[actionlike(DualAxis)]
+        DualAxis,
+        #[actionlike(Axis)]
+        TripleAxis,
     }
 
     #[test]
@@ -1116,5 +1109,56 @@ mod tests {
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);
+    }
+
+    #[cfg(feature = "keyboard")]
+    #[test]
+    fn input_map_serde() {
+        use bevy::prelude::{App, KeyCode};
+        use serde_test::{assert_tokens, Token};
+
+        let mut app = App::new();
+
+        // Add the plugin to register input deserializers
+        app.add_plugins(InputManagerPlugin::<Action>::default());
+
+        let input_map = InputMap::new([(Action::Hide, KeyCode::ControlLeft)]);
+        assert_tokens(
+            &input_map,
+            &[
+                Token::Struct {
+                    name: "InputMap",
+                    len: 5,
+                },
+                Token::Str("buttonlike_map"),
+                Token::Map { len: Some(1) },
+                Token::UnitVariant {
+                    name: "Action",
+                    variant: "Hide",
+                },
+                Token::Seq { len: Some(1) },
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("KeyCode"),
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "ControlLeft",
+                },
+                Token::MapEnd,
+                Token::SeqEnd,
+                Token::MapEnd,
+                Token::Str("axislike_map"),
+                Token::Map { len: Some(0) },
+                Token::MapEnd,
+                Token::Str("dual_axislike_map"),
+                Token::Map { len: Some(0) },
+                Token::MapEnd,
+                Token::Str("triple_axislike_map"),
+                Token::Map { len: Some(0) },
+                Token::MapEnd,
+                Token::Str("associated_gamepad"),
+                Token::None,
+                Token::StructEnd,
+            ],
+        );
     }
 }

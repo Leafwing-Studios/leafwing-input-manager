@@ -111,48 +111,7 @@ mod trait_serde;
 pub mod updating;
 
 /// A trait for defining the behavior expected from different user input sources.
-///
-/// Implementers of this trait should provide methods for accessing and processing user input data.
-///
-/// # Examples
-///
-/// ```rust
-/// use std::hash::{Hash, Hasher};
-/// use bevy::prelude::*;
-/// use bevy::math::{Vec2, FloatOrd};
-/// use serde::{Deserialize, Serialize};
-/// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::axislike::{DualAxisType};
-/// use leafwing_input_manager::clashing_inputs::BasicInputs;
-///
-/// #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
-/// pub struct MouseScrollAlwaysFiveOnYAxis;
-///
-/// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[serde_typetag]
-/// impl UserInput for MouseScrollAlwaysFiveOnYAxis {
-///     fn kind(&self) -> InputControlKind {
-///         // Returns the kind of input this represents.
-///         //
-///         // In this case, it represents an axial input.
-///         InputControlKind::Axis
-///     }
-///
-///     fn decompose(&self) -> BasicInputs {
-///         // Gets the most basic form of this input for clashing input detection.
-///         //
-///         // This input is not buttonlike, so it uses `None`.
-///         BasicInputs::None
-///     }
-/// }
-///
-/// // Remember to register your input - it will ensure everything works smoothly!
-/// let mut app = App::new();
-/// app.register_user_input::<MouseScrollAlwaysFiveOnYAxis>();
-/// ```
-pub trait UserInput:
-    Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
-{
+pub trait UserInput: Send + Sync + Debug {
     /// Defines the kind of behavior that the input should be.
     fn kind(&self) -> InputControlKind;
 
@@ -167,7 +126,9 @@ pub trait UserInput:
 }
 
 /// A trait used for buttonlike user inputs, which can be pressed or released.
-pub trait Buttonlike: UserInput {
+pub trait Buttonlike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Checks if the input is currently active.
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool;
 
@@ -216,7 +177,9 @@ pub trait Buttonlike: UserInput {
 }
 
 /// A trait used for axis-like user inputs, which provide a continuous value.
-pub trait Axislike: UserInput {
+pub trait Axislike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Gets the current value of the input as an `f32`.
     fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32;
 
@@ -241,7 +204,9 @@ pub trait Axislike: UserInput {
 }
 
 /// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
-pub trait DualAxislike: UserInput {
+pub trait DualAxislike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Gets the values of this input along the X and Y axes (if applicable).
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2;
 
@@ -266,7 +231,9 @@ pub trait DualAxislike: UserInput {
 }
 
 /// A trait used for triple-axis-like user inputs, which provide separate X, Y, and Z values.
-pub trait TripleAxislike: UserInput {
+pub trait TripleAxislike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Gets the values of this input along the X, Y, and Z axes (if applicable).
     fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3;
 

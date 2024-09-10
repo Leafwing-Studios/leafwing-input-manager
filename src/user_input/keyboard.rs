@@ -19,7 +19,6 @@ use super::updating::{CentralInputStore, UpdatableInput};
 use super::{Axislike, Buttonlike, DualAxislike};
 
 // Built-in support for Bevy's KeyCode
-#[serde_typetag]
 impl UserInput for KeyCode {
     /// [`KeyCode`] acts as a button.
     #[inline]
@@ -52,6 +51,7 @@ impl UpdatableInput for KeyCode {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for KeyCode {
     /// Checks if the specified key is currently pressed down.
     #[must_use]
@@ -150,7 +150,6 @@ impl ModifierKey {
     }
 }
 
-#[serde_typetag]
 impl UserInput for ModifierKey {
     /// [`ModifierKey`] acts as a button.
     #[inline]
@@ -165,6 +164,7 @@ impl UserInput for ModifierKey {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for ModifierKey {
     /// Checks if the specified modifier key is currently pressed down.
     #[must_use]
@@ -320,7 +320,6 @@ impl KeyboardVirtualAxis {
     };
 }
 
-#[serde_typetag]
 impl UserInput for KeyboardVirtualAxis {
     /// [`KeyboardVirtualAxis`] acts as a virtual axis input.
     #[inline]
@@ -335,6 +334,7 @@ impl UserInput for KeyboardVirtualAxis {
     }
 }
 
+#[serde_typetag]
 impl Axislike for KeyboardVirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
@@ -498,7 +498,6 @@ impl KeyboardVirtualDPad {
     };
 }
 
-#[serde_typetag]
 impl UserInput for KeyboardVirtualDPad {
     /// [`KeyboardVirtualDPad`] acts as a virtual dual-axis input.
     #[inline]
@@ -518,6 +517,7 @@ impl UserInput for KeyboardVirtualDPad {
     }
 }
 
+#[serde_typetag]
 impl DualAxislike for KeyboardVirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
@@ -626,7 +626,6 @@ impl KeyboardVirtualDPad3D {
     }
 }
 
-#[serde_typetag]
 impl UserInput for KeyboardVirtualDPad3D {
     /// [`KeyboardVirtualDPad3D`] acts as a virtual triple-axis input.
     #[inline]
@@ -648,6 +647,7 @@ impl UserInput for KeyboardVirtualDPad3D {
     }
 }
 
+#[serde_typetag]
 impl TripleAxislike for KeyboardVirtualDPad3D {
     /// Retrieves the current X, Y, and Z values of this D-pad.
     #[must_use]
