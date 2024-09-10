@@ -406,19 +406,19 @@ impl<A: Actionlike> InputMap<A> {
             self.clear_gamepad();
         }
 
-        for (other_action, other_inputs) in other.buttonlike_map.iter() {
+        for (other_action, other_inputs) in other.iter_buttonlike() {
             for other_input in other_inputs.iter().cloned() {
                 insert_unique(&mut self.buttonlike_map, other_action.clone(), other_input);
             }
         }
 
-        for (other_action, other_inputs) in other.axislike_map.iter() {
+        for (other_action, other_inputs) in other.iter_axislike() {
             for other_input in other_inputs.iter().cloned() {
                 insert_unique(&mut self.axislike_map, other_action.clone(), other_input);
             }
         }
 
-        for (other_action, other_inputs) in other.dual_axislike_map.iter() {
+        for (other_action, other_inputs) in other.iter_dual_axislike() {
             for other_input in other_inputs.iter().cloned() {
                 insert_unique(
                     &mut self.dual_axislike_map,
@@ -428,7 +428,7 @@ impl<A: Actionlike> InputMap<A> {
             }
         }
 
-        for (other_action, other_inputs) in other.triple_axislike_map.iter() {
+        for (other_action, other_inputs) in other.iter_triple_axislike() {
             for other_input in other_inputs.iter().cloned() {
                 insert_unique(
                     &mut self.triple_axislike_map,
