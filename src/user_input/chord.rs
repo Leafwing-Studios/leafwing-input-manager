@@ -104,7 +104,6 @@ impl ButtonlikeChord {
     }
 }
 
-#[serde_typetag]
 impl UserInput for ButtonlikeChord {
     /// [`ButtonlikeChord`] acts as a virtual button.
     #[inline]
@@ -126,6 +125,7 @@ impl UserInput for ButtonlikeChord {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
@@ -193,7 +193,6 @@ impl AxislikeChord {
     }
 }
 
-#[serde_typetag]
 impl UserInput for AxislikeChord {
     /// [`AxislikeChord`] acts as a virtual axis.
     #[inline]
@@ -208,6 +207,7 @@ impl UserInput for AxislikeChord {
     }
 }
 
+#[serde_typetag]
 impl Axislike for AxislikeChord {
     fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
         if self.button.pressed(input_store, gamepad) {
@@ -248,7 +248,6 @@ impl DualAxislikeChord {
     }
 }
 
-#[serde_typetag]
 impl UserInput for DualAxislikeChord {
     /// [`DualAxislikeChord`] acts as a virtual dual-axis.
     #[inline]
@@ -263,6 +262,7 @@ impl UserInput for DualAxislikeChord {
     }
 }
 
+#[serde_typetag]
 impl DualAxislike for DualAxislikeChord {
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
         if self.button.pressed(input_store, gamepad) {
@@ -309,7 +309,6 @@ impl TripleAxislikeChord {
     }
 }
 
-#[serde_typetag]
 impl UserInput for TripleAxislikeChord {
     /// [`TripleAxislikeChord`] acts as a virtual triple-axis.
     #[inline]
@@ -324,6 +323,7 @@ impl UserInput for TripleAxislikeChord {
     }
 }
 
+#[serde_typetag]
 impl TripleAxislike for TripleAxislikeChord {
     fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3 {
         if self.button.pressed(input_store, gamepad) {

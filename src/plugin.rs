@@ -201,33 +201,33 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         #[cfg(feature = "mouse")]
         app.register_type::<AccumulatedMouseMovement>()
             .register_type::<AccumulatedMouseScroll>()
-            .register_user_input::<MouseMoveDirection>()
-            .register_user_input::<MouseMoveAxis>()
-            .register_user_input::<MouseMove>()
-            .register_user_input::<MouseScrollDirection>()
-            .register_user_input::<MouseScrollAxis>()
-            .register_user_input::<MouseScroll>();
+            .register_buttonlike_input::<MouseMoveDirection>()
+            .register_axislike_input::<MouseMoveAxis>()
+            .register_dual_axislike_input::<MouseMove>()
+            .register_buttonlike_input::<MouseScrollDirection>()
+            .register_axislike_input::<MouseScrollAxis>()
+            .register_dual_axislike_input::<MouseScroll>();
 
         #[cfg(feature = "keyboard")]
-        app.register_user_input::<KeyCode>()
-            .register_user_input::<ModifierKey>()
-            .register_user_input::<KeyboardVirtualAxis>()
-            .register_user_input::<KeyboardVirtualDPad>()
-            .register_user_input::<KeyboardVirtualDPad3D>();
+        app.register_buttonlike_input::<KeyCode>()
+            .register_buttonlike_input::<ModifierKey>()
+            .register_axislike_input::<KeyboardVirtualAxis>()
+            .register_dual_axislike_input::<KeyboardVirtualDPad>()
+            .register_triple_axislike_input::<KeyboardVirtualDPad3D>();
 
         #[cfg(feature = "gamepad")]
-        app.register_user_input::<GamepadControlDirection>()
-            .register_user_input::<GamepadControlAxis>()
-            .register_user_input::<GamepadStick>()
-            .register_user_input::<GamepadButtonType>()
-            .register_user_input::<GamepadVirtualAxis>()
-            .register_user_input::<GamepadVirtualDPad>();
+        app.register_buttonlike_input::<GamepadControlDirection>()
+            .register_axislike_input::<GamepadControlAxis>()
+            .register_dual_axislike_input::<GamepadStick>()
+            .register_buttonlike_input::<GamepadButtonType>()
+            .register_axislike_input::<GamepadVirtualAxis>()
+            .register_dual_axislike_input::<GamepadVirtualDPad>();
 
         // Chords
-        app.register_user_input::<ButtonlikeChord>()
-            .register_user_input::<AxislikeChord>()
-            .register_user_input::<DualAxislikeChord>()
-            .register_user_input::<TripleAxislikeChord>();
+        app.register_buttonlike_input::<ButtonlikeChord>()
+            .register_axislike_input::<AxislikeChord>()
+            .register_dual_axislike_input::<DualAxislikeChord>()
+            .register_triple_axislike_input::<TripleAxislikeChord>();
 
         // General-purpose reflection
         app.register_type::<ActionState<A>>()

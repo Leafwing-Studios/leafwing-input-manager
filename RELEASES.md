@@ -31,6 +31,7 @@
 
 ### Bugs (0.15.1)
 
+- fixed the broken deserialization of inputs and `InputMap`s
 - `InputMap::get_pressed` and siblings now check if the action kind is buttonlike before checking if they are pressed or released, avoiding a debug-mode panic
 - `InputMap::merge` is now compatible with all input kinds, previously limited to buttons
 

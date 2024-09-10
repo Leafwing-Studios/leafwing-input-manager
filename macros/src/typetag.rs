@@ -38,7 +38,7 @@ pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> syn::Result<TokenStream>
 
         impl<'de, #generics_params> #crate_path::typetag::RegisterTypeTag<'de, dyn #trait_path> for #self_ty #where_clause {
             fn register_typetag(
-                registry: &mut #crate_path::typetag::MapRegistry<dyn #trait_path>,
+                registry: &mut #crate_path::typetag::InfallibleMapRegistry<dyn #trait_path>,
             ) {
                 #crate_path::typetag::Registry::register(
                     registry,
