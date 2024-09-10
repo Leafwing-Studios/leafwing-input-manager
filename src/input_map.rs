@@ -224,13 +224,17 @@ impl<A: Actionlike> InputMap<A> {
 }
 
 #[inline(always)]
-fn insert_unique<K: Eq + Hash, V: PartialEq>(map: &mut HashMap<K, Vec<V>>, key: K, value: V) {
-    if let Some(list) = map.get_mut(&key) {
+fn insert_unique<K, V>(map: &mut HashMap<K, Vec<V>>, key: &K, value: V)
+where
+    K: Clone + Eq + Hash,
+    V: PartialEq,
+{
+    if let Some(list) = map.get_mut(key) {
         if !list.contains(&value) {
             list.push(value);
         }
     } else {
-        map.insert(key, vec![value]);
+        map.insert(key.clone(), vec![value]);
     }
 }
 
@@ -261,7 +265,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.buttonlike_map, action, Box::new(button));
+        insert_unique(&mut self.buttonlike_map, &action, Box::new(button));
         self
     }
 
@@ -290,7 +294,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.axislike_map, action, Box::new(axis));
+        insert_unique(&mut self.axislike_map, &action, Box::new(axis));
         self
     }
 
@@ -319,7 +323,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.dual_axislike_map, action, Box::new(dual_axis));
+        insert_unique(&mut self.dual_axislike_map, &action, Box::new(dual_axis));
         self
     }
 
@@ -348,7 +352,8 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.triple_axislike_map, action, Box::new(triple_axis));
+        let boxed = Box::new(triple_axis);
+        insert_unique(&mut self.triple_axislike_map, &action, boxed);
         self
     }
 
@@ -408,33 +413,25 @@ impl<A: Actionlike> InputMap<A> {
 
         for (other_action, other_inputs) in other.iter_buttonlike() {
             for other_input in other_inputs.iter().cloned() {
-                insert_unique(&mut self.buttonlike_map, other_action.clone(), other_input);
+                insert_unique(&mut self.buttonlike_map, other_action, other_input);
             }
         }
 
         for (other_action, other_inputs) in other.iter_axislike() {
             for other_input in other_inputs.iter().cloned() {
-                insert_unique(&mut self.axislike_map, other_action.clone(), other_input);
+                insert_unique(&mut self.axislike_map, other_action, other_input);
             }
         }
 
         for (other_action, other_inputs) in other.iter_dual_axislike() {
             for other_input in other_inputs.iter().cloned() {
-                insert_unique(
-                    &mut self.dual_axislike_map,
-                    other_action.clone(),
-                    other_input,
-                );
+                insert_unique(&mut self.dual_axislike_map, other_action, other_input);
             }
         }
 
         for (other_action, other_inputs) in other.iter_triple_axislike() {
             for other_input in other_inputs.iter().cloned() {
-                insert_unique(
-                    &mut self.triple_axislike_map,
-                    other_action.clone(),
-                    other_input,
-                );
+                insert_unique(&mut self.triple_axislike_map, other_action, other_input);
             }
         }
 
