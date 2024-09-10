@@ -1,6 +1,7 @@
 //! This module contains [`InputMap`] and its supporting methods and impls.
 
 use std::fmt::Debug;
+use std::hash::Hash;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
@@ -222,26 +223,19 @@ impl<A: Actionlike> InputMap<A> {
     }
 }
 
+#[inline(always)]
+fn insert_unique<K: Eq + Hash, V: PartialEq>(map: &mut HashMap<K, Vec<V>>, key: K, value: V) {
+    if let Some(list) = map.get_mut(&key) {
+        if !list.contains(&value) {
+            list.push(value);
+        }
+    } else {
+        map.insert(key, vec![value]);
+    }
+}
+
 // Insertion
 impl<A: Actionlike> InputMap<A> {
-    /// Inserts a binding between an `action` and a specific boxed dyn [`Buttonlike`].
-    /// Multiple inputs can be bound to the same action.
-    ///
-    /// This method ensures idempotence, meaning that adding the same input
-    /// for the same action multiple times will only result in a single binding being created.
-    #[inline(always)]
-    fn insert_boxed(&mut self, action: A, button: Box<dyn Buttonlike>) -> &mut Self {
-        if let Some(bindings) = self.buttonlike_map.get_mut(&action) {
-            if !bindings.contains(&button) {
-                bindings.push(button);
-            }
-        } else {
-            self.buttonlike_map.insert(action, vec![button]);
-        }
-
-        self
-    }
-
     /// Inserts a binding between an `action` and a specific [`Buttonlike`] `input`.
     /// Multiple inputs can be bound to the same action.
     ///
@@ -267,7 +261,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        self.insert_boxed(action, Box::new(button));
+        insert_unique(&mut self.buttonlike_map, action, Box::new(button));
         self
     }
 
@@ -296,14 +290,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        let axis = Box::new(axis) as Box<dyn Axislike>;
-        if let Some(bindings) = self.axislike_map.get_mut(&action) {
-            if !bindings.contains(&axis) {
-                bindings.push(axis);
-            }
-        } else {
-            self.axislike_map.insert(action, vec![axis]);
-        }
+        insert_unique(&mut self.axislike_map, action, Box::new(axis));
         self
     }
 
@@ -332,14 +319,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        let dual_axis = Box::new(dual_axis) as Box<dyn DualAxislike>;
-        if let Some(bindings) = self.dual_axislike_map.get_mut(&action) {
-            if !bindings.contains(&dual_axis) {
-                bindings.push(dual_axis);
-            }
-        } else {
-            self.dual_axislike_map.insert(action, vec![dual_axis]);
-        }
+        insert_unique(&mut self.dual_axislike_map, action, Box::new(dual_axis));
         self
     }
 
@@ -368,14 +348,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        let triple_axis = Box::new(triple_axis) as Box<dyn TripleAxislike>;
-        if let Some(bindings) = self.triple_axislike_map.get_mut(&action) {
-            if !bindings.contains(&triple_axis) {
-                bindings.push(triple_axis);
-            }
-        } else {
-            self.triple_axislike_map.insert(action, vec![triple_axis]);
-        }
+        insert_unique(&mut self.triple_axislike_map, action, Box::new(triple_axis));
         self
     }
 
@@ -435,7 +408,33 @@ impl<A: Actionlike> InputMap<A> {
 
         for (other_action, other_inputs) in other.buttonlike_map.iter() {
             for other_input in other_inputs.iter().cloned() {
-                self.insert_boxed(other_action.clone(), other_input);
+                insert_unique(&mut self.buttonlike_map, other_action.clone(), other_input);
+            }
+        }
+
+        for (other_action, other_inputs) in other.axislike_map.iter() {
+            for other_input in other_inputs.iter().cloned() {
+                insert_unique(&mut self.axislike_map, other_action.clone(), other_input);
+            }
+        }
+
+        for (other_action, other_inputs) in other.dual_axislike_map.iter() {
+            for other_input in other_inputs.iter().cloned() {
+                insert_unique(
+                    &mut self.dual_axislike_map,
+                    other_action.clone(),
+                    other_input,
+                );
+            }
+        }
+
+        for (other_action, other_inputs) in other.triple_axislike_map.iter() {
+            for other_input in other_inputs.iter().cloned() {
+                insert_unique(
+                    &mut self.triple_axislike_map,
+                    other_action.clone(),
+                    other_input,
+                );
             }
         }
 
