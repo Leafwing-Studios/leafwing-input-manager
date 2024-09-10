@@ -9,7 +9,7 @@
   - added `TripleAxislikeChord` that groups a `Buttonlike` and a `TripleAxislike` together.
   - added related variants such as:
     - `InputControlType::TripleAxis`
-    - `ActionDiff::TripleAxisChanged` 
+    - `ActionDiff::TripleAxisChanged`
 
 ### Usability (0.15.1)
 
@@ -32,6 +32,7 @@
 ### Bugs (0.15.1)
 
 - `InputMap::get_pressed` and siblings now check if the action kind is buttonlike before checking if they are pressed or released, avoiding a debug-mode panic
+- `InputMap::merge` is now compatible with all input kinds, previously limited to buttons
 
 ## Version 0.15.0
 
