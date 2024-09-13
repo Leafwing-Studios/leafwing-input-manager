@@ -300,7 +300,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
     /// only passing positive values that greater than `positive_min` on both axes
-    /// and then normalizing non-excluded values into the "live zone" range `[positive_min, 1.0]`.
+    /// and then normalizing them into the "live zone" range `[positive_min, 1.0]`.
     ///
     /// # Requirements
     ///
@@ -316,7 +316,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
     /// only passing negative values that less than `negative_max` on both axes.
-    /// and then normalizing non-excluded values into the "live zone" range `[-1.0, negative_max]`.
+    /// and then normalizing them into the "live zone" range `[-1.0, negative_max]`.
     ///
     /// # Requirements
     ///
