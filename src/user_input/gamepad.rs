@@ -107,7 +107,15 @@ impl GamepadControlDirection {
         }
     }
 
-    /// Sets the `threshold` value. Must be non-negative.
+    /// Sets the `threshold` value.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
     #[inline]
     pub fn threshold(mut self, threshold: f32) -> Self {
         assert!(threshold >= 0.0);

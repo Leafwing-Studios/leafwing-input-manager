@@ -26,7 +26,15 @@ impl AxisDirection {
     }
 
     /// Checks if the given `value` represents an active input in this direction,
-    /// considering the specified `threshold` (Must be non-negative).
+    /// considering the specified `threshold`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
     #[must_use]
     #[inline]
     pub fn is_active(&self, value: f32, threshold: f32) -> bool {
@@ -154,7 +162,15 @@ impl DualAxisDirection {
     }
 
     /// Checks if the given `value` represents an active input in this direction,
-    /// considering the specified `threshold` (Must be non-negative).
+    /// considering the specified `threshold`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
     #[must_use]
     #[inline]
     pub fn is_active(&self, value: Vec2, threshold: f32) -> bool {
