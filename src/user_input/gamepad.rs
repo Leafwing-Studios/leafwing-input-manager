@@ -1,14 +1,7 @@
 //! Gamepad inputs
 
-use crate as leafwing_input_manager;
-use crate::axislike::AxisDirection;
-use crate::clashing_inputs::BasicInputs;
-use crate::input_processing::{
-    AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
-    WithDualAxisProcessingPipelineExt,
-};
-use crate::user_input::UserInput;
-use crate::InputControlKind;
+use std::hash::{Hash, Hasher};
+
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::input::{Axis, ButtonInput};
 use bevy::math::FloatOrd;
@@ -18,7 +11,16 @@ use bevy::prelude::{
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
-use std::hash::{Hash, Hasher};
+
+use crate as leafwing_input_manager;
+use crate::axislike::AxisDirection;
+use crate::clashing_inputs::BasicInputs;
+use crate::input_processing::{
+    AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
+    WithDualAxisProcessingPipelineExt,
+};
+use crate::user_input::UserInput;
+use crate::InputControlKind;
 
 use super::updating::{CentralInputStore, UpdatableInput};
 use super::{Axislike, Buttonlike, DualAxislike};
