@@ -26,10 +26,11 @@ impl AxisDirection {
     }
 
     /// Checks if the given `value` represents an active input in this direction,
-    /// considering the specified `threshold`.
+    /// considering the specified `threshold` (Must be non-negative).
     #[must_use]
     #[inline]
     pub fn is_active(&self, value: f32, threshold: f32) -> bool {
+        assert!(threshold >= 0.0);
         match self {
             Self::Negative => value < -threshold,
             Self::Positive => value > threshold,
@@ -153,7 +154,7 @@ impl DualAxisDirection {
     }
 
     /// Checks if the given `value` represents an active input in this direction,
-    /// considering the specified `threshold`.
+    /// considering the specified `threshold` (Must be non-negative).
     #[must_use]
     #[inline]
     pub fn is_active(&self, value: Vec2, threshold: f32) -> bool {

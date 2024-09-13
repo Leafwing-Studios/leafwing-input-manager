@@ -82,6 +82,7 @@ pub struct GamepadControlDirection {
     pub direction: AxisDirection,
 
     /// The threshold value for the direction to be considered pressed.
+    /// Must be non-negative.
     pub threshold: f32,
 }
 
@@ -106,9 +107,10 @@ impl GamepadControlDirection {
         }
     }
 
-    /// Sets the `threshold` value.
+    /// Sets the `threshold` value. Must be non-negative.
     #[inline]
     pub const fn threshold(mut self, threshold: f32) -> Self {
+        assert!(threshold >= 0.0);
         self.threshold = threshold;
         self
     }

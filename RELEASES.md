@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.16.0 (Unreleased)
+
+### Usability (0.16.0)
+
+- added `threshold` value for `GamepadControlDirection`, `MouseMoveDirection`, and `MouseScrollDirection` to be considered pressed.
+
 ## Version 0.15.1
 
 ### Enhancements (0.15.1)
@@ -24,10 +30,6 @@
 #### ActionState
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
-
-#### Inputs
-
-- added `threshold` value for `GamepadControlDirection`, `MouseMoveDirection`, and `MouseScrollDirection` to be considered pressed.
 
 #### ActionDiffEvent
 
