@@ -185,6 +185,10 @@ pub trait WithAxisProcessingPipelineExt: Sized {
         self.with_processor(AxisDeadZone::symmetric(threshold))
     }
 
+    fn negative_only(self, threshold: f32) -> Self {
+        self.with_processor(AxisDeadZone::negative_only())
+    }
+
     /// Appends an [`AxisExclusion`] processor as the next processing step,
     /// ignoring values within the dead zone range `[negative_max, positive_min]` on the axis,
     /// treating them as zeros.
