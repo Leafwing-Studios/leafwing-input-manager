@@ -46,10 +46,10 @@ use crate::input_processing::single_axis::*;
 #[must_use]
 pub struct DualAxisBounds {
     /// The [`AxisBounds`] for the X-axis inputs.
-    pub(crate) bounds_x: AxisBounds,
+    pub bounds_x: AxisBounds,
 
     /// The [`AxisBounds`] for the Y-axis inputs.
-    pub(crate) bounds_y: AxisBounds,
+    pub bounds_y: AxisBounds,
 }
 
 impl DualAxisBounds {
@@ -400,10 +400,10 @@ impl From<AxisBounds> for DualAxisProcessor {
 #[must_use]
 pub struct DualAxisExclusion {
     /// The [`AxisExclusion`] for the X-axis inputs.
-    pub(crate) exclusion_x: AxisExclusion,
+    pub exclusion_x: AxisExclusion,
 
     /// The [`AxisExclusion`] for the Y-axis inputs.
-    pub(crate) exclusion_y: AxisExclusion,
+    pub exclusion_y: AxisExclusion,
 }
 
 impl DualAxisExclusion {
@@ -544,6 +544,142 @@ impl DualAxisExclusion {
     pub fn symmetric_only_y(threshold: f32) -> Self {
         Self {
             exclusion_y: AxisExclusion::symmetric(threshold),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes positive values that greater than `positive_min` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive(x_positive_min: f32, y_positive_min: f32) -> Self {
+        Self {
+            exclusion_x: AxisExclusion::only_positive(x_positive_min),
+            exclusion_y: AxisExclusion::only_positive(y_positive_min),
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes positive values that greater than `positive_min` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive_all(positive_min: f32) -> Self {
+        Self {
+            exclusion_x: AxisExclusion::only_positive(positive_min),
+            exclusion_y: AxisExclusion::only_positive(positive_min),
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes positive X values that greater than `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive_x(positive_min: f32) -> Self {
+        Self {
+            exclusion_x: AxisExclusion::only_positive(positive_min),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes positive Y values that greater than `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive_y(positive_min: f32) -> Self {
+        Self {
+            exclusion_y: AxisExclusion::only_positive(positive_min),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes negative values that less than `negative_max` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative(x_negative_max: f32, y_negative_max: f32) -> Self {
+        Self {
+            exclusion_x: AxisExclusion::only_negative(x_negative_max),
+            exclusion_y: AxisExclusion::only_negative(y_negative_max),
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes negative values that less than `negative_max` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative_all(negative_max: f32) -> Self {
+        Self {
+            exclusion_x: AxisExclusion::only_negative(negative_max),
+            exclusion_y: AxisExclusion::only_negative(negative_max),
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes negative X values that less than `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative_x(negative_max: f32) -> Self {
+        Self {
+            exclusion_x: AxisExclusion::only_negative(negative_max),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisExclusion`] that only passes negative Y values that less than `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative_y(negative_max: f32) -> Self {
+        Self {
+            exclusion_y: AxisExclusion::only_negative(negative_max),
             ..Self::ZERO
         }
     }
@@ -703,10 +839,10 @@ impl From<AxisExclusion> for DualAxisProcessor {
 #[must_use]
 pub struct DualAxisDeadZone {
     /// The [`AxisDeadZone`] for the X-axis inputs.
-    pub(crate) deadzone_x: AxisDeadZone,
+    pub deadzone_x: AxisDeadZone,
 
     /// The [`AxisDeadZone`] for the Y-axis inputs.
-    pub(crate) deadzone_y: AxisDeadZone,
+    pub deadzone_y: AxisDeadZone,
 }
 
 impl DualAxisDeadZone {
@@ -847,6 +983,142 @@ impl DualAxisDeadZone {
     pub fn symmetric_only_y(threshold: f32) -> Self {
         Self {
             deadzone_y: AxisDeadZone::symmetric(threshold),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only passes positive values that greater than `positive_min` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive(x_positive_min: f32, y_positive_min: f32) -> Self {
+        Self {
+            deadzone_x: AxisDeadZone::only_positive(x_positive_min),
+            deadzone_y: AxisDeadZone::only_positive(y_positive_min),
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only passes positive values that greater than `positive_min` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive_all(positive_min: f32) -> Self {
+        Self {
+            deadzone_x: AxisDeadZone::only_positive(positive_min),
+            deadzone_y: AxisDeadZone::only_positive(positive_min),
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only excludes X values that less than or equal to `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive_x(positive_min: f32) -> Self {
+        Self {
+            deadzone_x: AxisDeadZone::only_positive(positive_min),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only excludes Y values that less than or equal to `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive_y(positive_min: f32) -> Self {
+        Self {
+            deadzone_y: AxisDeadZone::only_positive(positive_min),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only passes negative values that less than `negative_max` on each axis.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` on each axis.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative(x_negative_max: f32, y_negative_max: f32) -> Self {
+        Self {
+            deadzone_x: AxisDeadZone::only_negative(x_negative_max),
+            deadzone_y: AxisDeadZone::only_negative(y_negative_max),
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only passes negative values that less than `negative_max` on both axes.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative_all(negative_max: f32) -> Self {
+        Self {
+            deadzone_x: AxisDeadZone::only_negative(negative_max),
+            deadzone_y: AxisDeadZone::only_negative(negative_max),
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only excludes X values that greater than or equal to `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative_x(negative_max: f32) -> Self {
+        Self {
+            deadzone_x: AxisDeadZone::only_negative(negative_max),
+            ..Self::ZERO
+        }
+    }
+
+    /// Creates a [`DualAxisDeadZone`] that only excludes Y values that greater than or equal to `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative_y(negative_max: f32) -> Self {
+        Self {
+            deadzone_y: AxisDeadZone::only_negative(negative_max),
             ..Self::ZERO
         }
     }

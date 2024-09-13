@@ -30,10 +30,10 @@ use super::AxisProcessor;
 #[must_use]
 pub struct AxisBounds {
     /// The minimum value of valid inputs.
-    pub(crate) min: f32,
+    pub min: f32,
 
     /// The maximum value of valid inputs.
-    pub(crate) max: f32,
+    pub max: f32,
 }
 
 impl AxisBounds {
@@ -189,10 +189,10 @@ impl Hash for AxisBounds {
 #[must_use]
 pub struct AxisExclusion {
     /// The maximum negative value treated as zero.
-    pub(crate) negative_max: f32,
+    pub negative_max: f32,
 
     /// The minimum positive value treated as zero.
-    pub(crate) positive_min: f32,
+    pub positive_min: f32,
 }
 
 impl AxisExclusion {
@@ -234,6 +234,34 @@ impl AxisExclusion {
     #[inline]
     pub fn symmetric(threshold: f32) -> Self {
         Self::new(-threshold, threshold)
+    }
+
+    /// Creates an [`AxisExclusion`] that only passes positive values that greater than `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive(positive_min: f32) -> Self {
+        Self::new(f32::NEG_INFINITY, positive_min)
+    }
+
+    /// Creates an [`AxisExclusion`] that only passes negative values that less than `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative(negative_max: f32) -> Self {
+        Self::new(negative_max, f32::INFINITY)
     }
 
     /// Returns the minimum and maximum bounds.
@@ -420,7 +448,35 @@ impl AxisDeadZone {
     #[doc(alias = "magnitude")]
     #[inline]
     pub fn symmetric(threshold: f32) -> Self {
-        AxisDeadZone::new(-threshold, threshold)
+        Self::new(-threshold, threshold)
+    }
+
+    /// Creates an [`AxisDeadZone`] that only passes positive values that greater than `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive(positive_min: f32) -> Self {
+        Self::new(f32::NEG_INFINITY, positive_min)
+    }
+
+    /// Creates an [`AxisDeadZone`] that only passes negative values that less than `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative(negative_max: f32) -> Self {
+        Self::new(negative_max, f32::INFINITY)
     }
 
     /// Returns the [`AxisExclusion`] used by this deadzone.
