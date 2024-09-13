@@ -315,7 +315,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// only passing negative values that less than `negative_max` on both axes.
+    /// only passing negative values that less than `negative_max` on both axes
     /// and then normalizing them into the "live zone" range `[-1.0, negative_max]`.
     ///
     /// # Requirements
@@ -331,7 +331,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[negative_max, positive_min]` on the X-axis,
+    /// excluding values within the range `[negative_max, positive_min]` on the X-axis,
     /// treating them as zeros, then normalizing non-excluded X values into the "live zone",
     /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
     /// after dead zone exclusion.
@@ -349,7 +349,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[-threshold, threshold]` on the X-axis,
+    /// excluding values within the range `[-threshold, threshold]` on the X-axis,
     /// treating them as zeros, then normalizing non-excluded X values into the "live zone",
     /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
     /// after dead zone exclusion.
@@ -367,7 +367,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// only excluding X values that less than or equal to `positive_min`
+    /// only excluding X values that less than or equal to `positive_min`, treating them as zeros
     /// and then normalizing non-excluded X values into the "live zone" range `[positive_min, 1.0]`.
     ///
     /// # Requirements
@@ -383,7 +383,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// only excluding X values that greater than or equal to `negative_max`
+    /// only excluding X values that greater than or equal to `negative_max`, treating them as zeros
     /// and then normalizing non-excluded X values into the "live zone" range `[-1.0, negative_max]`.
     ///
     /// # Requirements
@@ -399,7 +399,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[negative_max, positive_min]` on the Y-axis,
+    /// excluding values within the range `[negative_max, positive_min]` on the Y-axis,
     /// treating them as zeros, then normalizing non-excluded Y values into the "live zone",
     /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
     /// after dead zone exclusion.
@@ -417,7 +417,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the deadzone range `[-threshold, threshold]` on the Y-axis,
+    /// excluding values within the range `[-threshold, threshold]` on the Y-axis,
     /// treating them as zeros, then normalizing non-excluded Y values into the "live zone",
     /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
     /// after dead zone exclusion.
@@ -435,8 +435,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// only excluding Y values that less than or equal to `positive_min`
-    /// and then normalizing non-excluded Y values into the "live zone" range `[positive_min, 1.0]`.
+    /// only excluding Y values that less than or equal to `positive_min`, treating them as zeros
+    /// and then normalizing non-excluded Y values into the range `[positive_min, 1.0]`.
     ///
     /// # Requirements
     ///
@@ -451,8 +451,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// only excluding Y values that greater than or equal to `negative_max`
-    /// and then normalizing non-excluded Y values into the "live zone" range `[-1.0, negative_max]`.
+    /// only excluding Y values that greater than or equal to `negative_max`, treating them as zeros
+    /// and then normalizing non-excluded Y values into the range `[-1.0, negative_max]`.
     ///
     /// # Requirements
     ///
@@ -485,7 +485,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// ignoring values within the dead zone range `[negative_max, positive_min]` on both axes,
+    /// ignoring values within the range `[negative_max, positive_min]` on both axes,
     /// treating them as zeros.
     ///
     /// # Requirements
@@ -501,7 +501,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// ignoring values within the dead zone range `[-threshold, threshold]` on both axes,
+    /// ignoring values within the range `[-threshold, threshold]` on both axes,
     /// treating them as zeros.
     ///
     /// # Requirements
@@ -517,7 +517,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only passing positive values that greater than `positive_min` on both axes.
+    /// only passing positive values that greater than `positive_min` on both axes,
+    /// treating them as zeros.
     ///
     /// # Requirements
     ///
@@ -532,7 +533,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only passing negative values that less than `negative_max` on both axes.
+    /// only passing negative values that less than `negative_max` on both axes,
+    /// treating them as zeros.
     ///
     /// # Requirements
     ///
@@ -547,7 +549,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[negative_max, positive_min]` on the X-axis,
+    /// only ignoring values within the range `[negative_max, positive_min]` on the X-axis,
     /// treating them as zeros.
     ///
     /// # Requirements
@@ -563,7 +565,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[-threshold, threshold]` on the X-axis,
+    /// only ignoring values within the range `[-threshold, threshold]` on the X-axis,
     /// treating them as zeros.
     ///
     /// # Requirements
@@ -579,7 +581,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only excluding X values that less than or equal to `positive_min`.
+    /// only excluding X values that less than or equal to `positive_min`,
+    /// treating them as zeros.
     ///
     /// # Requirements
     ///
@@ -594,7 +597,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only excluding X values that greater than or equal to `negative_max`.
+    /// only excluding X values that greater than or equal to `negative_max`,
+    /// treating them as zeros.
     ///
     /// # Requirements
     ///
@@ -609,7 +613,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[negative_max, positive_min]` on the Y-axis,
+    /// only ignoring values within the range `[negative_max, positive_min]` on the Y-axis,
     /// treating them as zeros.
     ///
     /// # Requirements
@@ -625,7 +629,7 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[-threshold, threshold]` on the Y-axis,
+    /// only ignoring values within the range `[-threshold, threshold]` on the Y-axis,
     /// treating them as zeros.
     ///
     /// # Requirements
@@ -641,7 +645,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only excluding Y values that less than or equal to `positive_min`.
+    /// only excluding Y values that less than or equal to `positive_min`,
+    /// treating them as zeros.
     ///
     /// # Requirements
     ///
@@ -656,7 +661,8 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only excluding Y values that greater than or equal to `negative_max`.
+    /// only excluding Y values that greater than or equal to `negative_max`,
+    /// treating them as zeros.
     ///
     /// # Requirements
     ///

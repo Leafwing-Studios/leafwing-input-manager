@@ -441,8 +441,7 @@ impl DualAxisExclusion {
     /// Panics if the requirements aren't met.
     #[inline]
     pub fn all(negative_max: f32, positive_min: f32) -> Self {
-        let range = (negative_max, positive_min);
-        Self::new(range, range)
+        AxisExclusion::new(negative_max, positive_min).extend_dual()
     }
 
     /// Creates a [`DualAxisExclusion`] that only ignores X values within the range `[negative_max, positive_min]`.
@@ -509,7 +508,7 @@ impl DualAxisExclusion {
     #[doc(alias = "magnitude_all")]
     #[inline]
     pub fn symmetric_all(threshold: f32) -> Self {
-        Self::symmetric(threshold, threshold)
+        AxisExclusion::symmetric(threshold).extend_dual()
     }
 
     /// Creates a [`DualAxisExclusion`] that only ignores X values within the range `[-threshold, threshold]`.
@@ -576,10 +575,7 @@ impl DualAxisExclusion {
     /// Panics if the requirements aren't met.
     #[inline]
     pub fn only_positive_all(positive_min: f32) -> Self {
-        Self {
-            exclusion_x: AxisExclusion::only_positive(positive_min),
-            exclusion_y: AxisExclusion::only_positive(positive_min),
-        }
+        AxisExclusion::only_positive(positive_min).extend_dual()
     }
 
     /// Creates a [`DualAxisExclusion`] that only passes positive X values that greater than `positive_min`.
@@ -644,10 +640,7 @@ impl DualAxisExclusion {
     /// Panics if the requirements aren't met.
     #[inline]
     pub fn only_negative_all(negative_max: f32) -> Self {
-        Self {
-            exclusion_x: AxisExclusion::only_negative(negative_max),
-            exclusion_y: AxisExclusion::only_negative(negative_max),
-        }
+        AxisExclusion::only_negative(negative_max).extend_dual()
     }
 
     /// Creates a [`DualAxisExclusion`] that only passes negative X values that less than `negative_max`.
@@ -880,8 +873,7 @@ impl DualAxisDeadZone {
     /// Panics if the requirements aren't met.
     #[inline]
     pub fn all(negative_max: f32, positive_min: f32) -> Self {
-        let range = (negative_max, positive_min);
-        Self::new(range, range)
+        AxisDeadZone::new(negative_max, positive_min).extend_dual()
     }
 
     /// Creates a [`DualAxisDeadZone`] that only excludes X values within the range `[negative_max, positive_min]`.
@@ -948,7 +940,7 @@ impl DualAxisDeadZone {
     #[doc(alias = "magnitude_all")]
     #[inline]
     pub fn symmetric_all(threshold: f32) -> Self {
-        Self::symmetric(threshold, threshold)
+        AxisDeadZone::symmetric(threshold).extend_dual()
     }
 
     /// Creates a [`DualAxisDeadZone`] that only excludes X values within the range `[-threshold, threshold]`.
@@ -1015,10 +1007,7 @@ impl DualAxisDeadZone {
     /// Panics if the requirements aren't met.
     #[inline]
     pub fn only_positive_all(positive_min: f32) -> Self {
-        Self {
-            deadzone_x: AxisDeadZone::only_positive(positive_min),
-            deadzone_y: AxisDeadZone::only_positive(positive_min),
-        }
+        AxisDeadZone::only_positive(positive_min).extend_dual()
     }
 
     /// Creates a [`DualAxisDeadZone`] that only excludes X values that less than or equal to `positive_min`.
@@ -1083,10 +1072,7 @@ impl DualAxisDeadZone {
     /// Panics if the requirements aren't met.
     #[inline]
     pub fn only_negative_all(negative_max: f32) -> Self {
-        Self {
-            deadzone_x: AxisDeadZone::only_negative(negative_max),
-            deadzone_y: AxisDeadZone::only_negative(negative_max),
-        }
+        AxisDeadZone::only_negative(negative_max).extend_dual()
     }
 
     /// Creates a [`DualAxisDeadZone`] that only excludes X values that greater than or equal to `negative_max`.

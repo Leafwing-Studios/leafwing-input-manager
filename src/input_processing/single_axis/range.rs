@@ -30,10 +30,10 @@ use super::AxisProcessor;
 #[must_use]
 pub struct AxisBounds {
     /// The minimum value of valid inputs.
-    pub min: f32,
+    pub(crate) min: f32,
 
     /// The maximum value of valid inputs.
-    pub max: f32,
+    pub(crate) max: f32,
 }
 
 impl AxisBounds {
@@ -189,10 +189,10 @@ impl Hash for AxisBounds {
 #[must_use]
 pub struct AxisExclusion {
     /// The maximum negative value treated as zero.
-    pub negative_max: f32,
+    pub(crate) negative_max: f32,
 
     /// The minimum positive value treated as zero.
-    pub positive_min: f32,
+    pub(crate) positive_min: f32,
 }
 
 impl AxisExclusion {
@@ -415,8 +415,8 @@ impl AxisDeadZone {
         livezone_upper_recip: 1.0,
     };
 
-    /// Creates an [`AxisDeadZone`] that excludes input values
-    /// within the given deadzone `[negative_max, positive_min]`.
+    /// Creates an [`AxisDeadZone`] that excludes input values within the range `[negative_max, positive_min]`
+    /// and then normalizes non-excluded input values into the valid range `[-1.0, 1.0]`.
     ///
     /// # Requirements
     ///
@@ -435,7 +435,7 @@ impl AxisDeadZone {
         }
     }
 
-    /// Creates an [`AxisDeadZone`] that excludes input values below a `threshold` magnitude
+    /// Creates an [`AxisDeadZone`] that excludes input values within the range `[-threshold, threshold]`
     /// and then normalizes non-excluded input values into the valid range `[-1.0, 1.0]`.
     ///
     /// # Requirements
@@ -451,7 +451,8 @@ impl AxisDeadZone {
         Self::new(-threshold, threshold)
     }
 
-    /// Creates an [`AxisDeadZone`] that only passes positive values that greater than `positive_min`.
+    /// Creates an [`AxisDeadZone`] that only passes positive values that greater than `positive_min`
+    /// and then normalizes them into the valid range `[-1.0, 1.0]`.
     ///
     /// # Requirements
     ///
@@ -465,7 +466,8 @@ impl AxisDeadZone {
         Self::new(f32::NEG_INFINITY, positive_min)
     }
 
-    /// Creates an [`AxisDeadZone`] that only passes negative values that less than `negative_max`.
+    /// Creates an [`AxisDeadZone`] that only passes negative values that less than `negative_max`
+    /// and then normalizes them into the valid range `[-1.0, 1.0]`.
     ///
     /// # Requirements
     ///

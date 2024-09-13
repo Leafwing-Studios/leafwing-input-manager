@@ -27,7 +27,7 @@
 
 #### Input Processors
 
-- allowed creating `AxisBounds`, `AxisExclusion`, `DualAxisBounds`, `DualAxisExclusion`, and `DualAxisDeadZone` from their struct definitions directly.
+- allowed creating `DualAxisBounds`, `DualAxisExclusion`, and `DualAxisDeadZone` from their struct definitions directly.
 - added `at_least` and `at_most` methods for those implementing `WithAxisProcessorExt` trait.
 - added `at_least`, `at_least_only_x`, `at_least_only_y`, `at_most`, `at_most_only_x`, and `at_most_only_y` methods for those implementing `WithDualAxisProcessorExt` trait.
 - added `only_positive` and `only_negative` builders for `AxisDeadZone` and `AxisExclusion`.
