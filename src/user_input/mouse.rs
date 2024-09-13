@@ -126,7 +126,7 @@ pub struct MouseMoveDirection {
 impl MouseMoveDirection {
     /// Sets the `threshold` value. Must be non-negative.
     #[inline]
-    pub const fn threshold(mut self, threshold: f32) -> Self {
+    pub fn threshold(mut self, threshold: f32) -> Self {
         assert!(threshold >= 0.0);
         self.threshold = threshold;
         self
@@ -478,7 +478,7 @@ pub struct MouseScrollDirection {
 impl MouseScrollDirection {
     /// Sets the `threshold` value. Must be non-negative.
     #[inline]
-    pub const fn threshold(mut self, threshold: f32) -> Self {
+    pub fn threshold(mut self, threshold: f32) -> Self {
         assert!(threshold >= 0.0);
         self.threshold = threshold;
         self
