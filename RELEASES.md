@@ -25,6 +25,10 @@
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 
+#### Inputs
+
+- added `threshold` value for `GamepadControlDirection`, `MouseMoveDirection`, and `MouseScrollDirection` to be considered pressed.
+
 #### ActionDiffEvent
 
 - Implement `MapEntities`, which lets networking crates translate owner entity IDs between ECS worlds
