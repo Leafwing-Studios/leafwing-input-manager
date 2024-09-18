@@ -34,12 +34,12 @@ pub trait RegisterUserInput {
     /// Registers the specified [`Buttonlike`].
     fn register_buttonlike_input<'de, T>(&mut self) -> &mut Self
     where
-        T: RegisterTypeTag<'de, dyn Buttonlike> + GetTypeRegistration + TypePath;
+        T: RegisterTypeTag<'de, dyn Buttonlike> + GetTypeRegistration;
 
     /// Registers the specified [`Axislike`].
     fn register_axislike_input<'de, T>(&mut self) -> &mut Self
     where
-        T: RegisterTypeTag<'de, dyn Axislike> + GetTypeRegistration + TypePath;
+        T: RegisterTypeTag<'de, dyn Axislike> + GetTypeRegistration;
 
     /// Registers the specified [`DualAxislike`].
     fn register_dual_axislike_input<'de, T>(&mut self) -> &mut Self

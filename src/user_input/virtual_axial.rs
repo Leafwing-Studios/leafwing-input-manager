@@ -250,7 +250,7 @@ impl WithAxisProcessingPipelineExt for VirtualAxis {
     }
 }
 
-/// A virtual dual-axis control constructed from four [`GamepadButtonType`]s.
+/// A virtual dual-axis control constructed from four [`Buttonlike`]s.
 /// Each button represents a specific direction (up, down, left, right),
 /// functioning similarly to a directional pad (D-pad) on both X and Y axes,
 /// and offering intermediate diagonals by means of two-button combinations.
