@@ -3,7 +3,6 @@
 use std::sync::RwLock;
 
 use bevy::app::App;
-use bevy::prelude::TypePath;
 use bevy::reflect::GetTypeRegistration;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
