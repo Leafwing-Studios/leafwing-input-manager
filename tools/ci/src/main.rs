@@ -23,6 +23,8 @@ const CLIPPY_FLAGS: [&str; 3] = [
     "-Dwarnings",
 ];
 
+const COMPILE_TARGETS: &[&str] = &["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"];
+
 fn main() {
     // When run locally, results may differ from actual CI runs triggered by
     // .github/workflows/ci.yml
@@ -71,7 +73,7 @@ fn main() {
         std::env::set_var("RUSTDOCFLAGS", "-D warnings");
         cmd!(
             sh,
-            "cargo doc --workspace --all-features --no-deps --document-private-items"
+            "cargo doc --workspace --all-features --features bevy/wayland --no-deps --document-private-items"
         )
         .run()
         .expect("Please fix doc warnings in output above.");
@@ -84,6 +86,13 @@ fn main() {
     // and convert them into '--features=<FEATURE_A,FEATURE_B,...>'
     let lib_features_options = (1..lib_features.len())
         .flat_map(|combination_length| lib_features.iter().combinations(combination_length))
+        .map(|mut combination| {
+            // bevy_egui 0.29 uses the bevy winit feature, which requires a renderer.
+            if combination.contains(&&"egui") {
+                combination.push(&"bevy/wayland");
+            }
+            combination
+        })
         .map(|combination| String::from("--features=") + &combination.iter().join(","));
 
     let default_feature_options = ["--no-default-features", "--all-features"];
@@ -94,13 +103,19 @@ fn main() {
         .collect::<Vec<_>>();
 
     for feature_option in all_features_options {
+        let extra = if feature_option == "--all-features" {
+            &vec!["--features", "bevy/wayland"]
+        } else {
+            &vec![]
+        };
+
         if what_to_run.contains(Check::CLIPPY) {
             // See if clippy has any complaints.
             // --all-targets was removed because Emergence currently has no special targets;
             // please add them back as necessary
             cmd!(
                 sh,
-                "cargo clippy --workspace {feature_option} -- {CLIPPY_FLAGS...}"
+                "cargo clippy --workspace {feature_option} {extra...} -- {CLIPPY_FLAGS...}"
             )
             .run()
             .expect("Please fix clippy errors in output above.");
@@ -110,7 +125,7 @@ fn main() {
             // Run tests (except doc tests and without building examples)
             cmd!(
                 sh,
-                "cargo test --workspace {feature_option} --lib --bins --tests --benches"
+                "cargo test --workspace {feature_option} {extra...} --lib --bins --tests --benches"
             )
             .run()
             .expect("Please fix failing tests in output above.");
@@ -125,15 +140,23 @@ fn main() {
             }
 
             // Run doc tests
-            cmd!(sh, "cargo test --workspace {feature_option} --doc")
-                .run()
-                .expect("Please fix failing doc-tests in output above.");
+            cmd!(
+                sh,
+                "cargo test --workspace {feature_option} {extra...} --doc"
+            )
+            .run()
+            .expect("Please fix failing doc-tests in output above.");
         }
 
         if what_to_run.contains(Check::COMPILE_CHECK) {
-            cmd!(sh, "cargo check --workspace {feature_option}")
+            for target in COMPILE_TARGETS {
+                cmd!(
+                    sh,
+                    "cargo check --workspace {feature_option} {extra...} --target {target}"
+                )
                 .run()
                 .expect("Please fix compiler errors in above output.");
+            }
         }
     }
 }
