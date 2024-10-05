@@ -28,7 +28,7 @@ pub use action_data::*;
 /// Actions can be disabled in four different ways, with increasing granularity:
 ///
 /// 1. By disabling updates to all actions using a run condition on [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
-/// 2. By disabling updates to all actions of type `A` using a run condition on [`tick_action_state::<A>`](crate::systems::tick_action_state).
+/// 2. By disabling updates to all actions of type `A` using a run condition on [`TickActionStateSystem::<A>`](crate::plugin::TickActionStateSystem).
 /// 3. By setting a specific action state to disabled using [`ActionState::disable`].
 /// 4. By disabling a specific action using [`ActionState::disable_action`].
 ///
