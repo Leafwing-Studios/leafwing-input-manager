@@ -1,13 +1,14 @@
 # Release Notes
 
-## Version 0.16.0
+## Version 0.16.0 (Unreleased)
 
-### Usability (0.16)
+### Usability (0.16.0)
 
 - made virtual axial controls more flexible, accepting any kind of `Buttonlike`
   - removed `KeyboardVirtualAxis` and `GamepadVirtualAxis` in favor of `VirtualAxis`
   - removed `KeyboardVirtualDPad` and `GamepadVirtualDPad` in favor of `VirtualDPad`
   - removed `KeyboardVirtualDPad3D` in favor of `VirtualDPad3D`
+- added `threshold` value for `GamepadControlDirection`, `MouseMoveDirection`, and `MouseScrollDirection` to be considered pressed.
 
 ## Version 0.15.1
 
@@ -33,6 +34,16 @@
 #### ActionState
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
+
+#### Input Processors
+
+- allowed creating `DualAxisBounds`, `DualAxisExclusion`, and `DualAxisDeadZone` from their struct definitions directly.
+- added `at_least` and `at_most` methods for those implementing `WithAxisProcessorExt` trait.
+- added `at_least`, `at_least_only_x`, `at_least_only_y`, `at_most`, `at_most_only_x`, and `at_most_only_y` methods for those implementing `WithDualAxisProcessorExt` trait.
+- added `only_positive` and `only_negative` builders for `AxisDeadZone` and `AxisExclusion`.
+  - added corresponding extension methods for those implementing `WithAxisProcessorExt` trait.
+- added `only_positive`, `only_positive_x`, `only_positive_y`, `only_negative`, `only_negative_x`, and `only_negative_y` builders for `DualAxisDeadZone` and `DualAxisExclusion`.
+  - added corresponding extension methods for those implementing `WithDualAxisProcessorExt` trait.
 
 #### ActionDiffEvent
 

@@ -1,7 +1,10 @@
 //! Gamepad inputs
 
+use std::hash::{Hash, Hasher};
+
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::input::{Axis, ButtonInput};
+use bevy::math::FloatOrd;
 use bevy::prelude::{
     Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
     Reflect, Res, ResMut, Vec2, World,
@@ -69,29 +72,55 @@ fn read_axis_value(
 /// app.update();
 /// assert!(app.read_pressed(input));
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct GamepadControlDirection {
     /// The axis that this input tracks.
     pub axis: GamepadAxisType,
 
     /// The direction of the axis to monitor (positive or negative).
-    pub side: AxisDirection,
+    pub direction: AxisDirection,
+
+    /// The threshold value for the direction to be considered pressed.
+    /// Must be non-negative.
+    pub threshold: f32,
 }
 
 impl GamepadControlDirection {
     /// Creates a [`GamepadControlDirection`] triggered by a negative value on the specified `axis`.
     #[inline]
     pub const fn negative(axis: GamepadAxisType) -> Self {
-        let side = AxisDirection::Negative;
-        Self { axis, side }
+        Self {
+            axis,
+            direction: AxisDirection::Negative,
+            threshold: 0.0,
+        }
     }
 
     /// Creates a [`GamepadControlDirection`] triggered by a positive value on the specified `axis`.
     #[inline]
     pub const fn positive(axis: GamepadAxisType) -> Self {
-        let side = AxisDirection::Positive;
-        Self { axis, side }
+        Self {
+            axis,
+            direction: AxisDirection::Positive,
+            threshold: 0.0,
+        }
+    }
+
+    /// Sets the `threshold` value.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
+    #[inline]
+    pub fn threshold(mut self, threshold: f32) -> Self {
+        assert!(threshold >= 0.0);
+        self.threshold = threshold;
+        self
     }
 
     /// "Up" on the left analog stick (positive Y-axis movement).
@@ -129,7 +158,7 @@ impl UserInput for GamepadControlDirection {
     /// [`GamepadControlDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Simple(Box::new(*self))
+        BasicInputs::Simple(Box::new((*self).threshold(0.0)))
     }
 }
 
@@ -140,7 +169,7 @@ impl Buttonlike for GamepadControlDirection {
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
         let value = read_axis_value(input_store, gamepad, self.axis);
-        self.side.is_active(value)
+        self.direction.is_active(value, self.threshold)
     }
 
     /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided [`Gamepad`].
@@ -150,7 +179,7 @@ impl Buttonlike for GamepadControlDirection {
         let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
             gamepad,
             axis_type: self.axis,
-            value: self.side.full_active_value(),
+            value: self.direction.full_active_value(),
         });
         world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
@@ -165,6 +194,16 @@ impl Buttonlike for GamepadControlDirection {
             value: 0.0,
         });
         world.resource_mut::<Events<GamepadEvent>>().send(event);
+    }
+}
+
+impl Eq for GamepadControlDirection {}
+
+impl Hash for GamepadControlDirection {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.axis.hash(state);
+        self.direction.hash(state);
+        FloatOrd(self.threshold).hash(state);
     }
 }
 

@@ -25,13 +25,23 @@ impl AxisDirection {
         }
     }
 
-    /// Checks if the given `value` represents an active input in this direction.
+    /// Checks if the given `value` represents an active input in this direction,
+    /// considering the specified `threshold`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
     #[must_use]
     #[inline]
-    pub fn is_active(&self, value: f32) -> bool {
+    pub fn is_active(&self, value: f32, threshold: f32) -> bool {
+        assert!(threshold >= 0.0);
         match self {
-            Self::Negative => value < 0.0,
-            Self::Positive => value > 0.0,
+            Self::Negative => value < -threshold,
+            Self::Positive => value > threshold,
         }
     }
 }
@@ -151,11 +161,20 @@ impl DualAxisDirection {
         }
     }
 
-    /// Checks if the given `value` represents an active input in this direction.
+    /// Checks if the given `value` represents an active input in this direction,
+    /// considering the specified `threshold`.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
     #[must_use]
     #[inline]
-    pub fn is_active(&self, value: Vec2) -> bool {
-        let component_along_axis = self.axis().get_value(value);
-        self.axis_direction().is_active(component_along_axis)
+    pub fn is_active(&self, value: Vec2, threshold: f32) -> bool {
+        let axis_value = self.axis().get_value(value);
+        self.axis_direction().is_active(axis_value, threshold)
     }
 }
