@@ -109,7 +109,10 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 // Main schedule
                 app.add_systems(
                     PreUpdate,
-                    (tick_action_state::<A>, clear_central_input_store)
+                    (
+                        tick_action_state::<A>.in_set(TickActionStateSystem::<A>::new()),
+                        clear_central_input_store,
+                    )
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
@@ -182,6 +185,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 app.add_systems(
                     FixedPostUpdate,
                     tick_action_state::<A>
+                        .in_set(TickActionStateSystem::<A>::new())
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
@@ -193,7 +197,9 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             Machine::Server => {
                 app.add_systems(
                     PreUpdate,
-                    tick_action_state::<A>.in_set(InputManagerSystem::Tick),
+                    tick_action_state::<A>
+                        .in_set(TickActionStateSystem::<A>::new())
+                        .in_set(InputManagerSystem::Tick),
                 );
             }
         };
@@ -282,6 +288,27 @@ pub enum InputManagerSystem {
     ///
     /// Must run after [`InputManagerSystem::Update`] or the action state will be overridden
     ManualControl,
+}
+
+#[derive(SystemSet, Clone, Hash, Debug, PartialEq, Eq)]
+/// [`SystemSet`] for the [`tick_action_state`](crate::systems::tick_action_state) system, is a child set of [`InputManagerSystem::Tick`].
+pub struct TickActionStateSystem<A: Actionlike> {
+    phantom_data: PhantomData<A>,
+}
+
+impl<A: Actionlike> TickActionStateSystem<A> {
+    /// Creates a [`TickActionStateSystem`] set instance.
+    pub fn new() -> Self {
+        Self {
+            phantom_data: PhantomData,
+        }
+    }
+}
+
+impl<A: Actionlike> Default for TickActionStateSystem<A> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// A plugin to handle accumulating mouse movement and scroll events.
