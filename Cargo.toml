@@ -48,7 +48,7 @@ leafwing_input_manager_macros = { path = "macros", version = "0.15.1" }
 bevy = { version = "0.14.0-rc.3", default-features = false, features = [
   "serialize",
 ] }
-bevy_egui = { version = "0.28", optional = true }
+bevy_egui = { version = "0.29", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
