@@ -216,18 +216,18 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
 
         #[cfg(feature = "keyboard")]
         app.register_buttonlike_input::<KeyCode>()
-            .register_buttonlike_input::<ModifierKey>()
-            .register_axislike_input::<KeyboardVirtualAxis>()
-            .register_dual_axislike_input::<KeyboardVirtualDPad>()
-            .register_triple_axislike_input::<KeyboardVirtualDPad3D>();
+            .register_buttonlike_input::<ModifierKey>();
 
         #[cfg(feature = "gamepad")]
         app.register_buttonlike_input::<GamepadControlDirection>()
             .register_axislike_input::<GamepadControlAxis>()
             .register_dual_axislike_input::<GamepadStick>()
-            .register_buttonlike_input::<GamepadButtonType>()
-            .register_axislike_input::<GamepadVirtualAxis>()
-            .register_dual_axislike_input::<GamepadVirtualDPad>();
+            .register_buttonlike_input::<GamepadButtonType>();
+
+        // Virtual Axes
+        app.register_axislike_input::<VirtualAxis>()
+            .register_dual_axislike_input::<VirtualDPad>()
+            .register_triple_axislike_input::<VirtualDPad3D>();
 
         // Chords
         app.register_buttonlike_input::<ButtonlikeChord>()

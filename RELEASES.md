@@ -4,6 +4,10 @@
 
 ### Usability (0.16.0)
 
+- made virtual axial controls more flexible, accepting any kind of `Buttonlike`
+  - removed `KeyboardVirtualAxis` and `GamepadVirtualAxis` in favor of `VirtualAxis`
+  - removed `KeyboardVirtualDPad` and `GamepadVirtualDPad` in favor of `VirtualDPad`
+  - removed `KeyboardVirtualDPad3D` in favor of `VirtualDPad3D`
 - added `threshold` value for `GamepadControlDirection`, `MouseMoveDirection`, and `MouseScrollDirection` to be considered pressed.
 
 ## Version 0.15.1

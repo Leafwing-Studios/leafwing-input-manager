@@ -87,7 +87,7 @@ fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
 ///     (Action::Jump, KeyCode::Space),
 /// ])
 /// // Associate actions with other input types.
-/// .with_dual_axis(Action::Move, KeyboardVirtualDPad::WASD)
+/// .with_dual_axis(Action::Move, VirtualDPad::wasd())
 /// .with_dual_axis(Action::Move, GamepadStick::LEFT)
 /// // Associate an action with multiple inputs at once.
 /// .with_one_to_many(Action::Jump, [KeyCode::KeyJ, KeyCode::KeyU]);
@@ -966,7 +966,7 @@ mod tests {
         Axis,
         #[actionlike(DualAxis)]
         DualAxis,
-        #[actionlike(Axis)]
+        #[actionlike(TripleAxis)]
         TripleAxis,
     }
 

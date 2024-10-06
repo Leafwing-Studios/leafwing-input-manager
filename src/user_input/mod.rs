@@ -52,23 +52,27 @@
 //! - Track mouse motion with [`MouseMove`], [`MouseMoveAxis`], and [`MouseMoveDirection`].
 //! - Capture mouse wheel events with [`MouseScroll`], [`MouseScrollAxis`], and [`MouseScrollDirection`].
 //!
-//! ### Complex Composition
+//! ### Virtual Axial Controls
 //!
-//! - Combine multiple inputs into a virtual button using [`ButtonlikeChord`].
-//!   - Only active if all its inner inputs are active simultaneously.
-//!   - Combine values from all inner single-axis inputs if available.
-//!   - Retrieve values from the first encountered dual-axis input within the chord.
+//! - [`VirtualAxis`]: Create a virtual axis control from two buttons.
 //!
-//! - Create a virtual axis control:
-//!   - [`GamepadVirtualAxis`] from two [`GamepadButtonType`]s.
-//!   - [`KeyboardVirtualAxis`] from two [`KeyCode`]s.
+//! - [`VirtualDPad`]: Create a virtual dual-axis control from four buttons.
 //!
-//! - Create a virtual directional pad (D-pad) for dual-axis control:
-//!   - [`GamepadVirtualDPad`] from four [`GamepadButtonType`]s.
-//!   - [`KeyboardVirtualDPad`] from four [`KeyCode`]s.
+//! - [`VirtualDPad3D`]: Create a virtual triple-axis control from six buttons.
 //!
-//! - Create a virtual directional pad (D-pad) for triple-axis control:
-//!   - [`KeyboardVirtualDPad3D`] from six [`KeyCode`]s.
+//! ### Chords
+//!
+//! - [`ButtonlikeChord`]: A combined input that groups multiple [`Buttonlike`]s together,
+//!   allowing you to define complex input combinations like hotkeys, shortcuts, and macros.
+//!
+//! - [`AxislikeChord`]: A combined input that groups a [`Buttonlike`] and an [`Axislike`] together,
+//!   allowing you to only read the dual axis data when the button is pressed.
+//!
+//! - [`DualAxislikeChord`]: A combined input that groups a [`Buttonlike`] and a [`DualAxislike`] together,
+//!   allowing you to only read the dual axis data when the button is pressed.
+//!
+//! - [`TripleAxislikeChord`]: A combined input that groups a [`Buttonlike`] and a [`TripleAxislike`] together,
+//!   allowing you to only read the dual axis data when the button is pressed.
 //!
 //! [`GamepadAxisType`]: bevy::prelude::GamepadAxisType
 //! [`GamepadButtonType`]: bevy::prelude::GamepadButtonType
@@ -97,6 +101,7 @@ pub use self::keyboard::*;
 #[cfg(feature = "mouse")]
 pub use self::mouse::*;
 pub use self::trait_serde::RegisterUserInput;
+pub use self::virtual_axial::*;
 
 pub mod chord;
 #[cfg(feature = "gamepad")]
@@ -109,6 +114,7 @@ pub mod testing_utils;
 mod trait_reflection;
 mod trait_serde;
 pub mod updating;
+pub mod virtual_axial;
 
 /// A trait for defining the behavior expected from different user input sources.
 pub trait UserInput: Send + Sync + Debug {
