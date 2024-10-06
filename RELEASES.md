@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.16.0 (Unreleased)
+
+### Usability (0.16.0)
+
+- added `threshold` value for `GamepadControlDirection`, `MouseMoveDirection`, and `MouseScrollDirection` to be considered pressed.
+
 ## Version 0.15.1
 
 ### Enhancements (0.15.1)
