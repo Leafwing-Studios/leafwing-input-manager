@@ -1,6 +1,10 @@
 //! Contains types used to store the state of the actions held in an [`ActionState`](super::ActionState).
 
-use bevy::{math::Vec2, reflect::Reflect, utils::Instant};
+use bevy::{
+    math::{Vec2, Vec3},
+    reflect::Reflect,
+    utils::Instant,
+};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "timing")]
@@ -30,6 +34,9 @@ impl ActionData {
                 InputControlKind::Button => ActionKindData::Button(ButtonData::default()),
                 InputControlKind::Axis => ActionKindData::Axis(AxisData::default()),
                 InputControlKind::DualAxis => ActionKindData::DualAxis(DualAxisData::default()),
+                InputControlKind::TripleAxis => {
+                    ActionKindData::TripleAxis(TripleAxisData::default())
+                }
             },
         }
     }
@@ -45,6 +52,7 @@ impl ActionData {
             }
             ActionKindData::Axis(ref mut _data) => {}
             ActionKindData::DualAxis(ref mut _data) => {}
+            ActionKindData::TripleAxis(ref mut _data) => {}
         }
     }
 }
@@ -58,6 +66,8 @@ pub enum ActionKindData {
     Axis(AxisData),
     /// The data for a dual-axis-like action.
     DualAxis(DualAxisData),
+    /// The data for a triple-axis-like action.
+    TripleAxis(TripleAxisData),
 }
 
 impl ActionKindData {
@@ -77,6 +87,10 @@ impl ActionKindData {
                 data.fixed_update_pair = data.pair;
                 data.pair = data.update_pair;
             }
+            Self::TripleAxis(data) => {
+                data.fixed_update_triple = data.triple;
+                data.triple = data.update_triple;
+            }
         }
     }
 
@@ -95,6 +109,10 @@ impl ActionKindData {
             Self::DualAxis(data) => {
                 data.update_pair = data.pair;
                 data.pair = data.fixed_update_pair;
+            }
+            Self::TripleAxis(data) => {
+                data.update_triple = data.triple;
+                data.triple = data.fixed_update_triple;
             }
         }
     }
@@ -186,13 +204,24 @@ pub struct AxisData {
     pub fixed_update_value: f32,
 }
 
-/// The raw data for an [`ActionState`](super::ActionState)  corresponding to a pair of virtual axes.
+/// The raw data for an [`ActionState`](super::ActionState) corresponding to a pair of virtual axes.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 pub struct DualAxisData {
     /// The XY coordinates of the axis
     pub pair: Vec2,
     /// The `pair` of the action in the `Main` schedule
     pub update_pair: Vec2,
-    /// The `value` of the action in the `FixedMain` schedule
+    /// The `pair` of the action in the `FixedMain` schedule
     pub fixed_update_pair: Vec2,
+}
+
+/// The raw data for an [`ActionState`](super::ActionState) corresponding to a triple of virtual axes.
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
+pub struct TripleAxisData {
+    /// The XYZ coordinates of the axis
+    pub triple: Vec3,
+    /// The `triple` of the action in the `Main` schedule
+    pub update_triple: Vec3,
+    /// The `triple` of the action in the `FixedMain` schedule
+    pub fixed_update_triple: Vec3,
 }

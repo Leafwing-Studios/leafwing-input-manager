@@ -11,7 +11,7 @@ use bevy::{
         event::Event,
         query::QueryFilter,
     },
-    math::Vec2,
+    math::{Vec2, Vec3},
     prelude::{EntityMapper, EventWriter, Query, Res},
     utils::{HashMap, HashSet},
 };
@@ -48,8 +48,15 @@ pub enum ActionDiff<A: Actionlike> {
     DualAxisChanged {
         /// The value of the action
         action: A,
-        /// The new value of the axis
+        /// The new value of the axes
         axis_pair: Vec2,
+    },
+    /// The axis pair of the action changed
+    TripleAxisChanged {
+        /// The value of the action
+        action: A,
+        /// The new value of the axes
+        axis_triple: Vec3,
     },
 }
 
@@ -84,6 +91,7 @@ pub struct SummarizedActionState<A: Actionlike> {
     button_state_map: HashMap<Entity, HashMap<A, bool>>,
     axis_state_map: HashMap<Entity, HashMap<A, f32>>,
     dual_axis_state_map: HashMap<Entity, HashMap<A, Vec2>>,
+    triple_axis_state_map: HashMap<Entity, HashMap<A, Vec3>>,
 }
 
 impl<A: Actionlike> SummarizedActionState<A> {
@@ -95,10 +103,12 @@ impl<A: Actionlike> SummarizedActionState<A> {
         let button_entities = self.button_state_map.keys();
         let axis_entities = self.axis_state_map.keys();
         let dual_axis_entities = self.dual_axis_state_map.keys();
+        let triple_axis_entities = self.triple_axis_state_map.keys();
 
         entities.extend(button_entities);
         entities.extend(axis_entities);
         entities.extend(dual_axis_entities);
+        entities.extend(triple_axis_entities);
 
         entities
     }
@@ -120,11 +130,13 @@ impl<A: Actionlike> SummarizedActionState<A> {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
         let mut dual_axis_state_map = HashMap::default();
+        let mut triple_axis_state_map = HashMap::default();
 
         if let Some(global_action_state) = global_action_state {
             let mut per_entity_button_state = HashMap::default();
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
+            let mut per_entity_triple_axis_state = HashMap::default();
 
             for (action, action_data) in global_action_state.all_action_data() {
                 match &action_data.kind_data {
@@ -137,18 +149,24 @@ impl<A: Actionlike> SummarizedActionState<A> {
                     ActionKindData::DualAxis(dual_axis_data) => {
                         per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
                     }
+                    ActionKindData::TripleAxis(triple_axis_data) => {
+                        per_entity_triple_axis_state
+                            .insert(action.clone(), triple_axis_data.triple);
+                    }
                 }
             }
 
             button_state_map.insert(Entity::PLACEHOLDER, per_entity_button_state);
             axis_state_map.insert(Entity::PLACEHOLDER, per_entity_axis_state);
             dual_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_dual_axis_state);
+            triple_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_triple_axis_state);
         }
 
         for (entity, action_state) in action_state_query.iter() {
             let mut per_entity_button_state = HashMap::default();
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
+            let mut per_entity_triple_axis_state = HashMap::default();
 
             for (action, action_data) in action_state.all_action_data() {
                 match &action_data.kind_data {
@@ -161,18 +179,24 @@ impl<A: Actionlike> SummarizedActionState<A> {
                     ActionKindData::DualAxis(dual_axis_data) => {
                         per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
                     }
+                    ActionKindData::TripleAxis(triple_axis_data) => {
+                        per_entity_triple_axis_state
+                            .insert(action.clone(), triple_axis_data.triple);
+                    }
                 }
             }
 
             button_state_map.insert(entity, per_entity_button_state);
             axis_state_map.insert(entity, per_entity_axis_state);
             dual_axis_state_map.insert(entity, per_entity_dual_axis_state);
+            triple_axis_state_map.insert(entity, per_entity_triple_axis_state);
         }
 
         Self {
             button_state_map,
             axis_state_map,
             dual_axis_state_map,
+            triple_axis_state_map,
         }
     }
 
@@ -189,15 +213,13 @@ impl<A: Actionlike> SummarizedActionState<A> {
         let previous_button = previous_button.unwrap_or_default();
         let current_button = current_button?;
 
-        if previous_button != current_button {
+        (previous_button != current_button).then(|| {
             if current_button {
-                Some(ActionDiff::Pressed { action })
+                ActionDiff::Pressed { action }
             } else {
-                Some(ActionDiff::Released { action })
+                ActionDiff::Released { action }
             }
-        } else {
-            None
-        }
+        })
     }
 
     /// Generates an [`ActionDiff`] for axis data,
@@ -212,14 +234,10 @@ impl<A: Actionlike> SummarizedActionState<A> {
         let previous_axis = previous_axis.unwrap_or_default();
         let current_axis = current_axis?;
 
-        if previous_axis != current_axis {
-            Some(ActionDiff::AxisChanged {
-                action,
-                value: current_axis,
-            })
-        } else {
-            None
-        }
+        (previous_axis != current_axis).then(|| ActionDiff::AxisChanged {
+            action,
+            value: current_axis,
+        })
     }
 
     /// Generates an [`ActionDiff`] for dual axis data,
@@ -232,29 +250,34 @@ impl<A: Actionlike> SummarizedActionState<A> {
         let previous_dual_axis = previous_dual_axis.unwrap_or_default();
         let current_dual_axis = current_dual_axis?;
 
-        if previous_dual_axis != current_dual_axis {
-            Some(ActionDiff::DualAxisChanged {
-                action,
-                axis_pair: current_dual_axis,
-            })
-        } else {
-            None
-        }
+        (previous_dual_axis != current_dual_axis).then(|| ActionDiff::DualAxisChanged {
+            action,
+            axis_pair: current_dual_axis,
+        })
+    }
+
+    /// Generates an [`ActionDiff`] for triple axis data,
+    /// if the triple axis has changed state.
+    pub fn triple_axis_diff(
+        action: A,
+        previous_triple_axis: Option<Vec3>,
+        current_triple_axis: Option<Vec3>,
+    ) -> Option<ActionDiff<A>> {
+        let previous_triple_axis = previous_triple_axis.unwrap_or_default();
+        let current_triple_axis = current_triple_axis?;
+
+        (previous_triple_axis != current_triple_axis).then(|| ActionDiff::TripleAxisChanged {
+            action,
+            axis_triple: current_triple_axis,
+        })
     }
 
     /// Generates all [`ActionDiff`]s for a single entity.
-    pub fn entity_diffs(
-        &self,
-        previous_button_state: Option<&HashMap<A, bool>>,
-        current_button_state: Option<&HashMap<A, bool>>,
-        previous_axis_state: Option<&HashMap<A, f32>>,
-        current_axis_state: Option<&HashMap<A, f32>>,
-        previous_dual_axis_state: Option<&HashMap<A, Vec2>>,
-        current_dual_axis_state: Option<&HashMap<A, Vec2>>,
-    ) -> Vec<ActionDiff<A>> {
+    pub fn entity_diffs(&self, entity: &Entity, previous: &Self) -> Vec<ActionDiff<A>> {
         let mut action_diffs = Vec::new();
 
-        if let Some(current_button_state) = current_button_state {
+        if let Some(current_button_state) = self.button_state_map.get(entity) {
+            let previous_button_state = previous.button_state_map.get(entity);
             for (action, current_button) in current_button_state {
                 let previous_button = previous_button_state
                     .and_then(|previous_button_state| previous_button_state.get(action))
@@ -268,7 +291,8 @@ impl<A: Actionlike> SummarizedActionState<A> {
             }
         }
 
-        if let Some(current_axis_state) = current_axis_state {
+        if let Some(current_axis_state) = self.axis_state_map.get(entity) {
+            let previous_axis_state = previous.axis_state_map.get(entity);
             for (action, current_axis) in current_axis_state {
                 let previous_axis = previous_axis_state
                     .and_then(|previous_axis_state| previous_axis_state.get(action))
@@ -282,7 +306,8 @@ impl<A: Actionlike> SummarizedActionState<A> {
             }
         }
 
-        if let Some(current_dual_axis_state) = current_dual_axis_state {
+        if let Some(current_dual_axis_state) = self.dual_axis_state_map.get(entity) {
+            let previous_dual_axis_state = previous.dual_axis_state_map.get(entity);
             for (action, current_dual_axis) in current_dual_axis_state {
                 let previous_dual_axis = previous_dual_axis_state
                     .and_then(|previous_dual_axis_state| previous_dual_axis_state.get(action))
@@ -298,33 +323,32 @@ impl<A: Actionlike> SummarizedActionState<A> {
             }
         }
 
+        if let Some(current_triple_axis_state) = self.triple_axis_state_map.get(entity) {
+            let previous_triple_axis_state = previous.triple_axis_state_map.get(entity);
+            for (action, current_triple_axis) in current_triple_axis_state {
+                let previous_triple_axis = previous_triple_axis_state
+                    .and_then(|previous_triple_axis_state| previous_triple_axis_state.get(action))
+                    .copied();
+
+                if let Some(diff) = Self::triple_axis_diff(
+                    action.clone(),
+                    previous_triple_axis,
+                    Some(*current_triple_axis),
+                ) {
+                    action_diffs.push(diff);
+                }
+            }
+        }
+
         action_diffs
     }
 
     /// Compares the current frame to the previous frame, generates [`ActionDiff`]s and then sends them as batched [`ActionDiffEvent`]s.
     pub fn send_diffs(&self, previous: &Self, writer: &mut EventWriter<ActionDiffEvent<A>>) {
         for entity in self.all_entities() {
-            let owner = if entity == Entity::PLACEHOLDER {
-                None
-            } else {
-                Some(entity)
-            };
+            let owner = (entity != Entity::PLACEHOLDER).then_some(entity);
 
-            let previous_button_state = previous.button_state_map.get(&entity);
-            let current_button_state = self.button_state_map.get(&entity);
-            let previous_axis_state = previous.axis_state_map.get(&entity);
-            let current_axis_state = self.axis_state_map.get(&entity);
-            let previous_dual_axis_state = previous.dual_axis_state_map.get(&entity);
-            let current_dual_axis_state = self.dual_axis_state_map.get(&entity);
-
-            let action_diffs = self.entity_diffs(
-                previous_button_state,
-                current_button_state,
-                previous_axis_state,
-                current_axis_state,
-                previous_dual_axis_state,
-                current_dual_axis_state,
-            );
+            let action_diffs = self.entity_diffs(&entity, previous);
 
             if !action_diffs.is_empty() {
                 writer.send(ActionDiffEvent {
@@ -343,32 +367,27 @@ impl<A: Actionlike> Default for SummarizedActionState<A> {
             button_state_map: Default::default(),
             axis_state_map: Default::default(),
             dual_axis_state_map: Default::default(),
+            triple_axis_state_map: Default::default(),
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::InputControlKind;
+    use crate as leafwing_input_manager;
 
     use super::*;
     use bevy::{ecs::system::SystemState, prelude::*};
 
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
+    #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
     enum TestAction {
         Button,
+        #[actionlike(Axis)]
         Axis,
+        #[actionlike(DualAxis)]
         DualAxis,
-    }
-
-    impl Actionlike for TestAction {
-        fn input_control_kind(&self) -> InputControlKind {
-            match self {
-                TestAction::Button => InputControlKind::Button,
-                TestAction::Axis => InputControlKind::Axis,
-                TestAction::DualAxis => InputControlKind::DualAxis,
-            }
-        }
+        #[actionlike(TripleAxis)]
+        TripleAxis,
     }
 
     fn test_action_state() -> ActionState<TestAction> {
@@ -376,6 +395,7 @@ mod tests {
         action_state.press(&TestAction::Button);
         action_state.set_value(&TestAction::Axis, 0.3);
         action_state.set_axis_pair(&TestAction::DualAxis, Vec2::new(0.5, 0.7));
+        action_state.set_axis_triple(&TestAction::TripleAxis, Vec3::new(0.5, 0.7, 0.9));
         action_state
     }
 
@@ -386,6 +406,7 @@ mod tests {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
         let mut dual_axis_state_map = HashMap::default();
+        let mut triple_axis_state_map = HashMap::default();
 
         let mut global_button_state = HashMap::default();
         global_button_state.insert(TestAction::Button, true);
@@ -399,10 +420,15 @@ mod tests {
         global_dual_axis_state.insert(TestAction::DualAxis, Vec2::new(0.5, 0.7));
         dual_axis_state_map.insert(entity, global_dual_axis_state);
 
+        let mut global_triple_axis_state = HashMap::default();
+        global_triple_axis_state.insert(TestAction::TripleAxis, Vec3::new(0.5, 0.7, 0.9));
+        triple_axis_state_map.insert(entity, global_triple_axis_state);
+
         SummarizedActionState {
             button_state_map,
             axis_state_map,
             dual_axis_state_map,
+            triple_axis_state_map,
         }
     }
 
@@ -482,6 +508,6 @@ mod tests {
         assert_eq!(action_diff_events.len(), 1);
         let action_diff_event = action_diff_events[0];
         assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 3);
+        assert_eq!(action_diff_event.action_diffs.len(), 4);
     }
 }

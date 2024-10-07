@@ -10,15 +10,10 @@ fn main() {
         .run();
 }
 
-#[derive(Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
+#[derive(Actionlike, Clone, Debug, Copy, PartialEq, Eq, Hash, Reflect)]
+#[actionlike(DualAxis)]
 enum CameraMovement {
     Pan,
-}
-
-impl Actionlike for CameraMovement {
-    fn input_control_kind(&self) -> InputControlKind {
-        InputControlKind::DualAxis
-    }
 }
 
 fn setup(mut commands: Commands) {

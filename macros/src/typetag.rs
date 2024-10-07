@@ -8,13 +8,13 @@ use crate::utils;
 /// Copyright (c) 2019 David Tolnay
 /// available under either of `Apache License, Version 2.0` or `MIT` license
 /// at <https://github.com/dtolnay/typetag>
-pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> TokenStream {
+pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> syn::Result<TokenStream> {
     let Some(trait_) = &input.trait_ else {
         let impl_token = input.impl_token;
         let ty = &input.self_ty;
         let span = quote!(#impl_token, #ty);
         let msg = "expected impl Trait for Type";
-        return Error::new_spanned(span, msg).to_compile_error();
+        return Err(Error::new_spanned(span, msg));
     };
 
     let trait_path = &trait_.1;
@@ -24,24 +24,21 @@ pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> TokenStream {
 
     let self_ty = &input.self_ty;
 
-    let ident = match type_name(self_ty) {
-        Some(name) => quote!(#name),
-        None => {
-            let impl_token = input.impl_token;
-            let span = quote!(#impl_token, #self_ty);
-            let msg = "expected explicit name for Type";
-            return Error::new_spanned(span, msg).to_compile_error();
-        }
+    let Some(ident) = type_name(self_ty) else {
+        let impl_token = input.impl_token;
+        let span = quote!(#impl_token, #self_ty);
+        let msg = "expected explicit name for Type";
+        return Err(Error::new_spanned(span, msg));
     };
 
     let crate_path = utils::crate_path();
 
-    quote! {
+    Ok(quote! {
         #input
 
         impl<'de, #generics_params> #crate_path::typetag::RegisterTypeTag<'de, dyn #trait_path> for #self_ty #where_clause {
             fn register_typetag(
-                registry: &mut #crate_path::typetag::MapRegistry<dyn #trait_path>,
+                registry: &mut #crate_path::typetag::InfallibleMapRegistry<dyn #trait_path>,
             ) {
                 #crate_path::typetag::Registry::register(
                     registry,
@@ -52,7 +49,7 @@ pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> TokenStream {
                 )
             }
         }
-    }
+    })
 }
 
 fn type_name(mut ty: &Type) -> Option<String> {
@@ -62,7 +59,7 @@ fn type_name(mut ty: &Type) -> Option<String> {
                 ty = &group.elem;
             }
             Type::Path(TypePath { qself, path }) if qself.is_none() => {
-                return Some(path.segments.last().unwrap().ident.to_string())
+                return Some(path.segments.last()?.ident.to_string())
             }
             _ => return None,
         }

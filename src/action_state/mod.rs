@@ -10,7 +10,10 @@ use bevy::reflect::Reflect;
 use bevy::utils::Duration;
 use bevy::utils::{HashMap, Instant};
 use bevy::{ecs::component::Component, prelude::ReflectComponent};
-use bevy::{math::Vec2, prelude::ReflectResource};
+use bevy::{
+    math::{Vec2, Vec3},
+    prelude::ReflectResource,
+};
 use serde::{Deserialize, Serialize};
 
 mod action_data;
@@ -25,7 +28,7 @@ pub use action_data::*;
 /// Actions can be disabled in four different ways, with increasing granularity:
 ///
 /// 1. By disabling updates to all actions using a run condition on [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
-/// 2. By disabling updates to all actions of type `A` using a run condition on [`tick_action_state::<A>`](crate::systems::tick_action_state).
+/// 2. By disabling updates to all actions of type `A` using a run condition on [`TickActionStateSystem::<A>`](crate::plugin::TickActionStateSystem).
 /// 3. By setting a specific action state to disabled using [`ActionState::disable`].
 /// 4. By disabling a specific action using [`ActionState::disable_action`].
 ///
@@ -147,6 +150,9 @@ impl<A: Actionlike> ActionState<A> {
                 }
                 UpdatedValue::DualAxis(pair) => {
                     self.set_axis_pair(action, *pair);
+                }
+                UpdatedValue::TripleAxis(triple) => {
+                    self.set_axis_triple(action, *triple);
                 }
             }
         }
@@ -305,6 +311,7 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn button_data_mut_or_default(&mut self, action: &A) -> &mut ButtonData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -328,6 +335,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn axis_data(&self, action: &A) -> Option<&AxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -373,6 +381,7 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn axis_data_mut_or_default(&mut self, action: &A) -> &mut AxisData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -396,12 +405,13 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn dual_axis_data(&self, action: &A) -> Option<&DualAxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
         match self.action_data(action) {
             Some(action_data) => match action_data.kind_data {
-                ActionKindData::DualAxis(ref axis_data) => Some(axis_data),
+                ActionKindData::DualAxis(ref dual_axis_data) => Some(dual_axis_data),
                 _ => None,
             },
             None => None,
@@ -412,15 +422,16 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// # Caution
     ///
-    /// To insert a default [`ButtonData`] if it doesn't exist,
+    /// To insert a default [`DualAxisData`] if it doesn't exist,
     /// use [`dual_axis_data_mut_or_default`](Self::dual_axis_data_mut_or_default) method.
     ///
     /// # Returns
     ///
-    /// - `Some(ButtonData)` if it exists.
+    /// - `Some(DualAxisData)` if it exists.
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn dual_axis_data_mut(&mut self, action: &A) -> Option<&mut DualAxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -433,7 +444,7 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// A mutable reference of the [`ButtonData`] corresponding to the `action` initializing it if needed.
+    /// A mutable reference of the [`DualAxisData`] corresponding to the `action` initializing it if needed.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
     /// this method will create and insert a default [`DualAxisData`] for you,
@@ -443,14 +454,88 @@ impl<A: Actionlike> ActionState<A> {
     /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn dual_axis_data_mut_or_default(&mut self, action: &A) -> &mut DualAxisData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
         let action_data = self.action_data_mut_or_default(action);
         let ActionKindData::DualAxis(ref mut dual_axis_data) = action_data.kind_data else {
-            panic!("{action:?} is not a Dual Axis");
+            panic!("{action:?} is not a DualAxis");
         };
         dual_axis_data
+    }
+
+    /// A reference of the [`TripleAxisData`] corresponding to the `action`.
+    ///
+    /// # Caution
+    ///
+    /// To access the [`TripleAxisData`] regardless of whether the `action` has been triggered,
+    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
+    ///
+    /// # Returns
+    ///
+    /// - `Some(TripleAxisData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    #[track_caller]
+    pub fn triple_axis_data(&self, action: &A) -> Option<&TripleAxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        match self.action_data(action) {
+            Some(action_data) => match action_data.kind_data {
+                ActionKindData::TripleAxis(ref triple_axis_data) => Some(triple_axis_data),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+
+    /// A mutable reference of the [`TripleAxisData`] corresponding to the `action`.
+    ///
+    /// # Caution
+    ///
+    /// To insert a default [`TripleAxisData`] if it doesn't exist,
+    /// use [`triple_axis_data_mut_or_default`](Self::dual_axis_data_mut_or_default) method.
+    ///
+    /// # Returns
+    ///
+    /// - `Some(ButtonData)` if it exists.
+    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
+    #[inline]
+    #[must_use]
+    #[track_caller]
+    pub fn triple_axis_data_mut(&mut self, action: &A) -> Option<&mut TripleAxisData> {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        match self.action_data_mut(action) {
+            Some(action_data) => match &mut action_data.kind_data {
+                ActionKindData::TripleAxis(ref mut triple_axis_data) => Some(triple_axis_data),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+
+    /// A mutable reference of the [`TripleAxisData`] corresponding to the `action` initializing it if needed.
+    ///
+    /// If the `action` has no data yet (because the `action` has not been triggered),
+    /// this method will create and insert a default [`TripleAxisData`] for you,
+    /// avoiding potential errors from unwrapping [`None`].
+    ///
+    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
+    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
+    #[inline]
+    #[must_use]
+    #[track_caller]
+    pub fn triple_axis_data_mut_or_default(&mut self, action: &A) -> &mut TripleAxisData {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        let action_data = self.action_data_mut_or_default(action);
+        let ActionKindData::TripleAxis(ref mut triple_axis_data) = action_data.kind_data else {
+            panic!("{action:?} is not a TripleAxis");
+        };
+        triple_axis_data
     }
 
     /// Get the value associated with the corresponding `action` if present.
@@ -474,6 +559,9 @@ impl<A: Actionlike> ActionState<A> {
     /// This value may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_value`](Self::clamped_value) method instead.
+    #[inline]
+    #[must_use]
+    #[track_caller]
     pub fn value(&self, action: &A) -> f32 {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -488,6 +576,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the value of the `action` to the provided `value`.
+    #[track_caller]
     pub fn set_value(&mut self, action: &A, value: f32) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
@@ -500,14 +589,14 @@ impl<A: Actionlike> ActionState<A> {
     /// # Warning
     ///
     /// This value will be 0. by default,
-    /// even if the action is not a axislike action.
+    /// even if the action is not an axislike action.
     pub fn clamped_value(&self, action: &A) -> f32 {
         self.value(action).clamp(-1., 1.)
     }
 
     /// Get the [`Vec2`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only events that represent dual-axis control provide an [`Vec2`],
+    /// Only events that represent dual-axis control provide a [`Vec2`],
     /// and this will return [`None`] for other events.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
@@ -521,6 +610,8 @@ impl<A: Actionlike> ActionState<A> {
     /// These values may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
     /// typically using the [`clamped_axis_pair`](Self::clamped_axis_pair) method instead.
+    #[must_use]
+    #[track_caller]
     pub fn axis_pair(&self, action: &A) -> Vec2 {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -533,6 +624,7 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the [`Vec2`] of the `action` to the provided `pair`.
+    #[track_caller]
     pub fn set_axis_pair(&mut self, action: &A, pair: Vec2) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::DualAxis);
 
@@ -548,7 +640,56 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a dual-axislike action.
     pub fn clamped_axis_pair(&self, action: &A) -> Vec2 {
         let pair = self.axis_pair(action);
-        Vec2::new(pair.x.clamp(-1.0, 1.0), pair.y.clamp(-1.0, 1.0))
+        pair.clamp(Vec2::NEG_ONE, Vec2::ONE)
+    }
+
+    /// Get the [`Vec3`] from the binding that triggered the corresponding `action`.
+    ///
+    /// Only events that represent triple-axis control provide a [`Vec3`],
+    /// and this will return [`None`] for other events.
+    ///
+    /// If multiple inputs with an axis triple trigger the same game action at the same time, the
+    /// value of each axis triple will be added together.
+    ///
+    /// # Warning
+    ///
+    /// This value will be [`Vec3::ZERO`] by default,
+    /// even if the action is not a triple-axislike action.
+    ///
+    /// These values may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_axis_triple`](Self::clamped_axis_triple) method instead.
+    #[must_use]
+    #[track_caller]
+    pub fn axis_triple(&self, action: &A) -> Vec3 {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        if self.action_disabled(action) {
+            return Vec3::ZERO;
+        }
+
+        let action_data = self.triple_axis_data(action);
+        action_data.map_or(Vec3::ZERO, |action_data| action_data.triple)
+    }
+
+    /// Sets the [`Vec2`] of the `action` to the provided `pair`.
+    #[track_caller]
+    pub fn set_axis_triple(&mut self, action: &A, triple: Vec3) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::TripleAxis);
+
+        let triple_axis_data = self.triple_axis_data_mut_or_default(action);
+        triple_axis_data.triple = triple;
+    }
+
+    /// Get the [`Vec3`] associated with the corresponding `action`, clamped to the cube of values bounded by -1 and 1 on all axes.
+    ///
+    /// # Warning
+    ///
+    /// This value will be [`Vec3::ZERO`] by default,
+    /// even if the action is not a dual-axislike action.
+    pub fn clamped_axis_triple(&self, action: &A) -> Vec3 {
+        let triple = self.axis_triple(action);
+        triple.clamp(Vec3::NEG_ONE, Vec3::ONE)
     }
 
     /// Manually sets the [`ButtonData`] of the corresponding `action`
@@ -588,6 +729,7 @@ impl<A: Actionlike> ActionState<A> {
     /// }
     /// ```
     #[inline]
+    #[track_caller]
     pub fn set_button_data(&mut self, action: A, data: ButtonData) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -600,6 +742,7 @@ impl<A: Actionlike> ActionState<A> {
     /// No initial instant or reasons why the button was pressed will be recorded.
     /// Instead, this is set through [`ActionState::tick()`]
     #[inline]
+    #[track_caller]
     pub fn press(&mut self, action: &A) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -643,12 +786,16 @@ impl<A: Actionlike> ActionState<A> {
             InputControlKind::DualAxis => {
                 self.set_axis_pair(action, Vec2::ZERO);
             }
+            InputControlKind::TripleAxis => {
+                self.set_axis_triple(action, Vec3::ZERO);
+            }
         }
     }
 
     /// Releases all [`Buttonlike`](crate::user_input::Buttonlike) actions,
     /// sets all [`Axislike`](crate::user_input::Axislike) actions to 0,
-    /// and sets all [`DualAxislike`](crate::user_input::DualAxislike) actions to [`Vec2::ZERO`].
+    /// sets all [`DualAxislike`](crate::user_input::DualAxislike) actions to [`Vec2::ZERO`],
+    /// and sets all [`TripleAxislike`](crate::user_input::TripleAxislike) actions to [`Vec3::ZERO`].
     pub fn reset_all(&mut self) {
         // Collect out to avoid angering the borrow checker
         let all_actions = self.action_data.keys().cloned().collect::<Vec<A>>();
@@ -734,6 +881,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -755,6 +903,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn just_pressed(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -778,6 +927,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -799,6 +949,7 @@ impl<A: Actionlike> ActionState<A> {
     /// even if the action is not a buttonlike action.
     #[inline]
     #[must_use]
+    #[track_caller]
     pub fn just_released(&self, action: &A) -> bool {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -819,6 +970,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.pressed(action))
             .collect()
     }
@@ -830,6 +982,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.just_pressed(action))
             .collect()
     }
@@ -841,6 +994,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.released(action))
             .collect()
     }
@@ -852,6 +1006,7 @@ impl<A: Actionlike> ActionState<A> {
 
         all_actions
             .into_iter()
+            .filter(|action| action.input_control_kind() == InputControlKind::Button)
             .filter(|action| self.just_released(action))
             .collect()
     }
@@ -867,6 +1022,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will also be [`None`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
+    #[must_use]
+    #[track_caller]
     pub fn instant_started(&self, action: &A) -> Option<Instant> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -878,6 +1035,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
+    #[must_use]
+    #[track_caller]
     pub fn current_duration(&self, action: &A) -> Duration {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -893,6 +1052,8 @@ impl<A: Actionlike> ActionState<A> {
     ///
     /// This will be [`Duration::ZERO`] if the action was never pressed or released.
     #[cfg(feature = "timing")]
+    #[must_use]
+    #[track_caller]
     pub fn previous_duration(&self, action: &A) -> Duration {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
 
@@ -917,6 +1078,12 @@ impl<A: Actionlike> ActionState<A> {
             }
             ActionDiff::DualAxisChanged { action, axis_pair } => {
                 self.set_axis_pair(action, *axis_pair);
+            }
+            ActionDiff::TripleAxisChanged {
+                action,
+                axis_triple,
+            } => {
+                self.set_axis_triple(action, *axis_triple);
             }
         };
     }

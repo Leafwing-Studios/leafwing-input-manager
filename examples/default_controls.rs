@@ -12,20 +12,12 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
 enum PlayerAction {
+    #[actionlike(DualAxis)]
     Run,
     Jump,
     UseItem,
-}
-
-impl Actionlike for PlayerAction {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            PlayerAction::Run => InputControlKind::DualAxis,
-            _ => InputControlKind::Button,
-        }
-    }
 }
 
 impl PlayerAction {
@@ -39,7 +31,7 @@ impl PlayerAction {
         input_map.insert(Self::UseItem, GamepadButtonType::RightTrigger2);
 
         // Default kbm input bindings
-        input_map.insert_dual_axis(Self::Run, KeyboardVirtualDPad::WASD);
+        input_map.insert_dual_axis(Self::Run, VirtualDPad::wasd());
         input_map.insert(Self::Jump, KeyCode::Space);
         input_map.insert(Self::UseItem, MouseButton::Left);
 
@@ -62,20 +54,17 @@ fn spawn_player(mut commands: Commands) {
 fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
     let action_state = query.single();
 
-    // When the default input for `PlayerAction::Run` is pressed, print the clamped direction of the axis
-    if action_state.pressed(&PlayerAction::Run) {
+    if action_state.axis_pair(&PlayerAction::Run) != Vec2::ZERO {
         println!(
             "Moving in direction {}",
-            action_state.clamped_axis_pair(&PlayerAction::Run).xy()
+            action_state.clamped_axis_pair(&PlayerAction::Run)
         );
     }
 
-    // When the default input for `PlayerAction::Jump` is pressed, print "Jump!"
     if action_state.just_pressed(&PlayerAction::Jump) {
         println!("Jumped!");
     }
 
-    // When the default input for `PlayerAction::UseItem` is pressed, print "Used an Item!"
     if action_state.just_pressed(&PlayerAction::UseItem) {
         println!("Used an Item!");
     }

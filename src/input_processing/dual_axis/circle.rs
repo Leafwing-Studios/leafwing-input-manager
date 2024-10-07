@@ -48,7 +48,7 @@ impl CircleBounds {
     ///
     /// # Requirements
     ///
-    /// - `threshold` >= `0.0`.
+    /// - `max` >= `0.0`.
     ///
     /// # Panics
     ///
@@ -56,9 +56,9 @@ impl CircleBounds {
     #[doc(alias = "magnitude")]
     #[doc(alias = "from_radius")]
     #[inline]
-    pub fn new(threshold: f32) -> Self {
-        assert!(threshold >= 0.0);
-        Self { radius: threshold }
+    pub fn new(max: f32) -> Self {
+        assert!(max >= 0.0);
+        Self { radius: max }
     }
 
     /// Returns the radius of the bounds.

@@ -31,20 +31,13 @@ fn main() {
 }
 
 // ----------------------------- Player Action Input Handling -----------------------------
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[actionlike(DualAxis)]
 pub enum PlayerAction {
     Move,
     Look,
+    #[actionlike(Button)]
     Shoot,
-}
-
-impl Actionlike for PlayerAction {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            PlayerAction::Move | PlayerAction::Look => InputControlKind::DualAxis,
-            PlayerAction::Shoot => InputControlKind::Button,
-        }
-    }
 }
 
 impl PlayerAction {
@@ -58,8 +51,8 @@ impl PlayerAction {
         input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
 
         // Default kbm input bindings
-        input_map.insert_dual_axis(Self::Move, KeyboardVirtualDPad::WASD);
-        input_map.insert_dual_axis(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert_dual_axis(Self::Move, VirtualDPad::wasd());
+        input_map.insert_dual_axis(Self::Look, VirtualDPad::arrow_keys());
         input_map.insert(Self::Shoot, MouseButton::Left);
 
         input_map
@@ -120,8 +113,6 @@ fn activate_mkb(
 
 // ----------------------------- Mouse input handling-----------------------------
 
-/// Note that we handle the action state mutation differently here than in the `mouse_position` example.
-/// Here we don't use an `ActionStateDriver`, but change the action data directly.
 fn player_mouse_look(
     camera_query: Query<(&GlobalTransform, &Camera)>,
     player_query: Query<&Transform, With<Player>>,
@@ -155,9 +146,6 @@ fn player_mouse_look(
             // Flipping y sign here to be consistent with gamepad input.
             // We could also invert the gamepad y-axis
             action_data.pair = Vec2::new(diff.x, -diff.y);
-
-            // Press the look action, so we can check that it is active
-            action_state.press(&PlayerAction::Look);
         }
     }
 }
@@ -169,17 +157,16 @@ fn control_player(
     mut query: Query<&mut Transform, With<Player>>,
 ) {
     let mut player_transform = query.single_mut();
-    if action_state.pressed(&PlayerAction::Move) {
+    if action_state.axis_pair(&PlayerAction::Move) != Vec2::ZERO {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
-        let move_delta =
-            time.delta_seconds() * action_state.clamped_axis_pair(&PlayerAction::Move).xy();
+        let move_delta = time.delta_seconds() * action_state.clamped_axis_pair(&PlayerAction::Move);
         player_transform.translation += Vec3::new(move_delta.x, 0.0, move_delta.y);
         println!("Player moved to: {}", player_transform.translation.xz());
     }
 
-    if action_state.pressed(&PlayerAction::Look) {
-        let look = action_state.axis_pair(&PlayerAction::Look).xy().normalize();
+    if action_state.axis_pair(&PlayerAction::Look) != Vec2::ZERO {
+        let look = action_state.axis_pair(&PlayerAction::Look).normalize();
         println!("Player looking in direction: {}", look);
     }
 
@@ -203,6 +190,4 @@ fn setup_scene(mut commands: Commands) {
 
     // And a player
     commands.spawn(Player).insert(Transform::default());
-
-    // But note that there is no visibility in this example
 }

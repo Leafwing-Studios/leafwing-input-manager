@@ -16,20 +16,13 @@ enum ButtonlikeTestAction {
     Right,
 }
 
-#[derive(Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
+#[actionlike(Axis)]
 enum AxislikeTestAction {
     X,
     Y,
+    #[actionlike(DualAxis)]
     XY,
-}
-
-impl Actionlike for AxislikeTestAction {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            AxislikeTestAction::X | AxislikeTestAction::Y => InputControlKind::Axis,
-            AxislikeTestAction::XY => InputControlKind::DualAxis,
-        }
-    }
 }
 
 fn test_app() -> App {
@@ -303,7 +296,7 @@ fn test_zero_circle_deadzone() {
 fn gamepad_virtual_dpad() {
     let mut app = test_app();
     app.insert_resource(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, GamepadVirtualDPad::DPAD),
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
     );
 
     GamepadButtonType::DPadLeft.press(app.world_mut());

@@ -1,12 +1,12 @@
 //! Mouse inputs
 
-use bevy::input::mouse::{MouseButtonInput, MouseMotion, MouseWheel};
+use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{
-    Entity, Events, Gamepad, MouseButton, Reflect, Res, ResMut, Resource, Vec2, World,
-};
+use bevy::math::FloatOrd;
+use bevy::prelude::{Entity, Events, Gamepad, Reflect, Res, ResMut, Resource, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 
 use crate as leafwing_input_manager;
 use crate::axislike::{DualAxisDirection, DualAxisType};
@@ -18,7 +18,6 @@ use super::updating::{CentralInputStore, UpdatableInput};
 use super::{Axislike, Buttonlike, DualAxislike};
 
 // Built-in support for Bevy's MouseButton
-#[serde_typetag]
 impl UserInput for MouseButton {
     /// [`MouseButton`] acts as a button.
     #[inline]
@@ -51,6 +50,7 @@ impl UpdatableInput for MouseButton {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for MouseButton {
     /// Checks if the specified button is currently pressed down.
     #[inline]
@@ -89,13 +89,6 @@ impl Buttonlike for MouseButton {
 
 /// Provides button-like behavior for mouse movement in cardinal directions.
 ///
-/// # Behaviors
-///
-/// - Activation: Only if the mouse moves in the chosen direction.
-/// - Single-Axis Value:
-///   - `1.0`: The input is currently active.
-///   - `0.0`: The input is inactive.
-///
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
@@ -119,25 +112,59 @@ impl Buttonlike for MouseButton {
 /// app.update();
 /// assert!(app.read_pressed(input));
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
-pub struct MouseMoveDirection(pub DualAxisDirection);
+pub struct MouseMoveDirection {
+    /// The direction to monitor (up, down, left, or right).
+    pub direction: DualAxisDirection,
 
-impl MouseMoveDirection {
-    /// Movement in the upward direction.
-    pub const UP: Self = Self(DualAxisDirection::Up);
-
-    /// Movement in the downward direction.
-    pub const DOWN: Self = Self(DualAxisDirection::Down);
-
-    /// Movement in the leftward direction.
-    pub const LEFT: Self = Self(DualAxisDirection::Left);
-
-    /// Movement in the rightward direction.
-    pub const RIGHT: Self = Self(DualAxisDirection::Right);
+    /// The threshold value for the direction to be considered pressed.
+    /// Must be non-negative.
+    pub threshold: f32,
 }
 
-#[serde_typetag]
+impl MouseMoveDirection {
+    /// Sets the `threshold` value.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
+    #[inline]
+    pub fn threshold(mut self, threshold: f32) -> Self {
+        assert!(threshold >= 0.0);
+        self.threshold = threshold;
+        self
+    }
+
+    /// Movement in the upward direction.
+    pub const UP: Self = Self {
+        direction: DualAxisDirection::Up,
+        threshold: 0.0,
+    };
+
+    /// Movement in the downward direction.
+    pub const DOWN: Self = Self {
+        direction: DualAxisDirection::Down,
+        threshold: 0.0,
+    };
+
+    /// Movement in the leftward direction.
+    pub const LEFT: Self = Self {
+        direction: DualAxisDirection::Left,
+        threshold: 0.0,
+    };
+
+    /// Movement in the rightward direction.
+    pub const RIGHT: Self = Self {
+        direction: DualAxisDirection::Right,
+        threshold: 0.0,
+    };
+}
+
 impl UserInput for MouseMoveDirection {
     /// [`MouseMoveDirection`] acts as a virtual button.
     #[inline]
@@ -148,17 +175,18 @@ impl UserInput for MouseMoveDirection {
     /// [`MouseMoveDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Simple(Box::new(*self))
+        BasicInputs::Simple(Box::new((*self).threshold(0.0)))
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for MouseMoveDirection {
     /// Checks if there is any recent mouse movement along the specified direction.
     #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
         let mouse_movement = input_store.pair(&MouseMove::default());
-        self.0.is_active(mouse_movement)
+        self.direction.is_active(mouse_movement, self.threshold)
     }
 
     /// Sends a [`MouseMotion`] event with a magnitude of 1.0 in the direction defined by `self`.
@@ -166,7 +194,7 @@ impl Buttonlike for MouseMoveDirection {
         world
             .resource_mut::<Events<MouseMotion>>()
             .send(MouseMotion {
-                delta: self.0.full_active_value(),
+                delta: self.direction.full_active_value(),
             });
     }
 
@@ -177,14 +205,21 @@ impl Buttonlike for MouseMoveDirection {
     fn release(&self, _world: &mut World) {}
 }
 
+impl Eq for MouseMoveDirection {}
+
+impl Hash for MouseMoveDirection {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.direction.hash(state);
+        FloatOrd(self.threshold).hash(state);
+    }
+}
+
 /// Relative changes in position of mouse movement on a single axis (X or Y).
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of movement on the chosen axis (X or Y).
-/// - Value Processing: Configure a pipeline to modify the raw value before use,
-///     see [`WithAxisProcessingPipelineExt`] for details.
-/// - Activation: Only if its value is non-zero.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -232,7 +267,6 @@ impl MouseMoveAxis {
     };
 }
 
-#[serde_typetag]
 impl UserInput for MouseMoveAxis {
     /// [`MouseMoveAxis`] acts as an axis input.
     #[inline]
@@ -244,12 +278,19 @@ impl UserInput for MouseMoveAxis {
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
-            Box::new(MouseMoveDirection(self.axis.negative())),
-            Box::new(MouseMoveDirection(self.axis.positive())),
+            Box::new(MouseMoveDirection {
+                direction: self.axis.negative(),
+                threshold: 0.0,
+            }),
+            Box::new(MouseMoveDirection {
+                direction: self.axis.positive(),
+                threshold: 0.0,
+            }),
         ])
     }
 }
 
+#[serde_typetag]
 impl Axislike for MouseMoveAxis {
     /// Retrieves the amount of the mouse movement along the specified axis
     /// after processing by the associated processors.
@@ -300,13 +341,10 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 
 /// Relative changes in position of mouse movement on both axes.
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of movement on both axes.
-/// - Value Processing: Configure a pipeline to modify the raw value before use,
-///     see [`WithDualAxisProcessingPipelineExt`] for details.
-/// - Activation: Only if its processed value is non-zero on either axis.
-/// - Single-Axis Value: Reports the magnitude of the processed value.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithDualAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -336,18 +374,6 @@ pub struct MouseMove {
     pub(crate) processors: Vec<DualAxisProcessor>,
 }
 
-impl MouseMove {
-    /// Retrieves the current X and Y values of the movement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
-        let movement = input_store.pair(&MouseMove::default());
-        self.processors
-            .iter()
-            .fold(movement, |value, processor| processor.process(value))
-    }
-}
-
 impl UpdatableInput for MouseMove {
     type SourceData = AccumulatedMouseMovement;
 
@@ -359,7 +385,6 @@ impl UpdatableInput for MouseMove {
     }
 }
 
-#[serde_typetag]
 impl UserInput for MouseMove {
     /// [`MouseMove`] acts as a dual-axis input.
     #[inline]
@@ -379,12 +404,16 @@ impl UserInput for MouseMove {
     }
 }
 
+#[serde_typetag]
 impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
-        self.processed_value(input_store)
+        let movement = input_store.pair(&MouseMove::default());
+        self.processors
+            .iter()
+            .fold(movement, |value, processor| processor.process(value))
     }
 
     /// Sends a [`MouseMotion`] event with the specified displacement.
@@ -420,13 +449,6 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 
 /// Provides button-like behavior for mouse wheel scrolling in cardinal directions.
 ///
-/// # Behaviors
-///
-/// - Activation: Only if the mouse wheel is scrolling in the chosen direction.
-/// - Single-Axis Value:
-///   - `1.0`: The input is currently active.
-///   - `0.0`: The input is inactive.
-///
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
@@ -450,25 +472,59 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// app.update();
 /// assert!(app.read_pressed(input));
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
-pub struct MouseScrollDirection(pub DualAxisDirection);
+pub struct MouseScrollDirection {
+    /// The direction to monitor (up, down, left, or right).
+    pub direction: DualAxisDirection,
 
-impl MouseScrollDirection {
-    /// Movement in the upward direction.
-    pub const UP: Self = Self(DualAxisDirection::Up);
-
-    /// Movement in the downward direction.
-    pub const DOWN: Self = Self(DualAxisDirection::Down);
-
-    /// Movement in the leftward direction.
-    pub const LEFT: Self = Self(DualAxisDirection::Left);
-
-    /// Movement in the rightward direction.
-    pub const RIGHT: Self = Self(DualAxisDirection::Right);
+    /// The threshold value for the direction to be considered pressed.
+    /// Must be non-negative.
+    pub threshold: f32,
 }
 
-#[serde_typetag]
+impl MouseScrollDirection {
+    /// Sets the `threshold` value.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirement isn't met.
+    #[inline]
+    pub fn threshold(mut self, threshold: f32) -> Self {
+        assert!(threshold >= 0.0);
+        self.threshold = threshold;
+        self
+    }
+
+    /// Movement in the upward direction.
+    pub const UP: Self = Self {
+        direction: DualAxisDirection::Up,
+        threshold: 0.0,
+    };
+
+    /// Movement in the downward direction.
+    pub const DOWN: Self = Self {
+        direction: DualAxisDirection::Down,
+        threshold: 0.0,
+    };
+
+    /// Movement in the leftward direction.
+    pub const LEFT: Self = Self {
+        direction: DualAxisDirection::Left,
+        threshold: 0.0,
+    };
+
+    /// Movement in the rightward direction.
+    pub const RIGHT: Self = Self {
+        direction: DualAxisDirection::Right,
+        threshold: 0.0,
+    };
+}
+
 impl UserInput for MouseScrollDirection {
     /// [`MouseScrollDirection`] acts as a virtual button.
     #[inline]
@@ -479,17 +535,18 @@ impl UserInput for MouseScrollDirection {
     /// [`MouseScrollDirection`] represents a simple virtual button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
-        BasicInputs::Simple(Box::new(*self))
+        BasicInputs::Simple(Box::new((*self).threshold(0.0)))
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for MouseScrollDirection {
     /// Checks if there is any recent mouse wheel movement along the specified direction.
     #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
         let movement = input_store.pair(&MouseScroll::default());
-        self.0.is_active(movement)
+        self.direction.is_active(movement, self.threshold)
     }
 
     /// Sends a [`MouseWheel`] event with a magnitude of 1.0 px in the direction defined by `self`.
@@ -498,7 +555,7 @@ impl Buttonlike for MouseScrollDirection {
     ///
     /// The `window` field will be filled with a placeholder value.
     fn press(&self, world: &mut World) {
-        let vec = self.0.full_active_value();
+        let vec = self.direction.full_active_value();
 
         world.resource_mut::<Events<MouseWheel>>().send(MouseWheel {
             unit: bevy::input::mouse::MouseScrollUnit::Pixel,
@@ -515,14 +572,21 @@ impl Buttonlike for MouseScrollDirection {
     fn release(&self, _world: &mut World) {}
 }
 
+impl Eq for MouseScrollDirection {}
+
+impl Hash for MouseScrollDirection {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.direction.hash(state);
+        FloatOrd(self.threshold).hash(state);
+    }
+}
+
 /// Amount of mouse wheel scrolling on a single axis (X or Y).
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of scrolling on the chosen axis (X or Y).
-/// - Value Processing: [`WithAxisProcessingPipelineExt`] offers methods
-///     for managing a processing pipeline that can be applied to the raw value before use.
-/// - Activation: Only if its value is non-zero.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -570,7 +634,6 @@ impl MouseScrollAxis {
     };
 }
 
-#[serde_typetag]
 impl UserInput for MouseScrollAxis {
     /// [`MouseScrollAxis`] acts as an axis input.
     #[inline]
@@ -582,12 +645,19 @@ impl UserInput for MouseScrollAxis {
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
-            Box::new(MouseScrollDirection(self.axis.negative())),
-            Box::new(MouseScrollDirection(self.axis.positive())),
+            Box::new(MouseScrollDirection {
+                direction: self.axis.negative(),
+                threshold: 0.0,
+            }),
+            Box::new(MouseScrollDirection {
+                direction: self.axis.positive(),
+                threshold: 0.0,
+            }),
         ])
     }
 }
 
+#[serde_typetag]
 impl Axislike for MouseScrollAxis {
     /// Retrieves the amount of the mouse wheel movement along the specified axis
     /// after processing by the associated processors.
@@ -604,6 +674,7 @@ impl Axislike for MouseScrollAxis {
     /// Sends a [`MouseWheel`] event along the appropriate axis with the specified value in pixels.
     ///
     /// # Note
+    ///
     /// The `window` field will be filled with a placeholder value.
     fn set_value(&self, world: &mut World, value: f32) {
         let event = MouseWheel {
@@ -649,12 +720,10 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 
 /// Amount of mouse wheel scrolling on both axes.
 ///
-/// # Behaviors
+/// # Value Processing
 ///
-/// - Raw Value: Captures the amount of scrolling on the chosen axis (X or Y).
-/// - Value Processing: [`WithAxisProcessingPipelineExt`] offers methods
-///     for managing a processing pipeline that can be applied to the raw value before use.
-/// - Activation: Only if its value is non-zero.
+/// You can customize how the values are processed using a pipeline of processors.
+/// See [`WithDualAxisProcessingPipelineExt`] for details.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -684,18 +753,6 @@ pub struct MouseScroll {
     pub(crate) processors: Vec<DualAxisProcessor>,
 }
 
-impl MouseScroll {
-    /// Retrieves the current X and Y values of the movement after processing by the associated processors.
-    #[must_use]
-    #[inline]
-    fn processed_value(&self, input_store: &CentralInputStore) -> Vec2 {
-        let movement = input_store.pair(&MouseScroll::default());
-        self.processors
-            .iter()
-            .fold(movement, |value, processor| processor.process(value))
-    }
-}
-
 impl UpdatableInput for MouseScroll {
     type SourceData = AccumulatedMouseScroll;
 
@@ -707,7 +764,6 @@ impl UpdatableInput for MouseScroll {
     }
 }
 
-#[serde_typetag]
 impl UserInput for MouseScroll {
     /// [`MouseScroll`] acts as an axis input.
     #[inline]
@@ -727,12 +783,16 @@ impl UserInput for MouseScroll {
     }
 }
 
+#[serde_typetag]
 impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
-        self.processed_value(input_store)
+        let movement = input_store.pair(&MouseScroll::default());
+        self.processors
+            .iter()
+            .fold(movement, |value, processor| processor.process(value))
     }
 
     /// Sends a [`MouseWheel`] event with the specified displacement in pixels.

@@ -1,13 +1,13 @@
 //! This module contains [`ButtonlikeChord`] and its impls.
 
-use bevy::math::Vec2;
+use bevy::math::{Vec2, Vec3};
 use bevy::prelude::{Gamepad, Reflect, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::clashing_inputs::BasicInputs;
-use crate::user_input::{Buttonlike, UserInput};
+use crate::user_input::{Buttonlike, TripleAxislike, UserInput};
 use crate::InputControlKind;
 
 use super::updating::CentralInputStore;
@@ -16,11 +16,10 @@ use super::{Axislike, DualAxislike};
 /// A combined input that groups multiple [`Buttonlike`]s together,
 /// allowing you to define complex input combinations like hotkeys, shortcuts, and macros.
 ///
-/// # Behaviors
+/// A chord is pressed only if all its constituent buttons are pressed simultaneously.
 ///
-/// - Activation: All included inputs must be active simultaneously.
-/// - Deduplication: Adding duplicate inputs within a chord will ignore the extras,
-///     preventing redundant data fetching.
+/// Adding duplicate buttons within a chord will ignore the extras,
+/// preventing redundant data fetching from multiple instances of the same input.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -61,9 +60,6 @@ impl ButtonlikeChord {
     /// Creates a [`ButtonlikeChord`] from multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     pub fn new<U: Buttonlike>(inputs: impl IntoIterator<Item = U>) -> Self {
         Self::default().with_multiple(inputs)
@@ -83,9 +79,6 @@ impl ButtonlikeChord {
     }
 
     /// Adds the given [`Buttonlike`] into this chord, avoiding duplicates.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     pub fn with(mut self, input: impl Buttonlike) -> Self {
         self.push_boxed_unique(Box::new(input));
@@ -94,9 +87,6 @@ impl ButtonlikeChord {
 
     /// Adds multiple [`Buttonlike`]s into this chord, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     pub fn with_multiple<U: Buttonlike>(mut self, inputs: impl IntoIterator<Item = U>) -> Self {
         for input in inputs.into_iter() {
@@ -106,9 +96,6 @@ impl ButtonlikeChord {
     }
 
     /// Adds the given boxed dyn [`Buttonlike`] to this chord, avoiding duplicates.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     fn push_boxed_unique(&mut self, input: Box<dyn Buttonlike>) {
         if !self.0.contains(&input) {
@@ -117,7 +104,6 @@ impl ButtonlikeChord {
     }
 }
 
-#[serde_typetag]
 impl UserInput for ButtonlikeChord {
     /// [`ButtonlikeChord`] acts as a virtual button.
     #[inline]
@@ -139,6 +125,7 @@ impl UserInput for ButtonlikeChord {
     }
 }
 
+#[serde_typetag]
 impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
@@ -178,9 +165,6 @@ impl<U: Buttonlike> FromIterator<U> for ButtonlikeChord {
     /// Creates a [`ButtonlikeChord`] from an iterator over multiple [`Buttonlike`]s, avoiding duplicates.
     /// Note that all elements within the iterator must be of the same type (homogeneous).
     /// You can still use other methods to add different types of inputs into the chord.
-    ///
-    /// This ensures that the same input isn't added multiple times,
-    /// preventing redundant data fetching from multiple instances of the same input.
     #[inline]
     fn from_iter<T: IntoIterator<Item = U>>(iter: T) -> Self {
         Self::default().with_multiple(iter)
@@ -209,7 +193,6 @@ impl AxislikeChord {
     }
 }
 
-#[serde_typetag]
 impl UserInput for AxislikeChord {
     /// [`AxislikeChord`] acts as a virtual axis.
     #[inline]
@@ -224,6 +207,7 @@ impl UserInput for AxislikeChord {
     }
 }
 
+#[serde_typetag]
 impl Axislike for AxislikeChord {
     fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
         if self.button.pressed(input_store, gamepad) {
@@ -247,14 +231,14 @@ impl Axislike for AxislikeChord {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct DualAxislikeChord {
-    /// The button that must be pressed to read the axis value.
+    /// The button that must be pressed to read the axis values.
     pub button: Box<dyn Buttonlike>,
     /// The dual axis data that is read when the button is pressed.
     pub dual_axis: Box<dyn DualAxislike>,
 }
 
 impl DualAxislikeChord {
-    /// Creates a new [`AxislikeChord`] from the given [`Buttonlike`] and [`Axislike`].
+    /// Creates a new [`DualAxislikeChord`] from the given [`Buttonlike`] and [`DualAxislike`].
     #[inline]
     pub fn new(button: impl Buttonlike, dual_axis: impl DualAxislike) -> Self {
         Self {
@@ -264,7 +248,6 @@ impl DualAxislikeChord {
     }
 }
 
-#[serde_typetag]
 impl UserInput for DualAxislikeChord {
     /// [`DualAxislikeChord`] acts as a virtual dual-axis.
     #[inline]
@@ -279,6 +262,7 @@ impl UserInput for DualAxislikeChord {
     }
 }
 
+#[serde_typetag]
 impl DualAxislike for DualAxislikeChord {
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
         if self.button.pressed(input_store, gamepad) {
@@ -300,6 +284,67 @@ impl DualAxislike for DualAxislikeChord {
     ) {
         self.dual_axis
             .set_axis_pair_as_gamepad(world, axis_pair, gamepad);
+    }
+}
+
+/// A combined input that groups a [`Buttonlike`] and a [`TripleAxislike`] together,
+/// allowing you to only read the dual axis data when the button is pressed.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[must_use]
+pub struct TripleAxislikeChord {
+    /// The button that must be pressed to read the axis values.
+    pub button: Box<dyn Buttonlike>,
+    /// The triple axis data that is read when the button is pressed.
+    pub triple_axis: Box<dyn TripleAxislike>,
+}
+
+impl TripleAxislikeChord {
+    /// Creates a new [`TripleAxislikeChord`] from the given [`Buttonlike`] and [`TripleAxislike`].
+    #[inline]
+    pub fn new(button: impl Buttonlike, triple_axis: impl TripleAxislike) -> Self {
+        Self {
+            button: Box::new(button),
+            triple_axis: Box::new(triple_axis),
+        }
+    }
+}
+
+impl UserInput for TripleAxislikeChord {
+    /// [`TripleAxislikeChord`] acts as a virtual triple-axis.
+    #[inline]
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::TripleAxis
+    }
+
+    /// Retrieves a list of simple, atomic [`Buttonlike`]s that compose the chord.
+    #[inline]
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::compose(self.button.decompose(), self.triple_axis.decompose())
+    }
+}
+
+#[serde_typetag]
+impl TripleAxislike for TripleAxislikeChord {
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3 {
+        if self.button.pressed(input_store, gamepad) {
+            self.triple_axis.axis_triple(input_store, gamepad)
+        } else {
+            Vec3::ZERO
+        }
+    }
+
+    fn set_axis_triple(&self, world: &mut World, axis_triple: Vec3) {
+        self.triple_axis.set_axis_triple(world, axis_triple);
+    }
+
+    fn set_axis_triple_as_gamepad(
+        &self,
+        world: &mut World,
+        axis_triple: Vec3,
+        gamepad: Option<Gamepad>,
+    ) {
+        self.triple_axis
+            .set_axis_triple_as_gamepad(world, axis_triple, gamepad);
     }
 }
 

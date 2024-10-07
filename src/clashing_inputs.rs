@@ -22,7 +22,7 @@ use crate::{Actionlike, InputControlKind};
 /// - `S` and `W`: does not clash
 /// - `ControlLeft + S` and `S`: clashes
 /// - `S` and `S`: does not clash
-/// - `ControlLeft + S` and ` AltLeft + S`: clashes
+/// - `ControlLeft + S` and ` AltLeft + S`: does not clash
 /// - `ControlLeft + S`, `AltLeft + S` and `ControlLeft + AltLeft + S`: clashes
 ///
 /// This strategy is only used when assessing the actions and input holistically,
@@ -258,6 +258,16 @@ impl<A: Actionlike> InputMap<A> {
                     .map(|input| input.decompose())
                     .collect()
             }
+            InputControlKind::TripleAxis => {
+                let Some(triple_axislike) = self.get_triple_axislike(action) else {
+                    return Vec::new();
+                };
+
+                triple_axislike
+                    .iter()
+                    .map(|input| input.decompose())
+                    .collect()
+            }
         }
     }
 
@@ -403,15 +413,16 @@ fn resolve_clash<A: Actionlike>(
 #[cfg(feature = "keyboard")]
 #[cfg(test)]
 mod tests {
-    use bevy::app::App;
     use bevy::input::keyboard::KeyCode::*;
     use bevy::prelude::Reflect;
 
     use super::*;
-    use crate::prelude::{KeyboardVirtualDPad, UserInput};
+    use crate::prelude::{UserInput, VirtualDPad};
     use crate::user_input::ButtonlikeChord;
 
-    #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+    use crate as leafwing_input_manager;
+
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     enum Action {
         One,
         Two,
@@ -421,17 +432,9 @@ mod tests {
         CtrlOne,
         AltOne,
         CtrlAltOne,
-        MoveDPad,
         CtrlUp,
-    }
-
-    impl Actionlike for Action {
-        fn input_control_kind(&self) -> crate::InputControlKind {
-            match self {
-                Self::MoveDPad => crate::InputControlKind::DualAxis,
-                _ => crate::InputControlKind::Button,
-            }
-        }
+        #[actionlike(DualAxis)]
+        MoveDPad,
     }
 
     fn test_input_map() -> InputMap<Action> {
@@ -453,7 +456,7 @@ mod tests {
             CtrlAltOne,
             ButtonlikeChord::new([ControlLeft, AltLeft, Digit1]),
         );
-        input_map.insert_dual_axis(MoveDPad, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert_dual_axis(MoveDPad, VirtualDPad::arrow_keys());
         input_map.insert(CtrlUp, ButtonlikeChord::new([ControlLeft, ArrowUp]));
 
         input_map
@@ -470,15 +473,14 @@ mod tests {
     }
 
     mod basic_functionality {
+        use super::*;
         use crate::{
             input_map::UpdatedValue,
             plugin::{AccumulatorPlugin, CentralInputStorePlugin},
-            prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey},
+            prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey, VirtualDPad},
         };
-        use bevy::{input::InputPlugin, math::Vec2, prelude::Gamepads};
+        use bevy::{input::InputPlugin, prelude::*};
         use Action::*;
-
-        use super::*;
 
         #[test]
         #[ignore = "Figuring out how to handle the length of chords with group inputs is out of scope."]
@@ -498,7 +500,7 @@ mod tests {
             let modified_chord = ButtonlikeChord::modified(ModifierKey::Control, KeyA).decompose();
             assert_eq!(modified_chord.len(), 2);
 
-            let group = KeyboardVirtualDPad::WASD.decompose();
+            let group = VirtualDPad::wasd().decompose();
             assert_eq!(group.len(), 1);
         }
 
@@ -510,11 +512,11 @@ mod tests {
             let ab = ButtonlikeChord::new([KeyA, KeyB]);
             let bc = ButtonlikeChord::new([KeyB, KeyC]);
             let abc = ButtonlikeChord::new([KeyA, KeyB, KeyC]);
-            let axyz_dpad = KeyboardVirtualDPad::new(KeyA, KeyX, KeyY, KeyZ);
-            let abcd_dpad = KeyboardVirtualDPad::WASD;
+            let axyz_dpad = VirtualDPad::new(KeyA, KeyX, KeyY, KeyZ);
+            let abcd_dpad = VirtualDPad::wasd();
 
             let ctrl_up = ButtonlikeChord::new([ArrowUp, ControlLeft]);
-            let directions_dpad = KeyboardVirtualDPad::ARROW_KEYS;
+            let directions_dpad = VirtualDPad::arrow_keys();
 
             assert!(!inputs_clash(a, b));
             assert!(inputs_clash(a, ab.clone()));
@@ -748,6 +750,7 @@ mod tests {
                         UpdatedValue::Button(pressed) => assert!(!pressed),
                         UpdatedValue::Axis(value) => assert_eq!(value, 0.0),
                         UpdatedValue::DualAxis(pair) => assert_eq!(pair, Vec2::ZERO),
+                        UpdatedValue::TripleAxis(triple) => assert_eq!(triple, Vec3::ZERO),
                     }
                 }
             }

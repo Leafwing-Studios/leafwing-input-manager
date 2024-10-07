@@ -159,10 +159,24 @@ pub trait WithAxisProcessingPipelineExt: Sized {
     }
 
     /// Appends an [`AxisBounds`] processor as the next processing step,
-    /// restricting values to a `threshold` magnitude.
+    /// restricting values within the range `[-threshold, threshold]`.
     #[inline]
     fn with_bounds_symmetric(self, threshold: f32) -> Self {
         self.with_processor(AxisBounds::symmetric(threshold))
+    }
+
+    /// Appends an [`AxisBounds`] processor as the next processing step,
+    /// restricting values to a minimum value.
+    #[inline]
+    fn at_least(self, min: f32) -> Self {
+        self.with_processor(AxisBounds::at_least(min))
+    }
+
+    /// Appends an [`AxisBounds`] processor as the next processing step,
+    /// restricting values to a maximum value.
+    #[inline]
+    fn at_most(self, max: f32) -> Self {
+        self.with_processor(AxisBounds::at_most(max))
     }
 
     /// Appends an [`AxisDeadZone`] processor as the next processing step,
@@ -170,6 +184,14 @@ pub trait WithAxisProcessingPipelineExt: Sized {
     /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
     /// the remaining range within the [`AxisBounds::magnitude(1.0)`](AxisBounds::default)
     /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone(self, negative_max: f32, positive_min: f32) -> Self {
         self.with_processor(AxisDeadZone::new(negative_max, positive_min))
@@ -180,14 +202,62 @@ pub trait WithAxisProcessingPipelineExt: Sized {
     /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
     /// the remaining range within the [`AxisBounds::magnitude(1.0)`](AxisBounds::default)
     /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_symmetric(self, threshold: f32) -> Self {
         self.with_processor(AxisDeadZone::symmetric(threshold))
     }
 
+    /// Appends an [`AxisDeadZone`] processor as the next processing step,
+    /// only passing positive values that greater than `positive_min`
+    /// and then normalizing them into the "live zone" range `[positive_min, 1.0]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_positive(self, positive_min: f32) -> Self {
+        self.with_processor(AxisDeadZone::only_positive(positive_min))
+    }
+
+    /// Appends an [`AxisDeadZone`] processor as the next processing step,
+    /// only passing negative values that less than `negative_max`
+    /// and then normalizing them into the "live zone" range `[-1.0, negative_max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative(self, negative_max: f32) -> Self {
+        self.with_processor(AxisDeadZone::only_negative(negative_max))
+    }
+
     /// Appends an [`AxisExclusion`] processor as the next processing step,
     /// ignoring values within the dead zone range `[negative_max, positive_min]` on the axis,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_unscaled(self, negative_max: f32, positive_min: f32) -> Self {
         self.with_processor(AxisExclusion::new(negative_max, positive_min))
@@ -196,9 +266,47 @@ pub trait WithAxisProcessingPipelineExt: Sized {
     /// Appends an [`AxisExclusion`] processor as the next processing step,
     /// ignoring values within the dead zone range `[-threshold, threshold]` on the axis,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_symmetric_unscaled(self, threshold: f32) -> Self {
         self.with_processor(AxisExclusion::symmetric(threshold))
+    }
+
+    /// Appends an [`AxisExclusion`] processor as the next processing step,
+    /// only passing positive values that greater than `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_positive_unscaled(self, positive_min: f32) -> Self {
+        self.with_processor(AxisExclusion::only_positive(positive_min))
+    }
+
+    /// Appends an [`AxisExclusion`] processor as the next processing step,
+    /// only passing negative values that less than `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative_unscaled(self, negative_max: f32) -> Self {
+        self.with_processor(AxisExclusion::only_negative(negative_max))
     }
 }
 

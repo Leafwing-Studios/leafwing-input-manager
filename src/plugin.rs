@@ -109,7 +109,10 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 // Main schedule
                 app.add_systems(
                     PreUpdate,
-                    (tick_action_state::<A>, clear_central_input_store)
+                    (
+                        tick_action_state::<A>.in_set(TickActionStateSystem::<A>::new()),
+                        clear_central_input_store,
+                    )
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 )
@@ -182,6 +185,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 app.add_systems(
                     FixedPostUpdate,
                     tick_action_state::<A>
+                        .in_set(TickActionStateSystem::<A>::new())
                         .in_set(InputManagerSystem::Tick)
                         .before(InputManagerSystem::Update),
                 );
@@ -193,7 +197,9 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
             Machine::Server => {
                 app.add_systems(
                     PreUpdate,
-                    tick_action_state::<A>.in_set(InputManagerSystem::Tick),
+                    tick_action_state::<A>
+                        .in_set(TickActionStateSystem::<A>::new())
+                        .in_set(InputManagerSystem::Tick),
                 );
             }
         };
@@ -201,26 +207,33 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         #[cfg(feature = "mouse")]
         app.register_type::<AccumulatedMouseMovement>()
             .register_type::<AccumulatedMouseScroll>()
-            .register_user_input::<MouseMoveDirection>()
-            .register_user_input::<MouseMoveAxis>()
-            .register_user_input::<MouseMove>()
-            .register_user_input::<MouseScrollDirection>()
-            .register_user_input::<MouseScrollAxis>()
-            .register_user_input::<MouseScroll>();
+            .register_buttonlike_input::<MouseMoveDirection>()
+            .register_axislike_input::<MouseMoveAxis>()
+            .register_dual_axislike_input::<MouseMove>()
+            .register_buttonlike_input::<MouseScrollDirection>()
+            .register_axislike_input::<MouseScrollAxis>()
+            .register_dual_axislike_input::<MouseScroll>();
 
         #[cfg(feature = "keyboard")]
-        app.register_user_input::<KeyCode>()
-            .register_user_input::<ModifierKey>()
-            .register_user_input::<KeyboardVirtualAxis>()
-            .register_user_input::<KeyboardVirtualDPad>();
+        app.register_buttonlike_input::<KeyCode>()
+            .register_buttonlike_input::<ModifierKey>();
 
         #[cfg(feature = "gamepad")]
-        app.register_user_input::<GamepadControlDirection>()
-            .register_user_input::<GamepadControlAxis>()
-            .register_user_input::<GamepadStick>()
-            .register_user_input::<GamepadButtonType>()
-            .register_user_input::<GamepadVirtualAxis>()
-            .register_user_input::<GamepadVirtualDPad>();
+        app.register_buttonlike_input::<GamepadControlDirection>()
+            .register_axislike_input::<GamepadControlAxis>()
+            .register_dual_axislike_input::<GamepadStick>()
+            .register_buttonlike_input::<GamepadButtonType>();
+
+        // Virtual Axes
+        app.register_axislike_input::<VirtualAxis>()
+            .register_dual_axislike_input::<VirtualDPad>()
+            .register_triple_axislike_input::<VirtualDPad3D>();
+
+        // Chords
+        app.register_buttonlike_input::<ButtonlikeChord>()
+            .register_axislike_input::<AxislikeChord>()
+            .register_dual_axislike_input::<DualAxislikeChord>()
+            .register_triple_axislike_input::<TripleAxislikeChord>();
 
         // General-purpose reflection
         app.register_type::<ActionState<A>>()
@@ -275,6 +288,27 @@ pub enum InputManagerSystem {
     ///
     /// Must run after [`InputManagerSystem::Update`] or the action state will be overridden
     ManualControl,
+}
+
+#[derive(SystemSet, Clone, Hash, Debug, PartialEq, Eq)]
+/// [`SystemSet`] for the [`tick_action_state`](crate::systems::tick_action_state) system, is a child set of [`InputManagerSystem::Tick`].
+pub struct TickActionStateSystem<A: Actionlike> {
+    phantom_data: PhantomData<A>,
+}
+
+impl<A: Actionlike> TickActionStateSystem<A> {
+    /// Creates a [`TickActionStateSystem`] set instance.
+    pub fn new() -> Self {
+        Self {
+            phantom_data: PhantomData,
+        }
+    }
+}
+
+impl<A: Actionlike> Default for TickActionStateSystem<A> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// A plugin to handle accumulating mouse movement and scroll events.

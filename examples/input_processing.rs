@@ -10,19 +10,11 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[actionlike(DualAxis)]
 enum Action {
     Move,
     LookAround,
-}
-
-impl Actionlike for Action {
-    fn input_control_kind(&self) -> InputControlKind {
-        match self {
-            Action::Move => InputControlKind::DualAxis,
-            Action::LookAround => InputControlKind::DualAxis,
-        }
-    }
 }
 
 #[derive(Component)]
@@ -32,7 +24,7 @@ fn spawn_player(mut commands: Commands) {
     let input_map = InputMap::default()
         .with_dual_axis(
             Action::Move,
-            KeyboardVirtualDPad::WASD
+            VirtualDPad::wasd()
                 // You can configure a processing pipeline to handle axis-like user inputs.
                 //
                 // This step adds a circular deadzone that normalizes input values

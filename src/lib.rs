@@ -57,12 +57,8 @@ pub mod prelude {
 /// While `Copy` is not a required trait bound,
 /// users are strongly encouraged to derive `Copy` on these enums whenever possible to improve ergonomics.
 ///
-/// # Warning
-///
-/// The derive macro for this trait assumes that all actions are buttonlike.
-/// If you have axislike or dual-axislike actions, you will need to implement this trait manually.
-///
 /// # Examples
+///
 /// ```rust
 /// use bevy::prelude::Reflect;
 /// use leafwing_input_manager::Actionlike;
@@ -83,30 +79,27 @@ pub mod prelude {
 /// }
 /// ```
 ///
+/// # Customizing variant behavior
+///
+/// By default, the derive macro for this trait assumes that all actions are buttonlike.
+///
+/// You can customize this behavior by using the `#[actionlike]` attribute,
+/// either on the entire enum or on individual variants.
+///
+/// See the document of [`InputControlKind`] for available options.
+///
 /// ```rust
-/// use bevy::prelude::Reflect;
-/// use leafwing_input_manager::Actionlike;
-/// use leafwing_input_manager::InputControlKind;
+/// use bevy::prelude::*;
+/// use leafwing_input_manager::prelude::*;
 ///
-/// #[derive(PartialEq, Debug, Eq, Clone, Copy, Hash, Reflect)]
-/// enum PlayerAction {
-///    // Movement
-///    Movement,
-///    // Abilities
-///    Ability1,
-///    Ability2,
-///    Ability3,
-///    Ability4,
-///    Ultimate,
-/// }
-///
-/// impl Actionlike for PlayerAction {
-///     fn input_control_kind(&self) -> InputControlKind {
-///         match self {
-///            PlayerAction::Movement => InputControlKind::DualAxis,
-///            _ => InputControlKind::Button,
-///         }
-///     }
+/// #[derive(Actionlike, Debug, PartialEq, Eq, Clone, Copy, Hash, Reflect)]
+/// #[actionlike(Axis)] // This attribute applies to all variants in the enum
+/// enum CameraAction {
+///    Zoom,  // This action is controlled by axes
+///    #[actionlike(DualAxis)]
+///    Move,  // This action is controlled by dual axes since we have overridden the default option
+///    #[actionlike(Button)]
+///    TakePhoto, // This action is controlled by buttons since we have overridden the default option
 /// }
 /// ```
 pub trait Actionlike:
@@ -167,4 +160,9 @@ pub enum InputControlKind {
     ///
     /// Corresponds to [`DualAxislike`](crate::user_input::DualAxislike) inputs.
     DualAxis,
+
+    /// A combination of three axis-like inputs, providing separate values for the X, Y and Z axes.
+    ///
+    /// Corresponds to [`TripleAxislike`](crate::user_input::TripleAxislike) inputs.
+    TripleAxis,
 }

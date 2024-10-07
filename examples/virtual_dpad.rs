@@ -14,20 +14,10 @@ fn main() {
         .run();
 }
 
-#[derive(PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[derive(Actionlike, PartialEq, Eq, Clone, Copy, Hash, Debug, Reflect)]
+#[actionlike(DualAxis)]
 enum Action {
     Move,
-}
-
-impl Actionlike for Action {
-    fn input_control_kind(&self) -> InputControlKind {
-        // We're using a match statement here
-        // because in larger projects, you will likely have
-        // different input control kinds for different actions
-        match self {
-            Action::Move => InputControlKind::DualAxis,
-        }
-    }
 }
 
 #[derive(Component)]
@@ -37,9 +27,13 @@ fn spawn_player(mut commands: Commands) {
     // Stores "which actions are currently activated"
     let input_map = InputMap::default().with_dual_axis(
         Action::Move,
-        // Define a virtual D-pad using four arbitrary keys.
-        // You can also use GamepadVirtualDPad to create similar ones using gamepad buttons.
-        KeyboardVirtualDPad::new(KeyCode::KeyW, KeyCode::KeyS, KeyCode::KeyA, KeyCode::KeyD),
+        // Define a virtual D-pad using four arbitrary buttons.
+        VirtualDPad::new(
+            KeyCode::KeyW,
+            KeyCode::KeyS,
+            GamepadButtonType::DPadLeft,
+            GamepadButtonType::DPadRight,
+        ),
     );
     commands
         .spawn(InputManagerBundle::with_map(input_map))
@@ -49,8 +43,7 @@ fn spawn_player(mut commands: Commands) {
 // Query for the `ActionState` component in your game logic systems!
 fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
-    // If any button in a virtual direction pad is pressed, then the action state is "pressed"
-    if action_state.pressed(&Action::Move) {
+    if action_state.axis_pair(&Action::Move) != Vec2::ZERO {
         // Virtual direction pads are one of the types which return a DualAxis. The values will be
         // represented as `-1.0`, `0.0`, or `1.0` depending on the combination of buttons pressed.
         let axis_pair = action_state.axis_pair(&Action::Move);

@@ -16,10 +16,10 @@ use dyn_hash::DynHash;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
+use serde_flexitos::{serialize_trait_object, Registry};
 
 use crate::input_processing::AxisProcessor;
-use crate::typetag::RegisterTypeTag;
+use crate::typetag::{InfallibleMapRegistry, RegisterTypeTag};
 
 /// A trait for creating custom processor that handles single-axis input values,
 /// accepting a `f32` input and producing a `f32` output.
@@ -286,8 +286,8 @@ impl<'de> Deserialize<'de> for Box<dyn CustomAxisProcessor> {
 }
 
 /// Registry of deserializers for [`CustomAxisProcessor`]s.
-static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn CustomAxisProcessor>>> =
-    Lazy::new(|| RwLock::new(MapRegistry::new("CustomAxisProcessor")));
+static mut PROCESSOR_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn CustomAxisProcessor>>> =
+    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("CustomAxisProcessor")));
 
 /// A trait for registering a specific [`CustomAxisProcessor`].
 pub trait RegisterCustomAxisProcessorExt {
