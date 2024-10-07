@@ -3,8 +3,10 @@
 use crate::prelude::updating::CentralInputStore;
 #[cfg(feature = "mouse")]
 use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
+use bevy::ecs::query::QueryFilter;
 #[cfg(feature = "mouse")]
 use bevy::input::mouse::{MouseMotion, MouseWheel};
+use bevy::log::debug;
 
 use crate::{
     action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap, Actionlike,
@@ -169,13 +171,35 @@ pub fn filter_captured_input(
 pub fn generate_action_diffs<A: Actionlike>(
     global_action_state: Option<Res<ActionState<A>>>,
     action_state_query: Query<(Entity, &ActionState<A>)>,
+    previous_action_state: Local<SummarizedActionState<A>>,
+    action_diff_events: EventWriter<ActionDiffEvent<A>>,
+) {
+    generate_action_diffs_filtered(
+        global_action_state,
+        action_state_query,
+        previous_action_state,
+        action_diff_events,
+    )
+}
+
+/// Generates an [`Events`] stream of [`ActionDiff`s](crate::action_diff::ActionDiff) from the [`ActionState`] of certain entities.
+///
+/// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
+/// Generally speaking, this should be added as part of [`PostUpdate`](bevy::prelude::PostUpdate),
+/// to ensure that all inputs have been processed and any manual actions have been sent.
+///
+/// This system accepts a [`QueryFilter`] to limit which entities should have action diffs generated.
+pub fn generate_action_diffs_filtered<A: Actionlike, F: QueryFilter>(
+    global_action_state: Option<Res<ActionState<A>>>,
+    action_state_query: Query<(Entity, &ActionState<A>), F>,
     mut previous_action_state: Local<SummarizedActionState<A>>,
     mut action_diff_events: EventWriter<ActionDiffEvent<A>>,
 ) {
     let current_action_state =
-        SummarizedActionState::summarize(global_action_state, action_state_query);
+        SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
     current_action_state.send_diffs(&previous_action_state, &mut action_diff_events);
-    dbg!(&previous_action_state, &current_action_state);
+    debug!("previous_action_state: {:?}", previous_action_state);
+    debug!("current_action_state: {:?}", current_action_state);
     *previous_action_state = current_action_state;
 }
 
