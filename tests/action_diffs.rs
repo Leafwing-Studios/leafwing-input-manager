@@ -314,6 +314,9 @@ fn generate_filtered_binary_action_diffs() {
             ActionDiff::DualAxisChanged { .. } => {
                 panic!("Expected a `Pressed` variant got a `AxisPairChanged` variant")
             }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `TripleAxisChanged` variant")
+            }
         }
     });
 }
