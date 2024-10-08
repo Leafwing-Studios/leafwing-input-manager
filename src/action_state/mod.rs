@@ -1138,11 +1138,7 @@ mod tests {
 
         // Starting state
         let input_store = app.world().resource::<CentralInputStore>();
-        action_state.update(input_map.process_actions(
-            &Gamepads::default(),
-            input_store,
-            ClashStrategy::PressAll,
-        ));
+        action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
         println!(
             "Initialized button data: {:?}",
@@ -1160,11 +1156,7 @@ mod tests {
         app.update();
         let input_store = app.world().resource::<CentralInputStore>();
 
-        action_state.update(input_map.process_actions(
-            &Gamepads::default(),
-            input_store,
-            ClashStrategy::PressAll,
-        ));
+        action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(action_state.just_pressed(&Action::Run));
@@ -1173,11 +1165,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.process_actions(
-            &Gamepads::default(),
-            input_store,
-            ClashStrategy::PressAll,
-        ));
+        action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
         assert!(action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1189,11 +1177,7 @@ mod tests {
         app.update();
         let input_store = app.world().resource::<CentralInputStore>();
 
-        action_state.update(input_map.process_actions(
-            &Gamepads::default(),
-            input_store,
-            ClashStrategy::PressAll,
-        ));
+        action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1202,11 +1186,7 @@ mod tests {
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
-        action_state.update(input_map.process_actions(
-            &Gamepads::default(),
-            input_store,
-            ClashStrategy::PressAll,
-        ));
+        action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
         assert!(!action_state.pressed(&Action::Run));
         assert!(!action_state.just_pressed(&Action::Run));
@@ -1276,7 +1256,7 @@ mod tests {
         // Starting state
         let input_store = app.world().resource::<CentralInputStore>();
         action_state.update(input_map.process_actions(
-            &Gamepads::default(),
+            None,
             input_store,
             ClashStrategy::PrioritizeLongest,
         ));
@@ -1290,7 +1270,7 @@ mod tests {
         let input_store = app.world().resource::<CentralInputStore>();
 
         action_state.update(input_map.process_actions(
-            &Gamepads::default(),
+            None,
             input_store,
             ClashStrategy::PrioritizeLongest,
         ));
@@ -1302,7 +1282,7 @@ mod tests {
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(
-            &Gamepads::default(),
+            None,
             input_store,
             ClashStrategy::PrioritizeLongest,
         ));
@@ -1317,7 +1297,7 @@ mod tests {
         let input_store = app.world().resource::<CentralInputStore>();
 
         action_state.update(input_map.process_actions(
-            &Gamepads::default(),
+            None,
             input_store,
             ClashStrategy::PrioritizeLongest,
         ));
@@ -1331,7 +1311,7 @@ mod tests {
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(
-            &Gamepads::default(),
+            None,
             input_store,
             ClashStrategy::PrioritizeLongest,
         ));

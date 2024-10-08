@@ -12,10 +12,10 @@ use crate::user_input::Buttonlike;
 use crate::InputControlKind;
 use bevy::math::{Vec2, Vec3};
 #[cfg(feature = "gamepad")]
-use bevy::prelude::GamepadButtonType;
+use bevy::prelude::GamepadButton;
 #[cfg(feature = "keyboard")]
 use bevy::prelude::KeyCode;
-use bevy::prelude::{Gamepad, Reflect, World};
+use bevy::prelude::{Entity, Reflect, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -143,45 +143,45 @@ impl VirtualAxis {
     /// The [`VirtualAxis`] using the horizontal D-Pad button mappings.
     /// No processing is applied to raw data from the gamepad.
     ///
-    /// - [`GamepadButtonType::DPadLeft`] for negative direction.
-    /// - [`GamepadButtonType::DPadRight`] for positive direction.
+    /// - [`GamepadButton::DPadLeft`] for negative direction.
+    /// - [`GamepadButton::DPadRight`] for positive direction.
     #[cfg(feature = "gamepad")]
     #[inline]
     pub fn dpad_x() -> Self {
-        Self::new(GamepadButtonType::DPadLeft, GamepadButtonType::DPadRight)
+        Self::new(GamepadButton::DPadLeft, GamepadButton::DPadRight)
     }
 
     /// The [`VirtualAxis`] using the vertical D-Pad button mappings.
     /// No processing is applied to raw data from the gamepad.
     ///
-    /// - [`GamepadButtonType::DPadDown`] for negative direction.
-    /// - [`GamepadButtonType::DPadUp`] for positive direction.
+    /// - [`GamepadButton::DPadDown`] for negative direction.
+    /// - [`GamepadButton::DPadUp`] for positive direction.
     #[cfg(feature = "gamepad")]
     #[inline]
     pub fn dpad_y() -> Self {
-        Self::new(GamepadButtonType::DPadDown, GamepadButtonType::DPadUp)
+        Self::new(GamepadButton::DPadDown, GamepadButton::DPadUp)
     }
 
     /// The [`VirtualAxis`] using the horizontal action pad button mappings.
     /// No processing is applied to raw data from the gamepad.
     ///
-    /// - [`GamepadButtonType::West`] for negative direction.
-    /// - [`GamepadButtonType::East`] for positive direction.
+    /// - [`GamepadButton::West`] for negative direction.
+    /// - [`GamepadButton::East`] for positive direction.
     #[cfg(feature = "gamepad")]
     #[inline]
     pub fn action_pad_x() -> Self {
-        Self::new(GamepadButtonType::West, GamepadButtonType::East)
+        Self::new(GamepadButton::West, GamepadButton::East)
     }
 
     /// The [`VirtualAxis`] using the vertical action pad button mappings.
     /// No processing is applied to raw data from the gamepad.
     ///
-    /// - [`GamepadButtonType::South`] for negative direction.
-    /// - [`GamepadButtonType::North`] for positive direction.
+    /// - [`GamepadButton::South`] for negative direction.
+    /// - [`GamepadButton::North`] for positive direction.
     #[cfg(feature = "gamepad")]
     #[inline]
     pub fn action_pad_y() -> Self {
-        Self::new(GamepadButtonType::South, GamepadButtonType::North)
+        Self::new(GamepadButton::South, GamepadButton::North)
     }
 }
 
@@ -204,7 +204,7 @@ impl Axislike for VirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         let negative = f32::from(self.negative.pressed(input_store, gamepad));
         let positive = f32::from(self.positive.pressed(input_store, gamepad));
         let value = positive - negative;
@@ -218,7 +218,7 @@ impl Axislike for VirtualAxis {
     /// If the value is negative, the negative button is pressed.
     /// If the value is positive, the positive button is pressed.
     /// If the value is zero, neither button is pressed.
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         if value < 0.0 {
             self.negative.press_as_gamepad(world, gamepad);
         } else if value > 0.0 {
@@ -376,35 +376,35 @@ impl VirtualDPad {
 
     /// Creates a new [`VirtualDPad`] using the common D-Pad button mappings.
     ///
-    /// - [`GamepadButtonType::DPadUp`] for upward direction.
-    /// - [`GamepadButtonType::DPadDown`] for downward direction.
-    /// - [`GamepadButtonType::DPadLeft`] for leftward direction.
-    /// - [`GamepadButtonType::DPadRight`] for rightward direction.
+    /// - [`GamepadButton::DPadUp`] for upward direction.
+    /// - [`GamepadButton::DPadDown`] for downward direction.
+    /// - [`GamepadButton::DPadLeft`] for leftward direction.
+    /// - [`GamepadButton::DPadRight`] for rightward direction.
     #[cfg(feature = "gamepad")]
     #[inline]
     pub fn dpad() -> Self {
         Self::new(
-            GamepadButtonType::DPadUp,
-            GamepadButtonType::DPadDown,
-            GamepadButtonType::DPadLeft,
-            GamepadButtonType::DPadRight,
+            GamepadButton::DPadUp,
+            GamepadButton::DPadDown,
+            GamepadButton::DPadLeft,
+            GamepadButton::DPadRight,
         )
     }
 
     /// Creates a new [`VirtualDPad`] using the common action pad button mappings.
     ///
-    /// - [`GamepadButtonType::North`] for upward direction.
-    /// - [`GamepadButtonType::South`] for downward direction.
-    /// - [`GamepadButtonType::West`] for leftward direction.
-    /// - [`GamepadButtonType::East`] for rightward direction.
+    /// - [`GamepadButton::North`] for upward direction.
+    /// - [`GamepadButton::South`] for downward direction.
+    /// - [`GamepadButton::West`] for leftward direction.
+    /// - [`GamepadButton::East`] for rightward direction.
     #[cfg(feature = "gamepad")]
     #[inline]
     pub fn action_pad() -> Self {
         Self::new(
-            GamepadButtonType::North,
-            GamepadButtonType::South,
-            GamepadButtonType::West,
-            GamepadButtonType::East,
+            GamepadButton::North,
+            GamepadButton::South,
+            GamepadButton::West,
+            GamepadButton::East,
         )
     }
 }
@@ -416,7 +416,7 @@ impl UserInput for VirtualDPad {
         InputControlKind::DualAxis
     }
 
-    /// Returns the four [`GamepadButtonType`]s used by this D-pad.
+    /// Returns the four [`GamepadButton`]s used by this D-pad.
     #[inline]
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
@@ -433,7 +433,7 @@ impl DualAxislike for VirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
         let up = f32::from(self.up.pressed(input_store, gamepad));
         let down = f32::from(self.down.pressed(input_store, gamepad));
         let left = f32::from(self.left.pressed(input_store, gamepad));
@@ -445,7 +445,7 @@ impl DualAxislike for VirtualDPad {
     }
 
     /// Presses the corresponding buttons based on the quadrant of the given value.
-    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Gamepad>) {
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Entity>) {
         if value.x < 0.0 {
             self.left.press_as_gamepad(world, gamepad);
         } else if value.x > 0.0 {
@@ -563,7 +563,7 @@ impl TripleAxislike for VirtualDPad3D {
     /// Retrieves the current X, Y, and Z values of this D-pad.
     #[must_use]
     #[inline]
-    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3 {
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3 {
         let up = f32::from(self.up.pressed(input_store, gamepad));
         let down = f32::from(self.down.pressed(input_store, gamepad));
         let left = f32::from(self.left.pressed(input_store, gamepad));
@@ -574,7 +574,7 @@ impl TripleAxislike for VirtualDPad3D {
     }
 
     /// Presses the corresponding buttons based on the octant of the given value.
-    fn set_axis_triple_as_gamepad(&self, world: &mut World, value: Vec3, gamepad: Option<Gamepad>) {
+    fn set_axis_triple_as_gamepad(&self, world: &mut World, value: Vec3, gamepad: Option<Entity>) {
         if value.x < 0.0 {
             self.left.press_as_gamepad(world, gamepad);
         } else if value.x > 0.0 {
@@ -630,7 +630,7 @@ mod tests {
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 
-        let gamepad = Gamepad::new(0);
+        let gamepad = Entity::PLACEHOLDER;
 
         assert_eq!(x.value(inputs, gamepad), 0.0);
         assert_eq!(xy.axis_pair(inputs, gamepad), Vec2::ZERO);

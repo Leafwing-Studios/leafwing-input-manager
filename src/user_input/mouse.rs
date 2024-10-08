@@ -1,9 +1,11 @@
 //! Mouse inputs
 
-use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel};
+use bevy::ecs::system::lifetimeless::SRes;
+use bevy::ecs::system::StaticSystemParam;
+use bevy::input::mouse::{MouseButtonInput, MouseMotion, MouseWheel};
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::math::FloatOrd;
-use bevy::prelude::{Entity, Events, Gamepad, Reflect, Res, ResMut, Resource, Vec2, World};
+use bevy::prelude::{Entity, Events, MouseButton, Reflect, ResMut, Resource, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
@@ -34,11 +36,11 @@ impl UserInput for MouseButton {
 }
 
 impl UpdatableInput for MouseButton {
-    type SourceData = ButtonInput<MouseButton>;
+    type SourceData = SRes<ButtonInput<MouseButton>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: Res<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         for key in source_data.get_pressed() {
             central_input_store.update_buttonlike(*key, true);
@@ -54,7 +56,7 @@ impl UpdatableInput for MouseButton {
 impl Buttonlike for MouseButton {
     /// Checks if the specified button is currently pressed down.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(self)
     }
 
@@ -184,7 +186,7 @@ impl Buttonlike for MouseMoveDirection {
     /// Checks if there is any recent mouse movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         let mouse_movement = input_store.pair(&MouseMove::default());
         self.direction.is_active(mouse_movement, self.threshold)
     }
@@ -296,7 +298,7 @@ impl Axislike for MouseMoveAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
         let movement = input_store.pair(&MouseMove::default());
         let value = self.axis.get_value(movement);
         self.processors
@@ -375,11 +377,11 @@ pub struct MouseMove {
 }
 
 impl UpdatableInput for MouseMove {
-    type SourceData = AccumulatedMouseMovement;
+    type SourceData = SRes<AccumulatedMouseMovement>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: Res<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         central_input_store.update_dualaxislike(Self::default(), source_data.0);
     }
@@ -409,7 +411,7 @@ impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
         let movement = input_store.pair(&MouseMove::default());
         self.processors
             .iter()
@@ -544,7 +546,7 @@ impl Buttonlike for MouseScrollDirection {
     /// Checks if there is any recent mouse wheel movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         let movement = input_store.pair(&MouseScroll::default());
         self.direction.is_active(movement, self.threshold)
     }
@@ -663,7 +665,7 @@ impl Axislike for MouseScrollAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
         let movement = input_store.pair(&MouseScroll::default());
         let value = self.axis.get_value(movement);
         self.processors
@@ -754,11 +756,11 @@ pub struct MouseScroll {
 }
 
 impl UpdatableInput for MouseScroll {
-    type SourceData = AccumulatedMouseScroll;
+    type SourceData = SRes<AccumulatedMouseScroll>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: Res<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         central_input_store.update_dualaxislike(Self::default(), source_data.0);
     }
@@ -788,7 +790,7 @@ impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
         let movement = input_store.pair(&MouseScroll::default());
         self.processors
             .iter()
@@ -912,9 +914,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!left.pressed(inputs, gamepad));
         assert!(!middle.pressed(inputs, gamepad));
@@ -965,9 +966,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!mouse_move_up.pressed(inputs, gamepad));
         assert_eq!(mouse_move_y.value(inputs, gamepad), 0.0);
@@ -1042,9 +1042,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!mouse_scroll_up.pressed(inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(inputs, gamepad), 0.0);

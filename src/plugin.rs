@@ -8,7 +8,6 @@ use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
 use bevy::input::InputSystem;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
-use bevy::time::run_fixed_main_schedule;
 #[cfg(feature = "ui")]
 use bevy::ui::UiSystem;
 use updating::CentralInputStore;
@@ -178,7 +177,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         update_action_state::<A>,
                     )
                         .chain()
-                        .before(run_fixed_main_schedule),
+                        .in_set(RunFixedMainLoopSystem::BeforeFixedMainLoop),
                 );
 
                 app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
@@ -191,7 +190,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 );
                 app.add_systems(
                     RunFixedMainLoop,
-                    swap_to_update::<A>.after(run_fixed_main_schedule),
+                    swap_to_update::<A>.in_set(RunFixedMainLoopSystem::AfterFixedMainLoop),
                 );
             }
             Machine::Server => {
@@ -207,6 +206,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         #[cfg(feature = "mouse")]
         app.register_type::<AccumulatedMouseMovement>()
             .register_type::<AccumulatedMouseScroll>()
+            .register_buttonlike_input::<MouseButton>()
             .register_buttonlike_input::<MouseMoveDirection>()
             .register_axislike_input::<MouseMoveAxis>()
             .register_dual_axislike_input::<MouseMove>()
@@ -222,7 +222,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         app.register_buttonlike_input::<GamepadControlDirection>()
             .register_axislike_input::<GamepadControlAxis>()
             .register_dual_axislike_input::<GamepadStick>()
-            .register_buttonlike_input::<GamepadButtonType>();
+            .register_buttonlike_input::<GamepadButton>();
 
         // Virtual Axes
         app.register_axislike_input::<VirtualAxis>()

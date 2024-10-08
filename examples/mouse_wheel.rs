@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::camera::ScalingMode};
 use leafwing_input_manager::prelude::*;
 
 fn main() {
@@ -33,7 +33,7 @@ fn setup(mut commands: Commands) {
         // Or even a digital dual-axis input!
         .with_dual_axis(CameraMovement::Pan, MouseScroll::default().digital());
     commands
-        .spawn(Camera2dBundle::default())
+        .spawn(Camera2d)
         .insert(InputManagerBundle::with_map(input_map));
 
     commands.spawn(SpriteBundle {
@@ -55,7 +55,10 @@ fn zoom_camera(
     // We want to zoom in when we use mouse wheel up,
     // so we increase the scale proportionally
     // Note that the projection's scale should always be positive (or our images will flip)
-    camera_projection.scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE;
+    match camera_projection.scaling_mode {
+        ScalingMode::WindowSize(ref mut scale) => *scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE,
+        ref mut scale => *scale = ScalingMode::WindowSize(1. - zoom_delta * CAMERA_ZOOM_RATE),
+    }
 }
 
 fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {

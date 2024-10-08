@@ -1,7 +1,7 @@
 //! This module contains [`ButtonlikeChord`] and its impls.
 
 use bevy::math::{Vec2, Vec3};
-use bevy::prelude::{Gamepad, Reflect, World};
+use bevy::prelude::{Entity, Reflect, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -130,7 +130,7 @@ impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         self.0
             .iter()
             .all(|input| input.pressed(input_store, gamepad))
@@ -148,13 +148,13 @@ impl Buttonlike for ButtonlikeChord {
         }
     }
 
-    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         for input in &self.0 {
             input.press_as_gamepad(world, gamepad);
         }
     }
 
-    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         for input in &self.0 {
             input.release_as_gamepad(world, gamepad);
         }
@@ -209,7 +209,7 @@ impl UserInput for AxislikeChord {
 
 #[serde_typetag]
 impl Axislike for AxislikeChord {
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         if self.button.pressed(input_store, gamepad) {
             self.axis.value(input_store, gamepad)
         } else {
@@ -221,7 +221,7 @@ impl Axislike for AxislikeChord {
         self.axis.set_value(world, value);
     }
 
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         self.axis.set_value_as_gamepad(world, value, gamepad);
     }
 }
@@ -264,7 +264,7 @@ impl UserInput for DualAxislikeChord {
 
 #[serde_typetag]
 impl DualAxislike for DualAxislikeChord {
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
         if self.button.pressed(input_store, gamepad) {
             self.dual_axis.axis_pair(input_store, gamepad)
         } else {
@@ -280,7 +280,7 @@ impl DualAxislike for DualAxislikeChord {
         &self,
         world: &mut World,
         axis_pair: Vec2,
-        gamepad: Option<Gamepad>,
+        gamepad: Option<Entity>,
     ) {
         self.dual_axis
             .set_axis_pair_as_gamepad(world, axis_pair, gamepad);
@@ -325,7 +325,7 @@ impl UserInput for TripleAxislikeChord {
 
 #[serde_typetag]
 impl TripleAxislike for TripleAxislikeChord {
-    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3 {
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3 {
         if self.button.pressed(input_store, gamepad) {
             self.triple_axis.axis_triple(input_store, gamepad)
         } else {
@@ -341,7 +341,7 @@ impl TripleAxislike for TripleAxislikeChord {
         &self,
         world: &mut World,
         axis_triple: Vec3,
-        gamepad: Option<Gamepad>,
+        gamepad: Option<Entity>,
     ) {
         self.triple_axis
             .set_axis_triple_as_gamepad(world, axis_triple, gamepad);
@@ -369,12 +369,15 @@ mod tests {
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
+        let gamepad = app.world_mut().spawn(()).id();
         let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
         gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             // This MUST be consistent with any other mocked events
-            gamepad: Gamepad { id: 1 },
+            gamepad,
             connection: GamepadConnection::Connected(GamepadInfo {
                 name: "TestController".into(),
+                vendor_id: None,
+                product_id: None,
             }),
         }));
 
@@ -408,8 +411,9 @@ mod tests {
         // No keys pressed, resulting in a released chord with a value of zero.
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-        assert!(!chord.pressed(inputs, Gamepad::new(0)));
+        assert!(!chord.pressed(inputs, gamepad));
 
         // All required keys pressed, resulting in a pressed chord with a value of one.
         let mut app = test_app();
@@ -418,7 +422,7 @@ mod tests {
         }
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
-        assert!(chord.pressed(inputs, Gamepad::new(0)));
+        assert!(chord.pressed(inputs, gamepad));
 
         // Some required keys pressed, but not all required keys for the chord,
         // resulting in a released chord with a value of zero.
@@ -429,7 +433,7 @@ mod tests {
             }
             app.update();
             let inputs = app.world().resource::<CentralInputStore>();
-            assert!(!chord.pressed(inputs, Gamepad::new(0)));
+            assert!(!chord.pressed(inputs, gamepad));
         }
 
         // Five keys pressed, but not all required keys for the chord,
@@ -441,6 +445,6 @@ mod tests {
         KeyCode::KeyB.press(app.world_mut());
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
-        assert!(!chord.pressed(inputs, Gamepad::new(0)));
+        assert!(!chord.pressed(inputs, gamepad));
     }
 }

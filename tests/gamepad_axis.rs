@@ -1,6 +1,8 @@
 #![cfg(feature = "gamepad")]
 
-use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo};
+use bevy::input::gamepad::{
+    GamepadConnection, GamepadConnectionEvent, GamepadInfo, RawGamepadEvent,
+};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::input_processing::{
@@ -35,14 +37,20 @@ fn test_app() -> App {
         .init_resource::<ActionState<AxislikeTestAction>>();
 
     // WARNING: you MUST register your gamepad during tests, or all gamepad input mocking will fail
-    let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
+    let gamepad_info = GamepadInfo {
+        name: "TestController".into(),
+        vendor_id: None,
+        product_id: None,
+    };
+    let gamepad = app.world_mut().spawn(()).id();
+    let mut gamepad_connection_events = app
+        .world_mut()
+        .resource_mut::<Events<GamepadConnectionEvent>>();
+    gamepad_connection_events.send(GamepadConnectionEvent {
         // This MUST be consistent with any other mocked events
-        gamepad: Gamepad { id: 1 },
-        connection: GamepadConnection::Connected(GamepadInfo {
-            name: "TestController".into(),
-        }),
-    }));
+        gamepad,
+        connection: GamepadConnection::Connected(gamepad_info),
+    });
 
     // Ensure that the gamepad is picked up by the appropriate system
     app.update();
@@ -56,13 +64,13 @@ fn test_app() -> App {
 #[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn gamepad_single_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = GamepadControlAxis::LEFT_X;
     input.set_value(app.world_mut(), -1.0);
 
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
     assert_eq!(events.drain().count(), 1);
 }
 
@@ -70,13 +78,13 @@ fn gamepad_single_axis_mocking() {
 #[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn gamepad_dual_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
     assert_eq!(events.drain().count(), 0);
 
     let input = GamepadStick::LEFT;
     input.set_axis_pair(app.world_mut(), Vec2::new(1.0, 0.0));
 
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
+    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
     // Dual axis events are split out
     assert_eq!(events.drain().count(), 2);
 }
@@ -299,7 +307,7 @@ fn gamepad_virtual_dpad() {
         InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
     );
 
-    GamepadButtonType::DPadLeft.press(app.world_mut());
+    GamepadButton::DPadLeft.press(app.world_mut());
     app.update();
 
     let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();

@@ -19,45 +19,50 @@ enum Action {
 }
 
 // This is used to check if a player already exists and which entity to disconnect
+//
+// This maps gamepad entity to player.
 #[derive(Resource, Default)]
-struct JoinedPlayers(pub HashMap<Gamepad, Entity>);
+struct JoinedPlayers(pub HashMap<Entity, Entity>);
 
 #[derive(Component)]
 struct Player {
     // This gamepad is used to index each player
-    gamepad: Gamepad,
+    gamepad: Entity,
 }
 
 fn join(
     mut commands: Commands,
     mut joined_players: ResMut<JoinedPlayers>,
-    gamepads: Res<Gamepads>,
-    button_inputs: Res<ButtonInput<GamepadButton>>,
+    gamepads: Query<(Entity, &Gamepad)>,
 ) {
-    for gamepad in gamepads.iter() {
+    for (gamepad_entity, gamepad) in gamepads.iter() {
         // Join the game when both bumpers (L+R) on the controller are pressed
         // We drop down the Bevy's input to get the input from each gamepad
-        if button_inputs.pressed(GamepadButton::new(gamepad, GamepadButtonType::LeftTrigger))
-            && button_inputs.pressed(GamepadButton::new(gamepad, GamepadButtonType::RightTrigger))
+        if gamepad.pressed(GamepadButton::LeftTrigger)
+            && gamepad.pressed(GamepadButton::RightTrigger)
         {
             // Make sure a player cannot join twice
-            if !joined_players.0.contains_key(&gamepad) {
-                println!("Player {} has joined the game!", gamepad.id);
+            if !joined_players.0.contains_key(&gamepad_entity) {
+                println!("Player {} has joined the game!", gamepad_entity);
 
                 let input_map = InputMap::new([
-                    (Action::Jump, GamepadButtonType::South),
-                    (Action::Disconnect, GamepadButtonType::Select),
+                    (Action::Jump, GamepadButton::South),
+                    (Action::Disconnect, GamepadButton::Select),
                 ])
                 // Make sure to set the gamepad or all gamepads will be used!
-                .with_gamepad(gamepad);
+                .with_gamepad(gamepad_entity);
                 let player = commands
                     .spawn(InputManagerBundle::with_map(input_map))
-                    .insert(Player { gamepad })
+                    .insert(Player {
+                        gamepad: gamepad_entity,
+                    })
                     .id();
 
                 // Insert the created player and its gamepad to the hashmap of joined players
                 // Since uniqueness was already checked above, we can insert here unchecked
-                joined_players.0.insert_unique_unchecked(gamepad, player);
+                joined_players
+                    .0
+                    .insert_unique_unchecked(gamepad_entity, player);
             }
         }
     }
@@ -67,7 +72,7 @@ fn jump(action_query: Query<(&ActionState<Action>, &Player)>) {
     // Iterate through each player to see if they jumped
     for (action_state, player) in action_query.iter() {
         if action_state.just_pressed(&Action::Jump) {
-            println!("Player {} jumped!", player.gamepad.id);
+            println!("Player {} jumped!", player.gamepad);
         }
     }
 }
@@ -85,7 +90,7 @@ fn disconnect(
             commands.entity(player_entity).despawn();
             joined_players.0.remove(&player.gamepad);
 
-            println!("Player {} has disconnected!", player.gamepad.id);
+            println!("Player {} has disconnected!", player.gamepad);
         }
     }
 }

@@ -1,8 +1,10 @@
 //! Keyboard inputs
 
+use bevy::ecs::system::lifetimeless::SRes;
+use bevy::ecs::system::StaticSystemParam;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, Res, ResMut, World};
+use bevy::prelude::{Entity, Events, KeyCode, Reflect, ResMut, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -31,11 +33,11 @@ impl UserInput for KeyCode {
 }
 
 impl UpdatableInput for KeyCode {
-    type SourceData = ButtonInput<KeyCode>;
+    type SourceData = SRes<ButtonInput<KeyCode>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: Res<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         for key in source_data.get_pressed() {
             central_input_store.update_buttonlike(*key, true);
@@ -52,7 +54,7 @@ impl Buttonlike for KeyCode {
     /// Checks if the specified key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(self)
     }
 
@@ -67,6 +69,7 @@ impl Buttonlike for KeyCode {
             key_code: *self,
             logical_key: Key::Unidentified(NativeKey::Unidentified),
             state: ButtonState::Pressed,
+            repeat: false,
             window: Entity::PLACEHOLDER,
         });
     }
@@ -82,6 +85,7 @@ impl Buttonlike for KeyCode {
             key_code: *self,
             logical_key: Key::Unidentified(NativeKey::Unidentified),
             state: ButtonState::Released,
+            repeat: false,
             window: Entity::PLACEHOLDER,
         });
     }
@@ -165,7 +169,7 @@ impl Buttonlike for ModifierKey {
     /// Checks if the specified modifier key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(&self.left()) || input_store.pressed(&self.right())
     }
 
@@ -222,9 +226,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!up.pressed(inputs, gamepad));
         assert!(!left.pressed(inputs, gamepad));

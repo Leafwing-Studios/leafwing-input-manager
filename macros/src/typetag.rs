@@ -42,7 +42,7 @@ pub(crate) fn expand_serde_typetag(input: &ItemImpl) -> syn::Result<TokenStream>
             ) {
                 #crate_path::typetag::Registry::register(
                     registry,
-                    #ident,
+                    (#ident).into(),
                     |de| Ok(::std::boxed::Box::new(
                         ::bevy::reflect::erased_serde::deserialize::<#self_ty>(de)?,
                     )),

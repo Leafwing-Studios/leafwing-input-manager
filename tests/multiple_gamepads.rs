@@ -1,6 +1,8 @@
 #![cfg(feature = "gamepad")]
 
-use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo};
+use bevy::input::gamepad::{
+    GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo, RawGamepadEvent,
+};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -15,19 +17,26 @@ fn create_test_app() -> App {
     app.add_plugins(MinimalPlugins).add_plugins(InputPlugin);
     app.add_plugins(InputManagerPlugin::<MyAction>::default());
 
+    let gamepad_1 = app.world_mut().spawn(()).id();
+    let gamepad_2 = app.world_mut().spawn(()).id();
+
     let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
     gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
         // Must be consistent with mocked events
-        gamepad: Gamepad { id: 1 },
+        gamepad: gamepad_1,
         connection: GamepadConnection::Connected(GamepadInfo {
             name: "FirstController".into(),
+            vendor_id: None,
+            product_id: None,
         }),
     }));
     gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
         // Must be consistent with mocked events
-        gamepad: Gamepad { id: 2 },
+        gamepad: gamepad_2,
         connection: GamepadConnection::Connected(GamepadInfo {
             name: "SecondController".into(),
+            vendor_id: None,
+            product_id: None,
         }),
     }));
 
@@ -39,12 +48,12 @@ fn create_test_app() -> App {
     app
 }
 
-fn jump_button_press_event(gamepad: Gamepad) -> GamepadEvent {
-    use bevy::input::gamepad::GamepadButtonChangedEvent;
+fn jump_button_press_event(gamepad: Entity) -> RawGamepadEvent {
+    use bevy::input::gamepad::RawGamepadButtonChangedEvent;
 
-    GamepadEvent::Button(GamepadButtonChangedEvent::new(
+    RawGamepadEvent::Button(RawGamepadButtonChangedEvent::new(
         gamepad,
-        GamepadButtonType::South,
+        GamepadButton::South,
         1.0,
     ))
 }
@@ -53,16 +62,33 @@ fn jump_button_press_event(gamepad: Gamepad) -> GamepadEvent {
 fn accepts_preferred_gamepad() {
     let mut app = create_test_app();
 
-    const PREFERRED_GAMEPAD: Gamepad = Gamepad { id: 2 };
+    let gamepad_info = GamepadInfo {
+        name: "Preferred gamepad".to_owned(),
+        vendor_id: None,
+        product_id: None,
+    };
+    let preferred_gamepad = app.world_mut().spawn(()).id();
+    let mut gamepad_connection_events = app
+        .world_mut()
+        .resource_mut::<Events<GamepadConnectionEvent>>();
+    gamepad_connection_events.send(GamepadConnectionEvent {
+        // This MUST be consistent with any other mocked events
+        gamepad: preferred_gamepad,
+        connection: GamepadConnection::Connected(gamepad_info),
+    });
+    // Ensure that the gamepad is picked up by the appropriate system
+    app.update();
+    // Ensure that the connection event is flushed through
+    app.update();
 
-    let mut input_map = InputMap::new([(MyAction::Jump, GamepadButtonType::South)]);
-    input_map.set_gamepad(PREFERRED_GAMEPAD);
+    let mut input_map = InputMap::new([(MyAction::Jump, GamepadButton::South)]);
+    input_map.set_gamepad(preferred_gamepad);
     app.insert_resource(input_map);
     app.init_resource::<ActionState<MyAction>>();
 
     // When we press the Jump button...
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    events.send(jump_button_press_event(PREFERRED_GAMEPAD));
+    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
+    events.send(jump_button_press_event(preferred_gamepad));
     app.update();
 
     // ... We should receive a Jump action!
@@ -74,17 +100,17 @@ fn accepts_preferred_gamepad() {
 fn filters_out_other_gamepads() {
     let mut app = create_test_app();
 
-    const PREFERRED_GAMEPAD: Gamepad = Gamepad { id: 2 };
-    const OTHER_GAMEPAD: Gamepad = Gamepad { id: 1 };
+    let preferred_gamepad = app.world_mut().spawn(()).id();
+    let other_gamepad = app.world_mut().spawn(()).id();
 
-    let mut input_map = InputMap::new([(MyAction::Jump, GamepadButtonType::South)]);
-    input_map.set_gamepad(PREFERRED_GAMEPAD);
+    let mut input_map = InputMap::new([(MyAction::Jump, GamepadButton::South)]);
+    input_map.set_gamepad(preferred_gamepad);
     app.insert_resource(input_map);
     app.init_resource::<ActionState<MyAction>>();
 
     // When we press the Jump button...
-    let mut events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    events.send(jump_button_press_event(OTHER_GAMEPAD));
+    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
+    events.send(jump_button_press_event(other_gamepad));
     app.update();
 
     // ... We should receive a Jump action!

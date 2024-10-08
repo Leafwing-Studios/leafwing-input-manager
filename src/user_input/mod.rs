@@ -82,7 +82,7 @@
 use std::fmt::Debug;
 
 use bevy::math::{Vec2, Vec3};
-use bevy::prelude::{Gamepad, World};
+use bevy::prelude::{Entity, World};
 use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
@@ -136,10 +136,10 @@ pub trait Buttonlike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Checks if the input is currently active.
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool;
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool;
 
     /// Checks if the input is currently inactive.
-    fn released(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+    fn released(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         !self.pressed(input_store, gamepad)
     }
 
@@ -158,7 +158,7 @@ pub trait Buttonlike:
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn press_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+    fn press_as_gamepad(&self, world: &mut World, _gamepad: Option<Entity>) {
         self.press(world);
     }
 
@@ -177,7 +177,7 @@ pub trait Buttonlike:
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+    fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Entity>) {
         self.release(world);
     }
 }
@@ -187,7 +187,7 @@ pub trait Axislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the current value of the input as an `f32`.
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32;
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32;
 
     /// Simulate an axis-like input by sending the appropriate event.
     ///
@@ -204,7 +204,7 @@ pub trait Axislike:
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Gamepad>) {
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Entity>) {
         self.set_value(world, value);
     }
 }
@@ -214,7 +214,7 @@ pub trait DualAxislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the values of this input along the X and Y axes (if applicable).
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2;
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2;
 
     /// Simulate a dual-axis-like input by sending the appropriate event.
     ///
@@ -231,7 +231,7 @@ pub trait DualAxislike:
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Gamepad>) {
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Entity>) {
         self.set_axis_pair(world, value);
     }
 }
@@ -241,7 +241,7 @@ pub trait TripleAxislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the values of this input along the X, Y, and Z axes (if applicable).
-    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3;
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3;
 
     /// Simulate a triple-axis-like input by sending the appropriate event.
     ///
@@ -258,12 +258,7 @@ pub trait TripleAxislike:
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_axis_triple_as_gamepad(
-        &self,
-        world: &mut World,
-        value: Vec3,
-        _gamepad: Option<Gamepad>,
-    ) {
+    fn set_axis_triple_as_gamepad(&self, world: &mut World, value: Vec3, _gamepad: Option<Entity>) {
         self.set_axis_triple(world, value);
     }
 }
