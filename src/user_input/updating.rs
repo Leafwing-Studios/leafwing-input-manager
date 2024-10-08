@@ -5,8 +5,9 @@ use std::hash::Hash;
 
 use bevy::{
     app::{App, PreUpdate},
+    ecs::system::{StaticSystemParam, SystemParam},
     math::{Vec2, Vec3},
-    prelude::{IntoSystemConfigs, Res, ResMut, Resource},
+    prelude::{IntoSystemConfigs, ResMut, Resource},
     reflect::Reflect,
     utils::{HashMap, HashSet},
 };
@@ -272,7 +273,7 @@ pub trait UpdatableInput: 'static {
     ///
     /// This type cannot be [`CentralInputStore`], as that would cause mutable aliasing and panic at runtime.
     // TODO: Ideally this should be a `SystemParam` for more flexibility.
-    type SourceData: Resource;
+    type SourceData: SystemParam;
 
     /// A system that updates the central store of user input based on the state of the world.
     ///
@@ -281,7 +282,10 @@ pub trait UpdatableInput: 'static {
     /// # Warning
     ///
     /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
-    fn compute(central_input_store: ResMut<CentralInputStore>, source_data: Res<Self::SourceData>);
+    fn compute(
+        central_input_store: ResMut<CentralInputStore>,
+        source_data: StaticSystemParam<Self::SourceData>,
+    );
 }
 
 #[cfg(test)]
@@ -337,7 +341,7 @@ mod tests {
         dbg!(&mouse_button_input);
         world.insert_resource(mouse_button_input);
 
-        world.run_system_once(MouseButton::compute);
+        world.run_system_once(MouseButton::compute).unwrap();
         let central_input_store = world.resource::<CentralInputStore>();
         dbg!(central_input_store);
         assert!(central_input_store.pressed(&MouseButton::Left));

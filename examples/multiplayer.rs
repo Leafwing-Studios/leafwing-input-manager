@@ -30,7 +30,7 @@ struct PlayerBundle {
 }
 
 impl PlayerBundle {
-    fn input_map(player: Player) -> InputMap<Action> {
+    fn input_map(player: Player, gamepad_0: Entity, gamepad_1: Entity) -> InputMap<Action> {
         let mut input_map = match player {
             Player::One => InputMap::new([
                 (Action::Left, KeyCode::KeyA),
@@ -42,21 +42,21 @@ impl PlayerBundle {
             // and gracefully handle disconnects
             // Note that this step is not required:
             // if it is skipped, all input maps will read from all connected gamepads
-            .with_gamepad(Gamepad { id: 0 }),
+            .with_gamepad(gamepad_0),
             Player::Two => InputMap::new([
                 (Action::Left, KeyCode::ArrowLeft),
                 (Action::Right, KeyCode::ArrowRight),
                 (Action::Jump, KeyCode::ArrowUp),
             ])
-            .with_gamepad(Gamepad { id: 1 }),
+            .with_gamepad(gamepad_1),
         };
 
         // Each player will use the same gamepad controls, but on separate gamepads.
         input_map.insert_multiple([
-            (Action::Left, GamepadButtonType::DPadLeft),
-            (Action::Right, GamepadButtonType::DPadRight),
-            (Action::Jump, GamepadButtonType::DPadUp),
-            (Action::Jump, GamepadButtonType::South),
+            (Action::Left, GamepadButton::DPadLeft),
+            (Action::Right, GamepadButton::DPadRight),
+            (Action::Jump, GamepadButton::DPadUp),
+            (Action::Jump, GamepadButton::South),
         ]);
 
         input_map
@@ -64,14 +64,17 @@ impl PlayerBundle {
 }
 
 fn spawn_players(mut commands: Commands) {
+    let gamepad_0 = commands.spawn(()).id();
+    let gamepad_1 = commands.spawn(()).id();
+
     commands.spawn(PlayerBundle {
         player: Player::One,
-        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::One)),
+        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::One, gamepad_0, gamepad_1)),
     });
 
     commands.spawn(PlayerBundle {
         player: Player::Two,
-        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::Two)),
+        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::Two, gamepad_0, gamepad_1)),
     });
 }
 

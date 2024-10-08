@@ -1,6 +1,7 @@
 //! Type tag registration for trait objects
 
-use std::collections::BTreeMap;
+use std::{borrow::Cow, collections::BTreeMap};
+use std::fmt::Debug;
 
 pub use serde_flexitos::Registry;
 use serde_flexitos::{DeserializeFn, GetError};
@@ -13,7 +14,7 @@ pub trait RegisterTypeTag<'de, T: ?Sized> {
 
 /// An infallible version of [`MapRegistry`](serde_flexitos::MapRegistry)
 /// that allows multiple registrations of deserializers.
-pub struct InfallibleMapRegistry<O: ?Sized, I = &'static str> {
+pub struct InfallibleMapRegistry<O: ?Sized, I = Cow<'static, str>> {
     deserialize_fns: BTreeMap<I, Option<DeserializeFn<O>>>,
     trait_object_name: &'static str,
 }
@@ -29,7 +30,7 @@ impl<O: ?Sized, I> InfallibleMapRegistry<O, I> {
     }
 }
 
-impl<O: ?Sized, I: Ord> Registry for InfallibleMapRegistry<O, I> {
+impl<O: ?Sized, I: Ord + Debug> Registry for InfallibleMapRegistry<O, I> {
     type Identifier = I;
     type TraitObject = O;
 

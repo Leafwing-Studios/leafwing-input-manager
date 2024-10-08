@@ -22,7 +22,7 @@ fn setup(mut commands: Commands) {
     // via the `MouseMoveDirection` enum.
     let input_map = InputMap::default().with_dual_axis(CameraMovement::Pan, MouseMove::default());
     commands
-        .spawn(Camera2dBundle::default())
+        .spawn(Camera2d)
         .insert(InputManagerBundle::with_map(input_map));
 
     commands.spawn(SpriteBundle {

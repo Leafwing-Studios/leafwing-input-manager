@@ -64,7 +64,7 @@ fn send_action_diff(app: &mut App, action_diff: ActionDiffEvent<Action>) {
 #[track_caller]
 fn assert_has_no_action_diffs(app: &mut App) {
     let action_diff_events = get_events::<ActionDiffEvent<Action>>(app);
-    let action_diff_event_reader = &mut action_diff_events.get_reader();
+    let action_diff_event_reader = &mut action_diff_events.get_cursor();
     if let Some(action_diff) = action_diff_event_reader.read(action_diff_events).next() {
         panic!(
             "Expected no `ActionDiff` variants. Received: {:?}",
@@ -76,7 +76,7 @@ fn assert_has_no_action_diffs(app: &mut App) {
 #[track_caller]
 fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffEvent<Action>)) {
     let mut action_diff_events = get_events_mut::<ActionDiffEvent<Action>>(app);
-    let action_diff_event_reader = &mut action_diff_events.get_reader();
+    let action_diff_event_reader = &mut action_diff_events.get_cursor();
     assert!(action_diff_event_reader.len(action_diff_events.as_ref()) < 2);
     match action_diff_event_reader
         .read(action_diff_events.as_ref())

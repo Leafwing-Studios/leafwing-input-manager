@@ -31,8 +31,8 @@ fn spawn_player(mut commands: Commands) {
         VirtualDPad::new(
             KeyCode::KeyW,
             KeyCode::KeyS,
-            GamepadButtonType::DPadLeft,
-            GamepadButtonType::DPadRight,
+            GamepadButton::DPadLeft,
+            GamepadButton::DPadRight,
         ),
     );
     commands
