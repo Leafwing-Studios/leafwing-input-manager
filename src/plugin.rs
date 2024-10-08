@@ -122,7 +122,9 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
 
                 app.configure_sets(
                     PreUpdate,
-                    InputManagerSystem::Unify.after(InputManagerSystem::Filter),
+                    InputManagerSystem::Unify
+                        .after(InputManagerSystem::Filter)
+                        .after(InputSystem),
                 );
 
                 app.configure_sets(
