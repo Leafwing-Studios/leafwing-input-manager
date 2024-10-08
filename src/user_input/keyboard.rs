@@ -201,14 +201,14 @@ impl Buttonlike for ModifierKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::plugin::CentralInputStorePlugin;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+            .add_plugins(CentralInputStorePlugin);
         app
     }
 

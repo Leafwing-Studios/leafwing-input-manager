@@ -476,8 +476,8 @@ mod tests {
         use super::*;
         use crate::{
             input_map::UpdatedValue,
-            plugin::{AccumulatorPlugin, CentralInputStorePlugin},
-            prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey, VirtualDPad},
+            plugin::CentralInputStorePlugin,
+            prelude::{ModifierKey, VirtualDPad},
         };
         use bevy::{input::InputPlugin, prelude::*};
         use Action::*;
@@ -579,9 +579,7 @@ mod tests {
         #[test]
         fn resolve_prioritize_longest() {
             let mut app = App::new();
-            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
-            app.init_resource::<AccumulatedMouseMovement>();
-            app.init_resource::<AccumulatedMouseScroll>();
+            app.add_plugins((InputPlugin, CentralInputStorePlugin));
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
@@ -637,7 +635,7 @@ mod tests {
         #[test]
         fn handle_simple_clash() {
             let mut app = App::new();
-            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+            app.add_plugins((InputPlugin, CentralInputStorePlugin));
             let input_map = test_input_map();
             let gamepad = app.world_mut().spawn(()).id();
 
@@ -672,8 +670,6 @@ mod tests {
         fn handle_clashes_dpad_chord() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
-            app.init_resource::<AccumulatedMouseMovement>();
-            app.init_resource::<AccumulatedMouseScroll>();
             let input_map = test_input_map();
             let gamepad = app.world_mut().spawn(()).id();
 
@@ -727,9 +723,7 @@ mod tests {
         #[test]
         fn check_which_pressed() {
             let mut app = App::new();
-            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
-            app.init_resource::<AccumulatedMouseMovement>();
-            app.init_resource::<AccumulatedMouseScroll>();
+            app.add_plugins((InputPlugin, CentralInputStorePlugin));
             let input_map = test_input_map();
 
             Digit1.press(app.world_mut());

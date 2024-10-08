@@ -1109,14 +1109,14 @@ mod tests {
         use std::time::{Duration, Instant};
 
         use crate::input_map::InputMap;
-        use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+        use crate::plugin::CentralInputStorePlugin;
         use crate::prelude::updating::CentralInputStore;
         use crate::prelude::ClashStrategy;
         use crate::user_input::Buttonlike;
         use bevy::input::InputPlugin;
 
         let mut app = App::new();
-        app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+        app.add_plugins((InputPlugin, CentralInputStorePlugin));
 
         #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, bevy::prelude::Reflect)]
         enum Action {
@@ -1224,7 +1224,7 @@ mod tests {
         use std::time::{Duration, Instant};
 
         use crate::input_map::InputMap;
-        use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+        use crate::plugin::CentralInputStorePlugin;
         use crate::prelude::updating::CentralInputStore;
         use crate::prelude::ClashStrategy;
         use crate::user_input::chord::ButtonlikeChord;
@@ -1248,7 +1248,7 @@ mod tests {
 
         let mut app = App::new();
         app.add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+            .add_plugins(CentralInputStorePlugin);
 
         // Action state
         let mut action_state = ActionState::<Action>::default();

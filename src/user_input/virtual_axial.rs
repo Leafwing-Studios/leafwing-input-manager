@@ -38,10 +38,10 @@ use serde::{Deserialize, Serialize};
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Define a virtual Y-axis using arrow "up" and "down" keys
 /// let axis = VirtualAxis::vertical_arrow_keys();
@@ -273,10 +273,10 @@ impl WithAxisProcessingPipelineExt for VirtualAxis {
 /// use bevy::input::InputPlugin;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 /// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Define a virtual D-pad using the WASD keys
 /// let input = VirtualDPad::wasd();
@@ -601,14 +601,14 @@ mod tests {
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::plugin::CentralInputStorePlugin;
     use crate::prelude::updating::CentralInputStore;
     use crate::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+            .add_plugins(CentralInputStorePlugin);
         app
     }
 

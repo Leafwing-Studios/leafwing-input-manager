@@ -1,11 +1,7 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
 use crate::prelude::updating::CentralInputStore;
-#[cfg(feature = "mouse")]
-use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
 use bevy::ecs::query::QueryFilter;
-#[cfg(feature = "mouse")]
-use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::log::debug;
 
 use crate::{
@@ -81,32 +77,6 @@ pub fn tick_action_state<A: Actionlike>(
 
     // Store the previous time in the system
     *stored_previous_instant = time.last_update();
-}
-
-/// Sums the[`MouseMotion`] events received since during this frame.
-#[cfg(feature = "mouse")]
-pub fn accumulate_mouse_movement(
-    mut mouse_motion: ResMut<AccumulatedMouseMovement>,
-    mut events: EventReader<MouseMotion>,
-) {
-    mouse_motion.reset();
-
-    for event in events.read() {
-        mouse_motion.accumulate(event);
-    }
-}
-
-/// Sums the [`MouseWheel`] events received since during this frame.
-#[cfg(feature = "mouse")]
-pub fn accumulate_mouse_scroll(
-    mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
-    mut events: EventReader<MouseWheel>,
-) {
-    mouse_scroll.reset();
-
-    for event in events.read() {
-        mouse_scroll.accumulate(event);
-    }
 }
 
 /// Fetches the [`CentralInputStore`]

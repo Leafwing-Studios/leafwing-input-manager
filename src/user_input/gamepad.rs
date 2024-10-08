@@ -727,7 +727,7 @@ impl Buttonlike for GamepadButton {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::plugin::CentralInputStorePlugin;
     use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadInfo};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
@@ -735,7 +735,7 @@ mod tests {
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins);
-        app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+        app.add_plugins((InputPlugin, CentralInputStorePlugin));
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail

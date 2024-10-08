@@ -24,12 +24,12 @@ use super::{Axislike, DualAxislike};
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Define a chord using A and B keys
 /// let input = ButtonlikeChord::new([KeyCode::KeyA, KeyCode::KeyB]);
@@ -352,7 +352,7 @@ impl TripleAxislike for TripleAxislikeChord {
 #[cfg(test)]
 mod tests {
     use super::ButtonlikeChord;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::plugin::CentralInputStorePlugin;
     use crate::user_input::updating::CentralInputStore;
     use crate::user_input::Buttonlike;
     use bevy::input::gamepad::{
@@ -365,7 +365,7 @@ mod tests {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins)
             .add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+            .add_plugins(CentralInputStorePlugin);
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
