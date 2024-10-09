@@ -51,8 +51,8 @@ impl PlayerAction {
         input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
 
         // Default kbm input bindings
-        input_map.insert_dual_axis(Self::Move, KeyboardVirtualDPad::WASD);
-        input_map.insert_dual_axis(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert_dual_axis(Self::Move, VirtualDPad::wasd());
+        input_map.insert_dual_axis(Self::Look, VirtualDPad::arrow_keys());
         input_map.insert(Self::Shoot, MouseButton::Left);
 
         input_map

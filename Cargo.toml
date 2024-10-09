@@ -1,7 +1,7 @@
 [package]
 name = "leafwing-input-manager"
 description = "A powerful, flexible and ergonomic way to manage action-input keybindings for the Bevy game engine."
-version = "0.15.0"
+version = "0.15.1"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
 repository = "https://github.com/leafwing-studios/leafwing-input-manager"
@@ -44,11 +44,11 @@ ui = ['bevy/bevy_ui']
 egui = ['dep:bevy_egui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.15" }
+leafwing_input_manager_macros = { path = "macros", version = "0.15.1" }
 bevy = { version = "0.14.0-rc.3", default-features = false, features = [
   "serialize",
 ] }
-bevy_egui = { version = "0.28", optional = true }
+bevy_egui = { version = "0.29", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",

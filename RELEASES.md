@@ -1,5 +1,18 @@
 # Release Notes
 
+## Version 0.16.0 (Unreleased)
+
+### Usability (0.16.0)
+
+- made virtual axial controls more flexible, accepting any kind of `Buttonlike`
+  - removed `KeyboardVirtualAxis` and `GamepadVirtualAxis` in favor of `VirtualAxis`
+  - removed `KeyboardVirtualDPad` and `GamepadVirtualDPad` in favor of `VirtualDPad`
+  - removed `KeyboardVirtualDPad3D` in favor of `VirtualDPad3D`
+- added `threshold` value for `GamepadControlDirection`, `MouseMoveDirection`, and `MouseScrollDirection` to be considered pressed.
+- added ability to filter entities to generate action diffs for:
+  - added new `generate_action_diffs_filtered<A, F>` system, which accepts a `QueryFilter`, so that only entities matching QueryFilter `F` (and with `ActionState<A>`) generate action diffs
+  - added new `summarize_filtered<F>` function for `SummarizedActionState<A>` (alongside the original `summarize`).
+
 ## Version 0.15.1
 
 ### Enhancements (0.15.1)

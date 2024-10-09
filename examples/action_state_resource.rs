@@ -30,7 +30,7 @@ pub enum PlayerAction {
 impl PlayerAction {
     fn mkb_input_map() -> InputMap<Self> {
         InputMap::new([(Self::Jump, KeyCode::Space)])
-            .with_dual_axis(Self::Move, KeyboardVirtualDPad::WASD)
+            .with_dual_axis(Self::Move, VirtualDPad::wasd())
     }
 }
 
