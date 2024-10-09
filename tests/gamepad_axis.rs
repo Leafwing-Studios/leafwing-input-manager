@@ -296,7 +296,7 @@ fn test_zero_circle_deadzone() {
 fn gamepad_virtual_dpad() {
     let mut app = test_app();
     app.insert_resource(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, GamepadVirtualDPad::DPAD),
+        InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
     );
 
     GamepadButtonType::DPadLeft.press(app.world_mut());

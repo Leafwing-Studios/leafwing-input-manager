@@ -9,6 +9,7 @@ use bevy::{
     ecs::{
         entity::{Entity, MapEntities},
         event::Event,
+        query::QueryFilter,
     },
     math::{Vec2, Vec3},
     prelude::{EntityMapper, EventWriter, Query, Res},
@@ -112,10 +113,19 @@ impl<A: Actionlike> SummarizedActionState<A> {
         entities
     }
 
-    /// Captures the raw values for each action in the current frame.
+    /// Captures the raw values for each action in the current frame, for all entities with `ActionState<A>`.
     pub fn summarize(
         global_action_state: Option<Res<ActionState<A>>>,
         action_state_query: Query<(Entity, &ActionState<A>)>,
+    ) -> Self {
+        Self::summarize_filtered(global_action_state, action_state_query)
+    }
+
+    /// Captures the raw values for each action in the current frame, for entities with `ActionState<A>`
+    /// matching the query filter.
+    pub fn summarize_filtered<F: QueryFilter>(
+        global_action_state: Option<Res<ActionState<A>>>,
+        action_state_query: Query<(Entity, &ActionState<A>), F>,
     ) -> Self {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
@@ -399,6 +409,9 @@ mod tests {
         action_state
     }
 
+    #[derive(Component)]
+    struct NotSummarized;
+
     fn expected_summary(entity: Entity) -> SummarizedActionState<TestAction> {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
@@ -456,6 +469,25 @@ mod tests {
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
 
         // Components use the entity
+        assert_eq!(summarized, expected_summary(entity));
+    }
+
+    #[test]
+    fn summarize_filtered_entities_from_component() {
+        // Spawn two entities, one to be summarized and one to be filtered out
+        let mut world = World::new();
+        let entity = world.spawn(test_action_state()).id();
+        world.spawn((test_action_state(), NotSummarized));
+
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
+        let summarized =
+            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+
+        // Check that only the entity without NotSummarized was summarized
         assert_eq!(summarized, expected_summary(entity));
     }
 

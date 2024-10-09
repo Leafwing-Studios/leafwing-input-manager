@@ -205,21 +205,79 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
         self.with_processor(DualAxisBounds::symmetric_all(threshold))
     }
 
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values to a minimum value on both axes.
+    #[inline]
+    fn at_least(self, min: f32) -> Self {
+        self.with_processor(DualAxisBounds::at_least_all(min))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting X values to a minimum value.
+    #[inline]
+    fn at_least_only_x(self, min: f32) -> Self {
+        self.with_processor(DualAxisBounds::at_least_only_x(min))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting Y values to a minimum value.
+    #[inline]
+    fn at_least_only_y(self, min: f32) -> Self {
+        self.with_processor(DualAxisBounds::at_least_only_y(min))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting values to a maximum value on both axes.
+    #[inline]
+    fn at_most(self, min: f32) -> Self {
+        self.with_processor(DualAxisBounds::at_most_all(min))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting X values to a maximum value.
+    #[inline]
+    fn at_most_only_x(self, min: f32) -> Self {
+        self.with_processor(DualAxisBounds::at_most_only_x(min))
+    }
+
+    /// Appends a [`DualAxisBounds`] processor as the next processing step,
+    /// restricting Y values to a maximum value.
+    #[inline]
+    fn at_most_only_y(self, min: f32) -> Self {
+        self.with_processor(DualAxisBounds::at_most_only_y(min))
+    }
+
     /// Appends a [`CircleBounds`] processor as the next processing step,
     /// restricting values to a `max` magnitude.
+    ///
+    /// # Requirements
+    ///
+    /// - `max` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_circle_bounds(self, max: f32) -> Self {
         self.with_processor(CircleBounds::new(max))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[min, max]` on both axes,
+    /// excluding values within the dead zone range `[negative_max, positive_min]` on both axes,
     /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
     /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
     /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
-    fn with_deadzone(self, min: f32, max: f32) -> Self {
-        self.with_processor(DualAxisDeadZone::all(min, max))
+    fn with_deadzone(self, negative_max: f32, positive_min: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::all(negative_max, positive_min))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
@@ -227,49 +285,185 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
     /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
     /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_symmetric(self, threshold: f32) -> Self {
         self.with_processor(DualAxisDeadZone::symmetric_all(threshold))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[min, max]` on the X-axis,
-    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
-    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
-    /// after dead zone exclusion.
+    /// only passing positive values that greater than `positive_min` on both axes
+    /// and then normalizing them into the "live zone" range `[positive_min, 1.0]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
-    fn with_deadzone_x(self, min: f32, max: f32) -> Self {
-        self.with_processor(DualAxisDeadZone::only_x(min, max))
+    fn only_positive(self, positive_min: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_positive_all(positive_min))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[-threshold, threshold]` on the X-axis,
-    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
-    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// only passing negative values that less than `negative_max` on both axes
+    /// and then normalizing them into the "live zone" range `[-1.0, negative_max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative(self, negative_max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_negative_all(negative_max))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the range `[negative_max, positive_min]` on the X-axis,
+    /// treating them as zeros, then normalizing non-excluded X values into the "live zone",
+    /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
     /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn with_deadzone_x(self, negative_max: f32, positive_min: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_x(negative_max, positive_min))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the range `[-threshold, threshold]` on the X-axis,
+    /// treating them as zeros, then normalizing non-excluded X values into the "live zone",
+    /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
+    /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_x_symmetric(self, threshold: f32) -> Self {
         self.with_processor(DualAxisDeadZone::symmetric_only_x(threshold))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the dead zone range `[min, max]` on the Y-axis,
-    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
-    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
-    /// after dead zone exclusion.
+    /// only excluding X values that less than or equal to `positive_min`, treating them as zeros
+    /// and then normalizing non-excluded X values into the "live zone" range `[positive_min, 1.0]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
-    fn with_deadzone_y(self, min: f32, max: f32) -> Self {
-        self.with_processor(DualAxisDeadZone::only_y(min, max))
+    fn only_positive_x(self, positive_min: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_positive_x(positive_min))
     }
 
     /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
-    /// excluding values within the deadzone range `[-threshold, threshold]` on the Y-axis,
-    /// treating them as zeros, then normalizing non-excluded input values into the "live zone",
-    /// the remaining range within the [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default)
+    /// only excluding X values that greater than or equal to `negative_max`, treating them as zeros
+    /// and then normalizing non-excluded X values into the "live zone" range `[-1.0, negative_max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative_x(self, negative_max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_negative_x(negative_max))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the range `[negative_max, positive_min]` on the Y-axis,
+    /// treating them as zeros, then normalizing non-excluded Y values into the "live zone",
+    /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
     /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn with_deadzone_y(self, negative_max: f32, positive_min: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_y(negative_max, positive_min))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// excluding values within the range `[-threshold, threshold]` on the Y-axis,
+    /// treating them as zeros, then normalizing non-excluded Y values into the "live zone",
+    /// the remaining range within the [`AxisBounds::symmetric(1.0)`](super::AxisBounds::default)
+    /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_y_symmetric(self, threshold: f32) -> Self {
         self.with_processor(DualAxisDeadZone::symmetric_only_y(threshold))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// only excluding Y values that less than or equal to `positive_min`, treating them as zeros
+    /// and then normalizing non-excluded Y values into the range `[positive_min, 1.0]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_positive_y(self, positive_min: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_positive_y(positive_min))
+    }
+
+    /// Appends a [`DualAxisDeadZone`] processor as the next processing step,
+    /// only excluding Y values that greater than or equal to `negative_max`, treating them as zeros
+    /// and then normalizing non-excluded Y values into the range `[-1.0, negative_max]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative_y(self, negative_max: f32) -> Self {
+        self.with_processor(DualAxisDeadZone::only_negative_y(negative_max))
     }
 
     /// Appends a [`CircleDeadZone`] processor as the next processing step,
@@ -277,61 +471,221 @@ pub trait WithDualAxisProcessingPipelineExt: Sized {
     /// then normalizing non-excluded input values into the "live zone",
     /// the remaining range within the [`CircleBounds::new(1.0)`](CircleBounds::default)
     /// after dead zone exclusion.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_circle_deadzone(self, min: f32) -> Self {
         self.with_processor(CircleDeadZone::new(min))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// ignoring values within the dead zone range `[min, max]` on both axes,
+    /// ignoring values within the range `[negative_max, positive_min]` on both axes,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
-    fn with_deadzone_unscaled(self, min: f32, max: f32) -> Self {
-        self.with_processor(DualAxisExclusion::all(min, max))
+    fn with_deadzone_unscaled(self, negative_max: f32, positive_min: f32) -> Self {
+        self.with_processor(DualAxisExclusion::all(negative_max, positive_min))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// ignoring values within the dead zone range `[-threshold, threshold]` on both axes,
+    /// ignoring values within the range `[-threshold, threshold]` on both axes,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_symmetric_unscaled(self, threshold: f32) -> Self {
         self.with_processor(DualAxisExclusion::symmetric_all(threshold))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[min, max]` on the X-axis,
+    /// only passing positive values that greater than `positive_min` on both axes,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
-    fn with_deadzone_x_unscaled(self, min: f32, max: f32) -> Self {
-        self.with_processor(DualAxisExclusion::only_x(min, max))
+    fn only_positive_unscaled(self, positive_min: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_positive_all(positive_min))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[-threshold, threshold]` on the X-axis,
+    /// only passing negative values that less than `negative_max` on both axes,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative_unscaled(self, negative_max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_negative_all(negative_max))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the range `[negative_max, positive_min]` on the X-axis,
+    /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn with_deadzone_x_unscaled(self, negative_max: f32, positive_min: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_x(negative_max, positive_min))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the range `[-threshold, threshold]` on the X-axis,
+    /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_x_symmetric_unscaled(self, threshold: f32) -> Self {
         self.with_processor(DualAxisExclusion::symmetric_only_x(threshold))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[min, max]` on the Y-axis,
+    /// only excluding X values that less than or equal to `positive_min`,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
-    fn with_deadzone_y_unscaled(self, min: f32, max: f32) -> Self {
-        self.with_processor(DualAxisExclusion::only_y(min, max))
+    fn only_positive_x_unscaled(self, positive_min: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_positive_x(positive_min))
     }
 
     /// Appends a [`DualAxisExclusion`] processor as the next processing step,
-    /// only ignoring values within the dead zone range `[-threshold, threshold]` on the Y-axis,
+    /// only excluding X values that greater than or equal to `negative_max`,
     /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative_x_unscaled(self, negative_max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_negative_x(negative_max))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the range `[negative_max, positive_min]` on the Y-axis,
+    /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0` <= `positive_min`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn with_deadzone_y_unscaled(self, negative_max: f32, positive_min: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_y(negative_max, positive_min))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only ignoring values within the range `[-threshold, threshold]` on the Y-axis,
+    /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `threshold` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_deadzone_y_symmetric_unscaled(self, threshold: f32) -> Self {
         self.with_processor(DualAxisExclusion::symmetric_only_y(threshold))
     }
 
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only excluding Y values that less than or equal to `positive_min`,
+    /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_positive_y_unscaled(self, positive_min: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_positive_y(positive_min))
+    }
+
+    /// Appends a [`DualAxisExclusion`] processor as the next processing step,
+    /// only excluding Y values that greater than or equal to `negative_max`,
+    /// treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    fn only_negative_y_unscaled(self, negative_max: f32) -> Self {
+        self.with_processor(DualAxisExclusion::only_negative_y(negative_max))
+    }
+
     /// Appends a [`CircleExclusion`] processor as the next processing step,
     /// ignoring values below a `min` magnitude, treating them as zeros.
+    ///
+    /// # Requirements
+    ///
+    /// - `min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
     #[inline]
     fn with_circle_deadzone_unscaled(self, min: f32) -> Self {
         self.with_processor(CircleExclusion::new(min))

@@ -236,6 +236,34 @@ impl AxisExclusion {
         Self::new(-threshold, threshold)
     }
 
+    /// Creates an [`AxisExclusion`] that only passes positive values that greater than `positive_min`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive(positive_min: f32) -> Self {
+        Self::new(f32::NEG_INFINITY, positive_min)
+    }
+
+    /// Creates an [`AxisExclusion`] that only passes negative values that less than `negative_max`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative(negative_max: f32) -> Self {
+        Self::new(negative_max, f32::INFINITY)
+    }
+
     /// Returns the minimum and maximum bounds.
     #[must_use]
     #[inline]
@@ -387,8 +415,8 @@ impl AxisDeadZone {
         livezone_upper_recip: 1.0,
     };
 
-    /// Creates an [`AxisDeadZone`] that excludes input values
-    /// within the given deadzone `[negative_max, positive_min]`.
+    /// Creates an [`AxisDeadZone`] that excludes input values within the range `[negative_max, positive_min]`
+    /// and then normalizes non-excluded input values into the valid range `[-1.0, 1.0]`.
     ///
     /// # Requirements
     ///
@@ -407,7 +435,7 @@ impl AxisDeadZone {
         }
     }
 
-    /// Creates an [`AxisDeadZone`] that excludes input values below a `threshold` magnitude
+    /// Creates an [`AxisDeadZone`] that excludes input values within the range `[-threshold, threshold]`
     /// and then normalizes non-excluded input values into the valid range `[-1.0, 1.0]`.
     ///
     /// # Requirements
@@ -420,7 +448,37 @@ impl AxisDeadZone {
     #[doc(alias = "magnitude")]
     #[inline]
     pub fn symmetric(threshold: f32) -> Self {
-        AxisDeadZone::new(-threshold, threshold)
+        Self::new(-threshold, threshold)
+    }
+
+    /// Creates an [`AxisDeadZone`] that only passes positive values that greater than `positive_min`
+    /// and then normalizes them into the valid range `[-1.0, 1.0]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `positive_min` >= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_positive(positive_min: f32) -> Self {
+        Self::new(f32::NEG_INFINITY, positive_min)
+    }
+
+    /// Creates an [`AxisDeadZone`] that only passes negative values that less than `negative_max`
+    /// and then normalizes them into the valid range `[-1.0, 1.0]`.
+    ///
+    /// # Requirements
+    ///
+    /// - `negative_max` <= `0.0`.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the requirements aren't met.
+    #[inline]
+    pub fn only_negative(negative_max: f32) -> Self {
+        Self::new(negative_max, f32::INFINITY)
     }
 
     /// Returns the [`AxisExclusion`] used by this deadzone.

@@ -16,10 +16,10 @@ use dyn_hash::DynHash;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{serialize_trait_object, MapRegistry, Registry};
+use serde_flexitos::{serialize_trait_object, Registry};
 
 use crate::input_processing::DualAxisProcessor;
-use crate::typetag::RegisterTypeTag;
+use crate::typetag::{InfallibleMapRegistry, RegisterTypeTag};
 
 /// A trait for creating custom processor that handles dual-axis input values,
 /// accepting a [`Vec2`] input and producing a [`Vec2`] output.
@@ -287,8 +287,8 @@ impl<'de> Deserialize<'de> for Box<dyn CustomDualAxisProcessor> {
 }
 
 /// Registry of deserializers for [`CustomDualAxisProcessor`]s.
-static mut PROCESSOR_REGISTRY: Lazy<RwLock<MapRegistry<dyn CustomDualAxisProcessor>>> =
-    Lazy::new(|| RwLock::new(MapRegistry::new("CustomDualAxisProcessor")));
+static mut PROCESSOR_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn CustomDualAxisProcessor>>> =
+    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("CustomDualAxisProcessor")));
 
 /// A trait for registering a specific [`CustomDualAxisProcessor`].
 pub trait RegisterDualAxisProcessorExt {

@@ -52,23 +52,27 @@
 //! - Track mouse motion with [`MouseMove`], [`MouseMoveAxis`], and [`MouseMoveDirection`].
 //! - Capture mouse wheel events with [`MouseScroll`], [`MouseScrollAxis`], and [`MouseScrollDirection`].
 //!
-//! ### Complex Composition
+//! ### Virtual Axial Controls
 //!
-//! - Combine multiple inputs into a virtual button using [`ButtonlikeChord`].
-//!   - Only active if all its inner inputs are active simultaneously.
-//!   - Combine values from all inner single-axis inputs if available.
-//!   - Retrieve values from the first encountered dual-axis input within the chord.
+//! - [`VirtualAxis`]: Create a virtual axis control from two buttons.
 //!
-//! - Create a virtual axis control:
-//!   - [`GamepadVirtualAxis`] from two [`GamepadButtonType`]s.
-//!   - [`KeyboardVirtualAxis`] from two [`KeyCode`]s.
+//! - [`VirtualDPad`]: Create a virtual dual-axis control from four buttons.
 //!
-//! - Create a virtual directional pad (D-pad) for dual-axis control:
-//!   - [`GamepadVirtualDPad`] from four [`GamepadButtonType`]s.
-//!   - [`KeyboardVirtualDPad`] from four [`KeyCode`]s.
+//! - [`VirtualDPad3D`]: Create a virtual triple-axis control from six buttons.
 //!
-//! - Create a virtual directional pad (D-pad) for triple-axis control:
-//!   - [`KeyboardVirtualDPad3D`] from six [`KeyCode`]s.
+//! ### Chords
+//!
+//! - [`ButtonlikeChord`]: A combined input that groups multiple [`Buttonlike`]s together,
+//!   allowing you to define complex input combinations like hotkeys, shortcuts, and macros.
+//!
+//! - [`AxislikeChord`]: A combined input that groups a [`Buttonlike`] and an [`Axislike`] together,
+//!   allowing you to only read the dual axis data when the button is pressed.
+//!
+//! - [`DualAxislikeChord`]: A combined input that groups a [`Buttonlike`] and a [`DualAxislike`] together,
+//!   allowing you to only read the dual axis data when the button is pressed.
+//!
+//! - [`TripleAxislikeChord`]: A combined input that groups a [`Buttonlike`] and a [`TripleAxislike`] together,
+//!   allowing you to only read the dual axis data when the button is pressed.
 //!
 //! [`GamepadAxisType`]: bevy::prelude::GamepadAxisType
 //! [`GamepadButtonType`]: bevy::prelude::GamepadButtonType
@@ -97,6 +101,7 @@ pub use self::keyboard::*;
 #[cfg(feature = "mouse")]
 pub use self::mouse::*;
 pub use self::trait_serde::RegisterUserInput;
+pub use self::virtual_axial::*;
 
 pub mod chord;
 #[cfg(feature = "gamepad")]
@@ -109,50 +114,10 @@ pub mod testing_utils;
 mod trait_reflection;
 mod trait_serde;
 pub mod updating;
+pub mod virtual_axial;
 
 /// A trait for defining the behavior expected from different user input sources.
-///
-/// Implementers of this trait should provide methods for accessing and processing user input data.
-///
-/// # Examples
-///
-/// ```rust
-/// use std::hash::{Hash, Hasher};
-/// use bevy::prelude::*;
-/// use bevy::math::{Vec2, FloatOrd};
-/// use serde::{Deserialize, Serialize};
-/// use leafwing_input_manager::prelude::*;
-/// use leafwing_input_manager::axislike::{DualAxisType};
-/// use leafwing_input_manager::clashing_inputs::BasicInputs;
-///
-/// #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
-/// pub struct MouseScrollAlwaysFiveOnYAxis;
-///
-/// // Add this attribute for ensuring proper serialization and deserialization.
-/// #[serde_typetag]
-/// impl UserInput for MouseScrollAlwaysFiveOnYAxis {
-///     fn kind(&self) -> InputControlKind {
-///         // Returns the kind of input this represents.
-///         //
-///         // In this case, it represents an axial input.
-///         InputControlKind::Axis
-///     }
-///
-///     fn decompose(&self) -> BasicInputs {
-///         // Gets the most basic form of this input for clashing input detection.
-///         //
-///         // This input is not buttonlike, so it uses `None`.
-///         BasicInputs::None
-///     }
-/// }
-///
-/// // Remember to register your input - it will ensure everything works smoothly!
-/// let mut app = App::new();
-/// app.register_user_input::<MouseScrollAlwaysFiveOnYAxis>();
-/// ```
-pub trait UserInput:
-    Send + Sync + Debug + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
-{
+pub trait UserInput: Send + Sync + Debug {
     /// Defines the kind of behavior that the input should be.
     fn kind(&self) -> InputControlKind;
 
@@ -167,7 +132,9 @@ pub trait UserInput:
 }
 
 /// A trait used for buttonlike user inputs, which can be pressed or released.
-pub trait Buttonlike: UserInput {
+pub trait Buttonlike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Checks if the input is currently active.
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool;
 
@@ -251,7 +218,9 @@ pub trait Triggerlike: Buttonlike {
 }
 
 /// A trait used for axis-like user inputs, which provide a continuous value.
-pub trait Axislike: UserInput {
+pub trait Axislike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Gets the current value of the input as an `f32`.
     fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32;
 
@@ -276,7 +245,9 @@ pub trait Axislike: UserInput {
 }
 
 /// A trait used for dual-axis-like user inputs, which provide separate X and Y values.
-pub trait DualAxislike: UserInput {
+pub trait DualAxislike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Gets the values of this input along the X and Y axes (if applicable).
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2;
 
@@ -301,7 +272,9 @@ pub trait DualAxislike: UserInput {
 }
 
 /// A trait used for triple-axis-like user inputs, which provide separate X, Y, and Z values.
-pub trait TripleAxislike: UserInput {
+pub trait TripleAxislike:
+    UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
+{
     /// Gets the values of this input along the X, Y, and Z axes (if applicable).
     fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3;
 

@@ -51,8 +51,8 @@ impl PlayerAction {
         input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
 
         // Default kbm input bindings
-        input_map.insert_dual_axis(Self::Move, KeyboardVirtualDPad::WASD);
-        input_map.insert_dual_axis(Self::Look, KeyboardVirtualDPad::ARROW_KEYS);
+        input_map.insert_dual_axis(Self::Move, VirtualDPad::wasd());
+        input_map.insert_dual_axis(Self::Look, VirtualDPad::arrow_keys());
         input_map.insert(Self::Shoot, MouseButton::Left);
 
         input_map
@@ -160,14 +160,13 @@ fn control_player(
     if action_state.axis_pair(&PlayerAction::Move) != Vec2::ZERO {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
-        let move_delta =
-            time.delta_seconds() * action_state.clamped_axis_pair(&PlayerAction::Move).xy();
+        let move_delta = time.delta_seconds() * action_state.clamped_axis_pair(&PlayerAction::Move);
         player_transform.translation += Vec3::new(move_delta.x, 0.0, move_delta.y);
         println!("Player moved to: {}", player_transform.translation.xz());
     }
 
     if action_state.axis_pair(&PlayerAction::Look) != Vec2::ZERO {
-        let look = action_state.axis_pair(&PlayerAction::Look).xy().normalize();
+        let look = action_state.axis_pair(&PlayerAction::Look).normalize();
         println!("Player looking in direction: {}", look);
     }
 
