@@ -1,10 +1,10 @@
 //! Mouse inputs
 
+use bevy::ecs::system::lifetimeless::SRes;
+use bevy::ecs::system::StaticSystemParam;
 use bevy::input::mouse::{MouseButtonInput, MouseMotion, MouseWheel};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{
-    Entity, Events, Gamepad, MouseButton, Reflect, Res, ResMut, Resource, Vec2, World,
-};
+use bevy::prelude::{Entity, Events, Gamepad, MouseButton, Reflect, ResMut, Resource, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -34,18 +34,18 @@ impl UserInput for MouseButton {
 }
 
 impl UpdatableInput for MouseButton {
-    type SourceData = ButtonInput<MouseButton>;
+    type SourceData = SRes<ButtonInput<MouseButton>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: Res<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        for key in source_data.get_pressed() {
-            central_input_store.update_buttonlike(*key, true);
+        for button in source_data.get_pressed() {
+            central_input_store.update_buttonlike(*button, true);
         }
 
-        for key in source_data.get_just_released() {
-            central_input_store.update_buttonlike(*key, false);
+        for button in source_data.get_just_released() {
+            central_input_store.update_buttonlike(*button, false);
         }
     }
 }
@@ -325,11 +325,11 @@ pub struct MouseMove {
 }
 
 impl UpdatableInput for MouseMove {
-    type SourceData = AccumulatedMouseMovement;
+    type SourceData = SRes<AccumulatedMouseMovement>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: Res<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         central_input_store.update_dualaxislike(Self::default(), source_data.0);
     }
@@ -654,11 +654,11 @@ pub struct MouseScroll {
 }
 
 impl UpdatableInput for MouseScroll {
-    type SourceData = AccumulatedMouseScroll;
+    type SourceData = SRes<AccumulatedMouseScroll>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: Res<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         central_input_store.update_dualaxislike(Self::default(), source_data.0);
     }
