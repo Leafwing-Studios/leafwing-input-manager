@@ -149,11 +149,6 @@ pub enum InputControlKind {
     /// Corresponds to [`Buttonlike`](crate::user_input::Buttonlike)  inputs.
     Button,
 
-    /// An buttonlike-input that stores a value for how pressed it is, often used for triggers or analog buttons.
-    ///
-    /// Corresponds to [`Triggerlike`](crate::user_input::Triggerlike) inputs.
-    Trigger,
-
     /// A single analog or digital input, often used for range controls like a thumb stick on a gamepad or mouse wheel,
     /// providing a value within a min-max range.
     ///

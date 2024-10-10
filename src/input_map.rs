@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
 use crate::prelude::UserInputWrapper;
-use crate::user_input::{Axislike, Buttonlike, DualAxislike, Triggerlike, TripleAxislike};
+use crate::user_input::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 use crate::{Actionlike, InputControlKind};
 
 #[cfg(feature = "gamepad")]
@@ -30,7 +30,7 @@ fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
 }
 
 /// A Multi-Map that allows you to map actions to multiple [`UserInputs`](crate::user_input::UserInput)s,
-/// whether they are [`Buttonlike`], [`Axislike`] or [`DualAxislike`].
+/// whether they are [`Buttonlike`], [`Axislike`], [`DualAxislike`], or [`TripleAxislike`].
 ///
 /// When inserting a binding, the [`InputControlKind`] of the action variant must match that of the input type.
 /// Use [`InputMap::insert`] to insert buttonlike inputs,
@@ -108,9 +108,6 @@ pub struct InputMap<A: Actionlike> {
     /// The underlying map that stores action-input mappings for [`Buttonlike`] actions.
     buttonlike_map: HashMap<A, Vec<Box<dyn Buttonlike>>>,
 
-    /// The underlying map that stores action-input mappings for [`Triggerlike`] actions.
-    triggerlike_map: HashMap<A, Vec<Box<dyn Triggerlike>>>,
-
     /// The underlying map that stores action-input mappings for [`Axislike`] actions.
     axislike_map: HashMap<A, Vec<Box<dyn Axislike>>>,
 
@@ -128,7 +125,6 @@ impl<A: Actionlike> Default for InputMap<A> {
     fn default() -> Self {
         InputMap {
             buttonlike_map: HashMap::default(),
-            triggerlike_map: HashMap::default(),
             axislike_map: HashMap::default(),
             dual_axislike_map: HashMap::default(),
             triple_axislike_map: HashMap::default(),
@@ -161,17 +157,6 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     pub fn with(mut self, action: A, button: impl Buttonlike) -> Self {
         self.insert(action, button);
-        self
-    }
-
-    /// Associates an `action` with a specific [`Triggerlike`] `input`.
-    /// Multiple inputs can be bound to the same action.
-    ///
-    /// This method ensures idempotence, meaning that adding the same input
-    /// for the same action multiple times will only result in a single binding being created.
-    #[inline(always)]
-    pub fn with_trigger(mut self, action: A, trigger: impl Triggerlike) -> Self {
-        self.insert_trigger(action, trigger);
         self
     }
 
@@ -281,42 +266,6 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         insert_unique(&mut self.buttonlike_map, &action, Box::new(button));
-        self
-    }
-
-    /// Inserts a binding between an `action` and a specific [`Triggerlike`] `input`.
-    /// Multiple inputs can be bound to the same action.
-    ///
-    /// This method ensures idempotence, meaning that adding the same input
-    /// for the same action multiple times will only result in a single binding being created.
-    #[inline(always)]
-    #[track_caller]
-    pub fn insert_trigger(&mut self, action: A, trigger: impl Triggerlike) -> &mut Self {
-        debug_assert!(
-            action.input_control_kind() == InputControlKind::Trigger,
-            "Cannot map a Triggerlike input for action {:?} of kind {:?}",
-            action,
-            action.input_control_kind()
-        );
-
-        if action.input_control_kind() != InputControlKind::Trigger {
-            error!(
-                "Cannot map a Triggerlike input for action {:?} of kind {:?}",
-                action,
-                action.input_control_kind()
-            );
-
-            return self;
-        }
-
-        let trigger = Box::new(trigger) as Box<dyn Triggerlike>;
-        if let Some(bindings) = self.triggerlike_map.get_mut(&action) {
-            if !bindings.contains(&trigger) {
-                bindings.push(trigger);
-            }
-        } else {
-            self.triggerlike_map.insert(action, vec![trigger]);
-        }
         self
     }
 
@@ -763,15 +712,6 @@ impl<A: Actionlike> InputMap<A> {
                         .collect(),
                 )
             }
-            InputControlKind::Trigger => {
-                let triggerlike = self.triggerlike_map.get(action)?;
-                Some(
-                    triggerlike
-                        .iter()
-                        .map(|input| UserInputWrapper::Trigger(input.clone()))
-                        .collect(),
-                )
-            }
             InputControlKind::Axis => {
                 let axislike = self.axislike_map.get(action)?;
                 Some(
@@ -812,18 +752,6 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn get_buttonlike_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Buttonlike>>> {
         self.buttonlike_map.get_mut(action)
-    }
-
-    /// Returns a reference to the [`Triggerlike`] inputs associated with the given `action`.
-    #[must_use]
-    pub fn get_triggerlike(&self, action: &A) -> Option<&Vec<Box<dyn Triggerlike>>> {
-        self.triggerlike_map.get(action)
-    }
-
-    /// Returns a mutable reference to the [`Triggerlike`] inputs mapped to `action`
-    #[must_use]
-    pub fn get_triggerlike_mut(&mut self, action: &A) -> Option<&mut Vec<Box<dyn Triggerlike>>> {
-        self.triggerlike_map.get_mut(action)
     }
 
     /// Returns a reference to the [`Axislike`] inputs associated with the given `action`.
@@ -902,9 +830,6 @@ impl<A: Actionlike> InputMap<A> {
             InputControlKind::Button => {
                 self.buttonlike_map.remove(action);
             }
-            InputControlKind::Trigger => {
-                self.triggerlike_map.remove(action);
-            }
             InputControlKind::Axis => {
                 self.axislike_map.remove(action);
             }
@@ -928,15 +853,6 @@ impl<A: Actionlike> InputMap<A> {
         match action.input_control_kind() {
             InputControlKind::Button => {
                 let input_bindings = self.buttonlike_map.get_mut(action)?;
-                if input_bindings.len() > index {
-                    input_bindings.remove(index);
-                    Some(())
-                } else {
-                    None
-                }
-            }
-            InputControlKind::Trigger => {
-                let input_bindings = self.triggerlike_map.get_mut(action)?;
                 if input_bindings.len() > index {
                     input_bindings.remove(index);
                     Some(())

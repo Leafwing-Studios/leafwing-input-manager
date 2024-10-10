@@ -94,7 +94,7 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
     let action_state = action_state_query.get_single(app.world()).unwrap();
     assert_eq!(action_diff_event.action_diffs.len(), 1);
     match action_diff_event.action_diffs.first().unwrap().clone() {
-        ActionDiff::Pressed { action } => {
+        ActionDiff::Pressed { action, .. } => {
             assert!(action_state.pressed(&action));
         }
         ActionDiff::Released { action } => {
@@ -137,14 +137,14 @@ fn generate_binary_action_diffs() {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Pressed { action } => {
+            ActionDiff::Pressed { action, .. } => {
                 assert_eq!(action, Action::Button);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `Pressed` variant got a `Released` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Pressed` variant got a `AxisChanged` variant")
+                panic!("Expected a `Pressed` variant got an `AxisChanged` variant")
             }
             ActionDiff::DualAxisChanged { .. } => {
                 panic!("Expected a `Pressed` variant got a `DualAxisChanged` variant")
@@ -179,7 +179,7 @@ fn generate_binary_action_diffs() {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `AxisChanged` variant")
+                panic!("Expected a `Released` variant got an `AxisChanged` variant")
             }
             ActionDiff::DualAxisChanged { .. } => {
                 panic!("Expected a `Released` variant got a `DualAxisChanged` variant")
@@ -226,7 +226,7 @@ fn generate_axis_action_diffs() {
                 panic!("Expected a `DualAxisChanged` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
+                panic!("Expected a `DualAxisChanged` variant got an `AxisChanged` variant")
             }
             ActionDiff::TripleAxisChanged { .. } => {
                 panic!("Expected a `DualAxisChanged` variant got a `TripleAxisChanged` variant")
@@ -262,7 +262,7 @@ fn generate_axis_action_diffs() {
                 panic!("Expected a `DualAxisChanged` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
+                panic!("Expected a `DualAxisChanged` variant got an `AxisChanged` variant")
             }
             ActionDiff::TripleAxisChanged { .. } => {
                 panic!("Expected a `DualAxisChanged` variant got a `TripleAxisChanged` variant")
@@ -302,7 +302,7 @@ fn generate_filtered_binary_action_diffs() {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Pressed { action } => {
+            ActionDiff::Pressed { action, .. } => {
                 assert_eq!(action, Action::Button);
             }
             ActionDiff::Released { .. } => {
@@ -312,7 +312,7 @@ fn generate_filtered_binary_action_diffs() {
                 panic!("Expected a `Pressed` variant got a `ValueChanged` variant")
             }
             ActionDiff::DualAxisChanged { .. } => {
-                panic!("Expected a `Pressed` variant got a `AxisPairChanged` variant")
+                panic!("Expected a `Pressed` variant got an `AxisPairChanged` variant")
             }
             ActionDiff::TripleAxisChanged { .. } => {
                 panic!("Expected a `Pressed` variant got a `TripleAxisChanged` variant")
@@ -334,6 +334,7 @@ fn process_binary_action_diffs() {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Pressed {
             action: Action::Button,
+            value: 1.0,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());

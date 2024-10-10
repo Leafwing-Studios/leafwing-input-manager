@@ -131,7 +131,8 @@ pub trait UserInput: Send + Sync + Debug {
     fn decompose(&self) -> BasicInputs;
 }
 
-/// A trait used for buttonlike user inputs, which can be pressed or released.
+/// A trait used for buttonlike user inputs, which can be pressed or released
+/// with a value for how much they are pressed.
 pub trait Buttonlike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
@@ -141,6 +142,15 @@ pub trait Buttonlike:
     /// Checks if the input is currently inactive.
     fn released(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
         !self.pressed(input_store, gamepad)
+    }
+
+    /// Gets the current value of the button as an `f32`.
+    ///
+    /// The returned value should be between `0.0` and `1.0`,
+    /// with `0.0` representing the input being fully released
+    /// and `1.0` representing the input being fully pressed.
+    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+        f32::from(self.pressed(input_store, gamepad))
     }
 
     /// Simulates a press of the buttonlike input by sending the appropriate event.
@@ -180,40 +190,24 @@ pub trait Buttonlike:
     fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
         self.release(world);
     }
-}
 
-/// A trait used for triggerlike user inputs, which can be pressed or released with a value for how much they are pressed.
-///
-/// This trait is used for inputs like triggers on gamepads, which can be pressed to varying degrees.
-pub trait Triggerlike: Buttonlike {
-    /// Gets the current value of the input as an `f32`.
+    /// Simulate a value change of the buttonlike input by sending the appropriate event.
     ///
-    /// The returned value should be between `0.0` and `1.0`, with `0.0` representing the input being fully released
-    /// and `1.0` representing the input being fully pressed.
-    fn trigger_value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32;
-
-    /// Simulate a triggerlike input by sending the appropriate event.
-    ///
-    /// This method defaults to calling [`Triggerlike::set_trigger_value_as_gamepad`] if not overridden,
+    /// This method defaults to calling [`Buttonlike::set_value_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
-    fn set_trigger_value(&self, world: &mut World, value: f32) {
-        self.set_trigger_value_as_gamepad(world, value, None);
+    fn set_value(&self, world: &mut World, value: f32) {
+        self.set_value_as_gamepad(world, value, None);
     }
 
-    /// Simulate a triggerlike input, pretending to be the provided [`Gamepad`].
+    /// Simulate a value change of the buttonlike input, pretending to be the provided [`Gamepad`].
     ///
-    /// This method defaults to calling [`Triggerlike::set_trigger_value`] if not overridden,
+    /// This method defaults to calling [`Buttonlike::set_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_trigger_value_as_gamepad(
-        &self,
-        world: &mut World,
-        value: f32,
-        _gamepad: Option<Gamepad>,
-    ) {
-        self.set_trigger_value(world, value);
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Gamepad>) {
+        self.set_value(world, value);
     }
 }
 
@@ -311,8 +305,6 @@ pub trait TripleAxislike:
 pub enum UserInputWrapper {
     /// Wraps a [`Buttonlike`] input.
     Button(Box<dyn Buttonlike>),
-    /// Wraps a [`Triggerlike`] input.
-    Trigger(Box<dyn Triggerlike>),
     /// Wraps an [`Axislike`] input.
     Axis(Box<dyn Axislike>),
     /// Wraps a [`DualAxislike`] input.
@@ -327,10 +319,6 @@ impl UserInput for UserInputWrapper {
         match self {
             UserInputWrapper::Button(input) => {
                 debug_assert!(input.kind() == InputControlKind::Button);
-                input.kind()
-            }
-            UserInputWrapper::Trigger(input) => {
-                debug_assert!(input.kind() == InputControlKind::Trigger);
                 input.kind()
             }
             UserInputWrapper::Axis(input) => {
@@ -351,7 +339,6 @@ impl UserInput for UserInputWrapper {
     fn decompose(&self) -> BasicInputs {
         match self {
             UserInputWrapper::Button(input) => input.decompose(),
-            UserInputWrapper::Trigger(input) => input.decompose(),
             UserInputWrapper::Axis(input) => input.decompose(),
             UserInputWrapper::DualAxis(input) => input.decompose(),
             UserInputWrapper::TripleAxis(input) => input.decompose(),

@@ -1,14 +1,14 @@
 //! Keyboard inputs
 
-use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, ResMut, World};
+use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, Res, ResMut, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
+use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::BasicInputs;
 use crate::user_input::{ButtonlikeChord, UserInput};
 use crate::InputControlKind;
@@ -33,18 +33,18 @@ impl UserInput for KeyCode {
 }
 
 impl UpdatableInput for KeyCode {
-    type SourceData = SRes<ButtonInput<KeyCode>>;
+    type SourceData<'w, 's> = Res<'w, ButtonInput<KeyCode>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
         for key in source_data.get_pressed() {
-            central_input_store.update_buttonlike(*key, true);
+            central_input_store.update_buttonlike(*key, ButtonValue::from_pressed(true));
         }
 
         for key in source_data.get_just_released() {
-            central_input_store.update_buttonlike(*key, false);
+            central_input_store.update_buttonlike(*key, ButtonValue::from_pressed(false));
         }
     }
 }
@@ -87,16 +87,9 @@ impl Buttonlike for KeyCode {
             window: Entity::PLACEHOLDER,
         });
     }
-}
-
-impl Triggerlike for KeyCode {
-    /// Returns `1.0` if the specified key is currently pressed down, `0.0` otherwise.
-    fn trigger_value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
-        f32::from(input_store.pressed(self))
-    }
 
     /// If the value is greater than `0.0`, press the key; otherwise release it.
-    fn set_trigger_value(&self, world: &mut World, value: f32) {
+    fn set_value(&self, world: &mut World, value: f32) {
         if value > 0.0 {
             self.press(world);
         } else {
@@ -209,6 +202,15 @@ impl Buttonlike for ModifierKey {
     fn release(&self, world: &mut World) {
         self.left().release(world);
         self.right().release(world);
+    }
+
+    /// If the value is greater than `0.0`, press the keys; otherwise release it.
+    fn set_value(&self, world: &mut World, value: f32) {
+        if value > 0.0 {
+            self.press(world);
+        } else {
+            self.release(world);
+        }
     }
 }
 

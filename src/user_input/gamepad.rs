@@ -2,20 +2,20 @@
 
 use std::hash::{Hash, Hasher};
 
-use bevy::ecs::system::lifetimeless::SRes;
-use bevy::ecs::system::StaticSystemParam;
+use bevy::ecs::system::{StaticSystemParam, SystemParam};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::input::{Axis, ButtonInput};
 use bevy::math::FloatOrd;
 use bevy::prelude::{
     Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
-    Reflect, ResMut, Vec2, World,
+    Reflect, Res, ResMut, Vec2, World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
 use crate::axislike::AxisDirection;
+use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -25,7 +25,7 @@ use crate::user_input::UserInput;
 use crate::InputControlKind;
 
 use super::updating::{CentralInputStore, UpdatableInput};
-use super::{Axislike, Buttonlike, DualAxislike, Triggerlike};
+use super::{Axislike, Buttonlike, DualAxislike};
 
 /// Retrieves the first connected gamepad.
 ///
@@ -197,6 +197,14 @@ impl Buttonlike for GamepadControlDirection {
         });
         world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
+
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+        if value > 0.0 {
+            self.press_as_gamepad(world, gamepad);
+        } else {
+            self.release_as_gamepad(world, gamepad);
+        }
+    }
 }
 
 impl Eq for GamepadControlDirection {}
@@ -210,11 +218,11 @@ impl Hash for GamepadControlDirection {
 }
 
 impl UpdatableInput for GamepadAxis {
-    type SourceData = SRes<Axis<GamepadAxis>>;
+    type SourceData<'w, 's> = Res<'w, Axis<GamepadAxis>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
         for axis in source_data.devices() {
             let value = source_data.get(*axis).unwrap_or_default();
@@ -535,7 +543,8 @@ fn button_pressed(
 /// Retrieves the current value of the given [`GamepadButtonType`].
 ///
 /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
-/// Physically triggerlike buttons will return a value between 0.0 and 1.0, depending on how far the button is pressed.
+/// Physically triggerlike buttons will return a value between 0.0 and 1.0,
+/// depending on how far the button is pressed.
 #[must_use]
 #[inline]
 fn button_value(
@@ -544,22 +553,34 @@ fn button_value(
     button: GamepadButtonType,
 ) -> f32 {
     let button = GamepadButton::new(gamepad, button);
-    input_store.trigger_value(&button)
+    input_store.button_value(&button)
+}
+
+/// The [`SystemParam`] that combines the [`ButtonInput`] and [`Axis`] resources for [`GamepadButton`]s.
+#[derive(SystemParam)]
+pub struct GamepadButtonInput<'w> {
+    /// The [`ButtonInput`] for [`GamepadButton`]s.
+    pub buttons: Res<'w, ButtonInput<GamepadButton>>,
+
+    /// The [`Axis`] for [`GamepadButton`]s.
+    pub axes: Res<'w, Axis<GamepadButton>>,
 }
 
 impl UpdatableInput for GamepadButton {
-    type SourceData = SRes<ButtonInput<GamepadButton>>;
+    type SourceData<'w, 's> = GamepadButtonInput<'w>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
-        for key in source_data.get_pressed() {
-            central_input_store.update_buttonlike(*key, true);
+        for button in source_data.buttons.get_pressed() {
+            let value = source_data.axes.get(*button).unwrap_or(1.0);
+            central_input_store.update_buttonlike(*button, ButtonValue::new(true, value));
         }
 
-        for key in source_data.get_just_released() {
-            central_input_store.update_buttonlike(*key, false);
+        for button in source_data.buttons.get_just_released() {
+            let value = source_data.axes.get(*button).unwrap_or(0.0);
+            central_input_store.update_buttonlike(*button, ButtonValue::new(false, value));
         }
     }
 }
@@ -584,6 +605,11 @@ impl Buttonlike for GamepadButton {
         button_pressed(input_store, self.gamepad, self.button_type)
     }
 
+    /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+        button_value(input_store, self.gamepad, self.button_type)
+    }
+
     fn press(&self, world: &mut World) {
         let event = GamepadEvent::Button(GamepadButtonChangedEvent {
             gamepad: self.gamepad,
@@ -601,15 +627,8 @@ impl Buttonlike for GamepadButton {
         });
         world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
-}
 
-impl Triggerlike for GamepadButton {
-    /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
-    fn trigger_value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
-        button_value(input_store, self.gamepad, self.button_type)
-    }
-
-    fn set_trigger_value(&self, world: &mut World, value: f32) {
+    fn set_value(&self, world: &mut World, value: f32) {
         let event = GamepadEvent::Button(GamepadButtonChangedEvent {
             gamepad: self.gamepad,
             button_type: self.button_type,
@@ -644,6 +663,17 @@ impl Buttonlike for GamepadButtonType {
         button_pressed(input_store, gamepad, *self)
     }
 
+    /// Retrieves the current value of the specified button.
+    ///
+    /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
+    /// Physically triggerlike buttons will return a value between 0.0 and 1.0,
+    /// depending on how far the button is pressed.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+        button_value(input_store, gamepad, *self)
+    }
+
     /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
         let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
@@ -667,26 +697,9 @@ impl Buttonlike for GamepadButtonType {
         });
         world.resource_mut::<Events<GamepadEvent>>().send(event);
     }
-}
-
-impl Triggerlike for GamepadButtonType {
-    /// Retrieves the current value of the specified button.
-    ///
-    /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
-    /// Physically triggerlike buttons will return a value between 0.0 and 1.0, depending on how far the button is pressed.
-    #[must_use]
-    #[inline]
-    fn trigger_value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
-        button_value(input_store, gamepad, *self)
-    }
 
     /// Sends a [`GamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided [`Gamepad`].
-    fn set_trigger_value_as_gamepad(
-        &self,
-        world: &mut World,
-        value: f32,
-        gamepad: Option<Gamepad>,
-    ) {
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
         let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
         let event = GamepadEvent::Button(GamepadButtonChangedEvent {

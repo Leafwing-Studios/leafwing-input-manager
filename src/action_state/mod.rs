@@ -322,76 +322,6 @@ impl<A: Actionlike> ActionState<A> {
         button_data
     }
 
-    /// A reference of the [`TriggerData`] corresponding to the `action`.
-    ///
-    /// # Caution
-    ///
-    /// To access the [`TriggerData`] regardless of whether the `action` has been triggered,
-    /// use [`unwrap_or_default`](Option::unwrap_or_default) on the returned [`Option`].
-    ///
-    /// # Returns
-    ///
-    /// - `Some(TriggerData)` if it exists.
-    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
-    #[inline]
-    #[must_use]
-    #[track_caller]
-    pub fn trigger_data(&self, action: &A) -> Option<&TriggerData> {
-        debug_assert_eq!(action.input_control_kind(), InputControlKind::Trigger);
-
-        match self.action_data(action) {
-            Some(action_data) => match action_data.kind_data {
-                ActionKindData::Trigger(ref trigger_data) => Some(trigger_data),
-                _ => None,
-            },
-            None => None,
-        }
-    }
-
-    /// A mutable reference of the [`TriggerData`] corresponding to the `action`.
-    ///
-    /// # Caution
-    ///
-    /// To insert a default [`TriggerData`] if it doesn't exist,
-    /// use [`trigger_data_mut_or_default`](Self::axis_data_mut_or_default) method.
-    ///
-    /// # Returns
-    ///
-    /// - `Some(TriggerData)` if it exists.
-    /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
-    #[inline]
-    #[must_use]
-    pub fn trigger_data_mut(&mut self, action: &A) -> Option<&mut TriggerData> {
-        match self.action_data_mut(action) {
-            Some(action_data) => match &mut action_data.kind_data {
-                ActionKindData::Trigger(ref mut trigger_data) => Some(trigger_data),
-                _ => None,
-            },
-            None => None,
-        }
-    }
-
-    /// A mutable reference of the [`TriggerData`] corresponding to the `action`, initializing it if needed..
-    ///
-    /// If the `action` has no data yet (because the `action` has not been triggered),
-    /// this method will create and insert a default [`TriggerData`] for you,
-    /// avoiding potential errors from unwrapping [`None`].
-    ///
-    /// Generally, it'll be clearer to call `pressed` or so on directly on the [`ActionState`].
-    /// However, accessing the raw data directly allows you to examine detailed metadata holistically.
-    #[inline]
-    #[must_use]
-    #[track_caller]
-    pub fn trigger_data_mut_or_default(&mut self, action: &A) -> &mut TriggerData {
-        debug_assert_eq!(action.input_control_kind(), InputControlKind::Trigger);
-
-        let action_data = self.action_data_mut_or_default(action);
-        let ActionKindData::Trigger(ref mut axis_data) = action_data.kind_data else {
-            panic!("{action:?} is not a Trigger");
-        };
-        axis_data
-    }
-
     /// A reference of the [`AxisData`] corresponding to the `action`.
     ///
     /// # Caution
@@ -406,7 +336,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     #[track_caller]
-    pub fn axis_data(&self, action: &A) -> Option<&TriggerData> {
+    pub fn axis_data(&self, action: &A) -> Option<&AxisData> {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
         match self.action_data(action) {
@@ -431,7 +361,7 @@ impl<A: Actionlike> ActionState<A> {
     /// - `None` if the `action` has never been triggered (pressed, clicked, etc.).
     #[inline]
     #[must_use]
-    pub fn axis_data_mut(&mut self, action: &A) -> Option<&mut TriggerData> {
+    pub fn axis_data_mut(&mut self, action: &A) -> Option<&mut AxisData> {
         match self.action_data_mut(action) {
             Some(action_data) => match &mut action_data.kind_data {
                 ActionKindData::Axis(ref mut axis_data) => Some(axis_data),
@@ -452,7 +382,7 @@ impl<A: Actionlike> ActionState<A> {
     #[inline]
     #[must_use]
     #[track_caller]
-    pub fn axis_data_mut_or_default(&mut self, action: &A) -> &mut TriggerData {
+    pub fn axis_data_mut_or_default(&mut self, action: &A) -> &mut AxisData {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
 
         let action_data = self.action_data_mut_or_default(action);
@@ -587,42 +517,6 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Get the value associated with the corresponding triggerlike `action` if present.
-    ///
-    /// # Warnings
-    ///
-    /// This value may not be bounded as you might expect.
-    /// Consider clamping this to account for multiple triggering inputs,
-    /// typically using the [`clamped_trigger_value`](Self::clamped_trigger_value) method instead.
-    #[track_caller]
-    pub fn trigger_value(&self, action: &A) -> f32 {
-        debug_assert_eq!(action.input_control_kind(), InputControlKind::Trigger);
-
-        if self.action_disabled(action) {
-            return 0.0;
-        }
-
-        match self.trigger_data(action) {
-            Some(axis_data) => axis_data.value,
-            None => 0.0,
-        }
-    }
-
-    /// Get the value associated with the corresponding trigger `action` if present, clamping to [0., 1.].
-    #[track_caller]
-    pub fn clamped_trigger_value(&self, action: &A) -> f32 {
-        self.trigger_value(action).clamp(0., 1.)
-    }
-
-    /// Sets the value of the triggerlike `action` to the provided `value`.
-    #[track_caller]
-    pub fn set_trigger_value(&mut self, action: &A, value: f32) {
-        debug_assert_eq!(action.input_control_kind(), InputControlKind::Trigger);
-
-        let trigger_data = self.trigger_data_mut_or_default(action);
-        trigger_data.value = value;
-    }
-
     /// A mutable reference of the [`TripleAxisData`] corresponding to the `action` initializing it if needed.
     ///
     /// If the `action` has no data yet (because the `action` has not been triggered),
@@ -644,6 +538,62 @@ impl<A: Actionlike> ActionState<A> {
         triple_axis_data
     }
 
+    /// Get the value associated with the corresponding buttonlike `action` if present.
+    ///
+    /// # Warnings
+    ///
+    /// This value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_button_value`](Self::clamped_button_value) method instead.
+    #[inline]
+    #[must_use]
+    #[track_caller]
+    pub fn button_value(&self, action: &A) -> f32 {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
+        if self.action_disabled(action) {
+            return 0.0;
+        }
+
+        let action_data = self.button_data(action);
+        action_data.map_or(0.0, |action_data| action_data.value)
+    }
+
+    /// Sets the value of the buttonlike `action` to the provided `value`.
+    #[track_caller]
+    pub fn set_button_value(&mut self, action: &A, value: f32) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
+        let button_data = self.button_data_mut_or_default(action);
+        button_data.value = value;
+
+        if value > 0.0 {
+            #[cfg(feature = "timing")]
+            if button_data.state.released() {
+                button_data.timing.flip();
+            }
+
+            button_data.state.press();
+        } else {
+            #[cfg(feature = "timing")]
+            if button_data.state.pressed() {
+                button_data.timing.flip();
+            }
+
+            button_data.state.release();
+        }
+    }
+
+    /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    ///
+    /// # Warning
+    ///
+    /// This value will be 0. by default,
+    /// even if the action is not a buttonlike action.
+    pub fn clamped_button_value(&self, action: &A) -> f32 {
+        self.button_value(action).clamp(-1., 1.)
+    }
+
     /// Get the value associated with the corresponding axislike `action` if present.
     ///
     /// # Warnings
@@ -661,10 +611,8 @@ impl<A: Actionlike> ActionState<A> {
             return 0.0;
         }
 
-        match self.axis_data(action) {
-            Some(axis_data) => axis_data.value,
-            None => 0.0,
-        }
+        let action_data = self.axis_data(action);
+        action_data.map_or(0.0, |action_data| action_data.value)
     }
 
     /// Sets the value of the axislike `action` to the provided `value`.
@@ -846,6 +794,7 @@ impl<A: Actionlike> ActionState<A> {
         }
 
         action_data.state.press();
+        action_data.value = 1.0;
     }
 
     /// Release the `action`
@@ -864,6 +813,7 @@ impl<A: Actionlike> ActionState<A> {
         }
 
         action_data.state.release();
+        action_data.value = 0.0;
     }
 
     /// Resets an action to its default state.
@@ -872,9 +822,6 @@ impl<A: Actionlike> ActionState<A> {
     pub fn reset(&mut self, action: &A) {
         match action.input_control_kind() {
             InputControlKind::Button => self.release(action),
-            InputControlKind::Trigger => {
-                self.set_trigger_value(action, 0.0);
-            }
             InputControlKind::Axis => {
                 self.set_value(action, 0.0);
             }
@@ -1162,8 +1109,8 @@ impl<A: Actionlike> ActionState<A> {
     /// This lets you reconstruct an [`ActionState`] from a stream of [`ActionDiff`]s
     pub fn apply_diff(&mut self, action_diff: &ActionDiff<A>) {
         match action_diff {
-            ActionDiff::Pressed { action } => {
-                self.press(action);
+            ActionDiff::Pressed { action, value } => {
+                self.set_button_value(action, *value);
             }
             ActionDiff::Released { action } => {
                 self.release(action);

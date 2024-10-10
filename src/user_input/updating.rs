@@ -13,6 +13,7 @@ use bevy::{
 };
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
+use crate::buttonlike::ButtonValue;
 use crate::{plugin::InputManagerSystem, InputControlKind};
 
 /// An overarching store for all user inputs.
@@ -94,7 +95,6 @@ impl CentralInputStore {
         for map in self.updated_values.values_mut() {
             match map {
                 UpdatedValues::Buttonlike(buttonlikes) => buttonlikes.clear(),
-                UpdatedValues::Triggerlike(triggerlikes) => triggerlikes.clear(),
                 UpdatedValues::Axislike(axislikes) => axislikes.clear(),
                 UpdatedValues::Dualaxislike(dualaxislikes) => dualaxislikes.clear(),
                 UpdatedValues::Tripleaxislike(tripleaxislikes) => tripleaxislikes.clear(),
@@ -103,7 +103,7 @@ impl CentralInputStore {
     }
 
     /// Updates the value of a [`Buttonlike`] input.
-    pub fn update_buttonlike<B: Buttonlike>(&mut self, buttonlike: B, pressed: bool) {
+    pub fn update_buttonlike<B: Buttonlike>(&mut self, buttonlike: B, value: ButtonValue) {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<B>())
@@ -113,21 +113,7 @@ impl CentralInputStore {
             panic!("Expected Buttonlike, found {:?}", updated_values);
         };
 
-        buttonlikes.insert(Box::new(buttonlike), pressed);
-    }
-
-    /// Updates the value of a [`Triggerlike`] input.
-    pub fn update_triggerlike<T: Triggerlike>(&mut self, triggerlike: T, trigger_value: f32) {
-        let updated_values = self
-            .updated_values
-            .entry(TypeId::of::<T>())
-            .or_insert_with(|| UpdatedValues::Buttonlike(HashMap::new()));
-
-        let UpdatedValues::Triggerlike(triggerlikes) = updated_values else {
-            panic!("Expected Triggerlike, found {:?}", updated_values);
-        };
-
-        triggerlikes.insert(Box::new(triggerlike), trigger_value);
+        buttonlikes.insert(Box::new(buttonlike), value);
     }
 
     /// Updates the value of an [`Axislike`] input.
@@ -172,7 +158,7 @@ impl CentralInputStore {
         tripleaxislikes.insert(Box::new(tripleaxislike), value);
     }
 
-    /// Fetches the value of a [`Buttonlike`] input.
+    /// Check if a [`Buttonlike`] input is currently pressing.
     pub fn pressed<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> bool {
         let Some(updated_values) = self.updated_values.get(&TypeId::of::<B>()) else {
             return false;
@@ -185,25 +171,33 @@ impl CentralInputStore {
         // PERF: surely there's a way to avoid cloning here
         let boxed_buttonlike: Box<dyn Buttonlike> = Box::new(buttonlike.clone());
 
-        buttonlikes.get(&boxed_buttonlike).copied().unwrap_or(false)
+        buttonlikes
+            .get(&boxed_buttonlike)
+            .copied()
+            .map(|button| button.pressed)
+            .unwrap_or(false)
     }
 
-    /// Fetches the value of a [`Triggerlike`] input.
+    /// Fetches the value of a [`Buttonlike`] input.
     ///
     /// This should be between 0.0 and 1.0, where 0.0 is not pressed and 1.0 is fully pressed.
-    pub fn trigger_value<T: Triggerlike + Hash + Eq + Clone>(&self, triggerlike: &T) -> f32 {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<T>()) else {
+    pub fn button_value<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> f32 {
+        let Some(updated_values) = self.updated_values.get(&TypeId::of::<B>()) else {
             return 0.0;
         };
 
-        let UpdatedValues::Triggerlike(triggerlikes) = updated_values else {
-            panic!("Expected Triggerlike, found {:?}", updated_values);
+        let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
+            panic!("Expected Buttonlike, found {:?}", updated_values);
         };
 
         // PERF: surely there's a way to avoid cloning here
-        let boxed_triggerlike: Box<dyn Triggerlike> = Box::new(triggerlike.clone());
+        let boxed_buttonlike: Box<dyn Buttonlike> = Box::new(buttonlike.clone());
 
-        triggerlikes.get(&boxed_triggerlike).copied().unwrap_or(0.0)
+        buttonlikes
+            .get(&boxed_buttonlike)
+            .copied()
+            .map(|button| button.value)
+            .unwrap_or(0.0)
     }
 
     /// Fetches the value of an [`Axislike`] input.
@@ -269,8 +263,7 @@ impl CentralInputStore {
 /// and the value should be the updated value fetched from [`UpdatableInput::SourceData`].
 #[derive(Debug, Reflect)]
 enum UpdatedValues {
-    Buttonlike(HashMap<Box<dyn Buttonlike>, bool>),
-    Triggerlike(HashMap<Box<dyn Triggerlike>, f32>),
+    Buttonlike(HashMap<Box<dyn Buttonlike>, ButtonValue>),
     Axislike(HashMap<Box<dyn Axislike>, f32>),
     Dualaxislike(HashMap<Box<dyn DualAxislike>, Vec2>),
     Tripleaxislike(HashMap<Box<dyn TripleAxislike>, Vec3>),
@@ -280,7 +273,6 @@ impl UpdatedValues {
     fn from_input_control_kind(kind: InputControlKind) -> Self {
         match kind {
             InputControlKind::Button => Self::Buttonlike(HashMap::new()),
-            InputControlKind::Trigger => Self::Triggerlike(HashMap::new()),
             InputControlKind::Axis => Self::Axislike(HashMap::new()),
             InputControlKind::DualAxis => Self::Dualaxislike(HashMap::new()),
             InputControlKind::TripleAxis => Self::Tripleaxislike(HashMap::new()),
@@ -308,7 +300,7 @@ pub trait UpdatableInput: 'static {
     /// # Panics
     ///
     /// This type cannot be [`CentralInputStore`], as that would cause mutable aliasing and panic at runtime.
-    type SourceData: SystemParam;
+    type SourceData<'w, 's>: SystemParam;
 
     /// A system that updates the central store of user input based on the state of the world.
     ///
@@ -319,7 +311,7 @@ pub trait UpdatableInput: 'static {
     /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
     fn compute(
         central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     );
 }
 

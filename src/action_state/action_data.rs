@@ -7,6 +7,7 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::buttonlike::ButtonValue;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::{buttonlike::ButtonState, InputControlKind};
@@ -32,8 +33,7 @@ impl ActionData {
             disabled: false,
             kind_data: match input_control_kind {
                 InputControlKind::Button => ActionKindData::Button(ButtonData::default()),
-                InputControlKind::Trigger => ActionKindData::Trigger(TriggerData::default()),
-                InputControlKind::Axis => ActionKindData::Axis(TriggerData::default()),
+                InputControlKind::Axis => ActionKindData::Axis(AxisData::default()),
                 InputControlKind::DualAxis => ActionKindData::DualAxis(DualAxisData::default()),
                 InputControlKind::TripleAxis => {
                     ActionKindData::TripleAxis(TripleAxisData::default())
@@ -51,7 +51,6 @@ impl ActionData {
                 #[cfg(feature = "timing")]
                 data.timing.tick(_current_instant, _previous_instant);
             }
-            ActionKindData::Trigger(ref mut _data) => {}
             ActionKindData::Axis(ref mut _data) => {}
             ActionKindData::DualAxis(ref mut _data) => {}
             ActionKindData::TripleAxis(ref mut _data) => {}
@@ -64,10 +63,8 @@ impl ActionData {
 pub enum ActionKindData {
     /// The data for a button-like action.
     Button(ButtonData),
-    /// The data for a trigger-like action.
-    Trigger(TriggerData),
     /// The data for an axis-like action.
-    Axis(TriggerData),
+    Axis(AxisData),
     /// The data for a dual-axis-like action.
     DualAxis(DualAxisData),
     /// The data for a triple-axis-like action.
@@ -81,10 +78,8 @@ impl ActionKindData {
         match self {
             Self::Button(data) => {
                 data.fixed_update_state = data.state;
-                data.state = data.update_state;
-            }
-            Self::Trigger(data) => {
                 data.fixed_update_value = data.value;
+                data.state = data.update_state;
                 data.value = data.update_value;
             }
             Self::Axis(data) => {
@@ -108,10 +103,8 @@ impl ActionKindData {
         match self {
             Self::Button(data) => {
                 data.update_state = data.state;
-                data.state = data.fixed_update_state;
-            }
-            Self::Trigger(data) => {
                 data.update_value = data.value;
+                data.state = data.fixed_update_state;
                 data.value = data.fixed_update_value;
             }
             Self::Axis(data) => {
@@ -139,6 +132,12 @@ pub struct ButtonData {
     pub update_state: ButtonState,
     /// The `state` of the action in the `FixedMain` schedule
     pub fixed_update_state: ButtonState,
+    /// How far has the button been pressed
+    pub value: f32,
+    /// The `value` of the action in the `Main` schedule
+    pub update_value: f32,
+    /// The `value` of the action in the `FixedMain` schedule
+    pub fixed_update_value: f32,
     /// When was the button pressed / released, and how long has it been held for?
     #[cfg(feature = "timing")]
     pub timing: Timing,
@@ -150,6 +149,9 @@ impl ButtonData {
         state: ButtonState::JustPressed,
         update_state: ButtonState::JustPressed,
         fixed_update_state: ButtonState::JustPressed,
+        value: 1.0,
+        update_value: 1.0,
+        fixed_update_value: 1.0,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
     };
@@ -159,6 +161,9 @@ impl ButtonData {
         state: ButtonState::JustReleased,
         update_state: ButtonState::JustReleased,
         fixed_update_state: ButtonState::JustReleased,
+        value: 0.0,
+        update_value: 0.0,
+        fixed_update_value: 0.0,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
     };
@@ -172,6 +177,9 @@ impl ButtonData {
         state: ButtonState::Released,
         update_state: ButtonState::Released,
         fixed_update_state: ButtonState::Released,
+        value: 0.0,
+        update_value: 0.0,
+        fixed_update_value: 0.0,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
     };
@@ -203,17 +211,13 @@ impl ButtonData {
     pub fn just_released(&self) -> bool {
         self.state.just_released()
     }
-}
 
-/// The raw data for an [`ActionState`](super::ActionState) corresponding to a trigger-style input.
-#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize, Reflect)]
-pub struct TriggerData {
-    /// How far the axis is currently pressed
-    pub value: f32,
-    /// The `value` of the action in the `Main` schedule
-    pub update_value: f32,
-    /// The `value` of the action in the `FixedMain` schedule
-    pub fixed_update_value: f32,
+    /// Convert `self` to a [`ButtonValue`].
+    #[inline]
+    #[must_use]
+    pub fn to_button_value(&self) -> ButtonValue {
+        ButtonValue::new(self.state.pressed(), self.value)
+    }
 }
 
 /// The raw data for an [`ActionState`](super::ActionState) corresponding to a single virtual axis.
