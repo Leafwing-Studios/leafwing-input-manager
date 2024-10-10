@@ -1,11 +1,10 @@
 //! Mouse inputs
 
-use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
 use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel};
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::math::FloatOrd;
-use bevy::prelude::{Entity, Events, Gamepad, Reflect, ResMut, Resource, Vec2, World};
+use bevy::prelude::{Entity, Events, Gamepad, Reflect, Res, ResMut, Resource, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
@@ -36,11 +35,11 @@ impl UserInput for MouseButton {
 }
 
 impl UpdatableInput for MouseButton {
-    type SourceData = SRes<ButtonInput<MouseButton>>;
+    type SourceData<'w, 's> = Res<'w, ButtonInput<MouseButton>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
         for button in source_data.get_pressed() {
             central_input_store.update_buttonlike(*button, true);
@@ -377,11 +376,11 @@ pub struct MouseMove {
 }
 
 impl UpdatableInput for MouseMove {
-    type SourceData = SRes<AccumulatedMouseMovement>;
+    type SourceData<'w, 's> = Res<'w, AccumulatedMouseMovement>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
         central_input_store.update_dualaxislike(Self::default(), source_data.0);
     }
@@ -756,11 +755,11 @@ pub struct MouseScroll {
 }
 
 impl UpdatableInput for MouseScroll {
-    type SourceData = SRes<AccumulatedMouseScroll>;
+    type SourceData<'w, 's> = Res<'w, AccumulatedMouseScroll>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
         central_input_store.update_dualaxislike(Self::default(), source_data.0);
     }

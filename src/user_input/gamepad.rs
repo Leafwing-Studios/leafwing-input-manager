@@ -2,14 +2,13 @@
 
 use std::hash::{Hash, Hasher};
 
-use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::input::{Axis, ButtonInput};
 use bevy::math::FloatOrd;
 use bevy::prelude::{
     Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
-    Reflect, ResMut, Vec2, World,
+    Reflect, Res, ResMut, Vec2, World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
@@ -210,11 +209,11 @@ impl Hash for GamepadControlDirection {
 }
 
 impl UpdatableInput for GamepadAxis {
-    type SourceData = SRes<Axis<GamepadAxis>>;
+    type SourceData<'w, 's> = Res<'w, Axis<GamepadAxis>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
         for axis in source_data.devices() {
             let value = source_data.get(*axis).unwrap_or_default();
@@ -533,11 +532,11 @@ fn button_pressed(
 }
 
 impl UpdatableInput for GamepadButton {
-    type SourceData = SRes<ButtonInput<GamepadButton>>;
+    type SourceData<'w, 's> = Res<'w, ButtonInput<GamepadButton>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData>,
+        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
     ) {
         for key in source_data.get_pressed() {
             central_input_store.update_buttonlike(*key, true);
