@@ -612,21 +612,11 @@ impl Buttonlike for GamepadButton {
     }
 
     fn press(&self, world: &mut World) {
-        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
-            gamepad: self.gamepad,
-            button_type: self.button_type,
-            value: 1.0,
-        });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        self.set_value(world, 1.0);
     }
 
     fn release(&self, world: &mut World) {
-        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
-            gamepad: self.gamepad,
-            button_type: self.button_type,
-            value: 0.0,
-        });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        self.set_value(world, 0.0);
     }
 
     fn set_value(&self, world: &mut World, value: f32) {
@@ -677,29 +667,16 @@ impl Buttonlike for GamepadButtonType {
 
     /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
-
-        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
-            gamepad,
-            button_type: *self,
-            value: 1.0,
-        });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        self.set_value_as_gamepad(world, 1.0, gamepad);
     }
 
     /// Sends a [`GamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
-
-        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
-            gamepad,
-            button_type: *self,
-            value: 0.0,
-        });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        self.set_value_as_gamepad(world, 0.0, gamepad);
     }
 
     /// Sends a [`GamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided [`Gamepad`].
+    #[inline]
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
         let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
 
