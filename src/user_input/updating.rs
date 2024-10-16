@@ -13,6 +13,7 @@ use bevy::{
 };
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
+use crate::buttonlike::ButtonValue;
 use crate::{plugin::InputManagerSystem, InputControlKind};
 
 /// An overarching store for all user inputs.
@@ -102,7 +103,7 @@ impl CentralInputStore {
     }
 
     /// Updates the value of a [`Buttonlike`] input.
-    pub fn update_buttonlike<B: Buttonlike>(&mut self, buttonlike: B, pressed: bool) {
+    pub fn update_buttonlike<B: Buttonlike>(&mut self, buttonlike: B, value: ButtonValue) {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<B>())
@@ -112,7 +113,7 @@ impl CentralInputStore {
             panic!("Expected Buttonlike, found {:?}", updated_values);
         };
 
-        buttonlikes.insert(Box::new(buttonlike), pressed);
+        buttonlikes.insert(Box::new(buttonlike), value);
     }
 
     /// Updates the value of an [`Axislike`] input.
@@ -157,7 +158,7 @@ impl CentralInputStore {
         tripleaxislikes.insert(Box::new(tripleaxislike), value);
     }
 
-    /// Fetches the value of a [`Buttonlike`] input.
+    /// Check if a [`Buttonlike`] input is currently pressing.
     pub fn pressed<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> bool {
         let Some(updated_values) = self.updated_values.get(&TypeId::of::<B>()) else {
             return false;
@@ -170,10 +171,38 @@ impl CentralInputStore {
         // PERF: surely there's a way to avoid cloning here
         let boxed_buttonlike: Box<dyn Buttonlike> = Box::new(buttonlike.clone());
 
-        buttonlikes.get(&boxed_buttonlike).copied().unwrap_or(false)
+        buttonlikes
+            .get(&boxed_buttonlike)
+            .copied()
+            .map(|button| button.pressed)
+            .unwrap_or(false)
+    }
+
+    /// Fetches the value of a [`Buttonlike`] input.
+    ///
+    /// This should be between 0.0 and 1.0, where 0.0 is not pressed and 1.0 is fully pressed.
+    pub fn button_value<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> f32 {
+        let Some(updated_values) = self.updated_values.get(&TypeId::of::<B>()) else {
+            return 0.0;
+        };
+
+        let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
+            panic!("Expected Buttonlike, found {:?}", updated_values);
+        };
+
+        // PERF: surely there's a way to avoid cloning here
+        let boxed_buttonlike: Box<dyn Buttonlike> = Box::new(buttonlike.clone());
+
+        buttonlikes
+            .get(&boxed_buttonlike)
+            .copied()
+            .map(|button| button.value)
+            .unwrap_or(0.0)
     }
 
     /// Fetches the value of an [`Axislike`] input.
+    ///
+    /// This should be between -1.0 and 1.0, where -1.0 is fully left or down and 1.0 is fully right or up.
     pub fn value<A: Axislike + Hash + Eq + Clone>(&self, axislike: &A) -> f32 {
         let Some(updated_values) = self.updated_values.get(&TypeId::of::<A>()) else {
             return 0.0;
@@ -234,7 +263,7 @@ impl CentralInputStore {
 /// and the value should be the updated value fetched from [`UpdatableInput::SourceData`].
 #[derive(Debug, Reflect)]
 enum UpdatedValues {
-    Buttonlike(HashMap<Box<dyn Buttonlike>, bool>),
+    Buttonlike(HashMap<Box<dyn Buttonlike>, ButtonValue>),
     Axislike(HashMap<Box<dyn Axislike>, f32>),
     Dualaxislike(HashMap<Box<dyn DualAxislike>, Vec2>),
     Tripleaxislike(HashMap<Box<dyn TripleAxislike>, Vec3>),

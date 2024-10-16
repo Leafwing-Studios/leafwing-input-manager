@@ -23,6 +23,9 @@ pub trait FetchUserInput {
     /// Returns `true` if the given [`Buttonlike`] input is currently pressed.
     fn read_pressed(&mut self, input: impl Buttonlike) -> bool;
 
+    /// Returns the value of the given [`Buttonlike`] input.
+    fn read_button_value(&mut self, input: impl Buttonlike) -> f32;
+
     /// Returns the value of the given [`Axislike`] input.
     fn read_axis_value(&mut self, input: impl Axislike) -> f32;
 
@@ -39,6 +42,16 @@ impl FetchUserInput for World {
         };
 
         input.pressed(input_store, gamepad)
+    }
+
+    fn read_button_value(&mut self, input: impl Buttonlike) -> f32 {
+        let input_store = self.resource::<CentralInputStore>();
+        let gamepad = match self.get_resource::<Gamepads>() {
+            Some(gamepads) => find_gamepad(gamepads),
+            None => Gamepad::new(0),
+        };
+
+        input.value(input_store, gamepad)
     }
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
@@ -65,6 +78,10 @@ impl FetchUserInput for World {
 impl FetchUserInput for App {
     fn read_pressed(&mut self, input: impl Buttonlike) -> bool {
         self.world_mut().read_pressed(input)
+    }
+
+    fn read_button_value(&mut self, input: impl Buttonlike) -> f32 {
+        self.world_mut().read_button_value(input)
     }
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {

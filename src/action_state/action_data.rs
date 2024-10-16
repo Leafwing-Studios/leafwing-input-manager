@@ -7,6 +7,7 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::buttonlike::ButtonValue;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::{buttonlike::ButtonState, InputControlKind};
@@ -77,7 +78,9 @@ impl ActionKindData {
         match self {
             Self::Button(data) => {
                 data.fixed_update_state = data.state;
+                data.fixed_update_value = data.value;
                 data.state = data.update_state;
+                data.value = data.update_value;
             }
             Self::Axis(data) => {
                 data.fixed_update_value = data.value;
@@ -100,7 +103,9 @@ impl ActionKindData {
         match self {
             Self::Button(data) => {
                 data.update_state = data.state;
+                data.update_value = data.value;
                 data.state = data.fixed_update_state;
+                data.value = data.fixed_update_value;
             }
             Self::Axis(data) => {
                 data.update_value = data.value;
@@ -127,6 +132,12 @@ pub struct ButtonData {
     pub update_state: ButtonState,
     /// The `state` of the action in the `FixedMain` schedule
     pub fixed_update_state: ButtonState,
+    /// How far has the button been pressed
+    pub value: f32,
+    /// The `value` of the action in the `Main` schedule
+    pub update_value: f32,
+    /// The `value` of the action in the `FixedMain` schedule
+    pub fixed_update_value: f32,
     /// When was the button pressed / released, and how long has it been held for?
     #[cfg(feature = "timing")]
     pub timing: Timing,
@@ -138,6 +149,9 @@ impl ButtonData {
         state: ButtonState::JustPressed,
         update_state: ButtonState::JustPressed,
         fixed_update_state: ButtonState::JustPressed,
+        value: 1.0,
+        update_value: 1.0,
+        fixed_update_value: 1.0,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
     };
@@ -147,6 +161,9 @@ impl ButtonData {
         state: ButtonState::JustReleased,
         update_state: ButtonState::JustReleased,
         fixed_update_state: ButtonState::JustReleased,
+        value: 0.0,
+        update_value: 0.0,
+        fixed_update_value: 0.0,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
     };
@@ -160,6 +177,9 @@ impl ButtonData {
         state: ButtonState::Released,
         update_state: ButtonState::Released,
         fixed_update_state: ButtonState::Released,
+        value: 0.0,
+        update_value: 0.0,
+        fixed_update_value: 0.0,
         #[cfg(feature = "timing")]
         timing: Timing::NEW,
     };
@@ -190,6 +210,13 @@ impl ButtonData {
     #[must_use]
     pub fn just_released(&self) -> bool {
         self.state.just_released()
+    }
+
+    /// Convert `self` to a [`ButtonValue`].
+    #[inline]
+    #[must_use]
+    pub fn to_button_value(&self) -> ButtonValue {
+        ButtonValue::new(self.state.pressed(), self.value)
     }
 }
 

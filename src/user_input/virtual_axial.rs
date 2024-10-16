@@ -205,24 +205,25 @@ impl Axislike for VirtualAxis {
     #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
-        let negative = f32::from(self.negative.pressed(input_store, gamepad));
-        let positive = f32::from(self.positive.pressed(input_store, gamepad));
+        let negative = self.negative.value(input_store, gamepad);
+        let positive = self.positive.value(input_store, gamepad);
         let value = positive - negative;
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
     }
 
-    /// Presses the corresponding button based on the given value.
+    /// Sets the value of corresponding button based on the given `value`.
     ///
-    /// If the value is negative, the negative button is pressed.
-    /// If the value is positive, the positive button is pressed.
-    /// If the value is zero, neither button is pressed.
+    /// When `value` is non-zero, set its absolute value to the value of:
+    /// - the negative button if the `value` is negative;
+    /// - the positive button if the `value` is positive.
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
         if value < 0.0 {
-            self.negative.press_as_gamepad(world, gamepad);
+            self.negative
+                .set_value_as_gamepad(world, value.abs(), gamepad);
         } else if value > 0.0 {
-            self.positive.press_as_gamepad(world, gamepad);
+            self.positive.set_value_as_gamepad(world, value, gamepad);
         }
     }
 }
@@ -434,28 +435,34 @@ impl DualAxislike for VirtualDPad {
     #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
-        let up = f32::from(self.up.pressed(input_store, gamepad));
-        let down = f32::from(self.down.pressed(input_store, gamepad));
-        let left = f32::from(self.left.pressed(input_store, gamepad));
-        let right = f32::from(self.right.pressed(input_store, gamepad));
+        let up = self.up.value(input_store, gamepad);
+        let down = self.down.value(input_store, gamepad);
+        let left = self.left.value(input_store, gamepad);
+        let right = self.right.value(input_store, gamepad);
         let value = Vec2::new(right - left, up - down);
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
     }
 
-    /// Presses the corresponding buttons based on the quadrant of the given value.
+    /// Sets the value of corresponding button on each axis based on the given `value`.
+    ///
+    /// When `value` along an axis is non-zero, set its absolute value to the value of:
+    /// - the negative button of the axis if the `value` is negative;
+    /// - the positive button of the axis if the `value` is positive.
     fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Gamepad>) {
-        if value.x < 0.0 {
-            self.left.press_as_gamepad(world, gamepad);
-        } else if value.x > 0.0 {
-            self.right.press_as_gamepad(world, gamepad);
+        let Vec2 { x, y } = value;
+
+        if x < 0.0 {
+            self.left.set_value_as_gamepad(world, x.abs(), gamepad);
+        } else if x > 0.0 {
+            self.right.set_value_as_gamepad(world, x, gamepad);
         }
 
-        if value.y < 0.0 {
-            self.down.press_as_gamepad(world, gamepad);
-        } else if value.y > 0.0 {
-            self.up.press_as_gamepad(world, gamepad);
+        if y < 0.0 {
+            self.down.set_value_as_gamepad(world, y.abs(), gamepad);
+        } else if y > 0.0 {
+            self.up.set_value_as_gamepad(world, y, gamepad);
         }
     }
 }
@@ -564,33 +571,39 @@ impl TripleAxislike for VirtualDPad3D {
     #[must_use]
     #[inline]
     fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3 {
-        let up = f32::from(self.up.pressed(input_store, gamepad));
-        let down = f32::from(self.down.pressed(input_store, gamepad));
-        let left = f32::from(self.left.pressed(input_store, gamepad));
-        let right = f32::from(self.right.pressed(input_store, gamepad));
-        let forward = f32::from(self.forward.pressed(input_store, gamepad));
-        let backward = f32::from(self.backward.pressed(input_store, gamepad));
+        let up = self.up.value(input_store, gamepad);
+        let down = self.down.value(input_store, gamepad);
+        let left = self.left.value(input_store, gamepad);
+        let right = self.right.value(input_store, gamepad);
+        let forward = self.forward.value(input_store, gamepad);
+        let backward = self.backward.value(input_store, gamepad);
         Vec3::new(right - left, up - down, backward - forward)
     }
 
-    /// Presses the corresponding buttons based on the octant of the given value.
+    /// Sets the value of corresponding button on each axis based on the given `value`.
+    ///
+    /// When `value` along an axis is non-zero, set its absolute value to the value of:
+    /// - the negative button of the axis if the `value` is negative;
+    /// - the positive button of the axis if the `value` is positive.
     fn set_axis_triple_as_gamepad(&self, world: &mut World, value: Vec3, gamepad: Option<Gamepad>) {
-        if value.x < 0.0 {
-            self.left.press_as_gamepad(world, gamepad);
-        } else if value.x > 0.0 {
-            self.right.press_as_gamepad(world, gamepad);
+        let Vec3 { x, y, z } = value;
+
+        if x < 0.0 {
+            self.left.set_value_as_gamepad(world, x.abs(), gamepad);
+        } else if x > 0.0 {
+            self.right.set_value_as_gamepad(world, x, gamepad);
         }
 
-        if value.y < 0.0 {
-            self.down.press_as_gamepad(world, gamepad);
-        } else if value.y > 0.0 {
-            self.up.press_as_gamepad(world, gamepad);
+        if y < 0.0 {
+            self.down.set_value_as_gamepad(world, y.abs(), gamepad);
+        } else if y > 0.0 {
+            self.up.set_value_as_gamepad(world, y, gamepad);
         }
 
-        if value.z < 0.0 {
-            self.forward.press_as_gamepad(world, gamepad);
-        } else if value.z > 0.0 {
-            self.backward.press_as_gamepad(world, gamepad);
+        if z < 0.0 {
+            self.forward.set_value_as_gamepad(world, z.abs(), gamepad);
+        } else if z > 0.0 {
+            self.backward.set_value_as_gamepad(world, z, gamepad);
         }
     }
 }

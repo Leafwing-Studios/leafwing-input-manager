@@ -30,7 +30,7 @@ fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
 }
 
 /// A Multi-Map that allows you to map actions to multiple [`UserInputs`](crate::user_input::UserInput)s,
-/// whether they are [`Buttonlike`], [`Axislike`] or [`DualAxislike`].
+/// whether they are [`Buttonlike`], [`Axislike`], [`DualAxislike`], or [`TripleAxislike`].
 ///
 /// When inserting a binding, the [`InputControlKind`] of the action variant must match that of the input type.
 /// Use [`InputMap::insert`] to insert buttonlike inputs,
