@@ -2,6 +2,14 @@
 
 ## Version 0.16.0 (Unreleased)
 
+### Bugs (0.16.0)
+
+- fixed the bug where the values of buttonlike `ActionState`s cann't be retrieved
+  - now you can use `button_value` function of `ActionState` to get the value of a buttonlike action
+  - added `value` and friends as the fields of `action_data::ButtonData`
+  - `GamepadButton` and `GamepadButtonType` now get values from `Axis<GamepadButton>`
+  - `VirtualAxis`, `VirtualDPad`, and `VirtualDPad3D` now report axis values based on the values of the constitute buttons
+
 ### Usability (0.16.0)
 
 - made virtual axial controls more flexible, accepting any kind of `Buttonlike`

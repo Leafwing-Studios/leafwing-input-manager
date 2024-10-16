@@ -1,9 +1,10 @@
 //! Keyboard inputs
 
+use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, Res, ResMut, World};
+use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, ResMut, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -33,11 +34,11 @@ impl UserInput for KeyCode {
 }
 
 impl UpdatableInput for KeyCode {
-    type SourceData<'w, 's> = Res<'w, ButtonInput<KeyCode>>;
+    type SourceData = SRes<ButtonInput<KeyCode>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         for key in source_data.get_pressed() {
             central_input_store.update_buttonlike(*key, ButtonValue::from_pressed(true));

@@ -300,7 +300,7 @@ pub trait UpdatableInput: 'static {
     /// # Panics
     ///
     /// This type cannot be [`CentralInputStore`], as that would cause mutable aliasing and panic at runtime.
-    type SourceData<'w, 's>: SystemParam;
+    type SourceData: SystemParam;
 
     /// A system that updates the central store of user input based on the state of the world.
     ///
@@ -311,7 +311,7 @@ pub trait UpdatableInput: 'static {
     /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
     fn compute(
         central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
+        source_data: StaticSystemParam<Self::SourceData>,
     );
 }
 

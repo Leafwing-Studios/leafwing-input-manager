@@ -142,15 +142,15 @@ impl Buttonlike for ButtonlikeChord {
         }
     }
 
-    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        for input in &self.0 {
-            input.press_as_gamepad(world, gamepad);
-        }
-    }
-
     fn release(&self, world: &mut World) {
         for input in &self.0 {
             input.release(world);
+        }
+    }
+
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+        for input in &self.0 {
+            input.press_as_gamepad(world, gamepad);
         }
     }
 

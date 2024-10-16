@@ -116,7 +116,7 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
 }
 
 #[test]
-fn generate_binary_action_diffs() {
+fn generate_button_action_diffs() {
     let mut app = create_app();
     let entity = app
         .world_mut()
@@ -137,8 +137,9 @@ fn generate_binary_action_diffs() {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Pressed { action, .. } => {
+            ActionDiff::Pressed { action, value } => {
                 assert_eq!(action, Action::Button);
+                assert_eq!(value, 1.0);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `Pressed` variant got a `Released` variant")
@@ -158,6 +159,38 @@ fn generate_binary_action_diffs() {
     // Hold
     app.update();
     assert_has_no_action_diffs(&mut app);
+
+    // Change value
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.set_button_value(&Action::Button, 0.5);
+    app.update();
+
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
+            ActionDiff::Pressed { action, value } => {
+                assert_eq!(action, Action::Button);
+                assert_eq!(value, 0.5);
+            }
+            ActionDiff::Released { .. } => {
+                panic!("Expected a `Pressed` variant got a `Released` variant")
+            }
+            ActionDiff::AxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got an `AxisChanged` variant")
+            }
+            ActionDiff::DualAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `DualAxisChanged` variant")
+            }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `TripleAxisChanged` variant")
+            }
+        }
+    });
 
     // Release
     let mut action_state = app

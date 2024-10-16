@@ -2,6 +2,7 @@
 
 use std::hash::{Hash, Hasher};
 
+use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::{StaticSystemParam, SystemParam};
 use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
 use bevy::input::{Axis, ButtonInput};
@@ -218,11 +219,11 @@ impl Hash for GamepadControlDirection {
 }
 
 impl UpdatableInput for GamepadAxis {
-    type SourceData<'w, 's> = Res<'w, Axis<GamepadAxis>>;
+    type SourceData = SRes<Axis<GamepadAxis>>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         for axis in source_data.devices() {
             let value = source_data.get(*axis).unwrap_or_default();
@@ -567,11 +568,11 @@ pub struct GamepadButtonInput<'w> {
 }
 
 impl UpdatableInput for GamepadButton {
-    type SourceData<'w, 's> = GamepadButtonInput<'w>;
+    type SourceData = GamepadButtonInput<'static>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
-        source_data: StaticSystemParam<Self::SourceData<'_, '_>>,
+        source_data: StaticSystemParam<Self::SourceData>,
     ) {
         for button in source_data.buttons.get_pressed() {
             let value = source_data.axes.get(*button).unwrap_or(1.0);
