@@ -195,6 +195,10 @@ pub trait Buttonlike:
     ///
     /// This method defaults to calling [`Buttonlike::set_value_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
+    ///
+    /// Also updates the state of the button based on the `value`:
+    /// - If `value > 0.0`, the button will be pressed.
+    /// - If `value <= 0.0`, the button will be released.
     fn set_value(&self, world: &mut World, value: f32) {
         self.set_value_as_gamepad(world, value, None);
     }
@@ -203,6 +207,10 @@ pub trait Buttonlike:
     ///
     /// This method defaults to calling [`Buttonlike::set_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
+    ///
+    /// Also updates the state of the button based on the `value`:
+    /// - If `value > 0.0`, the button will be pressed.
+    /// - If `value <= 0.0`, the button will be released.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.

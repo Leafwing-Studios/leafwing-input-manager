@@ -560,6 +560,10 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the value of the buttonlike `action` to the provided `value`.
+    ///
+    /// Also updates the state of the button based on the `value`:
+    /// - If `value > 0.0`, the button will be pressed.
+    /// - If `value <= 0.0`, the button will be released.
     #[track_caller]
     pub fn set_button_value(&mut self, action: &A, value: f32) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
@@ -584,14 +588,14 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Get the value associated with the corresponding `action`, clamped to `[-1.0, 1.0]`.
+    /// Get the value associated with the corresponding `action`, clamped to `[0.0, 1.0]`.
     ///
     /// # Warning
     ///
     /// This value will be 0. by default,
     /// even if the action is not a buttonlike action.
     pub fn clamped_button_value(&self, action: &A) -> f32 {
-        self.button_value(action).clamp(-1., 1.)
+        self.button_value(action).clamp(0., 1.)
     }
 
     /// Get the value associated with the corresponding axislike `action` if present.
