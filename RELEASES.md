@@ -10,6 +10,7 @@
   - `GamepadButton` and `GamepadButtonType` now get values from `Axis<GamepadButton>`
   - `VirtualAxis`, `VirtualDPad`, and `VirtualDPad3D` now report axis values based on the values of the constitute buttons
   - added `value` field to `ActionDiff::Pressed`
+- added missing deserializer function for `MouseButton`
 
 ### Usability (0.16.0)
 

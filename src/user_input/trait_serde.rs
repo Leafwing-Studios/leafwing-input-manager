@@ -258,6 +258,31 @@ mod tests {
 
     #[cfg(feature = "mouse")]
     #[test]
+    fn test_mouse_button_serde() {
+        use bevy::prelude::MouseButton;
+        use serde_test::{assert_tokens, Token};
+
+        use crate::prelude::Buttonlike;
+
+        register_input_deserializers();
+
+        let boxed_input: Box<dyn Buttonlike> = Box::new(MouseButton::Left);
+        assert_tokens(
+            &boxed_input,
+            &[
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("MouseButton"),
+                Token::UnitVariant {
+                    name: "MouseButton",
+                    variant: "Left",
+                },
+                Token::MapEnd,
+            ],
+        );
+    }
+
+    #[cfg(feature = "mouse")]
+    #[test]
     fn test_axis_serde() {
         use crate::prelude::{Axislike, MouseScrollAxis};
         use serde_test::{assert_tokens, Token};
