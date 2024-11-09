@@ -339,6 +339,7 @@ impl Plugin for AccumulatorPlugin {
                 PreUpdate,
                 InputManagerSystem::Accumulate
                     .after(InputSystem)
+                    .before(InputManagerSystem::Filter)
                     .before(InputManagerSystem::Unify),
             );
         }
