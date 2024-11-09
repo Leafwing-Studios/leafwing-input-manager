@@ -9,6 +9,7 @@ use bevy::{
     ecs::{
         entity::{Entity, MapEntities},
         event::Event,
+        query::QueryFilter,
     },
     math::{Vec2, Vec3},
     prelude::{EntityMapper, EventWriter, Query, Res},
@@ -16,6 +17,7 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 
+use crate::buttonlike::ButtonValue;
 use crate::{action_state::ActionKindData, prelude::ActionState, Actionlike};
 
 /// Stores presses and releases of buttons without timing information
@@ -30,6 +32,8 @@ pub enum ActionDiff<A: Actionlike> {
     Pressed {
         /// The value of the action
         action: A,
+        /// The new value of the action
+        value: f32,
     },
     /// The action was released
     Released {
@@ -87,7 +91,7 @@ impl<A: Actionlike> MapEntities for ActionDiffEvent<A> {
 /// Inside of the hashmap, [`Entity::PLACEHOLDER`] represents the global / resource state of the action.
 #[derive(Debug, PartialEq, Clone)]
 pub struct SummarizedActionState<A: Actionlike> {
-    button_state_map: HashMap<Entity, HashMap<A, bool>>,
+    button_state_map: HashMap<Entity, HashMap<A, ButtonValue>>,
     axis_state_map: HashMap<Entity, HashMap<A, f32>>,
     dual_axis_state_map: HashMap<Entity, HashMap<A, Vec2>>,
     triple_axis_state_map: HashMap<Entity, HashMap<A, Vec3>>,
@@ -112,10 +116,19 @@ impl<A: Actionlike> SummarizedActionState<A> {
         entities
     }
 
-    /// Captures the raw values for each action in the current frame.
+    /// Captures the raw values for each action in the current frame, for all entities with `ActionState<A>`.
     pub fn summarize(
         global_action_state: Option<Res<ActionState<A>>>,
         action_state_query: Query<(Entity, &ActionState<A>)>,
+    ) -> Self {
+        Self::summarize_filtered(global_action_state, action_state_query)
+    }
+
+    /// Captures the raw values for each action in the current frame, for entities with `ActionState<A>`
+    /// matching the query filter.
+    pub fn summarize_filtered<F: QueryFilter>(
+        global_action_state: Option<Res<ActionState<A>>>,
+        action_state_query: Query<(Entity, &ActionState<A>), F>,
     ) -> Self {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
@@ -131,7 +144,8 @@ impl<A: Actionlike> SummarizedActionState<A> {
             for (action, action_data) in global_action_state.all_action_data() {
                 match &action_data.kind_data {
                     ActionKindData::Button(button_data) => {
-                        per_entity_button_state.insert(action.clone(), button_data.pressed());
+                        per_entity_button_state
+                            .insert(action.clone(), button_data.to_button_value());
                     }
                     ActionKindData::Axis(axis_data) => {
                         per_entity_axis_state.insert(action.clone(), axis_data.value);
@@ -161,7 +175,8 @@ impl<A: Actionlike> SummarizedActionState<A> {
             for (action, action_data) in action_state.all_action_data() {
                 match &action_data.kind_data {
                     ActionKindData::Button(button_data) => {
-                        per_entity_button_state.insert(action.clone(), button_data.pressed());
+                        per_entity_button_state
+                            .insert(action.clone(), button_data.to_button_value());
                     }
                     ActionKindData::Axis(axis_data) => {
                         per_entity_axis_state.insert(action.clone(), axis_data.value);
@@ -197,15 +212,18 @@ impl<A: Actionlike> SummarizedActionState<A> {
     /// Previous values will be treated as default if they were not present.
     pub fn button_diff(
         action: A,
-        previous_button: Option<bool>,
-        current_button: Option<bool>,
+        previous_button: Option<ButtonValue>,
+        current_button: Option<ButtonValue>,
     ) -> Option<ActionDiff<A>> {
         let previous_button = previous_button.unwrap_or_default();
         let current_button = current_button?;
 
         (previous_button != current_button).then(|| {
-            if current_button {
-                ActionDiff::Pressed { action }
+            if current_button.pressed {
+                ActionDiff::Pressed {
+                    action,
+                    value: current_button.value,
+                }
             } else {
                 ActionDiff::Released { action }
             }
@@ -367,6 +385,7 @@ mod tests {
     use crate as leafwing_input_manager;
 
     use super::*;
+    use crate::buttonlike::ButtonValue;
     use bevy::{ecs::system::SystemState, prelude::*};
 
     #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
@@ -389,6 +408,9 @@ mod tests {
         action_state
     }
 
+    #[derive(Component)]
+    struct NotSummarized;
+
     fn expected_summary(entity: Entity) -> SummarizedActionState<TestAction> {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
@@ -396,7 +418,7 @@ mod tests {
         let mut triple_axis_state_map = HashMap::default();
 
         let mut global_button_state = HashMap::default();
-        global_button_state.insert(TestAction::Button, true);
+        global_button_state.insert(TestAction::Button, ButtonValue::from_pressed(true));
         button_state_map.insert(entity, global_button_state);
 
         let mut global_axis_state = HashMap::default();
@@ -446,6 +468,25 @@ mod tests {
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
 
         // Components use the entity
+        assert_eq!(summarized, expected_summary(entity));
+    }
+
+    #[test]
+    fn summarize_filtered_entities_from_component() {
+        // Spawn two entities, one to be summarized and one to be filtered out
+        let mut world = World::new();
+        let entity = world.spawn(test_action_state()).id();
+        world.spawn((test_action_state(), NotSummarized));
+
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
+        let summarized =
+            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+
+        // Check that only the entity without NotSummarized was summarized
         assert_eq!(summarized, expected_summary(entity));
     }
 

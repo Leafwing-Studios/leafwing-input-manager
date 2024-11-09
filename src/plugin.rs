@@ -208,6 +208,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         app.register_type::<AccumulatedMouseMovement>()
             .register_type::<AccumulatedMouseScroll>()
             .register_buttonlike_input::<MouseMoveDirection>()
+            .register_buttonlike_input::<MouseButton>()
             .register_axislike_input::<MouseMoveAxis>()
             .register_dual_axislike_input::<MouseMove>()
             .register_buttonlike_input::<MouseScrollDirection>()

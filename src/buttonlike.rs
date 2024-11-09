@@ -3,6 +3,45 @@
 use bevy::reflect::Reflect;
 use serde::{Deserialize, Serialize};
 
+/// Current values of a button.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
+pub struct ButtonValue {
+    /// Is the button currently pressed?
+    pub pressed: bool,
+
+    /// How far has the button been pressed,
+    /// ranging from 0.0 (not pressed) to 1.0 (fully pressed).
+    pub value: f32,
+}
+
+impl ButtonValue {
+    /// Create a new [`ButtonValue`] with the given `pressed` state and `value`.
+    #[inline]
+    pub fn new(pressed: bool, value: f32) -> Self {
+        Self { pressed, value }
+    }
+
+    /// Create a new [`ButtonValue`] with the given `pressed` state.
+    ///
+    /// The value will set to 1.0 if `pressed` is true, and 0.0 otherwise
+    #[inline]
+    pub fn from_pressed(pressed: bool) -> Self {
+        Self::new(pressed, f32::from(pressed))
+    }
+}
+
+impl From<ButtonState> for ButtonValue {
+    fn from(value: ButtonState) -> Self {
+        Self::from_pressed(value.pressed())
+    }
+}
+
+impl From<bevy::input::ButtonState> for ButtonValue {
+    fn from(value: bevy::input::ButtonState) -> Self {
+        Self::from_pressed(value.is_pressed())
+    }
+}
+
 /// The current state of a particular button,
 /// usually corresponding to a single [`Actionlike`](crate::Actionlike) action.
 ///

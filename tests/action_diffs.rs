@@ -1,6 +1,9 @@
 use bevy::{input::InputPlugin, prelude::*};
 use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
-use leafwing_input_manager::{prelude::*, systems::generate_action_diffs};
+use leafwing_input_manager::{
+    prelude::*,
+    systems::{generate_action_diffs, generate_action_diffs_filtered},
+};
 
 #[derive(Actionlike, Clone, Copy, Debug, Reflect, PartialEq, Eq, Hash)]
 enum Action {
@@ -10,6 +13,9 @@ enum Action {
     #[actionlike(DualAxis)]
     DualAxis,
 }
+
+#[derive(Component)]
+pub struct NoActionDiffs;
 
 fn spawn_test_entity(mut commands: Commands) {
     commands.spawn(ActionState::<Action>::default());
@@ -88,7 +94,7 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
     let action_state = action_state_query.get_single(app.world()).unwrap();
     assert_eq!(action_diff_event.action_diffs.len(), 1);
     match action_diff_event.action_diffs.first().unwrap().clone() {
-        ActionDiff::Pressed { action } => {
+        ActionDiff::Pressed { action, .. } => {
             assert!(action_state.pressed(&action));
         }
         ActionDiff::Released { action } => {
@@ -110,7 +116,7 @@ fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent
 }
 
 #[test]
-fn generate_binary_action_diffs() {
+fn generate_button_action_diffs() {
     let mut app = create_app();
     let entity = app
         .world_mut()
@@ -131,14 +137,15 @@ fn generate_binary_action_diffs() {
         assert_eq!(action_diff_event.owner, Some(entity));
         assert_eq!(action_diff_event.action_diffs.len(), 1);
         match action_diff_event.action_diffs.first().unwrap().clone() {
-            ActionDiff::Pressed { action } => {
+            ActionDiff::Pressed { action, value } => {
                 assert_eq!(action, Action::Button);
+                assert_eq!(value, 1.0);
             }
             ActionDiff::Released { .. } => {
                 panic!("Expected a `Pressed` variant got a `Released` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Pressed` variant got a `AxisChanged` variant")
+                panic!("Expected a `Pressed` variant got an `AxisChanged` variant")
             }
             ActionDiff::DualAxisChanged { .. } => {
                 panic!("Expected a `Pressed` variant got a `DualAxisChanged` variant")
@@ -152,6 +159,38 @@ fn generate_binary_action_diffs() {
     // Hold
     app.update();
     assert_has_no_action_diffs(&mut app);
+
+    // Change value
+    let mut action_state = app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .get_mut(app.world_mut(), entity)
+        .unwrap();
+    action_state.set_button_value(&Action::Button, 0.5);
+    app.update();
+
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
+            ActionDiff::Pressed { action, value } => {
+                assert_eq!(action, Action::Button);
+                assert_eq!(value, 0.5);
+            }
+            ActionDiff::Released { .. } => {
+                panic!("Expected a `Pressed` variant got a `Released` variant")
+            }
+            ActionDiff::AxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got an `AxisChanged` variant")
+            }
+            ActionDiff::DualAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `DualAxisChanged` variant")
+            }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `TripleAxisChanged` variant")
+            }
+        }
+    });
 
     // Release
     let mut action_state = app
@@ -173,7 +212,7 @@ fn generate_binary_action_diffs() {
                 panic!("Expected a `Released` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `Released` variant got a `AxisChanged` variant")
+                panic!("Expected a `Released` variant got an `AxisChanged` variant")
             }
             ActionDiff::DualAxisChanged { .. } => {
                 panic!("Expected a `Released` variant got a `DualAxisChanged` variant")
@@ -220,7 +259,7 @@ fn generate_axis_action_diffs() {
                 panic!("Expected a `DualAxisChanged` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
+                panic!("Expected a `DualAxisChanged` variant got an `AxisChanged` variant")
             }
             ActionDiff::TripleAxisChanged { .. } => {
                 panic!("Expected a `DualAxisChanged` variant got a `TripleAxisChanged` variant")
@@ -256,10 +295,60 @@ fn generate_axis_action_diffs() {
                 panic!("Expected a `DualAxisChanged` variant got a `Pressed` variant")
             }
             ActionDiff::AxisChanged { .. } => {
-                panic!("Expected a `DualAxisChanged` variant got a `AxisChanged` variant")
+                panic!("Expected a `DualAxisChanged` variant got an `AxisChanged` variant")
             }
             ActionDiff::TripleAxisChanged { .. } => {
                 panic!("Expected a `DualAxisChanged` variant got a `TripleAxisChanged` variant")
+            }
+        }
+    });
+}
+
+#[test]
+fn generate_filtered_binary_action_diffs() {
+    let mut app = create_app();
+    app.add_systems(
+        PostUpdate,
+        generate_action_diffs_filtered::<Action, Without<NoActionDiffs>>,
+    );
+
+    let entity = app
+        .world_mut()
+        .query_filtered::<Entity, With<ActionState<Action>>>()
+        .single(app.world());
+    // Also spawn an entity that will not send action diffs
+    app.world_mut()
+        .spawn((ActionState::<Action>::default(), NoActionDiffs));
+
+    // Press both entities
+    for mut action_state in app
+        .world_mut()
+        .query::<&mut ActionState<Action>>()
+        .iter_mut(app.world_mut())
+    {
+        action_state.press(&Action::Button);
+    }
+    app.update();
+
+    // Expect only `entity` to have an action diff event
+    assert_action_diff_created(&mut app, |action_diff_event| {
+        assert_eq!(action_diff_event.owner, Some(entity));
+        assert_eq!(action_diff_event.action_diffs.len(), 1);
+        match action_diff_event.action_diffs.first().unwrap().clone() {
+            ActionDiff::Pressed { action, .. } => {
+                assert_eq!(action, Action::Button);
+            }
+            ActionDiff::Released { .. } => {
+                panic!("Expected a `Pressed` variant got a `Released` variant")
+            }
+            ActionDiff::AxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `ValueChanged` variant")
+            }
+            ActionDiff::DualAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got an `AxisPairChanged` variant")
+            }
+            ActionDiff::TripleAxisChanged { .. } => {
+                panic!("Expected a `Pressed` variant got a `TripleAxisChanged` variant")
             }
         }
     });
@@ -278,6 +367,7 @@ fn process_binary_action_diffs() {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Pressed {
             action: Action::Button,
+            value: 1.0,
         }],
     };
     send_action_diff(&mut app, action_diff_event.clone());
