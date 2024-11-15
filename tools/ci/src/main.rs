@@ -23,8 +23,6 @@ const CLIPPY_FLAGS: [&str; 3] = [
     "-Dwarnings",
 ];
 
-const COMPILE_TARGETS: &[&str] = &["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"];
-
 fn main() {
     // When run locally, results may differ from actual CI runs triggered by
     // .github/workflows/ci.yml
@@ -149,10 +147,11 @@ fn main() {
         }
 
         if what_to_run.contains(Check::COMPILE_CHECK) {
-            for target in COMPILE_TARGETS {
+            let compile_targets = &[vec![], vec!["--target", "wasm32-unknown-unknown"]];
+            for target in compile_targets {
                 cmd!(
                     sh,
-                    "cargo check --workspace {feature_option} {extra...} --target {target}"
+                    "cargo check --workspace {feature_option} {extra...} {target...}"
                 )
                 .run()
                 .expect("Please fix compiler errors in above output.");
