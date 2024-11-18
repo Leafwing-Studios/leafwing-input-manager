@@ -261,7 +261,7 @@ pub struct MouseMoveAxis {
     pub axis: DualAxisType,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<AxisProcessor>,
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl MouseMoveAxis {
@@ -382,7 +382,7 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 #[must_use]
 pub struct MouseMove {
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<DualAxisProcessor>,
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl UpdatableInput for MouseMove {
@@ -628,7 +628,7 @@ pub struct MouseScrollAxis {
     pub axis: DualAxisType,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<AxisProcessor>,
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl MouseScrollAxis {
@@ -761,7 +761,7 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 #[must_use]
 pub struct MouseScroll {
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<DualAxisProcessor>,
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl UpdatableInput for MouseScroll {
