@@ -290,10 +290,10 @@ impl Axislike for GamepadAxis {
 #[must_use]
 pub struct GamepadControlAxis {
     /// The wrapped axis.
-    pub(crate) axis: GamepadAxisType,
+    pub axis: GamepadAxisType,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<AxisProcessor>,
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl GamepadControlAxis {
@@ -429,13 +429,13 @@ impl WithAxisProcessingPipelineExt for GamepadControlAxis {
 #[must_use]
 pub struct GamepadStick {
     /// Horizontal movement of the stick.
-    pub(crate) x: GamepadAxisType,
+    pub x: GamepadAxisType,
 
     /// Vertical movement of the stick.
-    pub(crate) y: GamepadAxisType,
+    pub y: GamepadAxisType,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<DualAxisProcessor>,
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl GamepadStick {

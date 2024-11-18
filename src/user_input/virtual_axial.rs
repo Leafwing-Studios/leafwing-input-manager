@@ -59,13 +59,13 @@ use serde::{Deserialize, Serialize};
 #[must_use]
 pub struct VirtualAxis {
     /// The button that represents the negative direction.
-    pub(crate) negative: Box<dyn Buttonlike>,
+    pub negative: Box<dyn Buttonlike>,
 
     /// The button that represents the positive direction.
-    pub(crate) positive: Box<dyn Buttonlike>,
+    pub positive: Box<dyn Buttonlike>,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<AxisProcessor>,
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl VirtualAxis {
@@ -295,19 +295,19 @@ impl WithAxisProcessingPipelineExt for VirtualAxis {
 #[must_use]
 pub struct VirtualDPad {
     /// The button for the upward direction.
-    pub(crate) up: Box<dyn Buttonlike>,
+    pub up: Box<dyn Buttonlike>,
 
     /// The button for the downward direction.
-    pub(crate) down: Box<dyn Buttonlike>,
+    pub down: Box<dyn Buttonlike>,
 
     /// The button for the leftward direction.
-    pub(crate) left: Box<dyn Buttonlike>,
+    pub left: Box<dyn Buttonlike>,
 
     /// The button for the rightward direction.
-    pub(crate) right: Box<dyn Buttonlike>,
+    pub right: Box<dyn Buttonlike>,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<DualAxisProcessor>,
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl VirtualDPad {
@@ -503,22 +503,22 @@ impl WithDualAxisProcessingPipelineExt for VirtualDPad {
 #[must_use]
 pub struct VirtualDPad3D {
     /// The button for the upward direction.
-    pub(crate) up: Box<dyn Buttonlike>,
+    pub up: Box<dyn Buttonlike>,
 
     /// The button for the downward direction.
-    pub(crate) down: Box<dyn Buttonlike>,
+    pub down: Box<dyn Buttonlike>,
 
     /// The button for the leftward direction.
-    pub(crate) left: Box<dyn Buttonlike>,
+    pub left: Box<dyn Buttonlike>,
 
     /// The button for the rightward direction.
-    pub(crate) right: Box<dyn Buttonlike>,
+    pub right: Box<dyn Buttonlike>,
 
     /// The button for the forward direction.
-    pub(crate) forward: Box<dyn Buttonlike>,
+    pub forward: Box<dyn Buttonlike>,
 
     /// The button for the backward direction.
-    pub(crate) backward: Box<dyn Buttonlike>,
+    pub backward: Box<dyn Buttonlike>,
 }
 
 impl VirtualDPad3D {
