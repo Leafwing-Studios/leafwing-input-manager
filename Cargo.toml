@@ -60,7 +60,6 @@ serde_flexitos = "0.2"
 dyn-clone = "1.0"
 dyn-eq = "0.1"
 dyn-hash = "0.2"
-once_cell = "1.19"
 
 [dev-dependencies]
 bevy = { version = "0.14.0-rc.3", default-features = false, features = [
