@@ -98,7 +98,7 @@ mod buttonlike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn Buttonlike + 'a {
+    impl Serialize for dyn Buttonlike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -128,7 +128,7 @@ mod axislike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn Axislike + 'a {
+    impl Serialize for dyn Axislike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -158,7 +158,7 @@ mod dualaxislike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn DualAxislike + 'a {
+    impl Serialize for dyn DualAxislike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -188,7 +188,7 @@ mod tripleaxislike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn TripleAxislike + 'a {
+    impl Serialize for dyn TripleAxislike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,

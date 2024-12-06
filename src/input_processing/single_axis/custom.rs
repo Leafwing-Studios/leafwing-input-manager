@@ -260,7 +260,7 @@ impl FromReflect for Box<dyn CustomAxisProcessor> {
     }
 }
 
-impl<'a> Serialize for dyn CustomAxisProcessor + 'a {
+impl Serialize for dyn CustomAxisProcessor + '_ {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
