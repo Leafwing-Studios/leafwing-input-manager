@@ -4,9 +4,9 @@ use quote::quote;
 use std::collections::HashMap;
 use syn::{Attribute, Data, DataEnum, DeriveInput, Error, Ident};
 
-/// This approach and implementation is inspired by the `strum` crate,
-/// Copyright (c) 2019 Peter Glotfelty
-/// available under the MIT License at <https://github.com/Peternator7/strum>
+// This approach and implementation is inspired by the `strum` crate,
+// Copyright (c) 2019 Peter Glotfelty
+// available under the MIT License at <https://github.com/Peternator7/strum>
 
 pub(crate) fn actionlike_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
     // Splitting the abstract syntax tree
