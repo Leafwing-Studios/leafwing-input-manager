@@ -1,7 +1,7 @@
 #![cfg(feature = "gamepad")]
 
 use bevy::input::gamepad::{
-    GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo, RawGamepadEvent,
+    GamepadConnection, GamepadConnectionEvent, GamepadEvent, RawGamepadEvent,
 };
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
@@ -24,20 +24,20 @@ fn create_test_app() -> App {
     gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
         // Must be consistent with mocked events
         gamepad: gamepad_1,
-        connection: GamepadConnection::Connected(GamepadInfo {
+        connection: GamepadConnection::Connected {
             name: "FirstController".into(),
             vendor_id: None,
             product_id: None,
-        }),
+        },
     }));
     gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
         // Must be consistent with mocked events
         gamepad: gamepad_2,
-        connection: GamepadConnection::Connected(GamepadInfo {
+        connection: GamepadConnection::Connected {
             name: "SecondController".into(),
             vendor_id: None,
             product_id: None,
-        }),
+        },
     }));
 
     // Ensure the gamepads are picked up
@@ -62,11 +62,6 @@ fn jump_button_press_event(gamepad: Entity) -> RawGamepadEvent {
 fn accepts_preferred_gamepad() {
     let mut app = create_test_app();
 
-    let gamepad_info = GamepadInfo {
-        name: "Preferred gamepad".to_owned(),
-        vendor_id: None,
-        product_id: None,
-    };
     let preferred_gamepad = app.world_mut().spawn(()).id();
     let mut gamepad_connection_events = app
         .world_mut()
@@ -74,7 +69,11 @@ fn accepts_preferred_gamepad() {
     gamepad_connection_events.send(GamepadConnectionEvent {
         // This MUST be consistent with any other mocked events
         gamepad: preferred_gamepad,
-        connection: GamepadConnection::Connected(gamepad_info),
+        connection: GamepadConnection::Connected {
+            name: "Preferred gamepad".to_owned(),
+            vendor_id: None,
+            product_id: None,
+        },
     });
     // Ensure that the gamepad is picked up by the appropriate system
     app.update();

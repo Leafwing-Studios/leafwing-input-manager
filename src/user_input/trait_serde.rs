@@ -4,29 +4,29 @@ use std::sync::RwLock;
 
 use bevy::app::App;
 use bevy::reflect::GetTypeRegistration;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
 use serde_flexitos::{serialize_trait_object, Registry};
+use std::sync::LazyLock;
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 use crate::typetag::{InfallibleMapRegistry, RegisterTypeTag};
 
 /// Registry of deserializers for [`Buttonlike`]s.
-static mut BUTTONLIKE_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn Buttonlike>>> =
-    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("Buttonlike")));
+static BUTTONLIKE_REGISTRY: LazyLock<RwLock<InfallibleMapRegistry<dyn Buttonlike>>> =
+    LazyLock::new(|| RwLock::new(InfallibleMapRegistry::new("Buttonlike")));
 
 /// Registry of deserializers for [`Axislike`]s.
-static mut AXISLIKE_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn Axislike>>> =
-    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("Axislike")));
+static AXISLIKE_REGISTRY: LazyLock<RwLock<InfallibleMapRegistry<dyn Axislike>>> =
+    LazyLock::new(|| RwLock::new(InfallibleMapRegistry::new("Axislike")));
 
 /// Registry of deserializers for [`DualAxislike`]s.
-static mut DUAL_AXISLIKE_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn DualAxislike>>> =
-    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("DualAxislike")));
+static DUAL_AXISLIKE_REGISTRY: LazyLock<RwLock<InfallibleMapRegistry<dyn DualAxislike>>> =
+    LazyLock::new(|| RwLock::new(InfallibleMapRegistry::new("DualAxislike")));
 
 /// Registry of deserializers for [`TripleAxislike`]s.
-static mut TRIPLE_AXISLIKE_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn TripleAxislike>>> =
-    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("TripleAxislike")));
+static TRIPLE_AXISLIKE_REGISTRY: LazyLock<RwLock<InfallibleMapRegistry<dyn TripleAxislike>>> =
+    LazyLock::new(|| RwLock::new(InfallibleMapRegistry::new("TripleAxislike")));
 
 /// A trait for registering inputs.
 pub trait RegisterUserInput {
@@ -56,7 +56,7 @@ impl RegisterUserInput for App {
     where
         T: RegisterTypeTag<'de, dyn Buttonlike> + GetTypeRegistration,
     {
-        let mut registry = unsafe { BUTTONLIKE_REGISTRY.write().unwrap() };
+        let mut registry = BUTTONLIKE_REGISTRY.write().unwrap();
         T::register_typetag(&mut registry);
         self.register_type::<T>();
         self
@@ -66,7 +66,7 @@ impl RegisterUserInput for App {
     where
         T: RegisterTypeTag<'de, dyn Axislike> + GetTypeRegistration,
     {
-        let mut registry = unsafe { AXISLIKE_REGISTRY.write().unwrap() };
+        let mut registry = AXISLIKE_REGISTRY.write().unwrap();
         T::register_typetag(&mut registry);
         self.register_type::<T>();
         self
@@ -76,7 +76,7 @@ impl RegisterUserInput for App {
     where
         T: RegisterTypeTag<'de, dyn DualAxislike> + GetTypeRegistration,
     {
-        let mut registry = unsafe { DUAL_AXISLIKE_REGISTRY.write().unwrap() };
+        let mut registry = DUAL_AXISLIKE_REGISTRY.write().unwrap();
         T::register_typetag(&mut registry);
         self.register_type::<T>();
         self
@@ -86,7 +86,7 @@ impl RegisterUserInput for App {
     where
         T: RegisterTypeTag<'de, dyn TripleAxislike> + GetTypeRegistration,
     {
-        let mut registry = unsafe { TRIPLE_AXISLIKE_REGISTRY.write().unwrap() };
+        let mut registry = TRIPLE_AXISLIKE_REGISTRY.write().unwrap();
         T::register_typetag(&mut registry);
         self.register_type::<T>();
         self
@@ -98,7 +98,7 @@ mod buttonlike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn Buttonlike + 'a {
+    impl Serialize for dyn Buttonlike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -117,7 +117,7 @@ mod buttonlike {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { BUTTONLIKE_REGISTRY.read().unwrap() };
+            let registry = BUTTONLIKE_REGISTRY.read().unwrap();
             registry.deserialize_trait_object(deserializer)
         }
     }
@@ -128,7 +128,7 @@ mod axislike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn Axislike + 'a {
+    impl Serialize for dyn Axislike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -147,7 +147,7 @@ mod axislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { AXISLIKE_REGISTRY.read().unwrap() };
+            let registry = AXISLIKE_REGISTRY.read().unwrap();
             registry.deserialize_trait_object(deserializer)
         }
     }
@@ -158,7 +158,7 @@ mod dualaxislike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn DualAxislike + 'a {
+    impl Serialize for dyn DualAxislike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -177,7 +177,7 @@ mod dualaxislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { DUAL_AXISLIKE_REGISTRY.read().unwrap() };
+            let registry = DUAL_AXISLIKE_REGISTRY.read().unwrap();
             registry.deserialize_trait_object(deserializer)
         }
     }
@@ -188,7 +188,7 @@ mod tripleaxislike {
 
     use super::*;
 
-    impl<'a> Serialize for dyn TripleAxislike + 'a {
+    impl Serialize for dyn TripleAxislike + '_ {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
         where
             S: Serializer,
@@ -207,7 +207,7 @@ mod tripleaxislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = unsafe { TRIPLE_AXISLIKE_REGISTRY.read().unwrap() };
+            let registry = TRIPLE_AXISLIKE_REGISTRY.read().unwrap();
             registry.deserialize_trait_object(deserializer)
         }
     }
@@ -250,6 +250,31 @@ mod tests {
                 Token::UnitVariant {
                     name: "KeyCode",
                     variant: "KeyB",
+                },
+                Token::MapEnd,
+            ],
+        );
+    }
+
+    #[cfg(feature = "mouse")]
+    #[test]
+    fn test_mouse_button_serde() {
+        use bevy::prelude::MouseButton;
+        use serde_test::{assert_tokens, Token};
+
+        use crate::prelude::Buttonlike;
+
+        register_input_deserializers();
+
+        let boxed_input: Box<dyn Buttonlike> = Box::new(MouseButton::Left);
+        assert_tokens(
+            &boxed_input,
+            &[
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("MouseButton"),
+                Token::UnitVariant {
+                    name: "MouseButton",
+                    variant: "Left",
                 },
                 Token::MapEnd,
             ],

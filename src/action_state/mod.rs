@@ -538,23 +538,69 @@ impl<A: Actionlike> ActionState<A> {
         triple_axis_data
     }
 
-    /// Get the value associated with the corresponding `action` if present.
-    ///
-    /// Different kinds of bindings have different ways of calculating the value:
-    ///
-    /// - Binary buttons will have a value of `0.0` when the button is not pressed, and a value of `1.0` when the button is pressed.
-    /// - Some axes, such as an analog stick, will have a value in the range `[-1.0, 1.0]`.
-    /// - Some axes, such as a variable trigger, will have a value in the range `[0.0, 1.0]`.
-    /// - Some buttons will also return a value in the range `[0.0, 1.0]`, such as analog gamepad triggers which may be tracked as buttons or axes. Examples of these include the Xbox LT/Rtriggers and the Playstation L2/R2 triggers. See also the `axis_inputs` example in the repository.
-    /// - Dual axis inputs will return the magnitude of its [`Vec2`] and will be in the range `0.0..=1.0`.
-    /// - Chord inputs will return the value of its first input.
-    ///
-    /// If multiple inputs trigger the same game action at the same time, the value of each
-    /// triggering input will be added together.
+    /// Get the value associated with the corresponding buttonlike `action` if present.
     ///
     /// # Warnings
     ///
-    /// This value will be 0. if the action has never been pressed or released.
+    /// This value may not be bounded as you might expect.
+    /// Consider clamping this to account for multiple triggering inputs,
+    /// typically using the [`clamped_button_value`](Self::clamped_button_value) method instead.
+    #[inline]
+    #[must_use]
+    #[track_caller]
+    pub fn button_value(&self, action: &A) -> f32 {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
+        if self.action_disabled(action) {
+            return 0.0;
+        }
+
+        let action_data = self.button_data(action);
+        action_data.map_or(0.0, |action_data| action_data.value)
+    }
+
+    /// Sets the value of the buttonlike `action` to the provided `value`.
+    ///
+    /// Also updates the state of the button based on the `value`:
+    /// - If `value > 0.0`, the button will be pressed.
+    /// - If `value <= 0.0`, the button will be released.
+    #[track_caller]
+    pub fn set_button_value(&mut self, action: &A, value: f32) {
+        debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+
+        let button_data = self.button_data_mut_or_default(action);
+        button_data.value = value;
+
+        if value > 0.0 {
+            #[cfg(feature = "timing")]
+            if button_data.state.released() {
+                button_data.timing.flip();
+            }
+
+            button_data.state.press();
+        } else {
+            #[cfg(feature = "timing")]
+            if button_data.state.pressed() {
+                button_data.timing.flip();
+            }
+
+            button_data.state.release();
+        }
+    }
+
+    /// Get the value associated with the corresponding `action`, clamped to `[0.0, 1.0]`.
+    ///
+    /// # Warning
+    ///
+    /// This value will be 0. by default,
+    /// even if the action is not a buttonlike action.
+    pub fn clamped_button_value(&self, action: &A) -> f32 {
+        self.button_value(action).clamp(0., 1.)
+    }
+
+    /// Get the value associated with the corresponding axislike `action` if present.
+    ///
+    /// # Warnings
     ///
     /// This value may not be bounded as you might expect.
     /// Consider clamping this to account for multiple triggering inputs,
@@ -569,13 +615,11 @@ impl<A: Actionlike> ActionState<A> {
             return 0.0;
         }
 
-        match self.axis_data(action) {
-            Some(axis_data) => axis_data.value,
-            None => 0.0,
-        }
+        let action_data = self.axis_data(action);
+        action_data.map_or(0.0, |action_data| action_data.value)
     }
 
-    /// Sets the value of the `action` to the provided `value`.
+    /// Sets the value of the axislike `action` to the provided `value`.
     #[track_caller]
     pub fn set_value(&mut self, action: &A, value: f32) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Axis);
@@ -754,6 +798,7 @@ impl<A: Actionlike> ActionState<A> {
         }
 
         action_data.state.press();
+        action_data.value = 1.0;
     }
 
     /// Release the `action`
@@ -772,6 +817,7 @@ impl<A: Actionlike> ActionState<A> {
         }
 
         action_data.state.release();
+        action_data.value = 0.0;
     }
 
     /// Resets an action to its default state.
@@ -1067,8 +1113,8 @@ impl<A: Actionlike> ActionState<A> {
     /// This lets you reconstruct an [`ActionState`] from a stream of [`ActionDiff`]s
     pub fn apply_diff(&mut self, action_diff: &ActionDiff<A>) {
         match action_diff {
-            ActionDiff::Pressed { action } => {
-                self.press(action);
+            ActionDiff::Pressed { action, value } => {
+                self.set_button_value(action, *value);
             }
             ActionDiff::Released { action } => {
                 self.release(action);

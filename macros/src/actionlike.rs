@@ -1,12 +1,12 @@
 use crate::utils;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use syn::{Attribute, Data, DataEnum, DeriveInput, Error, Ident};
 
-/// This approach and implementation is inspired by the `strum` crate,
-/// Copyright (c) 2019 Peter Glotfelty
-/// available under the MIT License at <https://github.com/Peternator7/strum>
+// This approach and implementation is inspired by the `strum` crate,
+// Copyright (c) 2019 Peter Glotfelty
+// available under the MIT License at <https://github.com/Peternator7/strum>
 
 pub(crate) fn actionlike_inner(ast: &DeriveInput) -> syn::Result<TokenStream> {
     // Splitting the abstract syntax tree
@@ -81,8 +81,8 @@ fn generate_input_control_kind_body(
 fn parse_variant_controls(
     data: &DataEnum,
     default_control: &Ident,
-) -> syn::Result<HashMap<Ident, Ident>> {
-    let mut map = HashMap::<Ident, Ident>::new();
+) -> syn::Result<BTreeMap<Ident, Ident>> {
+    let mut map = BTreeMap::<Ident, Ident>::new();
     for variant in data.variants.iter() {
         for attr in variant
             .attrs

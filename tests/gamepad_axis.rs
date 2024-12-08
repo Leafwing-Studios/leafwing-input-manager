@@ -1,8 +1,6 @@
 #![cfg(feature = "gamepad")]
 
-use bevy::input::gamepad::{
-    GamepadConnection, GamepadConnectionEvent, GamepadInfo, RawGamepadEvent,
-};
+use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, RawGamepadEvent};
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::input_processing::{
@@ -37,19 +35,18 @@ fn test_app() -> App {
         .init_resource::<ActionState<AxislikeTestAction>>();
 
     // WARNING: you MUST register your gamepad during tests, or all gamepad input mocking will fail
-    let gamepad_info = GamepadInfo {
-        name: "TestController".into(),
-        vendor_id: None,
-        product_id: None,
-    };
-    let gamepad = app.world_mut().spawn(()).id();
+    let gamepad = app.world_mut().spawn_empty().id();
     let mut gamepad_connection_events = app
         .world_mut()
         .resource_mut::<Events<GamepadConnectionEvent>>();
     gamepad_connection_events.send(GamepadConnectionEvent {
         // This MUST be consistent with any other mocked events
         gamepad,
-        connection: GamepadConnection::Connected(gamepad_info),
+        connection: GamepadConnection::Connected {
+            name: "TestController".into(),
+            vendor_id: None,
+            product_id: None,
+        },
     });
 
     // Ensure that the gamepad is picked up by the appropriate system

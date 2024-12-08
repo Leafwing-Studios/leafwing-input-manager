@@ -355,9 +355,7 @@ mod tests {
     use crate::plugin::CentralInputStorePlugin;
     use crate::user_input::updating::CentralInputStore;
     use crate::user_input::Buttonlike;
-    use bevy::input::gamepad::{
-        GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
-    };
+    use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
@@ -374,11 +372,11 @@ mod tests {
         gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
             // This MUST be consistent with any other mocked events
             gamepad,
-            connection: GamepadConnection::Connected(GamepadInfo {
+            connection: GamepadConnection::Connected {
                 name: "TestController".into(),
                 vendor_id: None,
                 product_id: None,
-            }),
+            },
         }));
 
         // Ensure that the gamepad is picked up by the appropriate system

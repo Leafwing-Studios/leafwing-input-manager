@@ -160,7 +160,7 @@ fn control_player(
     if action_state.axis_pair(&PlayerAction::Move) != Vec2::ZERO {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
-        let move_delta = time.delta_seconds() * action_state.clamped_axis_pair(&PlayerAction::Move);
+        let move_delta = time.delta_secs() * action_state.clamped_axis_pair(&PlayerAction::Move);
         player_transform.translation += Vec3::new(move_delta.x, 0.0, move_delta.y);
         println!("Player moved to: {}", player_transform.translation.xz());
     }

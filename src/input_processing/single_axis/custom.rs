@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::fmt::Debug;
-use std::sync::RwLock;
+use std::sync::{LazyLock, RwLock};
 
 use bevy::app::App;
 use bevy::prelude::{FromReflect, Reflect, ReflectDeserialize, ReflectSerialize, TypePath};
@@ -12,7 +12,6 @@ use bevy::reflect::{
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
 use serde_flexitos::{serialize_trait_object, Registry};
@@ -261,7 +260,7 @@ impl FromReflect for Box<dyn CustomAxisProcessor> {
     }
 }
 
-impl<'a> Serialize for dyn CustomAxisProcessor + 'a {
+impl Serialize for dyn CustomAxisProcessor + '_ {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -280,14 +279,14 @@ impl<'de> Deserialize<'de> for Box<dyn CustomAxisProcessor> {
     where
         D: Deserializer<'de>,
     {
-        let registry = unsafe { PROCESSOR_REGISTRY.read().unwrap() };
+        let registry = PROCESSOR_REGISTRY.read().unwrap();
         registry.deserialize_trait_object(deserializer)
     }
 }
 
 /// Registry of deserializers for [`CustomAxisProcessor`]s.
-static mut PROCESSOR_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn CustomAxisProcessor>>> =
-    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("CustomAxisProcessor")));
+static PROCESSOR_REGISTRY: LazyLock<RwLock<InfallibleMapRegistry<dyn CustomAxisProcessor>>> =
+    LazyLock::new(|| RwLock::new(InfallibleMapRegistry::new("CustomAxisProcessor")));
 
 /// A trait for registering a specific [`CustomAxisProcessor`].
 pub trait RegisterCustomAxisProcessorExt {
@@ -302,7 +301,7 @@ impl RegisterCustomAxisProcessorExt for App {
     where
         T: RegisterTypeTag<'de, dyn CustomAxisProcessor> + GetTypeRegistration,
     {
-        let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
+        let mut registry = PROCESSOR_REGISTRY.write().unwrap();
         T::register_typetag(&mut registry);
         self.register_type::<T>();
         self

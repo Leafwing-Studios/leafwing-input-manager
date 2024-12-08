@@ -131,7 +131,8 @@ pub trait UserInput: Send + Sync + Debug {
     fn decompose(&self) -> BasicInputs;
 }
 
-/// A trait used for buttonlike user inputs, which can be pressed or released.
+/// A trait used for buttonlike user inputs, which can be pressed or released
+/// with a value for how much they are pressed.
 pub trait Buttonlike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
@@ -141,6 +142,15 @@ pub trait Buttonlike:
     /// Checks if the input is currently inactive.
     fn released(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         !self.pressed(input_store, gamepad)
+    }
+
+    /// Gets the current value of the button as an `f32`.
+    ///
+    /// The returned value should be between `0.0` and `1.0`,
+    /// with `0.0` representing the input being fully released
+    /// and `1.0` representing the input being fully pressed.
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+        f32::from(self.pressed(input_store, gamepad))
     }
 
     /// Simulates a press of the buttonlike input by sending the appropriate event.
@@ -179,6 +189,33 @@ pub trait Buttonlike:
     /// if the provided gamepad is `None`.
     fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Entity>) {
         self.release(world);
+    }
+
+    /// Simulate a value change of the buttonlike input by sending the appropriate event.
+    ///
+    /// This method defaults to calling [`Buttonlike::set_value_as_gamepad`] if not overridden,
+    /// as is the case for gamepad-reliant inputs.
+    ///
+    /// Also updates the state of the button based on the `value`:
+    /// - If `value > 0.0`, the button will be pressed.
+    /// - If `value <= 0.0`, the button will be released.
+    fn set_value(&self, world: &mut World, value: f32) {
+        self.set_value_as_gamepad(world, value, None);
+    }
+
+    /// Simulate a value change of the buttonlike input, pretending to be the provided [`Gamepad`].
+    ///
+    /// This method defaults to calling [`Buttonlike::set_value`] if not overridden,
+    /// as is the case for things like a mouse wheel.
+    ///
+    /// Also updates the state of the button based on the `value`:
+    /// - If `value > 0.0`, the button will be pressed.
+    /// - If `value <= 0.0`, the button will be released.
+    ///
+    /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
+    /// if the provided gamepad is `None`.
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Entity>) {
+        self.set_value(world, value);
     }
 }
 

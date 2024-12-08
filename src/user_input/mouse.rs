@@ -1,22 +1,23 @@
 //! Mouse inputs
 
-use bevy::ecs::system::lifetimeless::SRes;
-use bevy::ecs::system::StaticSystemParam;
-use bevy::input::mouse::{
-    AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButtonInput, MouseMotion, MouseWheel,
-};
-use bevy::input::{ButtonInput, ButtonState};
-use bevy::math::FloatOrd;
-use bevy::prelude::{Entity, Events, MouseButton, Reflect, ResMut, Vec2, World};
-use leafwing_input_manager_macros::serde_typetag;
-use serde::{Deserialize, Serialize};
-use std::hash::{Hash, Hasher};
-
 use crate as leafwing_input_manager;
 use crate::axislike::{DualAxisDirection, DualAxisType};
+use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::*;
 use crate::user_input::{InputControlKind, UserInput};
+use bevy::ecs::system::lifetimeless::SRes;
+use bevy::ecs::system::StaticSystemParam;
+use bevy::input::mouse::{
+    AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButton, MouseButtonInput, MouseMotion,
+    MouseWheel,
+};
+use bevy::input::{ButtonInput, ButtonState};
+use bevy::math::FloatOrd;
+use bevy::prelude::{Entity, Events, Reflect, ResMut, Vec2, World};
+use leafwing_input_manager_macros::serde_typetag;
+use serde::{Deserialize, Serialize};
+use std::hash::{Hash, Hasher};
 
 use super::updating::{CentralInputStore, UpdatableInput};
 use super::{Axislike, Buttonlike, DualAxislike};
@@ -44,12 +45,12 @@ impl UpdatableInput for MouseButton {
         mut central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        for key in source_data.get_pressed() {
-            central_input_store.update_buttonlike(*key, true);
+        for button in source_data.get_pressed() {
+            central_input_store.update_buttonlike(*button, ButtonValue::from_pressed(true));
         }
 
-        for key in source_data.get_just_released() {
-            central_input_store.update_buttonlike(*key, false);
+        for button in source_data.get_just_released() {
+            central_input_store.update_buttonlike(*button, ButtonValue::from_pressed(false));
         }
     }
 }
@@ -88,6 +89,15 @@ impl Buttonlike for MouseButton {
             state: ButtonState::Released,
             window: Entity::PLACEHOLDER,
         });
+    }
+
+    /// If the value is greater than `0.0`, press the key; otherwise release it.
+    fn set_value(&self, world: &mut World, value: f32) {
+        if value > 0.0 {
+            self.press(world);
+        } else {
+            self.release(world);
+        }
     }
 }
 
@@ -254,7 +264,7 @@ pub struct MouseMoveAxis {
     pub axis: DualAxisType,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<AxisProcessor>,
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl MouseMoveAxis {
@@ -375,7 +385,7 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 #[must_use]
 pub struct MouseMove {
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<DualAxisProcessor>,
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl UpdatableInput for MouseMove {
@@ -621,7 +631,7 @@ pub struct MouseScrollAxis {
     pub axis: DualAxisType,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<AxisProcessor>,
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl MouseScrollAxis {
@@ -754,7 +764,7 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 #[must_use]
 pub struct MouseScroll {
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<DualAxisProcessor>,
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl UpdatableInput for MouseScroll {

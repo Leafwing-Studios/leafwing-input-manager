@@ -2,6 +2,16 @@
 
 ## Version 0.16.0 (Unreleased)
 
+### Bugs (0.16.0)
+
+- fixed the bug where the values of buttonlike `ActionState`s cann't be retrieved
+  - now you can use `button_value` function of `ActionState` to get the value of a buttonlike action
+  - added `value` and friends as the fields of `action_data::ButtonData`
+  - `GamepadButton` and `GamepadButtonType` now get values from `Axis<GamepadButton>`
+  - `VirtualAxis`, `VirtualDPad`, and `VirtualDPad3D` now report axis values based on the values of the constitute buttons
+  - added `value` field to `ActionDiff::Pressed`
+- added missing deserializer function for `MouseButton`
+
 ### Usability (0.16.0)
 
 - made virtual axial controls more flexible, accepting any kind of `Buttonlike`
@@ -26,15 +36,15 @@
 
 ### Usability (0.15.1)
 
-#### InputMap
+#### InputMap reflection
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 
-#### Actionlike
+#### Actionlike macro improvements
 
 - added `#[actionlike]` for actions to set their input kinds, either on an enum or on its individual variants.
 
-#### ActionState
+#### ActionState reflection
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 

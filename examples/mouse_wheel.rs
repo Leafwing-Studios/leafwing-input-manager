@@ -1,4 +1,4 @@
-use bevy::{prelude::*, render::camera::ScalingMode};
+use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
 fn main() {
@@ -36,10 +36,10 @@ fn setup(mut commands: Commands) {
         .spawn(Camera2d)
         .insert(InputManagerBundle::with_map(input_map));
 
-    commands.spawn(SpriteBundle {
-        transform: Transform::from_scale(Vec3::new(100., 100., 1.)),
-        ..default()
-    });
+    commands.spawn((
+        Sprite::default(),
+        Transform::from_scale(Vec3::new(100., 100., 1.)),
+    ));
 }
 
 fn zoom_camera(
@@ -55,10 +55,7 @@ fn zoom_camera(
     // We want to zoom in when we use mouse wheel up,
     // so we increase the scale proportionally
     // Note that the projection's scale should always be positive (or our images will flip)
-    match camera_projection.scaling_mode {
-        ScalingMode::WindowSize(ref mut scale) => *scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE,
-        ref mut scale => *scale = ScalingMode::WindowSize(1. - zoom_delta * CAMERA_ZOOM_RATE),
-    }
+    camera_projection.scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE;
 }
 
 fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {

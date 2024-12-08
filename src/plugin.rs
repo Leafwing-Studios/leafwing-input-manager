@@ -201,6 +201,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         #[cfg(feature = "mouse")]
         app.register_buttonlike_input::<MouseButton>()
             .register_buttonlike_input::<MouseMoveDirection>()
+            .register_buttonlike_input::<MouseButton>()
             .register_axislike_input::<MouseMoveAxis>()
             .register_dual_axislike_input::<MouseMove>()
             .register_buttonlike_input::<MouseScrollDirection>()

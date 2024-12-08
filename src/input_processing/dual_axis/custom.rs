@@ -1,6 +1,6 @@
 use std::any::Any;
 use std::fmt::Debug;
-use std::sync::RwLock;
+use std::sync::{LazyLock, RwLock};
 
 use bevy::app::App;
 use bevy::prelude::{FromReflect, Reflect, ReflectDeserialize, ReflectSerialize, TypePath, Vec2};
@@ -12,7 +12,6 @@ use bevy::reflect::{
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
 use serde_flexitos::{serialize_trait_object, Registry};
@@ -262,7 +261,7 @@ impl FromReflect for Box<dyn CustomDualAxisProcessor> {
     }
 }
 
-impl<'a> Serialize for dyn CustomDualAxisProcessor + 'a {
+impl Serialize for dyn CustomDualAxisProcessor + '_ {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -281,14 +280,14 @@ impl<'de> Deserialize<'de> for Box<dyn CustomDualAxisProcessor> {
     where
         D: Deserializer<'de>,
     {
-        let registry = unsafe { PROCESSOR_REGISTRY.read().unwrap() };
+        let registry = PROCESSOR_REGISTRY.read().unwrap();
         registry.deserialize_trait_object(deserializer)
     }
 }
 
 /// Registry of deserializers for [`CustomDualAxisProcessor`]s.
-static mut PROCESSOR_REGISTRY: Lazy<RwLock<InfallibleMapRegistry<dyn CustomDualAxisProcessor>>> =
-    Lazy::new(|| RwLock::new(InfallibleMapRegistry::new("CustomDualAxisProcessor")));
+static PROCESSOR_REGISTRY: LazyLock<RwLock<InfallibleMapRegistry<dyn CustomDualAxisProcessor>>> =
+    LazyLock::new(|| RwLock::new(InfallibleMapRegistry::new("CustomDualAxisProcessor")));
 
 /// A trait for registering a specific [`CustomDualAxisProcessor`].
 pub trait RegisterDualAxisProcessorExt {
@@ -303,7 +302,7 @@ impl RegisterDualAxisProcessorExt for App {
     where
         T: RegisterTypeTag<'de, dyn CustomDualAxisProcessor> + GetTypeRegistration,
     {
-        let mut registry = unsafe { PROCESSOR_REGISTRY.write().unwrap() };
+        let mut registry = PROCESSOR_REGISTRY.write().unwrap();
         T::register_typetag(&mut registry);
         self.register_type::<T>();
         self

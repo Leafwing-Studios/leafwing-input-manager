@@ -1,13 +1,15 @@
 //! Gamepad inputs
 
 use bevy::ecs::system::lifetimeless::{Read, SQuery};
-use bevy::ecs::system::{StaticSystemParam, SystemState};
+use bevy::ecs::system::{StaticSystemParam, SystemParam, SystemState};
 use bevy::input::gamepad::{
     GamepadInput, RawGamepadAxisChangedEvent, RawGamepadButtonChangedEvent, RawGamepadEvent,
 };
+use bevy::input::{Axis, ButtonInput};
 use bevy::math::FloatOrd;
 use bevy::prelude::{
-    Entity, Events, Gamepad, GamepadAxis, GamepadButton, Query, Reflect, ResMut, Vec2, With, World,
+    Entity, Events, Gamepad, GamepadAxis, GamepadButton, Query, Reflect, Res, ResMut, Vec2, With,
+    World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
@@ -15,6 +17,7 @@ use std::hash::{Hash, Hasher};
 
 use crate as leafwing_input_manager;
 use crate::axislike::AxisDirection;
+use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -232,6 +235,14 @@ impl Buttonlike for GamepadControlDirection {
         });
         world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
+
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
+        if value > 0.0 {
+            self.press_as_gamepad(world, gamepad);
+        } else {
+            self.release_as_gamepad(world, gamepad);
+        }
+    }
 }
 
 impl Eq for GamepadControlDirection {}
@@ -347,10 +358,10 @@ impl Axislike for SpecificGamepadAxis {
 #[must_use]
 pub struct GamepadControlAxis {
     /// The wrapped axis.
-    pub(crate) axis: GamepadAxis,
+    pub axis: GamepadAxis,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<AxisProcessor>,
+    pub processors: Vec<AxisProcessor>,
 }
 
 impl GamepadControlAxis {
@@ -488,13 +499,13 @@ impl WithAxisProcessingPipelineExt for GamepadControlAxis {
 #[must_use]
 pub struct GamepadStick {
     /// Horizontal movement of the stick.
-    pub(crate) x: GamepadAxis,
+    pub x: GamepadAxis,
 
     /// Vertical movement of the stick.
-    pub(crate) y: GamepadAxis,
+    pub y: GamepadAxis,
 
     /// A processing pipeline that handles input values.
-    pub(crate) processors: Vec<DualAxisProcessor>,
+    pub processors: Vec<DualAxisProcessor>,
 }
 
 impl GamepadStick {
@@ -598,6 +609,28 @@ fn button_pressed(input_store: &CentralInputStore, gamepad: Entity, button: Game
     input_store.pressed(&button)
 }
 
+/// Retrieves the current value of the given [`GamepadButton`].
+///
+/// This will be 0.0 if the button is released, and 1.0 if it is pressed.
+/// Physically triggerlike buttons will return a value between 0.0 and 1.0,
+/// depending on how far the button is pressed.
+#[must_use]
+#[inline]
+fn button_value(input_store: &CentralInputStore, gamepad: Entity, button: GamepadButton) -> f32 {
+    let button = SpecificGamepadButton::new(gamepad, button);
+    input_store.button_value(&button)
+}
+
+/// The [`SystemParam`] that combines the [`ButtonInput`] and [`Axis`] resources for [`GamepadButton`]s.
+#[derive(SystemParam)]
+pub struct GamepadButtonInput<'w> {
+    /// The [`ButtonInput`] for [`GamepadButton`]s.
+    pub buttons: Res<'w, ButtonInput<GamepadButton>>,
+
+    /// The [`Axis`] for [`GamepadButton`]s.
+    pub axes: Res<'w, Axis<GamepadButton>>,
+}
+
 impl UpdatableInput for GamepadButton {
     type SourceData = SQuery<(Entity, Read<Gamepad>)>;
 
@@ -607,33 +640,60 @@ impl UpdatableInput for GamepadButton {
     ) {
         for (gamepad_entity, gamepad) in source_data.iter() {
             for key in gamepad.get_pressed() {
+                let value = key.value(&central_input_store, gamepad_entity);
                 central_input_store.update_buttonlike(
                     SpecificGamepadButton {
                         gamepad: gamepad_entity,
                         button: *key,
                     },
-                    true,
+                    ButtonValue::new(true, value),
                 );
-                central_input_store.update_buttonlike(*key, true);
             }
 
             for key in gamepad.get_just_released() {
+                let value = key.value(&central_input_store, gamepad_entity);
                 central_input_store.update_buttonlike(
                     SpecificGamepadButton {
                         gamepad: gamepad_entity,
                         button: *key,
                     },
-                    false,
+                    ButtonValue::new(true, value),
                 );
-                central_input_store.update_buttonlike(*key, false);
             }
         }
     }
+
+    // fn compute(
+    //     mut central_input_store: ResMut<CentralInputStore>,
+    //     source_data: StaticSystemParam<Self::SourceData>,
+    // ) {
+    //     for (gamepad_entity, gamepad) in source_data.iter() {
+    //         for key in gamepad.get_pressed() {
+    //             central_input_store.update_buttonlike(
+    //                 SpecificGamepadButton {
+    //                     gamepad: gamepad_entity,
+    //                     button: *key,
+    //                 },
+    //                 true,
+    //             );
+    //             central_input_store.update_buttonlike(*key, ButtonValue::new(true, value));
+    //         }
+    //     }
+    //     for button in source_data.buttons.get_pressed() {
+    //         let value = source_data.axes.get(*button).unwrap_or(1.0);
+    //         central_input_store.update_buttonlike(*button, ButtonValue::new(true, value));
+    //     }
+
+    //     for button in source_data.buttons.get_just_released() {
+    //         let value = source_data.axes.get(*button).unwrap_or(0.0);
+    //         central_input_store.update_buttonlike(*button, ButtonValue::new(false, value));
+    //     }
+    // }
 }
 
-/// Unlike [`GamepadButtonType`], this struct represents a specific button on a specific gamepad.
+/// Unlike [`GamepadButton`], this struct represents a specific button on a specific gamepad.
 ///
-/// In the majority of cases, [`GamepadButtonType`] should be used instead.
+/// In the majority of cases, [`GamepadButton`] should be used instead.
 impl UserInput for SpecificGamepadButton {
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
@@ -651,26 +711,30 @@ impl Buttonlike for SpecificGamepadButton {
         button_pressed(input_store, self.gamepad, self.button)
     }
 
+    /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
+        button_value(input_store, self.gamepad, self.button)
+    }
+
     fn press(&self, world: &mut World) {
-        let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
-            gamepad: self.gamepad,
-            button: self.button,
-            value: 1.0,
-        });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        self.set_value(world, 1.0);
     }
 
     fn release(&self, world: &mut World) {
+        self.set_value(world, 0.0);
+    }
+
+    fn set_value(&self, world: &mut World, value: f32) {
         let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
             gamepad: self.gamepad,
             button: self.button,
-            value: 0.0,
+            value,
         });
         world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
 }
 
-// Built-in support for Bevy's GamepadButtonType.
+// Built-in support for Bevy's GamepadButton.
 impl UserInput for GamepadButton {
     /// [`GamepadButton`] acts as a button.
     #[inline]
@@ -678,7 +742,7 @@ impl UserInput for GamepadButton {
         InputControlKind::Button
     }
 
-    /// Creates a [`BasicInputs`] that only contains the [`GamepadButtonType`] itself,
+    /// Creates a [`BasicInputs`] that only contains the [`GamepadButton`] itself,
     /// as it represents a simple physical button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -695,22 +759,50 @@ impl Buttonlike for GamepadButton {
         button_pressed(input_store, gamepad, *self)
     }
 
-    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
-    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
-        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-        let query = query_state.get(world);
-        let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
+    // /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
+    // fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
+    //     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
+    //     let query = query_state.get(world);
+    //     let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
-            gamepad,
-            button: *self,
-            value: 1.0,
-        });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+    //     let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+    //         gamepad,
+    //         button: *self,
+    //         value: 1.0,
+    //     });
+    //     world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+    // }
+
+    // /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
+    // fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
+    //     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
+    //     let query = query_state.get(world);
+    //     let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
+
+    /// Retrieves the current value of the specified button.
+    ///
+    /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
+    /// Physically triggerlike buttons will return a value between 0.0 and 1.0,
+    /// depending on how far the button is pressed.
+    #[must_use]
+    #[inline]
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+        button_value(input_store, gamepad, *self)
     }
 
-    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
+    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
+        self.set_value_as_gamepad(world, 1.0, gamepad);
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
+        self.set_value_as_gamepad(world, 0.0, gamepad);
+    }
+
+    /// Sends a [`GamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided [`Gamepad`].
+    #[inline]
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
@@ -718,7 +810,7 @@ impl Buttonlike for GamepadButton {
         let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
             gamepad,
             button: *self,
-            value: 0.0,
+            value,
         });
         world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
@@ -728,7 +820,7 @@ impl Buttonlike for GamepadButton {
 mod tests {
     use super::*;
     use crate::plugin::CentralInputStorePlugin;
-    use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadInfo};
+    use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
@@ -739,11 +831,6 @@ mod tests {
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
-        let gamepad_info = GamepadInfo {
-            name: "TestController".into(),
-            vendor_id: None,
-            product_id: None,
-        };
         let gamepad = app.world_mut().spawn(()).id();
         let mut gamepad_connection_events = app
             .world_mut()
@@ -751,7 +838,11 @@ mod tests {
         gamepad_connection_events.send(GamepadConnectionEvent {
             // This MUST be consistent with any other mocked events
             gamepad,
-            connection: GamepadConnection::Connected(gamepad_info),
+            connection: GamepadConnection::Connected {
+                name: "TestController".into(),
+                vendor_id: None,
+                product_id: None,
+            },
         });
 
         // Ensure that the gamepad is picked up by the appropriate system

@@ -1,7 +1,10 @@
 //! Utilities for testing user input.
 
 use bevy::{
-    app::App, ecs::system::SystemState, math::Vec2, prelude::{Entity, Gamepad, Query, With, World}
+    app::App,
+    ecs::system::SystemState,
+    math::Vec2,
+    prelude::{Entity, Gamepad, Query, With, World},
 };
 
 use super::{updating::CentralInputStore, Axislike, Buttonlike, DualAxislike};
@@ -21,6 +24,9 @@ pub trait FetchUserInput {
     /// Returns `true` if the given [`Buttonlike`] input is currently pressed.
     fn read_pressed(&mut self, input: impl Buttonlike) -> bool;
 
+    /// Returns the value of the given [`Buttonlike`] input.
+    fn read_button_value(&mut self, input: impl Buttonlike) -> f32;
+
     /// Returns the value of the given [`Axislike`] input.
     fn read_axis_value(&mut self, input: impl Axislike) -> f32;
 
@@ -36,6 +42,15 @@ impl FetchUserInput for World {
         let input_store = self.resource::<CentralInputStore>();
 
         input.pressed(input_store, gamepad)
+    }
+
+    fn read_button_value(&mut self, input: impl Buttonlike) -> f32 {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
+        let query = query_state.get(self);
+        let gamepad = find_gamepad(Some(query));
+        let input_store = self.resource::<CentralInputStore>();
+
+        input.value(input_store, gamepad)
     }
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
@@ -60,6 +75,10 @@ impl FetchUserInput for World {
 impl FetchUserInput for App {
     fn read_pressed(&mut self, input: impl Buttonlike) -> bool {
         self.world_mut().read_pressed(input)
+    }
+
+    fn read_button_value(&mut self, input: impl Buttonlike) -> f32 {
+        self.world_mut().read_button_value(input)
     }
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
