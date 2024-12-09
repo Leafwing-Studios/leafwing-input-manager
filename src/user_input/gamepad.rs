@@ -1,5 +1,7 @@
 //! Gamepad inputs
 
+use std::hash::{Hash, Hasher};
+
 use bevy::ecs::system::lifetimeless::{Read, SQuery};
 use bevy::ecs::system::{StaticSystemParam, SystemParam, SystemState};
 use bevy::input::gamepad::{
@@ -13,7 +15,6 @@ use bevy::prelude::{
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
-use std::hash::{Hash, Hasher};
 
 use crate as leafwing_input_manager;
 use crate::axislike::AxisDirection;
@@ -640,25 +641,23 @@ impl UpdatableInput for GamepadButton {
     ) {
         for (gamepad_entity, gamepad) in source_data.iter() {
             for key in gamepad.get_pressed() {
-                let value = key.value(&central_input_store, gamepad_entity);
-                central_input_store.update_buttonlike(
-                    SpecificGamepadButton {
-                        gamepad: gamepad_entity,
-                        button: *key,
-                    },
-                    ButtonValue::new(true, value),
-                );
+                let specific_button = SpecificGamepadButton {
+                    gamepad: gamepad_entity,
+                    button: *key,
+                };
+                let value = specific_button.value(&central_input_store, gamepad_entity);
+                central_input_store
+                    .update_buttonlike(specific_button, ButtonValue::new(true, value));
             }
 
             for key in gamepad.get_just_released() {
-                let value = key.value(&central_input_store, gamepad_entity);
-                central_input_store.update_buttonlike(
-                    SpecificGamepadButton {
-                        gamepad: gamepad_entity,
-                        button: *key,
-                    },
-                    ButtonValue::new(false, value),
-                );
+                let specific_button = SpecificGamepadButton {
+                    gamepad: gamepad_entity,
+                    button: *key,
+                };
+                let value = specific_button.value(&central_input_store, gamepad_entity);
+                central_input_store
+                    .update_buttonlike(specific_button, ButtonValue::new(false, value));
             }
         }
     }
