@@ -25,10 +25,10 @@ fn setup(mut commands: Commands) {
         .spawn(Camera2d)
         .insert(InputManagerBundle::with_map(input_map));
 
-    commands.spawn(SpriteBundle {
-        transform: Transform::from_scale(Vec3::new(100., 100., 1.)),
-        ..default()
-    });
+    commands.spawn((
+        Sprite::default(),
+        Transform::from_scale(Vec3::new(100., 100., 1.)),
+    ));
 }
 
 fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {
