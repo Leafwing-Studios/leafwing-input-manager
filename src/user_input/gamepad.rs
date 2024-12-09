@@ -82,7 +82,7 @@ impl SpecificGamepadButton {
     }
 }
 
-/// Provides button-like behavior for a specific direction on a [`GamepadAxisType`].
+/// Provides button-like behavior for a specific direction on a [`GamepadAxis`].
 ///
 /// By default, it reads from **any connected gamepad**.
 /// Use the [`InputMap::set_gamepad`](crate::input_map::InputMap::set_gamepad) for specific ones.
@@ -209,7 +209,7 @@ impl Buttonlike for GamepadControlDirection {
         self.direction.is_active(value, self.threshold)
     }
 
-    /// Sends a [`RawGamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided [`Gamepad`].
+    /// Sends a [`RawGamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided gamepad [`Entity`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
@@ -325,7 +325,7 @@ impl Axislike for SpecificGamepadAxis {
     }
 }
 
-/// A wrapper around a specific [`GamepadAxisType`] (e.g., left stick X-axis, right stick Y-axis).
+/// A wrapper around a specific [`GamepadAxis`] (e.g., left stick X-axis, right stick Y-axis).
 ///
 /// By default, it reads from **any connected gamepad**.
 /// Use the [`InputMap::set_gamepad`](crate::input_map::InputMap::set_gamepad) for specific ones.
@@ -557,7 +557,7 @@ impl DualAxislike for GamepadStick {
             .fold(Vec2::new(x, y), |value, processor| processor.process(value))
     }
 
-    /// Sends a [`RawGamepadEvent::Axis`] event with the specified values on the provided [`Gamepad`].
+    /// Sends a [`RawGamepadEvent::Axis`] event with the specified values on the provided gamepad [`Entity`].
     fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
@@ -742,17 +742,17 @@ impl Buttonlike for GamepadButton {
         button_value(input_store, gamepad, *self)
     }
 
-    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
+    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided gamepad [`Entity`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         self.set_value_as_gamepad(world, 1.0, gamepad);
     }
 
-    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
+    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided gamepad [`Entity`].
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         self.set_value_as_gamepad(world, 0.0, gamepad);
     }
 
-    /// Sends a [`GamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided [`Gamepad`].
+    /// Sends a [`RawGamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided gamepad [`Entity`].
     #[inline]
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);

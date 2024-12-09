@@ -441,7 +441,7 @@ impl<A: Actionlike> InputMap<A> {
 
 // Configuration
 impl<A: Actionlike> InputMap<A> {
-    /// Fetches the [`Gamepad`] associated with the entity controlled by this input map.
+    /// Fetches the gamepad [`Entity`] associated with the one controlled by this input map.
     ///
     /// If this is [`None`], input from any connected gamepad will be used.
     #[must_use]
@@ -450,7 +450,7 @@ impl<A: Actionlike> InputMap<A> {
         self.associated_gamepad
     }
 
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map.
+    /// Assigns a particular gamepad [`Entity`] to the one controlled by this input map.
     ///
     /// Use this when an [`InputMap`] should exclusively accept input
     /// from a particular gamepad.
@@ -467,7 +467,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map.
+    /// Assigns a particular gamepad [`Entity`] to the one controlled by this input map.
     ///
     /// Use this when an [`InputMap`] should exclusively accept input
     /// from a particular gamepad.
@@ -484,7 +484,7 @@ impl<A: Actionlike> InputMap<A> {
         self
     }
 
-    /// Clears any [`Gamepad`] associated with the entity controlled by this input map.
+    /// Clears any gamepad [`Entity`] associated with the one controlled by this input map.
     #[inline]
     pub fn clear_gamepad(&mut self) -> &mut Self {
         self.associated_gamepad = None;

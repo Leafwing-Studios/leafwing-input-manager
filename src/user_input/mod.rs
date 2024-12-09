@@ -38,7 +38,7 @@
 //!
 //! ### Gamepad Inputs
 //!
-//! - Check gamepad button presses using Bevy's [`GamepadButtonType`] directly.
+//! - Check gamepad button presses using Bevy's [`GamepadButton`] directly.
 //! - Access physical sticks using [`GamepadStick`], [`GamepadControlAxis`], and [`GamepadControlDirection`].
 //!
 //! ### Keyboard Inputs
@@ -74,8 +74,7 @@
 //! - [`TripleAxislikeChord`]: A combined input that groups a [`Buttonlike`] and a [`TripleAxislike`] together,
 //!   allowing you to only read the dual axis data when the button is pressed.
 //!
-//! [`GamepadAxisType`]: bevy::prelude::GamepadAxisType
-//! [`GamepadButtonType`]: bevy::prelude::GamepadButtonType
+//! [`GamepadButton`]: bevy::prelude::GamepadButton
 //! [`KeyCode`]: bevy::prelude::KeyCode
 //! [`MouseButton`]: bevy::prelude::MouseButton
 
@@ -161,7 +160,7 @@ pub trait Buttonlike:
         self.press_as_gamepad(world, None);
     }
 
-    /// Simulate a press of the buttonlike input, pretending to be the provided [`Gamepad`].
+    /// Simulate a press of the buttonlike input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Buttonlike::press`] if not overridden,
     /// as is the case for things like mouse buttons and keyboard keys.
@@ -180,7 +179,7 @@ pub trait Buttonlike:
         self.release_as_gamepad(world, None);
     }
 
-    /// Simulate a release of the buttonlike input, pretending to be the provided [`Gamepad`].
+    /// Simulate a release of the buttonlike input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Buttonlike::release`] if not overridden,
     /// as is the case for things like mouse buttons and keyboard keys.
@@ -203,7 +202,7 @@ pub trait Buttonlike:
         self.set_value_as_gamepad(world, value, None);
     }
 
-    /// Simulate a value change of the buttonlike input, pretending to be the provided [`Gamepad`].
+    /// Simulate a value change of the buttonlike input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Buttonlike::set_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
@@ -234,7 +233,7 @@ pub trait Axislike:
         self.set_value_as_gamepad(world, value, None);
     }
 
-    /// Simulate an axis-like input, pretending to be the provided [`Gamepad`].
+    /// Simulate an axis-like input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Axislike::set_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
@@ -261,7 +260,7 @@ pub trait DualAxislike:
         self.set_axis_pair_as_gamepad(world, value, None);
     }
 
-    /// Simulate a dual-axis-like input, pretending to be the provided [`Gamepad`].
+    /// Simulate a dual-axis-like input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`DualAxislike::set_axis_pair`] if not overridden,
     /// as is the case for things like a mouse wheel.
@@ -288,7 +287,7 @@ pub trait TripleAxislike:
         self.set_axis_triple_as_gamepad(world, value, None);
     }
 
-    /// Simulate a triple-axis-like input, pretending to be the provided [`Gamepad`].
+    /// Simulate a triple-axis-like input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`TripleAxislike::set_axis_triple`] if not overridden,
     /// as is the case for things like a space mouse.

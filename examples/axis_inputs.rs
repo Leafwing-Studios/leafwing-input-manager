@@ -57,7 +57,7 @@ fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
 
     if action_state.pressed(&Action::Throttle) {
         // Note that some gamepad buttons are also tied to axes, so even though we used a
-        // GamepadButtonType::RightTrigger2 binding to trigger the throttle action,
+        // GamepadButton::RightTrigger2 binding to trigger the throttle action,
         // we can get a variable value here if you have a variable right trigger on your gamepad.
         //
         // If you don't have a variable trigger, this will just return 0.0 when not pressed and 1.0
