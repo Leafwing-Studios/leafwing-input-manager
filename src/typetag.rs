@@ -1,7 +1,7 @@
 //! Type tag registration for trait objects
 
-use std::{borrow::Cow, collections::BTreeMap};
 use std::fmt::Debug;
+use std::{borrow::Cow, collections::BTreeMap};
 
 pub use serde_flexitos::Registry;
 use serde_flexitos::{DeserializeFn, GetError};

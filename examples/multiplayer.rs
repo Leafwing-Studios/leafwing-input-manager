@@ -69,12 +69,20 @@ fn spawn_players(mut commands: Commands) {
 
     commands.spawn(PlayerBundle {
         player: Player::One,
-        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::One, gamepad_0, gamepad_1)),
+        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(
+            Player::One,
+            gamepad_0,
+            gamepad_1,
+        )),
     });
 
     commands.spawn(PlayerBundle {
         player: Player::Two,
-        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(Player::Two, gamepad_0, gamepad_1)),
+        input_manager: InputManagerBundle::with_map(PlayerBundle::input_map(
+            Player::Two,
+            gamepad_0,
+            gamepad_1,
+        )),
     });
 }
 
