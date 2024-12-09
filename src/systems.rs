@@ -113,8 +113,6 @@ pub fn filter_captured_input(
         bevy::input::ButtonInput<bevy::input::keyboard::KeyCode>,
     >,
     #[cfg(feature = "egui")] mut egui_query: Query<&'static mut bevy_egui::EguiContext>,
-    #[cfg(feature = "egui")] mut mouse_scroll: ResMut<bevy::input::mouse::AccumulatedMouseScroll>,
-    #[cfg(feature = "egui")] mut mouse_motion: ResMut<bevy::input::mouse::AccumulatedMouseMotion>,
 ) {
     // If the user clicks on a button, do not apply it to the game state
     #[cfg(feature = "ui")]
@@ -131,8 +129,6 @@ pub fn filter_captured_input(
         // Don't ask me why get doesn't exist :shrug:
         if egui_context.get_mut().wants_pointer_input() {
             mouse_buttons.reset_all();
-            mouse_motion.reset();
-            mouse_scroll.reset();
         }
 
         if egui_context.get_mut().wants_keyboard_input() {
