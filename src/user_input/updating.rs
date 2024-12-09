@@ -368,7 +368,7 @@ mod tests {
         dbg!(&mouse_button_input);
         world.insert_resource(mouse_button_input);
 
-        world.run_system_once(MouseButton::compute);
+        world.run_system_once(MouseButton::compute).unwrap();
         let central_input_store = world.resource::<CentralInputStore>();
         dbg!(central_input_store);
         assert!(central_input_store.pressed(&MouseButton::Left));

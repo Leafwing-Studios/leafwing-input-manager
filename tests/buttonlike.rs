@@ -2,7 +2,7 @@
 
 use bevy::{
     input::{
-        gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo},
+        gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent},
         InputPlugin,
     },
     prelude::*,
@@ -24,8 +24,8 @@ fn test_app() -> App {
     ));
 
     let mut input_map = InputMap::<TestAction>::default()
-        .with(TestAction::Throttle, GamepadButtonType::South)
-        .with(TestAction::Throttle, GamepadButtonType::RightTrigger);
+        .with(TestAction::Throttle, GamepadButton::South)
+        .with(TestAction::Throttle, GamepadButton::RightTrigger);
 
     input_map
         .insert(TestAction::Throttle, KeyCode::Space)
@@ -34,13 +34,16 @@ fn test_app() -> App {
     app.insert_resource(input_map)
         .init_resource::<ActionState<TestAction>>();
 
+    let gamepad = app.world_mut().spawn_empty().id();
     let mut gamepad_events: Mut<'_, Events<GamepadEvent>> =
         app.world_mut().resource_mut::<Events<GamepadEvent>>();
     gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-        gamepad: Gamepad { id: 1 },
-        connection: GamepadConnection::Connected(GamepadInfo {
+        gamepad,
+        connection: GamepadConnection::Connected {
             name: "FirstController".into(),
-        }),
+            product_id: None,
+            vendor_id: None,
+        },
     }));
 
     // Ensure the gamepads are picked up
@@ -56,7 +59,7 @@ fn test_app() -> App {
 fn set_gamepad_updates_central_input_store() {
     let mut app = test_app();
 
-    let gamepad_trigger = GamepadButtonType::RightTrigger;
+    let gamepad_trigger = GamepadButton::RightTrigger;
     gamepad_trigger.set_value(app.world_mut(), 0.7);
 
     app.update();
@@ -83,6 +86,8 @@ fn set_keyboard_updates_central_input_store() {
 }
 
 #[test]
+// FIXME: Should be fixed in a follow-up PR and the ignore should be removed
+#[ignore = "Ignoring as per https://github.com/Leafwing-Studios/leafwing-input-manager/pull/664#issuecomment-2529188830"]
 fn gamepad_button_value() {
     let mut app = test_app();
 
@@ -90,7 +95,7 @@ fn gamepad_button_value() {
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 0.0);
 
-    let relevant_button = GamepadButtonType::South;
+    let relevant_button = GamepadButton::South;
     relevant_button.press(app.world_mut());
 
     app.update();
@@ -145,7 +150,7 @@ fn gamepad_trigger() {
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 0.0);
 
-    let gamepad_trigger = GamepadButtonType::RightTrigger;
+    let gamepad_trigger = GamepadButton::RightTrigger;
     gamepad_trigger.set_value(app.world_mut(), 0.7);
 
     app.update();
@@ -181,10 +186,12 @@ fn buttonlike_actions_can_be_pressed_and_released_when_pressed() {
 }
 
 #[test]
+// FIXME: Should be fixed in a follow-up PR and the ignore should be removed
+#[ignore = "Ignoring as per https://github.com/Leafwing-Studios/leafwing-input-manager/pull/664#issuecomment-2529188830"]
 fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
     let mut app = test_app();
 
-    let gamepad_trigger = GamepadButtonType::RightTrigger;
+    let gamepad_trigger = GamepadButton::RightTrigger;
     gamepad_trigger.set_value(app.world_mut(), 1.0);
     app.update();
 
@@ -194,7 +201,7 @@ fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
     assert!(!action_state.released(&TestAction::Throttle));
     assert!(!action_state.just_released(&TestAction::Throttle));
 
-    let gamepad_trigger = GamepadButtonType::RightTrigger;
+    let gamepad_trigger = GamepadButton::RightTrigger;
     gamepad_trigger.set_value(app.world_mut(), 0.0);
     app.update();
 

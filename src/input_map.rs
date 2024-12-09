@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
-use bevy::prelude::{Component, Deref, DerefMut, Gamepad, Gamepads, Reflect, Resource};
+use bevy::prelude::{Component, Deref, DerefMut, Entity, Gamepad, Query, Reflect, Resource, With};
 use bevy::utils::HashMap;
 use bevy::{log::error, prelude::ReflectComponent};
 use bevy::{
@@ -25,8 +25,8 @@ use crate::{Actionlike, InputControlKind};
 use crate::user_input::gamepad::find_gamepad;
 
 #[cfg(not(feature = "gamepad"))]
-fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
-    Gamepad::new(0)
+fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
+    Entity::PLACEHOLDER
 }
 
 /// A Multi-Map that allows you to map actions to multiple [`UserInputs`](crate::user_input::UserInput)s,
@@ -117,8 +117,8 @@ pub struct InputMap<A: Actionlike> {
     /// The underlying map that stores action-input mappings for [`TripleAxislike`] actions.
     triple_axislike_map: HashMap<A, Vec<Box<dyn TripleAxislike>>>,
 
-    /// The specified [`Gamepad`] from which this map exclusively accepts input.
-    associated_gamepad: Option<Gamepad>,
+    /// The specified gamepad from which this map exclusively accepts input.
+    associated_gamepad: Option<Entity>,
 }
 
 impl<A: Actionlike> Default for InputMap<A> {
@@ -441,16 +441,16 @@ impl<A: Actionlike> InputMap<A> {
 
 // Configuration
 impl<A: Actionlike> InputMap<A> {
-    /// Fetches the [`Gamepad`] associated with the entity controlled by this input map.
+    /// Fetches the gamepad [`Entity`] associated with the one controlled by this input map.
     ///
     /// If this is [`None`], input from any connected gamepad will be used.
     #[must_use]
     #[inline]
-    pub const fn gamepad(&self) -> Option<Gamepad> {
+    pub const fn gamepad(&self) -> Option<Entity> {
         self.associated_gamepad
     }
 
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map.
+    /// Assigns a particular gamepad [`Entity`] to the one controlled by this input map.
     ///
     /// Use this when an [`InputMap`] should exclusively accept input
     /// from a particular gamepad.
@@ -462,12 +462,12 @@ impl<A: Actionlike> InputMap<A> {
     /// Because of this robust fallback behavior,
     /// this method can typically be ignored when writing single-player games.
     #[inline]
-    pub fn with_gamepad(mut self, gamepad: Gamepad) -> Self {
+    pub fn with_gamepad(mut self, gamepad: Entity) -> Self {
         self.set_gamepad(gamepad);
         self
     }
 
-    /// Assigns a particular [`Gamepad`] to the entity controlled by this input map.
+    /// Assigns a particular gamepad [`Entity`] to the one controlled by this input map.
     ///
     /// Use this when an [`InputMap`] should exclusively accept input
     /// from a particular gamepad.
@@ -479,12 +479,12 @@ impl<A: Actionlike> InputMap<A> {
     /// Because of this robust fallback behavior,
     /// this method can typically be ignored when writing single-player games.
     #[inline]
-    pub fn set_gamepad(&mut self, gamepad: Gamepad) -> &mut Self {
+    pub fn set_gamepad(&mut self, gamepad: Entity) -> &mut Self {
         self.associated_gamepad = Some(gamepad);
         self
     }
 
-    /// Clears any [`Gamepad`] associated with the entity controlled by this input map.
+    /// Clears any gamepad [`Entity`] associated with the one controlled by this input map.
     #[inline]
     pub fn clear_gamepad(&mut self) -> &mut Self {
         self.associated_gamepad = None;
@@ -504,8 +504,7 @@ impl<A: Actionlike> InputMap<A> {
         input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> bool {
-        let processed_actions =
-            self.process_actions(&Gamepads::default(), input_store, clash_strategy);
+        let processed_actions = self.process_actions(None, input_store, clash_strategy);
 
         let Some(updated_value) = processed_actions.get(action) else {
             return false;
@@ -530,7 +529,7 @@ impl<A: Actionlike> InputMap<A> {
     #[must_use]
     pub fn process_actions(
         &self,
-        gamepads: &Gamepads,
+        gamepads: Option<Query<Entity, With<Gamepad>>>,
         input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
@@ -1099,13 +1098,11 @@ mod tests {
     #[cfg(feature = "gamepad")]
     #[test]
     fn gamepad_swapping() {
-        use bevy::input::gamepad::Gamepad;
-
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
 
-        input_map.set_gamepad(Gamepad { id: 0 });
-        assert_eq!(input_map.gamepad(), Some(Gamepad { id: 0 }));
+        input_map.set_gamepad(Entity::from_raw(123));
+        assert_eq!(input_map.gamepad(), Some(Entity::from_raw(123)));
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);

@@ -2,14 +2,16 @@
 
 use std::hash::{Hash, Hasher};
 
-use bevy::ecs::system::lifetimeless::SRes;
-use bevy::ecs::system::{StaticSystemParam, SystemParam};
-use bevy::input::gamepad::{GamepadAxisChangedEvent, GamepadButtonChangedEvent, GamepadEvent};
+use bevy::ecs::system::lifetimeless::{Read, SQuery};
+use bevy::ecs::system::{StaticSystemParam, SystemParam, SystemState};
+use bevy::input::gamepad::{
+    GamepadInput, RawGamepadAxisChangedEvent, RawGamepadButtonChangedEvent, RawGamepadEvent,
+};
 use bevy::input::{Axis, ButtonInput};
 use bevy::math::FloatOrd;
 use bevy::prelude::{
-    Events, Gamepad, GamepadAxis, GamepadAxisType, GamepadButton, GamepadButtonType, Gamepads,
-    Reflect, Res, ResMut, Vec2, World,
+    Entity, Events, Gamepad, GamepadAxis, GamepadButton, Query, Reflect, Res, ResMut, Vec2, With,
+    World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
@@ -30,25 +32,57 @@ use super::{Axislike, Buttonlike, DualAxislike};
 
 /// Retrieves the first connected gamepad.
 ///
-/// If no gamepad is connected, a synthetic gamepad with an ID of 0 is returned.
+/// If no gamepad is connected, `Entity::PLACEHOLDER` is returned.
 #[must_use]
-pub fn find_gamepad(gamepads: &Gamepads) -> Gamepad {
-    gamepads.iter().next().unwrap_or(Gamepad { id: 0 })
+pub fn find_gamepad(gamepads: Option<Query<Entity, With<Gamepad>>>) -> Entity {
+    match gamepads {
+        None => Entity::PLACEHOLDER,
+        Some(gamepads) => gamepads.iter().next().unwrap_or(Entity::PLACEHOLDER),
+    }
 }
 
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
 #[inline]
-fn read_axis_value(
-    input_store: &CentralInputStore,
-    gamepad: Gamepad,
-    axis: GamepadAxisType,
-) -> f32 {
-    let axis = GamepadAxis::new(gamepad, axis);
+fn read_axis_value(input_store: &CentralInputStore, gamepad: Entity, axis: GamepadAxis) -> f32 {
+    let axis = SpecificGamepadAxis::new(gamepad, axis);
     input_store.value(&axis)
 }
 
-/// Provides button-like behavior for a specific direction on a [`GamepadAxisType`].
+/// A [`GamepadAxis`] for a specific gamepad (as opposed to all gamepads).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+pub struct SpecificGamepadAxis {
+    /// The gamepad that this axis is attached to.
+    pub gamepad: Entity,
+    /// The axis.
+    pub axis: GamepadAxis,
+}
+
+impl SpecificGamepadAxis {
+    /// Creates a new [`SpecificGamepadAxis`] with the given gamepad and axis.
+    pub fn new(gamepad: Entity, axis: GamepadAxis) -> Self {
+        Self { gamepad, axis }
+    }
+}
+
+/// A [`GamepadButton`] for a specific gamepad (as opposed to all gamepads).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+pub struct SpecificGamepadButton {
+    /// The gamepad that this button is attached to.
+    pub gamepad: Entity,
+    /// The button.
+    pub button: GamepadButton,
+}
+
+impl SpecificGamepadButton {
+    /// Creates a new [`SpecificGamepadButton`] with the given gamepad and
+    /// button.
+    pub fn new(gamepad: Entity, button: GamepadButton) -> Self {
+        Self { gamepad, button }
+    }
+}
+
+/// Provides button-like behavior for a specific direction on a [`GamepadAxis`].
 ///
 /// By default, it reads from **any connected gamepad**.
 /// Use the [`InputMap::set_gamepad`](crate::input_map::InputMap::set_gamepad) for specific ones.
@@ -79,7 +113,7 @@ fn read_axis_value(
 #[must_use]
 pub struct GamepadControlDirection {
     /// The axis that this input tracks.
-    pub axis: GamepadAxisType,
+    pub axis: GamepadAxis,
 
     /// The direction of the axis to monitor (positive or negative).
     pub direction: AxisDirection,
@@ -92,7 +126,7 @@ pub struct GamepadControlDirection {
 impl GamepadControlDirection {
     /// Creates a [`GamepadControlDirection`] triggered by a negative value on the specified `axis`.
     #[inline]
-    pub const fn negative(axis: GamepadAxisType) -> Self {
+    pub const fn negative(axis: GamepadAxis) -> Self {
         Self {
             axis,
             direction: AxisDirection::Negative,
@@ -102,7 +136,7 @@ impl GamepadControlDirection {
 
     /// Creates a [`GamepadControlDirection`] triggered by a positive value on the specified `axis`.
     #[inline]
-    pub const fn positive(axis: GamepadAxisType) -> Self {
+    pub const fn positive(axis: GamepadAxis) -> Self {
         Self {
             axis,
             direction: AxisDirection::Positive,
@@ -127,28 +161,28 @@ impl GamepadControlDirection {
     }
 
     /// "Up" on the left analog stick (positive Y-axis movement).
-    pub const LEFT_UP: Self = Self::positive(GamepadAxisType::LeftStickY);
+    pub const LEFT_UP: Self = Self::positive(GamepadAxis::LeftStickY);
 
     /// "Down" on the left analog stick (negative Y-axis movement).
-    pub const LEFT_DOWN: Self = Self::negative(GamepadAxisType::LeftStickY);
+    pub const LEFT_DOWN: Self = Self::negative(GamepadAxis::LeftStickY);
 
     /// "Left" on the left analog stick (negative X-axis movement).
-    pub const LEFT_LEFT: Self = Self::negative(GamepadAxisType::LeftStickX);
+    pub const LEFT_LEFT: Self = Self::negative(GamepadAxis::LeftStickX);
 
     /// "Right" on the left analog stick (positive X-axis movement).
-    pub const LEFT_RIGHT: Self = Self::positive(GamepadAxisType::LeftStickX);
+    pub const LEFT_RIGHT: Self = Self::positive(GamepadAxis::LeftStickX);
 
     /// "Up" on the right analog stick (positive Y-axis movement).
-    pub const RIGHT_UP: Self = Self::positive(GamepadAxisType::RightStickY);
+    pub const RIGHT_UP: Self = Self::positive(GamepadAxis::RightStickY);
 
     /// "Down" on the right analog stick (negative Y-axis movement).
-    pub const RIGHT_DOWN: Self = Self::negative(GamepadAxisType::RightStickY);
+    pub const RIGHT_DOWN: Self = Self::negative(GamepadAxis::RightStickY);
 
     /// "Left" on the right analog stick (negative X-axis movement).
-    pub const RIGHT_LEFT: Self = Self::negative(GamepadAxisType::RightStickX);
+    pub const RIGHT_LEFT: Self = Self::negative(GamepadAxis::RightStickX);
 
     /// "Right" on the right analog stick (positive X-axis movement).
-    pub const RIGHT_RIGHT: Self = Self::positive(GamepadAxisType::RightStickX);
+    pub const RIGHT_RIGHT: Self = Self::positive(GamepadAxis::RightStickX);
 }
 
 impl UserInput for GamepadControlDirection {
@@ -170,36 +204,40 @@ impl Buttonlike for GamepadControlDirection {
     /// Checks if there is any recent stick movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         let value = read_axis_value(input_store, gamepad, self.axis);
         self.direction.is_active(value, self.threshold)
     }
 
-    /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided [`Gamepad`].
-    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
+    /// Sends a [`RawGamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided gamepad [`Entity`].
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
+        let query = query_state.get(world);
+        let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
-            axis_type: self.axis,
+            axis: self.axis,
             value: self.direction.full_active_value(),
         });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
 
-    /// Sends a [`GamepadEvent::Axis`] event with a magnitude of 0.0 for the specified direction.
-    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
+    /// Sends a [`RawGamepadEvent::Axis`] event with a magnitude of 0.0 for the specified direction.
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
+        let query = query_state.get(world);
+        let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
-            axis_type: self.axis,
+            axis: self.axis,
             value: 0.0,
         });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
 
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         if value > 0.0 {
             self.press_as_gamepad(world, gamepad);
         } else {
@@ -219,23 +257,31 @@ impl Hash for GamepadControlDirection {
 }
 
 impl UpdatableInput for GamepadAxis {
-    type SourceData = SRes<Axis<GamepadAxis>>;
+    type SourceData = SQuery<(Entity, Read<Gamepad>)>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        for axis in source_data.devices() {
-            let value = source_data.get(*axis).unwrap_or_default();
-
-            central_input_store.update_axislike(*axis, value);
+        for (gamepad_entity, gamepad) in source_data.iter() {
+            for input in gamepad.get_analog_axes() {
+                let GamepadInput::Axis(axis) = input else {
+                    continue;
+                };
+                let value = gamepad.get(*axis).unwrap_or_default();
+                central_input_store.update_axislike(
+                    SpecificGamepadAxis {
+                        gamepad: gamepad_entity,
+                        axis: *axis,
+                    },
+                    value,
+                );
+                central_input_store.update_axislike(*axis, value);
+            }
         }
     }
 }
 
-/// Unlike [`GamepadButtonType`], this struct represents a specific axis on a specific gamepad.
-///
-/// In the majority of cases, [`GamepadControlAxis`] or [`GamepadStick`] should be used instead.
 impl UserInput for GamepadAxis {
     fn kind(&self) -> InputControlKind {
         InputControlKind::Axis
@@ -243,20 +289,43 @@ impl UserInput for GamepadAxis {
 
     fn decompose(&self) -> BasicInputs {
         BasicInputs::Composite(vec![
-            Box::new(GamepadControlDirection::negative(self.axis_type)),
-            Box::new(GamepadControlDirection::positive(self.axis_type)),
+            Box::new(GamepadControlDirection::negative(*self)),
+            Box::new(GamepadControlDirection::positive(*self)),
         ])
     }
 }
 
 #[serde_typetag]
 impl Axislike for GamepadAxis {
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
-        read_axis_value(input_store, gamepad, self.axis_type)
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+        read_axis_value(input_store, gamepad, *self)
     }
 }
 
-/// A wrapper around a specific [`GamepadAxisType`] (e.g., left stick X-axis, right stick Y-axis).
+/// Unlike [`GamepadButton`], this struct represents a specific axis on a specific gamepad.
+///
+/// In the majority of cases, [`GamepadControlAxis`] or [`GamepadStick`] should be used instead.
+impl UserInput for SpecificGamepadAxis {
+    fn kind(&self) -> InputControlKind {
+        InputControlKind::Axis
+    }
+
+    fn decompose(&self) -> BasicInputs {
+        BasicInputs::Composite(vec![
+            Box::new(GamepadControlDirection::negative(self.axis)),
+            Box::new(GamepadControlDirection::positive(self.axis)),
+        ])
+    }
+}
+
+#[serde_typetag]
+impl Axislike for SpecificGamepadAxis {
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+        read_axis_value(input_store, gamepad, self.axis)
+    }
+}
+
+/// A wrapper around a specific [`GamepadAxis`] (e.g., left stick X-axis, right stick Y-axis).
 ///
 /// By default, it reads from **any connected gamepad**.
 /// Use the [`InputMap::set_gamepad`](crate::input_map::InputMap::set_gamepad) for specific ones.
@@ -290,7 +359,7 @@ impl Axislike for GamepadAxis {
 #[must_use]
 pub struct GamepadControlAxis {
     /// The wrapped axis.
-    pub axis: GamepadAxisType,
+    pub axis: GamepadAxis,
 
     /// A processing pipeline that handles input values.
     pub processors: Vec<AxisProcessor>,
@@ -300,7 +369,7 @@ impl GamepadControlAxis {
     /// Creates a [`GamepadControlAxis`] for continuous input from the given axis.
     /// No processing is applied to raw data from the gamepad.
     #[inline]
-    pub const fn new(axis: GamepadAxisType) -> Self {
+    pub const fn new(axis: GamepadAxis) -> Self {
         Self {
             axis,
             processors: Vec::new(),
@@ -309,25 +378,25 @@ impl GamepadControlAxis {
 
     /// The horizontal axis (X-axis) of the left stick.
     /// No processing is applied to raw data from the gamepad.
-    pub const LEFT_X: Self = Self::new(GamepadAxisType::LeftStickX);
+    pub const LEFT_X: Self = Self::new(GamepadAxis::LeftStickX);
 
     /// The vertical axis (Y-axis) of the left stick.
     /// No processing is applied to raw data from the gamepad.
-    pub const LEFT_Y: Self = Self::new(GamepadAxisType::LeftStickY);
+    pub const LEFT_Y: Self = Self::new(GamepadAxis::LeftStickY);
 
     /// The left `Z` button. No processing is applied to raw data from the gamepad.
-    pub const LEFT_Z: Self = Self::new(GamepadAxisType::LeftZ);
+    pub const LEFT_Z: Self = Self::new(GamepadAxis::LeftZ);
 
     /// The horizontal axis (X-axis) of the right stick.
     /// No processing is applied to raw data from the gamepad.
-    pub const RIGHT_X: Self = Self::new(GamepadAxisType::RightStickX);
+    pub const RIGHT_X: Self = Self::new(GamepadAxis::RightStickX);
 
     /// The vertical axis (Y-axis) of the right stick.
     /// No processing is applied to raw data from the gamepad.
-    pub const RIGHT_Y: Self = Self::new(GamepadAxisType::RightStickY);
+    pub const RIGHT_Y: Self = Self::new(GamepadAxis::RightStickY);
 
     /// The right `Z` button. No processing is applied to raw data from the gamepad.
-    pub const RIGHT_Z: Self = Self::new(GamepadAxisType::RightZ);
+    pub const RIGHT_Z: Self = Self::new(GamepadAxis::RightZ);
 }
 
 impl UserInput for GamepadControlAxis {
@@ -352,23 +421,25 @@ impl Axislike for GamepadControlAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         let value = read_axis_value(input_store, gamepad, self.axis);
         self.processors
             .iter()
             .fold(value, |value, processor| processor.process(value))
     }
 
-    /// Sends a [`GamepadEvent::Axis`] event with the specified value on the provided [`Gamepad`].
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
+    /// Sends a [`RawGamepadEvent::Axis`] event with the specified value on the provided gamepad.
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
+        let query = query_state.get(world);
+        let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
-            axis_type: self.axis,
+            axis: self.axis,
             value,
         });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
 }
 
@@ -429,10 +500,10 @@ impl WithAxisProcessingPipelineExt for GamepadControlAxis {
 #[must_use]
 pub struct GamepadStick {
     /// Horizontal movement of the stick.
-    pub x: GamepadAxisType,
+    pub x: GamepadAxis,
 
     /// Vertical movement of the stick.
-    pub y: GamepadAxisType,
+    pub y: GamepadAxis,
 
     /// A processing pipeline that handles input values.
     pub processors: Vec<DualAxisProcessor>,
@@ -441,15 +512,15 @@ pub struct GamepadStick {
 impl GamepadStick {
     /// The left gamepad stick. No processing is applied to raw data from the gamepad.
     pub const LEFT: Self = Self {
-        x: GamepadAxisType::LeftStickX,
-        y: GamepadAxisType::LeftStickY,
+        x: GamepadAxis::LeftStickX,
+        y: GamepadAxis::LeftStickY,
         processors: Vec::new(),
     };
 
     /// The right gamepad stick. No processing is applied to raw data from the gamepad.
     pub const RIGHT: Self = Self {
-        x: GamepadAxisType::RightStickX,
-        y: GamepadAxisType::RightStickY,
+        x: GamepadAxis::RightStickX,
+        y: GamepadAxis::RightStickY,
         processors: Vec::new(),
     };
 }
@@ -478,7 +549,7 @@ impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
         let x = read_axis_value(input_store, gamepad, self.x);
         let y = read_axis_value(input_store, gamepad, self.y);
         self.processors
@@ -486,23 +557,25 @@ impl DualAxislike for GamepadStick {
             .fold(Vec2::new(x, y), |value, processor| processor.process(value))
     }
 
-    /// Sends a [`GamepadEvent::Axis`] event with the specified values on the provided [`Gamepad`].
-    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
+    /// Sends a [`RawGamepadEvent::Axis`] event with the specified values on the provided gamepad [`Entity`].
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Entity>) {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
+        let query = query_state.get(world);
+        let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
-            axis_type: self.x,
+            axis: self.x,
             value: value.x,
         });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
 
-        let event = GamepadEvent::Axis(GamepadAxisChangedEvent {
+        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
-            axis_type: self.y,
+            axis: self.y,
             value: value.y,
         });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
 }
 
@@ -529,31 +602,23 @@ impl WithDualAxisProcessingPipelineExt for GamepadStick {
     }
 }
 
-/// Checks if the given [`GamepadButtonType`] is currently pressed.
+/// Checks if the given [`GamepadButton`] is currently pressed.
 #[must_use]
 #[inline]
-fn button_pressed(
-    input_store: &CentralInputStore,
-    gamepad: Gamepad,
-    button: GamepadButtonType,
-) -> bool {
-    let button = GamepadButton::new(gamepad, button);
+fn button_pressed(input_store: &CentralInputStore, gamepad: Entity, button: GamepadButton) -> bool {
+    let button = SpecificGamepadButton::new(gamepad, button);
     input_store.pressed(&button)
 }
 
-/// Retrieves the current value of the given [`GamepadButtonType`].
+/// Retrieves the current value of the given [`GamepadButton`].
 ///
 /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
 /// Physically triggerlike buttons will return a value between 0.0 and 1.0,
 /// depending on how far the button is pressed.
 #[must_use]
 #[inline]
-fn button_value(
-    input_store: &CentralInputStore,
-    gamepad: Gamepad,
-    button: GamepadButtonType,
-) -> f32 {
-    let button = GamepadButton::new(gamepad, button);
+fn button_value(input_store: &CentralInputStore, gamepad: Entity, button: GamepadButton) -> f32 {
+    let button = SpecificGamepadButton::new(gamepad, button);
     input_store.button_value(&button)
 }
 
@@ -568,28 +633,40 @@ pub struct GamepadButtonInput<'w> {
 }
 
 impl UpdatableInput for GamepadButton {
-    type SourceData = GamepadButtonInput<'static>;
+    type SourceData = SQuery<(Entity, Read<Gamepad>)>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        for button in source_data.buttons.get_pressed() {
-            let value = source_data.axes.get(*button).unwrap_or(1.0);
-            central_input_store.update_buttonlike(*button, ButtonValue::new(true, value));
-        }
+        for (gamepad_entity, gamepad) in source_data.iter() {
+            for key in gamepad.get_pressed() {
+                let specific_button = SpecificGamepadButton {
+                    gamepad: gamepad_entity,
+                    button: *key,
+                };
+                let value = specific_button.value(&central_input_store, gamepad_entity);
+                central_input_store
+                    .update_buttonlike(specific_button, ButtonValue::new(true, value));
+            }
 
-        for button in source_data.buttons.get_just_released() {
-            let value = source_data.axes.get(*button).unwrap_or(0.0);
-            central_input_store.update_buttonlike(*button, ButtonValue::new(false, value));
+            for key in gamepad.get_just_released() {
+                let specific_button = SpecificGamepadButton {
+                    gamepad: gamepad_entity,
+                    button: *key,
+                };
+                let value = specific_button.value(&central_input_store, gamepad_entity);
+                central_input_store
+                    .update_buttonlike(specific_button, ButtonValue::new(false, value));
+            }
         }
     }
 }
 
-/// Unlike [`GamepadButtonType`], this struct represents a specific button on a specific gamepad.
+/// Unlike [`GamepadButton`], this struct represents a specific button on a specific gamepad.
 ///
-/// In the majority of cases, [`GamepadButtonType`] should be used instead.
-impl UserInput for GamepadButton {
+/// In the majority of cases, [`GamepadButton`] should be used instead.
+impl UserInput for SpecificGamepadButton {
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
     }
@@ -600,15 +677,15 @@ impl UserInput for GamepadButton {
 }
 
 #[serde_typetag]
-impl Buttonlike for GamepadButton {
+impl Buttonlike for SpecificGamepadButton {
     /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
-        button_pressed(input_store, self.gamepad, self.button_type)
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
+        button_pressed(input_store, self.gamepad, self.button)
     }
 
     /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
-        button_value(input_store, self.gamepad, self.button_type)
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
+        button_value(input_store, self.gamepad, self.button)
     }
 
     fn press(&self, world: &mut World) {
@@ -620,24 +697,24 @@ impl Buttonlike for GamepadButton {
     }
 
     fn set_value(&self, world: &mut World, value: f32) {
-        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+        let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
             gamepad: self.gamepad,
-            button_type: self.button_type,
+            button: self.button,
             value,
         });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
 }
 
-// Built-in support for Bevy's GamepadButtonType.
-impl UserInput for GamepadButtonType {
-    /// [`GamepadButtonType`] acts as a button.
+// Built-in support for Bevy's GamepadButton.
+impl UserInput for GamepadButton {
+    /// [`GamepadButton`] acts as a button.
     #[inline]
     fn kind(&self) -> InputControlKind {
         InputControlKind::Button
     }
 
-    /// Creates a [`BasicInputs`] that only contains the [`GamepadButtonType`] itself,
+    /// Creates a [`BasicInputs`] that only contains the [`GamepadButton`] itself,
     /// as it represents a simple physical button.
     #[inline]
     fn decompose(&self) -> BasicInputs {
@@ -646,11 +723,11 @@ impl UserInput for GamepadButtonType {
 }
 
 #[serde_typetag]
-impl Buttonlike for GamepadButtonType {
+impl Buttonlike for GamepadButton {
     /// Checks if the specified button is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         button_pressed(input_store, gamepad, *self)
     }
 
@@ -661,59 +738,64 @@ impl Buttonlike for GamepadButtonType {
     /// depending on how far the button is pressed.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         button_value(input_store, gamepad, *self)
     }
 
-    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
-    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided gamepad [`Entity`].
+    fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         self.set_value_as_gamepad(world, 1.0, gamepad);
     }
 
-    /// Sends a [`GamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
-    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Gamepad>) {
+    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided gamepad [`Entity`].
+    fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         self.set_value_as_gamepad(world, 0.0, gamepad);
     }
 
-    /// Sends a [`GamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided [`Gamepad`].
+    /// Sends a [`RawGamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided gamepad [`Entity`].
     #[inline]
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Gamepad>) {
-        let gamepad = gamepad.unwrap_or(find_gamepad(world.resource::<Gamepads>()));
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
+        let query = query_state.get(world);
+        let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = GamepadEvent::Button(GamepadButtonChangedEvent {
+        let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
             gamepad,
-            button_type: *self,
+            button: *self,
             value,
         });
-        world.resource_mut::<Events<GamepadEvent>>().send(event);
+        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
-    use bevy::input::gamepad::{
-        GamepadConnection, GamepadConnectionEvent, GamepadEvent, GamepadInfo,
-    };
+    use crate::plugin::CentralInputStorePlugin;
+    use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent};
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(MinimalPlugins);
-        app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+        app.add_plugins((InputPlugin, CentralInputStorePlugin));
 
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
-        let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
+        let gamepad = app.world_mut().spawn(()).id();
+        let mut gamepad_connection_events = app
+            .world_mut()
+            .resource_mut::<Events<GamepadConnectionEvent>>();
+        gamepad_connection_events.send(GamepadConnectionEvent {
             // This MUST be consistent with any other mocked events
-            gamepad: Gamepad { id: 1 },
-            connection: GamepadConnection::Connected(GamepadInfo {
+            gamepad,
+            connection: GamepadConnection::Connected {
                 name: "TestController".into(),
-            }),
-        }));
+                vendor_id: None,
+                product_id: None,
+            },
+        });
 
         // Ensure that the gamepad is picked up by the appropriate system
         app.update();
@@ -754,8 +836,13 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app
+            .world_mut()
+            .query_filtered::<Entity, With<Gamepad>>()
+            .iter(app.world())
+            .next()
+            .unwrap();
         let inputs = app.world().resource::<CentralInputStore>();
-        let gamepad = Gamepad::new(0);
 
         assert!(!left_up.pressed(inputs, gamepad));
         assert!(!left_down.pressed(inputs, gamepad));
@@ -769,6 +856,12 @@ mod tests {
         // Left stick moves upward
         let data = Vec2::new(0.0, 1.0);
         let mut app = test_app();
+        let gamepad = app
+            .world_mut()
+            .query_filtered::<Entity, With<Gamepad>>()
+            .iter(app.world())
+            .next()
+            .unwrap();
         GamepadControlDirection::LEFT_UP.press_as_gamepad(app.world_mut(), Some(gamepad));
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
@@ -785,6 +878,12 @@ mod tests {
         // Set Y-axis of left stick to 0.6
         let data = Vec2::new(0.0, 0.6);
         let mut app = test_app();
+        let gamepad = app
+            .world_mut()
+            .query_filtered::<Entity, With<Gamepad>>()
+            .iter(app.world())
+            .next()
+            .unwrap();
         GamepadControlAxis::LEFT_Y.set_value_as_gamepad(app.world_mut(), data.y, Some(gamepad));
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
@@ -801,6 +900,12 @@ mod tests {
         // Set left stick to (0.6, 0.4)
         let data = Vec2::new(0.6, 0.4);
         let mut app = test_app();
+        let gamepad = app
+            .world_mut()
+            .query_filtered::<Entity, With<Gamepad>>()
+            .iter(app.world())
+            .next()
+            .unwrap();
         GamepadStick::LEFT.set_axis_pair_as_gamepad(app.world_mut(), data, Some(gamepad));
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
@@ -818,24 +923,23 @@ mod tests {
     #[test]
     #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
     fn test_gamepad_buttons() {
-        let up = GamepadButtonType::DPadUp;
+        let up = GamepadButton::DPadUp;
         assert_eq!(up.kind(), InputControlKind::Button);
 
-        let left = GamepadButtonType::DPadLeft;
+        let left = GamepadButton::DPadLeft;
         assert_eq!(left.kind(), InputControlKind::Button);
 
-        let down = GamepadButtonType::DPadDown;
+        let down = GamepadButton::DPadDown;
         assert_eq!(left.kind(), InputControlKind::Button);
 
-        let right = GamepadButtonType::DPadRight;
+        let right = GamepadButton::DPadRight;
         assert_eq!(left.kind(), InputControlKind::Button);
 
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!up.pressed(inputs, gamepad));
         assert!(!left.pressed(inputs, gamepad));
@@ -844,7 +948,7 @@ mod tests {
 
         // Press DPadLeft
         let mut app = test_app();
-        GamepadButtonType::DPadLeft.press(app.world_mut());
+        GamepadButton::DPadLeft.press(app.world_mut());
         app.update();
         let inputs = app.world().resource::<CentralInputStore>();
 

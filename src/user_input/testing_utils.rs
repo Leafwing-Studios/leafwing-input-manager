@@ -2,8 +2,9 @@
 
 use bevy::{
     app::App,
+    ecs::system::SystemState,
     math::Vec2,
-    prelude::{Gamepad, Gamepads, World},
+    prelude::{Entity, Gamepad, Query, With, World},
 };
 
 use super::{updating::CentralInputStore, Axislike, Buttonlike, DualAxislike};
@@ -12,8 +13,8 @@ use super::{updating::CentralInputStore, Axislike, Buttonlike, DualAxislike};
 use crate::user_input::gamepad::find_gamepad;
 
 #[cfg(not(feature = "gamepad"))]
-fn find_gamepad(_gamepads: &Gamepads) -> Gamepad {
-    Gamepad::new(0)
+fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
+    Entity::PLACEHOLDER
 }
 
 /// A trait used to quickly fetch the value of a given [`UserInput`](crate::user_input::UserInput).
@@ -35,41 +36,37 @@ pub trait FetchUserInput {
 
 impl FetchUserInput for World {
     fn read_pressed(&mut self, input: impl Buttonlike) -> bool {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
+        let query = query_state.get(self);
+        let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
-        let gamepad = match self.get_resource::<Gamepads>() {
-            Some(gamepads) => find_gamepad(gamepads),
-            None => Gamepad::new(0),
-        };
 
         input.pressed(input_store, gamepad)
     }
 
     fn read_button_value(&mut self, input: impl Buttonlike) -> f32 {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
+        let query = query_state.get(self);
+        let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
-        let gamepad = match self.get_resource::<Gamepads>() {
-            Some(gamepads) => find_gamepad(gamepads),
-            None => Gamepad::new(0),
-        };
 
         input.value(input_store, gamepad)
     }
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
+        let query = query_state.get(self);
+        let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
-        let gamepad = match self.get_resource::<Gamepads>() {
-            Some(gamepads) => find_gamepad(gamepads),
-            None => Gamepad::new(0),
-        };
 
         input.value(input_store, gamepad)
     }
 
     fn read_dual_axis_values(&mut self, input: impl DualAxislike) -> Vec2 {
+        let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
+        let query = query_state.get(self);
+        let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
-        let gamepad = match self.get_resource::<Gamepads>() {
-            Some(gamepads) => find_gamepad(gamepads),
-            None => Gamepad::new(0),
-        };
 
         input.axis_pair(input_store, gamepad)
     }

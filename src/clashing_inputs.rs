@@ -6,7 +6,7 @@
 
 use std::cmp::Ordering;
 
-use bevy::prelude::{Gamepad, Resource};
+use bevy::prelude::{Entity, Resource};
 use serde::{Deserialize, Serialize};
 
 use crate::input_map::{InputMap, UpdatedActions};
@@ -175,7 +175,7 @@ impl<A: Actionlike> InputMap<A> {
         updated_actions: &mut UpdatedActions<A>,
         input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
-        gamepad: Gamepad,
+        gamepad: Entity,
     ) {
         for clash in self.get_clashes(updated_actions, input_store, gamepad) {
             // Remove the action in the pair that was overruled, if any
@@ -209,7 +209,7 @@ impl<A: Actionlike> InputMap<A> {
         &self,
         updated_actions: &UpdatedActions<A>,
         input_store: &CentralInputStore,
-        gamepad: Gamepad,
+        gamepad: Entity,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -321,7 +321,7 @@ impl<A: Actionlike> Clash<A> {
 fn check_clash<A: Actionlike>(
     clash: &Clash<A>,
     input_store: &CentralInputStore,
-    gamepad: Gamepad,
+    gamepad: Entity,
 ) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = clash.clone();
 
@@ -355,7 +355,7 @@ fn resolve_clash<A: Actionlike>(
     clash: &Clash<A>,
     clash_strategy: ClashStrategy,
     input_store: &CentralInputStore,
-    gamepad: Gamepad,
+    gamepad: Entity,
 ) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&dyn Buttonlike> = clash
@@ -476,8 +476,8 @@ mod tests {
         use super::*;
         use crate::{
             input_map::UpdatedValue,
-            plugin::{AccumulatorPlugin, CentralInputStorePlugin},
-            prelude::{AccumulatedMouseMovement, AccumulatedMouseScroll, ModifierKey, VirtualDPad},
+            plugin::CentralInputStorePlugin,
+            prelude::{ModifierKey, VirtualDPad},
         };
         use bevy::{input::InputPlugin, prelude::*};
         use Action::*;
@@ -579,9 +579,7 @@ mod tests {
         #[test]
         fn resolve_prioritize_longest() {
             let mut app = App::new();
-            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
-            app.init_resource::<AccumulatedMouseMovement>();
-            app.init_resource::<AccumulatedMouseScroll>();
+            app.add_plugins((InputPlugin, CentralInputStorePlugin));
 
             let input_map = test_input_map();
             let simple_clash = input_map.possible_clash(&One, &OneAndTwo).unwrap();
@@ -589,6 +587,7 @@ mod tests {
             Digit2.press(app.world_mut());
             app.update();
 
+            let gamepad = app.world_mut().spawn(()).id();
             let input_store = app.world().resource::<CentralInputStore>();
 
             assert_eq!(
@@ -596,7 +595,7 @@ mod tests {
                     &simple_clash,
                     ClashStrategy::PrioritizeLongest,
                     input_store,
-                    Gamepad::new(0),
+                    gamepad,
                 ),
                 Some(One)
             );
@@ -609,7 +608,7 @@ mod tests {
                     &reversed_clash,
                     ClashStrategy::PrioritizeLongest,
                     input_store,
-                    Gamepad::new(0),
+                    gamepad,
                 ),
                 Some(One)
             );
@@ -627,7 +626,7 @@ mod tests {
                     &chord_clash,
                     ClashStrategy::PrioritizeLongest,
                     input_store,
-                    Gamepad::new(0),
+                    gamepad,
                 ),
                 Some(OneAndTwo)
             );
@@ -636,8 +635,9 @@ mod tests {
         #[test]
         fn handle_simple_clash() {
             let mut app = App::new();
-            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+            app.add_plugins((InputPlugin, CentralInputStorePlugin));
             let input_map = test_input_map();
+            let gamepad = app.world_mut().spawn(()).id();
 
             Digit1.press(app.world_mut());
             Digit2.press(app.world_mut());
@@ -655,7 +655,7 @@ mod tests {
                 &mut updated_actions,
                 input_store,
                 ClashStrategy::PrioritizeLongest,
-                Gamepad::new(0),
+                gamepad,
             );
 
             let mut expected = UpdatedActions::default();
@@ -670,9 +670,8 @@ mod tests {
         fn handle_clashes_dpad_chord() {
             let mut app = App::new();
             app.add_plugins(InputPlugin);
-            app.init_resource::<AccumulatedMouseMovement>();
-            app.init_resource::<AccumulatedMouseScroll>();
             let input_map = test_input_map();
+            let gamepad = app.world_mut().spawn(()).id();
 
             ControlLeft.press(app.world_mut());
             ArrowUp.press(app.world_mut());
@@ -710,7 +709,7 @@ mod tests {
                 &mut updated_actions,
                 input_store,
                 ClashStrategy::PrioritizeLongest,
-                Gamepad::new(0),
+                gamepad,
             );
 
             // Only the chord should be pressed,
@@ -724,9 +723,7 @@ mod tests {
         #[test]
         fn check_which_pressed() {
             let mut app = App::new();
-            app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
-            app.init_resource::<AccumulatedMouseMovement>();
-            app.init_resource::<AccumulatedMouseScroll>();
+            app.add_plugins((InputPlugin, CentralInputStorePlugin));
             let input_map = test_input_map();
 
             Digit1.press(app.world_mut());
@@ -736,11 +733,8 @@ mod tests {
 
             let input_store = app.world().resource::<CentralInputStore>();
 
-            let action_data = input_map.process_actions(
-                &Gamepads::default(),
-                input_store,
-                ClashStrategy::PrioritizeLongest,
-            );
+            let action_data =
+                input_map.process_actions(None, input_store, ClashStrategy::PrioritizeLongest);
 
             for (action, &updated_value) in action_data.iter() {
                 if *action == CtrlOne || *action == OneAndTwo {

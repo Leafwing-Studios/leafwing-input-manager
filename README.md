@@ -36,7 +36,7 @@ and a single input can result in multiple actions being triggered, which can be 
 - Look up your current input state in a single `ActionState` component
   - That pesky maximum of 16 system parameters got you down? Say goodbye to that input handling mega-system
 - Ergonomic insertion API that seamlessly blends multiple input types for you
-  - Can't decide between `input_map.insert(Action::Jump, KeyCode::Space)` and `input_map.insert(Action::Jump, GamepadButtonType::South)`? Have both!
+  - Can't decide between `input_map.insert(Action::Jump, KeyCode::Space)` and `input_map.insert(Action::Jump, GamepadButton::South)`? Have both!
 - Full support for arbitrary button combinations: chord your heart out.
   - `input_map.insert(Action::Console, ButtonlikeChord::new([KeyCode::ControlLeft, KeyCode::Shift, KeyCode::KeyC]))`
 - Sophisticated input disambiguation with the `ClashStrategy` enum: stop triggering individual buttons when you meant to press a chord!

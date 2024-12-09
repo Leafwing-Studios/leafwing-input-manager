@@ -2,22 +2,20 @@
 //!
 //! Note that [bevy #3392](https://github.com/bevyengine/bevy/issues/3392) would eliminate the need for this.
 
-use std::{
-    any::{Any, TypeId},
-    fmt::{Debug, Formatter},
-    hash::{Hash, Hasher},
-};
+use std::any::Any;
 
 use bevy::reflect::{
-    utility::{reflect_hasher, GenericTypePathCell, NonGenericTypeInfoCell},
-    FromReflect, FromType, GetTypeRegistration, Reflect, ReflectDeserialize, ReflectFromPtr,
-    ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo, TypePath,
-    TypeRegistration, Typed, ValueInfo,
+    utility::{GenericTypePathCell, NonGenericTypeInfoCell},
+    FromReflect, FromType, GetTypeRegistration, OpaqueInfo, Reflect, ReflectDeserialize,
+    ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
+    TypePath, TypeRegistration, Typed,
 };
 
 use dyn_eq::DynEq;
 
 mod buttonlike {
+    use bevy::reflect::PartialReflect;
+
     use super::*;
 
     use crate::user_input::Buttonlike;
@@ -26,11 +24,80 @@ mod buttonlike {
     dyn_eq::eq_trait_object!(Buttonlike);
     dyn_hash::hash_trait_object!(Buttonlike);
 
-    impl Reflect for Box<dyn Buttonlike> {
+    impl PartialReflect for Box<dyn Buttonlike> {
         fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
             Some(Self::type_info())
         }
 
+        fn reflect_kind(&self) -> ReflectKind {
+            ReflectKind::Opaque
+        }
+
+        fn reflect_ref(&self) -> ReflectRef {
+            ReflectRef::Opaque(self)
+        }
+
+        fn reflect_mut(&mut self) -> ReflectMut {
+            ReflectMut::Opaque(self)
+        }
+
+        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
+            ReflectOwned::Opaque(self)
+        }
+
+        fn clone_value(&self) -> Box<dyn PartialReflect> {
+            Box::new(self.clone())
+        }
+
+        fn try_apply(
+            &mut self,
+            value: &dyn PartialReflect,
+        ) -> Result<(), bevy::reflect::ApplyError> {
+            if let Some(value) = value.try_downcast_ref::<Self>() {
+                *self = value.clone();
+                Ok(())
+            } else {
+                Err(bevy::reflect::ApplyError::MismatchedTypes {
+                    from_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                    to_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                })
+            }
+        }
+
+        fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
+            self
+        }
+
+        fn as_partial_reflect(&self) -> &dyn PartialReflect {
+            self
+        }
+
+        fn as_partial_reflect_mut(&mut self) -> &mut dyn PartialReflect {
+            self
+        }
+
+        fn try_into_reflect(self: Box<Self>) -> Result<Box<dyn Reflect>, Box<dyn PartialReflect>> {
+            Ok(self)
+        }
+
+        fn try_as_reflect(&self) -> Option<&dyn Reflect> {
+            Some(self)
+        }
+
+        fn try_as_reflect_mut(&mut self) -> Option<&mut dyn Reflect> {
+            Some(self)
+        }
+    }
+
+    impl Reflect for Box<dyn Buttonlike> {
         fn into_any(self: Box<Self>) -> Box<dyn Any> {
             self
         }
@@ -55,81 +122,16 @@ mod buttonlike {
             self
         }
 
-        fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
-            let value = value.as_any();
-            if let Some(value) = value.downcast_ref::<Self>() {
-                *self = value.clone();
-                Ok(())
-            } else {
-                Err(bevy::reflect::ApplyError::MismatchedTypes {
-                    from_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                    to_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                })
-            }
-        }
-
-        fn apply(&mut self, value: &dyn Reflect) {
-            Self::try_apply(self, value).unwrap();
-        }
-
         fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
             *self = value.take()?;
             Ok(())
-        }
-
-        fn reflect_kind(&self) -> ReflectKind {
-            ReflectKind::Value
-        }
-
-        fn reflect_ref(&self) -> ReflectRef {
-            ReflectRef::Value(self)
-        }
-
-        fn reflect_mut(&mut self) -> ReflectMut {
-            ReflectMut::Value(self)
-        }
-
-        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-            ReflectOwned::Value(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn Reflect> {
-            Box::new(self.clone())
-        }
-
-        fn reflect_hash(&self) -> Option<u64> {
-            let mut hasher = reflect_hasher();
-            let type_id = TypeId::of::<Self>();
-            Hash::hash(&type_id, &mut hasher);
-            Hash::hash(self, &mut hasher);
-            Some(hasher.finish())
-        }
-
-        fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-            value
-                .as_any()
-                .downcast_ref::<Self>()
-                .map(|value| self.dyn_eq(value))
-                .or(Some(false))
-        }
-
-        fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            Debug::fmt(self, f)
         }
     }
 
     impl Typed for Box<dyn Buttonlike> {
         fn type_info() -> &'static TypeInfo {
             static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-            CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
+            CELL.get_or_set(|| TypeInfo::Opaque(OpaqueInfo::new::<Self>()))
         }
     }
 
@@ -172,13 +174,15 @@ mod buttonlike {
     }
 
     impl FromReflect for Box<dyn Buttonlike> {
-        fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-            Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+        fn from_reflect(reflect: &dyn PartialReflect) -> Option<Self> {
+            Some(reflect.try_downcast_ref::<Self>()?.clone())
         }
     }
 }
 
 mod axislike {
+    use bevy::reflect::PartialReflect;
+
     use super::*;
 
     use crate::user_input::Axislike;
@@ -187,11 +191,80 @@ mod axislike {
     dyn_eq::eq_trait_object!(Axislike);
     dyn_hash::hash_trait_object!(Axislike);
 
-    impl Reflect for Box<dyn Axislike> {
+    impl PartialReflect for Box<dyn Axislike> {
         fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
             Some(Self::type_info())
         }
 
+        fn reflect_kind(&self) -> ReflectKind {
+            ReflectKind::Opaque
+        }
+
+        fn reflect_ref(&self) -> ReflectRef {
+            ReflectRef::Opaque(self)
+        }
+
+        fn reflect_mut(&mut self) -> ReflectMut {
+            ReflectMut::Opaque(self)
+        }
+
+        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
+            ReflectOwned::Opaque(self)
+        }
+
+        fn clone_value(&self) -> Box<dyn PartialReflect> {
+            Box::new(self.clone())
+        }
+
+        fn try_apply(
+            &mut self,
+            value: &dyn PartialReflect,
+        ) -> Result<(), bevy::reflect::ApplyError> {
+            if let Some(value) = value.try_downcast_ref::<Self>() {
+                *self = value.clone();
+                Ok(())
+            } else {
+                Err(bevy::reflect::ApplyError::MismatchedTypes {
+                    from_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                    to_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                })
+            }
+        }
+
+        fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
+            self
+        }
+
+        fn as_partial_reflect(&self) -> &dyn PartialReflect {
+            self
+        }
+
+        fn as_partial_reflect_mut(&mut self) -> &mut dyn PartialReflect {
+            self
+        }
+
+        fn try_into_reflect(self: Box<Self>) -> Result<Box<dyn Reflect>, Box<dyn PartialReflect>> {
+            Ok(self)
+        }
+
+        fn try_as_reflect(&self) -> Option<&dyn Reflect> {
+            Some(self)
+        }
+
+        fn try_as_reflect_mut(&mut self) -> Option<&mut dyn Reflect> {
+            Some(self)
+        }
+    }
+
+    impl Reflect for Box<dyn Axislike> {
         fn into_any(self: Box<Self>) -> Box<dyn Any> {
             self
         }
@@ -216,81 +289,16 @@ mod axislike {
             self
         }
 
-        fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
-            let value = value.as_any();
-            if let Some(value) = value.downcast_ref::<Self>() {
-                *self = value.clone();
-                Ok(())
-            } else {
-                Err(bevy::reflect::ApplyError::MismatchedTypes {
-                    from_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                    to_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                })
-            }
-        }
-
-        fn apply(&mut self, value: &dyn Reflect) {
-            Self::try_apply(self, value).unwrap();
-        }
-
         fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
             *self = value.take()?;
             Ok(())
-        }
-
-        fn reflect_kind(&self) -> ReflectKind {
-            ReflectKind::Value
-        }
-
-        fn reflect_ref(&self) -> ReflectRef {
-            ReflectRef::Value(self)
-        }
-
-        fn reflect_mut(&mut self) -> ReflectMut {
-            ReflectMut::Value(self)
-        }
-
-        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-            ReflectOwned::Value(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn Reflect> {
-            Box::new(self.clone())
-        }
-
-        fn reflect_hash(&self) -> Option<u64> {
-            let mut hasher = reflect_hasher();
-            let type_id = TypeId::of::<Self>();
-            Hash::hash(&type_id, &mut hasher);
-            Hash::hash(self, &mut hasher);
-            Some(hasher.finish())
-        }
-
-        fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-            value
-                .as_any()
-                .downcast_ref::<Self>()
-                .map(|value| self.dyn_eq(value))
-                .or(Some(false))
-        }
-
-        fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            Debug::fmt(self, f)
         }
     }
 
     impl Typed for Box<dyn Axislike> {
         fn type_info() -> &'static TypeInfo {
             static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-            CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
+            CELL.get_or_set(|| TypeInfo::Opaque(OpaqueInfo::new::<Self>()))
         }
     }
 
@@ -333,13 +341,15 @@ mod axislike {
     }
 
     impl FromReflect for Box<dyn Axislike> {
-        fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-            Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+        fn from_reflect(reflect: &dyn PartialReflect) -> Option<Self> {
+            Some(reflect.try_downcast_ref::<Self>()?.clone())
         }
     }
 }
 
 mod dualaxislike {
+    use bevy::reflect::{OpaqueInfo, PartialReflect};
+
     use super::*;
 
     use crate::user_input::DualAxislike;
@@ -348,11 +358,80 @@ mod dualaxislike {
     dyn_eq::eq_trait_object!(DualAxislike);
     dyn_hash::hash_trait_object!(DualAxislike);
 
-    impl Reflect for Box<dyn DualAxislike> {
+    impl PartialReflect for Box<dyn DualAxislike> {
         fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
             Some(Self::type_info())
         }
 
+        fn try_apply(
+            &mut self,
+            value: &dyn PartialReflect,
+        ) -> Result<(), bevy::reflect::ApplyError> {
+            if let Some(value) = value.try_downcast_ref::<Self>() {
+                *self = value.clone();
+                Ok(())
+            } else {
+                Err(bevy::reflect::ApplyError::MismatchedTypes {
+                    from_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                    to_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                })
+            }
+        }
+
+        fn reflect_kind(&self) -> ReflectKind {
+            ReflectKind::Opaque
+        }
+
+        fn reflect_ref(&self) -> ReflectRef {
+            ReflectRef::Opaque(self)
+        }
+
+        fn reflect_mut(&mut self) -> ReflectMut {
+            ReflectMut::Opaque(self)
+        }
+
+        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
+            ReflectOwned::Opaque(self)
+        }
+
+        fn clone_value(&self) -> Box<dyn PartialReflect> {
+            Box::new(self.clone())
+        }
+
+        fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
+            self
+        }
+
+        fn as_partial_reflect(&self) -> &dyn PartialReflect {
+            self
+        }
+
+        fn as_partial_reflect_mut(&mut self) -> &mut dyn PartialReflect {
+            self
+        }
+
+        fn try_into_reflect(self: Box<Self>) -> Result<Box<dyn Reflect>, Box<dyn PartialReflect>> {
+            Ok(self)
+        }
+
+        fn try_as_reflect(&self) -> Option<&dyn Reflect> {
+            Some(self)
+        }
+
+        fn try_as_reflect_mut(&mut self) -> Option<&mut dyn Reflect> {
+            Some(self)
+        }
+    }
+
+    impl Reflect for Box<dyn DualAxislike> {
         fn into_any(self: Box<Self>) -> Box<dyn Any> {
             self
         }
@@ -377,81 +456,16 @@ mod dualaxislike {
             self
         }
 
-        fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
-            let value = value.as_any();
-            if let Some(value) = value.downcast_ref::<Self>() {
-                *self = value.clone();
-                Ok(())
-            } else {
-                Err(bevy::reflect::ApplyError::MismatchedTypes {
-                    from_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                    to_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                })
-            }
-        }
-
-        fn apply(&mut self, value: &dyn Reflect) {
-            Self::try_apply(self, value).unwrap();
-        }
-
         fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
             *self = value.take()?;
             Ok(())
-        }
-
-        fn reflect_kind(&self) -> ReflectKind {
-            ReflectKind::Value
-        }
-
-        fn reflect_ref(&self) -> ReflectRef {
-            ReflectRef::Value(self)
-        }
-
-        fn reflect_mut(&mut self) -> ReflectMut {
-            ReflectMut::Value(self)
-        }
-
-        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-            ReflectOwned::Value(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn Reflect> {
-            Box::new(self.clone())
-        }
-
-        fn reflect_hash(&self) -> Option<u64> {
-            let mut hasher = reflect_hasher();
-            let type_id = TypeId::of::<Self>();
-            Hash::hash(&type_id, &mut hasher);
-            Hash::hash(self, &mut hasher);
-            Some(hasher.finish())
-        }
-
-        fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-            value
-                .as_any()
-                .downcast_ref::<Self>()
-                .map(|value| self.dyn_eq(value))
-                .or(Some(false))
-        }
-
-        fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            Debug::fmt(self, f)
         }
     }
 
     impl Typed for Box<dyn DualAxislike> {
         fn type_info() -> &'static TypeInfo {
             static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-            CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
+            CELL.get_or_set(|| TypeInfo::Opaque(OpaqueInfo::new::<Self>()))
         }
     }
 
@@ -494,13 +508,15 @@ mod dualaxislike {
     }
 
     impl FromReflect for Box<dyn DualAxislike> {
-        fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-            Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+        fn from_reflect(reflect: &dyn PartialReflect) -> Option<Self> {
+            Some(reflect.try_downcast_ref::<Self>()?.clone())
         }
     }
 }
 
 mod tripleaxislike {
+    use bevy::reflect::{OpaqueInfo, PartialReflect};
+
     use super::*;
 
     use crate::user_input::TripleAxislike;
@@ -509,11 +525,80 @@ mod tripleaxislike {
     dyn_eq::eq_trait_object!(TripleAxislike);
     dyn_hash::hash_trait_object!(TripleAxislike);
 
-    impl Reflect for Box<dyn TripleAxislike> {
+    impl PartialReflect for Box<dyn TripleAxislike> {
         fn get_represented_type_info(&self) -> Option<&'static TypeInfo> {
             Some(Self::type_info())
         }
 
+        fn try_apply(
+            &mut self,
+            value: &dyn PartialReflect,
+        ) -> Result<(), bevy::reflect::ApplyError> {
+            if let Some(value) = value.try_downcast_ref::<Self>() {
+                *self = value.clone();
+                Ok(())
+            } else {
+                Err(bevy::reflect::ApplyError::MismatchedTypes {
+                    from_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                    to_type: self
+                        .reflect_type_ident()
+                        .unwrap_or_default()
+                        .to_string()
+                        .into_boxed_str(),
+                })
+            }
+        }
+
+        fn reflect_kind(&self) -> ReflectKind {
+            ReflectKind::Opaque
+        }
+
+        fn reflect_ref(&self) -> ReflectRef {
+            ReflectRef::Opaque(self)
+        }
+
+        fn reflect_mut(&mut self) -> ReflectMut {
+            ReflectMut::Opaque(self)
+        }
+
+        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
+            ReflectOwned::Opaque(self)
+        }
+
+        fn clone_value(&self) -> Box<dyn PartialReflect> {
+            Box::new(self.clone())
+        }
+
+        fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
+            self
+        }
+
+        fn as_partial_reflect(&self) -> &dyn PartialReflect {
+            self
+        }
+
+        fn as_partial_reflect_mut(&mut self) -> &mut dyn PartialReflect {
+            self
+        }
+
+        fn try_into_reflect(self: Box<Self>) -> Result<Box<dyn Reflect>, Box<dyn PartialReflect>> {
+            Ok(self)
+        }
+
+        fn try_as_reflect(&self) -> Option<&dyn Reflect> {
+            Some(self)
+        }
+
+        fn try_as_reflect_mut(&mut self) -> Option<&mut dyn Reflect> {
+            Some(self)
+        }
+    }
+
+    impl Reflect for Box<dyn TripleAxislike> {
         fn into_any(self: Box<Self>) -> Box<dyn Any> {
             self
         }
@@ -538,81 +623,16 @@ mod tripleaxislike {
             self
         }
 
-        fn try_apply(&mut self, value: &dyn Reflect) -> Result<(), bevy::reflect::ApplyError> {
-            let value = value.as_any();
-            if let Some(value) = value.downcast_ref::<Self>() {
-                *self = value.clone();
-                Ok(())
-            } else {
-                Err(bevy::reflect::ApplyError::MismatchedTypes {
-                    from_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                    to_type: self
-                        .reflect_type_ident()
-                        .unwrap_or_default()
-                        .to_string()
-                        .into_boxed_str(),
-                })
-            }
-        }
-
-        fn apply(&mut self, value: &dyn Reflect) {
-            Self::try_apply(self, value).unwrap();
-        }
-
         fn set(&mut self, value: Box<dyn Reflect>) -> Result<(), Box<dyn Reflect>> {
             *self = value.take()?;
             Ok(())
-        }
-
-        fn reflect_kind(&self) -> ReflectKind {
-            ReflectKind::Value
-        }
-
-        fn reflect_ref(&self) -> ReflectRef {
-            ReflectRef::Value(self)
-        }
-
-        fn reflect_mut(&mut self) -> ReflectMut {
-            ReflectMut::Value(self)
-        }
-
-        fn reflect_owned(self: Box<Self>) -> ReflectOwned {
-            ReflectOwned::Value(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn Reflect> {
-            Box::new(self.clone())
-        }
-
-        fn reflect_hash(&self) -> Option<u64> {
-            let mut hasher = reflect_hasher();
-            let type_id = TypeId::of::<Self>();
-            Hash::hash(&type_id, &mut hasher);
-            Hash::hash(self, &mut hasher);
-            Some(hasher.finish())
-        }
-
-        fn reflect_partial_eq(&self, value: &dyn Reflect) -> Option<bool> {
-            value
-                .as_any()
-                .downcast_ref::<Self>()
-                .map(|value| self.dyn_eq(value))
-                .or(Some(false))
-        }
-
-        fn debug(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            Debug::fmt(self, f)
         }
     }
 
     impl Typed for Box<dyn TripleAxislike> {
         fn type_info() -> &'static TypeInfo {
             static CELL: NonGenericTypeInfoCell = NonGenericTypeInfoCell::new();
-            CELL.get_or_set(|| TypeInfo::Value(ValueInfo::new::<Self>()))
+            CELL.get_or_set(|| TypeInfo::Opaque(OpaqueInfo::new::<Self>()))
         }
     }
 
@@ -655,8 +675,8 @@ mod tripleaxislike {
     }
 
     impl FromReflect for Box<dyn TripleAxislike> {
-        fn from_reflect(reflect: &dyn Reflect) -> Option<Self> {
-            Some(reflect.as_any().downcast_ref::<Self>()?.clone())
+        fn from_reflect(reflect: &dyn PartialReflect) -> Option<Self> {
+            Some(reflect.try_downcast_ref::<Self>()?.clone())
         }
     }
 }

@@ -1,11 +1,7 @@
 //! The systems that power each [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
 
 use crate::prelude::updating::CentralInputStore;
-#[cfg(feature = "mouse")]
-use crate::user_input::{AccumulatedMouseMovement, AccumulatedMouseScroll};
 use bevy::ecs::query::QueryFilter;
-#[cfg(feature = "mouse")]
-use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::log::debug;
 
 use crate::{
@@ -13,7 +9,7 @@ use crate::{
 };
 
 use bevy::ecs::prelude::*;
-use bevy::prelude::Gamepads;
+use bevy::prelude::Gamepad;
 use bevy::{
     time::{Real, Time},
     utils::Instant,
@@ -83,32 +79,6 @@ pub fn tick_action_state<A: Actionlike>(
     *stored_previous_instant = time.last_update();
 }
 
-/// Sums the[`MouseMotion`] events received since during this frame.
-#[cfg(feature = "mouse")]
-pub fn accumulate_mouse_movement(
-    mut mouse_motion: ResMut<AccumulatedMouseMovement>,
-    mut events: EventReader<MouseMotion>,
-) {
-    mouse_motion.reset();
-
-    for event in events.read() {
-        mouse_motion.accumulate(event);
-    }
-}
-
-/// Sums the [`MouseWheel`] events received since during this frame.
-#[cfg(feature = "mouse")]
-pub fn accumulate_mouse_scroll(
-    mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
-    mut events: EventReader<MouseWheel>,
-) {
-    mouse_scroll.reset();
-
-    for event in events.read() {
-        mouse_scroll.accumulate(event);
-    }
-}
-
 /// Fetches the [`CentralInputStore`]
 /// to update [`ActionState`] according to the [`InputMap`].
 ///
@@ -116,7 +86,7 @@ pub fn accumulate_mouse_scroll(
 pub fn update_action_state<A: Actionlike>(
     input_store: Res<CentralInputStore>,
     clash_strategy: Res<ClashStrategy>,
-    gamepads: Res<Gamepads>,
+    mut gamepads: Query<Entity, With<Gamepad>>,
     action_state: Option<ResMut<ActionState<A>>>,
     input_map: Option<Res<InputMap<A>>>,
     mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
@@ -126,7 +96,11 @@ pub fn update_action_state<A: Actionlike>(
         .map(|(input_map, action_state)| (Mut::from(action_state), input_map.into_inner()));
 
     for (mut action_state, input_map) in query.iter_mut().chain(resources) {
-        action_state.update(input_map.process_actions(&gamepads, &input_store, *clash_strategy));
+        action_state.update(input_map.process_actions(
+            Some(gamepads.reborrow()),
+            &input_store,
+            *clash_strategy,
+        ));
     }
 }
 
@@ -139,8 +113,6 @@ pub fn filter_captured_input(
         bevy::input::ButtonInput<bevy::input::keyboard::KeyCode>,
     >,
     #[cfg(feature = "egui")] mut egui_query: Query<&'static mut bevy_egui::EguiContext>,
-    #[cfg(feature = "egui")] mut mouse_scroll: ResMut<AccumulatedMouseScroll>,
-    #[cfg(feature = "egui")] mut mouse_motion: ResMut<AccumulatedMouseMovement>,
 ) {
     // If the user clicks on a button, do not apply it to the game state
     #[cfg(feature = "ui")]
@@ -157,8 +129,6 @@ pub fn filter_captured_input(
         // Don't ask me why get doesn't exist :shrug:
         if egui_context.get_mut().wants_pointer_input() {
             mouse_buttons.reset_all();
-            mouse_motion.reset();
-            mouse_scroll.reset();
         }
 
         if egui_context.get_mut().wants_keyboard_input() {

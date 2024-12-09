@@ -48,7 +48,7 @@ impl PlayerAction {
         // Default gamepad input bindings
         input_map.insert_dual_axis(Self::Move, GamepadStick::LEFT);
         input_map.insert_dual_axis(Self::Look, GamepadStick::RIGHT);
-        input_map.insert(Self::Shoot, GamepadButtonType::RightTrigger);
+        input_map.insert(Self::Shoot, GamepadButton::RightTrigger);
 
         // Default kbm input bindings
         input_map.insert_dual_axis(Self::Move, VirtualDPad::wasd());
@@ -132,7 +132,7 @@ fn player_mouse_look(
     let player_position = player_transform.translation;
     if let Some(p) = window
         .cursor_position()
-        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor))
+        .and_then(|cursor| camera.viewport_to_world(camera_transform, cursor).ok())
         .and_then(|ray| {
             Some(ray).zip(ray.intersect_plane(player_position, InfinitePlane3d::new(Vec3::Y)))
         })
@@ -160,7 +160,7 @@ fn control_player(
     if action_state.axis_pair(&PlayerAction::Move) != Vec2::ZERO {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
-        let move_delta = time.delta_seconds() * action_state.clamped_axis_pair(&PlayerAction::Move);
+        let move_delta = time.delta_secs() * action_state.clamped_axis_pair(&PlayerAction::Move);
         player_transform.translation += Vec3::new(move_delta.x, 0.0, move_delta.y);
         println!("Player moved to: {}", player_transform.translation.xz());
     }
@@ -182,11 +182,9 @@ struct Player;
 
 fn setup_scene(mut commands: Commands) {
     // We need a camera
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, 10.0, 15.0)
-            .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
-        ..default()
-    });
+    commands
+        .spawn(Camera3d::default())
+        .insert(Transform::from_xyz(0.0, 10.0, 15.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y));
 
     // And a player
     commands.spawn(Player).insert(Transform::default());

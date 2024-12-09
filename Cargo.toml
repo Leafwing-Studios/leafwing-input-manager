@@ -45,10 +45,10 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.15.1" }
-bevy = { version = "0.14.0-rc.3", default-features = false, features = [
+bevy = { version = "0.15.0", default-features = false, features = [
   "serialize",
 ] }
-bevy_egui = { version = "0.30", optional = true }
+bevy_egui = { version = "0.31", optional = true }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
@@ -62,7 +62,7 @@ dyn-eq = "0.1"
 dyn-hash = "0.2"
 
 [dev-dependencies]
-bevy = { version = "0.14.0-rc.3", default-features = false, features = [
+bevy = { version = "0.15.0", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
@@ -70,6 +70,7 @@ bevy = { version = "0.14.0-rc.3", default-features = false, features = [
   "bevy_render",
   "bevy_core_pipeline",
   "bevy_state",
+  "bevy_window",
   "x11",
   # TODO Remove these before release. See https://github.com/bevyengine/bevy/issues/13728
   "ktx2",

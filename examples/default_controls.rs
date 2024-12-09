@@ -27,8 +27,8 @@ impl PlayerAction {
 
         // Default gamepad input bindings
         input_map.insert_dual_axis(Self::Run, GamepadStick::LEFT);
-        input_map.insert(Self::Jump, GamepadButtonType::South);
-        input_map.insert(Self::UseItem, GamepadButtonType::RightTrigger2);
+        input_map.insert(Self::Jump, GamepadButton::South);
+        input_map.insert(Self::UseItem, GamepadButton::RightTrigger2);
 
         // Default kbm input bindings
         input_map.insert_dual_axis(Self::Run, VirtualDPad::wasd());

@@ -5,7 +5,7 @@
 use crate::action_state::ActionState;
 use crate::input_map::InputMap;
 use bevy::ecs::prelude::*;
-use bevy::reflect::{FromReflect, Reflect, TypePath};
+use bevy::reflect::{FromReflect, Reflect, TypePath, Typed};
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 use std::hash::Hash;
@@ -103,7 +103,7 @@ pub mod prelude {
 /// }
 /// ```
 pub trait Actionlike:
-    Debug + Eq + Hash + Send + Sync + Clone + Reflect + TypePath + FromReflect + 'static
+    Debug + Eq + Hash + Send + Sync + Clone + Reflect + Typed + TypePath + FromReflect + 'static
 {
     /// Returns the kind of input control this action represents: buttonlike, axislike, or dual-axislike.
     fn input_control_kind(&self) -> InputControlKind;

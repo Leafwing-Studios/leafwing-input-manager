@@ -6,7 +6,7 @@
 //! Note that [`ActionState`] can also be serialized and sent directly.
 //! This approach will be less bandwidth efficient, but involve less complexity and CPU work.
 
-use bevy::ecs::event::ManualEventReader;
+use bevy::ecs::event::EventCursor;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use leafwing_input_manager::action_diff::ActionDiffEvent;
@@ -137,13 +137,13 @@ fn spawn_player(mut commands: Commands) {
 fn send_events<A: Send + Sync + 'static + Debug + Clone + Event>(
     client_app: &App,
     server_app: &mut App,
-    reader: Option<ManualEventReader<A>>,
-) -> ManualEventReader<A> {
+    reader: Option<EventCursor<A>>,
+) -> EventCursor<A> {
     let client_events: &Events<A> = client_app.world().resource();
     let mut server_events: Mut<Events<A>> = server_app.world_mut().resource_mut();
 
     // Get an event reader, one way or another
-    let mut reader = reader.unwrap_or_else(|| client_events.get_reader());
+    let mut reader = reader.unwrap_or_else(|| client_events.get_cursor());
 
     // Push the clients' events to the server
     for client_event in reader.read(client_events) {

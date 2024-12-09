@@ -4,7 +4,7 @@ use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{Entity, Events, Gamepad, KeyCode, Reflect, ResMut, World};
+use bevy::prelude::{Entity, Events, KeyCode, Reflect, ResMut, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -55,7 +55,7 @@ impl Buttonlike for KeyCode {
     /// Checks if the specified key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(self)
     }
 
@@ -70,6 +70,7 @@ impl Buttonlike for KeyCode {
             key_code: *self,
             logical_key: Key::Unidentified(NativeKey::Unidentified),
             state: ButtonState::Pressed,
+            repeat: false,
             window: Entity::PLACEHOLDER,
         });
     }
@@ -85,6 +86,7 @@ impl Buttonlike for KeyCode {
             key_code: *self,
             logical_key: Key::Unidentified(NativeKey::Unidentified),
             state: ButtonState::Released,
+            repeat: false,
             window: Entity::PLACEHOLDER,
         });
     }
@@ -177,7 +179,7 @@ impl Buttonlike for ModifierKey {
     /// Checks if the specified modifier key is currently pressed down.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(&self.left()) || input_store.pressed(&self.right())
     }
 
@@ -218,14 +220,14 @@ impl Buttonlike for ModifierKey {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::plugin::CentralInputStorePlugin;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+            .add_plugins(CentralInputStorePlugin);
         app
     }
 
@@ -243,9 +245,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!up.pressed(inputs, gamepad));
         assert!(!left.pressed(inputs, gamepad));

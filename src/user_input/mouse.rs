@@ -8,10 +8,13 @@ use crate::input_processing::*;
 use crate::user_input::{InputControlKind, UserInput};
 use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
-use bevy::input::mouse::{MouseButton, MouseButtonInput, MouseMotion, MouseWheel};
+use bevy::input::mouse::{
+    AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButton, MouseButtonInput, MouseMotion,
+    MouseWheel,
+};
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::math::FloatOrd;
-use bevy::prelude::{Entity, Events, Gamepad, Reflect, ResMut, Resource, Vec2, World};
+use bevy::prelude::{Entity, Events, Reflect, ResMut, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
@@ -56,7 +59,7 @@ impl UpdatableInput for MouseButton {
 impl Buttonlike for MouseButton {
     /// Checks if the specified button is currently pressed down.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(self)
     }
 
@@ -103,12 +106,12 @@ impl Buttonlike for MouseButton {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Positive Y-axis movement
 /// let input = MouseMoveDirection::UP;
@@ -195,7 +198,7 @@ impl Buttonlike for MouseMoveDirection {
     /// Checks if there is any recent mouse movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         let mouse_movement = input_store.pair(&MouseMove::default());
         self.direction.is_active(mouse_movement, self.threshold)
     }
@@ -235,12 +238,12 @@ impl Hash for MouseMoveDirection {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Y-axis movement
 /// let input = MouseMoveAxis::Y;
@@ -307,7 +310,7 @@ impl Axislike for MouseMoveAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
         let movement = input_store.pair(&MouseMove::default());
         let value = self.axis.get_value(movement);
         self.processors
@@ -360,12 +363,12 @@ impl WithAxisProcessingPipelineExt for MouseMoveAxis {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// let input = MouseMove::default();
 ///
@@ -386,13 +389,13 @@ pub struct MouseMove {
 }
 
 impl UpdatableInput for MouseMove {
-    type SourceData = SRes<AccumulatedMouseMovement>;
+    type SourceData = SRes<AccumulatedMouseMotion>;
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        central_input_store.update_dualaxislike(Self::default(), source_data.0);
+        central_input_store.update_dualaxislike(Self::default(), source_data.delta);
     }
 }
 
@@ -420,7 +423,7 @@ impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
         let movement = input_store.pair(&MouseMove::default());
         self.processors
             .iter()
@@ -463,12 +466,12 @@ impl WithDualAxisProcessingPipelineExt for MouseMove {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Positive Y-axis scrolling
 /// let input = MouseScrollDirection::UP;
@@ -555,7 +558,7 @@ impl Buttonlike for MouseScrollDirection {
     /// Checks if there is any recent mouse wheel movement along the specified direction.
     #[must_use]
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> bool {
+    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         let movement = input_store.pair(&MouseScroll::default());
         self.direction.is_active(movement, self.threshold)
     }
@@ -602,12 +605,12 @@ impl Hash for MouseScrollDirection {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Y-axis movement
 /// let input = MouseScrollAxis::Y;
@@ -674,7 +677,7 @@ impl Axislike for MouseScrollAxis {
     /// after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
         let movement = input_store.pair(&MouseScroll::default());
         let value = self.axis.get_value(movement);
         self.processors
@@ -739,12 +742,12 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
-/// use leafwing_input_manager::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+/// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
 ///
 /// let mut app = App::new();
-/// app.add_plugins((InputPlugin, AccumulatorPlugin, CentralInputStorePlugin));
+/// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// let input = MouseScroll::default();
 ///
@@ -771,7 +774,7 @@ impl UpdatableInput for MouseScroll {
         mut central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        central_input_store.update_dualaxislike(Self::default(), source_data.0);
+        central_input_store.update_dualaxislike(Self::default(), source_data.delta);
     }
 }
 
@@ -799,7 +802,7 @@ impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[must_use]
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Gamepad) -> Vec2 {
+    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
         let movement = input_store.pair(&MouseScroll::default());
         self.processors
             .iter()
@@ -843,69 +846,17 @@ impl WithDualAxisProcessingPipelineExt for MouseScroll {
     }
 }
 
-/// A resource that records the accumulated mouse movement for the frame.
-///
-/// These values are computed by summing the [`MouseMotion`] events.
-///
-/// This resource is automatically added by [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
-/// Its value is updated during [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
-#[derive(Debug, Default, Resource, Reflect, Serialize, Deserialize, Clone, PartialEq)]
-pub struct AccumulatedMouseMovement(pub Vec2);
-
-impl AccumulatedMouseMovement {
-    /// Resets the accumulated mouse movement to zero.
-    #[inline]
-    pub fn reset(&mut self) {
-        self.0 = Vec2::ZERO;
-    }
-
-    /// Accumulates the specified mouse movement.
-    #[inline]
-    pub fn accumulate(&mut self, event: &MouseMotion) {
-        self.0 += event.delta;
-    }
-}
-
-/// A resource that records the accumulated mouse wheel (scrolling) movement for the frame.
-///
-/// These values are computed by summing the [`MouseWheel`] events.
-///
-/// This resource is automatically added by [`InputManagerPlugin`](crate::plugin::InputManagerPlugin).
-/// Its value is updated during [`InputManagerSystem::Update`](crate::plugin::InputManagerSystem::Update).
-#[derive(Debug, Default, Resource, Reflect, Serialize, Deserialize, Clone, PartialEq)]
-pub struct AccumulatedMouseScroll(pub Vec2);
-
-impl AccumulatedMouseScroll {
-    /// Resets the accumulated mouse scroll to zero.
-    #[inline]
-    pub fn reset(&mut self) {
-        self.0 = Vec2::ZERO;
-    }
-
-    /// Accumulates the specified mouse wheel movement.
-    ///
-    /// # Warning
-    ///
-    /// This ignores the mouse scroll unit: all values are treated as equal.
-    /// All scrolling, no matter what window it is on, is added to the same total.
-    #[inline]
-    pub fn accumulate(&mut self, event: &MouseWheel) {
-        self.0.x += event.x;
-        self.0.y += event.y;
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::plugin::{AccumulatorPlugin, CentralInputStorePlugin};
+    use crate::plugin::CentralInputStorePlugin;
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
     fn test_app() -> App {
         let mut app = App::new();
         app.add_plugins(InputPlugin)
-            .add_plugins((AccumulatorPlugin, CentralInputStorePlugin));
+            .add_plugins(CentralInputStorePlugin);
         app
     }
 
@@ -923,9 +874,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!left.pressed(inputs, gamepad));
         assert!(!middle.pressed(inputs, gamepad));
@@ -976,9 +926,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!mouse_move_up.pressed(inputs, gamepad));
         assert_eq!(mouse_move_y.value(inputs, gamepad), 0.0);
@@ -1053,9 +1002,8 @@ mod tests {
         // No inputs
         let mut app = test_app();
         app.update();
+        let gamepad = app.world_mut().spawn(()).id();
         let inputs = app.world().resource::<CentralInputStore>();
-
-        let gamepad = Gamepad::new(0);
 
         assert!(!mouse_scroll_up.pressed(inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(inputs, gamepad), 0.0);
@@ -1118,14 +1066,14 @@ mod tests {
         }
 
         // The haven't been processed yet
-        let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMovement>();
-        assert_eq!(accumulated_mouse_movement.0, Vec2::new(0.0, 0.0));
+        let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMotion>();
+        assert_eq!(accumulated_mouse_movement.delta, Vec2::new(0.0, 0.0));
 
         app.update();
 
         // Now the events should be processed
-        let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMovement>();
-        assert_eq!(accumulated_mouse_movement.0, Vec2::new(0.0, 5.0));
+        let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMotion>();
+        assert_eq!(accumulated_mouse_movement.delta, Vec2::new(0.0, 5.0));
 
         let inputs = app.world().resource::<CentralInputStore>();
         assert_eq!(inputs.pair(&MouseMove::default()), Vec2::new(0.0, 5.0));

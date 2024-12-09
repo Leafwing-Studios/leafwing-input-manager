@@ -38,7 +38,7 @@
 //!
 //! ### Gamepad Inputs
 //!
-//! - Check gamepad button presses using Bevy's [`GamepadButtonType`] directly.
+//! - Check gamepad button presses using Bevy's [`GamepadButton`] directly.
 //! - Access physical sticks using [`GamepadStick`], [`GamepadControlAxis`], and [`GamepadControlDirection`].
 //!
 //! ### Keyboard Inputs
@@ -74,15 +74,14 @@
 //! - [`TripleAxislikeChord`]: A combined input that groups a [`Buttonlike`] and a [`TripleAxislike`] together,
 //!   allowing you to only read the dual axis data when the button is pressed.
 //!
-//! [`GamepadAxisType`]: bevy::prelude::GamepadAxisType
-//! [`GamepadButtonType`]: bevy::prelude::GamepadButtonType
+//! [`GamepadButton`]: bevy::prelude::GamepadButton
 //! [`KeyCode`]: bevy::prelude::KeyCode
 //! [`MouseButton`]: bevy::prelude::MouseButton
 
 use std::fmt::Debug;
 
 use bevy::math::{Vec2, Vec3};
-use bevy::prelude::{Gamepad, World};
+use bevy::prelude::{Entity, World};
 use bevy::reflect::{erased_serde, Reflect};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
@@ -137,10 +136,10 @@ pub trait Buttonlike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Checks if the input is currently active.
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool;
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool;
 
     /// Checks if the input is currently inactive.
-    fn released(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> bool {
+    fn released(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         !self.pressed(input_store, gamepad)
     }
 
@@ -149,7 +148,7 @@ pub trait Buttonlike:
     /// The returned value should be between `0.0` and `1.0`,
     /// with `0.0` representing the input being fully released
     /// and `1.0` representing the input being fully pressed.
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32 {
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         f32::from(self.pressed(input_store, gamepad))
     }
 
@@ -161,14 +160,14 @@ pub trait Buttonlike:
         self.press_as_gamepad(world, None);
     }
 
-    /// Simulate a press of the buttonlike input, pretending to be the provided [`Gamepad`].
+    /// Simulate a press of the buttonlike input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Buttonlike::press`] if not overridden,
     /// as is the case for things like mouse buttons and keyboard keys.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn press_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+    fn press_as_gamepad(&self, world: &mut World, _gamepad: Option<Entity>) {
         self.press(world);
     }
 
@@ -180,14 +179,14 @@ pub trait Buttonlike:
         self.release_as_gamepad(world, None);
     }
 
-    /// Simulate a release of the buttonlike input, pretending to be the provided [`Gamepad`].
+    /// Simulate a release of the buttonlike input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Buttonlike::release`] if not overridden,
     /// as is the case for things like mouse buttons and keyboard keys.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Gamepad>) {
+    fn release_as_gamepad(&self, world: &mut World, _gamepad: Option<Entity>) {
         self.release(world);
     }
 
@@ -203,7 +202,7 @@ pub trait Buttonlike:
         self.set_value_as_gamepad(world, value, None);
     }
 
-    /// Simulate a value change of the buttonlike input, pretending to be the provided [`Gamepad`].
+    /// Simulate a value change of the buttonlike input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Buttonlike::set_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
@@ -214,7 +213,7 @@ pub trait Buttonlike:
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Gamepad>) {
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Entity>) {
         self.set_value(world, value);
     }
 }
@@ -224,7 +223,7 @@ pub trait Axislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the current value of the input as an `f32`.
-    fn value(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> f32;
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32;
 
     /// Simulate an axis-like input by sending the appropriate event.
     ///
@@ -234,14 +233,14 @@ pub trait Axislike:
         self.set_value_as_gamepad(world, value, None);
     }
 
-    /// Simulate an axis-like input, pretending to be the provided [`Gamepad`].
+    /// Simulate an axis-like input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`Axislike::set_value`] if not overridden,
     /// as is the case for things like a mouse wheel.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Gamepad>) {
+    fn set_value_as_gamepad(&self, world: &mut World, value: f32, _gamepad: Option<Entity>) {
         self.set_value(world, value);
     }
 }
@@ -251,7 +250,7 @@ pub trait DualAxislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the values of this input along the X and Y axes (if applicable).
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec2;
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2;
 
     /// Simulate a dual-axis-like input by sending the appropriate event.
     ///
@@ -261,14 +260,14 @@ pub trait DualAxislike:
         self.set_axis_pair_as_gamepad(world, value, None);
     }
 
-    /// Simulate a dual-axis-like input, pretending to be the provided [`Gamepad`].
+    /// Simulate a dual-axis-like input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`DualAxislike::set_axis_pair`] if not overridden,
     /// as is the case for things like a mouse wheel.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Gamepad>) {
+    fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, _gamepad: Option<Entity>) {
         self.set_axis_pair(world, value);
     }
 }
@@ -278,7 +277,7 @@ pub trait TripleAxislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the values of this input along the X, Y, and Z axes (if applicable).
-    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Gamepad) -> Vec3;
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3;
 
     /// Simulate a triple-axis-like input by sending the appropriate event.
     ///
@@ -288,19 +287,14 @@ pub trait TripleAxislike:
         self.set_axis_triple_as_gamepad(world, value, None);
     }
 
-    /// Simulate a triple-axis-like input, pretending to be the provided [`Gamepad`].
+    /// Simulate a triple-axis-like input, pretending to be the provided gamepad [`Entity`].
     ///
     /// This method defaults to calling [`TripleAxislike::set_axis_triple`] if not overridden,
     /// as is the case for things like a space mouse.
     ///
     /// Use [`find_gamepad`] inside of this method to search for a gamepad to press the button on
     /// if the provided gamepad is `None`.
-    fn set_axis_triple_as_gamepad(
-        &self,
-        world: &mut World,
-        value: Vec3,
-        _gamepad: Option<Gamepad>,
-    ) {
+    fn set_axis_triple_as_gamepad(&self, world: &mut World, value: Vec3, _gamepad: Option<Entity>) {
         self.set_axis_triple(world, value);
     }
 }

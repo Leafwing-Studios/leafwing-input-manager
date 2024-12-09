@@ -33,13 +33,13 @@ fn setup(mut commands: Commands) {
         // Or even a digital dual-axis input!
         .with_dual_axis(CameraMovement::Pan, MouseScroll::default().digital());
     commands
-        .spawn(Camera2dBundle::default())
+        .spawn(Camera2d)
         .insert(InputManagerBundle::with_map(input_map));
 
-    commands.spawn(SpriteBundle {
-        transform: Transform::from_scale(Vec3::new(100., 100., 1.)),
-        ..default()
-    });
+    commands.spawn((
+        Sprite::default(),
+        Transform::from_scale(Vec3::new(100., 100., 1.)),
+    ));
 }
 
 fn zoom_camera(
