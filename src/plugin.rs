@@ -318,6 +318,7 @@ impl Plugin for CentralInputStorePlugin {
         let mut central_input_store = CentralInputStore::default();
         central_input_store.register_standard_input_kinds(app);
 
-        app.insert_resource(central_input_store);
+        app.insert_resource(central_input_store)
+            .configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystem));
     }
 }
