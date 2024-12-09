@@ -657,38 +657,11 @@ impl UpdatableInput for GamepadButton {
                         gamepad: gamepad_entity,
                         button: *key,
                     },
-                    ButtonValue::new(true, value),
+                    ButtonValue::new(false, value),
                 );
             }
         }
     }
-
-    // fn compute(
-    //     mut central_input_store: ResMut<CentralInputStore>,
-    //     source_data: StaticSystemParam<Self::SourceData>,
-    // ) {
-    //     for (gamepad_entity, gamepad) in source_data.iter() {
-    //         for key in gamepad.get_pressed() {
-    //             central_input_store.update_buttonlike(
-    //                 SpecificGamepadButton {
-    //                     gamepad: gamepad_entity,
-    //                     button: *key,
-    //                 },
-    //                 true,
-    //             );
-    //             central_input_store.update_buttonlike(*key, ButtonValue::new(true, value));
-    //         }
-    //     }
-    //     for button in source_data.buttons.get_pressed() {
-    //         let value = source_data.axes.get(*button).unwrap_or(1.0);
-    //         central_input_store.update_buttonlike(*button, ButtonValue::new(true, value));
-    //     }
-
-    //     for button in source_data.buttons.get_just_released() {
-    //         let value = source_data.axes.get(*button).unwrap_or(0.0);
-    //         central_input_store.update_buttonlike(*button, ButtonValue::new(false, value));
-    //     }
-    // }
 }
 
 /// Unlike [`GamepadButton`], this struct represents a specific button on a specific gamepad.
@@ -758,26 +731,6 @@ impl Buttonlike for GamepadButton {
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         button_pressed(input_store, gamepad, *self)
     }
-
-    // /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided [`Gamepad`].
-    // fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
-    //     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-    //     let query = query_state.get(world);
-    //     let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
-
-    //     let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
-    //         gamepad,
-    //         button: *self,
-    //         value: 1.0,
-    //     });
-    //     world.resource_mut::<Events<RawGamepadEvent>>().send(event);
-    // }
-
-    // /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided [`Gamepad`].
-    // fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
-    //     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-    //     let query = query_state.get(world);
-    //     let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
     /// Retrieves the current value of the specified button.
     ///
