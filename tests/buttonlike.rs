@@ -34,7 +34,7 @@ fn test_app() -> App {
     app.insert_resource(input_map)
         .init_resource::<ActionState<TestAction>>();
 
-    let gamepad = app.world_mut().spawn_empty().id();
+    let gamepad = app.world_mut().spawn(Gamepad::default()).id();
     let mut gamepad_events: Mut<'_, Events<GamepadEvent>> =
         app.world_mut().resource_mut::<Events<GamepadEvent>>();
     gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
@@ -86,8 +86,6 @@ fn set_keyboard_updates_central_input_store() {
 }
 
 #[test]
-// FIXME: Should be fixed in a follow-up PR and the ignore should be removed
-#[ignore = "Ignoring as per https://github.com/Leafwing-Studios/leafwing-input-manager/pull/664#issuecomment-2529188830"]
 fn gamepad_button_value() {
     let mut app = test_app();
 
@@ -186,8 +184,6 @@ fn buttonlike_actions_can_be_pressed_and_released_when_pressed() {
 }
 
 #[test]
-// FIXME: Should be fixed in a follow-up PR and the ignore should be removed
-#[ignore = "Ignoring as per https://github.com/Leafwing-Studios/leafwing-input-manager/pull/664#issuecomment-2529188830"]
 fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
     let mut app = test_app();
 
