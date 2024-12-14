@@ -44,7 +44,7 @@ ui = ['bevy/bevy_ui']
 egui = ['dep:bevy_egui']
 
 [dependencies]
-leafwing_input_manager_macros = { path = "macros", version = "0.15.1" }
+leafwing_input_manager_macros = { path = "macros", version = "0.16" }
 bevy = { version = "0.15.0", default-features = false, features = [
   "serialize",
 ] }
