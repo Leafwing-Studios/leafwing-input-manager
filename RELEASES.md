@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 0.16.1
+
+### Enhancements (0.16.1)
+
+- introduced `insert_*_boxed` methods for `Buttonlike`, `Axislike`, `DualAxislike`, and `TripleAxislike`
+  - now you can use dynamic dispatch inputs, allowing for easier seralisation into configs
+
 ## Version 0.16.0
 
 ## Depeendencies (0.16.0)
