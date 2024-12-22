@@ -248,6 +248,17 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
+        self.insert_boxed(action, Box::new(button));
+        self
+    }
+
+    /// See [`InputMap::insert`] for details.
+    ///
+    /// This method accepts a boxed [`Buttonlike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file)
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_boxed(&mut self, action: A, button: Box<dyn Buttonlike>) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Button,
             "Cannot map a Buttonlike input for action {:?} of kind {:?}",
@@ -265,7 +276,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.buttonlike_map, &action, Box::new(button));
+        insert_unique(&mut self.buttonlike_map, &action, button);
         self
     }
 
