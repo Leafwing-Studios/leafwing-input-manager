@@ -18,7 +18,7 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ["asset", "ui", "mouse", "keyboard", "gamepad"]
+default = ["asset", "ui", "mouse", "keyboard", "gamepad", "picking"]
 
 # Allow support for tracking timing information about actions (how long a button was pressed, etc.)
 timing = []
@@ -38,6 +38,10 @@ asset = ['bevy/bevy_asset']
 # Add support for 'bevy::ui' integration:
 # - Allow 'bevy::ui' to take priority over actions when processing inputs.
 ui = ['bevy/bevy_ui']
+
+# Add support for 'bevy::picking' integration:
+# - Order systems to allow picking observers to modify action state.
+picking = ['bevy/bevy_picking']
 
 # Add support for 'egui' integration:
 # - Allow 'egui' to take priority over actions when processing inputs.
