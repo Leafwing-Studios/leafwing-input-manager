@@ -6,6 +6,8 @@ use std::fmt::Debug;
 
 use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
 use bevy::input::InputSystem;
+#[cfg(feature = "picking")]
+use bevy::picking::PickSet;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
@@ -162,6 +164,9 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .after(UiSystem::Focus)
                         .after(InputSystem),
                 );
+
+                #[cfg(feature = "picking")]
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.before(PickSet::Focus));
 
                 // FixedMain schedule
                 app.add_systems(
