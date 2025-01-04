@@ -248,6 +248,17 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
+        self.insert_boxed(action, Box::new(button));
+        self
+    }
+
+    /// See [`InputMap::insert`] for details.
+    ///
+    /// This method accepts a boxed [`Buttonlike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_boxed(&mut self, action: A, button: Box<dyn Buttonlike>) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Button,
             "Cannot map a Buttonlike input for action {:?} of kind {:?}",
@@ -265,7 +276,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.buttonlike_map, &action, Box::new(button));
+        insert_unique(&mut self.buttonlike_map, &action, button);
         self
     }
 
@@ -277,6 +288,17 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
+        self.insert_axis_boxed(action, Box::new(axis));
+        self
+    }
+
+    /// See [`InputMap::insert_axis`] for details.
+    ///
+    /// This method accepts a boxed [`Axislike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_axis_boxed(&mut self, action: A, axis: Box<dyn Axislike>) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Axis,
             "Cannot map an Axislike input for action {:?} of kind {:?}",
@@ -294,7 +316,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.axislike_map, &action, Box::new(axis));
+        insert_unique(&mut self.axislike_map, &action, axis);
         self
     }
 
@@ -306,6 +328,17 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
+        self.insert_dual_axis_boxed(action, Box::new(dual_axis));
+        self
+    }
+
+    /// See [`InputMap::insert_dual_axis`] for details.
+    ///
+    /// This method accepts a boxed [`DualAxislike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_dual_axis_boxed(&mut self, action: A, axis: Box<dyn DualAxislike>) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::DualAxis,
             "Cannot map a DualAxislike input for action {:?} of kind {:?}",
@@ -323,7 +356,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.dual_axislike_map, &action, Box::new(dual_axis));
+        insert_unique(&mut self.dual_axislike_map, &action, axis);
         self
     }
 
@@ -335,6 +368,21 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert_triple_axis(&mut self, action: A, triple_axis: impl TripleAxislike) -> &mut Self {
+        self.insert_triple_axis_boxed(action, Box::new(triple_axis));
+        self
+    }
+
+    /// See [`InputMap::insert_triple_axis`] for details.
+    ///
+    /// This method accepts a boxed [`TripleAxislike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_triple_axis_boxed(
+        &mut self,
+        action: A,
+        triple_axis: Box<dyn TripleAxislike>,
+    ) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::TripleAxis,
             "Cannot map a TripleAxislike input for action {:?} of kind {:?}",
@@ -352,8 +400,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        let boxed = Box::new(triple_axis);
-        insert_unique(&mut self.triple_axislike_map, &action, boxed);
+        insert_unique(&mut self.triple_axislike_map, &action, triple_axis);
         self
     }
 
@@ -373,6 +420,21 @@ impl<A: Actionlike> InputMap<A> {
         let inputs = inputs
             .into_iter()
             .map(|input| Box::new(input) as Box<dyn Buttonlike>);
+        self.insert_one_to_many_boxed(action, inputs);
+        self
+    }
+
+    /// See [`InputMap::insert_one_to_many`] for details.
+    ///
+    /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    pub fn insert_one_to_many_boxed(
+        &mut self,
+        action: A,
+        inputs: impl IntoIterator<Item = Box<dyn Buttonlike>>,
+    ) -> &mut Self {
+        let inputs = inputs.into_iter();
         if let Some(bindings) = self.buttonlike_map.get_mut(&action) {
             for input in inputs {
                 if !bindings.contains(&input) {
@@ -398,6 +460,21 @@ impl<A: Actionlike> InputMap<A> {
     ) -> &mut Self {
         for (action, input) in bindings.into_iter() {
             self.insert(action, input);
+        }
+        self
+    }
+
+    /// See [`InputMap::insert_multiple`] for details.
+    ///
+    /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    pub fn insert_multiple_boxed(
+        &mut self,
+        bindings: impl IntoIterator<Item = (A, Box<dyn Buttonlike>)>,
+    ) -> &mut Self {
+        for (action, input) in bindings.into_iter() {
+            self.insert_boxed(action, input);
         }
         self
     }
