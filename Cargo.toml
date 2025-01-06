@@ -53,7 +53,7 @@ bevy = { version = "0.15.0", default-features = false, features = [
   "serialize",
 ] }
 bevy_egui = { version = "0.31", optional = true }
-itertools = "0.13"
+itertools = "0.14"
 serde = { version = "1.0", features = ["derive"] }
 serde_flexitos = "0.2"
 dyn-clone = "1.0"
