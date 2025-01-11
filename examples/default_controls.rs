@@ -45,9 +45,7 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     // Spawn the player with the default input_map
     commands
-        .spawn(InputManagerBundle::with_map(
-            PlayerAction::default_input_map(),
-        ))
+        .spawn(PlayerAction::default_input_map())
         .insert(Player);
 }
 

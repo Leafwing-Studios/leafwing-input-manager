@@ -32,9 +32,7 @@ fn setup(mut commands: Commands) {
         .with_dual_axis(CameraMovement::Pan, MouseScroll::default())
         // Or even a digital dual-axis input!
         .with_dual_axis(CameraMovement::Pan, MouseScroll::default().digital());
-    commands
-        .spawn(Camera2d)
-        .insert(InputManagerBundle::with_map(input_map));
+    commands.spawn(Camera2d).insert(input_map);
 
     commands.spawn((
         Sprite::default(),
