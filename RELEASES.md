@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.17.0
+
+### Usability (0.17.0)
+
+- `InputMap` now requires `ActionState`, `InputManagerBundle` is deprecated.
+
 ## Version 0.16.0
 
 ## Depeendencies (0.16.0)
@@ -26,7 +32,6 @@
 - added ability to filter entities to generate action diffs for:
   - added new `generate_action_diffs_filtered<A, F>` system, which accepts a `QueryFilter`, so that only entities matching QueryFilter `F` (and with `ActionState<A>`) generate action diffs
   - added new `summarize_filtered<F>` function for `SummarizedActionState<A>` (alongside the original `summarize`).
-- `InputMap` now requires `ActionState`, `InputManagerBundle` is deprecated.
 
 ## Version 0.15.1
 
