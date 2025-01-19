@@ -145,10 +145,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 );
 
                 #[cfg(feature = "egui")]
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::Filter.after(bevy_egui::EguiSet::ProcessInput),
-                );
+                app.configure_sets(PreUpdate, InputManagerSystem::Filter);
 
                 #[cfg(feature = "ui")]
                 app.configure_sets(PreUpdate, InputManagerSystem::Filter.after(UiSystem::Focus));

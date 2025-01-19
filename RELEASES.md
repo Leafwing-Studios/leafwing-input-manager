@@ -1,8 +1,14 @@
 # Release Notes
 
+## Version 0.17.0 (unreleased)
+
+### Dependencies (0.17.0)
+
+- now supports bevy_egui 0.32
+
 ## Version 0.16.0
 
-## Depeendencies (0.16.0)
+### Dependencies (0.16.0)
 
 - now supports Bevy 0.15 and bevy_egui 0.31
 
