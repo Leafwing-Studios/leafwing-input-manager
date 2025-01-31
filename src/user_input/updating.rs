@@ -21,7 +21,7 @@ use crate::{plugin::InputManagerSystem, InputControlKind};
 /// This resource allows values to be updated and fetched in a single location,
 /// and ensures that their values are only recomputed once per frame.
 ///
-/// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add a new kind of input, call [`InputRegistration::register_input_kind`] during [`App`] setup.
 #[derive(Resource, Default, Debug, Reflect)]
 pub struct CentralInputStore {
     /// Stores the updated values of each kind of input.
@@ -300,7 +300,7 @@ impl UpdatedValues {
 /// however when configuration is needed (such as for processed axes or virtual d-pads),
 /// two distinct types must be used.
 ///
-/// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add a new kind of input, call [`InputRegistration::register_input_kind`] during [`App`] setup.
 pub trait UpdatableInput: 'static {
     /// The [`SystemParam`] that must be fetched from the world in order to update the user input.
     ///
@@ -315,7 +315,7 @@ pub trait UpdatableInput: 'static {
     ///
     /// # Warning
     ///
-    /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
+    /// This system should not be added manually: instead, call [`InputRegistration::register_input_kind`].
     fn compute(
         central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,

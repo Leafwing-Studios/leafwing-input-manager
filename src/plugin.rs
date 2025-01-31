@@ -313,7 +313,7 @@ impl<A: Actionlike> Default for TickActionStateSystem<A> {
 /// This plugin is added by default by [`InputManagerPlugin`],
 /// and will register all of the standard [`UserInput`]s.
 ///
-/// To add more inputs, call [`App::register_input_kind`] during [`App`] setup.
+/// To add more inputs, call [`crate::user_input::updating::InputRegistration::register_input_kind`] via [`App`] during [`App`] setup.
 pub struct CentralInputStorePlugin;
 
 impl Plugin for CentralInputStorePlugin {
