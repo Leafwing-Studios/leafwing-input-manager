@@ -18,7 +18,7 @@ use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
-use crate::prelude::updating::{register_standard_input_kinds, InputRegistration};
+use crate::prelude::updating::register_standard_input_kinds;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
