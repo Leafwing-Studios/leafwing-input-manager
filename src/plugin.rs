@@ -18,7 +18,7 @@ use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
-use crate::prelude::updating::InputRegistration;
+use crate::prelude::updating::{register_standard_input_kinds, InputRegistration};
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
@@ -313,14 +313,14 @@ impl<A: Actionlike> Default for TickActionStateSystem<A> {
 /// This plugin is added by default by [`InputManagerPlugin`],
 /// and will register all of the standard [`UserInput`]s.
 ///
-/// To add more inputs, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add more inputs, call [`App::register_input_kind`] during [`App`] setup.
 pub struct CentralInputStorePlugin;
 
 impl Plugin for CentralInputStorePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(CentralInputStore::default());
 
-        app.register_standard_input_kinds();
+        register_standard_input_kinds(app);
 
         app.configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystem));
     }

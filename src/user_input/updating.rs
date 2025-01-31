@@ -214,12 +214,6 @@ pub trait InputRegistration {
     ///
     /// This method has no effect if the input kind has already been registered.
     fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind);
-
-    /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
-    ///
-    /// The set of input kinds registered by this method is controlled by the features enabled:
-    /// turn off default features to avoid registering input kinds that are not needed.
-    fn register_standard_input_kinds(&mut self);
 }
 
 impl InputRegistration for App {
@@ -243,27 +237,31 @@ impl InputRegistration for App {
             .insert(TypeId::of::<I>());
         self.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
     }
+}
 
-    #[allow(unused_variables)]
-    fn register_standard_input_kinds(&mut self) {
-        // Buttonlike
-        #[cfg(feature = "keyboard")]
-        self.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button);
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button);
-        #[cfg(feature = "gamepad")]
-        self.register_input_kind::<bevy::input::gamepad::GamepadButton>(InputControlKind::Button);
+/// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
+///
+/// The set of input kinds registered by this method is controlled by the features enabled:
+/// turn off default features to avoid registering input kinds that are not needed.
+#[allow(unused_variables)]
+pub(crate) fn register_standard_input_kinds(app: &mut App) {
+    // Buttonlike
+    #[cfg(feature = "keyboard")]
+    app.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button);
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button);
+    #[cfg(feature = "gamepad")]
+    app.register_input_kind::<bevy::input::gamepad::GamepadButton>(InputControlKind::Button);
 
-        // Axislike
-        #[cfg(feature = "gamepad")]
-        self.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis);
+    // Axislike
+    #[cfg(feature = "gamepad")]
+    app.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis);
 
-        // Dualaxislike
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis);
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis);
-    }
+    // Dualaxislike
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis);
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis);
 }
 
 /// A map of values that have been updated during the current frame.
