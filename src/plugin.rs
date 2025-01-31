@@ -18,6 +18,7 @@ use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
+use crate::prelude::updating::InputRegistration;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
@@ -317,10 +318,10 @@ pub struct CentralInputStorePlugin;
 
 impl Plugin for CentralInputStorePlugin {
     fn build(&self, app: &mut App) {
-        let mut central_input_store = CentralInputStore::default();
-        central_input_store.register_standard_input_kinds(app);
+        app.insert_resource(CentralInputStore::default());
 
-        app.insert_resource(central_input_store)
-            .configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystem));
+        app.register_standard_input_kinds();
+
+        app.configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystem));
     }
 }
