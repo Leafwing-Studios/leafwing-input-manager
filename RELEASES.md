@@ -2,6 +2,9 @@
 
 ## Version 0.17.0 (unreleased)
 
+### Bugs (0.17.0)
+- fixed the bug making it impossible to register custom input types via `register_input_kind`
+
 ### Dependencies (0.17.0)
 
 - now supports bevy_egui 0.32
