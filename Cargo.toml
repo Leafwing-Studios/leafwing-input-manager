@@ -52,7 +52,7 @@ leafwing_input_manager_macros = { path = "macros", version = "0.16" }
 bevy = { version = "0.15.0", default-features = false, features = [
   "serialize",
 ] }
-bevy_egui = { version = "0.32", optional = true, default-features = false }
+bevy_egui = { version = "0.33", optional = true, default-features = false }
 itertools = "0.14"
 serde = { version = "1.0", features = ["derive"] }
 serde_flexitos = "0.2"
