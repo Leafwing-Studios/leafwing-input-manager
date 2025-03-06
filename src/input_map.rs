@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
-use crate::prelude::UserInputWrapper;
+use crate::prelude::{ActionState, UserInputWrapper};
 use crate::user_input::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 use crate::{Actionlike, InputControlKind};
 
@@ -102,6 +102,7 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// input_map.clear();
 /// ```
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[require(ActionState::<A>)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 #[reflect(Resource, Component)]
 pub struct InputMap<A: Actionlike> {

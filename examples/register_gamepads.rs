@@ -52,7 +52,7 @@ fn join(
                 // Make sure to set the gamepad or all gamepads will be used!
                 .with_gamepad(gamepad_entity);
                 let player = commands
-                    .spawn(InputManagerBundle::with_map(input_map))
+                    .spawn(input_map)
                     .insert(Player {
                         gamepad: gamepad_entity,
                     })

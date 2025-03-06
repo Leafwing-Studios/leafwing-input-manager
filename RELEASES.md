@@ -2,6 +2,10 @@
 
 ## Version 0.17.0 (unreleased)
 
+### Usability (0.17.0)
+
+- `InputMap` now requires `ActionState`, `InputManagerBundle` is deprecated.
+
 ### Bugs (0.17.0)
 - fixed the bug making it impossible to register custom input types via `register_input_kind`
 

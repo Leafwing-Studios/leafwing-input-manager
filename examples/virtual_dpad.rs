@@ -35,9 +35,7 @@ fn spawn_player(mut commands: Commands) {
             GamepadButton::DPadRight,
         ),
     );
-    commands
-        .spawn(InputManagerBundle::with_map(input_map))
-        .insert(Player);
+    commands.spawn(input_map).insert(Player);
 }
 
 // Query for the `ActionState` component in your game logic systems!

@@ -40,9 +40,7 @@ fn spawn_player(mut commands: Commands) {
             Action::Rudder,
             GamepadControlAxis::RIGHT_X.with_deadzone_symmetric(0.1),
         );
-    commands
-        .spawn(InputManagerBundle::with_map(input_map))
-        .insert(Player);
+    commands.spawn(input_map).insert(Player);
 }
 
 // Query for the `ActionState` component in your game logic systems!

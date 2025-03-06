@@ -27,9 +27,7 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     // Describes how to convert from player inputs into those actions
     let input_map = InputMap::new([(Action::Jump, KeyCode::Space)]);
-    commands
-        .spawn(InputManagerBundle::with_map(input_map))
-        .insert(Player);
+    commands.spawn(input_map).insert(Player);
 }
 
 // Query for the `ActionState` component in your game logic systems!

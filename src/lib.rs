@@ -113,6 +113,7 @@ pub trait Actionlike:
 ///
 /// Use with [`InputManagerPlugin`](crate::plugin::InputManagerPlugin), providing the same enum type to both.
 #[derive(Bundle)]
+#[deprecated(note = "Insert `InputMap` directly (and optionally `ActionState`) instead.")]
 pub struct InputManagerBundle<A: Actionlike> {
     /// An [`ActionState`] component
     pub action_state: ActionState<A>,

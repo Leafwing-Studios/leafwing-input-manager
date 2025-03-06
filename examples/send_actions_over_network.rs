@@ -122,9 +122,7 @@ fn spawn_player(mut commands: Commands) {
 
     let input_map = InputMap::new([(MoveLeft, KeyW), (MoveRight, KeyD), (Jump, Space)])
         .with(Shoot, MouseButton::Left);
-    commands
-        .spawn(InputManagerBundle::with_map(input_map))
-        .insert(Player);
+    commands.spawn(input_map).insert(Player);
 }
 
 /// A simple mock network interface that copies a set of events from the client to the server
