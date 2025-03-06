@@ -1,14 +1,21 @@
 # Release Notes
 
-## Version 0.17.0
+## Version 0.17.0 (unreleased)
 
 ### Usability (0.17.0)
 
 - `InputMap` now requires `ActionState`, `InputManagerBundle` is deprecated.
 
+### Bugs (0.17.0)
+- fixed the bug making it impossible to register custom input types via `register_input_kind`
+
+### Dependencies (0.17.0)
+
+- now supports bevy_egui 0.32
+
 ## Version 0.16.0
 
-## Depeendencies (0.16.0)
+### Dependencies (0.16.0)
 
 - now supports Bevy 0.15 and bevy_egui 0.31
 

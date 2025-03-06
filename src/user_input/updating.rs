@@ -21,7 +21,7 @@ use crate::{plugin::InputManagerSystem, InputControlKind};
 /// This resource allows values to be updated and fetched in a single location,
 /// and ensures that their values are only recomputed once per frame.
 ///
-/// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add a new kind of input, call [`InputRegistration::register_input_kind`] during [`App`] setup.
 #[derive(Resource, Default, Debug, Reflect)]
 pub struct CentralInputStore {
     /// Stores the updated values of each kind of input.
@@ -31,61 +31,6 @@ pub struct CentralInputStore {
 }
 
 impl CentralInputStore {
-    /// Registers a new source of raw input data of a matching `kind`.
-    ///
-    /// This will allow the input to be updated based on the state of the world,
-    /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Unify`] during [`PreUpdate`].
-    ///
-    /// To improve clarity and data consistency, only one kind of input should be registered for each new data stream:
-    /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
-    ///
-    /// This method has no effect if the input kind has already been registered.
-    pub fn register_input_kind<I: UpdatableInput>(
-        &mut self,
-        kind: InputControlKind,
-        app: &mut App,
-    ) {
-        // Ensure this method is idempotent.
-        if self.registered_input_kinds.contains(&TypeId::of::<I>()) {
-            return;
-        }
-
-        self.updated_values.insert(
-            TypeId::of::<I>(),
-            UpdatedValues::from_input_control_kind(kind),
-        );
-        self.registered_input_kinds.insert(TypeId::of::<I>());
-        app.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
-    }
-
-    /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
-    ///
-    /// The set of input kinds registered by this method is controlled by the features enabled:
-    /// turn off default features to avoid registering input kinds that are not needed.
-    #[allow(unused_variables)]
-    pub fn register_standard_input_kinds(&mut self, app: &mut App) {
-        // Buttonlike
-        #[cfg(feature = "keyboard")]
-        self.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button, app);
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button, app);
-        #[cfg(feature = "gamepad")]
-        self.register_input_kind::<bevy::input::gamepad::GamepadButton>(
-            InputControlKind::Button,
-            app,
-        );
-
-        // Axislike
-        #[cfg(feature = "gamepad")]
-        self.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis, app);
-
-        // Dualaxislike
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis, app);
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis, app);
-    }
-
     /// Clears all existing values.
     ///
     /// This should be called once at the start of each frame, before polling for new input.
@@ -257,6 +202,68 @@ impl CentralInputStore {
     }
 }
 
+/// Trait for registering updatable inputs with the central input store
+pub trait InputRegistration {
+    /// Registers a new source of raw input data of a matching `kind`.
+    ///
+    /// This will allow the input to be updated based on the state of the world,
+    /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Unify`] during [`PreUpdate`].
+    ///
+    /// To improve clarity and data consistency, only one kind of input should be registered for each new data stream:
+    /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
+    ///
+    /// This method has no effect if the input kind has already been registered.
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind);
+}
+
+impl InputRegistration for App {
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) {
+        let mut central_input_store = self.world_mut().resource_mut::<CentralInputStore>();
+
+        // Ensure this method is idempotent.
+        if central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<I>())
+        {
+            return;
+        }
+
+        central_input_store.updated_values.insert(
+            TypeId::of::<I>(),
+            UpdatedValues::from_input_control_kind(kind),
+        );
+        central_input_store
+            .registered_input_kinds
+            .insert(TypeId::of::<I>());
+        self.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
+    }
+}
+
+/// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
+///
+/// The set of input kinds registered by this method is controlled by the features enabled:
+/// turn off default features to avoid registering input kinds that are not needed.
+#[allow(unused_variables)]
+pub(crate) fn register_standard_input_kinds(app: &mut App) {
+    // Buttonlike
+    #[cfg(feature = "keyboard")]
+    app.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button);
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button);
+    #[cfg(feature = "gamepad")]
+    app.register_input_kind::<bevy::input::gamepad::GamepadButton>(InputControlKind::Button);
+
+    // Axislike
+    #[cfg(feature = "gamepad")]
+    app.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis);
+
+    // Dualaxislike
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis);
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis);
+}
+
 /// A map of values that have been updated during the current frame.
 ///
 /// The key should be the default form of the input if there is no need to differentiate between possible inputs of the same type,
@@ -293,7 +300,7 @@ impl UpdatedValues {
 /// however when configuration is needed (such as for processed axes or virtual d-pads),
 /// two distinct types must be used.
 ///
-/// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add a new kind of input, call [`InputRegistration::register_input_kind`] during [`App`] setup.
 pub trait UpdatableInput: 'static {
     /// The [`SystemParam`] that must be fetched from the world in order to update the user input.
     ///
@@ -308,7 +315,7 @@ pub trait UpdatableInput: 'static {
     ///
     /// # Warning
     ///
-    /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
+    /// This system should not be added manually: instead, call [`InputRegistration::register_input_kind`].
     fn compute(
         central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
