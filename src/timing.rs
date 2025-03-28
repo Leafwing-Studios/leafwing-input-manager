@@ -2,8 +2,9 @@
 
 use bevy::{
     reflect::Reflect,
-    utils::{Duration, Instant},
+    platform_support::time::Instant,
 };
+use core::time::Duration;
 use serde::{Deserialize, Serialize};
 
 /// Stores information about when an action was pressed or released
