@@ -164,7 +164,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 );
 
                 #[cfg(feature = "picking")]
-                app.configure_sets(PreUpdate, InputManagerSystem::Update.before(PickSet::Focus));
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.before(PickSet::Hover));
 
                 // FixedMain schedule
                 app.add_systems(

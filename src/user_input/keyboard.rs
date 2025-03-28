@@ -72,6 +72,7 @@ impl Buttonlike for KeyCode {
             state: ButtonState::Pressed,
             repeat: false,
             window: Entity::PLACEHOLDER,
+            text: None,
         });
     }
 
@@ -88,6 +89,7 @@ impl Buttonlike for KeyCode {
             state: ButtonState::Released,
             repeat: false,
             window: Entity::PLACEHOLDER,
+            text: None,
         });
     }
 

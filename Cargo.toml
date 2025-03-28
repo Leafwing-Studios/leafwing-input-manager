@@ -49,8 +49,10 @@ egui = ['dep:bevy_egui']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.16" }
-bevy = { version = "0.15.0", default-features = false, features = [
+bevy = { version = "0.16.0-rc", default-features = false, features = [
   "serialize",
+  "std",
+  "bevy_log"
 ] }
 bevy_egui = { version = "0.32", optional = true, default-features = false }
 itertools = "0.14"
@@ -61,7 +63,8 @@ dyn-eq = "0.1"
 dyn-hash = "0.2"
 
 [dev-dependencies]
-bevy = { version = "0.15.0", default-features = false, features = [
+bevy = { version = "0.16.0-rc", default-features = false, features = [
+  "std",
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
