@@ -1,9 +1,6 @@
 //! Information about when an action was pressed or released.
 
-use bevy::{
-    reflect::Reflect,
-    platform_support::time::Instant,
-};
+use bevy::{platform_support::time::Instant, reflect::Reflect};
 use core::time::Duration;
 use serde::{Deserialize, Serialize};
 

@@ -7,13 +7,13 @@ use crate::{Actionlike, InputControlKind};
 use bevy::platform_support::{collections::HashMap, time::Instant};
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
-#[cfg(feature = "timing")]
-use core::time::Duration;
 use bevy::{ecs::component::Component, prelude::ReflectComponent};
 use bevy::{
     math::{Vec2, Vec3},
     prelude::ReflectResource,
 };
+#[cfg(feature = "timing")]
+use core::time::Duration;
 use serde::{Deserialize, Serialize};
 
 mod action_data;
