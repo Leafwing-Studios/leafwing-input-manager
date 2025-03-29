@@ -163,7 +163,7 @@ fn release_when_input_map_removed() {
 #[test]
 fn duration() {
     use bevy::input::InputPlugin;
-    use bevy::utils::Duration;
+    use core::time::Duration;
 
     const RESPECTFUL_DURATION: Duration = Duration::from_millis(5);
 
