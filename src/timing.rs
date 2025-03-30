@@ -78,7 +78,8 @@ mod tests {
     #[test]
     fn time_tick_ticks_away() {
         use crate::action_state::ActionState;
-        use bevy::utils::{Duration, Instant};
+        use core::time::Duration;
+        use bevy::platform_support::time::Instant;
 
         let mut action_state = ActionState::<Action>::default();
 
@@ -102,7 +103,8 @@ mod tests {
     #[test]
     fn durations() {
         use crate::action_state::ActionState;
-        use bevy::utils::{Duration, Instant};
+        use bevy::platform_support::time::Instant;
+        use core::time::Duration;
 
         let mut action_state = ActionState::<Action>::default();
 
