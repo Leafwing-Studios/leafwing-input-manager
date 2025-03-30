@@ -52,7 +52,7 @@ fn spawn_player(mut commands: Commands) {
 }
 
 fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
-    let action_state = query.single();
+    let action_state = query.single().expect("Player actions not found");
 
     if action_state.axis_pair(&PlayerAction::Run) != Vec2::ZERO {
         println!(

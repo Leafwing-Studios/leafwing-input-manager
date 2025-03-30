@@ -33,8 +33,7 @@ fn spawn_player(mut commands: Commands) {
 }
 
 // Query for the `ActionState` component in your game logic systems!
-fn jump(query: Query<&ActionState<Action>, With<Player>>) {
-    let action_state = query.single();
+fn jump(action_state: Single<&ActionState<Action>, With<Player>>) {
     // Each action has a button-like state of its own that you can check
     if action_state.just_pressed(&Action::Jump) {
         println!("I'm jumping!");

@@ -17,7 +17,7 @@ fn pay_respects(
     action_state_resource: Option<Res<ActionState<Action>>>,
     mut respect: ResMut<Respect>,
 ) {
-    if let Ok(action_state) = action_state_query.get_single() {
+    if let Ok(action_state) = action_state_query.single() {
         if action_state.pressed(&Action::PayRespects) {
             respect.0 = true;
         }
@@ -91,7 +91,8 @@ fn disable_input() {
     let mut action_state = app
         .world_mut()
         .query_filtered::<&mut ActionState<Action>, With<Player>>()
-        .single_mut(app.world_mut());
+        .single_mut(app.world_mut())
+        .expect("ActionState not found");
     action_state.disable_all_actions();
 
     // Now, all respect has faded
@@ -162,7 +163,7 @@ fn release_when_input_map_removed() {
 #[test]
 fn duration() {
     use bevy::input::InputPlugin;
-    use bevy::utils::Duration;
+    use core::time::Duration;
 
     const RESPECTFUL_DURATION: Duration = Duration::from_millis(5);
 

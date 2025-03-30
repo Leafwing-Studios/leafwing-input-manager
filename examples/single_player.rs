@@ -114,17 +114,13 @@ fn spawn_player(mut commands: Commands) {
     });
 }
 
-fn cast_fireball(query: Query<&ActionState<ArpgAction>, With<Player>>) {
-    let action_state = query.single();
-
+fn cast_fireball(action_state: Single<&ActionState<ArpgAction>, With<Player>>) {
     if action_state.just_pressed(&ArpgAction::Ability1) {
         println!("Fwoosh!");
     }
 }
 
-fn player_dash(query: Query<&ActionState<ArpgAction>, With<Player>>) {
-    let action_state = query.single();
-
+fn player_dash(action_state: Single<&ActionState<ArpgAction>, With<Player>>) {
     if action_state.just_pressed(&ArpgAction::Ability4) {
         let mut direction_vector = Vec2::ZERO;
 
@@ -152,11 +148,9 @@ pub struct PlayerWalk {
 }
 
 fn player_walks(
-    query: Query<&ActionState<ArpgAction>, With<Player>>,
+    action_state: Single<&ActionState<ArpgAction>, With<Player>>,
     mut event_writer: EventWriter<PlayerWalk>,
 ) {
-    let action_state = query.single();
-
     let mut direction_vector = Vec2::ZERO;
 
     for input_direction in ArpgAction::DIRECTIONS {
@@ -172,6 +166,6 @@ fn player_walks(
     let net_direction = Dir2::new(direction_vector);
 
     if let Ok(direction) = net_direction {
-        event_writer.send(PlayerWalk { direction });
+        event_writer.write(PlayerWalk { direction });
     }
 }

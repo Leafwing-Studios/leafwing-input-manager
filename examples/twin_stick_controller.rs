@@ -119,11 +119,9 @@ fn player_mouse_look(
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut action_state: ResMut<ActionState<PlayerAction>>,
 ) {
-    let (camera_transform, camera) = camera_query.get_single().expect("Need a single camera");
-    let player_transform = player_query.get_single().expect("Need a single player");
-    let window = window_query
-        .get_single()
-        .expect("Need a single primary window");
+    let (camera_transform, camera) = camera_query.single().expect("Need a single camera");
+    let player_transform = player_query.single().expect("Need a single player");
+    let window = window_query.single().expect("Need a single primary window");
 
     // Many steps can fail here, so we'll wrap in an option pipeline
     // First check if the cursor is in window
@@ -154,9 +152,8 @@ fn player_mouse_look(
 fn control_player(
     time: Res<Time>,
     action_state: Res<ActionState<PlayerAction>>,
-    mut query: Query<&mut Transform, With<Player>>,
+    mut player_transform: Single<&mut Transform, With<Player>>,
 ) {
-    let mut player_transform = query.single_mut();
     if action_state.axis_pair(&PlayerAction::Move) != Vec2::ZERO {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct

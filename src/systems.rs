@@ -11,8 +11,8 @@ use crate::{
 use bevy::ecs::prelude::*;
 use bevy::prelude::Gamepad;
 use bevy::{
+    platform_support::time::Instant,
     time::{Real, Time},
-    utils::Instant,
 };
 
 use crate::action_diff::{ActionDiffEvent, SummarizedActionState};

@@ -41,8 +41,7 @@ fn spawn_player(mut commands: Commands) {
 }
 
 // Query for the `ActionState` component in your game logic systems!
-fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
-    let action_state = query.single();
+fn move_player(action_state: Single<&ActionState<Action>, With<Player>>) {
     if action_state.axis_pair(&Action::Move) != Vec2::ZERO {
         // Virtual direction pads are one of the types which return a DualAxis. The values will be
         // represented as `-1.0`, `0.0`, or `1.0` depending on the combination of buttons pressed.

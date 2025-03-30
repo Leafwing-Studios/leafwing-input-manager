@@ -5,8 +5,8 @@
 //! This example demonstrates how to model that pattern by copying [`ActionData`]
 //! between two distinct [`ActionState`] components.
 
+use bevy::platform_support::collections::HashMap;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use leafwing_input_manager::plugin::InputManagerSystem;
 use leafwing_input_manager::prelude::*;
 
