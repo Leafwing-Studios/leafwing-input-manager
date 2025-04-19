@@ -2,7 +2,7 @@
 
 use bevy::{
     math::{Vec2, Vec3},
-    platform_support::time::Instant,
+    platform::time::Instant,
     reflect::Reflect,
 };
 use serde::{Deserialize, Serialize};

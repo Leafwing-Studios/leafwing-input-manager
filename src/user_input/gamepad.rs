@@ -202,7 +202,6 @@ impl UserInput for GamepadControlDirection {
 #[serde_typetag]
 impl Buttonlike for GamepadControlDirection {
     /// Checks if there is any recent stick movement along the specified direction.
-    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         let value = read_axis_value(input_store, gamepad, self.axis);
@@ -419,7 +418,6 @@ impl UserInput for GamepadControlAxis {
 #[serde_typetag]
 impl Axislike for GamepadControlAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         let value = read_axis_value(input_store, gamepad, self.axis);
@@ -547,7 +545,6 @@ impl UserInput for GamepadStick {
 #[serde_typetag]
 impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
         let x = read_axis_value(input_store, gamepad, self.x);
@@ -725,7 +722,6 @@ impl UserInput for GamepadButton {
 #[serde_typetag]
 impl Buttonlike for GamepadButton {
     /// Checks if the specified button is currently pressed down.
-    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         button_pressed(input_store, gamepad, *self)
@@ -736,7 +732,6 @@ impl Buttonlike for GamepadButton {
     /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
     /// Physically triggerlike buttons will return a value between 0.0 and 1.0,
     /// depending on how far the button is pressed.
-    #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         button_value(input_store, gamepad, *self)

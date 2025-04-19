@@ -196,8 +196,6 @@ impl UserInput for MouseMoveDirection {
 #[serde_typetag]
 impl Buttonlike for MouseMoveDirection {
     /// Checks if there is any recent mouse movement along the specified direction.
-    #[must_use]
-    #[inline]
     fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         let mouse_movement = input_store.pair(&MouseMove::default());
         self.direction.is_active(mouse_movement, self.threshold)
@@ -308,7 +306,6 @@ impl UserInput for MouseMoveAxis {
 impl Axislike for MouseMoveAxis {
     /// Retrieves the amount of the mouse movement along the specified axis
     /// after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
         let movement = input_store.pair(&MouseMove::default());
@@ -421,7 +418,6 @@ impl UserInput for MouseMove {
 #[serde_typetag]
 impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
         let movement = input_store.pair(&MouseMove::default());
@@ -556,7 +552,6 @@ impl UserInput for MouseScrollDirection {
 #[serde_typetag]
 impl Buttonlike for MouseScrollDirection {
     /// Checks if there is any recent mouse wheel movement along the specified direction.
-    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         let movement = input_store.pair(&MouseScroll::default());
@@ -675,7 +670,6 @@ impl UserInput for MouseScrollAxis {
 impl Axislike for MouseScrollAxis {
     /// Retrieves the amount of the mouse wheel movement along the specified axis
     /// after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
         let movement = input_store.pair(&MouseScroll::default());
@@ -800,7 +794,6 @@ impl UserInput for MouseScroll {
 #[serde_typetag]
 impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
         let movement = input_store.pair(&MouseScroll::default());

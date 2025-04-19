@@ -128,7 +128,6 @@ impl UserInput for ButtonlikeChord {
 #[serde_typetag]
 impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
-    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         self.0

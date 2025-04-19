@@ -12,7 +12,7 @@ use bevy::{
         query::QueryFilter,
     },
     math::{Vec2, Vec3},
-    platform_support::collections::{HashMap, HashSet},
+    platform::collections::{HashMap, HashSet},
     prelude::{EntityMapper, EventWriter, Query, Res},
 };
 use serde::{Deserialize, Serialize};

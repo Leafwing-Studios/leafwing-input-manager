@@ -4,7 +4,7 @@ use crate::input_map::UpdatedValue;
 use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 use crate::{Actionlike, InputControlKind};
 
-use bevy::platform_support::{collections::HashMap, time::Instant};
+use bevy::platform::{collections::HashMap, time::Instant};
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
 use bevy::{ecs::component::Component, prelude::ReflectComponent};
