@@ -11,7 +11,7 @@ use crate::{
 use bevy::ecs::prelude::*;
 use bevy::prelude::Gamepad;
 use bevy::{
-    platform_support::time::Instant,
+    platform::time::Instant,
     time::{Real, Time},
 };
 

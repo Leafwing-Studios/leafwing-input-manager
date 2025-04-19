@@ -202,7 +202,6 @@ impl UserInput for VirtualAxis {
 #[serde_typetag]
 impl Axislike for VirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         let negative = self.negative.value(input_store, gamepad);
@@ -432,7 +431,6 @@ impl UserInput for VirtualDPad {
 #[serde_typetag]
 impl DualAxislike for VirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
         let up = self.up.value(input_store, gamepad);
@@ -568,7 +566,6 @@ impl UserInput for VirtualDPad3D {
 #[serde_typetag]
 impl TripleAxislike for VirtualDPad3D {
     /// Retrieves the current X, Y, and Z values of this D-pad.
-    #[must_use]
     #[inline]
     fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3 {
         let up = self.up.value(input_store, gamepad);
