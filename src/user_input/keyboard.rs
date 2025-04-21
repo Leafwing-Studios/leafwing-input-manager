@@ -53,6 +53,7 @@ impl UpdatableInput for KeyCode {
 #[serde_typetag]
 impl Buttonlike for KeyCode {
     /// Checks if the specified key is currently pressed down.
+    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(self)
@@ -178,6 +179,7 @@ impl UserInput for ModifierKey {
 #[serde_typetag]
 impl Buttonlike for ModifierKey {
     /// Checks if the specified modifier key is currently pressed down.
+    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
         input_store.pressed(&self.left()) || input_store.pressed(&self.right())
