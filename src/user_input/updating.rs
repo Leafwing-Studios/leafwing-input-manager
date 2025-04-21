@@ -2,6 +2,7 @@
 
 use std::any::TypeId;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use bevy::{
     app::{App, PreUpdate},
@@ -11,7 +12,7 @@ use bevy::{
     },
     math::{Vec2, Vec3},
     platform::collections::{HashMap, HashSet},
-    prelude::{ResMut, Resource},
+    prelude::{Res, ResMut, Resource},
     reflect::Reflect,
 };
 
@@ -205,6 +206,26 @@ impl CentralInputStore {
     }
 }
 
+#[derive(Resource)]
+/// This resource exists for each input event type that implements [`UpdatableInput`]. Set [`EnabledInput::is_enabled`] to `false` to disable corresponding input handling.
+pub struct EnabledInput<T> {
+    /// Set this flag to `false` to disable input handling of corresponding events.
+    pub is_enabled: bool,
+    _p: PhantomData<T>,
+}
+
+unsafe impl<T> Send for EnabledInput<T> {}
+unsafe impl<T> Sync for EnabledInput<T> {}
+
+impl<T: UpdatableInput> Default for EnabledInput<T> {
+    fn default() -> Self {
+        Self {
+            is_enabled: true,
+            _p: PhantomData::default(),
+        }
+    }
+}
+
 /// Trait for registering updatable inputs with the central input store
 pub trait InputRegistration {
     /// Registers a new source of raw input data of a matching `kind`.
@@ -238,8 +259,18 @@ impl InputRegistration for App {
         central_input_store
             .registered_input_kinds
             .insert(TypeId::of::<I>());
-        self.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
+        self.insert_resource(EnabledInput::<I>::default());
+        self.add_systems(
+            PreUpdate,
+            I::compute
+                .in_set(InputManagerSystem::Unify)
+                .run_if(input_is_enabled::<I>),
+        );
     }
+}
+
+pub(crate) fn input_is_enabled<T: UpdatableInput>(enabled_input: Res<EnabledInput<T>>) -> bool {
+    enabled_input.is_enabled
 }
 
 /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).

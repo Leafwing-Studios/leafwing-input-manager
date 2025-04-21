@@ -137,16 +137,13 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .after(InputManagerSystem::Unify),
                 );
 
-                #[cfg(any(feature = "egui", feature = "ui"))]
+                #[cfg(feature = "ui")]
                 app.add_systems(
                     PreUpdate,
                     filter_captured_input
                         .before(update_action_state::<A>)
                         .in_set(InputManagerSystem::Filter),
                 );
-
-                #[cfg(feature = "egui")]
-                app.configure_sets(PreUpdate, InputManagerSystem::Filter);
 
                 #[cfg(feature = "ui")]
                 app.configure_sets(PreUpdate, InputManagerSystem::Filter.after(UiSystem::Focus));

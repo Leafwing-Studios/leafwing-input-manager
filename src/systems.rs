@@ -104,15 +104,11 @@ pub fn update_action_state<A: Actionlike>(
     }
 }
 
-#[cfg(any(feature = "egui", feature = "ui"))]
+#[cfg(feature = "ui")]
 /// Filters out all inputs that are captured by the UI.
 pub fn filter_captured_input(
     mut mouse_buttons: ResMut<bevy::input::ButtonInput<bevy::input::mouse::MouseButton>>,
     #[cfg(feature = "ui")] interactions: Query<&bevy::ui::Interaction>,
-    #[cfg(feature = "egui")] mut keycodes: ResMut<
-        bevy::input::ButtonInput<bevy::input::keyboard::KeyCode>,
-    >,
-    #[cfg(feature = "egui")] mut egui_query: Query<&'static mut bevy_egui::EguiContext>,
 ) {
     // If the user clicks on a button, do not apply it to the game state
     #[cfg(feature = "ui")]
@@ -121,19 +117,6 @@ pub fn filter_captured_input(
         .any(|&interaction| interaction != bevy::ui::Interaction::None)
     {
         mouse_buttons.clear();
-    }
-
-    // If egui wants to own inputs, don't also apply them to the game state
-    #[cfg(feature = "egui")]
-    for mut egui_context in egui_query.iter_mut() {
-        // Don't ask me why get doesn't exist :shrug:
-        if egui_context.get_mut().wants_pointer_input() {
-            mouse_buttons.reset_all();
-        }
-
-        if egui_context.get_mut().wants_keyboard_input() {
-            keycodes.reset_all();
-        }
     }
 }
 
