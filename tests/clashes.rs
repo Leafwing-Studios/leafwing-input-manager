@@ -2,7 +2,7 @@
 
 use bevy::ecs::system::SystemState;
 use bevy::input::InputPlugin;
-use bevy::platform_support::collections::HashSet;
+use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use updating::CentralInputStore;

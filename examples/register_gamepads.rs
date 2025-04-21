@@ -1,6 +1,6 @@
 //! Demonstrates how to register gamepads in local multiplayer fashion
 
-use bevy::{platform_support::collections::HashMap, prelude::*};
+use bevy::{platform::collections::HashMap, prelude::*};
 use leafwing_input_manager::prelude::*;
 
 fn main() {
