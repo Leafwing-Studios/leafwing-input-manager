@@ -43,10 +43,6 @@ ui = ['bevy/bevy_ui']
 # - Order systems to allow picking observers to modify action state.
 picking = ['bevy/bevy_picking']
 
-# Add support for 'egui' integration:
-# - Allow 'egui' to take priority over actions when processing inputs.
-egui = ['dep:bevy_egui']
-
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.16" }
 bevy = { version = "0.16.0-rc", default-features = false, features = [
@@ -55,9 +51,6 @@ bevy = { version = "0.16.0-rc", default-features = false, features = [
   "bevy_log"
 ] }
 
-# TODO: Update before release
-bevy_egui = { git = "http://github.com/slyedoc/bevy_egui", branch = "bevy_0.16", optional = true, default-features = false }
-#bevy_egui = { version = "0.32", optional = true, default-features = false }
 itertools = "0.14"
 serde = { version = "1.0", features = ["derive"] }
 serde_flexitos = "0.2"
