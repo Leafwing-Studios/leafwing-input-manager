@@ -215,6 +215,8 @@ pub struct EnabledInput<T> {
     _p: PhantomData<T>,
 }
 
+// SAFETY: The `Resource` derive requires `T` to implement `Send + Sync` as well, but since it's
+// used only as `PhantomData`, it's safe to say that `EnabledInput` is `Send + Sync` regardless of `T`.
 unsafe impl<T> Send for EnabledInput<T> {}
 unsafe impl<T> Sync for EnabledInput<T> {}
 
