@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
-use bevy::platform_support::collections::HashMap;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::{Component, Deref, DerefMut, Entity, Gamepad, Query, Reflect, Resource, With};
 use bevy::{log::error, prelude::ReflectComponent};
 use bevy::{
@@ -908,7 +908,7 @@ impl<A: Actionlike, U: Buttonlike> From<HashMap<A, Vec<U>>> for InputMap<A> {
     ///
     /// ```rust
     /// use bevy::prelude::*;
-    /// use bevy::platform_support::collections::HashMap;
+    /// use bevy::platform::collections::HashMap;
     /// use leafwing_input_manager::prelude::*;
     ///
     /// #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]

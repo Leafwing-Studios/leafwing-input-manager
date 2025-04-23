@@ -4,7 +4,7 @@ use crate::input_map::UpdatedValue;
 use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 use crate::{Actionlike, InputControlKind};
 
-use bevy::platform_support::{collections::HashMap, time::Instant};
+use bevy::platform::{collections::HashMap, time::Instant};
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
 use bevy::{ecs::component::Component, prelude::ReflectComponent};
@@ -45,7 +45,7 @@ pub use action_data::*;
 /// ```rust
 /// use bevy::reflect::Reflect;
 /// use leafwing_input_manager::prelude::*;
-/// use bevy::platform_support::time::Instant;
+/// use bevy::platform::time::Instant;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 /// enum Action {
@@ -171,7 +171,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use bevy::platform_support::time::Instant;
+    /// use bevy::platform::time::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum Action {

@@ -10,7 +10,7 @@ use bevy::{
         system::{StaticSystemParam, SystemParam},
     },
     math::{Vec2, Vec3},
-    platform_support::collections::{HashMap, HashSet},
+    platform::collections::{HashMap, HashSet},
     prelude::{ResMut, Resource},
     reflect::Reflect,
 };
