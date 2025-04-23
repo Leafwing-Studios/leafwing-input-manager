@@ -222,7 +222,7 @@ impl<T: UpdatableInput> Default for EnabledInput<T> {
     fn default() -> Self {
         Self {
             is_enabled: true,
-            _p: PhantomData::default(),
+            _p: PhantomData,
         }
     }
 }
