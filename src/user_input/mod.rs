@@ -136,6 +136,7 @@ pub trait Buttonlike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Checks if the input is currently active.
+    #[must_use]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool;
 
     /// Checks if the input is currently inactive.
@@ -148,6 +149,7 @@ pub trait Buttonlike:
     /// The returned value should be between `0.0` and `1.0`,
     /// with `0.0` representing the input being fully released
     /// and `1.0` representing the input being fully pressed.
+    #[must_use]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         f32::from(self.pressed(input_store, gamepad))
     }
@@ -223,6 +225,7 @@ pub trait Axislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the current value of the input as an `f32`.
+    #[must_use]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32;
 
     /// Simulate an axis-like input by sending the appropriate event.
@@ -250,6 +253,7 @@ pub trait DualAxislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the values of this input along the X and Y axes (if applicable).
+    #[must_use]
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2;
 
     /// Simulate a dual-axis-like input by sending the appropriate event.
@@ -277,6 +281,7 @@ pub trait TripleAxislike:
     UserInput + DynClone + DynEq + DynHash + Reflect + erased_serde::Serialize
 {
     /// Gets the values of this input along the X, Y, and Z axes (if applicable).
+    #[must_use]
     fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3;
 
     /// Simulate a triple-axis-like input by sending the appropriate event.
