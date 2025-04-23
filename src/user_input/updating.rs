@@ -207,7 +207,8 @@ impl CentralInputStore {
 }
 
 #[derive(Resource)]
-/// This resource exists for each input event type that implements [`UpdatableInput`]. Set [`EnabledInput::is_enabled`] to `false` to disable corresponding input handling.
+/// This resource exists for each input type that implements [`UpdatableInput`] (e.g. [`bevy::input::mouse::MouseButton`], [`bevy::input::keyboard::KeyCode`]).
+/// Set [`EnabledInput::is_enabled`] to `false` to disable corresponding input handling.
 pub struct EnabledInput<T> {
     /// Set this flag to `false` to disable input handling of corresponding events.
     pub is_enabled: bool,
