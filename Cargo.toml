@@ -45,10 +45,10 @@ picking = ['bevy/bevy_picking']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.16" }
-bevy = { version = "0.16.0-rc", default-features = false, features = [
+bevy = { version = "0.16.0", default-features = false, features = [
   "serialize",
   "std",
-  "bevy_log"
+  "bevy_log",
 ] }
 
 itertools = "0.14"
@@ -59,7 +59,7 @@ dyn-eq = "0.1"
 dyn-hash = "0.2"
 
 [dev-dependencies]
-bevy = { version = "0.16.0-rc", default-features = false, features = [
+bevy = { version = "0.16.0", default-features = false, features = [
   "std",
   "bevy_asset",
   "bevy_sprite",
@@ -70,10 +70,6 @@ bevy = { version = "0.16.0-rc", default-features = false, features = [
   "bevy_state",
   "bevy_window",
   "x11",
-  # TODO Remove these before release. See https://github.com/bevyengine/bevy/issues/13728
-  "ktx2",
-  "zstd",
-  "bevy_pbr",
 ] }
 serde_test = "1.0"
 
