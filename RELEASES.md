@@ -2,16 +2,25 @@
 
 ## Version 0.17.0 (unreleased)
 
+### Breaking Changes
+
+- removed the `egui` feature together with the `bevy_egui` dependency, absorbing inputs is now supported by `bevy_egui` itself
+
+### Enhancements (0.17.0)
+
+- added `EnabledInput` resources to allow disabling input handling by input type
+
 ### Usability (0.17.0)
 
 - `InputMap` now requires `ActionState`, `InputManagerBundle` is deprecated.
 
 ### Bugs (0.17.0)
+
 - fixed the bug making it impossible to register custom input types via `register_input_kind`
 
 ### Dependencies (0.17.0)
 
-- now supports bevy_egui 0.32
+- now supports Bevy 0.16
 
 ## Version 0.16.0
 

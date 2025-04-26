@@ -48,11 +48,11 @@
 //! to avoid unexpected behavior caused by extreme inputs.
 //!
 //! - [`AxisBounds`]: A min-max range for valid single-axis inputs,
-//!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
+//!   implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisBounds`]: A square-shaped region for valid dual-axis inputs,
-//!     with independent min-max ranges for each axis, implemented [`Into<DualAxisProcessor>`].
+//!   with independent min-max ranges for each axis, implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleBounds`]: A circular region for valid dual-axis inputs,
-//!     with a radius defining the maximum magnitude, implemented [`Into<DualAxisProcessor>`].
+//!   with a radius defining the maximum magnitude, implemented [`Into<DualAxisProcessor>`].
 //!
 //! ## Dead Zones
 //!
@@ -63,11 +63,11 @@
 //! helping filter out minor fluctuations and unintended movements.
 //!
 //! - [`AxisExclusion`]: A min-max range for excluding single-axis input values,
-//!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
+//!   implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisExclusion`]: A cross-shaped region for excluding dual-axis inputs,
-//!     with independent min-max ranges for each axis, implemented [`Into<DualAxisProcessor>`].
+//!   with independent min-max ranges for each axis, implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleExclusion`]: A circular region for excluding dual-axis inputs,
-//!     with a radius defining the maximum excluded magnitude, implemented [`Into<DualAxisProcessor>`].
+//!   with a radius defining the maximum excluded magnitude, implemented [`Into<DualAxisProcessor>`].
 //!
 //! ### Scaled Versions
 //!
@@ -76,12 +76,12 @@
 //! the remaining region within the bounds after dead zone exclusion.
 //!
 //! - [`AxisDeadZone`]: A scaled version of [`AxisExclusion`] with the bounds
-//!     set to [`AxisBounds::symmetric(1.0)`](AxisBounds::default),
-//!     implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
+//!   set to [`AxisBounds::symmetric(1.0)`](AxisBounds::default),
+//!   implemented [`Into<AxisProcessor>`] and [`Into<DualAxisProcessor>`].
 //! - [`DualAxisDeadZone`]: A scaled version of [`DualAxisExclusion`] with the bounds
-//!     set to [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default), implemented [`Into<DualAxisProcessor>`].
+//!   set to [`DualAxisBounds::symmetric_all(1.0)`](DualAxisBounds::default), implemented [`Into<DualAxisProcessor>`].
 //! - [`CircleDeadZone`]: A scaled version of [`CircleExclusion`] with the bounds
-//!     set to [`CircleBounds::new(1.0)`](CircleBounds::default), implemented [`Into<DualAxisProcessor>`].
+//!   set to [`CircleBounds::new(1.0)`](CircleBounds::default), implemented [`Into<DualAxisProcessor>`].
 
 pub use self::dual_axis::*;
 pub use self::single_axis::*;

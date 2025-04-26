@@ -2,8 +2,8 @@
 
 use bevy::{
     math::{Vec2, Vec3},
+    platform::time::Instant,
     reflect::Reflect,
-    utils::Instant,
 };
 use serde::{Deserialize, Serialize};
 

@@ -2,14 +2,18 @@
 
 use std::any::TypeId;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use bevy::{
     app::{App, PreUpdate},
-    ecs::system::{StaticSystemParam, SystemParam},
+    ecs::{
+        schedule::IntoScheduleConfigs,
+        system::{StaticSystemParam, SystemParam},
+    },
     math::{Vec2, Vec3},
-    prelude::{IntoSystemConfigs, ResMut, Resource},
+    platform::collections::{HashMap, HashSet},
+    prelude::{Res, ResMut, Resource},
     reflect::Reflect,
-    utils::{HashMap, HashSet},
 };
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
@@ -52,7 +56,7 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<B>())
-            .or_insert_with(|| UpdatedValues::Buttonlike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Buttonlike(HashMap::default()));
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
             panic!("Expected Buttonlike, found {:?}", updated_values);
@@ -66,7 +70,7 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<A>())
-            .or_insert_with(|| UpdatedValues::Axislike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Axislike(HashMap::default()));
 
         let UpdatedValues::Axislike(axislikes) = updated_values else {
             panic!("Expected Axislike, found {:?}", updated_values);
@@ -80,7 +84,7 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<D>())
-            .or_insert_with(|| UpdatedValues::Dualaxislike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Dualaxislike(HashMap::default()));
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
             panic!("Expected DualAxislike, found {:?}", updated_values);
@@ -94,7 +98,7 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<T>())
-            .or_insert_with(|| UpdatedValues::Tripleaxislike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Tripleaxislike(HashMap::default()));
 
         let UpdatedValues::Tripleaxislike(tripleaxislikes) = updated_values else {
             panic!("Expected TripleAxislike, found {:?}", updated_values);
@@ -202,6 +206,29 @@ impl CentralInputStore {
     }
 }
 
+#[derive(Resource)]
+/// This resource exists for each input type that implements [`UpdatableInput`] (e.g. [`bevy::input::mouse::MouseButton`], [`bevy::input::keyboard::KeyCode`]).
+/// Set [`EnabledInput::is_enabled`] to `false` to disable corresponding input handling.
+pub struct EnabledInput<T> {
+    /// Set this flag to `false` to disable input handling of corresponding events.
+    pub is_enabled: bool,
+    _p: PhantomData<T>,
+}
+
+// SAFETY: The `Resource` derive requires `T` to implement `Send + Sync` as well, but since it's
+// used only as `PhantomData`, it's safe to say that `EnabledInput` is `Send + Sync` regardless of `T`.
+unsafe impl<T> Send for EnabledInput<T> {}
+unsafe impl<T> Sync for EnabledInput<T> {}
+
+impl<T: UpdatableInput> Default for EnabledInput<T> {
+    fn default() -> Self {
+        Self {
+            is_enabled: true,
+            _p: PhantomData,
+        }
+    }
+}
+
 /// Trait for registering updatable inputs with the central input store
 pub trait InputRegistration {
     /// Registers a new source of raw input data of a matching `kind`.
@@ -235,8 +262,18 @@ impl InputRegistration for App {
         central_input_store
             .registered_input_kinds
             .insert(TypeId::of::<I>());
-        self.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
+        self.insert_resource(EnabledInput::<I>::default());
+        self.add_systems(
+            PreUpdate,
+            I::compute
+                .in_set(InputManagerSystem::Unify)
+                .run_if(input_is_enabled::<I>),
+        );
     }
+}
+
+pub(crate) fn input_is_enabled<T: UpdatableInput>(enabled_input: Res<EnabledInput<T>>) -> bool {
+    enabled_input.is_enabled
 }
 
 /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
@@ -279,10 +316,10 @@ enum UpdatedValues {
 impl UpdatedValues {
     fn from_input_control_kind(kind: InputControlKind) -> Self {
         match kind {
-            InputControlKind::Button => Self::Buttonlike(HashMap::new()),
-            InputControlKind::Axis => Self::Axislike(HashMap::new()),
-            InputControlKind::DualAxis => Self::Dualaxislike(HashMap::new()),
-            InputControlKind::TripleAxis => Self::Tripleaxislike(HashMap::new()),
+            InputControlKind::Button => Self::Buttonlike(HashMap::default()),
+            InputControlKind::Axis => Self::Axislike(HashMap::default()),
+            InputControlKind::DualAxis => Self::Dualaxislike(HashMap::default()),
+            InputControlKind::TripleAxis => Self::Tripleaxislike(HashMap::default()),
         }
     }
 }

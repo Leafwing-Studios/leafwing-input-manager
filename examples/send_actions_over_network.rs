@@ -33,7 +33,7 @@ fn process_action_diffs<A: Actionlike>(
 ) {
     for action_diff_event in action_diff_events.read() {
         if action_diff_event.owner.is_some() {
-            let mut action_state = action_state_query.get_single_mut().unwrap();
+            let mut action_state = action_state_query.single_mut().unwrap();
             action_diff_event
                 .action_diffs
                 .iter()

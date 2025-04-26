@@ -2,8 +2,8 @@
 
 use bevy::ecs::system::SystemState;
 use bevy::input::InputPlugin;
+use bevy::platform::collections::HashSet;
 use bevy::prelude::*;
-use bevy::utils::HashSet;
 use leafwing_input_manager::prelude::*;
 use updating::CentralInputStore;
 
@@ -93,7 +93,7 @@ impl ClashTestExt for App {
 
         let (input_map_query, central_input_store) = input_system_state.get(self.world());
 
-        let input_map = input_map_query.single();
+        let input_map = input_map_query.single().expect("No InputMap found");
         let keyboard_input = self.world().resource::<ButtonInput<KeyCode>>();
 
         for action in Action::variants() {
