@@ -21,9 +21,7 @@ fn setup(mut commands: Commands) {
     // Note that you can also use discrete gesture-like motion,
     // via the `MouseMoveDirection` enum.
     let input_map = InputMap::default().with_dual_axis(CameraMovement::Pan, MouseMove::default());
-    commands
-        .spawn(Camera2d)
-        .insert(InputManagerBundle::with_map(input_map));
+    commands.spawn(Camera2d).insert(input_map);
 
     commands.spawn((
         Sprite::default(),

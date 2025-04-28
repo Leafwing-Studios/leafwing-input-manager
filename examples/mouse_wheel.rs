@@ -1,7 +1,6 @@
-use std::ops::DerefMut;
-
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use std::ops::DerefMut;
 
 fn main() {
     App::new()
@@ -34,9 +33,7 @@ fn setup(mut commands: Commands) {
         .with_dual_axis(CameraMovement::Pan, MouseScroll::default())
         // Or even a digital dual-axis input!
         .with_dual_axis(CameraMovement::Pan, MouseScroll::default().digital());
-    commands
-        .spawn(Camera2d)
-        .insert(InputManagerBundle::with_map(input_map));
+    commands.spawn(Camera2d).insert(input_map);
 
     commands.spawn((
         Sprite::default(),
@@ -61,7 +58,6 @@ fn zoom_camera(query: Single<(&mut Projection, &ActionState<CameraMovement>), Wi
         }
         _ => unreachable!(),
     }
-    //camera_projection.scale *= 1. - zoom_delta * CAMERA_ZOOM_RATE;
 }
 
 fn pan_camera(query: Single<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {

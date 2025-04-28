@@ -6,9 +6,13 @@
 
 - removed the `egui` feature together with the `bevy_egui` dependency, absorbing inputs is now supported by `bevy_egui` itself
 
-### Enhancements
+### Enhancements (0.17.0)
 
 - added `EnabledInput` resources to allow disabling input handling by input type
+
+### Usability (0.17.0)
+
+- `InputMap` now requires `ActionState`, `InputManagerBundle` is deprecated.
 
 ### Bugs (0.17.0)
 
