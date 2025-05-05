@@ -1,8 +1,8 @@
 # Release Notes
 
-## Version 0.17.0 (unreleased)
+## Version 0.17.0
 
-### Breaking Changes
+### Breaking Changes (0.17.0)
 
 - removed the `egui` feature together with the `bevy_egui` dependency, absorbing inputs is now supported by `bevy_egui` itself
 
@@ -30,7 +30,7 @@
 
 ### Bugs (0.16.0)
 
-- fixed the bug where the values of buttonlike `ActionState`s cann't be retrieved
+- fixed the bug where the values of buttonlike `ActionState`s can't be retrieved
   - now you can use `button_value` function of `ActionState` to get the value of a buttonlike action
   - added `value` and friends as the fields of `action_data::ButtonData`
   - `GamepadButton` and `GamepadButtonType` now get values from `Axis<GamepadButton>`
@@ -74,7 +74,7 @@
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 
-#### Input Processors
+#### Input Processor Usability
 
 - allowed creating `DualAxisBounds`, `DualAxisExclusion`, and `DualAxisDeadZone` from their struct definitions directly.
 - added `at_least` and `at_most` methods for those implementing `WithAxisProcessorExt` trait.
@@ -157,7 +157,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - added App extensions for registration of custom processors:
     - `register_axis_processor` for `CustomAxisProcessor`.
     - `register_dual_axis_processor` for `CustomDualAxisProcessor`.
-- added built-in processors (variants of processor enums and `Into<Processor>` implementors):
+- added built-in processors (variants of processor enums and `Into<Processor>` implementers):
   - Digital Conversion: Discretizes values, returning `-1.0`. `0.0` or `1.0`:
     - `AxisProcessor::Digital`: Single-axis digital conversion.
     - `DualAxisProcessor::Digital`: Dual-axis digital conversion.
@@ -310,7 +310,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.13.1
 
-### Breaking Changes
+### Breaking Changes (0.13.1)
 
 - removed the `block_ui_interactions` feature:
   - by default, this library will prioritize `bevy::ui`.
