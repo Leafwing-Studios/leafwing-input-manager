@@ -16,6 +16,7 @@ and a single input can result in multiple actions being triggered, which can be 
 
 | Bevy | leafwing-input-manager |
 | ---- | ---------------------- |
+| 0.16 | 0.17                   |
 | 0.15 | 0.16                   |
 | 0.14 | 0.14..0.15             |
 | 0.13 | 0.13                   |
