@@ -952,4 +952,42 @@ mod tests {
         assert!(!down.pressed(inputs, gamepad));
         assert!(!right.pressed(inputs, gamepad));
     }
+
+    #[test]
+    #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
+    fn test_gamepad_button_values() {
+        let up = GamepadButton::DPadUp;
+        assert_eq!(up.kind(), InputControlKind::Button);
+
+        let left = GamepadButton::DPadLeft;
+        assert_eq!(left.kind(), InputControlKind::Button);
+
+        let down = GamepadButton::DPadDown;
+        assert_eq!(down.kind(), InputControlKind::Button);
+
+        let right = GamepadButton::DPadRight;
+        assert_eq!(right.kind(), InputControlKind::Button);
+
+        // No inputs
+        let mut app = test_app();
+        app.update();
+        let gamepad = app.world_mut().spawn(()).id();
+        let inputs = app.world().resource::<CentralInputStore>();
+
+        assert_eq!(up.value(inputs, gamepad), 0.0);
+        assert_eq!(left.value(inputs, gamepad), 0.0);
+        assert_eq!(down.value(inputs, gamepad), 0.0);
+        assert_eq!(right.value(inputs, gamepad), 0.0);
+
+        // Press DPadLeft
+        let mut app = test_app();
+        GamepadButton::DPadLeft.press(app.world_mut());
+        app.update();
+        let inputs = app.world().resource::<CentralInputStore>();
+
+        assert_eq!(up.value(inputs, gamepad), 0.0);
+        assert_eq!(left.value(inputs, gamepad), 1.0);
+        assert_eq!(down.value(inputs, gamepad), 0.0);
+        assert_eq!(right.value(inputs, gamepad), 0.0);
+    }
 }
