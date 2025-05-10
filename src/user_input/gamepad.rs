@@ -642,7 +642,7 @@ impl UpdatableInput for GamepadButton {
                     gamepad: gamepad_entity,
                     button: *key,
                 };
-                let value = specific_button.value(&central_input_store, gamepad_entity);
+                let value = gamepad.get(*key).unwrap_or(1.0);
                 central_input_store
                     .update_buttonlike(specific_button, ButtonValue::new(true, value));
             }
@@ -652,7 +652,7 @@ impl UpdatableInput for GamepadButton {
                     gamepad: gamepad_entity,
                     button: *key,
                 };
-                let value = specific_button.value(&central_input_store, gamepad_entity);
+                let value = gamepad.get(*key).unwrap_or(0.0);
                 central_input_store
                     .update_buttonlike(specific_button, ButtonValue::new(false, value));
             }
