@@ -121,6 +121,44 @@ impl ActionKindData {
             }
         }
     }
+
+    // set the `update_state` to the current `state`
+    pub(super) fn set_update_state_from_state(&mut self) {
+        match self {
+            Self::Button(data) => {
+                data.update_state = data.state;
+                data.update_value = data.value;
+            }
+            Self::Axis(data) => {
+                data.update_value = data.value;
+            }
+            Self::DualAxis(data) => {
+                data.update_pair = data.pair;
+            }
+            Self::TripleAxis(data) => {
+                data.update_triple = data.triple;
+            }
+        }
+    }
+
+    // set the `fixed_update_state` to the current `state`
+    pub(super) fn set_fixed_update_state_from_state(&mut self) {
+        match self {
+            Self::Button(data) => {
+                data.fixed_update_state = data.state;
+                data.fixed_update_value = data.value;
+            }
+            Self::Axis(data) => {
+                data.fixed_update_value = data.value;
+            }
+            Self::DualAxis(data) => {
+                data.fixed_update_pair = data.pair;
+            }
+            Self::TripleAxis(data) => {
+                data.fixed_update_triple = data.triple;
+            }
+        }
+    }
 }
 
 /// Metadata about an [`Buttonlike`](crate::user_input::Buttonlike) action
