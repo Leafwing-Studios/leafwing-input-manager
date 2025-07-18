@@ -164,7 +164,7 @@ fn control_player(
 
     if action_state.axis_pair(&PlayerAction::Look) != Vec2::ZERO {
         let look = action_state.axis_pair(&PlayerAction::Look).normalize();
-        println!("Player looking in direction: {}", look);
+        println!("Player looking in direction: {look}");
     }
 
     if action_state.pressed(&PlayerAction::Shoot) {
