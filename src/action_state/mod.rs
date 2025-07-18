@@ -128,6 +128,20 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
+    /// Function for advanced users to override the `state` from the `update_state`
+    pub fn set_update_state_from_state(&mut self) {
+        for action_datum in self.action_data.values_mut() {
+            action_datum.kind_data.set_update_state_from_state();
+        }
+    }
+
+    /// Function for advanced users to override the `state` from the `fixed_update_state`
+    pub fn set_fixed_update_state_from_state(&mut self) {
+        for action_datum in self.action_data.values_mut() {
+            action_datum.kind_data.set_fixed_update_state_from_state();
+        }
+    }
+
     /// Updates the [`ActionState`] based on the provided [`UpdatedActions`].
     ///
     /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),

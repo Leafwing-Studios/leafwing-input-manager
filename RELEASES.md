@@ -1,11 +1,16 @@
 # Release Notes
 
-## Version 0.17.1 (unrelesed)
+## Version 0.17.1
+
+### Usability (0.17.1)
+
+- added two public methods `ActionState::set_fixed_update_state_from_state` and `ActionState::set_update_state_from_state` for advanced users. This is mostly used for networking.
 
 ### Bugs (0.17.1)
 
 - fixed the bug where the values of buttonlikes were not being updated
   - this also fixed `VirtualDPad::dpad()` not giving any dual axis values
+
 
 ## Version 0.17.0
 
