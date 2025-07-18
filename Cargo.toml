@@ -1,7 +1,7 @@
 [package]
 name = "leafwing-input-manager"
 description = "A powerful, flexible and ergonomic way to manage action-input keybindings for the Bevy game engine."
-version = "0.17.0"
+version = "0.17.1"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
 repository = "https://github.com/leafwing-studios/leafwing-input-manager"
