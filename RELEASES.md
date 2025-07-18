@@ -1,11 +1,10 @@
 # Release Notes
 
-## Unreleased
+## 0.17.1
 
 ### Usability
 
 - added two public methods `ActionState::set_fixed_update_state_from_state` and `ActionState::set_update_state_from_state` for advanced users. This is mostly used for networking.
-
 
 ## Version 0.17.0
 
