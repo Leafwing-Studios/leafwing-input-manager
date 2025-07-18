@@ -59,7 +59,7 @@ impl CentralInputStore {
             .or_insert_with(|| UpdatedValues::Buttonlike(HashMap::default()));
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
-            panic!("Expected Buttonlike, found {:?}", updated_values);
+            panic!("Expected Buttonlike, found {updated_values:?}");
         };
 
         buttonlikes.insert(Box::new(buttonlike), value);
@@ -73,7 +73,7 @@ impl CentralInputStore {
             .or_insert_with(|| UpdatedValues::Axislike(HashMap::default()));
 
         let UpdatedValues::Axislike(axislikes) = updated_values else {
-            panic!("Expected Axislike, found {:?}", updated_values);
+            panic!("Expected Axislike, found {updated_values:?}");
         };
 
         axislikes.insert(Box::new(axislike), value);
@@ -87,7 +87,7 @@ impl CentralInputStore {
             .or_insert_with(|| UpdatedValues::Dualaxislike(HashMap::default()));
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
-            panic!("Expected DualAxislike, found {:?}", updated_values);
+            panic!("Expected DualAxislike, found {updated_values:?}");
         };
 
         dualaxislikes.insert(Box::new(dualaxislike), value);
@@ -101,7 +101,7 @@ impl CentralInputStore {
             .or_insert_with(|| UpdatedValues::Tripleaxislike(HashMap::default()));
 
         let UpdatedValues::Tripleaxislike(tripleaxislikes) = updated_values else {
-            panic!("Expected TripleAxislike, found {:?}", updated_values);
+            panic!("Expected TripleAxislike, found {updated_values:?}");
         };
 
         tripleaxislikes.insert(Box::new(tripleaxislike), value);
@@ -114,7 +114,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
-            panic!("Expected Buttonlike, found {:?}", updated_values);
+            panic!("Expected Buttonlike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -136,7 +136,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
-            panic!("Expected Buttonlike, found {:?}", updated_values);
+            panic!("Expected Buttonlike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -158,7 +158,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Axislike(axislikes) = updated_values else {
-            panic!("Expected Axislike, found {:?}", updated_values);
+            panic!("Expected Axislike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -174,7 +174,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
-            panic!("Expected DualAxislike, found {:?}", updated_values);
+            panic!("Expected DualAxislike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -193,7 +193,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Tripleaxislike(tripleaxislikes) = updated_values else {
-            panic!("Expected TripleAxislike, found {:?}", updated_values);
+            panic!("Expected TripleAxislike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here

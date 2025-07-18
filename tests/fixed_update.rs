@@ -93,8 +93,7 @@ fn check_fixed_update_run_count(app: &mut App, expected: usize) {
             .unwrap()
             .run,
         expected,
-        "FixedUpdate schedule should have run {} times",
-        expected
+        "FixedUpdate schedule should have run {expected} times"
     );
 }
 
@@ -106,8 +105,7 @@ fn check_fixed_update_just_pressed_count(app: &mut App, expected: usize) {
             .unwrap()
             .just_pressed,
         expected,
-        "Button should have been just_pressed {} times during the FixedUpdate schedule",
-        expected
+        "Button should have been just_pressed {expected} times during the FixedUpdate schedule"
     );
 }
 
@@ -119,8 +117,7 @@ fn check_update_just_pressed_count(app: &mut App, expected: usize) {
             .unwrap()
             .just_pressed,
         expected,
-        "Button should have been just_pressed {} times during the Update schedule",
-        expected
+        "Button should have been just_pressed {expected} times during the Update schedule"
     );
 }
 

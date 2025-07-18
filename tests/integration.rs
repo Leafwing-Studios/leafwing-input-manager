@@ -44,10 +44,7 @@ struct Player;
 
 fn spawn_player(mut commands: Commands) {
     commands
-        .spawn(InputManagerBundle::with_map(InputMap::new([(
-            Action::PayRespects,
-            KeyCode::KeyF,
-        )])))
+        .spawn(InputMap::new([(Action::PayRespects, KeyCode::KeyF)]))
         .insert(Player);
 }
 

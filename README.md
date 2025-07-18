@@ -16,6 +16,7 @@ and a single input can result in multiple actions being triggered, which can be 
 
 | Bevy | leafwing-input-manager |
 | ---- | ---------------------- |
+| 0.16 | 0.17                   |
 | 0.15 | 0.16                   |
 | 0.14 | 0.14..0.15             |
 | 0.13 | 0.13                   |
@@ -91,9 +92,7 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     // Describes how to convert from player inputs into those actions
     let input_map = InputMap::new([(Action::Jump, KeyCode::Space)]);
-    commands
-        .spawn(InputManagerBundle::with_map(input_map))
-        .insert(Player);
+    commands.spawn(input_map).insert(Player);
 }
 
 // Query for the `ActionState` component in your game logic systems!

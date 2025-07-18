@@ -43,7 +43,7 @@ fn join(
         {
             // Make sure a player cannot join twice
             if !joined_players.0.contains_key(&gamepad_entity) {
-                println!("Player {} has joined the game!", gamepad_entity);
+                println!("Player {gamepad_entity} has joined the game!");
 
                 let input_map = InputMap::new([
                     (Action::Jump, GamepadButton::South),
@@ -52,7 +52,7 @@ fn join(
                 // Make sure to set the gamepad or all gamepads will be used!
                 .with_gamepad(gamepad_entity);
                 let player = commands
-                    .spawn(InputManagerBundle::with_map(input_map))
+                    .spawn(input_map)
                     .insert(Player {
                         gamepad: gamepad_entity,
                     })
