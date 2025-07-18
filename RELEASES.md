@@ -1,10 +1,18 @@
 # Release Notes
 
-## 0.17.1
+## Version 0.17.1
 
-### Usability
+### Usability (0.17.1)
 
+- introduced `insert_*_boxed` methods for `Buttonlike`, `Axislike`, `DualAxislike`, and `TripleAxislike`
+  - now you can use dynamic dispatch inputs, allowing for easier seralisation into configs
 - added two public methods `ActionState::set_fixed_update_state_from_state` and `ActionState::set_update_state_from_state` for advanced users. This is mostly used for networking.
+
+### Bugs (0.17.1)
+
+- fixed the bug where the values of buttonlikes were not being updated
+  - this also fixed `VirtualDPad::dpad()` not giving any dual axis values
+
 
 ## Version 0.17.0
 

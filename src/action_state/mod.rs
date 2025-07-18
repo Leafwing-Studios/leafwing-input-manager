@@ -807,7 +807,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = self.button_data_mut_or_default(action);
 
         #[cfg(feature = "timing")]
-        if action_data.state.released() {
+        if action_data.update_state.released() {
             action_data.timing.flip();
         }
 
@@ -826,7 +826,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = self.button_data_mut_or_default(action);
 
         #[cfg(feature = "timing")]
-        if action_data.state.pressed() {
+        if action_data.update_state.pressed() {
             action_data.timing.flip();
         }
 

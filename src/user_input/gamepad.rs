@@ -642,7 +642,7 @@ impl UpdatableInput for GamepadButton {
                     gamepad: gamepad_entity,
                     button: *key,
                 };
-                let value = specific_button.value(&central_input_store, gamepad_entity);
+                let value = gamepad.get(*key).unwrap_or(1.0);
                 central_input_store
                     .update_buttonlike(specific_button, ButtonValue::new(true, value));
             }
@@ -652,7 +652,7 @@ impl UpdatableInput for GamepadButton {
                     gamepad: gamepad_entity,
                     button: *key,
                 };
-                let value = specific_button.value(&central_input_store, gamepad_entity);
+                let value = gamepad.get(*key).unwrap_or(0.0);
                 central_input_store
                     .update_buttonlike(specific_button, ButtonValue::new(false, value));
             }
@@ -951,5 +951,43 @@ mod tests {
         assert!(left.pressed(inputs, gamepad));
         assert!(!down.pressed(inputs, gamepad));
         assert!(!right.pressed(inputs, gamepad));
+    }
+
+    #[test]
+    #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
+    fn test_gamepad_button_values() {
+        let up = GamepadButton::DPadUp;
+        assert_eq!(up.kind(), InputControlKind::Button);
+
+        let left = GamepadButton::DPadLeft;
+        assert_eq!(left.kind(), InputControlKind::Button);
+
+        let down = GamepadButton::DPadDown;
+        assert_eq!(down.kind(), InputControlKind::Button);
+
+        let right = GamepadButton::DPadRight;
+        assert_eq!(right.kind(), InputControlKind::Button);
+
+        // No inputs
+        let mut app = test_app();
+        app.update();
+        let gamepad = app.world_mut().spawn(()).id();
+        let inputs = app.world().resource::<CentralInputStore>();
+
+        assert_eq!(up.value(inputs, gamepad), 0.0);
+        assert_eq!(left.value(inputs, gamepad), 0.0);
+        assert_eq!(down.value(inputs, gamepad), 0.0);
+        assert_eq!(right.value(inputs, gamepad), 0.0);
+
+        // Press DPadLeft
+        let mut app = test_app();
+        GamepadButton::DPadLeft.press(app.world_mut());
+        app.update();
+        let inputs = app.world().resource::<CentralInputStore>();
+
+        assert_eq!(up.value(inputs, gamepad), 0.0);
+        assert_eq!(left.value(inputs, gamepad), 1.0);
+        assert_eq!(down.value(inputs, gamepad), 0.0);
+        assert_eq!(right.value(inputs, gamepad), 0.0);
     }
 }
