@@ -67,8 +67,7 @@ fn assert_has_no_action_diffs(app: &mut App) {
     let action_diff_event_reader = &mut action_diff_events.get_cursor();
     if let Some(action_diff) = action_diff_event_reader.read(action_diff_events).next() {
         panic!(
-            "Expected no `ActionDiff` variants. Received: {:?}",
-            action_diff
+            "Expected no `ActionDiff` variants. Received: {action_diff:?}"
         )
     }
 }
