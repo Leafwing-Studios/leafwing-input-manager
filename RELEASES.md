@@ -13,7 +13,6 @@
 - fixed the bug where the values of buttonlikes were not being updated
   - this also fixed `VirtualDPad::dpad()` not giving any dual axis values
 
-
 ## Version 0.17.0
 
 ### Breaking Changes (0.17.0)
