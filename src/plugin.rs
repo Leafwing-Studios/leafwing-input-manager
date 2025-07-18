@@ -6,6 +6,8 @@ use std::fmt::Debug;
 
 use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
 use bevy::input::InputSystem;
+#[cfg(feature = "picking")]
+use bevy::picking::PickSet;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
@@ -16,6 +18,7 @@ use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
 use crate::input_processing::*;
+use crate::prelude::updating::register_standard_input_kinds;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
@@ -134,18 +137,12 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .after(InputManagerSystem::Unify),
                 );
 
-                #[cfg(any(feature = "egui", feature = "ui"))]
+                #[cfg(feature = "ui")]
                 app.add_systems(
                     PreUpdate,
                     filter_captured_input
                         .before(update_action_state::<A>)
                         .in_set(InputManagerSystem::Filter),
-                );
-
-                #[cfg(feature = "egui")]
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::Filter.after(bevy_egui::EguiSet::ProcessInput),
                 );
 
                 #[cfg(feature = "ui")]
@@ -162,6 +159,9 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         .after(UiSystem::Focus)
                         .after(InputSystem),
                 );
+
+                #[cfg(feature = "picking")]
+                app.configure_sets(PreUpdate, InputManagerSystem::Update.before(PickSet::Hover));
 
                 // FixedMain schedule
                 app.add_systems(
@@ -310,15 +310,15 @@ impl<A: Actionlike> Default for TickActionStateSystem<A> {
 /// This plugin is added by default by [`InputManagerPlugin`],
 /// and will register all of the standard [`UserInput`]s.
 ///
-/// To add more inputs, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add more inputs, call [`crate::user_input::updating::InputRegistration::register_input_kind`] via [`App`] during [`App`] setup.
 pub struct CentralInputStorePlugin;
 
 impl Plugin for CentralInputStorePlugin {
     fn build(&self, app: &mut App) {
-        let mut central_input_store = CentralInputStore::default();
-        central_input_store.register_standard_input_kinds(app);
+        app.insert_resource(CentralInputStore::default());
 
-        app.insert_resource(central_input_store)
-            .configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystem));
+        register_standard_input_kinds(app);
+
+        app.configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystem));
     }
 }

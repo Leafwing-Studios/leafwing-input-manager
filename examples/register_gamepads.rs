@@ -1,6 +1,6 @@
 //! Demonstrates how to register gamepads in local multiplayer fashion
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 use leafwing_input_manager::prelude::*;
 
 fn main() {
@@ -43,7 +43,7 @@ fn join(
         {
             // Make sure a player cannot join twice
             if !joined_players.0.contains_key(&gamepad_entity) {
-                println!("Player {} has joined the game!", gamepad_entity);
+                println!("Player {gamepad_entity} has joined the game!");
 
                 let input_map = InputMap::new([
                     (Action::Jump, GamepadButton::South),
@@ -52,17 +52,19 @@ fn join(
                 // Make sure to set the gamepad or all gamepads will be used!
                 .with_gamepad(gamepad_entity);
                 let player = commands
-                    .spawn(InputManagerBundle::with_map(input_map))
+                    .spawn(input_map)
                     .insert(Player {
                         gamepad: gamepad_entity,
                     })
                     .id();
 
                 // Insert the created player and its gamepad to the hashmap of joined players
-                // Since uniqueness was already checked above, we can insert here unchecked
-                joined_players
-                    .0
-                    .insert_unique_unchecked(gamepad_entity, player);
+                // SAFETY: Since uniqueness was already checked above, we can insert here unchecked
+                unsafe {
+                    joined_players
+                        .0
+                        .insert_unique_unchecked(gamepad_entity, player);
+                }
             }
         }
     }

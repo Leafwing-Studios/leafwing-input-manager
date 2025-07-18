@@ -1,21 +1,47 @@
 # Release Notes
 
-## Version 0.16.1
+## 0.17.1
 
 ### Enhancements (0.16.1)
 
 - introduced `insert_*_boxed` methods for `Buttonlike`, `Axislike`, `DualAxislike`, and `TripleAxislike`
   - now you can use dynamic dispatch inputs, allowing for easier seralisation into configs
 
+### Usability
+
+- added two public methods `ActionState::set_fixed_update_state_from_state` and `ActionState::set_update_state_from_state` for advanced users. This is mostly used for networking.
+
+## Version 0.17.0
+
+### Breaking Changes (0.17.0)
+
+- removed the `egui` feature together with the `bevy_egui` dependency, absorbing inputs is now supported by `bevy_egui` itself
+
+### Enhancements (0.17.0)
+
+- added `EnabledInput` resources to allow disabling input handling by input type
+
+### Usability (0.17.0)
+
+- `InputMap` now requires `ActionState`, `InputManagerBundle` is deprecated.
+
+### Bugs (0.17.0)
+
+- fixed the bug making it impossible to register custom input types via `register_input_kind`
+
+### Dependencies (0.17.0)
+
+- now supports Bevy 0.16
+
 ## Version 0.16.0
 
-## Depeendencies (0.16.0)
+### Dependencies (0.16.0)
 
 - now supports Bevy 0.15 and bevy_egui 0.31
 
 ### Bugs (0.16.0)
 
-- fixed the bug where the values of buttonlike `ActionState`s cann't be retrieved
+- fixed the bug where the values of buttonlike `ActionState`s can't be retrieved
   - now you can use `button_value` function of `ActionState` to get the value of a buttonlike action
   - added `value` and friends as the fields of `action_data::ButtonData`
   - `GamepadButton` and `GamepadButtonType` now get values from `Axis<GamepadButton>`
@@ -59,7 +85,7 @@
 
 - Reflect `Component` and `Resource`, which enables accessing the data in the type registry
 
-#### Input Processors
+#### Input Processor Usability
 
 - allowed creating `DualAxisBounds`, `DualAxisExclusion`, and `DualAxisDeadZone` from their struct definitions directly.
 - added `at_least` and `at_most` methods for those implementing `WithAxisProcessorExt` trait.
@@ -142,7 +168,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
   - added App extensions for registration of custom processors:
     - `register_axis_processor` for `CustomAxisProcessor`.
     - `register_dual_axis_processor` for `CustomDualAxisProcessor`.
-- added built-in processors (variants of processor enums and `Into<Processor>` implementors):
+- added built-in processors (variants of processor enums and `Into<Processor>` implementers):
   - Digital Conversion: Discretizes values, returning `-1.0`. `0.0` or `1.0`:
     - `AxisProcessor::Digital`: Single-axis digital conversion.
     - `DualAxisProcessor::Digital`: Dual-axis digital conversion.
@@ -295,7 +321,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Version 0.13.1
 
-### Breaking Changes
+### Breaking Changes (0.13.1)
 
 - removed the `block_ui_interactions` feature:
   - by default, this library will prioritize `bevy::ui`.

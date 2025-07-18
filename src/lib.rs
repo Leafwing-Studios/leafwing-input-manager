@@ -40,7 +40,12 @@ pub mod prelude {
     pub use crate::user_input::*;
 
     pub use crate::plugin::InputManagerPlugin;
-    pub use crate::{Actionlike, InputManagerBundle};
+    pub use crate::Actionlike;
+    #[expect(
+        deprecated,
+        reason = "This needs to be supported for until InputManagerBundle is removed"
+    )]
+    pub use crate::InputManagerBundle;
 
     pub use leafwing_input_manager_macros::serde_typetag;
 }
@@ -113,6 +118,10 @@ pub trait Actionlike:
 ///
 /// Use with [`InputManagerPlugin`](crate::plugin::InputManagerPlugin), providing the same enum type to both.
 #[derive(Bundle)]
+#[deprecated(
+    since = "0.17.0",
+    note = "Insert `InputMap` directly (and optionally `ActionState`) instead."
+)]
 pub struct InputManagerBundle<A: Actionlike> {
     /// An [`ActionState`] component
     pub action_state: ActionState<A>,
@@ -121,6 +130,10 @@ pub struct InputManagerBundle<A: Actionlike> {
 }
 
 // Cannot use derive(Default), as it forces an undesirable bound on our generics
+#[expect(
+    deprecated,
+    reason = "This needs to be supported for until InputManagerBundle is removed"
+)]
 impl<A: Actionlike> Default for InputManagerBundle<A> {
     fn default() -> Self {
         Self {
@@ -130,6 +143,10 @@ impl<A: Actionlike> Default for InputManagerBundle<A> {
     }
 }
 
+#[expect(
+    deprecated,
+    reason = "This needs to be supported for until InputManagerBundle is removed"
+)]
 impl<A: Actionlike> InputManagerBundle<A> {
     /// Creates a [`InputManagerBundle`] with the given [`InputMap`].
     pub fn with_map(input_map: InputMap<A>) -> Self {

@@ -5,8 +5,8 @@ use std::hash::Hash;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::{Component, Deref, DerefMut, Entity, Gamepad, Query, Reflect, Resource, With};
-use bevy::utils::HashMap;
 use bevy::{log::error, prelude::ReflectComponent};
 use bevy::{
     math::{Vec2, Vec3},
@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
-use crate::prelude::UserInputWrapper;
+use crate::prelude::{ActionState, UserInputWrapper};
 use crate::user_input::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 use crate::{Actionlike, InputControlKind};
 
@@ -102,6 +102,7 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// input_map.clear();
 /// ```
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[require(ActionState::<A>)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 #[reflect(Resource, Component)]
 pub struct InputMap<A: Actionlike> {
@@ -985,7 +986,7 @@ impl<A: Actionlike, U: Buttonlike> From<HashMap<A, Vec<U>>> for InputMap<A> {
     ///
     /// ```rust
     /// use bevy::prelude::*;
-    /// use bevy::utils::HashMap;
+    /// use bevy::platform::collections::HashMap;
     /// use leafwing_input_manager::prelude::*;
     ///
     /// #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
@@ -1062,7 +1063,7 @@ mod tests {
                 (Action::Hide, KeyCode::ControlRight),
             ]);
 
-        let expected_bindings: HashMap<Box<dyn Buttonlike>, Action> = HashMap::from([
+        let expected_bindings: HashMap<Box<dyn Buttonlike>, Action> = [
             (Box::new(KeyCode::KeyW) as Box<dyn Buttonlike>, Action::Run),
             (
                 Box::new(KeyCode::ShiftLeft) as Box<dyn Buttonlike>,
@@ -1085,7 +1086,9 @@ mod tests {
                 Box::new(KeyCode::ControlRight) as Box<dyn Buttonlike>,
                 Action::Hide,
             ),
-        ]);
+        ]
+        .into_iter()
+        .collect();
 
         for (action, input) in input_map.buttonlike_bindings() {
             let expected_action = expected_bindings.get(input).unwrap();

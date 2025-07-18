@@ -12,8 +12,8 @@ use bevy::{
         query::QueryFilter,
     },
     math::{Vec2, Vec3},
+    platform::collections::{HashMap, HashSet},
     prelude::{EntityMapper, EventWriter, Query, Res},
-    utils::{HashMap, HashSet},
 };
 use serde::{Deserialize, Serialize};
 
@@ -82,7 +82,7 @@ pub struct ActionDiffEvent<A: Actionlike> {
 /// between different ECS worlds (e.g. client and server).
 impl<A: Actionlike> MapEntities for ActionDiffEvent<A> {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.owner = self.owner.map(|entity| entity_mapper.map_entity(entity));
+        self.owner = self.owner.map(|entity| entity_mapper.get_mapped(entity));
     }
 }
 
@@ -102,7 +102,7 @@ impl<A: Actionlike> SummarizedActionState<A> {
     ///
     /// This includes the global / resource state, using [`Entity::PLACEHOLDER`].
     pub fn all_entities(&self) -> HashSet<Entity> {
-        let mut entities = HashSet::new();
+        let mut entities = HashSet::default();
         let button_entities = self.button_state_map.keys();
         let axis_entities = self.axis_state_map.keys();
         let dual_axis_entities = self.dual_axis_state_map.keys();
@@ -359,7 +359,7 @@ impl<A: Actionlike> SummarizedActionState<A> {
             let action_diffs = self.entity_diffs(&entity, previous);
 
             if !action_diffs.is_empty() {
-                writer.send(ActionDiffEvent {
+                writer.write(ActionDiffEvent {
                     owner,
                     action_diffs,
                 });

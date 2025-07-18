@@ -78,19 +78,12 @@ fn main() {
     }
 
     // The features the lib offers
-    let lib_features = ["asset", "timing", "ui", "egui"];
+    let lib_features = ["asset", "timing", "ui"];
 
     // Generate all possible combinations of lib features
     // and convert them into '--features=<FEATURE_A,FEATURE_B,...>'
     let lib_features_options = (1..lib_features.len())
         .flat_map(|combination_length| lib_features.iter().combinations(combination_length))
-        .map(|mut combination| {
-            // bevy_egui 0.29 uses the bevy winit feature, which requires a renderer.
-            if combination.contains(&&"egui") {
-                combination.push(&"bevy/wayland");
-            }
-            combination
-        })
         .map(|combination| String::from("--features=") + &combination.iter().join(","));
 
     let default_feature_options = ["--no-default-features", "--all-features"];
