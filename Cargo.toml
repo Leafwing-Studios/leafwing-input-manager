@@ -60,6 +60,7 @@ serde_flexitos = "0.2"
 dyn-clone = "1.0"
 dyn-eq = "0.1"
 dyn-hash = "0.2"
+winit = { version = "0.30.12", features = ["default"] }
 
 [dev-dependencies]
 bevy = { version = "0.15.0", default-features = false, features = [
