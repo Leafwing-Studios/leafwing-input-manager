@@ -43,12 +43,16 @@ ui = ['bevy/bevy_ui']
 # - Allow 'egui' to take priority over actions when processing inputs.
 egui = ['dep:bevy_egui']
 
+# winit platforms for docs
+docs = ['winit/x11', 'winit/wayland']
+
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.16" }
 bevy = { version = "0.15.0", default-features = false, features = [
   "serialize",
 ] }
 bevy_egui = { version = "0.31", optional = true }
+winit = { version = "0.30", default-features = false }
 
 derive_more = { version = "0.99", default-features = false, features = [
   "display",
@@ -60,7 +64,6 @@ serde_flexitos = "0.2"
 dyn-clone = "1.0"
 dyn-eq = "0.1"
 dyn-hash = "0.2"
-winit = { version = "0.30.12", features = ["default"] }
 
 [dev-dependencies]
 bevy = { version = "0.15.0", default-features = false, features = [
