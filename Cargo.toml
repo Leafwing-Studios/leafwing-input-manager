@@ -43,7 +43,8 @@ ui = ['bevy/bevy_ui']
 # - Allow 'egui' to take priority over actions when processing inputs.
 egui = ['dep:bevy_egui']
 
-# winit platforms for docs
+# Enable winit platforms to ensure that docs.rs builds correctly
+# Users should never need to enable this feature
 docs = ['winit/x11', 'winit/wayland']
 
 [dependencies]
