@@ -47,13 +47,11 @@ fn spawn_player(mut commands: Commands) {
                 DualAxisSensitivity::all(2.0).into(),
             ]),
         );
-    commands
-        .spawn(InputManagerBundle::with_map(input_map))
-        .insert(Player);
+    commands.spawn(input_map).insert(Player);
 }
 
 fn check_data(query: Query<&ActionState<Action>, With<Player>>) {
-    let action_state = query.single();
+    let action_state = query.single().expect("Player actions not found");
     for action in action_state.get_pressed() {
         println!(
             "Pressed {action:?} with data: {:?}",

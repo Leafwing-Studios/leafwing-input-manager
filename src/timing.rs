@@ -1,9 +1,7 @@
 //! Information about when an action was pressed or released.
 
-use bevy::{
-    reflect::Reflect,
-    utils::{Duration, Instant},
-};
+use bevy::{platform::time::Instant, reflect::Reflect};
+use core::time::Duration;
 use serde::{Deserialize, Serialize};
 
 /// Stores information about when an action was pressed or released
@@ -80,7 +78,8 @@ mod tests {
     #[test]
     fn time_tick_ticks_away() {
         use crate::action_state::ActionState;
-        use bevy::utils::{Duration, Instant};
+        use bevy::platform::time::Instant;
+        use core::time::Duration;
 
         let mut action_state = ActionState::<Action>::default();
 
@@ -104,7 +103,8 @@ mod tests {
     #[test]
     fn durations() {
         use crate::action_state::ActionState;
-        use bevy::utils::{Duration, Instant};
+        use bevy::platform::time::Instant;
+        use core::time::Duration;
 
         let mut action_state = ActionState::<Action>::default();
 

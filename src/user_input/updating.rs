@@ -2,14 +2,18 @@
 
 use std::any::TypeId;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 use bevy::{
     app::{App, PreUpdate},
-    ecs::system::{StaticSystemParam, SystemParam},
+    ecs::{
+        schedule::IntoScheduleConfigs,
+        system::{StaticSystemParam, SystemParam},
+    },
     math::{Vec2, Vec3},
-    prelude::{IntoSystemConfigs, ResMut, Resource},
+    platform::collections::{HashMap, HashSet},
+    prelude::{Res, ResMut, Resource},
     reflect::Reflect,
-    utils::{HashMap, HashSet},
 };
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
@@ -21,7 +25,7 @@ use crate::{plugin::InputManagerSystem, InputControlKind};
 /// This resource allows values to be updated and fetched in a single location,
 /// and ensures that their values are only recomputed once per frame.
 ///
-/// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add a new kind of input, call [`InputRegistration::register_input_kind`] during [`App`] setup.
 #[derive(Resource, Default, Debug, Reflect)]
 pub struct CentralInputStore {
     /// Stores the updated values of each kind of input.
@@ -31,61 +35,6 @@ pub struct CentralInputStore {
 }
 
 impl CentralInputStore {
-    /// Registers a new source of raw input data of a matching `kind`.
-    ///
-    /// This will allow the input to be updated based on the state of the world,
-    /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Unify`] during [`PreUpdate`].
-    ///
-    /// To improve clarity and data consistency, only one kind of input should be registered for each new data stream:
-    /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
-    ///
-    /// This method has no effect if the input kind has already been registered.
-    pub fn register_input_kind<I: UpdatableInput>(
-        &mut self,
-        kind: InputControlKind,
-        app: &mut App,
-    ) {
-        // Ensure this method is idempotent.
-        if self.registered_input_kinds.contains(&TypeId::of::<I>()) {
-            return;
-        }
-
-        self.updated_values.insert(
-            TypeId::of::<I>(),
-            UpdatedValues::from_input_control_kind(kind),
-        );
-        self.registered_input_kinds.insert(TypeId::of::<I>());
-        app.add_systems(PreUpdate, I::compute.in_set(InputManagerSystem::Unify));
-    }
-
-    /// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
-    ///
-    /// The set of input kinds registered by this method is controlled by the features enabled:
-    /// turn off default features to avoid registering input kinds that are not needed.
-    #[allow(unused_variables)]
-    pub fn register_standard_input_kinds(&mut self, app: &mut App) {
-        // Buttonlike
-        #[cfg(feature = "keyboard")]
-        self.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button, app);
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button, app);
-        #[cfg(feature = "gamepad")]
-        self.register_input_kind::<bevy::input::gamepad::GamepadButton>(
-            InputControlKind::Button,
-            app,
-        );
-
-        // Axislike
-        #[cfg(feature = "gamepad")]
-        self.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis, app);
-
-        // Dualaxislike
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis, app);
-        #[cfg(feature = "mouse")]
-        self.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis, app);
-    }
-
     /// Clears all existing values.
     ///
     /// This should be called once at the start of each frame, before polling for new input.
@@ -107,10 +56,10 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<B>())
-            .or_insert_with(|| UpdatedValues::Buttonlike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Buttonlike(HashMap::default()));
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
-            panic!("Expected Buttonlike, found {:?}", updated_values);
+            panic!("Expected Buttonlike, found {updated_values:?}");
         };
 
         buttonlikes.insert(Box::new(buttonlike), value);
@@ -121,10 +70,10 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<A>())
-            .or_insert_with(|| UpdatedValues::Axislike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Axislike(HashMap::default()));
 
         let UpdatedValues::Axislike(axislikes) = updated_values else {
-            panic!("Expected Axislike, found {:?}", updated_values);
+            panic!("Expected Axislike, found {updated_values:?}");
         };
 
         axislikes.insert(Box::new(axislike), value);
@@ -135,10 +84,10 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<D>())
-            .or_insert_with(|| UpdatedValues::Dualaxislike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Dualaxislike(HashMap::default()));
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
-            panic!("Expected DualAxislike, found {:?}", updated_values);
+            panic!("Expected DualAxislike, found {updated_values:?}");
         };
 
         dualaxislikes.insert(Box::new(dualaxislike), value);
@@ -149,10 +98,10 @@ impl CentralInputStore {
         let updated_values = self
             .updated_values
             .entry(TypeId::of::<T>())
-            .or_insert_with(|| UpdatedValues::Tripleaxislike(HashMap::new()));
+            .or_insert_with(|| UpdatedValues::Tripleaxislike(HashMap::default()));
 
         let UpdatedValues::Tripleaxislike(tripleaxislikes) = updated_values else {
-            panic!("Expected TripleAxislike, found {:?}", updated_values);
+            panic!("Expected TripleAxislike, found {updated_values:?}");
         };
 
         tripleaxislikes.insert(Box::new(tripleaxislike), value);
@@ -165,7 +114,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
-            panic!("Expected Buttonlike, found {:?}", updated_values);
+            panic!("Expected Buttonlike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -187,7 +136,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
-            panic!("Expected Buttonlike, found {:?}", updated_values);
+            panic!("Expected Buttonlike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -209,7 +158,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Axislike(axislikes) = updated_values else {
-            panic!("Expected Axislike, found {:?}", updated_values);
+            panic!("Expected Axislike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -225,7 +174,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
-            panic!("Expected DualAxislike, found {:?}", updated_values);
+            panic!("Expected DualAxislike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -244,7 +193,7 @@ impl CentralInputStore {
         };
 
         let UpdatedValues::Tripleaxislike(tripleaxislikes) = updated_values else {
-            panic!("Expected TripleAxislike, found {:?}", updated_values);
+            panic!("Expected TripleAxislike, found {updated_values:?}");
         };
 
         // PERF: surely there's a way to avoid cloning here
@@ -255,6 +204,101 @@ impl CentralInputStore {
             .copied()
             .unwrap_or(Vec3::ZERO)
     }
+}
+
+#[derive(Resource)]
+/// This resource exists for each input type that implements [`UpdatableInput`] (e.g. [`bevy::input::mouse::MouseButton`], [`bevy::input::keyboard::KeyCode`]).
+/// Set [`EnabledInput::is_enabled`] to `false` to disable corresponding input handling.
+pub struct EnabledInput<T> {
+    /// Set this flag to `false` to disable input handling of corresponding events.
+    pub is_enabled: bool,
+    _p: PhantomData<T>,
+}
+
+// SAFETY: The `Resource` derive requires `T` to implement `Send + Sync` as well, but since it's
+// used only as `PhantomData`, it's safe to say that `EnabledInput` is `Send + Sync` regardless of `T`.
+unsafe impl<T> Send for EnabledInput<T> {}
+unsafe impl<T> Sync for EnabledInput<T> {}
+
+impl<T: UpdatableInput> Default for EnabledInput<T> {
+    fn default() -> Self {
+        Self {
+            is_enabled: true,
+            _p: PhantomData,
+        }
+    }
+}
+
+/// Trait for registering updatable inputs with the central input store
+pub trait InputRegistration {
+    /// Registers a new source of raw input data of a matching `kind`.
+    ///
+    /// This will allow the input to be updated based on the state of the world,
+    /// by adding the [`UpdatableInput::compute`] system to [`InputManagerSystem::Unify`] during [`PreUpdate`].
+    ///
+    /// To improve clarity and data consistency, only one kind of input should be registered for each new data stream:
+    /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
+    ///
+    /// This method has no effect if the input kind has already been registered.
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind);
+}
+
+impl InputRegistration for App {
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) {
+        let mut central_input_store = self.world_mut().resource_mut::<CentralInputStore>();
+
+        // Ensure this method is idempotent.
+        if central_input_store
+            .registered_input_kinds
+            .contains(&TypeId::of::<I>())
+        {
+            return;
+        }
+
+        central_input_store.updated_values.insert(
+            TypeId::of::<I>(),
+            UpdatedValues::from_input_control_kind(kind),
+        );
+        central_input_store
+            .registered_input_kinds
+            .insert(TypeId::of::<I>());
+        self.insert_resource(EnabledInput::<I>::default());
+        self.add_systems(
+            PreUpdate,
+            I::compute
+                .in_set(InputManagerSystem::Unify)
+                .run_if(input_is_enabled::<I>),
+        );
+    }
+}
+
+pub(crate) fn input_is_enabled<T: UpdatableInput>(enabled_input: Res<EnabledInput<T>>) -> bool {
+    enabled_input.is_enabled
+}
+
+/// Registers the standard input types defined by [`bevy`] and [`leafwing_input_manager`](crate).
+///
+/// The set of input kinds registered by this method is controlled by the features enabled:
+/// turn off default features to avoid registering input kinds that are not needed.
+#[allow(unused_variables)]
+pub(crate) fn register_standard_input_kinds(app: &mut App) {
+    // Buttonlike
+    #[cfg(feature = "keyboard")]
+    app.register_input_kind::<bevy::input::keyboard::KeyCode>(InputControlKind::Button);
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<bevy::input::mouse::MouseButton>(InputControlKind::Button);
+    #[cfg(feature = "gamepad")]
+    app.register_input_kind::<bevy::input::gamepad::GamepadButton>(InputControlKind::Button);
+
+    // Axislike
+    #[cfg(feature = "gamepad")]
+    app.register_input_kind::<bevy::input::gamepad::GamepadAxis>(InputControlKind::Axis);
+
+    // Dualaxislike
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<crate::prelude::MouseMove>(InputControlKind::DualAxis);
+    #[cfg(feature = "mouse")]
+    app.register_input_kind::<crate::prelude::MouseScroll>(InputControlKind::DualAxis);
 }
 
 /// A map of values that have been updated during the current frame.
@@ -272,10 +316,10 @@ enum UpdatedValues {
 impl UpdatedValues {
     fn from_input_control_kind(kind: InputControlKind) -> Self {
         match kind {
-            InputControlKind::Button => Self::Buttonlike(HashMap::new()),
-            InputControlKind::Axis => Self::Axislike(HashMap::new()),
-            InputControlKind::DualAxis => Self::Dualaxislike(HashMap::new()),
-            InputControlKind::TripleAxis => Self::Tripleaxislike(HashMap::new()),
+            InputControlKind::Button => Self::Buttonlike(HashMap::default()),
+            InputControlKind::Axis => Self::Axislike(HashMap::default()),
+            InputControlKind::DualAxis => Self::Dualaxislike(HashMap::default()),
+            InputControlKind::TripleAxis => Self::Tripleaxislike(HashMap::default()),
         }
     }
 }
@@ -293,7 +337,7 @@ impl UpdatedValues {
 /// however when configuration is needed (such as for processed axes or virtual d-pads),
 /// two distinct types must be used.
 ///
-/// To add a new kind of input, call [`CentralInputStore::register_input_kind`] during [`App`] setup.
+/// To add a new kind of input, call [`InputRegistration::register_input_kind`] during [`App`] setup.
 pub trait UpdatableInput: 'static {
     /// The [`SystemParam`] that must be fetched from the world in order to update the user input.
     ///
@@ -308,7 +352,7 @@ pub trait UpdatableInput: 'static {
     ///
     /// # Warning
     ///
-    /// This system should not be added manually: instead, call [`CentralInputStore::register_input_kind`].
+    /// This system should not be added manually: instead, call [`InputRegistration::register_input_kind`].
     fn compute(
         central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,

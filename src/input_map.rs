@@ -5,8 +5,8 @@ use std::hash::Hash;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
+use bevy::platform::collections::HashMap;
 use bevy::prelude::{Component, Deref, DerefMut, Entity, Gamepad, Query, Reflect, Resource, With};
-use bevy::utils::HashMap;
 use bevy::{log::error, prelude::ReflectComponent};
 use bevy::{
     math::{Vec2, Vec3},
@@ -17,7 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
-use crate::prelude::UserInputWrapper;
+use crate::prelude::{ActionState, UserInputWrapper};
 use crate::user_input::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 use crate::{Actionlike, InputControlKind};
 
@@ -102,6 +102,7 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// input_map.clear();
 /// ```
 #[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[require(ActionState::<A>)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 #[reflect(Resource, Component)]
 pub struct InputMap<A: Actionlike> {
@@ -248,6 +249,17 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert(&mut self, action: A, button: impl Buttonlike) -> &mut Self {
+        self.insert_boxed(action, Box::new(button));
+        self
+    }
+
+    /// See [`InputMap::insert`] for details.
+    ///
+    /// This method accepts a boxed [`Buttonlike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_boxed(&mut self, action: A, button: Box<dyn Buttonlike>) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Button,
             "Cannot map a Buttonlike input for action {:?} of kind {:?}",
@@ -265,7 +277,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.buttonlike_map, &action, Box::new(button));
+        insert_unique(&mut self.buttonlike_map, &action, button);
         self
     }
 
@@ -277,6 +289,17 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert_axis(&mut self, action: A, axis: impl Axislike) -> &mut Self {
+        self.insert_axis_boxed(action, Box::new(axis));
+        self
+    }
+
+    /// See [`InputMap::insert_axis`] for details.
+    ///
+    /// This method accepts a boxed [`Axislike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_axis_boxed(&mut self, action: A, axis: Box<dyn Axislike>) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::Axis,
             "Cannot map an Axislike input for action {:?} of kind {:?}",
@@ -294,7 +317,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.axislike_map, &action, Box::new(axis));
+        insert_unique(&mut self.axislike_map, &action, axis);
         self
     }
 
@@ -306,6 +329,17 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert_dual_axis(&mut self, action: A, dual_axis: impl DualAxislike) -> &mut Self {
+        self.insert_dual_axis_boxed(action, Box::new(dual_axis));
+        self
+    }
+
+    /// See [`InputMap::insert_dual_axis`] for details.
+    ///
+    /// This method accepts a boxed [`DualAxislike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_dual_axis_boxed(&mut self, action: A, axis: Box<dyn DualAxislike>) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::DualAxis,
             "Cannot map a DualAxislike input for action {:?} of kind {:?}",
@@ -323,7 +357,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        insert_unique(&mut self.dual_axislike_map, &action, Box::new(dual_axis));
+        insert_unique(&mut self.dual_axislike_map, &action, axis);
         self
     }
 
@@ -335,6 +369,21 @@ impl<A: Actionlike> InputMap<A> {
     #[inline(always)]
     #[track_caller]
     pub fn insert_triple_axis(&mut self, action: A, triple_axis: impl TripleAxislike) -> &mut Self {
+        self.insert_triple_axis_boxed(action, Box::new(triple_axis));
+        self
+    }
+
+    /// See [`InputMap::insert_triple_axis`] for details.
+    ///
+    /// This method accepts a boxed [`TripleAxislike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    #[track_caller]
+    pub fn insert_triple_axis_boxed(
+        &mut self,
+        action: A,
+        triple_axis: Box<dyn TripleAxislike>,
+    ) -> &mut Self {
         debug_assert!(
             action.input_control_kind() == InputControlKind::TripleAxis,
             "Cannot map a TripleAxislike input for action {:?} of kind {:?}",
@@ -352,8 +401,7 @@ impl<A: Actionlike> InputMap<A> {
             return self;
         }
 
-        let boxed = Box::new(triple_axis);
-        insert_unique(&mut self.triple_axislike_map, &action, boxed);
+        insert_unique(&mut self.triple_axislike_map, &action, triple_axis);
         self
     }
 
@@ -373,6 +421,21 @@ impl<A: Actionlike> InputMap<A> {
         let inputs = inputs
             .into_iter()
             .map(|input| Box::new(input) as Box<dyn Buttonlike>);
+        self.insert_one_to_many_boxed(action, inputs);
+        self
+    }
+
+    /// See [`InputMap::insert_one_to_many`] for details.
+    ///
+    /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    pub fn insert_one_to_many_boxed(
+        &mut self,
+        action: A,
+        inputs: impl IntoIterator<Item = Box<dyn Buttonlike>>,
+    ) -> &mut Self {
+        let inputs = inputs.into_iter();
         if let Some(bindings) = self.buttonlike_map.get_mut(&action) {
             for input in inputs {
                 if !bindings.contains(&input) {
@@ -398,6 +461,21 @@ impl<A: Actionlike> InputMap<A> {
     ) -> &mut Self {
         for (action, input) in bindings.into_iter() {
             self.insert(action, input);
+        }
+        self
+    }
+
+    /// See [`InputMap::insert_multiple`] for details.
+    ///
+    /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
+    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    #[inline(always)]
+    pub fn insert_multiple_boxed(
+        &mut self,
+        bindings: impl IntoIterator<Item = (A, Box<dyn Buttonlike>)>,
+    ) -> &mut Self {
+        for (action, input) in bindings.into_iter() {
+            self.insert_boxed(action, input);
         }
         self
     }
@@ -908,7 +986,7 @@ impl<A: Actionlike, U: Buttonlike> From<HashMap<A, Vec<U>>> for InputMap<A> {
     ///
     /// ```rust
     /// use bevy::prelude::*;
-    /// use bevy::utils::HashMap;
+    /// use bevy::platform::collections::HashMap;
     /// use leafwing_input_manager::prelude::*;
     ///
     /// #[derive(Actionlike, Debug, Clone, Copy, PartialEq, Eq, Hash, Reflect)]
@@ -985,7 +1063,7 @@ mod tests {
                 (Action::Hide, KeyCode::ControlRight),
             ]);
 
-        let expected_bindings: HashMap<Box<dyn Buttonlike>, Action> = HashMap::from([
+        let expected_bindings: HashMap<Box<dyn Buttonlike>, Action> = [
             (Box::new(KeyCode::KeyW) as Box<dyn Buttonlike>, Action::Run),
             (
                 Box::new(KeyCode::ShiftLeft) as Box<dyn Buttonlike>,
@@ -1008,7 +1086,9 @@ mod tests {
                 Box::new(KeyCode::ControlRight) as Box<dyn Buttonlike>,
                 Action::Hide,
             ),
-        ]);
+        ]
+        .into_iter()
+        .collect();
 
         for (action, input) in input_map.buttonlike_bindings() {
             let expected_action = expected_bindings.get(input).unwrap();

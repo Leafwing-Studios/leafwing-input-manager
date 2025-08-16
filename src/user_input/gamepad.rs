@@ -202,7 +202,6 @@ impl UserInput for GamepadControlDirection {
 #[serde_typetag]
 impl Buttonlike for GamepadControlDirection {
     /// Checks if there is any recent stick movement along the specified direction.
-    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         let value = read_axis_value(input_store, gamepad, self.axis);
@@ -419,7 +418,6 @@ impl UserInput for GamepadControlAxis {
 #[serde_typetag]
 impl Axislike for GamepadControlAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         let value = read_axis_value(input_store, gamepad, self.axis);
@@ -547,7 +545,6 @@ impl UserInput for GamepadStick {
 #[serde_typetag]
 impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
-    #[must_use]
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
         let x = read_axis_value(input_store, gamepad, self.x);
@@ -645,7 +642,7 @@ impl UpdatableInput for GamepadButton {
                     gamepad: gamepad_entity,
                     button: *key,
                 };
-                let value = specific_button.value(&central_input_store, gamepad_entity);
+                let value = gamepad.get(*key).unwrap_or(1.0);
                 central_input_store
                     .update_buttonlike(specific_button, ButtonValue::new(true, value));
             }
@@ -655,7 +652,7 @@ impl UpdatableInput for GamepadButton {
                     gamepad: gamepad_entity,
                     button: *key,
                 };
-                let value = specific_button.value(&central_input_store, gamepad_entity);
+                let value = gamepad.get(*key).unwrap_or(0.0);
                 central_input_store
                     .update_buttonlike(specific_button, ButtonValue::new(false, value));
             }
@@ -725,7 +722,6 @@ impl UserInput for GamepadButton {
 #[serde_typetag]
 impl Buttonlike for GamepadButton {
     /// Checks if the specified button is currently pressed down.
-    #[must_use]
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         button_pressed(input_store, gamepad, *self)
@@ -736,7 +732,6 @@ impl Buttonlike for GamepadButton {
     /// This will be 0.0 if the button is released, and 1.0 if it is pressed.
     /// Physically triggerlike buttons will return a value between 0.0 and 1.0,
     /// depending on how far the button is pressed.
-    #[must_use]
     #[inline]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         button_value(input_store, gamepad, *self)
@@ -956,5 +951,43 @@ mod tests {
         assert!(left.pressed(inputs, gamepad));
         assert!(!down.pressed(inputs, gamepad));
         assert!(!right.pressed(inputs, gamepad));
+    }
+
+    #[test]
+    #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
+    fn test_gamepad_button_values() {
+        let up = GamepadButton::DPadUp;
+        assert_eq!(up.kind(), InputControlKind::Button);
+
+        let left = GamepadButton::DPadLeft;
+        assert_eq!(left.kind(), InputControlKind::Button);
+
+        let down = GamepadButton::DPadDown;
+        assert_eq!(down.kind(), InputControlKind::Button);
+
+        let right = GamepadButton::DPadRight;
+        assert_eq!(right.kind(), InputControlKind::Button);
+
+        // No inputs
+        let mut app = test_app();
+        app.update();
+        let gamepad = app.world_mut().spawn(()).id();
+        let inputs = app.world().resource::<CentralInputStore>();
+
+        assert_eq!(up.value(inputs, gamepad), 0.0);
+        assert_eq!(left.value(inputs, gamepad), 0.0);
+        assert_eq!(down.value(inputs, gamepad), 0.0);
+        assert_eq!(right.value(inputs, gamepad), 0.0);
+
+        // Press DPadLeft
+        let mut app = test_app();
+        GamepadButton::DPadLeft.press(app.world_mut());
+        app.update();
+        let inputs = app.world().resource::<CentralInputStore>();
+
+        assert_eq!(up.value(inputs, gamepad), 0.0);
+        assert_eq!(left.value(inputs, gamepad), 1.0);
+        assert_eq!(down.value(inputs, gamepad), 0.0);
+        assert_eq!(right.value(inputs, gamepad), 0.0);
     }
 }

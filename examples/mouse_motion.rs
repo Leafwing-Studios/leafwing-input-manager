@@ -21,9 +21,7 @@ fn setup(mut commands: Commands) {
     // Note that you can also use discrete gesture-like motion,
     // via the `MouseMoveDirection` enum.
     let input_map = InputMap::default().with_dual_axis(CameraMovement::Pan, MouseMove::default());
-    commands
-        .spawn(Camera2d)
-        .insert(InputManagerBundle::with_map(input_map));
+    commands.spawn(Camera2d).insert(input_map);
 
     commands.spawn((
         Sprite::default(),
@@ -31,10 +29,10 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-fn pan_camera(mut query: Query<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {
+fn pan_camera(query: Single<(&mut Transform, &ActionState<CameraMovement>), With<Camera2d>>) {
     const CAMERA_PAN_RATE: f32 = 0.5;
 
-    let (mut camera_transform, action_state) = query.single_mut();
+    let (mut camera_transform, action_state) = query.into_inner();
 
     let camera_pan_vector = action_state.axis_pair(&CameraMovement::Pan);
 

@@ -44,12 +44,11 @@ fn spawn_input_map(mut commands: Commands) {
         ButtonlikeChord::new([Digit1, Digit2, Digit3]),
     );
 
-    commands.spawn(InputManagerBundle::with_map(input_map));
+    commands.spawn(input_map);
 }
 
 fn report_pressed_actions(
-    query: Query<&ActionState<TestAction>, Changed<ActionState<TestAction>>>,
+    action_state: Single<&ActionState<TestAction>, Changed<ActionState<TestAction>>>,
 ) {
-    let action_state = query.single();
     dbg!(action_state.get_just_pressed());
 }

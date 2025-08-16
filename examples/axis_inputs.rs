@@ -40,14 +40,12 @@ fn spawn_player(mut commands: Commands) {
             Action::Rudder,
             GamepadControlAxis::RIGHT_X.with_deadzone_symmetric(0.1),
         );
-    commands
-        .spawn(InputManagerBundle::with_map(input_map))
-        .insert(Player);
+    commands.spawn(input_map).insert(Player);
 }
 
 // Query for the `ActionState` component in your game logic systems!
 fn move_player(query: Query<&ActionState<Action>, With<Player>>) {
-    let action_state = query.single();
+    let action_state = query.single().expect("Player actions not found");
 
     let axis_pair = action_state.clamped_axis_pair(&Action::Move);
     println!("Move:");

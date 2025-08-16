@@ -4,16 +4,16 @@ use crate::input_map::UpdatedValue;
 use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 use crate::{Actionlike, InputControlKind};
 
+use bevy::platform::{collections::HashMap, time::Instant};
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
-#[cfg(feature = "timing")]
-use bevy::utils::Duration;
-use bevy::utils::{HashMap, Instant};
 use bevy::{ecs::component::Component, prelude::ReflectComponent};
 use bevy::{
     math::{Vec2, Vec3},
     prelude::ReflectResource,
 };
+#[cfg(feature = "timing")]
+use core::time::Duration;
 use serde::{Deserialize, Serialize};
 
 mod action_data;
@@ -45,7 +45,7 @@ pub use action_data::*;
 /// ```rust
 /// use bevy::reflect::Reflect;
 /// use leafwing_input_manager::prelude::*;
-/// use bevy::utils::Instant;
+/// use bevy::platform::time::Instant;
 ///
 /// #[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
 /// enum Action {
@@ -128,6 +128,20 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
+    /// Function for advanced users to override the `state` from the `update_state`
+    pub fn set_update_state_from_state(&mut self) {
+        for action_datum in self.action_data.values_mut() {
+            action_datum.kind_data.set_update_state_from_state();
+        }
+    }
+
+    /// Function for advanced users to override the `state` from the `fixed_update_state`
+    pub fn set_fixed_update_state_from_state(&mut self) {
+        for action_datum in self.action_data.values_mut() {
+            action_datum.kind_data.set_fixed_update_state_from_state();
+        }
+    }
+
     /// Updates the [`ActionState`] based on the provided [`UpdatedActions`].
     ///
     /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),
@@ -171,7 +185,7 @@ impl<A: Actionlike> ActionState<A> {
     /// use bevy::prelude::Reflect;
     /// use leafwing_input_manager::prelude::*;
     /// use leafwing_input_manager::buttonlike::ButtonState;
-    /// use bevy::utils::Instant;
+    /// use bevy::platform::time::Instant;
     ///
     /// #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
     /// enum Action {
@@ -793,7 +807,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = self.button_data_mut_or_default(action);
 
         #[cfg(feature = "timing")]
-        if action_data.state.released() {
+        if action_data.update_state.released() {
             action_data.timing.flip();
         }
 
@@ -812,7 +826,7 @@ impl<A: Actionlike> ActionState<A> {
         let action_data = self.button_data_mut_or_default(action);
 
         #[cfg(feature = "timing")]
-        if action_data.state.pressed() {
+        if action_data.update_state.pressed() {
             action_data.timing.flip();
         }
 

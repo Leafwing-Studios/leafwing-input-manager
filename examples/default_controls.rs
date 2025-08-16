@@ -45,14 +45,12 @@ struct Player;
 fn spawn_player(mut commands: Commands) {
     // Spawn the player with the default input_map
     commands
-        .spawn(InputManagerBundle::with_map(
-            PlayerAction::default_input_map(),
-        ))
+        .spawn(PlayerAction::default_input_map())
         .insert(Player);
 }
 
 fn use_actions(query: Query<&ActionState<PlayerAction>, With<Player>>) {
-    let action_state = query.single();
+    let action_state = query.single().expect("Player actions not found");
 
     if action_state.axis_pair(&PlayerAction::Run) != Vec2::ZERO {
         println!(
