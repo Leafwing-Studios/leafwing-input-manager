@@ -52,7 +52,7 @@ fn create_app() -> App {
 fn get_events<E: Event>(app: &App) -> &Events<E> {
     app.world().resource()
 }
-fn get_events_mut<E: Event>(app: &mut App) -> Mut<Events<E>> {
+fn get_events_mut<E: Event>(app: &'_ mut App) -> Mut<'_, Events<E>> {
     app.world_mut().resource_mut()
 }
 

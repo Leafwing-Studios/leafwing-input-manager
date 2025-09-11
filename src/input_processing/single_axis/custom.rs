@@ -114,11 +114,11 @@ impl PartialReflect for Box<dyn CustomAxisProcessor> {
         ReflectKind::Opaque
     }
 
-    fn reflect_ref(&self) -> ReflectRef {
+    fn reflect_ref(&self) -> ReflectRef<'_> {
         ReflectRef::Opaque(self)
     }
 
-    fn reflect_mut(&mut self) -> ReflectMut {
+    fn reflect_mut(&mut self) -> ReflectMut<'_> {
         ReflectMut::Opaque(self)
     }
 

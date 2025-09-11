@@ -256,7 +256,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert`] for details.
     ///
     /// This method accepts a boxed [`Buttonlike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_boxed(&mut self, action: A, button: Box<dyn Buttonlike>) -> &mut Self {
@@ -296,7 +296,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_axis`] for details.
     ///
     /// This method accepts a boxed [`Axislike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_axis_boxed(&mut self, action: A, axis: Box<dyn Axislike>) -> &mut Self {
@@ -336,7 +336,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_dual_axis`] for details.
     ///
     /// This method accepts a boxed [`DualAxislike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_dual_axis_boxed(&mut self, action: A, axis: Box<dyn DualAxislike>) -> &mut Self {
@@ -376,7 +376,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_triple_axis`] for details.
     ///
     /// This method accepts a boxed [`TripleAxislike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_triple_axis_boxed(
@@ -428,7 +428,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_one_to_many`] for details.
     ///
     /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     pub fn insert_one_to_many_boxed(
         &mut self,
@@ -468,7 +468,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_multiple`] for details.
     ///
     /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     pub fn insert_multiple_boxed(
         &mut self,
@@ -1025,6 +1025,7 @@ impl<A: Actionlike, U: Buttonlike> FromIterator<(A, U)> for InputMap<A> {
     }
 }
 
+#[cfg(test)]
 #[cfg(feature = "keyboard")]
 mod tests {
     use bevy::prelude::Reflect;

@@ -38,7 +38,7 @@ pub struct Player;
 struct PlayerBundle {
     player: Player,
     velocity: Velocity,
-    input_manager: InputManagerBundle<Action>,
+    input_map: InputMap<Action>,
     sprite: Sprite,
     transform: Transform,
 }
@@ -60,7 +60,7 @@ fn spawn_player(mut commands: Commands) {
     commands.spawn(PlayerBundle {
         player: Player,
         velocity: Velocity { x: 0.0 },
-        input_manager: InputManagerBundle::with_map(PlayerBundle::default_input_map()),
+        input_map: PlayerBundle::default_input_map(),
         sprite: Sprite {
             color: Color::srgb(0.5, 0.5, 1.0),
             ..Default::default()
