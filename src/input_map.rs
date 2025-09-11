@@ -1025,6 +1025,7 @@ impl<A: Actionlike, U: Buttonlike> FromIterator<(A, U)> for InputMap<A> {
     }
 }
 
+#[cfg(test)]
 #[cfg(feature = "keyboard")]
 mod tests {
     use bevy::prelude::Reflect;

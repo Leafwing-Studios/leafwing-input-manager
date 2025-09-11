@@ -33,11 +33,11 @@ mod buttonlike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
@@ -200,11 +200,11 @@ mod axislike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
@@ -390,11 +390,11 @@ mod dualaxislike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
@@ -557,11 +557,11 @@ mod tripleaxislike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
