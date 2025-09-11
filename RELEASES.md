@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.17.2
+
+### Usability (0.17.2)
+
+- add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
+
 ## Version 0.17.1
 
 ### Usability (0.17.1)
