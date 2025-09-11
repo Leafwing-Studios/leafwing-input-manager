@@ -240,11 +240,11 @@ pub trait InputRegistration {
     /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
     ///
     /// This method has no effect if the input kind has already been registered.
-    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind);
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) -> &mut App;
 }
 
 impl InputRegistration for App {
-    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) {
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) -> &mut App {
         let mut central_input_store = self.world_mut().resource_mut::<CentralInputStore>();
 
         // Ensure this method is idempotent.
@@ -252,7 +252,7 @@ impl InputRegistration for App {
             .registered_input_kinds
             .contains(&TypeId::of::<I>())
         {
-            return;
+            return self;
         }
 
         central_input_store.updated_values.insert(
@@ -268,7 +268,7 @@ impl InputRegistration for App {
             I::compute
                 .in_set(InputManagerSystem::Unify)
                 .run_if(input_is_enabled::<I>),
-        );
+        )
     }
 }
 
