@@ -1,6 +1,8 @@
 //! When debugging this file, `cargo expand` is invaluable.
 //! See: https://github.com/dtolnay/cargo-expand
 //! use `cargo expand --test actionlike_derive`
+#![allow(dead_code, reason = "Testing derives")]
+
 use bevy::prelude::Reflect;
 use leafwing_input_manager::Actionlike;
 
