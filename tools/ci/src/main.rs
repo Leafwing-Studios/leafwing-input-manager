@@ -140,7 +140,7 @@ fn main() {
         }
 
         if what_to_run.contains(Check::COMPILE_CHECK) {
-            let compile_targets = &[vec![], vec!["--target", "wasm32-unknown-unknown"]];
+            let compile_targets = &[vec![], vec!["--target"]];
             for target in compile_targets {
                 cmd!(
                     sh,
