@@ -30,7 +30,7 @@ use crate::Actionlike;
 /// This plugin needs to be passed in an [`Actionlike`] enum type that you've created for your game.
 /// Each variant represents a "virtual button" whose state is stored in an [`ActionState`] struct.
 ///
-/// Each [`InputManagerBundle`](crate::InputManagerBundle) contains:
+/// In order to control entities via actions using this crate, you need:
 ///  - an [`InputMap`] component, which stores an entity-specific mapping between the assorted input streams and an internal representation of "actions"
 ///  - an [`ActionState`] component, which stores the current input state for that entity in a source-agnostic fashion
 ///

@@ -59,7 +59,7 @@ and a single input can result in multiple actions being triggered, which can be 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
 2. Create an enum of the logical actions you want to represent, and derive the `Actionlike` trait for it.
 3. Add the `InputManagerPlugin` to your `App`.
-4. Add the `InputManagerBundle` to your player entity (or entities!).
+4. Add an `InputMap<A: Actionlike>` component to your player entity (or entities!).
 5. Configure a mapping between your inputs and your actions by modifying the `InputMap` component on your player entity.
 6. Read the `ActionState` component on your player entity to check the collected input state!
 
