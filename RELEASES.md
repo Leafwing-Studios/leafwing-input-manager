@@ -9,6 +9,7 @@
 ## Breaking Changes (0.18.0)
 
 - many types that were previously `Message`-implementing types are now `Message`-implementing types (same semantics, new name), and have been renamed accordingly
+  - for example, `ActionDiffEvent` is now `ActionDiffMessage`
 - `InputManagerBundle` has been removed after being deprecated: insert an `InputMap<A>` component instead and use required components to fill in the `ActionState<A>`
 
 ### Usability (0.18.2)
