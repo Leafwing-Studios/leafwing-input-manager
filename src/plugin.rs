@@ -5,7 +5,6 @@ use core::marker::PhantomData;
 use std::fmt::Debug;
 
 use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
-#[cfg(feature = "ui")]
 use bevy::input::InputSystems;
 #[cfg(feature = "picking")]
 use bevy::picking::PickingSystems;
