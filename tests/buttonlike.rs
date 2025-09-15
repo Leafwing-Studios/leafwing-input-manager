@@ -35,9 +35,9 @@ fn test_app() -> App {
         .init_resource::<ActionState<TestAction>>();
 
     let gamepad = app.world_mut().spawn(Gamepad::default()).id();
-    let mut gamepad_events: Mut<'_, Events<GamepadEvent>> =
-        app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
+    let mut gamepad_messages: Mut<'_, Messages<GamepadEvent>> =
+        app.world_mut().resource_mut::<Messages<GamepadEvent>>();
+    gamepad_messages.write(GamepadEvent::Connection(GamepadConnectionEvent {
         gamepad,
         connection: GamepadConnection::Connected {
             name: "FirstController".into(),
@@ -48,7 +48,7 @@ fn test_app() -> App {
 
     // Ensure the gamepads are picked up
     app.update();
-    // Flush the gamepad connection events
+    // Flush the gamepad connection messages
     app.update();
 
     app

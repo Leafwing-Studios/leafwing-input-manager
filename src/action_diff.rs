@@ -8,12 +8,12 @@
 use bevy::{
     ecs::{
         entity::{Entity, MapEntities},
-        event::Event,
+        message::Message,
         query::QueryFilter,
     },
     math::{Vec2, Vec3},
     platform::collections::{HashMap, HashSet},
-    prelude::{EntityMapper, EventWriter, Query, Res},
+    prelude::{EntityMapper, MessageWriter, Query, Res},
 };
 use serde::{Deserialize, Serialize};
 
@@ -22,7 +22,7 @@ use crate::{action_state::ActionKindData, prelude::ActionState, Actionlike};
 
 /// Stores presses and releases of buttons without timing information
 ///
-/// These are typically accessed using the `Events<ActionDiffEvent>` resource.
+/// These are typically accessed using the `Messages<ActionDiffMessage>` resource.
 /// Uses a minimal storage format to facilitate transport over the network.
 ///
 /// An `ActionState` can be fully reconstructed from a stream of `ActionDiff`.
@@ -66,9 +66,9 @@ pub enum ActionDiff<A: Actionlike> {
 /// Will store an `ActionDiff` as well as what generated it (either an Entity, or nothing if the
 /// input actions are represented by a `Resource`)
 ///
-/// These are typically accessed using the `Events<ActionDiffEvent>` resource.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Event)]
-pub struct ActionDiffEvent<A: Actionlike> {
+/// These are typically accessed using the `Messages<ActionDiffMessage>` resource.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
+pub struct ActionDiffMessage<A: Actionlike> {
     /// If some: the entity that has the `ActionState<A>` component
     /// If none: `ActionState<A>` is a Resource, not a component
     pub owner: Option<Entity>,
@@ -76,11 +76,11 @@ pub struct ActionDiffEvent<A: Actionlike> {
     pub action_diffs: Vec<ActionDiff<A>>,
 }
 
-/// Implements entity mapping for `ActionDiffEvent`.
+/// Implements entity mapping for [`ActionDiffMessage`].
 ///
-/// This allows the owner entity to be remapped when transferring event diffs
+/// This allows the owner entity to be remapped when transferring message diffs
 /// between different ECS worlds (e.g. client and server).
-impl<A: Actionlike> MapEntities for ActionDiffEvent<A> {
+impl<A: Actionlike> MapEntities for ActionDiffMessage<A> {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
         self.owner = self.owner.map(|entity| entity_mapper.get_mapped(entity));
     }
@@ -351,15 +351,15 @@ impl<A: Actionlike> SummarizedActionState<A> {
         action_diffs
     }
 
-    /// Compares the current frame to the previous frame, generates [`ActionDiff`]s and then sends them as batched [`ActionDiffEvent`]s.
-    pub fn send_diffs(&self, previous: &Self, writer: &mut EventWriter<ActionDiffEvent<A>>) {
+    /// Compares the current frame to the previous frame, generates [`ActionDiff`]s and then sends them as batched [`ActionDiffMessage`]s.
+    pub fn send_diffs(&self, previous: &Self, writer: &mut MessageWriter<ActionDiffMessage<A>>) {
         for entity in self.all_entities() {
             let owner = (entity != Entity::PLACEHOLDER).then_some(entity);
 
             let action_diffs = self.entity_diffs(&entity, previous);
 
             if !action_diffs.is_empty() {
-                writer.write(ActionDiffEvent {
+                writer.write(ActionDiffMessage {
                     owner,
                     action_diffs,
                 });
@@ -493,13 +493,13 @@ mod tests {
     #[test]
     fn diffs_are_sent() {
         let mut world = World::new();
-        world.init_resource::<Events<ActionDiffEvent<TestAction>>>();
+        world.init_resource::<Messages<ActionDiffMessage<TestAction>>>();
 
         let entity = world.spawn(test_action_state()).id();
         let mut system_state: SystemState<(
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
-            EventWriter<ActionDiffEvent<TestAction>>,
+            MessageWriter<ActionDiffMessage<TestAction>>,
         )> = SystemState::new(&mut world);
         let (global_action_state, action_state_query, mut action_diff_writer) =
             system_state.get_mut(&mut world);
@@ -508,15 +508,15 @@ mod tests {
         let previous = SummarizedActionState::default();
         summarized.send_diffs(&previous, &mut action_diff_writer);
 
-        let mut system_state: SystemState<EventReader<ActionDiffEvent<TestAction>>> =
+        let mut system_state: SystemState<MessageReader<ActionDiffMessage<TestAction>>> =
             SystemState::new(&mut world);
-        let mut event_reader = system_state.get_mut(&mut world);
-        let action_diff_events = event_reader.read().collect::<Vec<_>>();
+        let mut message_reader = system_state.get_mut(&mut world);
+        let action_diff_messages = message_reader.read().collect::<Vec<_>>();
 
-        dbg!(&action_diff_events);
-        assert_eq!(action_diff_events.len(), 1);
-        let action_diff_event = action_diff_events[0];
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 4);
+        dbg!(&action_diff_messages);
+        assert_eq!(action_diff_messages.len(), 1);
+        let action_diff_message = action_diff_messages[0];
+        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.action_diffs.len(), 4);
     }
 }

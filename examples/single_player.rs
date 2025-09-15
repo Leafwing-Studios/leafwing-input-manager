@@ -13,8 +13,8 @@ fn main() {
         .add_systems(Update, cast_fireball)
         // Or multiple parts of it can be inspected
         .add_systems(Update, player_dash)
-        // Or it can be used to emit events for later processing
-        .add_event::<PlayerWalk>()
+        // Or it can be used to emit messages for later processing
+        .add_message::<PlayerWalk>()
         .add_systems(Update, player_walks)
         .run();
 }
@@ -131,14 +131,14 @@ fn player_dash(action_state: Single<&ActionState<ArpgAction>, With<Player>>) {
     }
 }
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct PlayerWalk {
     pub direction: Dir2,
 }
 
 fn player_walks(
     action_state: Single<&ActionState<ArpgAction>, With<Player>>,
-    mut event_writer: EventWriter<PlayerWalk>,
+    mut message_writer: MessageWriter<PlayerWalk>,
 ) {
     let mut direction_vector = Vec2::ZERO;
 
@@ -155,6 +155,6 @@ fn player_walks(
     let net_direction = Dir2::new(direction_vector);
 
     if let Ok(direction) = net_direction {
-        event_writer.write(PlayerWalk { direction });
+        message_writer.write(PlayerWalk { direction });
     }
 }

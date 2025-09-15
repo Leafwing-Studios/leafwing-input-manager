@@ -127,10 +127,6 @@ impl PartialReflect for Box<dyn CustomDualAxisProcessor> {
         ReflectOwned::Opaque(self)
     }
 
-    fn clone_value(&self) -> Box<dyn PartialReflect> {
-        Box::new(self.clone())
-    }
-
     fn try_apply(&mut self, value: &dyn PartialReflect) -> Result<(), bevy::reflect::ApplyError> {
         if let Some(value) = value.try_downcast_ref::<Self>() {
             *self = value.clone();
@@ -267,7 +263,7 @@ impl Serialize for dyn CustomDualAxisProcessor + '_ {
         S: Serializer,
     {
         // Check that `CustomDualAxisProcessor` has `erased_serde::Serialize` as a super trait,
-        // preventing infinite recursion at runtime.
+        // prmessageing infinite recursion at runtime.
         const fn __check_erased_serialize_super_trait<T: ?Sized + CustomDualAxisProcessor>() {
             require_erased_serialize_impl::<T>();
         }

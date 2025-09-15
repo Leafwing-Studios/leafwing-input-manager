@@ -6,6 +6,11 @@
 
 - updated to Bevy 0.17
 
+## Breaking Changes (0.18.0)
+
+- many types that were previously `Message`-implementing types are now `Message`-implementing types (same semantics, new name), and have been renamed accordingly
+- `InputManagerBundle` has been removed after being deprecated: insert an `InputMap<A>` component instead and use required components to fill in the `ActionState<A>`
+
 ### Usability (0.18.2)
 
 - add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
@@ -107,7 +112,7 @@
 - added `only_positive`, `only_positive_x`, `only_positive_y`, `only_negative`, `only_negative_x`, and `only_negative_y` builders for `DualAxisDeadZone` and `DualAxisExclusion`.
   - added corresponding extension methods for those implementing `WithDualAxisProcessorExt` trait.
 
-#### ActionDiffEvent
+#### ActionDiffMessage
 
 - Implement `MapEntities`, which lets networking crates translate owner entity IDs between ECS worlds
 
@@ -658,7 +663,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Bug fixes
 
-- mocked inputs are now sent at the low-level `Events` form, rather than in their `Input` format.
+- mocked inputs are now sent at the low-level `Messages` form, rather than in their `Input` format.
   - this ensures that user code that is reading these events directly can be tested accurately.
 
 ## Version 0.4.1

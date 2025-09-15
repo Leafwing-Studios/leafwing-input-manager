@@ -2,6 +2,7 @@
 
 use std::hash::{Hash, Hasher};
 
+use bevy::ecs::message::Messages;
 use bevy::ecs::system::lifetimeless::{Read, SQuery};
 use bevy::ecs::system::{StaticSystemParam, SystemParam, SystemState};
 use bevy::input::gamepad::{
@@ -10,8 +11,7 @@ use bevy::input::gamepad::{
 use bevy::input::{Axis, ButtonInput};
 use bevy::math::FloatOrd;
 use bevy::prelude::{
-    Entity, Events, Gamepad, GamepadAxis, GamepadButton, Query, Reflect, Res, ResMut, Vec2, With,
-    World,
+    Entity, Gamepad, GamepadAxis, GamepadButton, Query, Reflect, Res, ResMut, Vec2, With, World,
 };
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
@@ -208,32 +208,36 @@ impl Buttonlike for GamepadControlDirection {
         self.direction.is_active(value, self.threshold)
     }
 
-    /// Sends a [`RawGamepadEvent::Axis`] event with a magnitude of 1.0 for the specified direction on the provided gamepad [`Entity`].
+    /// Sends a [`RawGamepadEvent::Axis`] message with a magnitude of 1.0 for the specified direction on the provided gamepad [`Entity`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+        let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
             axis: self.axis,
             value: self.direction.full_active_value(),
         });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        world
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(message);
     }
 
-    /// Sends a [`RawGamepadEvent::Axis`] event with a magnitude of 0.0 for the specified direction.
+    /// Sends a [`RawGamepadEvent::Axis`] message with a magnitude of 0.0 for the specified direction.
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+        let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
             axis: self.axis,
             value: 0.0,
         });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        world
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(message);
     }
 
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
@@ -426,18 +430,20 @@ impl Axislike for GamepadControlAxis {
             .fold(value, |value, processor| processor.process(value))
     }
 
-    /// Sends a [`RawGamepadEvent::Axis`] event with the specified value on the provided gamepad.
+    /// Sends a [`RawGamepadEvent::Axis`] message with the specified value on the provided gamepad.
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+        let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
             axis: self.axis,
             value,
         });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        world
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(message);
     }
 }
 
@@ -554,25 +560,29 @@ impl DualAxislike for GamepadStick {
             .fold(Vec2::new(x, y), |value, processor| processor.process(value))
     }
 
-    /// Sends a [`RawGamepadEvent::Axis`] event with the specified values on the provided gamepad [`Entity`].
+    /// Sends a [`RawGamepadEvent::Axis`] message with the specified values on the provided gamepad [`Entity`].
     fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+        let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
             axis: self.x,
             value: value.x,
         });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        world
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(message);
 
-        let event = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+        let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
             gamepad,
             axis: self.y,
             value: value.y,
         });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        world
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(message);
     }
 }
 
@@ -694,12 +704,14 @@ impl Buttonlike for SpecificGamepadButton {
     }
 
     fn set_value(&self, world: &mut World, value: f32) {
-        let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+        let message = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
             gamepad: self.gamepad,
             button: self.button,
             value,
         });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        world
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(message);
     }
 }
 
@@ -737,29 +749,31 @@ impl Buttonlike for GamepadButton {
         button_value(input_store, gamepad, *self)
     }
 
-    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 1.0 in the direction defined by `self` on the provided gamepad [`Entity`].
+    /// Sends a [`RawGamepadEvent::Button`] message with a magnitude of 1.0 in the direction defined by `self` on the provided gamepad [`Entity`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         self.set_value_as_gamepad(world, 1.0, gamepad);
     }
 
-    /// Sends a [`RawGamepadEvent::Button`] event with a magnitude of 0.0 in the direction defined by `self` on the provided gamepad [`Entity`].
+    /// Sends a [`RawGamepadEvent::Button`] message with a magnitude of 0.0 in the direction defined by `self` on the provided gamepad [`Entity`].
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         self.set_value_as_gamepad(world, 0.0, gamepad);
     }
 
-    /// Sends a [`RawGamepadEvent::Button`] event with the specified value in the direction defined by `self` on the provided gamepad [`Entity`].
+    /// Sends a [`RawGamepadEvent::Button`] message with the specified value in the direction defined by `self` on the provided gamepad [`Entity`].
     #[inline]
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
         let query = query_state.get(world);
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
-        let event = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+        let message = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
             gamepad,
             button: *self,
             value,
         });
-        world.resource_mut::<Events<RawGamepadEvent>>().send(event);
+        world
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(message);
     }
 }
 
@@ -779,11 +793,11 @@ mod tests {
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
         let gamepad = app.world_mut().spawn(()).id();
-        let mut gamepad_connection_events = app
+        let mut gamepad_connection_messages = app
             .world_mut()
-            .resource_mut::<Events<GamepadConnectionEvent>>();
-        gamepad_connection_events.send(GamepadConnectionEvent {
-            // This MUST be consistent with any other mocked events
+            .resource_mut::<Messages<GamepadConnectionEvent>>();
+        gamepad_connection_messages.write(GamepadConnectionEvent {
+            // This MUST be consistent with any other mocked messages
             gamepad,
             connection: GamepadConnection::Connected {
                 name: "TestController".into(),
@@ -794,7 +808,7 @@ mod tests {
 
         // Ensure that the gamepad is picked up by the appropriate system
         app.update();
-        // Ensure that the connection event is flushed through
+        // Ensure that the connection message is flushed through
         app.update();
 
         app

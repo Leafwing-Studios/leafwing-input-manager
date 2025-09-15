@@ -1179,11 +1179,14 @@ mod tests {
     #[cfg(feature = "gamepad")]
     #[test]
     fn gamepad_swapping() {
+        use bevy::ecs::world::World;
+
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
 
-        input_map.set_gamepad(Entity::from_raw(123));
-        assert_eq!(input_map.gamepad(), Some(Entity::from_raw(123)));
+        let test_entity = World::new().spawn_empty().id();
+        input_map.set_gamepad(test_entity);
+        assert_eq!(input_map.gamepad(), Some(test_entity));
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);

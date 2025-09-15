@@ -36,11 +36,11 @@ fn test_app() -> App {
 
     // WARNING: you MUST register your gamepad during tests, or all gamepad input mocking will fail
     let gamepad = app.world_mut().spawn_empty().id();
-    let mut gamepad_connection_events = app
+    let mut gamepad_connection_messages = app
         .world_mut()
-        .resource_mut::<Events<GamepadConnectionEvent>>();
-    gamepad_connection_events.send(GamepadConnectionEvent {
-        // This MUST be consistent with any other mocked events
+        .resource_mut::<Messages<GamepadConnectionEvent>>();
+    gamepad_connection_messages.write(GamepadConnectionEvent {
+        // This MUST be consistent with any other mocked messages
         gamepad,
         connection: GamepadConnection::Connected {
             name: "TestController".into(),
@@ -51,7 +51,7 @@ fn test_app() -> App {
 
     // Ensure that the gamepad is picked up by the appropriate system
     app.update();
-    // Ensure that the connection event is flushed through
+    // Ensure that the connection message is flushed through
     app.update();
 
     app
@@ -61,29 +61,29 @@ fn test_app() -> App {
 #[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn gamepad_single_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
-    assert_eq!(events.drain().count(), 0);
+    let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
+    assert_eq!(messages.drain().count(), 0);
 
     let input = GamepadControlAxis::LEFT_X;
     input.set_value(app.world_mut(), -1.0);
 
-    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
-    assert_eq!(events.drain().count(), 1);
+    let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
+    assert_eq!(messages.drain().count(), 1);
 }
 
 #[test]
 #[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn gamepad_dual_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
-    assert_eq!(events.drain().count(), 0);
+    let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
+    assert_eq!(messages.drain().count(), 0);
 
     let input = GamepadStick::LEFT;
     input.set_axis_pair(app.world_mut(), Vec2::new(1.0, 0.0));
 
-    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
-    // Dual axis events are split out
-    assert_eq!(events.drain().count(), 2);
+    let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
+    // Dual axis messages are split out
+    assert_eq!(messages.drain().count(), 2);
 }
 
 #[test]

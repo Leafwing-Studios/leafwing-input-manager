@@ -49,26 +49,26 @@ fn test_app() -> App {
 #[test]
 fn mouse_move_discrete_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 0);
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseMotion>>();
+    assert_eq!(messages.drain().count(), 0);
 
     MouseMoveDirection::UP.press(app.world_mut());
-    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseMotion>>();
 
-    assert_eq!(events.drain().count(), 1);
+    assert_eq!(messages.drain().count(), 1);
 }
 
 #[test]
 fn mouse_move_single_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 0);
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseMotion>>();
+    assert_eq!(messages.drain().count(), 0);
 
     let input = MouseMoveAxis::X;
     input.set_value(app.world_mut(), -1.0);
 
-    let mut events = app.world_mut().resource_mut::<Events<MouseMotion>>();
-    assert_eq!(events.drain().count(), 1);
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseMotion>>();
+    assert_eq!(messages.drain().count(), 1);
 }
 
 #[test]

@@ -19,7 +19,7 @@ use super::{Axislike, DualAxislike};
 /// A chord is pressed only if all its constituent buttons are pressed simultaneously.
 ///
 /// Adding duplicate buttons within a chord will ignore the extras,
-/// preventing redundant data fetching from multiple instances of the same input.
+/// prmessageing redundant data fetching from multiple instances of the same input.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -367,9 +367,9 @@ mod tests {
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
         let gamepad = app.world_mut().spawn(()).id();
-        let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-            // This MUST be consistent with any other mocked events
+        let mut gamepad_messages = app.world_mut().resource_mut::<Messages<GamepadEvent>>();
+        gamepad_messages.write(GamepadEvent::Connection(GamepadConnectionEvent {
+            // This MUST be consistent with any other mocked messages
             gamepad,
             connection: GamepadConnection::Connected {
                 name: "TestController".into(),
@@ -380,7 +380,7 @@ mod tests {
 
         // Ensure that the gamepad is picked up by the appropriate system
         app.update();
-        // Ensure that the connection event is flushed through
+        // Ensure that the connection message is flushed through
         app.update();
         app
     }

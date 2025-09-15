@@ -136,7 +136,7 @@ impl Hash for CircleBounds {
 #[derive(Debug, Clone, Copy, PartialEq, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct CircleExclusion {
-    /// Pre-calculated squared radius of the circle, preventing redundant calculations.
+    /// Pre-calculated squared radius of the circle, prmessageing redundant calculations.
     pub(crate) radius_squared: f32,
 }
 
@@ -275,7 +275,7 @@ pub struct CircleDeadZone {
     /// The radius of the circle.
     pub(crate) radius: f32,
 
-    /// Pre-calculated reciprocal of the live zone size, preventing division during normalization.
+    /// Pre-calculated reciprocal of the live zone size, prmessageing division during normalization.
     pub(crate) livezone_recip: f32,
 }
 

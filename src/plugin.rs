@@ -5,13 +5,14 @@ use core::marker::PhantomData;
 use std::fmt::Debug;
 
 use bevy::app::{App, FixedPostUpdate, Plugin, RunFixedMainLoop};
-use bevy::input::InputSystem;
+#[cfg(feature = "ui")]
+use bevy::input::InputSystems;
 #[cfg(feature = "picking")]
-use bevy::picking::PickSet;
+use bevy::picking::PickingSystems;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
 #[cfg(feature = "ui")]
-use bevy::ui::UiSystem;
+use bevy::ui::UiSystems;
 use updating::CentralInputStore;
 
 use crate::action_state::{ActionState, ButtonData};
@@ -73,7 +74,7 @@ impl<A: Actionlike> InputManagerPlugin<A> {
     ///
     /// Inputs will not be processed; instead, [`ActionState`]
     /// should be copied directly from the state provided by the client,
-    /// or constructed from [`ActionDiff`](crate::action_diff::ActionDiff) event streams.
+    /// or constructed from [`ActionDiff`](crate::action_diff::ActionDiff) message streams.
     #[must_use]
     pub fn server() -> Self {
         Self {
@@ -127,13 +128,13 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                     PreUpdate,
                     InputManagerSystem::Unify
                         .after(InputManagerSystem::Filter)
-                        .after(InputSystem),
+                        .after(InputSystems),
                 );
 
                 app.configure_sets(
                     PreUpdate,
                     InputManagerSystem::Update
-                        .after(InputSystem)
+                        .after(InputSystems)
                         .after(InputManagerSystem::Unify),
                 );
 
@@ -146,7 +147,10 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 );
 
                 #[cfg(feature = "ui")]
-                app.configure_sets(PreUpdate, InputManagerSystem::Filter.after(UiSystem::Focus));
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::Filter.after(UiSystems::Focus),
+                );
 
                 #[cfg(feature = "ui")]
                 app.configure_sets(
@@ -156,12 +160,15 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
                         // not being pressed
                         .after(InputManagerSystem::Update)
-                        .after(UiSystem::Focus)
-                        .after(InputSystem),
+                        .after(UiSystems::Focus)
+                        .after(InputSystems),
                 );
 
                 #[cfg(feature = "picking")]
-                app.configure_sets(PreUpdate, InputManagerSystem::Update.before(PickSet::Hover));
+                app.configure_sets(
+                    PreUpdate,
+                    InputManagerSystem::Update.before(PickingSystems::Hover),
+                );
 
                 // FixedMain schedule
                 app.add_systems(
@@ -172,7 +179,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                         update_action_state::<A>,
                     )
                         .chain()
-                        .in_set(RunFixedMainLoopSystem::BeforeFixedMainLoop),
+                        .in_set(RunFixedMainLoopSystems::BeforeFixedMainLoop),
                 );
 
                 app.add_systems(FixedPostUpdate, release_on_input_map_removed::<A>);
@@ -185,7 +192,7 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                 );
                 app.add_systems(
                     RunFixedMainLoop,
-                    swap_to_update::<A>.in_set(RunFixedMainLoopSystem::AfterFixedMainLoop),
+                    swap_to_update::<A>.in_set(RunFixedMainLoopSystems::AfterFixedMainLoop),
                 );
             }
             Machine::Server => {
@@ -268,7 +275,7 @@ pub enum InputManagerSystem {
     ///
     /// Cleans up the state of the input manager, clearing `just_pressed` and `just_released`
     Tick,
-    /// Accumulates various input event streams into a total delta for the frame.
+    /// Accumulates various input message streams into a total delta for the frame.
     Accumulate,
     /// Filters out inputs that are captured by UI elements.
     Filter,
@@ -319,6 +326,6 @@ impl Plugin for CentralInputStorePlugin {
 
         register_standard_input_kinds(app);
 
-        app.configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystem));
+        app.configure_sets(PreUpdate, InputManagerSystem::Unify.after(InputSystems));
     }
 }
