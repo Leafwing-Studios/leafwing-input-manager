@@ -140,15 +140,9 @@ fn main() {
         }
 
         if what_to_run.contains(Check::COMPILE_CHECK) {
-            let compile_targets = &[vec![], vec!["--target"]];
-            for target in compile_targets {
-                cmd!(
-                    sh,
-                    "cargo check --workspace {feature_option} {extra...} {target...}"
-                )
+            cmd!(sh, "cargo check --workspace {feature_option} {extra...}")
                 .run()
                 .expect("Please fix compiler errors in above output.");
-            }
         }
     }
 }
