@@ -1,8 +1,12 @@
 # Release Notes
 
-## Version 0.17.2 (Unreleased)
+## Version 0.18
 
-### Usability (0.17.2)
+### Dependencies (0.18.0)
+
+- updated to Bevy 0.17
+
+### Usability (0.18.2)
 
 - add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
 
