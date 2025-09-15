@@ -6,6 +6,7 @@ use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::*;
 use crate::user_input::{InputControlKind, UserInput};
+use bevy::ecs::message::Messages;
 use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
 use bevy::input::mouse::{
@@ -14,7 +15,7 @@ use bevy::input::mouse::{
 };
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::math::FloatOrd;
-use bevy::prelude::{Entity, Events, Reflect, ResMut, Vec2, World};
+use bevy::prelude::{Entity, Reflect, ResMut, Vec2, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 use std::hash::{Hash, Hasher};
@@ -63,28 +64,28 @@ impl Buttonlike for MouseButton {
         input_store.pressed(self)
     }
 
-    /// Sends a fake [`MouseButtonInput`] event to the world with [`ButtonState::Pressed`].
+    /// Sends a fake [`MouseButtonInput`] message to the world with [`ButtonState::Pressed`].
     ///
     /// # Note
     ///
     /// The `window` field will be filled with a placeholder value.
     fn press(&self, world: &mut World) {
-        let mut events = world.resource_mut::<Events<MouseButtonInput>>();
-        events.send(MouseButtonInput {
+        let mut messages = world.resource_mut::<Messages<MouseButtonInput>>();
+        messages.write(MouseButtonInput {
             button: *self,
             state: ButtonState::Pressed,
             window: Entity::PLACEHOLDER,
         });
     }
 
-    /// Sends a fake [`MouseButtonInput`] event to the world with [`ButtonState::Released`].
+    /// Sends a fake [`MouseButtonInput`] message to the world with [`ButtonState::Released`].
     ///
     /// # Note
     ///
     /// The `window` field will be filled with a placeholder value.
     fn release(&self, world: &mut World) {
-        let mut events = world.resource_mut::<Events<MouseButtonInput>>();
-        events.send(MouseButtonInput {
+        let mut messages = world.resource_mut::<Messages<MouseButtonInput>>();
+        messages.write(MouseButtonInput {
             button: *self,
             state: ButtonState::Released,
             window: Entity::PLACEHOLDER,
@@ -202,11 +203,11 @@ impl Buttonlike for MouseMoveDirection {
         self.direction.is_active(mouse_movement, self.threshold)
     }
 
-    /// Sends a [`MouseMotion`] event with a magnitude of 1.0 in the direction defined by `self`.
+    /// Sends a [`MouseMotion`] message with a magnitude of 1.0 in the direction defined by `self`.
     fn press(&self, world: &mut World) {
         world
-            .resource_mut::<Events<MouseMotion>>()
-            .send(MouseMotion {
+            .resource_mut::<Messages<MouseMotion>>()
+            .write(MouseMotion {
                 delta: self.direction.full_active_value(),
             });
     }
@@ -316,15 +317,15 @@ impl Axislike for MouseMoveAxis {
             .fold(value, |value, processor| processor.process(value))
     }
 
-    /// Sends a [`MouseMotion`] event along the appropriate axis with the specified value.
+    /// Sends a [`MouseMotion`] message along the appropriate axis with the specified value.
     fn set_value(&self, world: &mut World, value: f32) {
-        let event = MouseMotion {
+        let message = MouseMotion {
             delta: match self.axis {
                 DualAxisType::X => Vec2::new(value, 0.0),
                 DualAxisType::Y => Vec2::new(0.0, value),
             },
         };
-        world.resource_mut::<Events<MouseMotion>>().send(event);
+        world.resource_mut::<Messages<MouseMotion>>().write(message);
     }
 }
 
@@ -427,11 +428,11 @@ impl DualAxislike for MouseMove {
             .fold(movement, |value, processor| processor.process(value))
     }
 
-    /// Sends a [`MouseMotion`] event with the specified displacement.
+    /// Sends a [`MouseMotion`] message with the specified displacement.
     fn set_axis_pair(&self, world: &mut World, value: Vec2) {
         world
-            .resource_mut::<Events<MouseMotion>>()
-            .send(MouseMotion { delta: value });
+            .resource_mut::<Messages<MouseMotion>>()
+            .write(MouseMotion { delta: value });
     }
 }
 
@@ -559,7 +560,7 @@ impl Buttonlike for MouseScrollDirection {
         self.direction.is_active(movement, self.threshold)
     }
 
-    /// Sends a [`MouseWheel`] event with a magnitude of 1.0 px in the direction defined by `self`.
+    /// Sends a [`MouseWheel`] message with a magnitude of 1.0 px in the direction defined by `self`.
     ///
     /// # Note
     ///
@@ -567,12 +568,14 @@ impl Buttonlike for MouseScrollDirection {
     fn press(&self, world: &mut World) {
         let vec = self.direction.full_active_value();
 
-        world.resource_mut::<Events<MouseWheel>>().send(MouseWheel {
-            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
-            x: vec.x,
-            y: vec.y,
-            window: Entity::PLACEHOLDER,
-        });
+        world
+            .resource_mut::<Messages<MouseWheel>>()
+            .write(MouseWheel {
+                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+                x: vec.x,
+                y: vec.y,
+                window: Entity::PLACEHOLDER,
+            });
     }
 
     /// This method has no effect.
@@ -680,13 +683,13 @@ impl Axislike for MouseScrollAxis {
             .fold(value, |value, processor| processor.process(value))
     }
 
-    /// Sends a [`MouseWheel`] event along the appropriate axis with the specified value in pixels.
+    /// Sends a [`MouseWheel`] message along the appropriate axis with the specified value in pixels.
     ///
     /// # Note
     ///
     /// The `window` field will be filled with a placeholder value.
     fn set_value(&self, world: &mut World, value: f32) {
-        let event = MouseWheel {
+        let message = MouseWheel {
             unit: bevy::input::mouse::MouseScrollUnit::Pixel,
             x: if self.axis == DualAxisType::X {
                 value
@@ -700,7 +703,7 @@ impl Axislike for MouseScrollAxis {
             },
             window: Entity::PLACEHOLDER,
         };
-        world.resource_mut::<Events<MouseWheel>>().send(event);
+        world.resource_mut::<Messages<MouseWheel>>().write(message);
     }
 }
 
@@ -803,17 +806,19 @@ impl DualAxislike for MouseScroll {
             .fold(movement, |value, processor| processor.process(value))
     }
 
-    /// Sends a [`MouseWheel`] event with the specified displacement in pixels.
+    /// Sends a [`MouseWheel`] message with the specified displacement in pixels.
     ///
     /// # Note
     /// The `window` field will be filled with a placeholder value.
     fn set_axis_pair(&self, world: &mut World, value: Vec2) {
-        world.resource_mut::<Events<MouseWheel>>().send(MouseWheel {
-            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
-            x: value.x,
-            y: value.y,
-            window: Entity::PLACEHOLDER,
-        });
+        world
+            .resource_mut::<Messages<MouseWheel>>()
+            .write(MouseWheel {
+                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+                x: value.x,
+                y: value.y,
+                window: Entity::PLACEHOLDER,
+            });
     }
 }
 
@@ -1054,9 +1059,9 @@ mod tests {
         MouseMoveAxis::Y.set_value(app.world_mut(), 3.0);
         MouseMoveAxis::Y.set_value(app.world_mut(), 2.0);
 
-        let mouse_motion_events = app.world().get_resource::<Events<MouseMotion>>().unwrap();
-        for event in mouse_motion_events.iter_current_update_events() {
-            dbg!("Event sent: {:?}", event);
+        let mouse_motion_messages = app.world().get_resource::<Messages<MouseMotion>>().unwrap();
+        for message in mouse_motion_messages.iter_current_update_messages() {
+            dbg!("Message sent: {:?}", message);
         }
 
         // The haven't been processed yet
@@ -1065,7 +1070,7 @@ mod tests {
 
         app.update();
 
-        // Now the events should be processed
+        // Now the messages should be processed
         let accumulated_mouse_movement = app.world().resource::<AccumulatedMouseMotion>();
         assert_eq!(accumulated_mouse_movement.delta, Vec2::new(0.0, 5.0));
 
@@ -1086,7 +1091,7 @@ mod tests {
 
         // Send some data
         MouseMoveAxis::Y.set_value(app.world_mut(), 3.0);
-        // Wait for the events to be processed
+        // Wait for the messages to be processed
         app.update();
 
         let inputs = app.world().resource::<CentralInputStore>();
@@ -1104,7 +1109,7 @@ mod tests {
         assert_eq!(
             inputs.pair(&MouseMove::default()),
             Vec2::ZERO,
-            "No movement was expected. Is the position in the event stream being cleared properly?"
+            "No movement was expected. Is the position in the message stream being cleared properly?"
         );
     }
 }

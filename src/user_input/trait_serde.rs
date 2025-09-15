@@ -104,7 +104,7 @@ mod buttonlike {
             S: Serializer,
         {
             // Check that `Buttonlike` has `erased_serde::Serialize` as a super trait,
-            // preventing infinite recursion at runtime.
+            // prmessageing infinite recursion at runtime.
             const fn __check_erased_serialize_super_trait<T: ?Sized + Buttonlike>() {
                 require_erased_serialize_impl::<T>();
             }
@@ -134,7 +134,7 @@ mod axislike {
             S: Serializer,
         {
             // Check that `Axislike` has `erased_serde::Serialize` as a super trait,
-            // preventing infinite recursion at runtime.
+            // prmessageing infinite recursion at runtime.
             const fn __check_erased_serialize_super_trait<T: ?Sized + Axislike>() {
                 require_erased_serialize_impl::<T>();
             }
@@ -164,7 +164,7 @@ mod dualaxislike {
             S: Serializer,
         {
             // Check that `DualAxislike` has `erased_serde::Serialize` as a super trait,
-            // preventing infinite recursion at runtime.
+            // prmessageing infinite recursion at runtime.
             const fn __check_erased_serialize_super_trait<T: ?Sized + DualAxislike>() {
                 require_erased_serialize_impl::<T>();
             }
@@ -194,7 +194,7 @@ mod tripleaxislike {
             S: Serializer,
         {
             // Check that `TripleAxislike` has `erased_serde::Serialize` as a super trait,
-            // preventing infinite recursion at runtime.
+            // prmessageing infinite recursion at runtime.
             const fn __check_erased_serialize_super_trait<T: ?Sized + TripleAxislike>() {
                 require_erased_serialize_impl::<T>();
             }

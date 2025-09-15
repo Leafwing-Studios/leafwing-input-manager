@@ -55,7 +55,7 @@ fn build_app(fixed_timestep: Duration, frame_timestep: Duration) -> App {
     app
 }
 
-/// Keep track of some events that happen in the FixedUpdate schedule
+/// Keep track of some messages that happen in the FixedUpdate schedule
 /// - did the FixedUpdate schedule run during the frame?
 /// - was the button marked as `just_pressed` in the FixedUpdate schedule?
 fn fixed_update_counter(
@@ -68,7 +68,7 @@ fn fixed_update_counter(
     counter.run += 1;
 }
 
-/// Keep track of some events that happen in the Update schedule
+/// Keep track of some messages that happen in the Update schedule
 /// - was the button marked as `just_pressed` in the Update schedule?
 fn update_counter(mut counter: ResMut<UpdateCounter>, action: Res<ActionState<TestAction>>) {
     if action.just_pressed(&TestAction::Up) {

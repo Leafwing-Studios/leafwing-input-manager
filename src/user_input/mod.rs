@@ -50,7 +50,7 @@
 //!
 //! - Check mouse buttons presses using Bevy's [`MouseButton`] directly.
 //! - Track mouse motion with [`MouseMove`], [`MouseMoveAxis`], and [`MouseMoveDirection`].
-//! - Capture mouse wheel events with [`MouseScroll`], [`MouseScrollAxis`], and [`MouseScrollDirection`].
+//! - Capture mouse wheel messages with [`MouseScroll`], [`MouseScrollAxis`], and [`MouseScrollDirection`].
 //!
 //! ### Virtual Axial Controls
 //!
@@ -154,7 +154,7 @@ pub trait Buttonlike:
         f32::from(self.pressed(input_store, gamepad))
     }
 
-    /// Simulates a press of the buttonlike input by sending the appropriate event.
+    /// Simulates a press of the buttonlike input by sending the appropriate message.
     ///
     /// This method defaults to calling [`Buttonlike::press_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
@@ -173,7 +173,7 @@ pub trait Buttonlike:
         self.press(world);
     }
 
-    /// Simulates a release of the buttonlike input by sending the appropriate event.
+    /// Simulates a release of the buttonlike input by sending the appropriate message.
     ///
     /// This method defaults to calling [`Buttonlike::release_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
@@ -192,7 +192,7 @@ pub trait Buttonlike:
         self.release(world);
     }
 
-    /// Simulate a value change of the buttonlike input by sending the appropriate event.
+    /// Simulate a value change of the buttonlike input by sending the appropriate message.
     ///
     /// This method defaults to calling [`Buttonlike::set_value_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
@@ -228,7 +228,7 @@ pub trait Axislike:
     #[must_use]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32;
 
-    /// Simulate an axis-like input by sending the appropriate event.
+    /// Simulate an axis-like input by sending the appropriate message.
     ///
     /// This method defaults to calling [`Axislike::set_value_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
@@ -256,7 +256,7 @@ pub trait DualAxislike:
     #[must_use]
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2;
 
-    /// Simulate a dual-axis-like input by sending the appropriate event.
+    /// Simulate a dual-axis-like input by sending the appropriate message.
     ///
     /// This method defaults to calling [`DualAxislike::set_axis_pair_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.
@@ -284,7 +284,7 @@ pub trait TripleAxislike:
     #[must_use]
     fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3;
 
-    /// Simulate a triple-axis-like input by sending the appropriate event.
+    /// Simulate a triple-axis-like input by sending the appropriate message.
     ///
     /// This method defaults to calling [`TripleAxislike::set_axis_triple_as_gamepad`] if not overridden,
     /// as is the case for gamepad-reliant inputs.

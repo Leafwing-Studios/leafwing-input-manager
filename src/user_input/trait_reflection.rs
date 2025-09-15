@@ -45,10 +45,6 @@ mod buttonlike {
             ReflectOwned::Opaque(self)
         }
 
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
-        }
-
         fn try_apply(
             &mut self,
             value: &dyn PartialReflect,
@@ -210,10 +206,6 @@ mod axislike {
 
         fn reflect_owned(self: Box<Self>) -> ReflectOwned {
             ReflectOwned::Opaque(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
         }
 
         fn try_apply(
@@ -402,10 +394,6 @@ mod dualaxislike {
             ReflectOwned::Opaque(self)
         }
 
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
-        }
-
         fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
             self
         }
@@ -567,10 +555,6 @@ mod tripleaxislike {
 
         fn reflect_owned(self: Box<Self>) -> ReflectOwned {
             ReflectOwned::Opaque(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
         }
 
         fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {

@@ -654,8 +654,8 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Get the [`Vec2`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only events that represent dual-axis control provide a [`Vec2`],
-    /// and this will return [`None`] for other events.
+    /// Only messages that represent dual-axis control provide a [`Vec2`],
+    /// and this will return [`None`] for other messages.
     ///
     /// If multiple inputs with an axis pair trigger the same game action at the same time, the
     /// value of each axis pair will be added together.
@@ -703,8 +703,8 @@ impl<A: Actionlike> ActionState<A> {
 
     /// Get the [`Vec3`] from the binding that triggered the corresponding `action`.
     ///
-    /// Only events that represent triple-axis control provide a [`Vec3`],
-    /// and this will return [`None`] for other events.
+    /// Only messages that represent triple-axis control provide a [`Vec3`],
+    /// and this will return [`None`] for other messages.
     ///
     /// If multiple inputs with an axis triple trigger the same game action at the same time, the
     /// value of each axis triple will be added together.
@@ -1212,7 +1212,7 @@ mod tests {
 
         // Pressing
         KeyCode::KeyR.press(app.world_mut());
-        // Process the input events into Input<KeyCode> data
+        // Process the input messages into Input<KeyCode> data
         app.update();
         let input_store = app.world().resource::<CentralInputStore>();
 

@@ -86,7 +86,7 @@ enum ActiveInput {
 /// Switch the gamepad when any button is pressed or any axis input used
 fn activate_gamepad(
     mut next_state: ResMut<NextState<ActiveInput>>,
-    mut gamepad_evr: EventReader<GamepadEvent>,
+    mut gamepad_evr: MessageReader<GamepadEvent>,
 ) {
     for ev in gamepad_evr.read() {
         match ev {
@@ -103,7 +103,7 @@ fn activate_gamepad(
 /// Switch to mouse and keyboard input when any keyboard button is pressed
 fn activate_mkb(
     mut next_state: ResMut<NextState<ActiveInput>>,
-    mut kb_evr: EventReader<KeyboardInput>,
+    mut kb_evr: MessageReader<KeyboardInput>,
 ) {
     for _ev in kb_evr.read() {
         info!("Switching to mouse and keyboard input");

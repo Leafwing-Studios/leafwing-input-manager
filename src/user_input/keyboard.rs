@@ -1,10 +1,11 @@
 //! Keyboard inputs
 
+use bevy::ecs::message::Messages;
 use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::{ButtonInput, ButtonState};
-use bevy::prelude::{Entity, Events, KeyCode, Reflect, ResMut, World};
+use bevy::prelude::{Entity, KeyCode, Reflect, ResMut, World};
 use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
@@ -58,14 +59,14 @@ impl Buttonlike for KeyCode {
         input_store.pressed(self)
     }
 
-    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
+    /// Sends a fake [`KeyboardInput`] message to the world with [`ButtonState::Pressed`].
     ///
     /// # Note
     ///
     /// The `logical_key` and `window` fields will be filled with placeholder values.
     fn press(&self, world: &mut World) {
-        let mut events = world.resource_mut::<Events<KeyboardInput>>();
-        events.send(KeyboardInput {
+        let mut messages = world.resource_mut::<Messages<KeyboardInput>>();
+        messages.write(KeyboardInput {
             key_code: *self,
             logical_key: Key::Unidentified(NativeKey::Unidentified),
             state: ButtonState::Pressed,
@@ -75,14 +76,14 @@ impl Buttonlike for KeyCode {
         });
     }
 
-    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Released`].
+    /// Sends a fake [`KeyboardInput`] message to the world with [`ButtonState::Released`].
     ///
     /// # Note
     ///
     /// The `logical_key` and `window` fields will be filled with placeholder values.
     fn release(&self, world: &mut World) {
-        let mut events = world.resource_mut::<Events<KeyboardInput>>();
-        events.send(KeyboardInput {
+        let mut messages = world.resource_mut::<Messages<KeyboardInput>>();
+        messages.write(KeyboardInput {
             key_code: *self,
             logical_key: Key::Unidentified(NativeKey::Unidentified),
             state: ButtonState::Released,
@@ -183,7 +184,7 @@ impl Buttonlike for ModifierKey {
         input_store.pressed(&self.left()) || input_store.pressed(&self.right())
     }
 
-    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Pressed`].
+    /// Sends a fake [`KeyboardInput`] message to the world with [`ButtonState::Pressed`].
     ///
     /// The left and right keys will be pressed simultaneously.
     ///
@@ -195,7 +196,7 @@ impl Buttonlike for ModifierKey {
         self.right().press(world);
     }
 
-    /// Sends a fake [`KeyboardInput`] event to the world with [`ButtonState::Released`].
+    /// Sends a fake [`KeyboardInput`] message to the world with [`ButtonState::Released`].
     ///
     /// The left and right keys will be released simultaneously.
     ///
