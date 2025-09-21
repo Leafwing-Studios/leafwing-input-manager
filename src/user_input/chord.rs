@@ -208,11 +208,11 @@ impl UserInput for AxislikeChord {
 
 #[serde_typetag]
 impl Axislike for AxislikeChord {
-    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32> {
         if self.button.pressed(input_store, gamepad) {
-            self.axis.value(input_store, gamepad)
+            self.axis.get_value(input_store, gamepad)
         } else {
-            0.0
+            Some(0.0)
         }
     }
 

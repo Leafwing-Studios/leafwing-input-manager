@@ -44,7 +44,11 @@ pub fn find_gamepad(gamepads: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// Retrieves the current value of the specified `axis`.
 #[must_use]
 #[inline]
-fn read_axis_value(input_store: &CentralInputStore, gamepad: Entity, axis: GamepadAxis) -> f32 {
+fn read_axis_value(
+    input_store: &CentralInputStore,
+    gamepad: Entity,
+    axis: GamepadAxis,
+) -> Option<f32> {
     let axis = SpecificGamepadAxis::new(gamepad, axis);
     input_store.value(&axis)
 }
@@ -205,7 +209,8 @@ impl Buttonlike for GamepadControlDirection {
     #[inline]
     fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
         let value = read_axis_value(input_store, gamepad, self.axis);
-        self.direction.is_active(value, self.threshold)
+        self.direction
+            .is_active(value.unwrap_or(0.0), self.threshold)
     }
 
     /// Sends a [`RawGamepadEvent::Axis`] message with a magnitude of 1.0 for the specified direction on the provided gamepad [`Entity`].
@@ -300,7 +305,7 @@ impl UserInput for GamepadAxis {
 
 #[serde_typetag]
 impl Axislike for GamepadAxis {
-    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32> {
         read_axis_value(input_store, gamepad, *self)
     }
 }
@@ -323,7 +328,7 @@ impl UserInput for SpecificGamepadAxis {
 
 #[serde_typetag]
 impl Axislike for SpecificGamepadAxis {
-    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32> {
         read_axis_value(input_store, gamepad, self.axis)
     }
 }
@@ -423,11 +428,12 @@ impl UserInput for GamepadControlAxis {
 impl Axislike for GamepadControlAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
-        let value = read_axis_value(input_store, gamepad, self.axis);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32> {
+        read_axis_value(input_store, gamepad, self.axis).map(|value| {
+            self.processors
+                .iter()
+                .fold(value, |value, processor| processor.process(value))
+        })
     }
 
     /// Sends a [`RawGamepadEvent::Axis`] message with the specified value on the provided gamepad.
@@ -553,8 +559,8 @@ impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[inline]
     fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
-        let x = read_axis_value(input_store, gamepad, self.x);
-        let y = read_axis_value(input_store, gamepad, self.y);
+        let x = read_axis_value(input_store, gamepad, self.x).unwrap_or(0.0);
+        let y = read_axis_value(input_store, gamepad, self.y).unwrap_or(0.0);
         self.processors
             .iter()
             .fold(Vec2::new(x, y), |value, processor| processor.process(value))

@@ -203,13 +203,15 @@ impl UserInput for VirtualAxis {
 impl Axislike for VirtualAxis {
     /// Retrieves the current value of this axis after processing by the associated processors.
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32> {
         let negative = self.negative.value(input_store, gamepad);
         let positive = self.positive.value(input_store, gamepad);
         let value = positive - negative;
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
+        Some(
+            self.processors
+                .iter()
+                .fold(value, |value, processor| processor.process(value)),
+        )
     }
 
     /// Sets the value of corresponding button based on the given `value`.

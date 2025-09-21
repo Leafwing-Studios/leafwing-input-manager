@@ -226,7 +226,13 @@ pub trait Axislike:
 {
     /// Gets the current value of the input as an `f32`.
     #[must_use]
-    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32;
+    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+        self.get_value(input_store, gamepad).unwrap_or(0.0)
+    }
+
+    /// Gets the current value of the input as an `f32`.
+    #[must_use]
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32>;
 
     /// Simulate an axis-like input by sending the appropriate message.
     ///

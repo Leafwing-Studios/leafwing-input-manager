@@ -152,10 +152,8 @@ impl CentralInputStore {
     /// Fetches the value of an [`Axislike`] input.
     ///
     /// This should be between -1.0 and 1.0, where -1.0 is fully left or down and 1.0 is fully right or up.
-    pub fn value<A: Axislike + Hash + Eq + Clone>(&self, axislike: &A) -> f32 {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<A>()) else {
-            return 0.0;
-        };
+    pub fn value<A: Axislike + Hash + Eq + Clone>(&self, axislike: &A) -> Option<f32> {
+        let updated_values = self.updated_values.get(&TypeId::of::<A>())?;
 
         let UpdatedValues::Axislike(axislikes) = updated_values else {
             panic!("Expected Axislike, found {updated_values:?}");
@@ -164,7 +162,7 @@ impl CentralInputStore {
         // PERF: surely there's a way to avoid cloning here
         let boxed_axislike: Box<dyn Axislike> = Box::new(axislike.clone());
 
-        axislikes.get(&boxed_axislike).copied().unwrap_or(0.0)
+        axislikes.get(&boxed_axislike).copied()
     }
 
     /// Fetches the value of a [`DualAxislike`] input.

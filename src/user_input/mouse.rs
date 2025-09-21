@@ -309,12 +309,14 @@ impl Axislike for MouseMoveAxis {
     /// Retrieves the amount of the mouse movement along the specified axis
     /// after processing by the associated processors.
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
+    fn get_value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<f32> {
         let movement = input_store.pair(&MouseMove::default());
         let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
+        Some(
+            self.processors
+                .iter()
+                .fold(value, |value, processor| processor.process(value)),
+        )
     }
 
     /// Sends a [`MouseMotion`] message along the appropriate axis with the specified value.
@@ -675,12 +677,14 @@ impl Axislike for MouseScrollAxis {
     /// Retrieves the amount of the mouse wheel movement along the specified axis
     /// after processing by the associated processors.
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
+    fn get_value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<f32> {
         let movement = input_store.pair(&MouseScroll::default());
         let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
+        Some(
+            self.processors
+                .iter()
+                .fold(value, |value, processor| processor.process(value)),
+        )
     }
 
     /// Sends a [`MouseWheel`] message along the appropriate axis with the specified value in pixels.
