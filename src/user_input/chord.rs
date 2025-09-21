@@ -131,7 +131,7 @@ impl Buttonlike for ButtonlikeChord {
     #[inline]
     fn get_pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<bool> {
         for input in &self.0 {
-            if input.get_pressed(input_store, gamepad)? == false {
+            if !(input.get_pressed(input_store, gamepad)?) {
                 return Some(false);
             }
         }
