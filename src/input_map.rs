@@ -615,34 +615,43 @@ impl<A: Actionlike> InputMap<A> {
         let gamepad = self.associated_gamepad.unwrap_or(find_gamepad(gamepads));
 
         // Generate the base action data for each action
-        for (action, _input_bindings) in self.iter_buttonlike() {
-            let mut final_state = false;
-            for binding in _input_bindings {
-                if binding.pressed(input_store, gamepad) {
-                    final_state = true;
-                    break;
+        for (action, input_bindings) in self.iter_buttonlike() {
+            let mut final_state = None;
+            for binding in input_bindings {
+                if let Some(pressed) = binding.get_pressed(input_store, gamepad) {
+                    final_state = Some(final_state.unwrap_or(false) || pressed);
                 }
             }
 
-            updated_actions.insert(action.clone(), UpdatedValue::Button(final_state));
+            if let Some(pressed) = final_state {
+                updated_actions.insert(action.clone(), UpdatedValue::Button(pressed));
+            }
         }
 
-        for (action, _input_bindings) in self.iter_axislike() {
-            let mut final_value = 0.0;
-            for binding in _input_bindings {
-                final_value += binding.value(input_store, gamepad);
+        for (action, input_bindings) in self.iter_axislike() {
+            let mut final_value = None;
+            for binding in input_bindings {
+                if let Some(value) = binding.get_value(input_store, gamepad) {
+                    final_value = Some(final_value.unwrap_or(0.0) + value);
+                }
             }
 
-            updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
+            if let Some(final_value) = final_value {
+                updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
+            }
         }
 
         for (action, _input_bindings) in self.iter_dual_axislike() {
-            let mut final_value = Vec2::ZERO;
+            let mut final_value = None;
             for binding in _input_bindings {
-                final_value += binding.axis_pair(input_store, gamepad);
+                if let Some(axis_pair) = binding.get_axis_pair(input_store, gamepad) {
+                    final_value = Some(final_value.unwrap_or(Vec2::ZERO) + axis_pair);
+                }
             }
 
-            updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
+            if let Some(final_value) = final_value {
+                updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
+            }
         }
 
         for (action, _input_bindings) in self.iter_triple_axislike() {

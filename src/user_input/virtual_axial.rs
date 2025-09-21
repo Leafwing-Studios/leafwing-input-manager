@@ -581,14 +581,32 @@ impl UserInput for VirtualDPad3D {
 impl TripleAxislike for VirtualDPad3D {
     /// Retrieves the current X, Y, and Z values of this D-pad.
     #[inline]
-    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3 {
-        let up = self.up.value(input_store, gamepad);
-        let down = self.down.value(input_store, gamepad);
-        let left = self.left.value(input_store, gamepad);
-        let right = self.right.value(input_store, gamepad);
-        let forward = self.forward.value(input_store, gamepad);
-        let backward = self.backward.value(input_store, gamepad);
-        Vec3::new(right - left, up - down, backward - forward)
+    fn get_axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec3> {
+        let up = self.up.get_value(input_store, gamepad);
+        let down = self.down.get_value(input_store, gamepad);
+        let left = self.left.get_value(input_store, gamepad);
+        let right = self.right.get_value(input_store, gamepad);
+        let forward = self.forward.get_value(input_store, gamepad);
+        let backward = self.backward.get_value(input_store, gamepad);
+
+        if up.is_none()
+            && down.is_none()
+            && left.is_none()
+            && right.is_none()
+            && forward.is_none()
+            && backward.is_none()
+        {
+            return None;
+        }
+
+        let up = up.unwrap_or(0.0);
+        let down = down.unwrap_or(0.0);
+        let left = left.unwrap_or(0.0);
+        let right = right.unwrap_or(0.0);
+        let forward = forward.unwrap_or(0.0);
+        let backward = backward.unwrap_or(0.0);
+
+        Some(Vec3::new(right - left, up - down, backward - forward))
     }
 
     /// Sets the value of corresponding button on each axis based on the given `value`.

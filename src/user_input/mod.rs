@@ -311,7 +311,15 @@ pub trait TripleAxislike:
 {
     /// Gets the values of this input along the X, Y, and Z axes (if applicable).
     #[must_use]
-    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3;
+    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3 {
+        self.get_axis_triple(input_store, gamepad)
+            .unwrap_or(Vec3::ZERO)
+    }
+
+    /// Gets the values of this input along the X, Y, and Z axes (if applicable).
+    ///
+    /// Or `None` if the input has never been pressed or set.
+    fn get_axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec3>;
 
     /// Simulate a triple-axis-like input by sending the appropriate message.
     ///

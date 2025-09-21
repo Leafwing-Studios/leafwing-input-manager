@@ -67,7 +67,7 @@ fn set_gamepad_updates_central_input_store() {
     let central_input_store = app.world().resource::<CentralInputStore>();
 
     assert_eq!(central_input_store.button_value(&gamepad_trigger), 0.7);
-    assert!(central_input_store.pressed(&gamepad_trigger));
+    assert!(central_input_store.pressed(&gamepad_trigger).unwrap());
 }
 
 #[test]
@@ -82,7 +82,7 @@ fn set_keyboard_updates_central_input_store() {
     let central_input_store = app.world().resource::<CentralInputStore>();
 
     assert_eq!(central_input_store.button_value(&keycode), 1.0);
-    assert!(central_input_store.pressed(&keycode));
+    assert!(central_input_store.pressed(&keycode).unwrap());
 }
 
 #[test]
