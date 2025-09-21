@@ -4,7 +4,7 @@
 
 ### Breaking Changes (0.19.0)
 
-- The `Buttonlike`, `Axislike` and `DualAxislike` traits now have getters that return `Option`s to indicate whether an input has been seen before. If you implemented your own input types, you should now implement `Buttonlike::get_pressed` instaed of `pressed`, `Axislike::get_value` instead of `value` and `DualAxislike::get_axis_pair` instead of `axis_pair`.
+- The `Buttonlike`, `Axislike`, `DualAxislike` and `TripleAxislike` traits now have getters that return `Option`s to indicate whether an input has been seen before. If you implemented your own input types, you should now implement `Buttonlike::get_pressed` instaed of `pressed`, `Axislike::get_value` instead of `value` and `DualAxislike::get_axis_pair` instead of `axis_pair`.
 
 ### Bugs (0.19.0)
 
