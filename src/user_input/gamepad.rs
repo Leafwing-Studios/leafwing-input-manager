@@ -207,10 +207,9 @@ impl UserInput for GamepadControlDirection {
 impl Buttonlike for GamepadControlDirection {
     /// Checks if there is any recent stick movement along the specified direction.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
-        let value = read_axis_value(input_store, gamepad, self.axis);
-        self.direction
-            .is_active(value.unwrap_or(0.0), self.threshold)
+    fn get_pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<bool> {
+        read_axis_value(input_store, gamepad, self.axis)
+            .map(|value| self.direction.is_active(value, self.threshold))
     }
 
     /// Sends a [`RawGamepadEvent::Axis`] message with a magnitude of 1.0 for the specified direction on the provided gamepad [`Entity`].
@@ -558,12 +557,14 @@ impl UserInput for GamepadStick {
 impl DualAxislike for GamepadStick {
     /// Retrieves the current X and Y values of this stick after processing by the associated processors.
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
-        let x = read_axis_value(input_store, gamepad, self.x).unwrap_or(0.0);
-        let y = read_axis_value(input_store, gamepad, self.y).unwrap_or(0.0);
-        self.processors
-            .iter()
-            .fold(Vec2::new(x, y), |value, processor| processor.process(value))
+    fn get_axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec2> {
+        let x = read_axis_value(input_store, gamepad, self.x)?;
+        let y = read_axis_value(input_store, gamepad, self.y)?;
+        Some(
+            self.processors
+                .iter()
+                .fold(Vec2::new(x, y), |value, processor| processor.process(value)),
+        )
     }
 
     /// Sends a [`RawGamepadEvent::Axis`] message with the specified values on the provided gamepad [`Entity`].
@@ -618,7 +619,11 @@ impl WithDualAxisProcessingPipelineExt for GamepadStick {
 /// Checks if the given [`GamepadButton`] is currently pressed.
 #[must_use]
 #[inline]
-fn button_pressed(input_store: &CentralInputStore, gamepad: Entity, button: GamepadButton) -> bool {
+fn button_pressed(
+    input_store: &CentralInputStore,
+    gamepad: Entity,
+    button: GamepadButton,
+) -> Option<bool> {
     let button = SpecificGamepadButton::new(gamepad, button);
     input_store.pressed(&button)
 }
@@ -692,7 +697,7 @@ impl UserInput for SpecificGamepadButton {
 #[serde_typetag]
 impl Buttonlike for SpecificGamepadButton {
     /// WARNING: The supplied gamepad is ignored, as the button is already specific to a gamepad.
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
+    fn get_pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<bool> {
         button_pressed(input_store, self.gamepad, self.button)
     }
 
@@ -741,7 +746,7 @@ impl UserInput for GamepadButton {
 impl Buttonlike for GamepadButton {
     /// Checks if the specified button is currently pressed down.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
+    fn get_pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<bool> {
         button_pressed(input_store, gamepad, *self)
     }
 

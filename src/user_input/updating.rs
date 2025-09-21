@@ -108,10 +108,8 @@ impl CentralInputStore {
     }
 
     /// Check if a [`Buttonlike`] input is currently pressing.
-    pub fn pressed<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> bool {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<B>()) else {
-            return false;
-        };
+    pub fn pressed<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> Option<bool> {
+        let updated_values = self.updated_values.get(&TypeId::of::<B>())?;
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
             panic!("Expected Buttonlike, found {updated_values:?}");
@@ -124,7 +122,6 @@ impl CentralInputStore {
             .get(&boxed_buttonlike)
             .copied()
             .map(|button| button.pressed)
-            .unwrap_or(false)
     }
 
     /// Fetches the value of a [`Buttonlike`] input.
@@ -166,10 +163,8 @@ impl CentralInputStore {
     }
 
     /// Fetches the value of a [`DualAxislike`] input.
-    pub fn pair<D: DualAxislike + Hash + Eq + Clone>(&self, dualaxislike: &D) -> Vec2 {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<D>()) else {
-            return Vec2::ZERO;
-        };
+    pub fn pair<D: DualAxislike + Hash + Eq + Clone>(&self, dualaxislike: &D) -> Option<Vec2> {
+        let updated_values = self.updated_values.get(&TypeId::of::<D>())?;
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
             panic!("Expected DualAxislike, found {updated_values:?}");
@@ -178,10 +173,7 @@ impl CentralInputStore {
         // PERF: surely there's a way to avoid cloning here
         let boxed_dualaxislike: Box<dyn DualAxislike> = Box::new(dualaxislike.clone());
 
-        dualaxislikes
-            .get(&boxed_dualaxislike)
-            .copied()
-            .unwrap_or(Vec2::ZERO)
+        dualaxislikes.get(&boxed_dualaxislike).copied()
     }
 
     /// Fetches the value of a [`TripleAxislike`] input.
@@ -413,6 +405,6 @@ mod tests {
         world.run_system_once(MouseButton::compute).unwrap();
         let central_input_store = world.resource::<CentralInputStore>();
         dbg!(central_input_store);
-        assert!(central_input_store.pressed(&MouseButton::Left));
+        assert_eq!(central_input_store.pressed(&MouseButton::Left), Some(true));
     }
 }

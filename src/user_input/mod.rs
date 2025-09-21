@@ -137,7 +137,13 @@ pub trait Buttonlike:
 {
     /// Checks if the input is currently active.
     #[must_use]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool;
+    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
+        self.get_pressed(input_store, gamepad).unwrap_or(false)
+    }
+
+    /// Checks if the input is currently active.
+    #[must_use]
+    fn get_pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<bool>;
 
     /// Checks if the input is currently inactive.
     fn released(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
@@ -152,6 +158,16 @@ pub trait Buttonlike:
     #[must_use]
     fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
         f32::from(self.pressed(input_store, gamepad))
+    }
+
+    /// Gets the current value of the button as an `f32`.
+    /// Or `None` if the input has never been pressed or set.
+    ///
+    /// The returned value should be between `0.0` and `1.0`,
+    /// with `0.0` representing the input being fully released
+    /// and `1.0` representing the input being fully pressed.
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32> {
+        self.get_pressed(input_store, gamepad).map(f32::from)
     }
 
     /// Simulates a press of the buttonlike input by sending the appropriate message.
@@ -260,7 +276,14 @@ pub trait DualAxislike:
 {
     /// Gets the values of this input along the X and Y axes (if applicable).
     #[must_use]
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2;
+    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
+        self.get_axis_pair(input_store, gamepad)
+            .unwrap_or(Vec2::ZERO)
+    }
+
+    /// Gets the values of this input along the X and Y axes (if applicable).
+    #[must_use]
+    fn get_axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec2>;
 
     /// Simulate a dual-axis-like input by sending the appropriate message.
     ///

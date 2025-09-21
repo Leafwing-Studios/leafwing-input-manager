@@ -434,15 +434,27 @@ impl UserInput for VirtualDPad {
 impl DualAxislike for VirtualDPad {
     /// Retrieves the current X and Y values of this D-pad after processing by the associated processors.
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
-        let up = self.up.value(input_store, gamepad);
-        let down = self.down.value(input_store, gamepad);
-        let left = self.left.value(input_store, gamepad);
-        let right = self.right.value(input_store, gamepad);
+    fn get_axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec2> {
+        let up = self.up.get_value(input_store, gamepad);
+        let down = self.down.get_value(input_store, gamepad);
+        let left = self.left.get_value(input_store, gamepad);
+        let right = self.right.get_value(input_store, gamepad);
+
+        if up.is_none() && down.is_none() && left.is_none() && right.is_none() {
+            return None;
+        }
+
+        let up = up.unwrap_or(0.0);
+        let down = down.unwrap_or(0.0);
+        let left = left.unwrap_or(0.0);
+        let right = right.unwrap_or(0.0);
+
         let value = Vec2::new(right - left, up - down);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
+        Some(
+            self.processors
+                .iter()
+                .fold(value, |value, processor| processor.process(value)),
+        )
     }
 
     /// Sets the value of corresponding button on each axis based on the given `value`.

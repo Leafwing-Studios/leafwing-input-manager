@@ -129,10 +129,13 @@ impl UserInput for ButtonlikeChord {
 impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
-        self.0
-            .iter()
-            .all(|input| input.pressed(input_store, gamepad))
+    fn get_pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<bool> {
+        for input in &self.0 {
+            if input.get_pressed(input_store, gamepad)? == false {
+                return Some(false);
+            }
+        }
+        Some(true)
     }
 
     fn press(&self, world: &mut World) {
@@ -263,11 +266,11 @@ impl UserInput for DualAxislikeChord {
 
 #[serde_typetag]
 impl DualAxislike for DualAxislikeChord {
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
+    fn get_axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec2> {
         if self.button.pressed(input_store, gamepad) {
-            self.dual_axis.axis_pair(input_store, gamepad)
+            self.dual_axis.get_axis_pair(input_store, gamepad)
         } else {
-            Vec2::ZERO
+            None
         }
     }
 
