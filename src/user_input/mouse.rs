@@ -60,7 +60,7 @@ impl UpdatableInput for MouseButton {
 impl Buttonlike for MouseButton {
     /// Checks if the specified button is currently pressed down.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
+    fn get_pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<bool> {
         input_store.pressed(self)
     }
 
@@ -198,9 +198,10 @@ impl UserInput for MouseMoveDirection {
 impl Buttonlike for MouseMoveDirection {
     /// Checks if there is any recent mouse movement along the specified direction.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
+    fn get_pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<bool> {
         let mouse_movement = input_store.pair(&MouseMove::default());
-        self.direction.is_active(mouse_movement, self.threshold)
+        mouse_movement
+            .map(|mouse_movement| self.direction.is_active(mouse_movement, self.threshold))
     }
 
     /// Sends a [`MouseMotion`] message with a magnitude of 1.0 in the direction defined by `self`.
@@ -309,12 +310,14 @@ impl Axislike for MouseMoveAxis {
     /// Retrieves the amount of the mouse movement along the specified axis
     /// after processing by the associated processors.
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
-        let movement = input_store.pair(&MouseMove::default());
-        let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
+    fn get_value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<f32> {
+        input_store.pair(&MouseMove::default()).map(|movement| {
+            let value = self.axis.get_value(movement);
+
+            self.processors
+                .iter()
+                .fold(value, |value, processor| processor.process(value))
+        })
     }
 
     /// Sends a [`MouseMotion`] message along the appropriate axis with the specified value.
@@ -421,11 +424,12 @@ impl UserInput for MouseMove {
 impl DualAxislike for MouseMove {
     /// Retrieves the mouse displacement after processing by the associated processors.
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
-        let movement = input_store.pair(&MouseMove::default());
-        self.processors
-            .iter()
-            .fold(movement, |value, processor| processor.process(value))
+    fn get_axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<Vec2> {
+        input_store.pair(&MouseMove::default()).map(|movement| {
+            self.processors
+                .iter()
+                .fold(movement, |value, processor| processor.process(value))
+        })
     }
 
     /// Sends a [`MouseMotion`] message with the specified displacement.
@@ -555,9 +559,10 @@ impl UserInput for MouseScrollDirection {
 impl Buttonlike for MouseScrollDirection {
     /// Checks if there is any recent mouse wheel movement along the specified direction.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
-        let movement = input_store.pair(&MouseScroll::default());
-        self.direction.is_active(movement, self.threshold)
+    fn get_pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<bool> {
+        input_store
+            .pair(&MouseScroll::default())
+            .map(|movement| self.direction.is_active(movement, self.threshold))
     }
 
     /// Sends a [`MouseWheel`] message with a magnitude of 1.0 px in the direction defined by `self`.
@@ -675,12 +680,14 @@ impl Axislike for MouseScrollAxis {
     /// Retrieves the amount of the mouse wheel movement along the specified axis
     /// after processing by the associated processors.
     #[inline]
-    fn value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> f32 {
-        let movement = input_store.pair(&MouseScroll::default());
-        let value = self.axis.get_value(movement);
-        self.processors
-            .iter()
-            .fold(value, |value, processor| processor.process(value))
+    fn get_value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<f32> {
+        input_store.pair(&MouseScroll::default()).map(|movement| {
+            let value = self.axis.get_value(movement);
+
+            self.processors
+                .iter()
+                .fold(value, |value, processor| processor.process(value))
+        })
     }
 
     /// Sends a [`MouseWheel`] message along the appropriate axis with the specified value in pixels.
@@ -799,11 +806,12 @@ impl UserInput for MouseScroll {
 impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[inline]
-    fn axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Vec2 {
-        let movement = input_store.pair(&MouseScroll::default());
-        self.processors
-            .iter()
-            .fold(movement, |value, processor| processor.process(value))
+    fn get_axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<Vec2> {
+        input_store.pair(&MouseScroll::default()).map(|movement| {
+            self.processors
+                .iter()
+                .fold(movement, |value, processor| processor.process(value))
+        })
     }
 
     /// Sends a [`MouseWheel`] message with the specified displacement in pixels.
@@ -1075,18 +1083,21 @@ mod tests {
         assert_eq!(accumulated_mouse_movement.delta, Vec2::new(0.0, 5.0));
 
         let inputs = app.world().resource::<CentralInputStore>();
-        assert_eq!(inputs.pair(&MouseMove::default()), Vec2::new(0.0, 5.0));
+        assert_eq!(
+            inputs.pair(&MouseMove::default()).unwrap(),
+            Vec2::new(0.0, 5.0)
+        );
     }
 
     #[test]
     fn multiple_frames_accumulate_mouse_movement() {
         let mut app = test_app();
         let inputs = app.world().resource::<CentralInputStore>();
-        // Starts at 0
+        // Starts at None
         assert_eq!(
             inputs.pair(&MouseMove::default()),
-            Vec2::ZERO,
-            "Initial movement is not zero."
+            None,
+            "Initial movement is not None."
         );
 
         // Send some data
@@ -1097,7 +1108,7 @@ mod tests {
         let inputs = app.world().resource::<CentralInputStore>();
         // Data is read
         assert_eq!(
-            inputs.pair(&MouseMove::default()),
+            inputs.pair(&MouseMove::default()).unwrap(),
             Vec2::new(0.0, 3.0),
             "Movement sent was not read correctly."
         );
@@ -1107,7 +1118,7 @@ mod tests {
         let inputs = app.world().resource::<CentralInputStore>();
         // Back to 0 for this frame
         assert_eq!(
-            inputs.pair(&MouseMove::default()),
+            inputs.pair(&MouseMove::default()).unwrap(),
             Vec2::ZERO,
             "No movement was expected. Is the position in the message stream being cleared properly?"
         );

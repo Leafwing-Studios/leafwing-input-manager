@@ -55,7 +55,7 @@ impl UpdatableInput for KeyCode {
 impl Buttonlike for KeyCode {
     /// Checks if the specified key is currently pressed down.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
+    fn get_pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<bool> {
         input_store.pressed(self)
     }
 
@@ -180,8 +180,14 @@ impl UserInput for ModifierKey {
 impl Buttonlike for ModifierKey {
     /// Checks if the specified modifier key is currently pressed down.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> bool {
-        input_store.pressed(&self.left()) || input_store.pressed(&self.right())
+    fn get_pressed(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<bool> {
+        let left = input_store.pressed(&self.left());
+        let right = input_store.pressed(&self.right());
+        if (None, None) == (left, right) {
+            None
+        } else {
+            Some(left.unwrap_or(false) || right.unwrap_or(false))
+        }
     }
 
     /// Sends a fake [`KeyboardInput`] message to the world with [`ButtonState::Pressed`].
