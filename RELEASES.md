@@ -1,5 +1,15 @@
 # Release Notes
 
+## Version 0.19.0 (Unreleased)
+
+### Breaking Changes (0.19.0)
+
+- The `Buttonlike`, `Axislike` and `DualAxislike` traits now have getters that return `Option`s to indicate whether an input has been seen before. If you implemented your own input types, you should now implement `Buttonlike::get_pressed` instaed of `pressed`, `Axislike::get_value` instead of `value` and `DualAxislike::get_axis_pair` instead of `axis_pair`.
+
+### Bugs (0.19.0)
+
+- Fixed a bug where `ActionLike::axis_data`, `ActionLike::button_data` and `ActionLike::dual_axis_data()` would return `Some` even though the inputs had never been triggered.
+
 ## Version 0.18
 
 ### Dependencies (0.18.0)
