@@ -45,7 +45,7 @@ picking = ['bevy/bevy_picking']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.17" }
-bevy = { version = "0.17.0-rc.1", default-features = false, features = [
+bevy = { version = "0.17.0", default-features = false, features = [
   "serialize",
   "std",
   "bevy_log",
