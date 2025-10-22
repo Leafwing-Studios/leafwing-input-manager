@@ -796,33 +796,44 @@ mod tests {
     use bevy::input::InputPlugin;
     use bevy::prelude::*;
 
-    fn test_app() -> App {
-        let mut app = App::new();
-        app.add_plugins(MinimalPlugins);
-        app.add_plugins((InputPlugin, CentralInputStorePlugin));
+    struct TestContext {
+        pub app: App,
+    }
 
-        // WARNING: you MUST register your gamepad during tests,
-        // or all gamepad input mocking actions will fail
-        let gamepad = app.world_mut().spawn(()).id();
-        let mut gamepad_connection_messages = app
-            .world_mut()
-            .resource_mut::<Messages<GamepadConnectionEvent>>();
-        gamepad_connection_messages.write(GamepadConnectionEvent {
-            // This MUST be consistent with any other mocked messages
-            gamepad,
-            connection: GamepadConnection::Connected {
-                name: "TestController".into(),
-                vendor_id: None,
-                product_id: None,
-            },
-        });
+    impl TestContext {
+        pub fn new() -> Self {
+            let mut app = App::new();
+            app.add_plugins(MinimalPlugins);
+            app.add_plugins((InputPlugin, CentralInputStorePlugin));
+            Self { app }
+        }
 
-        // Ensure that the gamepad is picked up by the appropriate system
-        app.update();
-        // Ensure that the connection message is flushed through
-        app.update();
+        pub fn send_gamepad_connection_event(&mut self, gamepad: Option<Entity>) -> Entity {
+            let gamepad = gamepad.unwrap_or_else(|| self.app.world_mut().spawn_empty().id());
+            self.app
+                .world_mut()
+                .resource_mut::<Messages<GamepadConnectionEvent>>()
+                .write(GamepadConnectionEvent::new(
+                    gamepad,
+                    GamepadConnection::Connected {
+                        name: "TestController".to_string(),
+                        vendor_id: None,
+                        product_id: None,
+                    },
+                ));
+            gamepad
+        }
 
-        app
+        pub fn update(&mut self) {
+            self.app.update();
+        }
+
+        pub fn send_raw_gamepad_event(&mut self, event: RawGamepadEvent) {
+            self.app
+                .world_mut()
+                .resource_mut::<Messages<RawGamepadEvent>>()
+                .write(event);
+        }
     }
 
     #[test]
@@ -854,16 +865,13 @@ mod tests {
         assert_eq!(right.kind(), InputControlKind::DualAxis);
 
         // No inputs
-        let mut app = test_app();
-        app.update();
-        let gamepad = app
-            .world_mut()
-            .query_filtered::<Entity, With<Gamepad>>()
-            .iter(app.world())
-            .next()
-            .unwrap();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.update();
+
+        let inputs = ctx.app.world().resource::<CentralInputStore>();
         assert!(!left_up.pressed(inputs, gamepad));
         assert!(!left_down.pressed(inputs, gamepad));
         assert!(!right_up.pressed(inputs, gamepad));
@@ -873,75 +881,78 @@ mod tests {
         assert_eq!(left.axis_pair(inputs, gamepad), Vec2::ZERO);
         assert_eq!(right.axis_pair(inputs, gamepad), Vec2::ZERO);
 
-        // Left stick moves upward
-        let data = Vec2::new(0.0, 1.0);
-        let mut app = test_app();
-        let gamepad = app
-            .world_mut()
-            .query_filtered::<Entity, With<Gamepad>>()
-            .iter(app.world())
-            .next()
-            .unwrap();
-        GamepadControlDirection::LEFT_UP.press_as_gamepad(app.world_mut(), Some(gamepad));
-        app.update();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+            gamepad,
+            axis: GamepadControlDirection::LEFT_UP.axis,
+            value: GamepadControlDirection::LEFT_UP
+                .direction
+                .full_active_value(),
+        }));
+        ctx.update();
+
+        let inputs: &CentralInputStore = ctx.app.world().resource::<CentralInputStore>();
         assert!(left_up.pressed(inputs, gamepad));
         assert!(!left_down.pressed(inputs, gamepad));
         assert!(!right_up.pressed(inputs, gamepad));
         assert_eq!(left_x.value(inputs, gamepad), 0.0);
         assert_eq!(left_y.value(inputs, gamepad), 1.0);
         assert_eq!(right_y.value(inputs, gamepad), 0.0);
-        assert_eq!(left.axis_pair(inputs, gamepad), data);
+        assert_eq!(left.axis_pair(inputs, gamepad), Vec2::new(0.0, 1.0));
         assert_eq!(right.axis_pair(inputs, gamepad), Vec2::ZERO);
 
-        // Set Y-axis of left stick to 0.6
-        let data = Vec2::new(0.0, 0.6);
-        let mut app = test_app();
-        let gamepad = app
-            .world_mut()
-            .query_filtered::<Entity, With<Gamepad>>()
-            .iter(app.world())
-            .next()
-            .unwrap();
-        GamepadControlAxis::LEFT_Y.set_value_as_gamepad(app.world_mut(), data.y, Some(gamepad));
-        app.update();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+            gamepad,
+            axis: GamepadControlDirection::LEFT_UP.axis,
+            value: 0.6,
+        }));
+        ctx.update();
+
+        let inputs: &CentralInputStore = ctx.app.world().resource::<CentralInputStore>();
         assert!(left_up.pressed(inputs, gamepad));
         assert!(!left_down.pressed(inputs, gamepad));
         assert!(!right_up.pressed(inputs, gamepad));
         assert_eq!(left_x.value(inputs, gamepad), 0.0);
         assert_eq!(left_y.value(inputs, gamepad), 0.6);
         assert_eq!(right_y.value(inputs, gamepad), 0.0);
-        assert_eq!(left.axis_pair(inputs, gamepad), data);
+        assert_eq!(left.axis_pair(inputs, gamepad), Vec2::new(0.0, 0.6));
         assert_eq!(right.axis_pair(inputs, gamepad), Vec2::ZERO);
 
-        // Set left stick to (0.6, 0.4)
-        let data = Vec2::new(0.6, 0.4);
-        let mut app = test_app();
-        let gamepad = app
-            .world_mut()
-            .query_filtered::<Entity, With<Gamepad>>()
-            .iter(app.world())
-            .next()
-            .unwrap();
-        GamepadStick::LEFT.set_axis_pair_as_gamepad(app.world_mut(), data, Some(gamepad));
-        app.update();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+            gamepad,
+            axis: GamepadStick::LEFT.x,
+            value: 0.6,
+        }));
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+            gamepad,
+            axis: GamepadAxis::LeftStickY,
+            value: 0.4,
+        }));
+        ctx.update();
+
+        let inputs: &CentralInputStore = ctx.app.world().resource::<CentralInputStore>();
         assert!(left_up.pressed(inputs, gamepad));
         assert!(!left_down.pressed(inputs, gamepad));
         assert!(!right_up.pressed(inputs, gamepad));
-        assert_eq!(left_x.value(inputs, gamepad), data.x);
-        assert_eq!(left_y.value(inputs, gamepad), data.y);
+        assert_eq!(left_x.value(inputs, gamepad), 0.6);
+        assert_eq!(left_y.value(inputs, gamepad), 0.4);
         assert_eq!(right_y.value(inputs, gamepad), 0.0);
-        assert_eq!(left.axis_pair(inputs, gamepad), data);
+        assert_eq!(left.axis_pair(inputs, gamepad), Vec2::new(0.6, 0.4));
         assert_eq!(right.axis_pair(inputs, gamepad), Vec2::ZERO);
     }
 
     #[test]
-    #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
     fn test_gamepad_buttons() {
         let up = GamepadButton::DPadUp;
         assert_eq!(up.kind(), InputControlKind::Button);
@@ -956,22 +967,31 @@ mod tests {
         assert_eq!(left.kind(), InputControlKind::Button);
 
         // No inputs
-        let mut app = test_app();
-        app.update();
-        let gamepad = app.world_mut().spawn(()).id();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.update();
+
+        let inputs = ctx.app.world().resource::<CentralInputStore>();
         assert!(!up.pressed(inputs, gamepad));
         assert!(!left.pressed(inputs, gamepad));
         assert!(!down.pressed(inputs, gamepad));
         assert!(!right.pressed(inputs, gamepad));
 
         // Press DPadLeft
-        let mut app = test_app();
-        GamepadButton::DPadLeft.press(app.world_mut());
-        app.update();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+            gamepad,
+            button: GamepadButton::DPadLeft,
+            value: 1.0,
+        }));
+        ctx.update();
+
+        let inputs = ctx.app.world().resource::<CentralInputStore>();
         assert!(!up.pressed(inputs, gamepad));
         assert!(left.pressed(inputs, gamepad));
         assert!(!down.pressed(inputs, gamepad));
@@ -979,7 +999,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
     fn test_gamepad_button_values() {
         let up = GamepadButton::DPadUp;
         assert_eq!(up.kind(), InputControlKind::Button);
@@ -994,22 +1013,31 @@ mod tests {
         assert_eq!(right.kind(), InputControlKind::Button);
 
         // No inputs
-        let mut app = test_app();
-        app.update();
-        let gamepad = app.world_mut().spawn(()).id();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.update();
+
+        let inputs = ctx.app.world().resource::<CentralInputStore>();
         assert_eq!(up.value(inputs, gamepad), 0.0);
         assert_eq!(left.value(inputs, gamepad), 0.0);
         assert_eq!(down.value(inputs, gamepad), 0.0);
         assert_eq!(right.value(inputs, gamepad), 0.0);
 
         // Press DPadLeft
-        let mut app = test_app();
-        GamepadButton::DPadLeft.press(app.world_mut());
-        app.update();
-        let inputs = app.world().resource::<CentralInputStore>();
+        let mut ctx = TestContext::new();
+        ctx.update();
 
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+            gamepad,
+            button: GamepadButton::DPadLeft,
+            value: 1.0,
+        }));
+        ctx.update();
+
+        let inputs = ctx.app.world().resource::<CentralInputStore>();
         assert_eq!(up.value(inputs, gamepad), 0.0);
         assert_eq!(left.value(inputs, gamepad), 1.0);
         assert_eq!(down.value(inputs, gamepad), 0.0);
