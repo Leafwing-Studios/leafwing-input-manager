@@ -475,6 +475,7 @@ mod tests {
     mod basic_functionality {
         use super::*;
         use crate::{
+            buttonlike::ButtonValue,
             input_map::UpdatedValue,
             plugin::CentralInputStorePlugin,
             prelude::{ModifierKey, VirtualDPad},
@@ -645,9 +646,27 @@ mod tests {
 
             let mut updated_actions = UpdatedActions::default();
 
-            updated_actions.insert(One, UpdatedValue::Button(true));
-            updated_actions.insert(Two, UpdatedValue::Button(true));
-            updated_actions.insert(OneAndTwo, UpdatedValue::Button(true));
+            updated_actions.insert(
+                One,
+                UpdatedValue::Button(ButtonValue {
+                    pressed: true,
+                    value: 1.0,
+                }),
+            );
+            updated_actions.insert(
+                Two,
+                UpdatedValue::Button(ButtonValue {
+                    pressed: true,
+                    value: 1.0,
+                }),
+            );
+            updated_actions.insert(
+                OneAndTwo,
+                UpdatedValue::Button(ButtonValue {
+                    pressed: true,
+                    value: 1.0,
+                }),
+            );
 
             let input_store = app.world().resource::<CentralInputStore>();
 
@@ -659,7 +678,13 @@ mod tests {
             );
 
             let mut expected = UpdatedActions::default();
-            expected.insert(OneAndTwo, UpdatedValue::Button(true));
+            expected.insert(
+                OneAndTwo,
+                UpdatedValue::Button(ButtonValue {
+                    pressed: true,
+                    value: 1.0,
+                }),
+            );
 
             assert_eq!(updated_actions, expected);
         }
@@ -680,8 +705,20 @@ mod tests {
             // Both the DPad and the chord are pressed,
             // because we've sent the inputs for both
             let mut updated_actions = UpdatedActions::default();
-            updated_actions.insert(CtrlUp, UpdatedValue::Button(true));
-            updated_actions.insert(MoveDPad, UpdatedValue::Button(true));
+            updated_actions.insert(
+                CtrlUp,
+                UpdatedValue::Button(ButtonValue {
+                    pressed: true,
+                    value: 1.0,
+                }),
+            );
+            updated_actions.insert(
+                MoveDPad,
+                UpdatedValue::Button(ButtonValue {
+                    pressed: true,
+                    value: 1.0,
+                }),
+            );
 
             // Double-check that the two input bindings clash
             let chord_input = input_map.get_buttonlike(&CtrlUp).unwrap().first().unwrap();
@@ -715,7 +752,13 @@ mod tests {
             // Only the chord should be pressed,
             // because it is longer than the DPad
             let mut expected = UpdatedActions::default();
-            expected.insert(CtrlUp, UpdatedValue::Button(true));
+            expected.insert(
+                CtrlUp,
+                UpdatedValue::Button(ButtonValue {
+                    pressed: true,
+                    value: 1.0,
+                }),
+            );
 
             assert_eq!(updated_actions, expected);
         }
@@ -738,10 +781,22 @@ mod tests {
 
             for (action, &updated_value) in action_data.iter() {
                 if *action == CtrlOne || *action == OneAndTwo {
-                    assert_eq!(updated_value, UpdatedValue::Button(true));
+                    assert_eq!(
+                        updated_value,
+                        UpdatedValue::Button(ButtonValue {
+                            pressed: true,
+                            value: 1.0,
+                        })
+                    );
                 } else {
                     match updated_value {
-                        UpdatedValue::Button(pressed) => assert!(!pressed),
+                        UpdatedValue::Button(value) => assert_eq!(
+                            value,
+                            ButtonValue {
+                                pressed: false,
+                                value: 0.0,
+                            }
+                        ),
                         UpdatedValue::Axis(value) => assert_eq!(value, 0.0),
                         UpdatedValue::DualAxis(pair) => assert_eq!(pair, Vec2::ZERO),
                         UpdatedValue::TripleAxis(triple) => assert_eq!(triple, Vec3::ZERO),

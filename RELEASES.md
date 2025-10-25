@@ -26,6 +26,8 @@
 
 - add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
 
+- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.0`
+
 ## Version 0.17.1
 
 ### Usability (0.17.1)

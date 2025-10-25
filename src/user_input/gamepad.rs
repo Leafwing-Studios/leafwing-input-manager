@@ -658,24 +658,16 @@ impl UpdatableInput for GamepadButton {
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
         for (gamepad_entity, gamepad) in source_data.iter() {
-            for key in gamepad.get_pressed() {
+            for gamepad_button in GamepadButton::all() {
                 let specific_button = SpecificGamepadButton {
                     gamepad: gamepad_entity,
-                    button: *key,
+                    button: gamepad_button,
                 };
-                let value = gamepad.get(*key).unwrap_or(1.0);
-                central_input_store
-                    .update_buttonlike(specific_button, ButtonValue::new(true, value));
-            }
-
-            for key in gamepad.get_just_released() {
-                let specific_button = SpecificGamepadButton {
-                    gamepad: gamepad_entity,
-                    button: *key,
-                };
-                let value = gamepad.get(*key).unwrap_or(0.0);
-                central_input_store
-                    .update_buttonlike(specific_button, ButtonValue::new(false, value));
+                let pressed = gamepad.pressed(gamepad_button);
+                let value = gamepad.get(gamepad_button).unwrap_or(f32::from(pressed));
+                let button_value = ButtonValue::new(pressed, value);
+                central_input_store.update_buttonlike(specific_button, button_value);
+                central_input_store.update_buttonlike(gamepad_button, button_value);
             }
         }
     }
@@ -1042,5 +1034,54 @@ mod tests {
         assert_eq!(left.value(inputs, gamepad), 1.0);
         assert_eq!(down.value(inputs, gamepad), 0.0);
         assert_eq!(right.value(inputs, gamepad), 0.0);
+    }
+
+    #[test]
+    fn test_gamepad_triggers() {
+        let trigger = GamepadButton::RightTrigger2;
+        assert_eq!(trigger.kind(), InputControlKind::Button);
+
+        // No Inputs
+        let mut ctx = TestContext::new();
+        ctx.update();
+
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.update();
+
+        let inputs: &CentralInputStore = ctx.app.world().resource::<CentralInputStore>();
+        assert_eq!(trigger.value(inputs, gamepad), 0.0);
+
+        // Trigger push 0.8
+        let mut ctx = TestContext::new();
+        ctx.update();
+
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+            gamepad,
+
+            button: trigger,
+            value: 0.8,
+        }));
+        ctx.update();
+
+        let inputs: &CentralInputStore = ctx.app.world().resource::<CentralInputStore>();
+        assert!(trigger.pressed(inputs, gamepad));
+        assert_eq!(trigger.value(inputs, gamepad), 0.8);
+
+        // Trigger push 0.4
+        let mut ctx = TestContext::new();
+        ctx.update();
+
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.send_raw_gamepad_event(RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+            gamepad,
+            button: trigger,
+            value: 0.4,
+        }));
+        ctx.update();
+
+        let inputs: &CentralInputStore = ctx.app.world().resource::<CentralInputStore>();
+        assert!(trigger.released(inputs, gamepad));
+        assert_eq!(trigger.value(inputs, gamepad), 0.4);
     }
 }
