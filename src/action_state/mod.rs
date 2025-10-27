@@ -1,5 +1,6 @@
 //! This module contains [`ActionState`] and its supporting methods and impls.
 
+use crate::buttonlike::ButtonValue;
 use crate::input_map::UpdatedValue;
 use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 use crate::{Actionlike, InputControlKind};
@@ -152,12 +153,13 @@ impl<A: Actionlike> ActionState<A> {
     pub fn update(&mut self, updated_actions: UpdatedActions<A>) {
         for (action, updated_value) in updated_actions.iter() {
             match updated_value {
-                UpdatedValue::Button(pressed) => {
+                UpdatedValue::Button(ButtonValue { pressed, value }) => {
                     if *pressed {
                         self.press(action);
                     } else {
                         self.release(action);
                     }
+                    self.set_button_value(action, *value);
                 }
                 UpdatedValue::Axis(value) => {
                     self.set_value(action, *value);
@@ -1379,5 +1381,87 @@ mod tests {
         assert!(action_state.released(&Action::One));
         assert!(action_state.released(&Action::Two));
         assert!(action_state.pressed(&Action::OneAndTwo));
+    }
+
+    #[cfg(feature = "gamepad")]
+    #[test]
+    fn test_triggerlikes() {
+        use crate::prelude::{Buttonlike, InputMap};
+
+        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+        enum TestAction {
+            Trigger,
+        }
+
+        struct GamepadTestContext {
+            pub app: App,
+        }
+
+        impl GamepadTestContext {
+            pub fn new() -> Self {
+                use bevy::input::InputPlugin;
+
+                use crate::plugin::InputManagerPlugin;
+
+                let mut app = App::new();
+                app.add_plugins((
+                    MinimalPlugins,
+                    InputPlugin,
+                    InputManagerPlugin::<TestAction>::default(),
+                ));
+
+                let mut input_map = InputMap::default();
+                input_map.insert(TestAction::Trigger, GamepadButton::RightTrigger);
+
+                app.insert_resource(input_map)
+                    .init_resource::<ActionState<TestAction>>();
+
+                app.update();
+
+                Self { app }
+            }
+
+            pub fn send_gamepad_connection_event(&mut self, gamepad: Option<Entity>) -> Entity {
+                use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent};
+
+                let gamepad = gamepad.unwrap_or_else(|| self.app.world_mut().spawn_empty().id());
+                self.app
+                    .world_mut()
+                    .resource_mut::<Messages<GamepadConnectionEvent>>()
+                    .write(GamepadConnectionEvent::new(
+                        gamepad,
+                        GamepadConnection::Connected {
+                            name: "TestController".to_string(),
+                            vendor_id: None,
+                            product_id: None,
+                        },
+                    ));
+                gamepad
+            }
+
+            pub fn update(&mut self) {
+                self.app.update();
+            }
+        }
+
+        let mut ctx = GamepadTestContext::new();
+        let _gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.update();
+
+        let action_state = ctx.app.world().resource::<ActionState<TestAction>>();
+        assert!(action_state.released(&TestAction::Trigger));
+
+        // App Context
+        let mut ctx = GamepadTestContext::new();
+        let gamepad = ctx.send_gamepad_connection_event(None);
+        ctx.update();
+
+        GamepadButton::RightTrigger.set_value_as_gamepad(ctx.app.world_mut(), 0.8, Some(gamepad));
+        ctx.update();
+
+        let action_state = ctx.app.world().resource::<ActionState<TestAction>>();
+        assert!(action_state.pressed(&TestAction::Trigger));
+        assert!(action_state.just_pressed(&TestAction::Trigger));
+        assert_eq!(action_state.button_value(&TestAction::Trigger), 0.8);
     }
 }

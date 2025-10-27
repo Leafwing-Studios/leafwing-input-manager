@@ -31,14 +31,14 @@ impl ButtonValue {
 }
 
 impl From<ButtonState> for ButtonValue {
-    fn from(value: ButtonState) -> Self {
-        Self::from_pressed(value.pressed())
+    fn from(state: ButtonState) -> Self {
+        Self::from_pressed(state.pressed())
     }
 }
 
 impl From<bevy::input::ButtonState> for ButtonValue {
-    fn from(value: bevy::input::ButtonState) -> Self {
-        Self::from_pressed(value.is_pressed())
+    fn from(state: bevy::input::ButtonState) -> Self {
+        Self::from_pressed(state.is_pressed())
     }
 }
 
