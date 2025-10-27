@@ -15,6 +15,7 @@ use bevy::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
+use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
 use crate::prelude::{ActionState, UserInputWrapper};
@@ -589,7 +590,7 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         match updated_value {
-            UpdatedValue::Button(state) => *state,
+            UpdatedValue::Button(ButtonValue { pressed, value: _ }) => *pressed,
             _ => false,
         }
     }
@@ -616,15 +617,22 @@ impl<A: Actionlike> InputMap<A> {
 
         // Generate the base action data for each action
         for (action, input_bindings) in self.iter_buttonlike() {
-            let mut final_state = None;
+            let mut final_state: Option<(bool, f32)> = None;
             for binding in input_bindings {
-                if let Some(pressed) = binding.get_pressed(input_store, gamepad) {
-                    final_state = Some(final_state.unwrap_or(false) || pressed);
+                let pressed = binding.pressed(input_store, gamepad);
+                let value = binding.value(input_store, gamepad);
+                if let Some((existing_state, existing_value)) = final_state {
+                    final_state = Some((existing_state || pressed, existing_value.max(value)));
+                } else {
+                    final_state = Some((pressed, value));
                 }
             }
 
-            if let Some(pressed) = final_state {
-                updated_actions.insert(action.clone(), UpdatedValue::Button(pressed));
+            if let Some((pressed, value)) = final_state {
+                updated_actions.insert(
+                    action.clone(),
+                    UpdatedValue::Button(ButtonValue { pressed, value }),
+                );
             }
         }
 
@@ -679,7 +687,7 @@ impl<A: Actionlike> UpdatedActions<A> {
     /// Returns `true` if the action is both buttonlike and pressed.
     pub fn pressed(&self, action: &A) -> bool {
         match self.0.get(action) {
-            Some(UpdatedValue::Button(state)) => *state,
+            Some(UpdatedValue::Button(ButtonValue { pressed, value: _ })) => *pressed,
             _ => false,
         }
     }
@@ -691,7 +699,7 @@ impl<A: Actionlike> UpdatedActions<A> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum UpdatedValue {
     /// A buttonlike action that was pressed or released.
-    Button(bool),
+    Button(ButtonValue),
     /// An axislike action that was updated.
     Axis(f32),
     /// A dual-axislike action that was updated.
