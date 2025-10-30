@@ -38,13 +38,13 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// [`InputMap::insert_axis`] to insert axislike inputs,
 /// and [`InputMap::insert_dual_axis`] to insert dual-axislike inputs.
 ///
-/// # Many-to-One Mapping
+/// # One-to-Many Mapping
 ///
 /// You can associate multiple [`Buttonlike`]s (e.g., keyboard keys, mouse buttons, gamepad buttons)
 /// with a single action, simplifying handling complex input combinations for the same action.
 /// Duplicate associations are ignored.
 ///
-/// # One-to-Many Mapping
+/// # Many-to-One Mapping
 ///
 /// A single [`Buttonlike`] can be mapped to multiple actions simultaneously.
 /// This allows flexibility in defining alternative ways to trigger an action.
