@@ -14,8 +14,6 @@
 
 ### Usability (0.18.1)
 
-- add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
-
 - analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.0`
 
 - run conditions provided by `common_conditions` can now find `ActionState`s from either resources or queries
@@ -25,6 +23,10 @@
 ### Dependencies (0.18.0)
 
 - updated to Bevy 0.17
+
+### Usability (0.18.0)
+
+- add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
 
 ## Breaking Changes (0.18.0)
 
