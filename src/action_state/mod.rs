@@ -576,9 +576,12 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the value of the buttonlike `action` to the provided `value`.
+    /// The threshold of `0.02` is to account for a semi-frequent issue
+    /// with analog inputs (e.g., gamepad triggers) reporting very small
+    /// non-zero values when not pressed.
     ///
     /// Also updates the state of the button based on the `value`:
-    /// - If `value > 0.0`, the button will be pressed.
+    /// - If `value > 0.02`, the button will be pressed.
     /// - If `value <= 0.0`, the button will be released.
     #[track_caller]
     pub fn set_button_value(&mut self, action: &A, value: f32) {
@@ -587,7 +590,7 @@ impl<A: Actionlike> ActionState<A> {
         let button_data = self.button_data_mut_or_default(action);
         button_data.value = value;
 
-        if value > 0.0 {
+        if value > 0.02 {
             #[cfg(feature = "timing")]
             if button_data.state.released() {
                 button_data.timing.flip();
