@@ -2,7 +2,7 @@
 
 use crate::{prelude::ActionState, Actionlike};
 use bevy::{
-    ecs::system::{Query, SystemParam},
+    ecs::system::{Single, SystemParam},
     log::warn,
     prelude::Res,
 };
@@ -14,7 +14,7 @@ where
     A: Actionlike + Clone,
 {
     action_state_resource: Option<Res<'w, ActionState<A>>>,
-    action_state_query: Query<'w, 's, &'static ActionState<A>>,
+    action_state_component: Option<Single<'w, 's, &'static ActionState<A>>>,
 }
 impl<'w, 's, A> ActionStateParam<'w, 's, A>
 where
@@ -23,8 +23,8 @@ where
     fn as_ref(&self) -> Option<&ActionState<A>> {
         if self.action_state_resource.is_some() {
             self.action_state_resource.as_deref()
-        } else if let Some(action_state) = self.action_state_query.iter().next() {
-            Some(action_state)
+        } else if self.action_state_component.is_some() {
+            Some(self.action_state_component.as_ref().unwrap())
         } else {
             let type_name = std::any::type_name::<A>();
             warn!("No ActionState found for {type_name}. Please ensure that an ActionState resource is added, or that an InputMap component exists to provide an ActionState.");
