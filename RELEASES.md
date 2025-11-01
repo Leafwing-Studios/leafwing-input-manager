@@ -14,7 +14,8 @@
 
 ### Usability (0.18.1)
 
-- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.0`
+- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.02` 
+  - this prevents issues where triggers would report very small non-zero values as "pressed" when not physically pressed due to sensor imprecision
 
 - run conditions provided by `common_conditions` can now find `ActionState`s from either resources or queries
 
