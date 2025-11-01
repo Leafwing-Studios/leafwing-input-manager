@@ -5,7 +5,7 @@
 //! and include it as a resource in a bevy app.
 
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::{common_conditions::action_pressed, prelude::*};
 
 fn main() {
     App::new()
@@ -15,7 +15,9 @@ fn main() {
         .init_resource::<ActionState<PlayerAction>>()
         // Insert the InputMap resource
         .insert_resource(PlayerAction::mkb_input_map())
+        // System to read the ActionState resource
         .add_systems(Update, move_player)
+        .add_systems(Update, jump.run_if(action_pressed(PlayerAction::Jump)))
         .run();
 }
 
@@ -40,8 +42,9 @@ fn move_player(
 ) {
     let axis_pair = action_state.clamped_axis_pair(&PlayerAction::Move);
     println!("Move: ({}, {})", axis_pair.x, axis_pair.y);
+}
 
-    if action_state.pressed(&PlayerAction::Jump) {
-        println!("Jumping!");
-    }
+// System that runs when the Jump action is just pressed as a result of the run condition
+fn jump() {
+    println!("Jumping!");
 }

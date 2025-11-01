@@ -10,23 +10,29 @@
 
 - Fixed a bug where `ActionLike::axis_data`, `ActionLike::button_data` and `ActionLike::dual_axis_data()` would return `Some` even though the inputs had never been triggered.
 
+## Version 0.18.1 (Unreleased)
+
+### Usability (0.18.1)
+
+- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.0`
+
+- run conditions provided by `common_conditions` can now find `ActionState`s from either resources or queries
+
 ## Version 0.18
 
 ### Dependencies (0.18.0)
 
 - updated to Bevy 0.17
 
+### Usability (0.18.0)
+
+- add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
+
 ## Breaking Changes (0.18.0)
 
 - many types that were previously `Message`-implementing types are now `Message`-implementing types (same semantics, new name), and have been renamed accordingly
   - for example, `ActionDiffEvent` is now `ActionDiffMessage`
 - `InputManagerBundle` has been removed after being deprecated: insert an `InputMap<A>` component instead and use required components to fill in the `ActionState<A>`
-
-### Usability (0.18.2)
-
-- add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
-
-- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.0`
 
 ## Version 0.17.1
 
