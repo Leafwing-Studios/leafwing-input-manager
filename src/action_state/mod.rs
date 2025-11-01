@@ -576,9 +576,10 @@ impl<A: Actionlike> ActionState<A> {
     }
 
     /// Sets the value of the buttonlike `action` to the provided `value`.
-    /// The threshold of `0.02` is to account for a semi-frequent issue
-    /// with analog inputs (e.g., gamepad triggers) reporting very small
-    /// non-zero values when not pressed.
+    /// A threshold of `0.02` must be overcome for the button to count as "pressed"
+    /// This is used to account for a semi-frequent issue with analog inputs
+    /// (e.g., gamepad triggers) reporting very small non-zero values when
+    /// not physically pressed, due to sensor imprecision.
     ///
     /// Also updates the state of the button based on the `value`:
     /// - If `value > 0.02`, the button will be pressed.
@@ -586,11 +587,12 @@ impl<A: Actionlike> ActionState<A> {
     #[track_caller]
     pub fn set_button_value(&mut self, action: &A, value: f32) {
         debug_assert_eq!(action.input_control_kind(), InputControlKind::Button);
+        const BUTTON_PRESS_THRESHOLD: f32 = 0.02;
 
         let button_data = self.button_data_mut_or_default(action);
         button_data.value = value;
 
-        if value > 0.02 {
+        if value > BUTTON_PRESS_THRESHOLD {
             #[cfg(feature = "timing")]
             if button_data.state.released() {
                 button_data.timing.flip();
