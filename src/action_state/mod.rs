@@ -1167,41 +1167,102 @@ impl<A: Actionlike> ActionState<A> {
 mod tests {
     use crate as leafwing_input_manager;
     use crate::action_state::ActionState;
+    use crate::prelude::{ButtonlikeChord, InputMap};
+    use bevy::prelude::KeyCode::*;
     use bevy::prelude::*;
+
     use leafwing_input_manager_macros::Actionlike;
+
+    #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
+    enum TestAction {
+        Trigger,
+        Run,
+        Jump,
+        Hide,
+        One,
+        Two,
+        OneAndTwo,
+    }
+
+    struct TestContext {
+        pub app: App,
+        pub input_map: InputMap<TestAction>,
+    }
+
+    impl TestContext {
+        pub fn new() -> Self {
+            use bevy::input::InputPlugin;
+
+            use crate::plugin::InputManagerPlugin;
+
+            let mut app = App::new();
+            app.add_plugins((
+                MinimalPlugins,
+                InputPlugin,
+                InputManagerPlugin::<TestAction>::default(),
+            ));
+
+            let mut input_map = InputMap::default();
+            input_map.insert(TestAction::Trigger, GamepadButton::RightTrigger);
+            input_map.insert(TestAction::One, Digit1);
+            input_map.insert(TestAction::Two, Digit2);
+            input_map.insert(
+                TestAction::OneAndTwo,
+                ButtonlikeChord::new([Digit1, Digit2]),
+            );
+
+            input_map.insert(TestAction::Run, KeyCode::KeyR);
+
+            app.insert_resource(input_map.clone())
+                .init_resource::<ActionState<TestAction>>();
+
+            app.update();
+
+            Self { app, input_map }
+        }
+
+        pub fn send_gamepad_connection_event(&mut self, gamepad: Option<Entity>) -> Entity {
+            use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent};
+
+            let gamepad = gamepad.unwrap_or_else(|| self.app.world_mut().spawn_empty().id());
+            self.app
+                .world_mut()
+                .resource_mut::<Messages<GamepadConnectionEvent>>()
+                .write(GamepadConnectionEvent::new(
+                    gamepad,
+                    GamepadConnection::Connected {
+                        name: "TestController".to_string(),
+                        vendor_id: None,
+                        product_id: None,
+                    },
+                ));
+            gamepad
+        }
+
+        pub fn update(&mut self) {
+            self.app.update();
+        }
+    }
 
     #[cfg(feature = "keyboard")]
     #[test]
     fn press_lifecycle() {
         use std::time::{Duration, Instant};
 
-        use crate::input_map::InputMap;
-        use crate::plugin::CentralInputStorePlugin;
         use crate::prelude::updating::CentralInputStore;
+        use crate::prelude::Buttonlike;
         use crate::prelude::ClashStrategy;
-        use crate::user_input::Buttonlike;
-        use bevy::input::InputPlugin;
 
-        let mut app = App::new();
-        app.add_plugins((InputPlugin, CentralInputStorePlugin));
-
-        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, bevy::prelude::Reflect)]
-        enum Action {
-            Run,
-            Jump,
-            Hide,
-        }
+        let ctx = TestContext::new();
+        let mut app = ctx.app;
+        let input_map = ctx.input_map;
 
         // Action state
-        let mut action_state = ActionState::<Action>::default();
+        let mut action_state = ActionState::<TestAction>::default();
         println!(
             "Default button data: {:?}",
-            action_state.button_data(&Action::Run)
+            action_state.button_data(&TestAction::Run)
         );
-
-        // Input map
-        let mut input_map = InputMap::default();
-        input_map.insert(Action::Run, KeyCode::KeyR);
 
         // Starting state
         let input_store = app.world().resource::<CentralInputStore>();
@@ -1209,13 +1270,13 @@ mod tests {
 
         println!(
             "Initialized button data: {:?}",
-            action_state.button_data(&Action::Run)
+            action_state.button_data(&TestAction::Run)
         );
 
-        assert!(!action_state.pressed(&Action::Run));
-        assert!(!action_state.just_pressed(&Action::Run));
-        assert!(action_state.released(&Action::Run));
-        assert!(!action_state.just_released(&Action::Run));
+        assert!(!action_state.pressed(&TestAction::Run));
+        assert!(!action_state.just_pressed(&TestAction::Run));
+        assert!(action_state.released(&TestAction::Run));
+        assert!(!action_state.just_released(&TestAction::Run));
 
         // Pressing
         KeyCode::KeyR.press(app.world_mut());
@@ -1225,19 +1286,19 @@ mod tests {
 
         action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
-        assert!(action_state.pressed(&Action::Run));
-        assert!(action_state.just_pressed(&Action::Run));
-        assert!(!action_state.released(&Action::Run));
-        assert!(!action_state.just_released(&Action::Run));
+        assert!(action_state.pressed(&TestAction::Run));
+        assert!(action_state.just_pressed(&TestAction::Run));
+        assert!(!action_state.released(&TestAction::Run));
+        assert!(!action_state.just_released(&TestAction::Run));
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
-        assert!(action_state.pressed(&Action::Run));
-        assert!(!action_state.just_pressed(&Action::Run));
-        assert!(!action_state.released(&Action::Run));
-        assert!(!action_state.just_released(&Action::Run));
+        assert!(action_state.pressed(&TestAction::Run));
+        assert!(!action_state.just_pressed(&TestAction::Run));
+        assert!(!action_state.released(&TestAction::Run));
+        assert!(!action_state.just_released(&TestAction::Run));
 
         // Releasing
         KeyCode::KeyR.release(app.world_mut());
@@ -1246,42 +1307,36 @@ mod tests {
 
         action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
-        assert!(!action_state.pressed(&Action::Run));
-        assert!(!action_state.just_pressed(&Action::Run));
-        assert!(action_state.released(&Action::Run));
-        assert!(action_state.just_released(&Action::Run));
+        assert!(!action_state.pressed(&TestAction::Run));
+        assert!(!action_state.just_pressed(&TestAction::Run));
+        assert!(action_state.released(&TestAction::Run));
+        assert!(action_state.just_released(&TestAction::Run));
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
         action_state.update(input_map.process_actions(None, input_store, ClashStrategy::PressAll));
 
-        assert!(!action_state.pressed(&Action::Run));
-        assert!(!action_state.just_pressed(&Action::Run));
-        assert!(action_state.released(&Action::Run));
-        assert!(!action_state.just_released(&Action::Run));
+        assert!(!action_state.pressed(&TestAction::Run));
+        assert!(!action_state.just_pressed(&TestAction::Run));
+        assert!(action_state.released(&TestAction::Run));
+        assert!(!action_state.just_released(&TestAction::Run));
     }
 
     #[test]
     fn synthetic_press() {
-        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
-        enum Action {
-            One,
-            Two,
-        }
-
-        let mut action_state = ActionState::<Action>::default();
-        action_state.press(&Action::One);
+        let mut action_state = ActionState::<TestAction>::default();
+        action_state.press(&TestAction::One);
         dbg!(&action_state);
 
-        assert!(action_state.pressed(&Action::One));
-        assert!(action_state.just_pressed(&Action::One));
-        assert!(!action_state.released(&Action::One));
-        assert!(!action_state.just_released(&Action::One));
+        assert!(action_state.pressed(&TestAction::One));
+        assert!(action_state.just_pressed(&TestAction::One));
+        assert!(!action_state.released(&TestAction::One));
+        assert!(!action_state.just_released(&TestAction::One));
 
-        assert!(!action_state.pressed(&Action::Two));
-        assert!(!action_state.just_pressed(&Action::Two));
-        assert!(action_state.released(&Action::Two));
-        assert!(!action_state.just_released(&Action::Two));
+        assert!(!action_state.pressed(&TestAction::Two));
+        assert!(!action_state.just_pressed(&TestAction::Two));
+        assert!(action_state.released(&TestAction::Two));
+        assert!(!action_state.just_released(&TestAction::Two));
     }
 
     #[cfg(feature = "keyboard")]
@@ -1290,35 +1345,17 @@ mod tests {
     fn update_with_clashes_prioritizing_longest() {
         use std::time::{Duration, Instant};
 
-        use crate::input_map::InputMap;
-        use crate::plugin::CentralInputStorePlugin;
         use crate::prelude::updating::CentralInputStore;
         use crate::prelude::ClashStrategy;
-        use crate::user_input::chord::ButtonlikeChord;
         use crate::user_input::Buttonlike;
-        use bevy::input::InputPlugin;
         use bevy::prelude::KeyCode::*;
-        use bevy::prelude::*;
 
-        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
-        enum Action {
-            One,
-            Two,
-            OneAndTwo,
-        }
-
-        // Input map
-        let mut input_map = InputMap::default();
-        input_map.insert(Action::One, Digit1);
-        input_map.insert(Action::Two, Digit2);
-        input_map.insert(Action::OneAndTwo, ButtonlikeChord::new([Digit1, Digit2]));
-
-        let mut app = App::new();
-        app.add_plugins(InputPlugin)
-            .add_plugins(CentralInputStorePlugin);
+        let ctx = TestContext::new();
+        let mut app = ctx.app;
+        let input_map = ctx.input_map;
 
         // Action state
-        let mut action_state = ActionState::<Action>::default();
+        let mut action_state = ActionState::<TestAction>::default();
 
         // Starting state
         let input_store = app.world().resource::<CentralInputStore>();
@@ -1327,9 +1364,9 @@ mod tests {
             input_store,
             ClashStrategy::PrioritizeLongest,
         ));
-        assert!(action_state.released(&Action::One));
-        assert!(action_state.released(&Action::Two));
-        assert!(action_state.released(&Action::OneAndTwo));
+        assert!(action_state.released(&TestAction::One));
+        assert!(action_state.released(&TestAction::Two));
+        assert!(action_state.released(&TestAction::OneAndTwo));
 
         // Pressing One
         Digit1.press(app.world_mut());
@@ -1342,9 +1379,9 @@ mod tests {
             ClashStrategy::PrioritizeLongest,
         ));
 
-        assert!(action_state.pressed(&Action::One));
-        assert!(action_state.released(&Action::Two));
-        assert!(action_state.released(&Action::OneAndTwo));
+        assert!(action_state.pressed(&TestAction::One));
+        assert!(action_state.released(&TestAction::Two));
+        assert!(action_state.released(&TestAction::OneAndTwo));
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
@@ -1354,9 +1391,9 @@ mod tests {
             ClashStrategy::PrioritizeLongest,
         ));
 
-        assert!(action_state.pressed(&Action::One));
-        assert!(action_state.released(&Action::Two));
-        assert!(action_state.released(&Action::OneAndTwo));
+        assert!(action_state.pressed(&TestAction::One));
+        assert!(action_state.released(&TestAction::Two));
+        assert!(action_state.released(&TestAction::OneAndTwo));
 
         // Pressing Two
         Digit2.press(app.world_mut());
@@ -1371,9 +1408,9 @@ mod tests {
 
         // Now only the longest OneAndTwo has been pressed,
         // while both One and Two have been released
-        assert!(action_state.released(&Action::One));
-        assert!(action_state.released(&Action::Two));
-        assert!(action_state.pressed(&Action::OneAndTwo));
+        assert!(action_state.released(&TestAction::One));
+        assert!(action_state.released(&TestAction::Two));
+        assert!(action_state.pressed(&TestAction::OneAndTwo));
 
         // Waiting
         action_state.tick(Instant::now(), Instant::now() - Duration::from_micros(1));
@@ -1383,73 +1420,17 @@ mod tests {
             ClashStrategy::PrioritizeLongest,
         ));
 
-        assert!(action_state.released(&Action::One));
-        assert!(action_state.released(&Action::Two));
-        assert!(action_state.pressed(&Action::OneAndTwo));
+        assert!(action_state.released(&TestAction::One));
+        assert!(action_state.released(&TestAction::Two));
+        assert!(action_state.pressed(&TestAction::OneAndTwo));
     }
 
     #[cfg(feature = "gamepad")]
     #[test]
-    fn test_triggerlikes() {
-        use crate::prelude::{Buttonlike, InputMap};
+    fn test_analog_buttons() {
+        use crate::prelude::Buttonlike;
 
-        #[derive(Actionlike, Clone, Copy, PartialEq, Eq, Hash, Debug, Reflect)]
-        enum TestAction {
-            Trigger,
-        }
-
-        struct GamepadTestContext {
-            pub app: App,
-        }
-
-        impl GamepadTestContext {
-            pub fn new() -> Self {
-                use bevy::input::InputPlugin;
-
-                use crate::plugin::InputManagerPlugin;
-
-                let mut app = App::new();
-                app.add_plugins((
-                    MinimalPlugins,
-                    InputPlugin,
-                    InputManagerPlugin::<TestAction>::default(),
-                ));
-
-                let mut input_map = InputMap::default();
-                input_map.insert(TestAction::Trigger, GamepadButton::RightTrigger);
-
-                app.insert_resource(input_map)
-                    .init_resource::<ActionState<TestAction>>();
-
-                app.update();
-
-                Self { app }
-            }
-
-            pub fn send_gamepad_connection_event(&mut self, gamepad: Option<Entity>) -> Entity {
-                use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent};
-
-                let gamepad = gamepad.unwrap_or_else(|| self.app.world_mut().spawn_empty().id());
-                self.app
-                    .world_mut()
-                    .resource_mut::<Messages<GamepadConnectionEvent>>()
-                    .write(GamepadConnectionEvent::new(
-                        gamepad,
-                        GamepadConnection::Connected {
-                            name: "TestController".to_string(),
-                            vendor_id: None,
-                            product_id: None,
-                        },
-                    ));
-                gamepad
-            }
-
-            pub fn update(&mut self) {
-                self.app.update();
-            }
-        }
-
-        let mut ctx = GamepadTestContext::new();
+        let mut ctx = TestContext::new();
         let _gamepad = ctx.send_gamepad_connection_event(None);
         ctx.update();
 
@@ -1457,7 +1438,7 @@ mod tests {
         assert!(action_state.released(&TestAction::Trigger));
 
         // App Context
-        let mut ctx = GamepadTestContext::new();
+        let mut ctx = TestContext::new();
         let gamepad = ctx.send_gamepad_connection_event(None);
         ctx.update();
 
