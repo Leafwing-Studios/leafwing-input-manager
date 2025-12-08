@@ -43,6 +43,10 @@ ui = ['bevy/bevy_ui']
 # - Order systems to allow picking observers to modify action state.
 picking = ['bevy/bevy_picking']
 
+# Enable winit platforms to ensure that docs.rs builds correctly
+# Users should never need to enable this feature
+docs = ['winit/x11', 'winit/wayland']
+
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.17" }
 bevy = { version = "0.17.0", default-features = false, features = [
@@ -50,6 +54,8 @@ bevy = { version = "0.17.0", default-features = false, features = [
   "std",
   "bevy_log",
 ] }
+# Needed for the `docs` feature. Must be kept in sync with Bevy's version
+winit = { version = "0.30", default-features = false, optional = true }
 
 itertools = "0.14"
 serde = { version = "1.0", features = ["derive"] }
