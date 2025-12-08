@@ -290,3 +290,263 @@ pub struct TripleAxisData {
     /// The `triple` of the action in the `FixedMain` schedule
     pub fixed_update_triple: Vec3,
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::buttonlike::ButtonState;
+
+    #[test]
+    fn test_tick_triple_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::TripleAxisData;
+        use bevy::platform::time::Instant;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::TripleAxis(TripleAxisData {
+                triple: bevy::math::Vec3::new(1.0, 2.0, 3.0),
+                update_triple: bevy::math::Vec3::new(4.0, 5.0, 6.0),
+                fixed_update_triple: bevy::math::Vec3::new(7.0, 8.0, 9.0),
+            }),
+        };
+
+        let previous_instant = Instant::now();
+        let current_instant = previous_instant + std::time::Duration::from_secs(1);
+
+        action_data.tick(current_instant, previous_instant);
+
+        if let ActionKindData::TripleAxis(data) = &action_data.kind_data {
+            assert_eq!(data.triple, bevy::math::Vec3::new(1.0, 2.0, 3.0));
+        } else {
+            panic!("Expected TripleAxisData");
+        }
+    }
+
+    #[test]
+    fn test_swap_update_to_update_state_triple_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::TripleAxisData;
+        use bevy::math::Vec3;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::TripleAxis(TripleAxisData {
+                triple: Vec3::new(1.0, 2.0, 3.0),
+                update_triple: Vec3::new(4.0, 5.0, 6.0),
+                fixed_update_triple: Vec3::new(7.0, 8.0, 9.0),
+            }),
+        };
+
+        action_data.kind_data.swap_to_update_state();
+
+        if let ActionKindData::TripleAxis(data) = &action_data.kind_data {
+            assert_eq!(data.triple, Vec3::new(4.0, 5.0, 6.0));
+        } else {
+            panic!("Expected TripleAxisData");
+        }
+    }
+
+    #[test]
+    fn test_swap_to_fixed_update_state_triple_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::TripleAxisData;
+        use bevy::math::Vec3;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::TripleAxis(TripleAxisData {
+                triple: Vec3::new(1.0, 2.0, 3.0),
+                update_triple: Vec3::new(4.0, 5.0, 6.0),
+                fixed_update_triple: Vec3::new(7.0, 8.0, 9.0),
+            }),
+        };
+
+        action_data.kind_data.swap_to_fixed_update_state();
+
+        if let ActionKindData::TripleAxis(data) = &action_data.kind_data {
+            assert_eq!(data.triple, Vec3::new(7.0, 8.0, 9.0));
+        } else {
+            panic!("Expected TripleAxisData");
+        }
+    }
+
+    #[test]
+    fn test_set_update_state_from_state_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::AxisData;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::Axis(AxisData {
+                value: 1.0,
+                update_value: 2.0,
+                fixed_update_value: 3.0,
+            }),
+        };
+
+        action_data.kind_data.set_update_state_from_state();
+
+        if let ActionKindData::Axis(data) = &action_data.kind_data {
+            assert_eq!(data.update_value, 1.0);
+        } else {
+            panic!("Expected AxisData");
+        }
+    }
+
+    #[test]
+    fn test_set_update_state_from_state_dual_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::DualAxisData;
+        use bevy::math::Vec2;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::DualAxis(DualAxisData {
+                pair: Vec2::new(1.0, 2.0),
+                update_pair: Vec2::new(3.0, 4.0),
+                fixed_update_pair: Vec2::new(5.0, 6.0),
+            }),
+        };
+
+        action_data.kind_data.set_update_state_from_state();
+
+        if let ActionKindData::DualAxis(data) = &action_data.kind_data {
+            assert_eq!(data.update_pair, Vec2::new(1.0, 2.0));
+        } else {
+            panic!("Expected DualAxisData");
+        }
+    }
+
+    #[test]
+    fn test_set_update_state_from_state_triple_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::TripleAxisData;
+        use bevy::math::Vec3;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::TripleAxis(TripleAxisData {
+                triple: Vec3::new(1.0, 2.0, 3.0),
+                update_triple: Vec3::new(4.0, 5.0, 6.0),
+                fixed_update_triple: Vec3::new(7.0, 8.0, 9.0),
+            }),
+        };
+
+        action_data.kind_data.set_update_state_from_state();
+
+        if let ActionKindData::TripleAxis(data) = &action_data.kind_data {
+            assert_eq!(data.update_triple, Vec3::new(1.0, 2.0, 3.0));
+        } else {
+            panic!("Expected TripleAxisData");
+        }
+    }
+
+    #[test]
+    fn test_set_fixed_update_state_from_state_button() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::ButtonData;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::Button(ButtonData {
+                state: ButtonState::Pressed,
+                update_state: ButtonState::JustPressed,
+                fixed_update_state: ButtonState::Released,
+                value: 1.0,
+                update_value: 0.5,
+                fixed_update_value: 0.0,
+                #[cfg(feature = "timing")]
+                timing: Default::default(),
+            }),
+        };
+
+        action_data.kind_data.set_fixed_update_state_from_state();
+        if let ActionKindData::Button(data) = &action_data.kind_data {
+            assert_eq!(data.fixed_update_state, ButtonState::Pressed);
+            assert_eq!(data.fixed_update_value, 1.0);
+        } else {
+            panic!("Expected ButtonData");
+        }
+    }
+
+    #[test]
+    fn test_set_fixed_update_state_from_state_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::AxisData;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::Axis(AxisData {
+                value: 1.0,
+                update_value: 2.0,
+                fixed_update_value: 3.0,
+            }),
+        };
+
+        action_data.kind_data.set_fixed_update_state_from_state();
+
+        if let ActionKindData::Axis(data) = &action_data.kind_data {
+            assert_eq!(data.fixed_update_value, 1.0);
+        } else {
+            panic!("Expected AxisData");
+        }
+    }
+
+    #[test]
+    fn test_set_fixed_update_state_from_state_dual_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::DualAxisData;
+        use bevy::math::Vec2;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::DualAxis(DualAxisData {
+                pair: Vec2::new(1.0, 2.0),
+                update_pair: Vec2::new(3.0, 4.0),
+                fixed_update_pair: Vec2::new(5.0, 6.0),
+            }),
+        };
+
+        action_data.kind_data.set_fixed_update_state_from_state();
+
+        if let ActionKindData::DualAxis(data) = &action_data.kind_data {
+            assert_eq!(data.fixed_update_pair, Vec2::new(1.0, 2.0));
+        } else {
+            panic!("Expected DualAxisData");
+        }
+    }
+
+    #[test]
+    fn test_set_fixed_update_state_from_state_triple_axis() {
+        use super::ActionData;
+        use super::ActionKindData;
+        use super::TripleAxisData;
+        use bevy::math::Vec3;
+
+        let mut action_data = ActionData {
+            disabled: false,
+            kind_data: ActionKindData::TripleAxis(TripleAxisData {
+                triple: Vec3::new(1.0, 2.0, 3.0),
+                update_triple: Vec3::new(4.0, 5.0, 6.0),
+                fixed_update_triple: Vec3::new(7.0, 8.0, 9.0),
+            }),
+        };
+
+        action_data.kind_data.set_fixed_update_state_from_state();
+
+        if let ActionKindData::TripleAxis(data) = &action_data.kind_data {
+            assert_eq!(data.fixed_update_triple, Vec3::new(1.0, 2.0, 3.0));
+        } else {
+            panic!("Expected TripleAxisData");
+        }
+    }
+}
