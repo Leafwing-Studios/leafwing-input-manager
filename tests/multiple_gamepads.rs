@@ -20,9 +20,9 @@ fn create_test_app() -> App {
     let gamepad_1 = app.world_mut().spawn(()).id();
     let gamepad_2 = app.world_mut().spawn(()).id();
 
-    let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-        // Must be consistent with mocked events
+    let mut gamepad_messages = app.world_mut().resource_mut::<Messages<GamepadEvent>>();
+    gamepad_messages.write(GamepadEvent::Connection(GamepadConnectionEvent {
+        // Must be consistent with mocked messages
         gamepad: gamepad_1,
         connection: GamepadConnection::Connected {
             name: "FirstController".into(),
@@ -30,8 +30,8 @@ fn create_test_app() -> App {
             product_id: None,
         },
     }));
-    gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-        // Must be consistent with mocked events
+    gamepad_messages.write(GamepadEvent::Connection(GamepadConnectionEvent {
+        // Must be consistent with mocked messages
         gamepad: gamepad_2,
         connection: GamepadConnection::Connected {
             name: "SecondController".into(),
@@ -42,13 +42,13 @@ fn create_test_app() -> App {
 
     // Ensure the gamepads are picked up
     app.update();
-    // Flush the gamepad connection events
+    // Flush the gamepad connection messages
     app.update();
 
     app
 }
 
-fn jump_button_press_event(gamepad: Entity) -> RawGamepadEvent {
+fn jump_button_press_message(gamepad: Entity) -> RawGamepadEvent {
     use bevy::input::gamepad::RawGamepadButtonChangedEvent;
 
     RawGamepadEvent::Button(RawGamepadButtonChangedEvent::new(
@@ -63,11 +63,11 @@ fn accepts_preferred_gamepad() {
     let mut app = create_test_app();
 
     let preferred_gamepad = app.world_mut().spawn(()).id();
-    let mut gamepad_connection_events = app
+    let mut gamepad_connection_messages = app
         .world_mut()
-        .resource_mut::<Events<GamepadConnectionEvent>>();
-    gamepad_connection_events.send(GamepadConnectionEvent {
-        // This MUST be consistent with any other mocked events
+        .resource_mut::<Messages<GamepadConnectionEvent>>();
+    gamepad_connection_messages.write(GamepadConnectionEvent {
+        // This MUST be consistent with any other mocked messages
         gamepad: preferred_gamepad,
         connection: GamepadConnection::Connected {
             name: "Preferred gamepad".to_owned(),
@@ -77,7 +77,7 @@ fn accepts_preferred_gamepad() {
     });
     // Ensure that the gamepad is picked up by the appropriate system
     app.update();
-    // Ensure that the connection event is flushed through
+    // Ensure that the connection message is flushed through
     app.update();
 
     let mut input_map = InputMap::new([(MyAction::Jump, GamepadButton::South)]);
@@ -86,8 +86,8 @@ fn accepts_preferred_gamepad() {
     app.init_resource::<ActionState<MyAction>>();
 
     // When we press the Jump button...
-    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
-    events.send(jump_button_press_event(preferred_gamepad));
+    let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
+    messages.write(jump_button_press_message(preferred_gamepad));
     app.update();
 
     // ... We should receive a Jump action!
@@ -108,8 +108,8 @@ fn filters_out_other_gamepads() {
     app.init_resource::<ActionState<MyAction>>();
 
     // When we press the Jump button...
-    let mut events = app.world_mut().resource_mut::<Events<RawGamepadEvent>>();
-    events.send(jump_button_press_event(other_gamepad));
+    let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
+    messages.write(jump_button_press_message(other_gamepad));
     app.update();
 
     // ... We should receive a Jump action!

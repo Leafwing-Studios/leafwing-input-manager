@@ -15,6 +15,7 @@ use bevy::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
+use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
 use crate::prelude::{ActionState, UserInputWrapper};
@@ -37,13 +38,13 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// [`InputMap::insert_axis`] to insert axislike inputs,
 /// and [`InputMap::insert_dual_axis`] to insert dual-axislike inputs.
 ///
-/// # Many-to-One Mapping
+/// # One-to-Many Mapping
 ///
 /// You can associate multiple [`Buttonlike`]s (e.g., keyboard keys, mouse buttons, gamepad buttons)
 /// with a single action, simplifying handling complex input combinations for the same action.
 /// Duplicate associations are ignored.
 ///
-/// # One-to-Many Mapping
+/// # Many-to-One Mapping
 ///
 /// A single [`Buttonlike`] can be mapped to multiple actions simultaneously.
 /// This allows flexibility in defining alternative ways to trigger an action.
@@ -256,7 +257,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert`] for details.
     ///
     /// This method accepts a boxed [`Buttonlike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_boxed(&mut self, action: A, button: Box<dyn Buttonlike>) -> &mut Self {
@@ -296,7 +297,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_axis`] for details.
     ///
     /// This method accepts a boxed [`Axislike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_axis_boxed(&mut self, action: A, axis: Box<dyn Axislike>) -> &mut Self {
@@ -336,7 +337,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_dual_axis`] for details.
     ///
     /// This method accepts a boxed [`DualAxislike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_dual_axis_boxed(&mut self, action: A, axis: Box<dyn DualAxislike>) -> &mut Self {
@@ -376,7 +377,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_triple_axis`] for details.
     ///
     /// This method accepts a boxed [`TripleAxislike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     #[track_caller]
     pub fn insert_triple_axis_boxed(
@@ -428,7 +429,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_one_to_many`] for details.
     ///
     /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     pub fn insert_one_to_many_boxed(
         &mut self,
@@ -468,7 +469,7 @@ impl<A: Actionlike> InputMap<A> {
     /// See [`InputMap::insert_multiple`] for details.
     ///
     /// This method accepts an iterator, over a boxed [`Buttonlike`] `input`, allowing for
-    /// generics to be used in place of specifics. (E.g. seralizing from a config file).
+    /// generics to be used in place of specifics. (E.g. serializing from a config file).
     #[inline(always)]
     pub fn insert_multiple_boxed(
         &mut self,
@@ -589,7 +590,7 @@ impl<A: Actionlike> InputMap<A> {
         };
 
         match updated_value {
-            UpdatedValue::Button(state) => *state,
+            UpdatedValue::Button(ButtonValue { pressed, value: _ }) => *pressed,
             _ => false,
         }
     }
@@ -615,34 +616,50 @@ impl<A: Actionlike> InputMap<A> {
         let gamepad = self.associated_gamepad.unwrap_or(find_gamepad(gamepads));
 
         // Generate the base action data for each action
-        for (action, _input_bindings) in self.iter_buttonlike() {
-            let mut final_state = false;
-            for binding in _input_bindings {
-                if binding.pressed(input_store, gamepad) {
-                    final_state = true;
-                    break;
+        for (action, input_bindings) in self.iter_buttonlike() {
+            let mut final_state: Option<(bool, f32)> = None;
+            for binding in input_bindings {
+                let pressed = binding.pressed(input_store, gamepad);
+                let value = binding.value(input_store, gamepad);
+                if let Some((existing_state, existing_value)) = final_state {
+                    final_state = Some((existing_state || pressed, existing_value.max(value)));
+                } else {
+                    final_state = Some((pressed, value));
                 }
             }
 
-            updated_actions.insert(action.clone(), UpdatedValue::Button(final_state));
+            if let Some((pressed, value)) = final_state {
+                updated_actions.insert(
+                    action.clone(),
+                    UpdatedValue::Button(ButtonValue { pressed, value }),
+                );
+            }
         }
 
-        for (action, _input_bindings) in self.iter_axislike() {
-            let mut final_value = 0.0;
-            for binding in _input_bindings {
-                final_value += binding.value(input_store, gamepad);
+        for (action, input_bindings) in self.iter_axislike() {
+            let mut final_value = None;
+            for binding in input_bindings {
+                if let Some(value) = binding.get_value(input_store, gamepad) {
+                    final_value = Some(final_value.unwrap_or(0.0) + value);
+                }
             }
 
-            updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
+            if let Some(final_value) = final_value {
+                updated_actions.insert(action.clone(), UpdatedValue::Axis(final_value));
+            }
         }
 
         for (action, _input_bindings) in self.iter_dual_axislike() {
-            let mut final_value = Vec2::ZERO;
+            let mut final_value = None;
             for binding in _input_bindings {
-                final_value += binding.axis_pair(input_store, gamepad);
+                if let Some(axis_pair) = binding.get_axis_pair(input_store, gamepad) {
+                    final_value = Some(final_value.unwrap_or(Vec2::ZERO) + axis_pair);
+                }
             }
 
-            updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
+            if let Some(final_value) = final_value {
+                updated_actions.insert(action.clone(), UpdatedValue::DualAxis(final_value));
+            }
         }
 
         for (action, _input_bindings) in self.iter_triple_axislike() {
@@ -670,7 +687,7 @@ impl<A: Actionlike> UpdatedActions<A> {
     /// Returns `true` if the action is both buttonlike and pressed.
     pub fn pressed(&self, action: &A) -> bool {
         match self.0.get(action) {
-            Some(UpdatedValue::Button(state)) => *state,
+            Some(UpdatedValue::Button(ButtonValue { pressed, value: _ })) => *pressed,
             _ => false,
         }
     }
@@ -682,7 +699,7 @@ impl<A: Actionlike> UpdatedActions<A> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum UpdatedValue {
     /// A buttonlike action that was pressed or released.
-    Button(bool),
+    Button(ButtonValue),
     /// An axislike action that was updated.
     Axis(f32),
     /// A dual-axislike action that was updated.
@@ -1025,6 +1042,7 @@ impl<A: Actionlike, U: Buttonlike> FromIterator<(A, U)> for InputMap<A> {
     }
 }
 
+#[cfg(test)]
 #[cfg(feature = "keyboard")]
 mod tests {
     use bevy::prelude::Reflect;
@@ -1178,11 +1196,14 @@ mod tests {
     #[cfg(feature = "gamepad")]
     #[test]
     fn gamepad_swapping() {
+        use bevy::ecs::world::World;
+
         let mut input_map = InputMap::<Action>::default();
         assert_eq!(input_map.gamepad(), None);
 
-        input_map.set_gamepad(Entity::from_raw(123));
-        assert_eq!(input_map.gamepad(), Some(Entity::from_raw(123)));
+        let test_entity = World::new().spawn_empty().id();
+        input_map.set_gamepad(test_entity);
+        assert_eq!(input_map.gamepad(), Some(test_entity));
 
         input_map.clear_gamepad();
         assert_eq!(input_map.gamepad(), None);

@@ -2,7 +2,10 @@
 
 use bevy::{
     input::{
-        gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent},
+        gamepad::{
+            GamepadConnection, GamepadConnectionEvent, RawGamepadButtonChangedEvent,
+            RawGamepadEvent,
+        },
         InputPlugin,
     },
     prelude::*,
@@ -15,64 +18,85 @@ enum TestAction {
     Throttle,
 }
 
-fn test_app() -> App {
-    let mut app = App::new();
-    app.add_plugins((
-        MinimalPlugins,
-        InputPlugin,
-        InputManagerPlugin::<TestAction>::default(),
-    ));
+struct TestContext {
+    pub app: App,
+}
 
-    let mut input_map = InputMap::<TestAction>::default()
-        .with(TestAction::Throttle, GamepadButton::South)
-        .with(TestAction::Throttle, GamepadButton::RightTrigger);
+impl TestContext {
+    pub fn new() -> Self {
+        let mut app = App::new();
+        app.add_plugins((
+            MinimalPlugins,
+            InputPlugin,
+            InputManagerPlugin::<TestAction>::default(),
+        ));
 
-    input_map
-        .insert(TestAction::Throttle, KeyCode::Space)
-        .insert(TestAction::Throttle, MouseButton::Left);
+        let mut input_map = InputMap::<TestAction>::default()
+            .with(TestAction::Throttle, GamepadButton::South)
+            .with(TestAction::Throttle, GamepadButton::RightTrigger);
+        input_map
+            .insert(TestAction::Throttle, KeyCode::Space)
+            .insert(TestAction::Throttle, MouseButton::Left);
 
-    app.insert_resource(input_map)
-        .init_resource::<ActionState<TestAction>>();
+        app.insert_resource(input_map)
+            .init_resource::<ActionState<TestAction>>();
 
-    let gamepad = app.world_mut().spawn(Gamepad::default()).id();
-    let mut gamepad_events: Mut<'_, Events<GamepadEvent>> =
-        app.world_mut().resource_mut::<Events<GamepadEvent>>();
-    gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-        gamepad,
-        connection: GamepadConnection::Connected {
-            name: "FirstController".into(),
-            product_id: None,
-            vendor_id: None,
-        },
-    }));
+        app.update();
+        app.update();
 
-    // Ensure the gamepads are picked up
-    app.update();
-    // Flush the gamepad connection events
-    app.update();
+        Self { app }
+    }
 
-    app
+    pub fn send_gamepad_connection_event(&mut self, gamepad: Option<Entity>) -> Entity {
+        let gamepad = gamepad.unwrap_or_else(|| self.app.world_mut().spawn_empty().id());
+        self.app
+            .world_mut()
+            .resource_mut::<Messages<GamepadConnectionEvent>>()
+            .write(GamepadConnectionEvent::new(
+                gamepad,
+                GamepadConnection::Connected {
+                    name: "TestController".to_string(),
+                    vendor_id: None,
+                    product_id: None,
+                },
+            ));
+
+        self.app.update();
+        gamepad
+    }
+
+    pub fn update(&mut self) {
+        self.app.update();
+    }
+
+    pub fn send_raw_gamepad_event(&mut self, event: RawGamepadEvent) {
+        self.app
+            .world_mut()
+            .resource_mut::<Messages<RawGamepadEvent>>()
+            .write(event);
+    }
 }
 
 #[test]
-#[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
 fn set_gamepad_updates_central_input_store() {
-    let mut app = test_app();
-
+    let mut ctx = TestContext::new();
+    let gamepad = ctx.send_gamepad_connection_event(None);
     let gamepad_trigger = GamepadButton::RightTrigger;
-    gamepad_trigger.set_value(app.world_mut(), 0.7);
+    ctx.send_raw_gamepad_event(RawGamepadEvent::Button(RawGamepadButtonChangedEvent {
+        gamepad,
+        button: gamepad_trigger,
+        value: 0.8,
+    }));
+    ctx.update();
 
-    app.update();
-
-    let central_input_store = app.world().resource::<CentralInputStore>();
-
-    assert_eq!(central_input_store.button_value(&gamepad_trigger), 0.7);
-    assert!(central_input_store.pressed(&gamepad_trigger));
+    let central_input_store = ctx.app.world().resource::<CentralInputStore>();
+    assert_eq!(central_input_store.button_value(&gamepad_trigger), 0.8);
+    assert!(central_input_store.pressed(&gamepad_trigger).unwrap());
 }
 
 #[test]
 fn set_keyboard_updates_central_input_store() {
-    let mut app = test_app();
+    let mut app = TestContext::new().app;
 
     let keycode = KeyCode::Space;
     keycode.set_value(app.world_mut(), 1.0);
@@ -82,20 +106,17 @@ fn set_keyboard_updates_central_input_store() {
     let central_input_store = app.world().resource::<CentralInputStore>();
 
     assert_eq!(central_input_store.button_value(&keycode), 1.0);
-    assert!(central_input_store.pressed(&keycode));
+    assert!(central_input_store.pressed(&keycode).unwrap());
 }
 
 #[test]
 fn gamepad_button_value() {
-    let mut app = test_app();
+    let mut ctx = TestContext::new();
+    let gamepad = ctx.send_gamepad_connection_event(None);
+    let mut app = ctx.app;
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
-    let button_value = action_state.button_value(&TestAction::Throttle);
-    assert_eq!(button_value, 0.0);
-
-    let relevant_button = GamepadButton::South;
-    relevant_button.press(app.world_mut());
-
+    let gamepad_button: GamepadButton = GamepadButton::South;
+    gamepad_button.set_value_as_gamepad(app.world_mut(), 1.0, Some(gamepad));
     app.update();
 
     let action_state = app.world().resource::<ActionState<TestAction>>();
@@ -105,7 +126,7 @@ fn gamepad_button_value() {
 
 #[test]
 fn mouse_button_value() {
-    let mut app = test_app();
+    let mut app = TestContext::new().app;
 
     let action_state = app.world().resource::<ActionState<TestAction>>();
     let button_value = action_state.button_value(&TestAction::Throttle);
@@ -123,7 +144,7 @@ fn mouse_button_value() {
 
 #[test]
 fn keyboard_button_value() {
-    let mut app = test_app();
+    let mut app = TestContext::new().app;
 
     let action_state = app.world().resource::<ActionState<TestAction>>();
     let button_value = action_state.button_value(&TestAction::Throttle);
@@ -140,17 +161,17 @@ fn keyboard_button_value() {
 }
 
 #[test]
-#[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
 fn gamepad_trigger() {
-    let mut app = test_app();
+    let mut ctx = TestContext::new();
+    let gamepad = ctx.send_gamepad_connection_event(None);
+    let mut app = ctx.app;
 
     let action_state = app.world().resource::<ActionState<TestAction>>();
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 0.0);
 
     let gamepad_trigger = GamepadButton::RightTrigger;
-    gamepad_trigger.set_value(app.world_mut(), 0.7);
-
+    gamepad_trigger.set_value_as_gamepad(app.world_mut(), 0.7, Some(gamepad));
     app.update();
 
     let action_state = app.world().resource::<ActionState<TestAction>>();
@@ -160,7 +181,7 @@ fn gamepad_trigger() {
 
 #[test]
 fn buttonlike_actions_can_be_pressed_and_released_when_pressed() {
-    let mut app = test_app();
+    let mut app = TestContext::new().app;
 
     let relevant_button = MouseButton::Left;
 
@@ -185,10 +206,12 @@ fn buttonlike_actions_can_be_pressed_and_released_when_pressed() {
 
 #[test]
 fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
-    let mut app = test_app();
+    let mut ctx = TestContext::new();
+    let gamepad = ctx.send_gamepad_connection_event(None);
+    let mut app = ctx.app;
 
     let gamepad_trigger = GamepadButton::RightTrigger;
-    gamepad_trigger.set_value(app.world_mut(), 1.0);
+    gamepad_trigger.set_value_as_gamepad(app.world_mut(), 1.0, Some(gamepad));
     app.update();
 
     let action_state = app.world().resource::<ActionState<TestAction>>();
@@ -198,7 +221,7 @@ fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
     assert!(!action_state.just_released(&TestAction::Throttle));
 
     let gamepad_trigger = GamepadButton::RightTrigger;
-    gamepad_trigger.set_value(app.world_mut(), 0.0);
+    gamepad_trigger.set_value_as_gamepad(app.world_mut(), 0.0, Some(gamepad));
     app.update();
 
     let action_state = app.world().resource::<ActionState<TestAction>>();

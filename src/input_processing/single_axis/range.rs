@@ -399,11 +399,11 @@ pub struct AxisDeadZone {
     pub(crate) exclusion: AxisExclusion,
 
     /// Pre-calculated reciprocal of the lower live zone size,
-    /// preventing division during normalization.
+    /// prmessageing division during normalization.
     pub(crate) livezone_lower_recip: f32,
 
     /// Pre-calculated reciprocal of the upper live zone size,
-    /// preventing division during normalization.
+    /// prmessageing division during normalization.
     pub(crate) livezone_upper_recip: f32,
 }
 

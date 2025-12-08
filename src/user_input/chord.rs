@@ -19,7 +19,7 @@ use super::{Axislike, DualAxislike};
 /// A chord is pressed only if all its constituent buttons are pressed simultaneously.
 ///
 /// Adding duplicate buttons within a chord will ignore the extras,
-/// preventing redundant data fetching from multiple instances of the same input.
+/// prmessageing redundant data fetching from multiple instances of the same input.
 ///
 /// ```rust
 /// use bevy::prelude::*;
@@ -129,10 +129,13 @@ impl UserInput for ButtonlikeChord {
 impl Buttonlike for ButtonlikeChord {
     /// Checks if all the inner inputs within the chord are active simultaneously.
     #[inline]
-    fn pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> bool {
-        self.0
-            .iter()
-            .all(|input| input.pressed(input_store, gamepad))
+    fn get_pressed(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<bool> {
+        for input in &self.0 {
+            if !(input.get_pressed(input_store, gamepad)?) {
+                return Some(false);
+            }
+        }
+        Some(true)
     }
 
     fn press(&self, world: &mut World) {
@@ -208,11 +211,11 @@ impl UserInput for AxislikeChord {
 
 #[serde_typetag]
 impl Axislike for AxislikeChord {
-    fn value(&self, input_store: &CentralInputStore, gamepad: Entity) -> f32 {
+    fn get_value(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<f32> {
         if self.button.pressed(input_store, gamepad) {
-            self.axis.value(input_store, gamepad)
+            self.axis.get_value(input_store, gamepad)
         } else {
-            0.0
+            Some(0.0)
         }
     }
 
@@ -263,11 +266,12 @@ impl UserInput for DualAxislikeChord {
 
 #[serde_typetag]
 impl DualAxislike for DualAxislikeChord {
-    fn axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec2 {
-        if self.button.pressed(input_store, gamepad) {
-            self.dual_axis.axis_pair(input_store, gamepad)
+    fn get_axis_pair(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec2> {
+        let pressed = self.button.get_pressed(input_store, gamepad)?;
+        if pressed {
+            self.dual_axis.get_axis_pair(input_store, gamepad)
         } else {
-            Vec2::ZERO
+            Some(Vec2::ZERO)
         }
     }
 
@@ -324,11 +328,12 @@ impl UserInput for TripleAxislikeChord {
 
 #[serde_typetag]
 impl TripleAxislike for TripleAxislikeChord {
-    fn axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Vec3 {
-        if self.button.pressed(input_store, gamepad) {
-            self.triple_axis.axis_triple(input_store, gamepad)
+    fn get_axis_triple(&self, input_store: &CentralInputStore, gamepad: Entity) -> Option<Vec3> {
+        let pressed = self.button.get_pressed(input_store, gamepad)?;
+        if pressed {
+            self.triple_axis.get_axis_triple(input_store, gamepad)
         } else {
-            Vec3::ZERO
+            Some(Vec3::ZERO)
         }
     }
 
@@ -367,9 +372,9 @@ mod tests {
         // WARNING: you MUST register your gamepad during tests,
         // or all gamepad input mocking actions will fail
         let gamepad = app.world_mut().spawn(()).id();
-        let mut gamepad_events = app.world_mut().resource_mut::<Events<GamepadEvent>>();
-        gamepad_events.send(GamepadEvent::Connection(GamepadConnectionEvent {
-            // This MUST be consistent with any other mocked events
+        let mut gamepad_messages = app.world_mut().resource_mut::<Messages<GamepadEvent>>();
+        gamepad_messages.write(GamepadEvent::Connection(GamepadConnectionEvent {
+            // This MUST be consistent with any other mocked messages
             gamepad,
             connection: GamepadConnection::Connected {
                 name: "TestController".into(),
@@ -380,7 +385,7 @@ mod tests {
 
         // Ensure that the gamepad is picked up by the appropriate system
         app.update();
-        // Ensure that the connection event is flushed through
+        // Ensure that the connection message is flushed through
         app.update();
         app
     }

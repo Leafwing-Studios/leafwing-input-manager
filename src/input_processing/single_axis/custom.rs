@@ -114,20 +114,16 @@ impl PartialReflect for Box<dyn CustomAxisProcessor> {
         ReflectKind::Opaque
     }
 
-    fn reflect_ref(&self) -> ReflectRef {
+    fn reflect_ref(&self) -> ReflectRef<'_> {
         ReflectRef::Opaque(self)
     }
 
-    fn reflect_mut(&mut self) -> ReflectMut {
+    fn reflect_mut(&mut self) -> ReflectMut<'_> {
         ReflectMut::Opaque(self)
     }
 
     fn reflect_owned(self: Box<Self>) -> ReflectOwned {
         ReflectOwned::Opaque(self)
-    }
-
-    fn clone_value(&self) -> Box<dyn PartialReflect> {
-        Box::new(self.clone())
     }
 
     fn try_apply(&mut self, value: &dyn PartialReflect) -> Result<(), bevy::reflect::ApplyError> {
@@ -266,7 +262,7 @@ impl Serialize for dyn CustomAxisProcessor + '_ {
         S: Serializer,
     {
         // Check that `CustomAxisProcessor` has `erased_serde::Serialize` as a super trait,
-        // preventing infinite recursion at runtime.
+        // prmessageing infinite recursion at runtime.
         const fn __check_erased_serialize_super_trait<T: ?Sized + CustomAxisProcessor>() {
             require_erased_serialize_impl::<T>();
         }

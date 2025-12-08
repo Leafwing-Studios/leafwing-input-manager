@@ -15,7 +15,7 @@ use bevy::{
     time::{Real, Time},
 };
 
-use crate::action_diff::{ActionDiffEvent, SummarizedActionState};
+use crate::action_diff::{ActionDiffMessage, SummarizedActionState};
 
 /// We are about to enter the `Main` schedule, so we:
 /// - save all the changes applied to `state` into the `fixed_update_state`
@@ -120,7 +120,7 @@ pub fn filter_captured_input(
     }
 }
 
-/// Generates an [`Events`] stream of [`ActionDiff`s](crate::action_diff::ActionDiff) from every [`ActionState`].
+/// Generates an [`Messages`] stream of [`ActionDiff`s](crate::action_diff::ActionDiff) from every [`ActionState`].
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
 /// Generally speaking, this should be added as part of [`PostUpdate`](bevy::prelude::PostUpdate),
@@ -129,17 +129,17 @@ pub fn generate_action_diffs<A: Actionlike>(
     global_action_state: Option<Res<ActionState<A>>>,
     action_state_query: Query<(Entity, &ActionState<A>)>,
     previous_action_state: Local<SummarizedActionState<A>>,
-    action_diff_events: EventWriter<ActionDiffEvent<A>>,
+    action_diff_messages: MessageWriter<ActionDiffMessage<A>>,
 ) {
     generate_action_diffs_filtered(
         global_action_state,
         action_state_query,
         previous_action_state,
-        action_diff_events,
+        action_diff_messages,
     )
 }
 
-/// Generates an [`Events`] stream of [`ActionDiff`s](crate::action_diff::ActionDiff) from the [`ActionState`] of certain entities.
+/// Generates an [`Messages`] stream of [`ActionDiff`s](crate::action_diff::ActionDiff) from the [`ActionState`] of certain entities.
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
 /// Generally speaking, this should be added as part of [`PostUpdate`](bevy::prelude::PostUpdate),
@@ -150,17 +150,17 @@ pub fn generate_action_diffs_filtered<A: Actionlike, F: QueryFilter>(
     global_action_state: Option<Res<ActionState<A>>>,
     action_state_query: Query<(Entity, &ActionState<A>), F>,
     mut previous_action_state: Local<SummarizedActionState<A>>,
-    mut action_diff_events: EventWriter<ActionDiffEvent<A>>,
+    mut action_diff_messages: MessageWriter<ActionDiffMessage<A>>,
 ) {
     let current_action_state =
         SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
-    current_action_state.send_diffs(&previous_action_state, &mut action_diff_events);
+    current_action_state.send_diffs(&previous_action_state, &mut action_diff_messages);
     debug!("previous_action_state: {:?}", previous_action_state);
     debug!("current_action_state: {:?}", current_action_state);
     *previous_action_state = current_action_state;
 }
 
-/// Release all inputs when an [`InputMap<A>`] is removed to prevent them from being held forever.
+/// Release all inputs when an [`InputMap<A>`] is removed to prmessage them from being held forever.
 ///
 /// By default, [`InputManagerPlugin<A>`](crate::plugin::InputManagerPlugin) will run this on [`PostUpdate`](bevy::prelude::PostUpdate).
 /// For components you must remove the [`InputMap<A>`] before [`PostUpdate`](bevy::prelude::PostUpdate)

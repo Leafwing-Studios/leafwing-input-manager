@@ -43,27 +43,27 @@ fn test_app() -> App {
 #[test]
 fn mouse_scroll_discrete_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
-    assert_eq!(events.drain().count(), 0);
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseWheel>>();
+    assert_eq!(messages.drain().count(), 0);
 
     MouseScrollDirection::UP.press(app.world_mut());
 
-    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseWheel>>();
 
-    assert_eq!(events.drain().count(), 1);
+    assert_eq!(messages.drain().count(), 1);
 }
 
 #[test]
 fn mouse_scroll_single_axis_mocking() {
     let mut app = test_app();
-    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
-    assert_eq!(events.drain().count(), 0);
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseWheel>>();
+    assert_eq!(messages.drain().count(), 0);
 
     let input = MouseScrollAxis::X;
     input.set_value(app.world_mut(), -1.0);
 
-    let mut events = app.world_mut().resource_mut::<Events<MouseWheel>>();
-    assert_eq!(events.drain().count(), 1);
+    let mut messages = app.world_mut().resource_mut::<Messages<MouseWheel>>();
+    assert_eq!(messages.drain().count(), 1);
 }
 
 #[test]

@@ -1,5 +1,34 @@
 # Release Notes
 
+## Version 0.19.0
+
+### Breaking Changes (0.19.0)
+
+- the `Buttonlike`, `Axislike`, `DualAxislike` and `TripleAxislike` traits now have getters that return `Option`s to indicate whether an input has been seen before. If you implemented your own input types, you should now implement `Buttonlike::get_pressed` instead of `pressed`, `Axislike::get_value` instead of `value` and `DualAxislike::get_axis_pair` instead of `axis_pair`.
+
+### Bugs (0.19.0)
+
+- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.02` 
+  - this prevents issues where triggers would report very small non-zero values as "pressed" when not physically pressed due to sensor imprecision
+- fixed a bug where `ActionLike::axis_data`, `ActionLike::button_data` and `ActionLike::dual_axis_data()` would return `Some` even though the inputs had never been triggered.
+- run conditions provided by `common_conditions` can now find `ActionState`s from either resources or singleton queries
+
+## Version 0.18
+
+### Dependencies (0.18.0)
+
+- updated to Bevy 0.17
+
+### Usability (0.18.0)
+
+- add the ability to use `register_input_kind` in a `App` builder pattern rather than having to do it separately. [See #706](https://github.com/Leafwing-Studios/leafwing-input-manager/issues/706) for more info
+
+## Breaking Changes (0.18.0)
+
+- many types that were previously `Message`-implementing types are now `Message`-implementing types (same semantics, new name), and have been renamed accordingly
+  - for example, `ActionDiffEvent` is now `ActionDiffMessage`
+- `InputManagerBundle` has been removed after being deprecated: insert an `InputMap<A>` component instead and use required components to fill in the `ActionState<A>`
+
 ## Version 0.17.1
 
 ### Usability (0.17.1)
@@ -97,7 +126,7 @@
 - added `only_positive`, `only_positive_x`, `only_positive_y`, `only_negative`, `only_negative_x`, and `only_negative_y` builders for `DualAxisDeadZone` and `DualAxisExclusion`.
   - added corresponding extension methods for those implementing `WithDualAxisProcessorExt` trait.
 
-#### ActionDiffEvent
+#### ActionDiffMessage
 
 - Implement `MapEntities`, which lets networking crates translate owner entity IDs between ECS worlds
 
@@ -648,7 +677,7 @@ Input processors allow you to create custom logic for axis-like input manipulati
 
 ## Bug fixes
 
-- mocked inputs are now sent at the low-level `Events` form, rather than in their `Input` format.
+- mocked inputs are now sent at the low-level `Messages` form, rather than in their `Input` format.
   - this ensures that user code that is reading these events directly can be tested accurately.
 
 ## Version 0.4.1

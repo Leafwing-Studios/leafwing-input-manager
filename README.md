@@ -16,6 +16,7 @@ and a single input can result in multiple actions being triggered, which can be 
 
 | Bevy | leafwing-input-manager |
 | ---- | ---------------------- |
+| 0.17 | 0.18..0.19             |
 | 0.16 | 0.17                   |
 | 0.15 | 0.16                   |
 | 0.14 | 0.14..0.15             |
@@ -58,7 +59,7 @@ and a single input can result in multiple actions being triggered, which can be 
 1. Add `leafwing-input-manager` to your `Cargo.toml`.
 2. Create an enum of the logical actions you want to represent, and derive the `Actionlike` trait for it.
 3. Add the `InputManagerPlugin` to your `App`.
-4. Add the `InputManagerBundle` to your player entity (or entities!).
+4. Add an `InputMap<A: Actionlike>` component to your player entity (or entities!).
 5. Configure a mapping between your inputs and your actions by modifying the `InputMap` component on your player entity.
 6. Read the `ActionState` component on your player entity to check the collected input state!
 
@@ -98,9 +99,11 @@ fn spawn_player(mut commands: Commands) {
 // Query for the `ActionState` component in your game logic systems!
 fn jump(query: Query<&ActionState<Action>, With<Player>>) {
     let action_state = query.single();
-    // Each action has a button-like state of its own that you can check
-    if action_state.just_pressed(&Action::Jump) {
-        println!("I'm jumping!");
+    if let Ok(action_state) = action_state {
+        // Each action has a button-like state of its own that you can check
+        if action_state.just_pressed(&Action::Jump) {
+            println!("I'm jumping!");
+        }
     }
 }
 ```

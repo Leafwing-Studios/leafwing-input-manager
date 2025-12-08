@@ -108,10 +108,8 @@ impl CentralInputStore {
     }
 
     /// Check if a [`Buttonlike`] input is currently pressing.
-    pub fn pressed<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> bool {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<B>()) else {
-            return false;
-        };
+    pub fn pressed<B: Buttonlike + Hash + Eq + Clone>(&self, buttonlike: &B) -> Option<bool> {
+        let updated_values = self.updated_values.get(&TypeId::of::<B>())?;
 
         let UpdatedValues::Buttonlike(buttonlikes) = updated_values else {
             panic!("Expected Buttonlike, found {updated_values:?}");
@@ -124,7 +122,6 @@ impl CentralInputStore {
             .get(&boxed_buttonlike)
             .copied()
             .map(|button| button.pressed)
-            .unwrap_or(false)
     }
 
     /// Fetches the value of a [`Buttonlike`] input.
@@ -152,10 +149,8 @@ impl CentralInputStore {
     /// Fetches the value of an [`Axislike`] input.
     ///
     /// This should be between -1.0 and 1.0, where -1.0 is fully left or down and 1.0 is fully right or up.
-    pub fn value<A: Axislike + Hash + Eq + Clone>(&self, axislike: &A) -> f32 {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<A>()) else {
-            return 0.0;
-        };
+    pub fn value<A: Axislike + Hash + Eq + Clone>(&self, axislike: &A) -> Option<f32> {
+        let updated_values = self.updated_values.get(&TypeId::of::<A>())?;
 
         let UpdatedValues::Axislike(axislikes) = updated_values else {
             panic!("Expected Axislike, found {updated_values:?}");
@@ -164,14 +159,12 @@ impl CentralInputStore {
         // PERF: surely there's a way to avoid cloning here
         let boxed_axislike: Box<dyn Axislike> = Box::new(axislike.clone());
 
-        axislikes.get(&boxed_axislike).copied().unwrap_or(0.0)
+        axislikes.get(&boxed_axislike).copied()
     }
 
     /// Fetches the value of a [`DualAxislike`] input.
-    pub fn pair<D: DualAxislike + Hash + Eq + Clone>(&self, dualaxislike: &D) -> Vec2 {
-        let Some(updated_values) = self.updated_values.get(&TypeId::of::<D>()) else {
-            return Vec2::ZERO;
-        };
+    pub fn pair<D: DualAxislike + Hash + Eq + Clone>(&self, dualaxislike: &D) -> Option<Vec2> {
+        let updated_values = self.updated_values.get(&TypeId::of::<D>())?;
 
         let UpdatedValues::Dualaxislike(dualaxislikes) = updated_values else {
             panic!("Expected DualAxislike, found {updated_values:?}");
@@ -180,10 +173,7 @@ impl CentralInputStore {
         // PERF: surely there's a way to avoid cloning here
         let boxed_dualaxislike: Box<dyn DualAxislike> = Box::new(dualaxislike.clone());
 
-        dualaxislikes
-            .get(&boxed_dualaxislike)
-            .copied()
-            .unwrap_or(Vec2::ZERO)
+        dualaxislikes.get(&boxed_dualaxislike).copied()
     }
 
     /// Fetches the value of a [`TripleAxislike`] input.
@@ -210,7 +200,7 @@ impl CentralInputStore {
 /// This resource exists for each input type that implements [`UpdatableInput`] (e.g. [`bevy::input::mouse::MouseButton`], [`bevy::input::keyboard::KeyCode`]).
 /// Set [`EnabledInput::is_enabled`] to `false` to disable corresponding input handling.
 pub struct EnabledInput<T> {
-    /// Set this flag to `false` to disable input handling of corresponding events.
+    /// Set this flag to `false` to disable input handling of corresponding messages.
     pub is_enabled: bool,
     _p: PhantomData<T>,
 }
@@ -240,11 +230,11 @@ pub trait InputRegistration {
     /// compute the values of all related inputs from the data stored the [`CentralInputStore`].
     ///
     /// This method has no effect if the input kind has already been registered.
-    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind);
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) -> &mut App;
 }
 
 impl InputRegistration for App {
-    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) {
+    fn register_input_kind<I: UpdatableInput>(&mut self, kind: InputControlKind) -> &mut App {
         let mut central_input_store = self.world_mut().resource_mut::<CentralInputStore>();
 
         // Ensure this method is idempotent.
@@ -252,7 +242,7 @@ impl InputRegistration for App {
             .registered_input_kinds
             .contains(&TypeId::of::<I>())
         {
-            return;
+            return self;
         }
 
         central_input_store.updated_values.insert(
@@ -268,7 +258,7 @@ impl InputRegistration for App {
             I::compute
                 .in_set(InputManagerSystem::Unify)
                 .run_if(input_is_enabled::<I>),
-        );
+        )
     }
 }
 
@@ -415,6 +405,6 @@ mod tests {
         world.run_system_once(MouseButton::compute).unwrap();
         let central_input_store = world.resource::<CentralInputStore>();
         dbg!(central_input_store);
-        assert!(central_input_store.pressed(&MouseButton::Left));
+        assert_eq!(central_input_store.pressed(&MouseButton::Left), Some(true));
     }
 }

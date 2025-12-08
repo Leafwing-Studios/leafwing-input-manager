@@ -1,5 +1,5 @@
 use bevy::{input::InputPlugin, prelude::*};
-use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffEvent};
+use leafwing_input_manager::action_diff::{ActionDiff, ActionDiffMessage};
 use leafwing_input_manager::{
     prelude::*,
     systems::{generate_action_diffs, generate_action_diffs_filtered},
@@ -23,12 +23,12 @@ fn spawn_test_entity(mut commands: Commands) {
 
 fn process_action_diffs<A: Actionlike>(
     mut action_state_query: Query<&mut ActionState<A>>,
-    mut action_diff_events: EventReader<ActionDiffEvent<A>>,
+    mut action_diff_messages: MessageReader<ActionDiffMessage<A>>,
 ) {
-    for action_diff_event in action_diff_events.read() {
-        if action_diff_event.owner.is_some() {
+    for action_diff_message in action_diff_messages.read() {
+        if action_diff_message.owner.is_some() {
             let mut action_state = action_state_query.single_mut().unwrap();
-            action_diff_event
+            action_diff_message
                 .action_diffs
                 .iter()
                 .for_each(|diff| action_state.apply_diff(diff));
@@ -44,53 +44,53 @@ fn create_app() -> App {
         InputManagerPlugin::<Action>::default(),
     ))
     .add_systems(Startup, spawn_test_entity)
-    .add_event::<ActionDiffEvent<Action>>();
+    .add_message::<ActionDiffMessage<Action>>();
     app.update();
     app
 }
 
-fn get_events<E: Event>(app: &App) -> &Events<E> {
+fn get_messages<M: Message>(app: &App) -> &Messages<M> {
     app.world().resource()
 }
-fn get_events_mut<E: Event>(app: &mut App) -> Mut<Events<E>> {
+fn get_messages_mut<M: Message>(app: &'_ mut App) -> Mut<'_, Messages<M>> {
     app.world_mut().resource_mut()
 }
 
-fn send_action_diff(app: &mut App, action_diff: ActionDiffEvent<Action>) {
-    let mut action_diff_events = get_events_mut::<ActionDiffEvent<Action>>(app);
-    action_diff_events.send(action_diff);
+fn send_action_diff(app: &mut App, action_diff: ActionDiffMessage<Action>) {
+    let mut action_diff_messages = get_messages_mut::<ActionDiffMessage<Action>>(app);
+    action_diff_messages.write(action_diff);
 }
 
 #[track_caller]
 fn assert_has_no_action_diffs(app: &mut App) {
-    let action_diff_events = get_events::<ActionDiffEvent<Action>>(app);
-    let action_diff_event_reader = &mut action_diff_events.get_cursor();
-    if let Some(action_diff) = action_diff_event_reader.read(action_diff_events).next() {
+    let action_diff_messages = get_messages::<ActionDiffMessage<Action>>(app);
+    let action_diff_message_reader = &mut action_diff_messages.get_cursor();
+    if let Some(action_diff) = action_diff_message_reader.read(action_diff_messages).next() {
         panic!("Expected no `ActionDiff` variants. Received: {action_diff:?}")
     }
 }
 
 #[track_caller]
-fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffEvent<Action>)) {
-    let mut action_diff_events = get_events_mut::<ActionDiffEvent<Action>>(app);
-    let action_diff_event_reader = &mut action_diff_events.get_cursor();
-    assert!(action_diff_event_reader.len(action_diff_events.as_ref()) < 2);
-    match action_diff_event_reader
-        .read(action_diff_events.as_ref())
+fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffMessage<Action>)) {
+    let mut action_diff_messages = get_messages_mut::<ActionDiffMessage<Action>>(app);
+    let action_diff_message_reader = &mut action_diff_messages.get_cursor();
+    assert!(action_diff_message_reader.len(action_diff_messages.as_ref()) < 2);
+    match action_diff_message_reader
+        .read(action_diff_messages.as_ref())
         .next()
     {
         Some(action_diff) => predicate(action_diff),
         None => panic!("Expected an `ActionDiff` variant. Received none."),
     };
-    action_diff_events.clear();
+    action_diff_messages.clear();
 }
 
 #[track_caller]
-fn assert_action_diff_received(app: &mut App, action_diff_event: ActionDiffEvent<Action>) {
+fn assert_action_diff_received(app: &mut App, action_diff_message: ActionDiffMessage<Action>) {
     let mut action_state_query = app.world_mut().query::<&ActionState<Action>>();
     let action_state = action_state_query.single(app.world()).unwrap();
-    assert_eq!(action_diff_event.action_diffs.len(), 1);
-    match action_diff_event.action_diffs.first().unwrap().clone() {
+    assert_eq!(action_diff_message.action_diffs.len(), 1);
+    match action_diff_message.action_diffs.first().unwrap().clone() {
         ActionDiff::Pressed { action, .. } => {
             assert!(action_state.pressed(&action));
         }
@@ -131,10 +131,10 @@ fn generate_button_action_diffs() {
     action_state.press(&Action::Button);
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
+    assert_action_diff_created(&mut app, |action_diff_message| {
+        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.action_diffs.len(), 1);
+        match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action, value } => {
                 assert_eq!(action, Action::Button);
                 assert_eq!(value, 1.0);
@@ -167,10 +167,10 @@ fn generate_button_action_diffs() {
     action_state.set_button_value(&Action::Button, 0.5);
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
+    assert_action_diff_created(&mut app, |action_diff_message| {
+        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.action_diffs.len(), 1);
+        match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action, value } => {
                 assert_eq!(action, Action::Button);
                 assert_eq!(value, 0.5);
@@ -199,10 +199,10 @@ fn generate_button_action_diffs() {
     action_state.release(&Action::Button);
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
+    assert_action_diff_created(&mut app, |action_diff_message| {
+        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.action_diffs.len(), 1);
+        match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
                 assert_eq!(action, Action::Button);
             }
@@ -243,10 +243,10 @@ fn generate_axis_action_diffs() {
     action_state.set_axis_pair(&Action::DualAxis, test_axis_pair);
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
+    assert_action_diff_created(&mut app, |action_diff_message| {
+        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.action_diffs.len(), 1);
+        match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
                 assert_eq!(action, Action::DualAxis);
                 assert_eq!(axis_pair, test_axis_pair);
@@ -279,10 +279,10 @@ fn generate_axis_action_diffs() {
     action_state.set_axis_pair(&Action::DualAxis, Vec2::ZERO);
     app.update();
 
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
+    assert_action_diff_created(&mut app, |action_diff_message| {
+        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.action_diffs.len(), 1);
+        match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
                 assert_eq!(action, Action::DualAxis);
                 assert_eq!(axis_pair, Vec2::ZERO);
@@ -330,11 +330,11 @@ fn generate_filtered_binary_action_diffs() {
     }
     app.update();
 
-    // Expect only `entity` to have an action diff event
-    assert_action_diff_created(&mut app, |action_diff_event| {
-        assert_eq!(action_diff_event.owner, Some(entity));
-        assert_eq!(action_diff_event.action_diffs.len(), 1);
-        match action_diff_event.action_diffs.first().unwrap().clone() {
+    // Expect only `entity` to have an action diff message
+    assert_action_diff_created(&mut app, |action_diff_message| {
+        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.action_diffs.len(), 1);
+        match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action, .. } => {
                 assert_eq!(action, Action::Button);
             }
@@ -364,30 +364,30 @@ fn process_binary_action_diffs() {
         .expect("Need a Entity with ActionState");
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
-    let action_diff_event = ActionDiffEvent {
+    let action_diff_message = ActionDiffMessage {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Pressed {
             action: Action::Button,
             value: 1.0,
         }],
     };
-    send_action_diff(&mut app, action_diff_event.clone());
+    send_action_diff(&mut app, action_diff_message.clone());
 
     app.update();
 
-    assert_action_diff_received(&mut app, action_diff_event);
+    assert_action_diff_received(&mut app, action_diff_message);
 
-    let action_diff_event = ActionDiffEvent {
+    let action_diff_message = ActionDiffMessage {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
             action: Action::Button,
         }],
     };
-    send_action_diff(&mut app, action_diff_event.clone());
+    send_action_diff(&mut app, action_diff_message.clone());
 
     app.update();
 
-    assert_action_diff_received(&mut app, action_diff_event);
+    assert_action_diff_received(&mut app, action_diff_message);
 }
 
 #[test]
@@ -400,30 +400,30 @@ fn process_value_action_diff() {
         .expect("Need a Entity with ActionState");
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
-    let action_diff_event = ActionDiffEvent {
+    let action_diff_message = ActionDiffMessage {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::AxisChanged {
             action: Action::Axis,
             value: 0.5,
         }],
     };
-    send_action_diff(&mut app, action_diff_event.clone());
+    send_action_diff(&mut app, action_diff_message.clone());
 
     app.update();
 
-    assert_action_diff_received(&mut app, action_diff_event);
+    assert_action_diff_received(&mut app, action_diff_message);
 
-    let action_diff_event = ActionDiffEvent {
+    let action_diff_message = ActionDiffMessage {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
             action: Action::Button,
         }],
     };
-    send_action_diff(&mut app, action_diff_event.clone());
+    send_action_diff(&mut app, action_diff_message.clone());
 
     app.update();
 
-    assert_action_diff_received(&mut app, action_diff_event);
+    assert_action_diff_received(&mut app, action_diff_message);
 }
 
 #[test]
@@ -436,28 +436,28 @@ fn process_axis_action_diff() {
         .expect("Need a Entity with ActionState");
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
-    let action_diff_event = ActionDiffEvent {
+    let action_diff_message = ActionDiffMessage {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::DualAxisChanged {
             action: Action::DualAxis,
             axis_pair: Vec2 { x: 1., y: 0. },
         }],
     };
-    send_action_diff(&mut app, action_diff_event.clone());
+    send_action_diff(&mut app, action_diff_message.clone());
 
     app.update();
 
-    assert_action_diff_received(&mut app, action_diff_event);
+    assert_action_diff_received(&mut app, action_diff_message);
 
-    let action_diff_event = ActionDiffEvent {
+    let action_diff_message = ActionDiffMessage {
         owner: Some(entity),
         action_diffs: vec![ActionDiff::Released {
             action: Action::Button,
         }],
     };
-    send_action_diff(&mut app, action_diff_event.clone());
+    send_action_diff(&mut app, action_diff_message.clone());
 
     app.update();
 
-    assert_action_diff_received(&mut app, action_diff_event);
+    assert_action_diff_received(&mut app, action_diff_message);
 }

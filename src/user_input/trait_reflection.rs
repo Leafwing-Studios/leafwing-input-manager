@@ -33,20 +33,16 @@ mod buttonlike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
         fn reflect_owned(self: Box<Self>) -> ReflectOwned {
             ReflectOwned::Opaque(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
         }
 
         fn try_apply(
@@ -200,20 +196,16 @@ mod axislike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
         fn reflect_owned(self: Box<Self>) -> ReflectOwned {
             ReflectOwned::Opaque(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
         }
 
         fn try_apply(
@@ -390,20 +382,16 @@ mod dualaxislike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
         fn reflect_owned(self: Box<Self>) -> ReflectOwned {
             ReflectOwned::Opaque(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
         }
 
         fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
@@ -557,20 +545,16 @@ mod tripleaxislike {
             ReflectKind::Opaque
         }
 
-        fn reflect_ref(&self) -> ReflectRef {
+        fn reflect_ref(&self) -> ReflectRef<'_> {
             ReflectRef::Opaque(self)
         }
 
-        fn reflect_mut(&mut self) -> ReflectMut {
+        fn reflect_mut(&mut self) -> ReflectMut<'_> {
             ReflectMut::Opaque(self)
         }
 
         fn reflect_owned(self: Box<Self>) -> ReflectOwned {
             ReflectOwned::Opaque(self)
-        }
-
-        fn clone_value(&self) -> Box<dyn PartialReflect> {
-            Box::new(self.clone())
         }
 
         fn into_partial_reflect(self: Box<Self>) -> Box<dyn PartialReflect> {
