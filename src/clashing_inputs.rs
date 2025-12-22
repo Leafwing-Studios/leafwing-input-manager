@@ -480,8 +480,8 @@ mod tests {
             plugin::CentralInputStorePlugin,
             prelude::{ModifierKey, VirtualDPad},
         };
-        use bevy::{input::InputPlugin, prelude::*};
         use Action::*;
+        use bevy::{input::InputPlugin, prelude::*};
 
         #[test]
         #[ignore = "Figuring out how to handle the length of chords with group inputs is out of scope."]
@@ -572,9 +572,11 @@ mod tests {
             assert!(input_map.possible_clash(&One, &OneAndTwo).is_some());
             assert!(input_map.possible_clash(&One, &OneAndTwoAndThree).is_some());
             assert!(input_map.possible_clash(&One, &TwoAndThree).is_none());
-            assert!(input_map
-                .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
-                .is_some());
+            assert!(
+                input_map
+                    .possible_clash(&OneAndTwo, &OneAndTwoAndThree)
+                    .is_some()
+            );
         }
 
         #[test]
@@ -728,9 +730,11 @@ mod tests {
                 .first()
                 .unwrap();
 
-            assert!(chord_input
-                .decompose()
-                .clashes_with(&dpad_input.decompose()));
+            assert!(
+                chord_input
+                    .decompose()
+                    .clashes_with(&dpad_input.decompose())
+            );
 
             // Triple check that the inputs are clashing
             input_map

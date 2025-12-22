@@ -6,9 +6,9 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
+use crate::InputControlKind;
 use crate::clashing_inputs::BasicInputs;
 use crate::user_input::{Buttonlike, TripleAxislike, UserInput};
-use crate::InputControlKind;
 
 use super::updating::CentralInputStore;
 use super::{Axislike, DualAxislike};
@@ -357,10 +357,10 @@ impl TripleAxislike for TripleAxislikeChord {
 mod tests {
     use super::ButtonlikeChord;
     use crate::plugin::CentralInputStorePlugin;
-    use crate::user_input::updating::CentralInputStore;
     use crate::user_input::Buttonlike;
-    use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent};
+    use crate::user_input::updating::CentralInputStore;
     use bevy::input::InputPlugin;
+    use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, GamepadEvent};
     use bevy::prelude::*;
 
     fn test_app() -> App {

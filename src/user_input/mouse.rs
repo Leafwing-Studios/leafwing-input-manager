@@ -7,8 +7,8 @@ use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::*;
 use crate::user_input::{InputControlKind, UserInput};
 use bevy::ecs::message::Messages;
-use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
+use bevy::ecs::system::lifetimeless::SRes;
 use bevy::input::mouse::{
     AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButton, MouseButtonInput, MouseMotion,
     MouseWheel,

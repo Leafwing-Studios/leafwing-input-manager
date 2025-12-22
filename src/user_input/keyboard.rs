@@ -1,8 +1,8 @@
 //! Keyboard inputs
 
 use bevy::ecs::message::Messages;
-use bevy::ecs::system::lifetimeless::SRes;
 use bevy::ecs::system::StaticSystemParam;
+use bevy::ecs::system::lifetimeless::SRes;
 use bevy::input::keyboard::{Key, KeyboardInput, NativeKey};
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::prelude::{Entity, KeyCode, Reflect, ResMut, World};
@@ -10,13 +10,13 @@ use leafwing_input_manager_macros::serde_typetag;
 use serde::{Deserialize, Serialize};
 
 use crate as leafwing_input_manager;
+use crate::InputControlKind;
 use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::BasicInputs;
 use crate::user_input::{ButtonlikeChord, UserInput};
-use crate::InputControlKind;
 
-use super::updating::{CentralInputStore, UpdatableInput};
 use super::Buttonlike;
+use super::updating::{CentralInputStore, UpdatableInput};
 
 // Built-in support for Bevy's KeyCode
 impl UserInput for KeyCode {

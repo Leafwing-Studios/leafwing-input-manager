@@ -1,7 +1,7 @@
 #![cfg(feature = "mouse")]
 
-use bevy::input::mouse::MouseMotion;
 use bevy::input::InputPlugin;
+use bevy::input::mouse::MouseMotion;
 use bevy::prelude::*;
 use leafwing_input_manager::input_processing::WithDualAxisProcessingPipelineExt;
 use leafwing_input_manager::prelude::*;

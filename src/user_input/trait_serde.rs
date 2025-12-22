@@ -6,7 +6,7 @@ use bevy::app::App;
 use bevy::reflect::GetTypeRegistration;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{serialize_trait_object, Registry};
+use serde_flexitos::{Registry, serialize_trait_object};
 use std::sync::LazyLock;
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
@@ -237,7 +237,7 @@ mod tests {
     fn test_button_serde() {
         use crate::prelude::Buttonlike;
         use bevy::prelude::KeyCode;
-        use serde_test::{assert_tokens, Token};
+        use serde_test::{Token, assert_tokens};
 
         register_input_deserializers();
 
@@ -260,7 +260,7 @@ mod tests {
     #[test]
     fn test_mouse_button_serde() {
         use bevy::prelude::MouseButton;
-        use serde_test::{assert_tokens, Token};
+        use serde_test::{Token, assert_tokens};
 
         use crate::prelude::Buttonlike;
 
@@ -285,7 +285,7 @@ mod tests {
     #[test]
     fn test_axis_serde() {
         use crate::prelude::{Axislike, MouseScrollAxis};
-        use serde_test::{assert_tokens, Token};
+        use serde_test::{Token, assert_tokens};
 
         register_input_deserializers();
 
@@ -318,7 +318,7 @@ mod tests {
     #[test]
     fn test_dual_axis_serde() {
         use crate::prelude::{DualAxislike, MouseMove};
-        use serde_test::{assert_tokens, Token};
+        use serde_test::{Token, assert_tokens};
 
         register_input_deserializers();
 
@@ -346,7 +346,7 @@ mod tests {
     fn test_triple_axis_serde() {
         use crate::prelude::{TripleAxislike, VirtualDPad3D};
         use bevy::prelude::KeyCode;
-        use serde_test::{assert_tokens, Token};
+        use serde_test::{Token, assert_tokens};
 
         register_input_deserializers();
 

@@ -5,10 +5,10 @@
 use std::any::Any;
 
 use bevy::reflect::{
-    utility::{GenericTypePathCell, NonGenericTypeInfoCell},
     FromReflect, FromType, GetTypeRegistration, OpaqueInfo, Reflect, ReflectDeserialize,
     ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
     TypePath, TypeRegistration, Typed,
+    utility::{GenericTypePathCell, NonGenericTypeInfoCell},
 };
 
 use dyn_eq::DynEq;
@@ -135,9 +135,7 @@ mod buttonlike {
         fn type_path() -> &'static str {
             static CELL: GenericTypePathCell = GenericTypePathCell::new();
             CELL.get_or_insert::<Self, _>(|| {
-                {
-                    format!("std::boxed::Box<dyn {}::Buttonlike>", module_path!())
-                }
+                format!("std::boxed::Box<dyn {}::Buttonlike>", module_path!())
             })
         }
 
@@ -298,9 +296,7 @@ mod axislike {
         fn type_path() -> &'static str {
             static CELL: GenericTypePathCell = GenericTypePathCell::new();
             CELL.get_or_insert::<Self, _>(|| {
-                {
-                    format!("std::boxed::Box<dyn {}::Axislike>", module_path!())
-                }
+                format!("std::boxed::Box<dyn {}::Axislike>", module_path!())
             })
         }
 
@@ -461,9 +457,7 @@ mod dualaxislike {
         fn type_path() -> &'static str {
             static CELL: GenericTypePathCell = GenericTypePathCell::new();
             CELL.get_or_insert::<Self, _>(|| {
-                {
-                    format!("std::boxed::Box<dyn {}::DualAxislike>", module_path!())
-                }
+                format!("std::boxed::Box<dyn {}::DualAxislike>", module_path!())
             })
         }
 
@@ -624,9 +618,7 @@ mod tripleaxislike {
         fn type_path() -> &'static str {
             static CELL: GenericTypePathCell = GenericTypePathCell::new();
             CELL.get_or_insert::<Self, _>(|| {
-                {
-                    format!("std::boxed::Box<dyn {}::TripleAxislike>", module_path!())
-                }
+                format!("std::boxed::Box<dyn {}::TripleAxislike>", module_path!())
             })
         }
 

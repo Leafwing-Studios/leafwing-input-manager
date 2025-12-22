@@ -36,8 +36,8 @@ pub mod prelude {
     pub use crate::input_processing::*;
     pub use crate::user_input::*;
 
-    pub use crate::plugin::InputManagerPlugin;
     pub use crate::Actionlike;
+    pub use crate::plugin::InputManagerPlugin;
     pub use leafwing_input_manager_macros::serde_typetag;
 }
 

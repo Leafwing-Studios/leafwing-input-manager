@@ -5,8 +5,9 @@ use std::hash::Hash;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
+use bevy::input::gamepad::Gamepad;
 use bevy::platform::collections::HashMap;
-use bevy::prelude::{Component, Deref, DerefMut, Entity, Gamepad, Query, Reflect, Resource, With};
+use bevy::prelude::{Component, Deref, DerefMut, Entity, Query, Reflect, Resource, With};
 use bevy::{log::error, prelude::ReflectComponent};
 use bevy::{
     math::{Vec2, Vec3},
@@ -1213,7 +1214,7 @@ mod tests {
     #[test]
     fn input_map_serde() {
         use bevy::prelude::{App, KeyCode};
-        use serde_test::{assert_tokens, Token};
+        use serde_test::{Token, assert_tokens};
 
         let mut app = App::new();
 

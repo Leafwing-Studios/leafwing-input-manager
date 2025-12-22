@@ -18,7 +18,7 @@ use bevy::{
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
 use crate::buttonlike::ButtonValue;
-use crate::{plugin::InputManagerSystem, InputControlKind};
+use crate::{InputControlKind, plugin::InputManagerSystem};
 
 /// An overarching store for all user inputs.
 ///

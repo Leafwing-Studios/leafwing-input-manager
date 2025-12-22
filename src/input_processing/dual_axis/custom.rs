@@ -6,15 +6,15 @@ use bevy::app::App;
 use bevy::prelude::{FromReflect, Reflect, ReflectDeserialize, ReflectSerialize, TypePath, Vec2};
 use bevy::reflect::utility::{GenericTypePathCell, NonGenericTypeInfoCell};
 use bevy::reflect::{
-    erased_serde, FromType, GetTypeRegistration, OpaqueInfo, PartialReflect, ReflectFromPtr,
-    ReflectKind, ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypeRegistration, Typed,
+    FromType, GetTypeRegistration, OpaqueInfo, PartialReflect, ReflectFromPtr, ReflectKind,
+    ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypeRegistration, Typed, erased_serde,
 };
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{serialize_trait_object, Registry};
+use serde_flexitos::{Registry, serialize_trait_object};
 
 use crate::input_processing::DualAxisProcessor;
 use crate::typetag::{InfallibleMapRegistry, RegisterTypeTag};
@@ -310,7 +310,7 @@ mod tests {
     use super::*;
     use crate as leafwing_input_manager;
     use leafwing_input_manager_macros::serde_typetag;
-    use serde_test::{assert_tokens, Token};
+    use serde_test::{Token, assert_tokens};
 
     #[test]
     fn test_custom_dual_axis_processor() {

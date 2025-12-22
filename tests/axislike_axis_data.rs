@@ -1,9 +1,9 @@
 use bevy::{ecs::system::ResMut, input::InputPlugin, prelude::*};
 use leafwing_input_manager::{
+    InputControlKind,
     clashing_inputs::BasicInputs,
     prelude::{updating::InputRegistration, *},
     user_input::updating::{CentralInputStore, UpdatableInput},
-    InputControlKind,
 };
 use serde::{Deserialize, Serialize};
 

@@ -1,6 +1,7 @@
 //! This module contains [`VirtualAxis`], [`VirtualDPad`], and [`VirtualDPad3D`].
 
 use crate as leafwing_input_manager;
+use crate::InputControlKind;
 use crate::clashing_inputs::BasicInputs;
 use crate::input_processing::{
     AxisProcessor, DualAxisProcessor, WithAxisProcessingPipelineExt,
@@ -9,7 +10,6 @@ use crate::input_processing::{
 use crate::prelude::updating::CentralInputStore;
 use crate::prelude::{Axislike, DualAxislike, TripleAxislike, UserInput};
 use crate::user_input::Buttonlike;
-use crate::InputControlKind;
 use bevy::math::{Vec2, Vec3};
 #[cfg(feature = "gamepad")]
 use bevy::prelude::GamepadButton;

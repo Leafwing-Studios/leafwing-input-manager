@@ -1,7 +1,7 @@
 #![cfg(feature = "gamepad")]
 
-use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, RawGamepadEvent};
 use bevy::input::InputPlugin;
+use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, RawGamepadEvent};
 use bevy::prelude::*;
 use leafwing_input_manager::input_processing::{
     WithAxisProcessingPipelineExt, WithDualAxisProcessingPipelineExt,

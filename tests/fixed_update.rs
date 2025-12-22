@@ -1,9 +1,9 @@
 #![cfg(feature = "keyboard")]
 
+use bevy::MinimalPlugins;
 use bevy::input::InputPlugin;
 use bevy::prelude::*;
 use bevy::time::TimeUpdateStrategy;
-use bevy::MinimalPlugins;
 use leafwing_input_manager::action_state::ActionState;
 use leafwing_input_manager::input_map::InputMap;
 use leafwing_input_manager::plugin::InputManagerPlugin;

@@ -5,11 +5,11 @@ use bevy::ecs::query::QueryFilter;
 use bevy::log::debug;
 
 use crate::{
-    action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap, Actionlike,
+    Actionlike, action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
 };
 
 use bevy::ecs::prelude::*;
-use bevy::prelude::Gamepad;
+use bevy::input::gamepad::Gamepad;
 use bevy::{
     platform::time::Instant,
     time::{Real, Time},

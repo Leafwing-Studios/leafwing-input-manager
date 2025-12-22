@@ -3,11 +3,12 @@
 use bevy::{
     app::App,
     ecs::system::SystemState,
+    input::gamepad::Gamepad,
     math::Vec2,
-    prelude::{Entity, Gamepad, Query, With, World},
+    prelude::{Entity, Query, With, World},
 };
 
-use super::{updating::CentralInputStore, Axislike, Buttonlike, DualAxislike};
+use super::{Axislike, Buttonlike, DualAxislike, updating::CentralInputStore};
 
 #[cfg(feature = "gamepad")]
 use crate::user_input::gamepad::find_gamepad;

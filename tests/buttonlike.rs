@@ -2,11 +2,11 @@
 
 use bevy::{
     input::{
+        InputPlugin,
         gamepad::{
             GamepadConnection, GamepadConnectionEvent, RawGamepadButtonChangedEvent,
             RawGamepadEvent,
         },
-        InputPlugin,
     },
     prelude::*,
 };
