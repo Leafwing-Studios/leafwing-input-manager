@@ -18,7 +18,7 @@ opt-level = 3
 members = ["./", "tools/ci", "macros"]
 
 [features]
-default = ["asset", "ui", "mouse", "keyboard", "gamepad", "picking"]
+default = ["asset", "mouse", "keyboard", "gamepad", "picking"]
 
 # Allow support for tracking timing information about actions (how long a button was pressed, etc.)
 timing = []
@@ -34,10 +34,6 @@ gamepad = ["bevy/bevy_gilrs"]
 
 # Allow using the `InputMap` as `bevy::asset::Asset`.
 asset = ['bevy/bevy_asset']
-
-# Add support for 'bevy::ui' integration:
-# - Allow 'bevy::ui' to take priority over actions when processing inputs.
-ui = ['bevy/bevy_ui']
 
 # Add support for 'bevy::picking' integration:
 # - Order systems to allow picking observers to modify action state.
@@ -71,7 +67,6 @@ bevy = { version = "0.18.0-rc.2", default-features = false, features = [
   "bevy_asset",
   "bevy_sprite",
   "bevy_text",
-  "bevy_ui",
   "bevy_render",
   "bevy_core_pipeline",
   "bevy_state",

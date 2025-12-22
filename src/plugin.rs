@@ -10,8 +10,6 @@ use bevy::input::InputSystems;
 use bevy::picking::PickingSystems;
 use bevy::prelude::*;
 use bevy::reflect::TypePath;
-#[cfg(feature = "ui")]
-use bevy::ui::UiSystems;
 use updating::CentralInputStore;
 
 use crate::Actionlike;
@@ -135,32 +133,6 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
                     InputManagerSystem::Update
                         .after(InputSystems)
                         .after(InputManagerSystem::Unify),
-                );
-
-                #[cfg(feature = "ui")]
-                app.add_systems(
-                    PreUpdate,
-                    filter_captured_input
-                        .before(update_action_state::<A>)
-                        .in_set(InputManagerSystem::Filter),
-                );
-
-                #[cfg(feature = "ui")]
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::Filter.after(UiSystems::Focus),
-                );
-
-                #[cfg(feature = "ui")]
-                app.configure_sets(
-                    PreUpdate,
-                    InputManagerSystem::ManualControl
-                        .after(InputManagerSystem::Tick)
-                        // Must run after the system is updated from inputs, or it will be forcibly released due to the inputs
-                        // not being pressed
-                        .after(InputManagerSystem::Update)
-                        .after(UiSystems::Focus)
-                        .after(InputSystems),
                 );
 
                 #[cfg(feature = "picking")]

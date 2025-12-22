@@ -78,7 +78,7 @@ fn main() {
     }
 
     // The features the lib offers
-    let lib_features = ["asset", "timing", "ui"];
+    let lib_features = ["asset", "timing"];
 
     // Generate all possible combinations of lib features
     // and convert them into '--features=<FEATURE_A,FEATURE_B,...>'
