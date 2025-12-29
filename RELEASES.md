@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.21.0 (Unreleased)
+
+### Breaking Changes (0.20.0)
+
+- Removed the `ui` feature. This was a default feature. The `ui` feature would attempt to filter out mouse clicks captured by `bevy::ui::Interaction`s. This can be handled by temporarily disabling mouse click actions or entire action status during UI heavy scenes or interactions.
+
 ## Version 0.20.0
 
 ### Dependencies (0.20.0)
