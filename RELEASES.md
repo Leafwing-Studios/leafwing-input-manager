@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.20.0 (Unreleased)
+
+### Dependencies (0.20.0)
+
+- updated to Bevy 0.18 Release Candidate
+
 ## Version 0.19.0
 
 ### Breaking Changes (0.19.0)
