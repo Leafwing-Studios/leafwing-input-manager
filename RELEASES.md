@@ -4,7 +4,7 @@
 
 ### Dependencies (0.20.0)
 
-- updated to Bevy 0.18.rc.1 (this should be compatible with Bevy 0.18 more broadly, assuming no further relevant breaking changes occur upstream)
+- updated to Bevy 0.18.rc.2 (this should be compatible with Bevy 0.18 more broadly, assuming no further relevant breaking changes occur upstream)
 
 ## Version 0.19.0
 
