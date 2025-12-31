@@ -53,6 +53,7 @@ bevy = { version = "0.18.0-rc.2", default-features = false, features = [
   "serialize",
   "std",
   "bevy_log",
+  "gamepad"
 ] }
 # Needed for the `docs` feature. Must be kept in sync with Bevy's version
 winit = { version = "0.30", default-features = false, optional = true }
