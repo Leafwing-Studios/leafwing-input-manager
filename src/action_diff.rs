@@ -136,43 +136,54 @@ impl<A: Actionlike> SummarizedActionState<A> {
         let mut triple_axis_state_map = HashMap::default();
 
         if let Some(global_action_state) = global_action_state {
-            let mut per_entity_button_state = HashMap::default();
-            let mut per_entity_axis_state = HashMap::default();
-            let mut per_entity_dual_axis_state = HashMap::default();
-            let mut per_entity_triple_axis_state = HashMap::default();
+            if !global_action_state.disabled() {
+                let mut per_entity_button_state = HashMap::default();
+                let mut per_entity_axis_state = HashMap::default();
+                let mut per_entity_dual_axis_state = HashMap::default();
+                let mut per_entity_triple_axis_state = HashMap::default();
 
-            for (action, action_data) in global_action_state.all_action_data() {
-                match &action_data.kind_data {
-                    ActionKindData::Button(button_data) => {
-                        per_entity_button_state
-                            .insert(action.clone(), button_data.to_button_value());
+                for (action, action_data) in global_action_state.all_action_data() {
+                    if action_data.disabled {
+                        continue;
                     }
-                    ActionKindData::Axis(axis_data) => {
-                        per_entity_axis_state.insert(action.clone(), axis_data.value);
-                    }
-                    ActionKindData::DualAxis(dual_axis_data) => {
-                        per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
-                    }
-                    ActionKindData::TripleAxis(triple_axis_data) => {
-                        per_entity_triple_axis_state
-                            .insert(action.clone(), triple_axis_data.triple);
+                    match &action_data.kind_data {
+                        ActionKindData::Button(button_data) => {
+                            per_entity_button_state
+                                .insert(action.clone(), button_data.to_button_value());
+                        }
+                        ActionKindData::Axis(axis_data) => {
+                            per_entity_axis_state.insert(action.clone(), axis_data.value);
+                        }
+                        ActionKindData::DualAxis(dual_axis_data) => {
+                            per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
+                        }
+                        ActionKindData::TripleAxis(triple_axis_data) => {
+                            per_entity_triple_axis_state
+                                .insert(action.clone(), triple_axis_data.triple);
+                        }
                     }
                 }
+                button_state_map.insert(Entity::PLACEHOLDER, per_entity_button_state);
+                axis_state_map.insert(Entity::PLACEHOLDER, per_entity_axis_state);
+                dual_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_dual_axis_state);
+                triple_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_triple_axis_state);
             }
-
-            button_state_map.insert(Entity::PLACEHOLDER, per_entity_button_state);
-            axis_state_map.insert(Entity::PLACEHOLDER, per_entity_axis_state);
-            dual_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_dual_axis_state);
-            triple_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_triple_axis_state);
         }
 
-        for (entity, action_state) in action_state_query.iter() {
+        for (entity, action_state) in action_state_query
+            .iter()
+            .filter(|(_, action_state)| !action_state.disabled())
+        {
             let mut per_entity_button_state = HashMap::default();
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
             let mut per_entity_triple_axis_state = HashMap::default();
 
-            for (action, action_data) in action_state.all_action_data() {
+            for (action, action_data) in action_state
+                .all_action_data()
+                .iter()
+                .filter(|(_, action_data)| !action_data.disabled)
+            {
                 match &action_data.kind_data {
                     ActionKindData::Button(button_data) => {
                         per_entity_button_state
