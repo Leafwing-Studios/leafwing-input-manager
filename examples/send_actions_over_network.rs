@@ -93,8 +93,11 @@ fn main() {
     assert!(player_state.pressed(&FpsAction::Jump));
     assert!(player_state.pressed(&FpsAction::Shoot));
 
-    // If we wait a tick, the buttons will be released
+    // If we release the buttons, we can send over new messages
+    KeyCode::Space.release(client_app.world_mut());
+    MouseButton::Left.release(client_app.world_mut());
     client_app.update();
+
     let mut player_state_query = client_app.world_mut().query::<&ActionState<FpsAction>>();
     let player_state = player_state_query.iter(client_app.world()).next().unwrap();
     assert!(player_state.released(&FpsAction::Jump));
