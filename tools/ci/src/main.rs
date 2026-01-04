@@ -86,7 +86,7 @@ fn main() {
         .flat_map(|combination_length| lib_features.iter().combinations(combination_length))
         .map(|combination| String::from("--features=") + &combination.iter().join(","));
 
-    let default_feature_options = ["--no-default-features", "--all-features"];
+    let default_feature_options = ["", "--no-default-features", "--all-features"];
     let all_features_options = default_feature_options
         .iter()
         .map(|str| str.to_string())
