@@ -1084,4 +1084,52 @@ mod tests {
         assert!(trigger.released(inputs, gamepad));
         assert_eq!(trigger.value(inputs, gamepad), 0.4);
     }
+
+    #[test]
+    fn test_gamepad_control_direction() {
+        let dir = GamepadControlDirection::positive(GamepadAxis::LeftStickX);
+        assert_eq!(
+            dir,
+            GamepadControlDirection {
+                axis: GamepadAxis::LeftStickX,
+                direction: AxisDirection::Positive,
+                threshold: 0.0,
+            }
+        );
+
+        let dir = GamepadControlDirection::negative(GamepadAxis::LeftStickY);
+        assert_eq!(
+            dir,
+            GamepadControlDirection {
+                axis: GamepadAxis::LeftStickY,
+                direction: AxisDirection::Negative,
+                threshold: 0.0,
+            }
+        );
+    }
+
+    #[test]
+    fn test_gamepad_control_direction_threshold() {
+        let dir = GamepadControlDirection::positive(GamepadAxis::LeftStickX).threshold(0.1);
+        assert_eq!(
+            dir,
+            GamepadControlDirection {
+                axis: GamepadAxis::LeftStickX,
+                direction: AxisDirection::Positive,
+                threshold: 0.1,
+            }
+        );
+    }
+
+    #[test]
+    #[should_panic = "assertion failed: threshold >= 0.0"]
+    fn test_gamepad_control_direction_threshold_with_negative() {
+        let _ = GamepadControlDirection::positive(GamepadAxis::LeftStickX).threshold(-0.1);
+    }
+
+    #[test]
+    fn test_gamepad_control_direction_kind() {
+        let dir = GamepadControlDirection::positive(GamepadAxis::LeftStickX);
+        assert_eq!(dir.kind(), InputControlKind::Button);
+    }
 }
