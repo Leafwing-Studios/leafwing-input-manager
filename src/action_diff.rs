@@ -18,7 +18,7 @@ use bevy::{
 use serde::{Deserialize, Serialize};
 
 use crate::buttonlike::ButtonValue;
-use crate::{action_state::ActionKindData, prelude::ActionState, Actionlike};
+use crate::{Actionlike, action_state::ActionKindData, prelude::ActionState};
 
 /// Stores presses and releases of buttons without timing information
 ///

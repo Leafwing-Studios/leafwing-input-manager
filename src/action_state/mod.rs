@@ -2,8 +2,8 @@
 
 use crate::buttonlike::ButtonValue;
 use crate::input_map::UpdatedValue;
-use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 use crate::{Actionlike, InputControlKind};
+use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 
 use bevy::platform::{collections::HashMap, time::Instant};
 use bevy::prelude::Resource;
@@ -310,7 +310,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn button_data_mut(&mut self, action: &A) -> Option<&mut ButtonData> {
         match self.action_data_mut(action) {
             Some(action_data) => match &mut action_data.kind_data {
-                ActionKindData::Button(ref mut button_data) => Some(button_data),
+                ActionKindData::Button(button_data) => Some(button_data),
                 _ => None,
             },
             None => None,
@@ -380,7 +380,7 @@ impl<A: Actionlike> ActionState<A> {
     pub fn axis_data_mut(&mut self, action: &A) -> Option<&mut AxisData> {
         match self.action_data_mut(action) {
             Some(action_data) => match &mut action_data.kind_data {
-                ActionKindData::Axis(ref mut axis_data) => Some(axis_data),
+                ActionKindData::Axis(axis_data) => Some(axis_data),
                 _ => None,
             },
             None => None,
@@ -453,7 +453,7 @@ impl<A: Actionlike> ActionState<A> {
 
         match self.action_data_mut(action) {
             Some(action_data) => match &mut action_data.kind_data {
-                ActionKindData::DualAxis(ref mut dual_axis_data) => Some(dual_axis_data),
+                ActionKindData::DualAxis(dual_axis_data) => Some(dual_axis_data),
                 _ => None,
             },
             None => None,
@@ -526,7 +526,7 @@ impl<A: Actionlike> ActionState<A> {
 
         match self.action_data_mut(action) {
             Some(action_data) => match &mut action_data.kind_data {
-                ActionKindData::TripleAxis(ref mut triple_axis_data) => Some(triple_axis_data),
+                ActionKindData::TripleAxis(triple_axis_data) => Some(triple_axis_data),
                 _ => None,
             },
             None => None,
@@ -1370,9 +1370,9 @@ mod tests {
     fn press_lifecycle() {
         use std::time::{Duration, Instant};
 
-        use crate::prelude::updating::CentralInputStore;
         use crate::prelude::Buttonlike;
         use crate::prelude::ClashStrategy;
+        use crate::prelude::updating::CentralInputStore;
 
         let ctx = TestContext::new();
         let mut app = ctx.app;
@@ -1466,8 +1466,8 @@ mod tests {
     fn update_with_clashes_prioritizing_longest() {
         use std::time::{Duration, Instant};
 
-        use crate::prelude::updating::CentralInputStore;
         use crate::prelude::ClashStrategy;
+        use crate::prelude::updating::CentralInputStore;
         use crate::user_input::Buttonlike;
         use bevy::prelude::KeyCode::*;
 
@@ -1780,17 +1780,21 @@ mod tests {
                 }),
             },
         );
-        assert!(action_state
-            .dual_axis_data_mut(&TestAction::DualAxis)
-            .is_some());
+        assert!(
+            action_state
+                .dual_axis_data_mut(&TestAction::DualAxis)
+                .is_some()
+        );
     }
 
     #[test]
     fn test_dual_axis_data_mut_for_dual_axis_action_without_data() {
         let mut action_state = ActionState::<TestAction>::default();
-        assert!(action_state
-            .dual_axis_data_mut(&TestAction::DualAxis)
-            .is_none());
+        assert!(
+            action_state
+                .dual_axis_data_mut(&TestAction::DualAxis)
+                .is_none()
+        );
     }
 
     #[test]
@@ -1803,9 +1807,11 @@ mod tests {
     #[test]
     fn test_triple_axis_data_for_triple_axis_action_without_data() {
         let action_state = ActionState::<TestAction>::default();
-        assert!(action_state
-            .triple_axis_data(&TestAction::TripleAxis)
-            .is_none());
+        assert!(
+            action_state
+                .triple_axis_data(&TestAction::TripleAxis)
+                .is_none()
+        );
     }
 
     #[test]
@@ -1822,9 +1828,11 @@ mod tests {
                 }),
             },
         );
-        assert!(action_state
-            .triple_axis_data_mut(&TestAction::TripleAxis)
-            .is_some());
+        assert!(
+            action_state
+                .triple_axis_data_mut(&TestAction::TripleAxis)
+                .is_some()
+        );
     }
 
     #[test]

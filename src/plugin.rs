@@ -14,6 +14,7 @@ use bevy::reflect::TypePath;
 use bevy::ui::UiSystems;
 use updating::CentralInputStore;
 
+use crate::Actionlike;
 use crate::action_state::{ActionState, ButtonData};
 use crate::clashing_inputs::ClashStrategy;
 use crate::input_map::InputMap;
@@ -22,7 +23,6 @@ use crate::prelude::updating::register_standard_input_kinds;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
 use crate::user_input::*;
-use crate::Actionlike;
 
 /// A [`Plugin`] that collects [`ButtonInput`] from disparate sources,
 /// producing an [`ActionState`] that can be conveniently checked

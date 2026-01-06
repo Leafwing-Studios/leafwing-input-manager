@@ -1,6 +1,6 @@
 //! Run conditions for actions.
 
-use crate::{prelude::ActionState, Actionlike};
+use crate::{Actionlike, prelude::ActionState};
 use bevy::{
     ecs::system::{Single, SystemParam},
     log::warn,
@@ -27,7 +27,9 @@ where
             Some(self.action_state_component.as_ref().unwrap())
         } else {
             let type_name = std::any::type_name::<A>();
-            warn!("No ActionState found for {type_name}. Please ensure that an ActionState resource is added, or that an InputMap component exists to provide an ActionState.");
+            warn!(
+                "No ActionState found for {type_name}. Please ensure that an ActionState resource is added, or that an InputMap component exists to provide an ActionState."
+            );
             None
         }
     }

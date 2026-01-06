@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::buttonlike::ButtonValue;
 #[cfg(feature = "timing")]
 use crate::timing::Timing;
-use crate::{buttonlike::ButtonState, InputControlKind};
+use crate::{InputControlKind, buttonlike::ButtonState};
 
 /// Data about the state of an action.
 ///

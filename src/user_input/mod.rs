@@ -82,15 +82,15 @@ use std::fmt::Debug;
 
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::{Entity, World};
-use bevy::reflect::{erased_serde, Reflect};
+use bevy::reflect::{Reflect, erased_serde};
 use dyn_clone::DynClone;
 use dyn_eq::DynEq;
 use dyn_hash::DynHash;
 use serde::Serialize;
 use updating::CentralInputStore;
 
-use crate::clashing_inputs::BasicInputs;
 use crate::InputControlKind;
+use crate::clashing_inputs::BasicInputs;
 
 pub use self::chord::*;
 #[cfg(feature = "gamepad")]

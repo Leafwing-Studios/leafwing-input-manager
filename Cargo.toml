@@ -1,12 +1,12 @@
 [package]
 name = "leafwing-input-manager"
 description = "A powerful, flexible and ergonomic way to manage action-input keybindings for the Bevy game engine."
-version = "0.19.0"
+version = "0.20.0"
 authors = ["Leafwing Studios"]
 homepage = "https://leafwing-studios.com/"
 repository = "https://github.com/leafwing-studios/leafwing-input-manager"
 license = "MIT OR Apache-2.0"
-edition = "2021"
+edition = "2024"
 categories = ["games", "game-development"]
 keywords = ["bevy"]
 exclude = ["assets/**/*", "tools/**/*", ".github/**/*"]
@@ -49,10 +49,11 @@ docs = ['winit/x11', 'winit/wayland']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.17" }
-bevy = { version = "0.17.0", default-features = false, features = [
+bevy = { version = "0.18.0-rc.2", default-features = false, features = [
   "serialize",
   "std",
   "bevy_log",
+  "gamepad"
 ] }
 # Needed for the `docs` feature. Must be kept in sync with Bevy's version
 winit = { version = "0.30", default-features = false, optional = true }
@@ -65,7 +66,7 @@ dyn-eq = "0.1"
 dyn-hash = "1.0"
 
 [dev-dependencies]
-bevy = { version = "0.17.0-rc.1", default-features = false, features = [
+bevy = { version = "0.18.0-rc.2", default-features = false, features = [
   "std",
   "bevy_asset",
   "bevy_sprite",

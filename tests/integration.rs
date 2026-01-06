@@ -201,8 +201,9 @@ fn duration() {
 
     // Check
     app.update();
-    assert!(app
-        .world()
-        .resource::<ActionState<Action>>()
-        .pressed(&Action::PayRespects));
+    assert!(
+        app.world()
+            .resource::<ActionState<Action>>()
+            .pressed(&Action::PayRespects)
+    );
 }
