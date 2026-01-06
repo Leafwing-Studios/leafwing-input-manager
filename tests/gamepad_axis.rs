@@ -2,7 +2,9 @@
 
 use bevy::ecs::system::SystemState;
 use bevy::input::InputPlugin;
-use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, RawGamepadAxisChangedEvent, RawGamepadEvent};
+use bevy::input::gamepad::{
+    GamepadConnection, GamepadConnectionEvent, RawGamepadAxisChangedEvent, RawGamepadEvent,
+};
 use bevy::prelude::*;
 use leafwing_input_manager::input_processing::{
     WithAxisProcessingPipelineExt, WithDualAxisProcessingPipelineExt,
