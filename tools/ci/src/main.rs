@@ -86,7 +86,7 @@ fn main() {
         .flat_map(|combination_length| lib_features.iter().combinations(combination_length))
         .map(|combination| String::from("--features=") + &combination.iter().join(","));
 
-    let default_feature_options = ["--no-default-features", "--all-features"];
+    let default_feature_options = ["", "--no-default-features", "--all-features"];
     let all_features_options = default_feature_options
         .iter()
         .map(|str| str.to_string())
@@ -103,13 +103,27 @@ fn main() {
         if what_to_run.contains(Check::CLIPPY) {
             // See if clippy has any complaints.
             // --all-targets was removed because Emergence currently has no special targets;
-            // please add them back as necessary
-            cmd!(
-                sh,
-                "cargo clippy --workspace {feature_option} {extra...} -- {CLIPPY_FLAGS...}"
-            )
-            .run()
-            .expect("Please fix clippy errors in output above.");
+            // please add them back as
+
+            // We have to do this check because if the feature_option is empty (default-features) and there
+            // and there is no extra, the command chokes on the last argument (feature_option) being empty
+            // extra doesn't trigger this because it is an array and the logic for handling a split empty
+            // array is not the same as an empty string
+            if feature_option.is_empty() {
+                cmd!(
+                    sh,
+                    "cargo clippy --workspace {extra...} -- {CLIPPY_FLAGS...}"
+                )
+                .run()
+                .expect("Please fix clippy errors in output above.");
+            } else {
+                cmd!(
+                    sh,
+                    "cargo clippy --workspace {feature_option} {extra...} -- {CLIPPY_FLAGS...}"
+                )
+                .run()
+                .expect("Please fix clippy errors in output above.");
+            }
         }
 
         if what_to_run.contains(Check::TEST) {
@@ -140,9 +154,19 @@ fn main() {
         }
 
         if what_to_run.contains(Check::COMPILE_CHECK) {
-            cmd!(sh, "cargo check --workspace {feature_option} {extra...}")
-                .run()
-                .expect("Please fix compiler errors in above output.");
+            // We have to do this check because if the feature_option is empty (default-features) and there
+            // and there is no extra, the command chokes on the last argument (feature_option) being empty
+            // extra doesn't trigger this because it is an array and the logic for handling a split empty
+            // array is not the same as an empty string
+            if feature_option.is_empty() {
+                cmd!(sh, "cargo check --workspace {extra...}")
+                    .run()
+                    .expect("Please fix compiler errors in above output.");
+            } else {
+                cmd!(sh, "cargo check --workspace {feature_option} {extra...}")
+                    .run()
+                    .expect("Please fix compiler errors in above output.");
+            }
         }
     }
 }
