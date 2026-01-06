@@ -1,7 +1,8 @@
 #![cfg(feature = "gamepad")]
 
+use bevy::ecs::system::SystemState;
 use bevy::input::InputPlugin;
-use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, RawGamepadEvent};
+use bevy::input::gamepad::{GamepadConnection, GamepadConnectionEvent, RawGamepadAxisChangedEvent, RawGamepadEvent};
 use bevy::prelude::*;
 use leafwing_input_manager::input_processing::{
     WithAxisProcessingPipelineExt, WithDualAxisProcessingPipelineExt,
@@ -58,7 +59,6 @@ fn test_app() -> App {
 }
 
 #[test]
-#[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn gamepad_single_axis_mocking() {
     let mut app = test_app();
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
@@ -67,23 +67,57 @@ fn gamepad_single_axis_mocking() {
     let input = GamepadControlAxis::LEFT_X;
     input.set_value(app.world_mut(), -1.0);
 
+    let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(app.world_mut());
+    let query = query_state.get(app.world());
+    let gamepad = find_gamepad(Some(query));
+
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
-    assert_eq!(messages.drain().count(), 1);
+    assert_eq!(
+        messages.drain().next().unwrap(),
+        RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+            axis: GamepadAxis::LeftStickX,
+            gamepad: gamepad,
+            value: -1.0,
+        })
+    );
 }
 
 #[test]
-#[ignore = "Broken upstream; tracked in https://github.com/Leafwing-Studios/leafwing-input-manager/issues/419"]
 fn gamepad_dual_axis_mocking() {
     let mut app = test_app();
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
     assert_eq!(messages.drain().count(), 0);
 
     let input = GamepadStick::LEFT;
-    input.set_axis_pair(app.world_mut(), Vec2::new(1.0, 0.0));
+    input.set_axis_pair(app.world_mut(), Vec2::new(1.0, -1.0));
+
+    let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(app.world_mut());
+    let query = query_state.get(app.world());
+    let gamepad = find_gamepad(Some(query));
 
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
-    // Dual axis messages are split out
-    assert_eq!(messages.drain().count(), 2);
+    let mut drain = messages.drain().into_iter();
+
+    // Dual axis events are split per axis
+    let x = drain.next().unwrap();
+    assert_eq!(
+        x,
+        RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+            axis: GamepadAxis::LeftStickX,
+            gamepad: gamepad,
+            value: 1.0,
+        })
+    );
+
+    let y = drain.next().unwrap();
+    assert_eq!(
+        y,
+        RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
+            axis: GamepadAxis::LeftStickY,
+            gamepad: gamepad,
+            value: -1.0,
+        })
+    );
 }
 
 #[test]
@@ -297,7 +331,6 @@ fn test_zero_circle_deadzone() {
 }
 
 #[test]
-#[ignore = "Input mocking is subtly broken: https://github.com/Leafwing-Studios/leafwing-input-manager/issues/516"]
 fn gamepad_virtual_dpad() {
     let mut app = test_app();
     app.insert_resource(
