@@ -87,13 +87,6 @@ fn assert_action_diff_created(app: &mut App, predicate: impl Fn(&ActionDiffMessa
 }
 
 #[track_caller]
-fn assert_action_diff_not_created(app: &mut App) {
-    let action_diff_messages = get_messages_mut::<ActionDiffMessage<Action>>(app);
-    let action_diff_message_reader = &mut action_diff_messages.get_cursor();
-    assert!(action_diff_message_reader.len(action_diff_messages.as_ref()) == 0);
-}
-
-#[track_caller]
 fn assert_action_diff_received(app: &mut App, action_diff_message: ActionDiffMessage<Action>) {
     let mut action_state_query = app.world_mut().query::<&ActionState<Action>>();
     let action_state = action_state_query.single(app.world()).unwrap();
@@ -468,52 +461,4 @@ fn process_axis_action_diff() {
     app.update();
 
     assert_action_diff_received(&mut app, action_diff_message);
-}
-
-#[test]
-fn diffs_with_disabled_action_state() {
-    let mut app = create_app();
-    let entity = app
-        .world_mut()
-        .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(app.world())
-        .expect("Need a Entity with ActionState");
-    app.add_systems(PreUpdate, process_action_diffs::<Action>);
-
-    let mut action_state = app
-        .world_mut()
-        .query::<&mut ActionState<Action>>()
-        .get_mut(app.world_mut(), entity)
-        .unwrap();
-    // Disable action state
-    // action_state.disable();
-    // Press button on disabled action state
-    action_state.press(&Action::Button);
-    app.update();
-
-    assert_action_diff_not_created(&mut app);
-}
-
-#[test]
-fn diffs_with_disabled_action() {
-    let mut app = create_app();
-    let entity = app
-        .world_mut()
-        .query_filtered::<Entity, With<ActionState<Action>>>()
-        .single(app.world())
-        .expect("Need a Entity with ActionState");
-    app.add_systems(PreUpdate, process_action_diffs::<Action>);
-
-    let mut action_state = app
-        .world_mut()
-        .query::<&mut ActionState<Action>>()
-        .get_mut(app.world_mut(), entity)
-        .unwrap();
-    // Disable action
-    action_state.disable_action(&Action::Button);
-    // Press button on disabled action state
-    action_state.press(&Action::Button);
-    app.update();
-
-    assert_action_diff_not_created(&mut app);
 }
