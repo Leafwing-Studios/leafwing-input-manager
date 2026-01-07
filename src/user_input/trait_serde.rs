@@ -297,13 +297,19 @@ mod tests {
                 Token::BorrowedStr("MouseScrollAxis"),
                 Token::Struct {
                     name: "MouseScrollAxis",
-                    len: 2,
+                    len: 3,
                 },
                 Token::BorrowedStr("axis"),
                 Token::Enum {
                     name: "DualAxisType",
                 },
                 Token::Str("Y"),
+                Token::Unit,
+                Token::BorrowedStr("mouse_scroll_unit"),
+                Token::Enum {
+                    name: "MouseScrollUnit",
+                },
+                Token::Str("Pixel"),
                 Token::Unit,
                 Token::BorrowedStr("processors"),
                 Token::Seq { len: Some(0) },

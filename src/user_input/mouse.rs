@@ -11,7 +11,7 @@ use bevy::ecs::system::StaticSystemParam;
 use bevy::ecs::system::lifetimeless::SRes;
 use bevy::input::mouse::{
     AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButton, MouseButtonInput, MouseMotion,
-    MouseWheel,
+    MouseScrollUnit, MouseWheel,
 };
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::math::FloatOrd;
@@ -609,6 +609,7 @@ impl Hash for MouseScrollDirection {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use bevy::input::mouse::MouseScrollUnit;
 /// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
@@ -617,7 +618,12 @@ impl Hash for MouseScrollDirection {
 /// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
 /// // Y-axis movement
-/// let input = MouseScrollAxis::Y;
+/// let mut input = MouseScrollAxis::Y;
+///
+/// // You can configure which [`MouseScrollUnit`] this Axis uses.
+/// // The default is [`MouseScrollUnit::Pixel`]
+/// input.mouse_scroll_unit = MouseScrollUnit::Line;
+/// assert_eq!(input.mouse_scroll_unit, MouseScrollUnit::Line);
 ///
 /// // Scrolling on the chosen axis activates the input
 /// MouseScrollAxis::Y.set_value(app.world_mut(), 1.0);
@@ -634,6 +640,9 @@ pub struct MouseScrollAxis {
     /// The axis that this input tracks.
     pub axis: DualAxisType,
 
+    /// The [`MouseScrollUnit`] this axis uses
+    pub mouse_scroll_unit: MouseScrollUnit,
+
     /// A processing pipeline that handles input values.
     pub processors: Vec<AxisProcessor>,
 }
@@ -643,12 +652,14 @@ impl MouseScrollAxis {
     pub const X: Self = Self {
         axis: DualAxisType::X,
         processors: Vec::new(),
+        mouse_scroll_unit: MouseScrollUnit::Pixel,
     };
 
     /// Vertical scrolling of the mouse wheel. No processing is applied to raw data from the mouse.
     pub const Y: Self = Self {
         axis: DualAxisType::Y,
         processors: Vec::new(),
+        mouse_scroll_unit: MouseScrollUnit::Pixel,
     };
 }
 
@@ -697,7 +708,7 @@ impl Axislike for MouseScrollAxis {
     /// The `window` field will be filled with a placeholder value.
     fn set_value(&self, world: &mut World, value: f32) {
         let message = MouseWheel {
-            unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+            unit: self.mouse_scroll_unit,
             x: if self.axis == DualAxisType::X {
                 value
             } else {
@@ -747,6 +758,7 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// ```rust
 /// use bevy::prelude::*;
 /// use bevy::input::InputPlugin;
+/// use bevy::input::mouse::MouseScrollUnit;
 /// use leafwing_input_manager::plugin::CentralInputStorePlugin;
 /// use leafwing_input_manager::prelude::*;
 /// use leafwing_input_manager::user_input::testing_utils::FetchUserInput;
@@ -754,7 +766,12 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// let mut app = App::new();
 /// app.add_plugins((InputPlugin, CentralInputStorePlugin));
 ///
-/// let input = MouseScroll::default();
+/// let mut input = MouseScroll::default();
+///
+/// // You can configure which [`MouseScrollUnit`] this Axis uses.
+/// // The default is [`MouseScrollUnit::Pixel`]
+/// input.mouse_scroll_unit = MouseScrollUnit::Line;
+/// assert_eq!(input.mouse_scroll_unit, MouseScrollUnit::Line);
 ///
 /// // Scrolling on either axis activates the input
 /// MouseScrollAxis::Y.set_value(app.world_mut(), 3.0);
@@ -765,11 +782,23 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// let doubled = MouseScroll::default().sensitivity_y(2.0);
 /// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 6.0));
 /// ```
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
 #[must_use]
 pub struct MouseScroll {
+    /// The [`MouseScrollUnit`] this axis uses
+    pub mouse_scroll_unit: MouseScrollUnit,
+
     /// A processing pipeline that handles input values.
     pub processors: Vec<DualAxisProcessor>,
+}
+
+impl Default for MouseScroll {
+    fn default() -> Self {
+        Self {
+            mouse_scroll_unit: MouseScrollUnit::Pixel,
+            processors: Vec::new(),
+        }
+    }
 }
 
 impl UpdatableInput for MouseScroll {
@@ -822,7 +851,7 @@ impl DualAxislike for MouseScroll {
         world
             .resource_mut::<Messages<MouseWheel>>()
             .write(MouseWheel {
-                unit: bevy::input::mouse::MouseScrollUnit::Pixel,
+                unit: self.mouse_scroll_unit,
                 x: value.x,
                 y: value.y,
                 window: Entity::PLACEHOLDER,
@@ -920,6 +949,56 @@ mod tests {
     }
 
     #[test]
+    fn test_user_input_mouse_button_kind() {
+        let mouse_button = MouseButton::Left;
+        assert_eq!(mouse_button.kind(), InputControlKind::Button);
+    }
+
+    #[test]
+    fn test_mouse_button_set_value_press() {
+        let mut app = test_app();
+        let mouse_button = MouseButton::Left;
+        mouse_button.set_value(app.world_mut(), 1.0);
+
+        let mut mouse_motion_messages = app
+            .world_mut()
+            .get_resource_mut::<Messages<MouseButtonInput>>()
+            .unwrap();
+
+        assert_eq!(mouse_motion_messages.len(), 1);
+        assert_eq!(
+            mouse_motion_messages.drain().next().unwrap(),
+            MouseButtonInput {
+                button: MouseButton::Left,
+                state: ButtonState::Pressed,
+                window: Entity::PLACEHOLDER,
+            }
+        );
+    }
+
+    #[test]
+    fn test_mouse_button_set_value_release() {
+        let mut app = test_app();
+        let mouse_button = MouseButton::Left;
+        mouse_button.set_value(app.world_mut(), 0.0);
+
+        let mut mouse_motion_messages = app
+            .world_mut()
+            .get_resource_mut::<Messages<MouseButtonInput>>()
+            .unwrap();
+
+        assert_eq!(mouse_motion_messages.len(), 1);
+        assert_eq!(
+            mouse_motion_messages.drain().next().unwrap(),
+            MouseButtonInput {
+                button: MouseButton::Left,
+                state: ButtonState::Released,
+                window: Entity::PLACEHOLDER,
+            }
+        );
+    }
+
+    #[test]
     fn test_mouse_move() {
         let mouse_move_up = MouseMoveDirection::UP;
         assert_eq!(mouse_move_up.kind(), InputControlKind::Button);
@@ -997,6 +1076,123 @@ mod tests {
     }
 
     #[test]
+    fn test_mouse_move_direction_set_valid_threshold() {
+        let mouse_move_direction = MouseMoveDirection::UP.threshold(0.5);
+
+        assert_eq!(mouse_move_direction.threshold, 0.5);
+    }
+
+    #[test]
+    #[should_panic = "assertion failed: threshold >= 0.0"]
+    fn test_mouse_move_direction_set_invalid_threshold() {
+        let _ = MouseMoveDirection::UP.threshold(-0.5);
+    }
+
+    #[test]
+    fn test_mouse_move_direction_kind() {
+        let mouse_move_direction = MouseMoveDirection::UP;
+
+        assert_eq!(mouse_move_direction.kind(), InputControlKind::Button);
+    }
+
+    #[test]
+    fn test_mouse_move_axis_processing_pipeline() {
+        let mouse_move_axis = MouseMoveAxis::X.with_processor(AxisProcessor::Inverted);
+
+        assert_eq!(mouse_move_axis.processors.len(), 1);
+        assert_eq!(
+            mouse_move_axis.processors.first().unwrap(),
+            &AxisProcessor::Inverted
+        );
+
+        let mouse_move_axis =
+            mouse_move_axis.replace_processing_pipeline(vec![AxisProcessor::Digital]);
+
+        assert_eq!(mouse_move_axis.processors.len(), 1);
+        assert_eq!(
+            mouse_move_axis.processors.first().unwrap(),
+            &AxisProcessor::Digital
+        );
+
+        let mouse_move_axis = mouse_move_axis.reset_processing_pipeline();
+
+        assert_eq!(mouse_move_axis.processors.len(), 0);
+    }
+
+    #[test]
+    fn test_mouse_move_processing_pipeline() {
+        let mouse_move =
+            MouseMove::default().with_processor(DualAxisProcessor::Inverted(DualAxisInverted::ALL));
+
+        assert_eq!(mouse_move.processors.len(), 1);
+        assert_eq!(
+            mouse_move.processors.first().unwrap(),
+            &DualAxisProcessor::Inverted(DualAxisInverted::ALL),
+        );
+
+        let mouse_move = mouse_move.replace_processing_pipeline(vec![DualAxisProcessor::Digital]);
+
+        assert_eq!(mouse_move.processors.len(), 1);
+        assert_eq!(
+            mouse_move.processors.first().unwrap(),
+            &DualAxisProcessor::Digital
+        );
+
+        let mouse_move = mouse_move.reset_processing_pipeline();
+
+        assert_eq!(mouse_move.processors.len(), 0);
+    }
+
+    #[test]
+    fn test_mouse_scroll_processing_pipeline() {
+        let mouse_scroll = MouseScroll::default()
+            .with_processor(DualAxisProcessor::Inverted(DualAxisInverted::ALL));
+
+        assert_eq!(mouse_scroll.processors.len(), 1);
+        assert_eq!(
+            mouse_scroll.processors.first().unwrap(),
+            &DualAxisProcessor::Inverted(DualAxisInverted::ALL),
+        );
+
+        let mouse_scroll =
+            mouse_scroll.replace_processing_pipeline(vec![DualAxisProcessor::Digital]);
+
+        assert_eq!(mouse_scroll.processors.len(), 1);
+        assert_eq!(
+            mouse_scroll.processors.first().unwrap(),
+            &DualAxisProcessor::Digital
+        );
+
+        let mouse_scroll = mouse_scroll.reset_processing_pipeline();
+
+        assert_eq!(mouse_scroll.processors.len(), 0);
+    }
+
+    #[test]
+    fn test_mouse_scroll_axis_processing_pipeline() {
+        let mouse_scroll_axis = MouseScrollAxis::X.with_processor(AxisProcessor::Inverted);
+
+        assert_eq!(mouse_scroll_axis.processors.len(), 1);
+        assert_eq!(
+            mouse_scroll_axis.processors.first().unwrap(),
+            &AxisProcessor::Inverted,
+        );
+
+        let mouse_scroll_axis =
+            mouse_scroll_axis.replace_processing_pipeline(vec![AxisProcessor::Digital]);
+
+        assert_eq!(mouse_scroll_axis.processors.len(), 1);
+        assert_eq!(
+            mouse_scroll_axis.processors.first().unwrap(),
+            &AxisProcessor::Digital
+        );
+
+        let mouse_scroll_axis = mouse_scroll_axis.reset_processing_pipeline();
+
+        assert_eq!(mouse_scroll_axis.processors.len(), 0);
+    }
+
+    #[test]
     fn test_mouse_scroll() {
         let mouse_scroll_up = MouseScrollDirection::UP;
         assert_eq!(mouse_scroll_up.kind(), InputControlKind::Button);
@@ -1049,7 +1245,7 @@ mod tests {
         assert_eq!(mouse_scroll_y.value(inputs, gamepad), data.y);
         assert_eq!(mouse_scroll.axis_pair(inputs, gamepad), data);
 
-        // Set changes in scrolling to (2.0, 3.0)
+        // Set changes in scrolling `to (2.0, 3.0)
         let data = Vec2::new(2.0, 3.0);
         let mut app = test_app();
         MouseScroll::default().set_axis_pair(app.world_mut(), data);
@@ -1059,6 +1255,19 @@ mod tests {
         assert!(mouse_scroll_up.pressed(inputs, gamepad));
         assert_eq!(mouse_scroll_y.value(inputs, gamepad), data.y);
         assert_eq!(mouse_scroll.axis_pair(inputs, gamepad), data);
+    }
+
+    #[test]
+    fn test_mouse_scroll_direction_set_valid_threshold() {
+        let mouse_scroll_direction = MouseScrollDirection::UP.threshold(0.5);
+
+        assert_eq!(mouse_scroll_direction.threshold, 0.5);
+    }
+
+    #[test]
+    #[should_panic = "assertion failed: threshold >= 0.0"]
+    fn test_mouse_scroll_direction_set_invalid_threshold() {
+        let _ = MouseScrollDirection::UP.threshold(-0.5);
     }
 
     #[test]
