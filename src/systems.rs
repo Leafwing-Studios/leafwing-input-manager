@@ -104,22 +104,6 @@ pub fn update_action_state<A: Actionlike>(
     }
 }
 
-#[cfg(feature = "ui")]
-/// Filters out all inputs that are captured by the UI.
-pub fn filter_captured_input(
-    mut mouse_buttons: ResMut<bevy::input::ButtonInput<bevy::input::mouse::MouseButton>>,
-    #[cfg(feature = "ui")] interactions: Query<&bevy::ui::Interaction>,
-) {
-    // If the user clicks on a button, do not apply it to the game state
-    #[cfg(feature = "ui")]
-    if interactions
-        .iter()
-        .any(|&interaction| interaction != bevy::ui::Interaction::None)
-    {
-        mouse_buttons.clear();
-    }
-}
-
 /// Generates an [`Messages`] stream of [`ActionDiff`s](crate::action_diff::ActionDiff) from every [`ActionState`].
 ///
 /// This system is not part of the [`InputManagerPlugin`](crate::plugin::InputManagerPlugin) and must be added manually.
