@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 0.20.0 (Unreleased)
+## Version 0.20.0
 
 ### Dependencies (0.20.0)
 
