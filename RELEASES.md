@@ -9,7 +9,8 @@
 ### Bugs (0.21.0)
 
 - `ActionDiff`s generated will no longer include entries from disabled `ActionState`s or disabled `Action`s 
-
+- `MouseScroll` and `MouseScrollAxis` now support specifying `MouseScrollUnit::Pixel` or `MouseScrollUnit::Line`
+ 
 ## Version 0.20.0
 
 ### Dependencies (0.20.0)
