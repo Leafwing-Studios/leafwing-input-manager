@@ -52,6 +52,7 @@ fn create_app() -> App {
 fn get_messages<M: Message>(app: &App) -> &Messages<M> {
     app.world().resource()
 }
+
 fn get_messages_mut<M: Message>(app: &'_ mut App) -> Mut<'_, Messages<M>> {
     app.world_mut().resource_mut()
 }

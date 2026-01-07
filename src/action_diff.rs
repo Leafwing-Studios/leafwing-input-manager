@@ -135,13 +135,21 @@ impl<A: Actionlike> SummarizedActionState<A> {
         let mut dual_axis_state_map = HashMap::default();
         let mut triple_axis_state_map = HashMap::default();
 
-        if let Some(global_action_state) = global_action_state {
+        println!("action_state_resource check");
+        if let Some(global_action_state) = global_action_state
+            && !global_action_state.disabled()
+        {
+            println!("action_state_resource");
             let mut per_entity_button_state = HashMap::default();
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
             let mut per_entity_triple_axis_state = HashMap::default();
 
-            for (action, action_data) in global_action_state.all_action_data() {
+            for (action, action_data) in global_action_state
+                .all_action_data()
+                .iter()
+                .filter(|(_, action_data)| !action_data.disabled)
+            {
                 match &action_data.kind_data {
                     ActionKindData::Button(button_data) => {
                         per_entity_button_state
@@ -159,20 +167,26 @@ impl<A: Actionlike> SummarizedActionState<A> {
                     }
                 }
             }
-
             button_state_map.insert(Entity::PLACEHOLDER, per_entity_button_state);
             axis_state_map.insert(Entity::PLACEHOLDER, per_entity_axis_state);
             dual_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_dual_axis_state);
             triple_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_triple_axis_state);
         }
 
-        for (entity, action_state) in action_state_query.iter() {
+        for (entity, action_state) in action_state_query
+            .iter()
+            .filter(|(_, action_state)| !action_state.disabled())
+        {
             let mut per_entity_button_state = HashMap::default();
             let mut per_entity_axis_state = HashMap::default();
             let mut per_entity_dual_axis_state = HashMap::default();
             let mut per_entity_triple_axis_state = HashMap::default();
 
-            for (action, action_data) in action_state.all_action_data() {
+            for (action, action_data) in action_state
+                .all_action_data()
+                .iter()
+                .filter(|(_, action_data)| !action_data.disabled)
+            {
                 match &action_data.kind_data {
                     ActionKindData::Button(button_data) => {
                         per_entity_button_state
@@ -518,5 +532,139 @@ mod tests {
         let action_diff_message = action_diff_messages[0];
         assert_eq!(action_diff_message.owner, Some(entity));
         assert_eq!(action_diff_message.action_diffs.len(), 4);
+    }
+
+    fn test_action_state_disabled() -> ActionState<TestAction> {
+        let mut action_state = ActionState::default();
+        action_state.press(&TestAction::Button);
+        action_state.set_value(&TestAction::Axis, 0.3);
+        action_state.set_axis_pair(&TestAction::DualAxis, Vec2::new(0.5, 0.7));
+        action_state.set_axis_triple(&TestAction::TripleAxis, Vec3::new(0.5, 0.7, 0.9));
+        action_state.disable();
+        action_state
+    }
+
+    fn expected_summary_when_disabled() -> SummarizedActionState<TestAction> {
+        let button_state_map = HashMap::default();
+        let axis_state_map = HashMap::default();
+        let dual_axis_state_map = HashMap::default();
+        let triple_axis_state_map = HashMap::default();
+
+        SummarizedActionState {
+            button_state_map,
+            axis_state_map,
+            dual_axis_state_map,
+            triple_axis_state_map,
+        }
+    }
+
+    #[test]
+    fn summarize_filtered_from_disabled_component() {
+        let mut world = World::new();
+        world.spawn((test_action_state_disabled(), NotSummarized));
+
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
+        let summarized =
+            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+
+        // Check that only the entity without NotSummarized was summarized
+        assert_eq!(summarized, expected_summary_when_disabled());
+    }
+
+    #[test]
+    fn summarize_filtered_from_disabled_resource() {
+        let mut world = World::new();
+        world.insert_resource(test_action_state_disabled());
+
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
+        let summarized =
+            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+
+        // Check that only the entity without NotSummarized was summarized
+        assert_eq!(summarized, expected_summary_when_disabled());
+    }
+
+    fn test_action_state_disabled_action() -> ActionState<TestAction> {
+        let mut action_state = ActionState::default();
+        action_state.press(&TestAction::Button);
+        action_state.set_value(&TestAction::Axis, 0.3);
+        action_state.set_axis_pair(&TestAction::DualAxis, Vec2::new(0.5, 0.7));
+        action_state.set_axis_triple(&TestAction::TripleAxis, Vec3::new(0.5, 0.7, 0.9));
+        action_state.disable_action(&TestAction::Button);
+        action_state
+    }
+
+    fn expected_summary_with_disabled_action(entity: Entity) -> SummarizedActionState<TestAction> {
+        let mut button_state_map = HashMap::default();
+        let mut axis_state_map = HashMap::default();
+        let mut dual_axis_state_map = HashMap::default();
+        let mut triple_axis_state_map = HashMap::default();
+
+        let global_button_state = HashMap::default();
+        button_state_map.insert(entity, global_button_state);
+
+        let mut global_axis_state = HashMap::default();
+        global_axis_state.insert(TestAction::Axis, 0.3);
+        axis_state_map.insert(entity, global_axis_state);
+
+        let mut global_dual_axis_state = HashMap::default();
+        global_dual_axis_state.insert(TestAction::DualAxis, Vec2::new(0.5, 0.7));
+        dual_axis_state_map.insert(entity, global_dual_axis_state);
+
+        let mut global_triple_axis_state = HashMap::default();
+        global_triple_axis_state.insert(TestAction::TripleAxis, Vec3::new(0.5, 0.7, 0.9));
+        triple_axis_state_map.insert(entity, global_triple_axis_state);
+
+        SummarizedActionState {
+            button_state_map,
+            axis_state_map,
+            dual_axis_state_map,
+            triple_axis_state_map,
+        }
+    }
+
+    #[test]
+    fn summarize_filtered_entites_from_component_disabled_action() {
+        let mut world = World::new();
+        let entity = world.spawn(test_action_state_disabled_action()).id();
+
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
+        let summarized =
+            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+
+        // Check that only the entity without NotSummarized was summarized
+        assert_eq!(summarized, expected_summary_with_disabled_action(entity));
+    }
+
+    #[test]
+    fn summarize_filtered_entites_from_resource_disabled_action() {
+        let mut world = World::new();
+        world.insert_resource(test_action_state_disabled_action());
+
+        let mut system_state: SystemState<(
+            Option<Res<ActionState<TestAction>>>,
+            Query<(Entity, &ActionState<TestAction>)>,
+        )> = SystemState::new(&mut world);
+        let (global_action_state, action_state_query) = system_state.get(&world);
+        let summarized =
+            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+
+        // Check that only the entity without NotSummarized was summarized
+        assert_eq!(
+            summarized,
+            expected_summary_with_disabled_action(Entity::PLACEHOLDER)
+        );
     }
 }
