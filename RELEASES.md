@@ -42,7 +42,7 @@
 
 ## Breaking Changes (0.18.0)
 
-- many types that were previously `Message`-implementing types are now `Message`-implementing types (same semantics, new name), and have been renamed accordingly
+- many types that were previously `Event`-implementing types are now `Message`-implementing types (same semantics, new name), and have been renamed accordingly
   - for example, `ActionDiffEvent` is now `ActionDiffMessage`
 - `InputManagerBundle` has been removed after being deprecated: insert an `InputMap<A>` component instead and use required components to fill in the `ActionState<A>`
 
@@ -818,3 +818,4 @@ Input processors allow you to create custom logic for axis-like input manipulati
 ## Version 0.1
 
 - Released!
+
