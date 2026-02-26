@@ -143,14 +143,32 @@ impl<A: Actionlike> ActionState<A> {
         }
     }
 
-    /// Updates the [`ActionState`] based on the provided [`UpdatedActions`].
+    /// Updates the [`ActionState`] based on the provided [`UpdatedActions`],
+    /// typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions).
     ///
-    /// The `action_data` is typically constructed from [`InputMap::process_actions`](crate::input_map::InputMap::process_actions),
-    /// which reads from the assorted [`ButtonInput`](bevy::input::ButtonInput) resources.
-    ///
+    /// Actions absent from `updated_actions` but with existing data are reset to zero/released.
     /// Actions that are disabled will still be updated: instead, their values will be read as released / zero.
     /// You can see their underlying values by checking their [`ActionData`] directly.
     pub fn update(&mut self, updated_actions: UpdatedActions<A>) {
+        // Reset existing action data absent from this frame's update (e.g. after rollback restore).
+        for (action, action_data) in self.action_data.iter_mut() {
+            if updated_actions.contains_key(action) {
+                continue;
+            }
+            match action_data.kind_data {
+                ActionKindData::Button(_) => {}
+                ActionKindData::Axis(ref mut data) => {
+                    data.value = 0.0;
+                }
+                ActionKindData::DualAxis(ref mut data) => {
+                    data.pair = Vec2::ZERO;
+                }
+                ActionKindData::TripleAxis(ref mut data) => {
+                    data.triple = Vec3::ZERO;
+                }
+            }
+        }
+
         for (action, updated_value) in updated_actions.iter() {
             match updated_value {
                 UpdatedValue::Button(ButtonValue { pressed, value }) => {

@@ -351,3 +351,59 @@ fn gamepad_virtual_dpad() {
         Vec2::new(-1.0, 0.0)
     );
 }
+
+// Regression: a nonzero axis seeded outside the input pipeline (e.g. rollback restore) must be cleared.
+#[test]
+fn axis_resets_to_zero_when_no_input_in_store() {
+    // No gamepad registered: `compute` never runs, so the axis is absent from the store.
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
+        .init_resource::<ActionState<AxislikeTestAction>>()
+        .insert_resource(
+            InputMap::default().with_axis(AxislikeTestAction::X, GamepadControlAxis::LEFT_X),
+        );
+    app.update();
+
+    app.world_mut()
+        .resource_mut::<ActionState<AxislikeTestAction>>()
+        .set_value(&AxislikeTestAction::X, 1.0);
+
+    app.update();
+
+    assert_eq!(
+        app.world()
+            .resource::<ActionState<AxislikeTestAction>>()
+            .value(&AxislikeTestAction::X),
+        0.0,
+    );
+}
+
+// Regression: a nonzero pair seeded outside the input pipeline (e.g. rollback restore) must be cleared.
+#[test]
+fn dual_axis_resets_to_zero_when_no_input_in_store() {
+    // No gamepad registered: `compute` never runs, so DPad buttons are absent from the store.
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .add_plugins(InputPlugin)
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
+        .init_resource::<ActionState<AxislikeTestAction>>()
+        .insert_resource(
+            InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
+        );
+    app.update();
+
+    app.world_mut()
+        .resource_mut::<ActionState<AxislikeTestAction>>()
+        .set_axis_pair(&AxislikeTestAction::XY, Vec2::new(-1.0, 0.0));
+
+    app.update();
+
+    assert_eq!(
+        app.world()
+            .resource::<ActionState<AxislikeTestAction>>()
+            .axis_pair(&AxislikeTestAction::XY),
+        Vec2::ZERO,
+    );
+}

@@ -8,8 +8,9 @@
 
 ### Bugs (0.21.0)
 
-- `ActionDiff`s generated will no longer include entries from disabled `ActionState`s or disabled `Action`s 
+- `ActionDiff`s generated will no longer include entries from disabled `ActionState`s or disabled `Action`s
 - `MouseScroll` and `MouseScrollAxis` now support specifying `MouseScrollUnit::Pixel` or `MouseScrollUnit::Line`
+- Fixed `Axislike` and `DualAxislike` actions getting stuck at a stale value when no input is present, most notably after rollback snapshot restoration in networked games.
  
 ## Version 0.20.0
 
