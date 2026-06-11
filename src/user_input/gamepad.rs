@@ -215,7 +215,7 @@ impl Buttonlike for GamepadControlDirection {
     /// Sends a [`RawGamepadEvent::Axis`] message with a magnitude of 1.0 for the specified direction on the provided gamepad [`Entity`].
     fn press_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-        let query = query_state.get(world);
+        let query = query_state.get(world).unwrap();
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
         let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
@@ -231,7 +231,7 @@ impl Buttonlike for GamepadControlDirection {
     /// Sends a [`RawGamepadEvent::Axis`] message with a magnitude of 0.0 for the specified direction.
     fn release_as_gamepad(&self, world: &mut World, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-        let query = query_state.get(world);
+        let query = query_state.get(world).unwrap();
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
         let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
@@ -438,7 +438,7 @@ impl Axislike for GamepadControlAxis {
     /// Sends a [`RawGamepadEvent::Axis`] message with the specified value on the provided gamepad.
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-        let query = query_state.get(world);
+        let query = query_state.get(world).unwrap();
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
         let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
@@ -570,7 +570,7 @@ impl DualAxislike for GamepadStick {
     /// Sends a [`RawGamepadEvent::Axis`] message with the specified values on the provided gamepad [`Entity`].
     fn set_axis_pair_as_gamepad(&self, world: &mut World, value: Vec2, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-        let query = query_state.get(world);
+        let query = query_state.get(world).unwrap();
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
         let message = RawGamepadEvent::Axis(RawGamepadAxisChangedEvent {
@@ -766,7 +766,7 @@ impl Buttonlike for GamepadButton {
     #[inline]
     fn set_value_as_gamepad(&self, world: &mut World, value: f32, gamepad: Option<Entity>) {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(world);
-        let query = query_state.get(world);
+        let query = query_state.get(world).unwrap();
         let gamepad = gamepad.unwrap_or(find_gamepad(Some(query)));
 
         let message = RawGamepadEvent::Button(RawGamepadButtonChangedEvent {

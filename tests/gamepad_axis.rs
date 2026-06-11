@@ -70,7 +70,7 @@ fn gamepad_single_axis_mocking() {
     input.set_value(app.world_mut(), -1.0);
 
     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(app.world_mut());
-    let query = query_state.get(app.world());
+    let query = query_state.get(app.world()).unwrap();
     let gamepad = find_gamepad(Some(query));
 
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
@@ -94,7 +94,7 @@ fn gamepad_dual_axis_mocking() {
     input.set_axis_pair(app.world_mut(), Vec2::new(1.0, -1.0));
 
     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(app.world_mut());
-    let query = query_state.get(app.world());
+    let query = query_state.get(app.world()).unwrap();
     let gamepad = find_gamepad(Some(query));
 
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();

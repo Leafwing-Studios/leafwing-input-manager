@@ -8,7 +8,7 @@ use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 use bevy::platform::{collections::HashMap, time::Instant};
 use bevy::prelude::Resource;
 use bevy::reflect::Reflect;
-use bevy::{ecs::component::Component, prelude::ReflectComponent};
+use bevy::prelude::ReflectComponent;
 use bevy::{
     math::{Vec2, Vec3},
     prelude::ReflectResource,
@@ -83,7 +83,7 @@ pub use action_data::*;
 /// assert!(action_state.released(&Action::Jump));
 /// assert!(!action_state.just_released(&Action::Jump));
 /// ```
-#[derive(Resource, Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
+#[derive(Resource, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
 #[reflect(Resource, Component)]
 pub struct ActionState<A: Actionlike> {
     /// Whether or not all of the actions are disabled.

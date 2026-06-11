@@ -7,7 +7,7 @@ use std::hash::Hash;
 use bevy::asset::Asset;
 use bevy::input::gamepad::Gamepad;
 use bevy::platform::collections::HashMap;
-use bevy::prelude::{Component, Deref, DerefMut, Entity, Query, Reflect, Resource, With};
+use bevy::prelude::{Deref, DerefMut, Entity, Query, Reflect, Resource, With};
 use bevy::{log::error, prelude::ReflectComponent};
 use bevy::{
     math::{Vec2, Vec3},
@@ -103,7 +103,7 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// // Remove all bindings.
 /// input_map.clear();
 /// ```
-#[derive(Resource, Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[derive(Resource, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 #[require(ActionState::<A>)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 #[reflect(Resource, Component)]

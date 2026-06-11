@@ -463,7 +463,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world);
+        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
 
         // Resources use the placeholder entity
@@ -478,7 +478,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world);
+        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
 
         // Components use the entity
@@ -496,7 +496,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world);
+        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
         let summarized =
             SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
 
@@ -516,7 +516,7 @@ mod tests {
             MessageWriter<ActionDiffMessage<TestAction>>,
         )> = SystemState::new(&mut world);
         let (global_action_state, action_state_query, mut action_diff_writer) =
-            system_state.get_mut(&mut world);
+            system_state.get_mut(&mut world).unwrap();
         let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
 
         let previous = SummarizedActionState::default();
@@ -524,7 +524,7 @@ mod tests {
 
         let mut system_state: SystemState<MessageReader<ActionDiffMessage<TestAction>>> =
             SystemState::new(&mut world);
-        let mut message_reader = system_state.get_mut(&mut world);
+        let mut message_reader = system_state.get_mut(&mut world).unwrap();
         let action_diff_messages = message_reader.read().collect::<Vec<_>>();
 
         dbg!(&action_diff_messages);
@@ -567,7 +567,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world);
+        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
         let summarized =
             SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
 
@@ -584,7 +584,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world);
+        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
         let summarized =
             SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
 
@@ -640,7 +640,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world);
+        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
         let summarized =
             SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
 
@@ -657,7 +657,7 @@ mod tests {
             Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world);
+        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
         let summarized =
             SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
 
