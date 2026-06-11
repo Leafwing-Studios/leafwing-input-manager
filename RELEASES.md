@@ -1,9 +1,10 @@
 # Release Notes
 
-## Version 0.21.0 (Unreleased)
+## Version 0.21.0
 
 ### Breaking Changes (0.21.0)
 
+- Updated to Bevy 0.19 (yes, it's fine: full 0.19 are semver compatible with the `rc` versions and will be automatically picked up).
 - Removed the `ui` feature. This was a default feature. The `ui` feature would attempt to filter out mouse clicks captured by `bevy::ui::Interaction`s. This can be handled by temporarily disabling mouse click actions or entire action status during UI heavy scenes or interactions.
 
 ### Bugs (0.21.0)
