@@ -45,7 +45,7 @@ docs = ['winit/x11', 'winit/wayland']
 
 [dependencies]
 leafwing_input_manager_macros = { path = "macros", version = "0.17" }
-bevy = { version = "0.19.0-rc.3", default-features = false, features = [
+bevy = { version = "0.19", default-features = false, features = [
   "serialize",
   "std",
   "bevy_log",
@@ -62,7 +62,7 @@ dyn-eq = "0.1"
 dyn-hash = "1.0"
 
 [dev-dependencies]
-bevy = { version = "0.19.0-rc.3", default-features = false, features = [
+bevy = { version = "0.19", default-features = false, features = [
   "std",
   "bevy_asset",
   "bevy_sprite",
