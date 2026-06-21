@@ -340,9 +340,8 @@ fn test_zero_circle_deadzone() {
 #[test]
 fn gamepad_virtual_dpad() {
     let mut app = test_app();
-    app.world_mut().spawn(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
-    );
+    app.world_mut()
+        .spawn(InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()));
 
     GamepadButton::DPadLeft.press(app.world_mut());
     app.update();
@@ -365,9 +364,8 @@ fn axis_resets_to_zero_when_no_input_in_store() {
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default());
-    app.world_mut().spawn(
-        InputMap::default().with_axis(AxislikeTestAction::X, GamepadControlAxis::LEFT_X),
-    );
+    app.world_mut()
+        .spawn(InputMap::default().with_axis(AxislikeTestAction::X, GamepadControlAxis::LEFT_X));
     app.update();
 
     {
@@ -395,9 +393,8 @@ fn dual_axis_resets_to_zero_when_no_input_in_store() {
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default());
-    app.world_mut().spawn(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
-    );
+    app.world_mut()
+        .spawn(InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()));
     app.update();
 
     {

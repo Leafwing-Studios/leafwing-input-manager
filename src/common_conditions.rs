@@ -15,9 +15,7 @@ pub fn action_toggle_active<A>(
 where
     A: Actionlike + Clone,
 {
-    move |action_state| {
-        action_state.is_some_and(|state| state.pressed(&action)) || default
-    }
+    move |action_state| action_state.is_some_and(|state| state.pressed(&action)) || default
 }
 
 /// Run condition that is active if [`ActionState::pressed`] is true for the given action.

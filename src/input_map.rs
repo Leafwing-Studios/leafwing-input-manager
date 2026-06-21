@@ -6,10 +6,10 @@ use std::hash::Hash;
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
 use bevy::input::gamepad::Gamepad;
+use bevy::math::{Vec2, Vec3};
 use bevy::platform::collections::HashMap;
 use bevy::prelude::{Component, Deref, DerefMut, Entity, Query, Reflect, With};
 use bevy::{log::error, prelude::ReflectComponent};
-use bevy::math::{Vec2, Vec3};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 

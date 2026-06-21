@@ -174,9 +174,8 @@ fn mouse_move_single_axis() {
 #[test]
 fn mouse_move_dual_axis() {
     let mut app = test_app();
-    app.world_mut().spawn(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseMove::default()),
-    );
+    app.world_mut()
+        .spawn(InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseMove::default()));
 
     let input = MouseMove::default();
     input.set_axis_pair(app.world_mut(), Vec2::new(5.0, 0.0));

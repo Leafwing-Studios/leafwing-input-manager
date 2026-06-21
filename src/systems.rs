@@ -107,8 +107,7 @@ pub fn generate_action_diffs_filtered<A: Actionlike, F: QueryFilter>(
     mut previous_action_state: Local<SummarizedActionState<A>>,
     mut action_diff_messages: MessageWriter<ActionDiffMessage<A>>,
 ) {
-    let current_action_state =
-        SummarizedActionState::summarize_filtered(action_state_query);
+    let current_action_state = SummarizedActionState::summarize_filtered(action_state_query);
     current_action_state.send_diffs(&previous_action_state, &mut action_diff_messages);
     debug!("previous_action_state: {:?}", previous_action_state);
     debug!("current_action_state: {:?}", current_action_state);

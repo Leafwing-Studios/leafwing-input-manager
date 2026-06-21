@@ -134,9 +134,8 @@ fn mouse_scroll_buttonlike_cancels() {
 #[test]
 fn mouse_scroll_dual_axis() {
     let mut app = test_app();
-    app.world_mut().spawn(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseScroll::default()),
-    );
+    app.world_mut()
+        .spawn(InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseScroll::default()));
 
     let input = MouseScroll::default();
     input.set_axis_pair(app.world_mut(), Vec2::new(5.0, 0.0));
