@@ -22,6 +22,13 @@ struct TestContext {
     pub app: App,
 }
 
+/// Returns a clone of the single [`ActionState<A>`] component in the app.
+fn get_action_state<A: Actionlike>(app: &mut App) -> ActionState<A> {
+    let world = app.world_mut();
+    let mut query = world.query::<&ActionState<A>>();
+    query.single(world).unwrap().clone()
+}
+
 impl TestContext {
     pub fn new() -> Self {
         let mut app = App::new();
@@ -38,8 +45,9 @@ impl TestContext {
             .insert(TestAction::Throttle, KeyCode::Space)
             .insert(TestAction::Throttle, MouseButton::Left);
 
-        app.insert_resource(input_map)
-            .init_resource::<ActionState<TestAction>>();
+        // Spawn a single input entity. The `InputMap` requires an `ActionState`,
+        // so it is added automatically.
+        app.world_mut().spawn(input_map);
 
         app.update();
         app.update();
@@ -119,7 +127,7 @@ fn gamepad_button_value() {
     gamepad_button.set_value_as_gamepad(app.world_mut(), 1.0, Some(gamepad));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 1.0);
 }
@@ -128,7 +136,7 @@ fn gamepad_button_value() {
 fn mouse_button_value() {
     let mut app = TestContext::new().app;
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 0.0);
 
@@ -137,7 +145,7 @@ fn mouse_button_value() {
 
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 1.0);
 }
@@ -146,7 +154,7 @@ fn mouse_button_value() {
 fn keyboard_button_value() {
     let mut app = TestContext::new().app;
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 0.0);
 
@@ -155,7 +163,7 @@ fn keyboard_button_value() {
 
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 1.0);
 }
@@ -166,7 +174,7 @@ fn gamepad_trigger() {
     let gamepad = ctx.send_gamepad_connection_event(None);
     let mut app = ctx.app;
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 0.0);
 
@@ -174,7 +182,7 @@ fn gamepad_trigger() {
     gamepad_trigger.set_value_as_gamepad(app.world_mut(), 0.7, Some(gamepad));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     let button_value = action_state.button_value(&TestAction::Throttle);
     assert_eq!(button_value, 0.7);
 }
@@ -188,7 +196,7 @@ fn buttonlike_actions_can_be_pressed_and_released_when_pressed() {
     relevant_button.press(app.world_mut());
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     assert!(action_state.just_pressed(&TestAction::Throttle));
     assert!(action_state.pressed(&TestAction::Throttle));
     assert!(!action_state.released(&TestAction::Throttle));
@@ -197,7 +205,7 @@ fn buttonlike_actions_can_be_pressed_and_released_when_pressed() {
     relevant_button.release(app.world_mut());
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     assert!(!action_state.just_pressed(&TestAction::Throttle));
     assert!(!action_state.pressed(&TestAction::Throttle));
     assert!(action_state.just_released(&TestAction::Throttle));
@@ -214,7 +222,7 @@ fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
     gamepad_trigger.set_value_as_gamepad(app.world_mut(), 1.0, Some(gamepad));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     assert!(action_state.just_pressed(&TestAction::Throttle));
     assert!(action_state.pressed(&TestAction::Throttle));
     assert!(!action_state.released(&TestAction::Throttle));
@@ -224,7 +232,7 @@ fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
     gamepad_trigger.set_value_as_gamepad(app.world_mut(), 0.0, Some(gamepad));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<TestAction>>();
+    let action_state = get_action_state::<TestAction>(&mut app);
     assert!(!action_state.just_pressed(&TestAction::Throttle));
     assert!(!action_state.pressed(&TestAction::Throttle));
     assert!(action_state.just_released(&TestAction::Throttle));

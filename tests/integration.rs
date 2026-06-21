@@ -13,20 +13,26 @@ enum Action {
 struct Respect(bool);
 
 fn pay_respects(
-    action_state_query: Query<&ActionState<Action>, With<Player>>,
-    action_state_resource: Option<Res<ActionState<Action>>>,
+    player_action_state: Query<&ActionState<Action>, With<Player>>,
+    global_action_state: Query<&ActionState<Action>, Without<Player>>,
     mut respect: ResMut<Respect>,
 ) {
-    if let Ok(action_state) = action_state_query.single() {
+    if let Ok(action_state) = player_action_state.single() {
         if action_state.pressed(&Action::PayRespects) {
             respect.0 = true;
         }
     }
-    if let Some(action_state) = action_state_resource {
+    // Previously a global resource `ActionState`; now a second, non-player entity.
+    if let Ok(action_state) = global_action_state.single() {
         if action_state.pressed(&Action::PayRespects) {
             respect.0 = true;
         }
     }
+}
+
+/// Spawns the "global" (non-player) input entity that previously lived as a resource.
+fn spawn_global_input(mut commands: Commands) {
+    commands.spawn(InputMap::new([(Action::PayRespects, KeyCode::KeyF)]));
 }
 
 fn respect_fades(mut respect: ResMut<Respect>) {
@@ -54,17 +60,12 @@ fn disable_input() {
 
     let mut app = App::new();
 
-    // Here we spawn a player and create a global action state to check if [`DisableInput`]
-    // releases correctly both
+    // Here we spawn a player and a separate global input entity to check if [`DisableInput`]
+    // releases correctly on both.
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<Action>::default())
-        .add_systems(Startup, spawn_player)
-        .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(
-            Action::PayRespects,
-            KeyCode::KeyF,
-        )]))
+        .add_systems(Startup, (spawn_player, spawn_global_input))
         .init_resource::<Respect>()
         .add_systems(Update, pay_respects)
         .add_systems(PreUpdate, respect_fades);
@@ -76,7 +77,11 @@ fn disable_input() {
     assert_eq!(*respect, Respect(true));
 
     // Disable the global input
-    let mut action_state = app.world_mut().resource_mut::<ActionState<Action>>();
+    let mut action_state = app
+        .world_mut()
+        .query_filtered::<&mut ActionState<Action>, Without<Player>>()
+        .single_mut(app.world_mut())
+        .expect("global ActionState not found");
     action_state.disable_all_actions();
 
     // But the player is still paying respects
@@ -104,7 +109,11 @@ fn disable_input() {
     assert_eq!(*respect, Respect(false));
 
     // Re-enable the global input
-    let mut action_state = app.world_mut().resource_mut::<ActionState<Action>>();
+    let mut action_state = app
+        .world_mut()
+        .query_filtered::<&mut ActionState<Action>, Without<Player>>()
+        .single_mut(app.world_mut())
+        .expect("global ActionState not found");
     action_state.enable_all_actions();
 
     // And it will start paying respects again
@@ -119,18 +128,13 @@ fn release_when_input_map_removed() {
 
     let mut app = App::new();
 
-    // Spawn a player and create a global action state.
+    // Spawn a player carrying its own input map.
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
-        .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(
-            Action::PayRespects,
-            KeyCode::KeyF,
-        )]))
         .init_resource::<Respect>()
-        .add_systems(Update, (pay_respects, remove_input_map))
+        .add_systems(Update, pay_respects)
         .add_systems(PreUpdate, respect_fades);
 
     // Press F to pay respects
@@ -139,9 +143,9 @@ fn release_when_input_map_removed() {
     let respect = app.world().resource::<Respect>();
     assert_eq!(*respect, Respect(true));
 
-    // Remove the InputMap
-    app.world_mut().remove_resource::<InputMap<Action>>();
-    // Needs an extra frame for the resource removed detection to release inputs
+    // Remove the InputMap component from the player
+    app.add_systems(Update, remove_input_map);
+    // Needs an extra frame for the removed-component detection to release inputs
     app.update();
 
     // Now, all respect has faded
@@ -165,7 +169,7 @@ fn duration() {
     const RESPECTFUL_DURATION: Duration = Duration::from_millis(5);
 
     fn hold_f_to_pay_respects(
-        action_state: Res<ActionState<Action>>,
+        action_state: Single<&ActionState<Action>>,
         mut respect: ResMut<Respect>,
     ) {
         if action_state.pressed(&Action::PayRespects)
@@ -182,11 +186,6 @@ fn duration() {
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<Action>::default())
         .add_systems(Startup, spawn_player)
-        .init_resource::<ActionState<Action>>()
-        .insert_resource(InputMap::<Action>::new([(
-            Action::PayRespects,
-            KeyCode::KeyF,
-        )]))
         .init_resource::<Respect>()
         .add_systems(Update, hold_f_to_pay_respects);
 
@@ -201,9 +200,10 @@ fn duration() {
 
     // Check
     app.update();
-    assert!(
-        app.world()
-            .resource::<ActionState<Action>>()
-            .pressed(&Action::PayRespects)
-    );
+    let action_state = app
+        .world_mut()
+        .query::<&ActionState<Action>>()
+        .single(app.world())
+        .unwrap();
+    assert!(action_state.pressed(&Action::PayRespects));
 }

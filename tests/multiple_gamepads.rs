@@ -48,6 +48,13 @@ fn create_test_app() -> App {
     app
 }
 
+/// Returns a clone of the single [`ActionState<A>`] component in the app.
+fn get_action_state<A: Actionlike>(app: &mut App) -> ActionState<A> {
+    let world = app.world_mut();
+    let mut query = world.query::<&ActionState<A>>();
+    query.single(world).unwrap().clone()
+}
+
 fn jump_button_press_message(gamepad: Entity) -> RawGamepadEvent {
     use bevy::input::gamepad::RawGamepadButtonChangedEvent;
 
@@ -82,8 +89,7 @@ fn accepts_preferred_gamepad() {
 
     let mut input_map = InputMap::new([(MyAction::Jump, GamepadButton::South)]);
     input_map.set_gamepad(preferred_gamepad);
-    app.insert_resource(input_map);
-    app.init_resource::<ActionState<MyAction>>();
+    app.world_mut().spawn(input_map);
 
     // When we press the Jump button...
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
@@ -91,7 +97,7 @@ fn accepts_preferred_gamepad() {
     app.update();
 
     // ... We should receive a Jump action!
-    let action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
+    let action_state = get_action_state::<MyAction>(&mut app);
     assert!(action_state.pressed(&MyAction::Jump));
 }
 
@@ -104,8 +110,7 @@ fn filters_out_other_gamepads() {
 
     let mut input_map = InputMap::new([(MyAction::Jump, GamepadButton::South)]);
     input_map.set_gamepad(preferred_gamepad);
-    app.insert_resource(input_map);
-    app.init_resource::<ActionState<MyAction>>();
+    app.world_mut().spawn(input_map);
 
     // When we press the Jump button...
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
@@ -113,6 +118,6 @@ fn filters_out_other_gamepads() {
     app.update();
 
     // ... We should receive a Jump action!
-    let action_state = app.world_mut().resource_mut::<ActionState<MyAction>>();
+    let action_state = get_action_state::<MyAction>(&mut app);
     assert!(action_state.released(&MyAction::Jump));
 }

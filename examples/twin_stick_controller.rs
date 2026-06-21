@@ -4,7 +4,7 @@
 //! the most recent input.
 //!
 //! This example builds on top of several concepts introduced in other examples. In particular,
-//! the `default_controls`. `mouse_position`, and `action_state_resource` examples.
+//! the `default_controls` and `mouse_position` examples.
 
 use bevy::{
     input::gamepad::GamepadEvent, input::keyboard::KeyboardInput, prelude::*, window::PrimaryWindow,
@@ -17,8 +17,6 @@ fn main() {
         .add_plugins(InputManagerPlugin::<PlayerAction>::default())
         // Defined below, detects whether MKB or gamepad are active
         .add_plugins(InputModeManagerPlugin)
-        .init_resource::<ActionState<PlayerAction>>()
-        .insert_resource(PlayerAction::default_input_map())
         // Set up the scene
         .add_systems(Startup, setup_scene)
         // Set up the input processing
@@ -115,13 +113,12 @@ fn activate_mkb(
 
 fn player_mouse_look(
     camera_query: Query<(&GlobalTransform, &Camera)>,
-    player_query: Query<&Transform, With<Player>>,
     window_query: Query<&Window, With<PrimaryWindow>>,
-    mut action_state: ResMut<ActionState<PlayerAction>>,
+    player: Single<(&Transform, &mut ActionState<PlayerAction>), With<Player>>,
 ) {
     let (camera_transform, camera) = camera_query.single().expect("Need a single camera");
-    let player_transform = player_query.single().expect("Need a single player");
     let window = window_query.single().expect("Need a single primary window");
+    let (player_transform, mut action_state) = player.into_inner();
 
     // Many steps can fail here, so we'll wrap in an option pipeline
     // First check if the cursor is in window
@@ -151,9 +148,10 @@ fn player_mouse_look(
 // ----------------------------- Movement -----------------------------
 fn control_player(
     time: Res<Time>,
-    action_state: Res<ActionState<PlayerAction>>,
-    mut player_transform: Single<&mut Transform, With<Player>>,
+    player: Single<(&mut Transform, &ActionState<PlayerAction>), With<Player>>,
 ) {
+    let (mut player_transform, action_state) = player.into_inner();
+
     if action_state.axis_pair(&PlayerAction::Move) != Vec2::ZERO {
         // Note: In a real game we'd feed this into an actual player controller
         // and respects the camera extrinsics to ensure the direction is correct
@@ -183,6 +181,10 @@ fn setup_scene(mut commands: Commands) {
         .spawn(Camera3d::default())
         .insert(Transform::from_xyz(0.0, 10.0, 15.0).looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y));
 
-    // And a player
-    commands.spawn(Player).insert(Transform::default());
+    // And a player, carrying its own input map and action state
+    commands.spawn((
+        Player,
+        Transform::default(),
+        PlayerAction::default_input_map(),
+    ));
 }

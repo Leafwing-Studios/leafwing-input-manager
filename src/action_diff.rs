@@ -13,7 +13,7 @@ use bevy::{
     },
     math::{Vec2, Vec3},
     platform::collections::{HashMap, HashSet},
-    prelude::{EntityMapper, MessageWriter, Query, Res},
+    prelude::{EntityMapper, MessageWriter, Query},
 };
 use serde::{Deserialize, Serialize};
 
@@ -63,15 +63,13 @@ pub enum ActionDiff<A: Actionlike> {
     },
 }
 
-/// Will store an `ActionDiff` as well as what generated it (either an Entity, or nothing if the
-/// input actions are represented by a `Resource`)
+/// Will store an `ActionDiff` as well as the entity that generated it.
 ///
 /// These are typically accessed using the `Messages<ActionDiffMessage>` resource.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, Message)]
 pub struct ActionDiffMessage<A: Actionlike> {
-    /// If some: the entity that has the `ActionState<A>` component
-    /// If none: `ActionState<A>` is a Resource, not a component
-    pub owner: Option<Entity>,
+    /// The entity that has the `ActionState<A>` component
+    pub owner: Entity,
     /// The `ActionDiff` that was generated
     pub action_diffs: Vec<ActionDiff<A>>,
 }
@@ -82,13 +80,12 @@ pub struct ActionDiffMessage<A: Actionlike> {
 /// between different ECS worlds (e.g. client and server).
 impl<A: Actionlike> MapEntities for ActionDiffMessage<A> {
     fn map_entities<M: EntityMapper>(&mut self, entity_mapper: &mut M) {
-        self.owner = self.owner.map(|entity| entity_mapper.get_mapped(entity));
+        self.owner = entity_mapper.get_mapped(self.owner);
     }
 }
 
-/// Stores the state of all actions in the current frame.
-///
-/// Inside of the hashmap, [`Entity::PLACEHOLDER`] represents the global / resource state of the action.
+/// Stores the state of all actions in the current frame, keyed by the entity that owns each
+/// [`ActionState`].
 #[derive(Debug, PartialEq, Clone)]
 pub struct SummarizedActionState<A: Actionlike> {
     button_state_map: HashMap<Entity, HashMap<A, ButtonValue>>,
@@ -99,8 +96,6 @@ pub struct SummarizedActionState<A: Actionlike> {
 
 impl<A: Actionlike> SummarizedActionState<A> {
     /// Returns a list of all entities that are contained within this data structure.
-    ///
-    /// This includes the global / resource state, using [`Entity::PLACEHOLDER`].
     pub fn all_entities(&self) -> HashSet<Entity> {
         let mut entities = HashSet::default();
         let button_entities = self.button_state_map.keys();
@@ -117,61 +112,19 @@ impl<A: Actionlike> SummarizedActionState<A> {
     }
 
     /// Captures the raw values for each action in the current frame, for all entities with `ActionState<A>`.
-    pub fn summarize(
-        global_action_state: Option<Res<ActionState<A>>>,
-        action_state_query: Query<(Entity, &ActionState<A>)>,
-    ) -> Self {
-        Self::summarize_filtered(global_action_state, action_state_query)
+    pub fn summarize(action_state_query: Query<(Entity, &ActionState<A>)>) -> Self {
+        Self::summarize_filtered(action_state_query)
     }
 
     /// Captures the raw values for each action in the current frame, for entities with `ActionState<A>`
     /// matching the query filter.
     pub fn summarize_filtered<F: QueryFilter>(
-        global_action_state: Option<Res<ActionState<A>>>,
         action_state_query: Query<(Entity, &ActionState<A>), F>,
     ) -> Self {
         let mut button_state_map = HashMap::default();
         let mut axis_state_map = HashMap::default();
         let mut dual_axis_state_map = HashMap::default();
         let mut triple_axis_state_map = HashMap::default();
-
-        println!("action_state_resource check");
-        if let Some(global_action_state) = global_action_state
-            && !global_action_state.disabled()
-        {
-            println!("action_state_resource");
-            let mut per_entity_button_state = HashMap::default();
-            let mut per_entity_axis_state = HashMap::default();
-            let mut per_entity_dual_axis_state = HashMap::default();
-            let mut per_entity_triple_axis_state = HashMap::default();
-
-            for (action, action_data) in global_action_state
-                .all_action_data()
-                .iter()
-                .filter(|(_, action_data)| !action_data.disabled)
-            {
-                match &action_data.kind_data {
-                    ActionKindData::Button(button_data) => {
-                        per_entity_button_state
-                            .insert(action.clone(), button_data.to_button_value());
-                    }
-                    ActionKindData::Axis(axis_data) => {
-                        per_entity_axis_state.insert(action.clone(), axis_data.value);
-                    }
-                    ActionKindData::DualAxis(dual_axis_data) => {
-                        per_entity_dual_axis_state.insert(action.clone(), dual_axis_data.pair);
-                    }
-                    ActionKindData::TripleAxis(triple_axis_data) => {
-                        per_entity_triple_axis_state
-                            .insert(action.clone(), triple_axis_data.triple);
-                    }
-                }
-            }
-            button_state_map.insert(Entity::PLACEHOLDER, per_entity_button_state);
-            axis_state_map.insert(Entity::PLACEHOLDER, per_entity_axis_state);
-            dual_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_dual_axis_state);
-            triple_axis_state_map.insert(Entity::PLACEHOLDER, per_entity_triple_axis_state);
-        }
 
         for (entity, action_state) in action_state_query
             .iter()
@@ -368,13 +321,11 @@ impl<A: Actionlike> SummarizedActionState<A> {
     /// Compares the current frame to the previous frame, generates [`ActionDiff`]s and then sends them as batched [`ActionDiffMessage`]s.
     pub fn send_diffs(&self, previous: &Self, writer: &mut MessageWriter<ActionDiffMessage<A>>) {
         for entity in self.all_entities() {
-            let owner = (entity != Entity::PLACEHOLDER).then_some(entity);
-
             let action_diffs = self.entity_diffs(&entity, previous);
 
             if !action_diffs.is_empty() {
                 writer.write(ActionDiffMessage {
-                    owner,
+                    owner: entity,
                     action_diffs,
                 });
             }
@@ -456,30 +407,13 @@ mod tests {
     }
 
     #[test]
-    fn summarize_from_resource() {
-        let mut world = World::new();
-        world.insert_resource(test_action_state());
-        let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
-            Query<(Entity, &ActionState<TestAction>)>,
-        )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
-        let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
-
-        // Resources use the placeholder entity
-        assert_eq!(summarized, expected_summary(Entity::PLACEHOLDER));
-    }
-
-    #[test]
     fn summarize_from_component() {
         let mut world = World::new();
         let entity = world.spawn(test_action_state()).id();
-        let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
-            Query<(Entity, &ActionState<TestAction>)>,
-        )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
-        let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
+        let mut system_state: SystemState<Query<(Entity, &ActionState<TestAction>)>> =
+            SystemState::new(&mut world);
+        let action_state_query = system_state.get(&world).unwrap();
+        let summarized = SummarizedActionState::summarize(action_state_query);
 
         // Components use the entity
         assert_eq!(summarized, expected_summary(entity));
@@ -492,13 +426,11 @@ mod tests {
         let entity = world.spawn(test_action_state()).id();
         world.spawn((test_action_state(), NotSummarized));
 
-        let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
+        let mut system_state: SystemState<
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
-        )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
-        let summarized =
-            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+        > = SystemState::new(&mut world);
+        let action_state_query = system_state.get(&world).unwrap();
+        let summarized = SummarizedActionState::summarize_filtered(action_state_query);
 
         // Check that only the entity without NotSummarized was summarized
         assert_eq!(summarized, expected_summary(entity));
@@ -511,13 +443,12 @@ mod tests {
 
         let entity = world.spawn(test_action_state()).id();
         let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
             Query<(Entity, &ActionState<TestAction>)>,
             MessageWriter<ActionDiffMessage<TestAction>>,
         )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query, mut action_diff_writer) =
+        let (action_state_query, mut action_diff_writer) =
             system_state.get_mut(&mut world).unwrap();
-        let summarized = SummarizedActionState::summarize(global_action_state, action_state_query);
+        let summarized = SummarizedActionState::summarize(action_state_query);
 
         let previous = SummarizedActionState::default();
         summarized.send_diffs(&previous, &mut action_diff_writer);
@@ -530,7 +461,7 @@ mod tests {
         dbg!(&action_diff_messages);
         assert_eq!(action_diff_messages.len(), 1);
         let action_diff_message = action_diff_messages[0];
-        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.owner, entity);
         assert_eq!(action_diff_message.action_diffs.len(), 4);
     }
 
@@ -563,30 +494,11 @@ mod tests {
         let mut world = World::new();
         world.spawn((test_action_state_disabled(), NotSummarized));
 
-        let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
+        let mut system_state: SystemState<
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
-        )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
-        let summarized =
-            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
-
-        // Check that only the entity without NotSummarized was summarized
-        assert_eq!(summarized, expected_summary_when_disabled());
-    }
-
-    #[test]
-    fn summarize_filtered_from_disabled_resource() {
-        let mut world = World::new();
-        world.insert_resource(test_action_state_disabled());
-
-        let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
-            Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
-        )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
-        let summarized =
-            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+        > = SystemState::new(&mut world);
+        let action_state_query = system_state.get(&world).unwrap();
+        let summarized = SummarizedActionState::summarize_filtered(action_state_query);
 
         // Check that only the entity without NotSummarized was summarized
         assert_eq!(summarized, expected_summary_when_disabled());
@@ -636,35 +548,13 @@ mod tests {
         let mut world = World::new();
         let entity = world.spawn(test_action_state_disabled_action()).id();
 
-        let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
+        let mut system_state: SystemState<
             Query<(Entity, &ActionState<TestAction>), Without<NotSummarized>>,
-        )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
-        let summarized =
-            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
+        > = SystemState::new(&mut world);
+        let action_state_query = system_state.get(&world).unwrap();
+        let summarized = SummarizedActionState::summarize_filtered(action_state_query);
 
         // Check that only the entity without NotSummarized was summarized
         assert_eq!(summarized, expected_summary_with_disabled_action(entity));
-    }
-
-    #[test]
-    fn summarize_filtered_entites_from_resource_disabled_action() {
-        let mut world = World::new();
-        world.insert_resource(test_action_state_disabled_action());
-
-        let mut system_state: SystemState<(
-            Option<Res<ActionState<TestAction>>>,
-            Query<(Entity, &ActionState<TestAction>)>,
-        )> = SystemState::new(&mut world);
-        let (global_action_state, action_state_query) = system_state.get(&world).unwrap();
-        let summarized =
-            SummarizedActionState::summarize_filtered(global_action_state, action_state_query);
-
-        // Check that only the entity without NotSummarized was summarized
-        assert_eq!(
-            summarized,
-            expected_summary_with_disabled_action(Entity::PLACEHOLDER)
-        );
     }
 }

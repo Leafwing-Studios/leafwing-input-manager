@@ -36,13 +36,15 @@ fn build_app(fixed_timestep: Duration, frame_timestep: Duration) -> App {
         .add_plugins(InputManagerPlugin::<TestAction>::default())
         .init_resource::<UpdateCounter>()
         .init_resource::<FixedUpdateCounter>()
-        .init_resource::<ActionState<TestAction>>()
-        .insert_resource(InputMap::<TestAction>::new([(
-            TestAction::Up,
-            KeyCode::ArrowUp,
-        )]))
         .insert_resource(Time::<Fixed>::from_duration(fixed_timestep))
         .insert_resource(TimeUpdateStrategy::ManualDuration(frame_timestep));
+
+    // Spawn a single input entity. The `InputMap` requires an `ActionState`,
+    // so it is added automatically.
+    app.world_mut().spawn(InputMap::<TestAction>::new([(
+        TestAction::Up,
+        KeyCode::ArrowUp,
+    )]));
 
     app.add_systems(Update, update_counter);
     app.add_systems(FixedUpdate, fixed_update_counter);
@@ -60,7 +62,7 @@ fn build_app(fixed_timestep: Duration, frame_timestep: Duration) -> App {
 /// - was the button marked as `just_pressed` in the FixedUpdate schedule?
 fn fixed_update_counter(
     mut counter: ResMut<FixedUpdateCounter>,
-    action: Res<ActionState<TestAction>>,
+    action: Single<&ActionState<TestAction>>,
 ) {
     if action.just_pressed(&TestAction::Up) {
         counter.just_pressed += 1;
@@ -70,10 +72,18 @@ fn fixed_update_counter(
 
 /// Keep track of some messages that happen in the Update schedule
 /// - was the button marked as `just_pressed` in the Update schedule?
-fn update_counter(mut counter: ResMut<UpdateCounter>, action: Res<ActionState<TestAction>>) {
+fn update_counter(mut counter: ResMut<UpdateCounter>, action: Single<&ActionState<TestAction>>) {
     if action.just_pressed(&TestAction::Up) {
         counter.just_pressed += 1;
     }
+}
+
+/// Returns a clone of the single [`ActionState<A>`] component in the app.
+#[cfg(feature = "timing")]
+fn get_action_state<A: leafwing_input_manager::Actionlike>(app: &mut App) -> ActionState<A> {
+    let world = app.world_mut();
+    let mut query = world.query::<&ActionState<A>>();
+    query.single(world).unwrap().clone()
 }
 
 /// Reset the counters at the end of the frame
@@ -157,10 +167,7 @@ fn frame_without_fixed_timestep() {
     // which is only updated in `PreUpdate`, which is what we want)
     #[cfg(feature = "timing")]
     assert_eq!(
-        app.world()
-            .get_resource::<ActionState<TestAction>>()
-            .unwrap()
-            .current_duration(&TestAction::Up),
+        get_action_state::<TestAction>(&mut app).current_duration(&TestAction::Up),
         Duration::from_millis(18)
     );
 }
@@ -195,10 +202,7 @@ fn frame_with_two_fixed_timestep() {
     // which is only updated in `PreUpdate`, which is what we want)
     #[cfg(feature = "timing")]
     assert_eq!(
-        app.world()
-            .get_resource::<ActionState<TestAction>>()
-            .unwrap()
-            .current_duration(&TestAction::Up),
+        get_action_state::<TestAction>(&mut app).current_duration(&TestAction::Up),
         Duration::from_millis(18)
     );
 }

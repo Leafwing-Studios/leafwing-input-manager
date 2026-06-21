@@ -5,14 +5,11 @@ use crate::input_map::UpdatedValue;
 use crate::{Actionlike, InputControlKind};
 use crate::{action_diff::ActionDiff, input_map::UpdatedActions};
 
+use bevy::math::{Vec2, Vec3};
 use bevy::platform::{collections::HashMap, time::Instant};
-use bevy::prelude::Resource;
-use bevy::reflect::Reflect;
+use bevy::prelude::Component;
 use bevy::prelude::ReflectComponent;
-use bevy::{
-    math::{Vec2, Vec3},
-    prelude::ReflectResource,
-};
+use bevy::reflect::Reflect;
 #[cfg(feature = "timing")]
 use core::time::Duration;
 use serde::{Deserialize, Serialize};
@@ -22,7 +19,10 @@ pub use action_data::*;
 
 /// Stores the canonical input-method-agnostic representation of the inputs received
 ///
-/// Can be used as either a resource or as a [`Component`] on entities that you wish to control directly from player input.
+/// Stored as a [`Component`] on entities that you wish to control directly from player input.
+///
+/// To model a single abstract / global input, spawn one dedicated entity holding the [`InputMap`](crate::prelude::InputMap)
+/// (which will add an [`ActionState`] via required components) and read/write to it using [`Single<&ActionState>`](bevy::prelude::Single).
 ///
 /// # Disabling actions
 ///
@@ -83,8 +83,8 @@ pub use action_data::*;
 /// assert!(action_state.released(&Action::Jump));
 /// assert!(!action_state.just_released(&Action::Jump));
 /// ```
-#[derive(Resource, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
-#[reflect(Resource, Component)]
+#[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize, Reflect)]
+#[reflect(Component)]
 pub struct ActionState<A: Actionlike> {
     /// Whether or not all of the actions are disabled.
     disabled: bool,
@@ -1252,8 +1252,9 @@ mod tests {
                 input_map.insert(TestAction::Run, KeyCode::KeyR);
             }
 
-            app.insert_resource(input_map.clone())
-                .init_resource::<ActionState<TestAction>>();
+            // Spawn a single input entity. The `InputMap` requires an `ActionState`,
+            // so it is added automatically.
+            app.world_mut().spawn(input_map.clone());
 
             app.update();
 
@@ -1282,6 +1283,13 @@ mod tests {
         pub fn update(&mut self) {
             self.app.update();
         }
+    }
+
+    /// Returns a clone of the single [`ActionState<TestAction>`] component in the app.
+    fn single_action_state(app: &mut App) -> ActionState<TestAction> {
+        let world = app.world_mut();
+        let mut query = world.query::<&ActionState<TestAction>>();
+        query.single(world).unwrap().clone()
     }
 
     #[test]
@@ -2188,7 +2196,7 @@ mod tests {
         let _gamepad = ctx.send_gamepad_connection_event(None);
         ctx.update();
 
-        let action_state = ctx.app.world().resource::<ActionState<TestAction>>();
+        let action_state = single_action_state(&mut ctx.app);
         assert!(action_state.released(&TestAction::Trigger));
 
         // App Context
@@ -2199,7 +2207,7 @@ mod tests {
         GamepadButton::RightTrigger.set_value_as_gamepad(ctx.app.world_mut(), 0.8, Some(gamepad));
         ctx.update();
 
-        let action_state = ctx.app.world().resource::<ActionState<TestAction>>();
+        let action_state = single_action_state(&mut ctx.app);
         assert!(action_state.pressed(&TestAction::Trigger));
         assert!(action_state.just_pressed(&TestAction::Trigger));
         assert_eq!(action_state.button_value(&TestAction::Trigger), 0.8);

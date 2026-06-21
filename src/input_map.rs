@@ -7,12 +7,9 @@ use std::hash::Hash;
 use bevy::asset::Asset;
 use bevy::input::gamepad::Gamepad;
 use bevy::platform::collections::HashMap;
-use bevy::prelude::{Deref, DerefMut, Entity, Query, Reflect, Resource, With};
+use bevy::prelude::{Component, Deref, DerefMut, Entity, Query, Reflect, With};
 use bevy::{log::error, prelude::ReflectComponent};
-use bevy::{
-    math::{Vec2, Vec3},
-    prelude::ReflectResource,
-};
+use bevy::math::{Vec2, Vec3};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -103,10 +100,10 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// // Remove all bindings.
 /// input_map.clear();
 /// ```
-#[derive(Resource, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
+#[derive(Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
 #[require(ActionState::<A>)]
 #[cfg_attr(feature = "asset", derive(Asset))]
-#[reflect(Resource, Component)]
+#[reflect(Component)]
 pub struct InputMap<A: Actionlike> {
     /// The underlying map that stores action-input mappings for [`Buttonlike`] actions.
     buttonlike_map: HashMap<A, Vec<Box<dyn Buttonlike>>>,
