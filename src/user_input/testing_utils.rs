@@ -38,7 +38,7 @@ pub trait FetchUserInput {
 impl FetchUserInput for World {
     fn read_pressed(&mut self, input: impl Buttonlike) -> bool {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
-        let query = query_state.get(self);
+        let query = query_state.get(self).unwrap();
         let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
 
@@ -47,7 +47,7 @@ impl FetchUserInput for World {
 
     fn read_button_value(&mut self, input: impl Buttonlike) -> f32 {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
-        let query = query_state.get(self);
+        let query = query_state.get(self).unwrap();
         let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
 
@@ -56,7 +56,7 @@ impl FetchUserInput for World {
 
     fn read_axis_value(&mut self, input: impl Axislike) -> f32 {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
-        let query = query_state.get(self);
+        let query = query_state.get(self).unwrap();
         let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
 
@@ -65,7 +65,7 @@ impl FetchUserInput for World {
 
     fn read_dual_axis_values(&mut self, input: impl DualAxislike) -> Vec2 {
         let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(self);
-        let query = query_state.get(self);
+        let query = query_state.get(self).unwrap();
         let gamepad = find_gamepad(Some(query));
         let input_store = self.resource::<CentralInputStore>();
 

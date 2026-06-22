@@ -66,11 +66,9 @@ fn axis_data_should_be_none_before_update_axislike() {
     // Register a new input kind (custom axis input)
     app.register_input_kind::<MidiAxis>(InputControlKind::Axis);
 
-    // Insert a default ActionState resource
-    app.init_resource::<ActionState<Action>>();
-
-    // Add an InputMap binding for the custom axis input
-    app.insert_resource(
+    // Spawn a single input entity with a binding for the custom axis input.
+    // The `InputMap` requires an `ActionState`, so it is added automatically.
+    app.world_mut().spawn(
         InputMap::default()
             .with_axis(Action::Axis0, MidiAxis(0))
             .with_axis(Action::Axis1, MidiAxis(1)),
@@ -80,7 +78,11 @@ fn axis_data_should_be_none_before_update_axislike() {
     app.update();
 
     // Before any update, axis_data should be None
-    let action_state = app.world().resource::<ActionState<Action>>();
+    let action_state = {
+        let world = app.world_mut();
+        let mut query = world.query::<&ActionState<Action>>();
+        query.single(world).unwrap().clone()
+    };
 
     // not in input map and not updated, should definitely be None
     assert_eq!(action_state.axis_data(&Action::Axis2), None);

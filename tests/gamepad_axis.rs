@@ -33,9 +33,7 @@ fn test_app() -> App {
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<ButtonlikeTestAction>::default())
-        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
-        .init_resource::<ActionState<ButtonlikeTestAction>>()
-        .init_resource::<ActionState<AxislikeTestAction>>();
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default());
 
     // WARNING: you MUST register your gamepad during tests, or all gamepad input mocking will fail
     let gamepad = app.world_mut().spawn_empty().id();
@@ -60,6 +58,13 @@ fn test_app() -> App {
     app
 }
 
+/// Returns a clone of the single [`ActionState<A>`] component in the app.
+fn get_action_state<A: Actionlike>(app: &mut App) -> ActionState<A> {
+    let world = app.world_mut();
+    let mut query = world.query::<&ActionState<A>>();
+    query.single(world).unwrap().clone()
+}
+
 #[test]
 fn gamepad_single_axis_mocking() {
     let mut app = test_app();
@@ -70,7 +75,7 @@ fn gamepad_single_axis_mocking() {
     input.set_value(app.world_mut(), -1.0);
 
     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(app.world_mut());
-    let query = query_state.get(app.world());
+    let query = query_state.get(app.world()).unwrap();
     let gamepad = find_gamepad(Some(query));
 
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
@@ -94,7 +99,7 @@ fn gamepad_dual_axis_mocking() {
     input.set_axis_pair(app.world_mut(), Vec2::new(1.0, -1.0));
 
     let mut query_state = SystemState::<Query<Entity, With<Gamepad>>>::new(app.world_mut());
-    let query = query_state.get(app.world());
+    let query = query_state.get(app.world()).unwrap();
     let gamepad = find_gamepad(Some(query));
 
     let mut messages = app.world_mut().resource_mut::<Messages<RawGamepadEvent>>();
@@ -125,7 +130,7 @@ fn gamepad_dual_axis_mocking() {
 #[test]
 fn gamepad_single_axis() {
     let mut app = test_app();
-    app.insert_resource(
+    app.world_mut().spawn(
         InputMap::default()
             .with_axis(
                 AxislikeTestAction::X,
@@ -167,14 +172,14 @@ fn gamepad_single_axis() {
     let input = GamepadControlAxis::LEFT_X;
     input.set_value(app.world_mut(), 0.2);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(action_state.value(&AxislikeTestAction::X), 0.11111112);
 }
 
 #[test]
 fn gamepad_single_axis_inverted() {
     let mut app = test_app();
-    app.insert_resource(
+    app.world_mut().spawn(
         InputMap::default()
             .with_axis(
                 AxislikeTestAction::X,
@@ -194,35 +199,35 @@ fn gamepad_single_axis_inverted() {
     let input = GamepadControlAxis::LEFT_X;
     input.set_value(app.world_mut(), 1.0);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(action_state.value(&AxislikeTestAction::X), -1.0);
 
     // -X
     let input = GamepadControlAxis::LEFT_X;
     input.set_value(app.world_mut(), -1.0);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(action_state.value(&AxislikeTestAction::X), 1.0);
 
     // +Y
     let input = GamepadControlAxis::LEFT_Y;
     input.set_value(app.world_mut(), 1.0);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(action_state.value(&AxislikeTestAction::Y), -1.0);
 
     // -Y
     let input = GamepadControlAxis::LEFT_Y;
     input.set_value(app.world_mut(), -1.0);
     app.update();
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(action_state.value(&AxislikeTestAction::Y), 1.0);
 }
 
 #[test]
 fn gamepad_dual_axis_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dual_axis(
+    app.world_mut().spawn(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_deadzone_symmetric(0.1),
     ));
@@ -232,7 +237,7 @@ fn gamepad_dual_axis_deadzone() {
     input.set_axis_pair(app.world_mut(), Vec2::new(0.04, 0.1));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -243,7 +248,7 @@ fn gamepad_dual_axis_deadzone() {
     input.set_axis_pair(app.world_mut(), Vec2::new(1.0, 0.2));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(1.0, 0.11111112)
@@ -254,7 +259,7 @@ fn gamepad_dual_axis_deadzone() {
     input.set_axis_pair(app.world_mut(), Vec2::new(0.8, 0.1));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.7777778, 0.0)
@@ -264,7 +269,7 @@ fn gamepad_dual_axis_deadzone() {
 #[test]
 fn gamepad_circle_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dual_axis(
+    app.world_mut().spawn(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_circle_deadzone(0.1),
     ));
@@ -274,7 +279,7 @@ fn gamepad_circle_deadzone() {
     input.set_axis_pair(app.world_mut(), Vec2::new(0.06, 0.06));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -285,7 +290,7 @@ fn gamepad_circle_deadzone() {
     input.set_axis_pair(app.world_mut(), Vec2::new(0.2, 0.0));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.11111112, 0.0)
@@ -295,7 +300,7 @@ fn gamepad_circle_deadzone() {
 #[test]
 fn test_zero_dual_axis_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dual_axis(
+    app.world_mut().spawn(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_deadzone_symmetric(0.0),
     ));
@@ -305,7 +310,7 @@ fn test_zero_dual_axis_deadzone() {
     input.set_axis_pair(app.world_mut(), Vec2::ZERO);
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -315,7 +320,7 @@ fn test_zero_dual_axis_deadzone() {
 #[test]
 fn test_zero_circle_deadzone() {
     let mut app = test_app();
-    app.insert_resource(InputMap::default().with_dual_axis(
+    app.world_mut().spawn(InputMap::default().with_dual_axis(
         AxislikeTestAction::XY,
         GamepadStick::LEFT.with_circle_deadzone(0.0),
     ));
@@ -325,7 +330,7 @@ fn test_zero_circle_deadzone() {
     input.set_axis_pair(app.world_mut(), Vec2::ZERO);
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
         Vec2::new(0.0, 0.0)
@@ -335,14 +340,13 @@ fn test_zero_circle_deadzone() {
 #[test]
 fn gamepad_virtual_dpad() {
     let mut app = test_app();
-    app.insert_resource(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
-    );
+    app.world_mut()
+        .spawn(InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()));
 
     GamepadButton::DPadLeft.press(app.world_mut());
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
 
     // This should be a unit length, because we're working with a VirtualDPad
     assert_eq!(
@@ -359,23 +363,24 @@ fn axis_resets_to_zero_when_no_input_in_store() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
-        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
-        .init_resource::<ActionState<AxislikeTestAction>>()
-        .insert_resource(
-            InputMap::default().with_axis(AxislikeTestAction::X, GamepadControlAxis::LEFT_X),
-        );
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default());
+    app.world_mut()
+        .spawn(InputMap::default().with_axis(AxislikeTestAction::X, GamepadControlAxis::LEFT_X));
     app.update();
 
-    app.world_mut()
-        .resource_mut::<ActionState<AxislikeTestAction>>()
-        .set_value(&AxislikeTestAction::X, 1.0);
+    {
+        let world = app.world_mut();
+        let mut query = world.query::<&mut ActionState<AxislikeTestAction>>();
+        query
+            .single_mut(world)
+            .unwrap()
+            .set_value(&AxislikeTestAction::X, 1.0);
+    }
 
     app.update();
 
     assert_eq!(
-        app.world()
-            .resource::<ActionState<AxislikeTestAction>>()
-            .value(&AxislikeTestAction::X),
+        get_action_state::<AxislikeTestAction>(&mut app).value(&AxislikeTestAction::X),
         0.0,
     );
 }
@@ -387,23 +392,24 @@ fn dual_axis_resets_to_zero_when_no_input_in_store() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
-        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
-        .init_resource::<ActionState<AxislikeTestAction>>()
-        .insert_resource(
-            InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()),
-        );
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default());
+    app.world_mut()
+        .spawn(InputMap::default().with_dual_axis(AxislikeTestAction::XY, VirtualDPad::dpad()));
     app.update();
 
-    app.world_mut()
-        .resource_mut::<ActionState<AxislikeTestAction>>()
-        .set_axis_pair(&AxislikeTestAction::XY, Vec2::new(-1.0, 0.0));
+    {
+        let world = app.world_mut();
+        let mut query = world.query::<&mut ActionState<AxislikeTestAction>>();
+        query
+            .single_mut(world)
+            .unwrap()
+            .set_axis_pair(&AxislikeTestAction::XY, Vec2::new(-1.0, 0.0));
+    }
 
     app.update();
 
     assert_eq!(
-        app.world()
-            .resource::<ActionState<AxislikeTestAction>>()
-            .axis_pair(&AxislikeTestAction::XY),
+        get_action_state::<AxislikeTestAction>(&mut app).axis_pair(&AxislikeTestAction::XY),
         Vec2::ZERO,
     );
 }

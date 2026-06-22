@@ -39,11 +39,23 @@ fn test_app() -> App {
     app.add_plugins(MinimalPlugins)
         .add_plugins(InputPlugin)
         .add_plugins(InputManagerPlugin::<ButtonlikeTestAction>::default())
-        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default())
-        .init_resource::<ActionState<ButtonlikeTestAction>>()
-        .init_resource::<ActionState<AxislikeTestAction>>();
+        .add_plugins(InputManagerPlugin::<AxislikeTestAction>::default());
 
     app
+}
+
+/// Returns a clone of the single [`ActionState<A>`] component in the app.
+fn get_action_state<A: Actionlike>(app: &mut App) -> ActionState<A> {
+    let world = app.world_mut();
+    let mut query = world.query::<&ActionState<A>>();
+    query.single(world).unwrap().clone()
+}
+
+/// Returns a clone of the single [`InputMap<A>`] component in the app.
+fn get_input_map<A: Actionlike>(app: &mut App) -> InputMap<A> {
+    let world = app.world_mut();
+    let mut query = world.query::<&InputMap<A>>();
+    query.single(world).unwrap().clone()
 }
 
 #[test]
@@ -74,7 +86,7 @@ fn mouse_move_single_axis_mocking() {
 #[test]
 fn mouse_move_buttonlike() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([
+    app.world_mut().spawn(InputMap::new([
         (ButtonlikeTestAction::Up, MouseMoveDirection::UP),
         (ButtonlikeTestAction::Down, MouseMoveDirection::DOWN),
         (ButtonlikeTestAction::Left, MouseMoveDirection::LEFT),
@@ -82,7 +94,7 @@ fn mouse_move_buttonlike() {
     ]));
 
     for action in ButtonlikeTestAction::variants() {
-        let input_map = app.world().resource::<InputMap<ButtonlikeTestAction>>();
+        let input_map = get_input_map::<ButtonlikeTestAction>(&mut app);
         // Get the first associated input
         let input = input_map
             .get_buttonlike(action)
@@ -97,7 +109,7 @@ fn mouse_move_buttonlike() {
         direction.press(app.world_mut());
         app.update();
 
-        let action_state = app.world().resource::<ActionState<ButtonlikeTestAction>>();
+        let action_state = get_action_state::<ButtonlikeTestAction>(&mut app);
         assert!(action_state.pressed(action), "failed for {input:?}");
     }
 }
@@ -105,7 +117,7 @@ fn mouse_move_buttonlike() {
 #[test]
 fn mouse_move_buttonlike_cancels() {
     let mut app = test_app();
-    app.insert_resource(InputMap::new([
+    app.world_mut().spawn(InputMap::new([
         (ButtonlikeTestAction::Up, MouseMoveDirection::UP),
         (ButtonlikeTestAction::Down, MouseMoveDirection::DOWN),
         (ButtonlikeTestAction::Left, MouseMoveDirection::LEFT),
@@ -118,7 +130,7 @@ fn mouse_move_buttonlike_cancels() {
     // Correctly flushes the world
     app.update();
 
-    let action_state = app.world().resource::<ActionState<ButtonlikeTestAction>>();
+    let action_state = get_action_state::<ButtonlikeTestAction>(&mut app);
 
     assert!(!action_state.pressed(&ButtonlikeTestAction::Up));
     assert!(!action_state.pressed(&ButtonlikeTestAction::Down));
@@ -127,7 +139,7 @@ fn mouse_move_buttonlike_cancels() {
 #[test]
 fn mouse_move_single_axis() {
     let mut app = test_app();
-    app.insert_resource(
+    app.world_mut().spawn(
         InputMap::default()
             .with_axis(AxislikeTestAction::X, MouseMoveAxis::X)
             .with_axis(AxislikeTestAction::Y, MouseMoveAxis::Y),
@@ -162,15 +174,14 @@ fn mouse_move_single_axis() {
 #[test]
 fn mouse_move_dual_axis() {
     let mut app = test_app();
-    app.insert_resource(
-        InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseMove::default()),
-    );
+    app.world_mut()
+        .spawn(InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseMove::default()));
 
     let input = MouseMove::default();
     input.set_axis_pair(app.world_mut(), Vec2::new(5.0, 0.0));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
 
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -181,7 +192,7 @@ fn mouse_move_dual_axis() {
 #[test]
 fn mouse_move_discrete() {
     let mut app = test_app();
-    app.insert_resource(
+    app.world_mut().spawn(
         InputMap::default().with_dual_axis(AxislikeTestAction::XY, MouseMove::default().digital()),
     );
 
@@ -189,7 +200,7 @@ fn mouse_move_discrete() {
     input.set_axis_pair(app.world_mut(), Vec2::new(0.0, -2.0));
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
 
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),
@@ -209,14 +220,14 @@ fn mouse_drag() {
         DualAxislikeChord::new(MouseButton::Right, MouseMove::default()),
     );
 
-    app.insert_resource(input_map);
+    app.world_mut().spawn(input_map);
 
     let input = MouseMove::default();
     input.set_axis_pair(app.world_mut(), Vec2::new(5.0, 0.0));
     MouseButton::Right.press(app.world_mut());
     app.update();
 
-    let action_state = app.world().resource::<ActionState<AxislikeTestAction>>();
+    let action_state = get_action_state::<AxislikeTestAction>(&mut app);
 
     assert_eq!(
         action_state.axis_pair(&AxislikeTestAction::XY),

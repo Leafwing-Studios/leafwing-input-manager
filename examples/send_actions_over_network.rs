@@ -32,13 +32,13 @@ fn process_action_diffs<A: Actionlike>(
     mut action_diff_messages: MessageReader<ActionDiffMessage<A>>,
 ) {
     for action_diff_message in action_diff_messages.read() {
-        if action_diff_message.owner.is_some() {
-            let mut action_state = action_state_query.single_mut().unwrap();
-            action_diff_message
-                .action_diffs
-                .iter()
-                .for_each(|diff| action_state.apply_diff(diff));
-        }
+        // Every diff now has an owning entity. In a real scenario you would map
+        // `action_diff_message.owner` between worlds; here there is only a single entity.
+        let mut action_state = action_state_query.single_mut().unwrap();
+        action_diff_message
+            .action_diffs
+            .iter()
+            .for_each(|diff| action_state.apply_diff(diff));
     }
 }
 

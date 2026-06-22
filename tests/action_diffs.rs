@@ -26,13 +26,11 @@ fn process_action_diffs<A: Actionlike>(
     mut action_diff_messages: MessageReader<ActionDiffMessage<A>>,
 ) {
     for action_diff_message in action_diff_messages.read() {
-        if action_diff_message.owner.is_some() {
-            let mut action_state = action_state_query.single_mut().unwrap();
-            action_diff_message
-                .action_diffs
-                .iter()
-                .for_each(|diff| action_state.apply_diff(diff));
-        }
+        let mut action_state = action_state_query.single_mut().unwrap();
+        action_diff_message
+            .action_diffs
+            .iter()
+            .for_each(|diff| action_state.apply_diff(diff));
     }
 }
 
@@ -133,7 +131,7 @@ fn generate_button_action_diffs() {
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_message| {
-        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.owner, entity);
         assert_eq!(action_diff_message.action_diffs.len(), 1);
         match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action, value } => {
@@ -169,7 +167,7 @@ fn generate_button_action_diffs() {
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_message| {
-        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.owner, entity);
         assert_eq!(action_diff_message.action_diffs.len(), 1);
         match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action, value } => {
@@ -201,7 +199,7 @@ fn generate_button_action_diffs() {
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_message| {
-        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.owner, entity);
         assert_eq!(action_diff_message.action_diffs.len(), 1);
         match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Released { action } => {
@@ -245,7 +243,7 @@ fn generate_axis_action_diffs() {
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_message| {
-        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.owner, entity);
         assert_eq!(action_diff_message.action_diffs.len(), 1);
         match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
@@ -281,7 +279,7 @@ fn generate_axis_action_diffs() {
     app.update();
 
     assert_action_diff_created(&mut app, |action_diff_message| {
-        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.owner, entity);
         assert_eq!(action_diff_message.action_diffs.len(), 1);
         match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::DualAxisChanged { action, axis_pair } => {
@@ -333,7 +331,7 @@ fn generate_filtered_binary_action_diffs() {
 
     // Expect only `entity` to have an action diff message
     assert_action_diff_created(&mut app, |action_diff_message| {
-        assert_eq!(action_diff_message.owner, Some(entity));
+        assert_eq!(action_diff_message.owner, entity);
         assert_eq!(action_diff_message.action_diffs.len(), 1);
         match action_diff_message.action_diffs.first().unwrap().clone() {
             ActionDiff::Pressed { action, .. } => {
@@ -366,7 +364,7 @@ fn process_binary_action_diffs() {
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
     let action_diff_message = ActionDiffMessage {
-        owner: Some(entity),
+        owner: entity,
         action_diffs: vec![ActionDiff::Pressed {
             action: Action::Button,
             value: 1.0,
@@ -379,7 +377,7 @@ fn process_binary_action_diffs() {
     assert_action_diff_received(&mut app, action_diff_message);
 
     let action_diff_message = ActionDiffMessage {
-        owner: Some(entity),
+        owner: entity,
         action_diffs: vec![ActionDiff::Released {
             action: Action::Button,
         }],
@@ -402,7 +400,7 @@ fn process_value_action_diff() {
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
     let action_diff_message = ActionDiffMessage {
-        owner: Some(entity),
+        owner: entity,
         action_diffs: vec![ActionDiff::AxisChanged {
             action: Action::Axis,
             value: 0.5,
@@ -415,7 +413,7 @@ fn process_value_action_diff() {
     assert_action_diff_received(&mut app, action_diff_message);
 
     let action_diff_message = ActionDiffMessage {
-        owner: Some(entity),
+        owner: entity,
         action_diffs: vec![ActionDiff::Released {
             action: Action::Button,
         }],
@@ -438,7 +436,7 @@ fn process_axis_action_diff() {
     app.add_systems(PreUpdate, process_action_diffs::<Action>);
 
     let action_diff_message = ActionDiffMessage {
-        owner: Some(entity),
+        owner: entity,
         action_diffs: vec![ActionDiff::DualAxisChanged {
             action: Action::DualAxis,
             axis_pair: Vec2 { x: 1., y: 0. },
@@ -451,7 +449,7 @@ fn process_axis_action_diff() {
     assert_action_diff_received(&mut app, action_diff_message);
 
     let action_diff_message = ActionDiffMessage {
-        owner: Some(entity),
+        owner: entity,
         action_diffs: vec![ActionDiff::Released {
             action: Action::Button,
         }],

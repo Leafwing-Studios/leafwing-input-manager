@@ -91,7 +91,7 @@ impl ClashTestExt for App {
             Res<CentralInputStore>,
         )> = SystemState::new(self.world_mut());
 
-        let (input_map_query, central_input_store) = input_system_state.get(self.world());
+        let (input_map_query, central_input_store) = input_system_state.get(self.world()).unwrap();
 
         let input_map = input_map_query.single().expect("No InputMap found");
         let keyboard_input = self.world().resource::<ButtonInput<KeyCode>>();

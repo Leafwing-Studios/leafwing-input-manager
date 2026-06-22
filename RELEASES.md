@@ -1,10 +1,32 @@
 # Release Notes
 
-## Version 0.21.0 (Unreleased)
+## Version 0.21.0
 
 ### Breaking Changes (0.21.0)
 
+- Updated to Bevy 0.19.
 - Removed the `ui` feature. This was a default feature. The `ui` feature would attempt to filter out mouse clicks captured by `bevy::ui::Interaction`s. This can be handled by temporarily disabling mouse click actions or entire action status during UI heavy scenes or interactions.
+- `ActionState<A>` and `InputMap<A>` can no longer be used as resources: they are components only. This is a consequence of Bevy 0.19's resources-as-components change, which broke the previous resource-or-component pattern (resource *and* component) usage. As a result:
+  - If you were using resource-flavored `ActionState`/`InputMap` patterns, spawn a dummy entity to put them on. The `ActionState` and `InputMap` must be on the same entity.
+  - The run condition helpers in `common_conditions` (`action_pressed`, `action_just_pressed`, `action_just_released`, `action_toggle_active`) now read the `ActionState<A>` of a single entity. The `ActionStateParam` system parameter has been removed.
+  - `ActionDiffMessage.owner` is now `Entity` instead of `Option<Entity>` (there is no longer a global/resource action state, so every diff has an owning entity), and `SummarizedActionState::summarize`/`summarize_filtered` no longer take a global `ActionState` argument.
+
+### Migration Guide (0.21.0)
+
+- Replace `app.init_resource::<ActionState<A>>()` + `app.insert_resource(input_map)` with spawning a single entity that holds the `InputMap<A>`. The `InputMap<A>` `#[require]`s an `ActionState<A>`, so it is added automatically:
+
+  ```rust
+  // Before
+  app.init_resource::<ActionState<A>>()
+     .insert_resource(input_map);
+
+  // After (the ActionState is added via required components)
+  app.world_mut().spawn(input_map);
+  // or, from a system:
+  // commands.spawn(input_map);
+  ```
+
+- Replace `Res<ActionState<A>>` / `ResMut<ActionState<A>>` system parameters that read a single global action state with `Single<&ActionState<A>>` / `Single<&mut ActionState<A>>` (or a `Query` if you have multiple input entities).
 
 ### Bugs (0.21.0)
 

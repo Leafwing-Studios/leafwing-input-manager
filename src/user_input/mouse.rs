@@ -13,6 +13,7 @@ use bevy::input::mouse::{
     AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButton, MouseButtonInput, MouseMotion,
     MouseScrollUnit, MouseWheel,
 };
+use bevy::input::touch::TouchPhase;
 use bevy::input::{ButtonInput, ButtonState};
 use bevy::math::FloatOrd;
 use bevy::prelude::{Entity, Reflect, ResMut, Vec2, World};
@@ -580,6 +581,7 @@ impl Buttonlike for MouseScrollDirection {
                 x: vec.x,
                 y: vec.y,
                 window: Entity::PLACEHOLDER,
+                phase: TouchPhase::Moved,
             });
     }
 
@@ -720,6 +722,7 @@ impl Axislike for MouseScrollAxis {
                 0.0
             },
             window: Entity::PLACEHOLDER,
+            phase: TouchPhase::Moved,
         };
         world.resource_mut::<Messages<MouseWheel>>().write(message);
     }
@@ -855,6 +858,7 @@ impl DualAxislike for MouseScroll {
                 x: value.x,
                 y: value.y,
                 window: Entity::PLACEHOLDER,
+                phase: TouchPhase::Moved,
             });
     }
 }
