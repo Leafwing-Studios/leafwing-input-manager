@@ -1285,13 +1285,6 @@ mod tests {
         }
     }
 
-    /// Returns a clone of the single [`ActionState<TestAction>`] component in the app.
-    fn single_action_state(app: &mut App) -> ActionState<TestAction> {
-        let world = app.world_mut();
-        let mut query = world.query::<&ActionState<TestAction>>();
-        query.single(world).unwrap().clone()
-    }
-
     #[test]
     fn action_state_default_state() {
         let action_state = ActionState::<TestAction>::default();
@@ -2191,6 +2184,13 @@ mod tests {
     #[test]
     fn test_triggerlikes() {
         use crate::prelude::Buttonlike;
+
+        /// Returns a clone of the single [`ActionState<TestAction>`] component in the app.
+        fn single_action_state(app: &mut App) -> ActionState<TestAction> {
+            let world = app.world_mut();
+            let mut query = world.query::<&ActionState<TestAction>>();
+            query.single(world).unwrap().clone()
+        }
 
         let mut ctx = TestContext::new();
         let _gamepad = ctx.send_gamepad_connection_event(None);
