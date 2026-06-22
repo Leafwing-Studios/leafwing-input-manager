@@ -54,7 +54,7 @@ bevy = { version = "0.19", default-features = false, features = [
 # Needed for the `docs` feature. Must be kept in sync with Bevy's version
 winit = { version = "0.30", default-features = false, optional = true }
 
-itertools = "0.14"
+itertools = "0.15"
 serde = { version = "1.0", features = ["derive"] }
 serde_flexitos = "0.2"
 dyn-clone = "1.0"
