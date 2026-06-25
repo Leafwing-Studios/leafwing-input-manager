@@ -2,12 +2,13 @@
 
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::marker::PhantomData;
 
 #[cfg(feature = "asset")]
 use bevy::asset::Asset;
 use bevy::input::gamepad::Gamepad;
 use bevy::math::{Vec2, Vec3};
-use bevy::platform::collections::HashMap;
+use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::{Component, Deref, DerefMut, Entity, Query, Reflect, With};
 use bevy::{log::error, prelude::ReflectComponent};
 use itertools::Itertools;
@@ -17,7 +18,7 @@ use crate::buttonlike::ButtonValue;
 use crate::clashing_inputs::ClashStrategy;
 use crate::prelude::updating::CentralInputStore;
 use crate::prelude::{ActionState, UserInputWrapper};
-use crate::user_input::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
+use crate::user_input::{Axislike, Buttonlike, DualAxislike, TripleAxislike, UserInput};
 use crate::{Actionlike, InputControlKind};
 
 #[cfg(feature = "gamepad")]
@@ -26,6 +27,49 @@ use crate::user_input::gamepad::find_gamepad;
 #[cfg(not(feature = "gamepad"))]
 fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
     Entity::PLACEHOLDER
+}
+
+/// Runtime state used to isolate held inputs across [`InputMap`] changes.
+#[derive(Component, Debug)]
+pub(crate) struct InputMapState<A: Actionlike> {
+    suppressed_inputs: HashSet<Box<dyn Buttonlike>>,
+    suppressed_gamepad: Entity,
+    _marker: PhantomData<A>,
+}
+
+impl<A: Actionlike> Default for InputMapState<A> {
+    fn default() -> Self {
+        Self {
+            suppressed_inputs: HashSet::default(),
+            suppressed_gamepad: Entity::PLACEHOLDER,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<A: Actionlike> InputMapState<A> {
+    pub(crate) fn suppress(&mut self, inputs: HashSet<Box<dyn Buttonlike>>, gamepad: Entity) {
+        self.suppressed_inputs = inputs;
+        self.suppressed_gamepad = gamepad;
+    }
+
+    pub(crate) fn clear(&mut self) {
+        self.suppressed_inputs.clear();
+        self.suppressed_gamepad = Entity::PLACEHOLDER;
+    }
+
+    pub(crate) fn clear_released(&mut self, input_store: &CentralInputStore) {
+        self.suppressed_inputs
+            .retain(|input| input.pressed(input_store, self.suppressed_gamepad));
+    }
+
+    pub(crate) fn suppresses(&self, input: &dyn UserInput) -> bool {
+        input
+            .decompose()
+            .inputs()
+            .into_iter()
+            .any(|basic_input| self.suppressed_inputs.contains(&basic_input))
+    }
 }
 
 /// A Multi-Map that allows you to map actions to multiple [`UserInputs`](crate::user_input::UserInput)s,
@@ -101,7 +145,7 @@ fn find_gamepad(_: Option<Query<Entity, With<Gamepad>>>) -> Entity {
 /// input_map.clear();
 /// ```
 #[derive(Component, Debug, Clone, PartialEq, Eq, Reflect, Serialize, Deserialize)]
-#[require(ActionState::<A>)]
+#[require(ActionState::<A>, InputMapState::<A>)]
 #[cfg_attr(feature = "asset", derive(Asset))]
 #[reflect(Component)]
 pub struct InputMap<A: Actionlike> {
@@ -571,6 +615,10 @@ impl<A: Actionlike> InputMap<A> {
 
 // Check whether actions are pressed
 impl<A: Actionlike> InputMap<A> {
+    pub(crate) fn resolve_gamepad(&self, gamepads: Option<Query<Entity, With<Gamepad>>>) -> Entity {
+        self.associated_gamepad.unwrap_or(find_gamepad(gamepads))
+    }
+
     /// Checks if the `action` are currently pressed by any of the associated [`Buttonlike`]s.
     ///
     /// Accounts for clashing inputs according to the [`ClashStrategy`] and remove conflicting actions.
@@ -610,13 +658,27 @@ impl<A: Actionlike> InputMap<A> {
         input_store: &CentralInputStore,
         clash_strategy: ClashStrategy,
     ) -> UpdatedActions<A> {
+        self.process_actions_with_state(gamepads, input_store, clash_strategy, None)
+    }
+
+    pub(crate) fn process_actions_with_state(
+        &self,
+        gamepads: Option<Query<Entity, With<Gamepad>>>,
+        input_store: &CentralInputStore,
+        clash_strategy: ClashStrategy,
+        input_map_state: Option<&InputMapState<A>>,
+    ) -> UpdatedActions<A> {
         let mut updated_actions = UpdatedActions::default();
-        let gamepad = self.associated_gamepad.unwrap_or(find_gamepad(gamepads));
+        let gamepad = self.resolve_gamepad(gamepads);
 
         // Generate the base action data for each action
         for (action, input_bindings) in self.iter_buttonlike() {
             let mut final_state: Option<(bool, f32)> = None;
             for binding in input_bindings {
+                if input_map_state.is_some_and(|state| state.suppresses(binding.as_ref())) {
+                    continue;
+                }
+
                 let pressed = binding.pressed(input_store, gamepad);
                 let value = binding.value(input_store, gamepad);
                 if let Some((existing_state, existing_value)) = final_state {
@@ -637,6 +699,10 @@ impl<A: Actionlike> InputMap<A> {
         for (action, input_bindings) in self.iter_axislike() {
             let mut final_value = None;
             for binding in input_bindings {
+                if input_map_state.is_some_and(|state| state.suppresses(binding.as_ref())) {
+                    continue;
+                }
+
                 if let Some(value) = binding.get_value(input_store, gamepad) {
                     final_value = Some(final_value.unwrap_or(0.0) + value);
                 }
@@ -650,6 +716,10 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_dual_axislike() {
             let mut final_value = None;
             for binding in _input_bindings {
+                if input_map_state.is_some_and(|state| state.suppresses(binding.as_ref())) {
+                    continue;
+                }
+
                 if let Some(axis_pair) = binding.get_axis_pair(input_store, gamepad) {
                     final_value = Some(final_value.unwrap_or(Vec2::ZERO) + axis_pair);
                 }
@@ -663,6 +733,10 @@ impl<A: Actionlike> InputMap<A> {
         for (action, _input_bindings) in self.iter_triple_axislike() {
             let mut final_value = Vec3::ZERO;
             for binding in _input_bindings {
+                if input_map_state.is_some_and(|state| state.suppresses(binding.as_ref())) {
+                    continue;
+                }
+
                 final_value += binding.axis_triple(input_store, gamepad);
             }
 
@@ -670,7 +744,13 @@ impl<A: Actionlike> InputMap<A> {
         }
 
         // Handle clashing inputs, possibly removing some pressed actions from the list
-        self.handle_clashes(&mut updated_actions, input_store, clash_strategy, gamepad);
+        self.handle_clashes_with_state(
+            &mut updated_actions,
+            input_store,
+            clash_strategy,
+            gamepad,
+            input_map_state,
+        );
 
         updated_actions
     }
@@ -714,6 +794,64 @@ impl<A: Actionlike> Default for UpdatedActions<A> {
 
 // Utilities
 impl<A: Actionlike> InputMap<A> {
+    pub(crate) fn currently_pressed_inputs(
+        &self,
+        input_store: &CentralInputStore,
+        gamepad: Entity,
+    ) -> HashSet<Box<dyn Buttonlike>> {
+        let mut pressed_inputs = HashSet::default();
+
+        for (_action, input_bindings) in self.iter_buttonlike() {
+            for binding in input_bindings {
+                pressed_inputs.extend(
+                    binding
+                        .decompose()
+                        .inputs()
+                        .into_iter()
+                        .filter(|input| input.pressed(input_store, gamepad)),
+                );
+            }
+        }
+
+        for (_action, input_bindings) in self.iter_axislike() {
+            for binding in input_bindings {
+                pressed_inputs.extend(
+                    binding
+                        .decompose()
+                        .inputs()
+                        .into_iter()
+                        .filter(|input| input.pressed(input_store, gamepad)),
+                );
+            }
+        }
+
+        for (_action, input_bindings) in self.iter_dual_axislike() {
+            for binding in input_bindings {
+                pressed_inputs.extend(
+                    binding
+                        .decompose()
+                        .inputs()
+                        .into_iter()
+                        .filter(|input| input.pressed(input_store, gamepad)),
+                );
+            }
+        }
+
+        for (_action, input_bindings) in self.iter_triple_axislike() {
+            for binding in input_bindings {
+                pressed_inputs.extend(
+                    binding
+                        .decompose()
+                        .inputs()
+                        .into_iter()
+                        .filter(|input| input.pressed(input_store, gamepad)),
+                );
+            }
+        }
+
+        pressed_inputs
+    }
+
     /// Returns an iterator over all registered [`Buttonlike`] actions with their input bindings.
     pub fn iter_buttonlike(&self) -> impl Iterator<Item = (&A, &Vec<Box<dyn Buttonlike>>)> {
         self.buttonlike_map.iter()
