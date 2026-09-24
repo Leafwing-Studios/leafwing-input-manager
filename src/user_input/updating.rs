@@ -12,13 +12,27 @@ use bevy::{
     },
     math::{Vec2, Vec3},
     platform::collections::{HashMap, HashSet},
-    prelude::{Res, ResMut, Resource},
+    prelude::{Entity, Res, ResMut, Resource},
     reflect::Reflect,
 };
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
+use crate::axislike::AxisDirection;
 use crate::buttonlike::ButtonValue;
 use crate::{InputControlKind, plugin::InputManagerSystem};
+
+#[cfg(feature = "gamepad")]
+use crate::user_input::gamepad::{
+    GamepadControlDirection, SpecificGamepadAxis, SpecificGamepadButton,
+};
+#[cfg(feature = "mouse")]
+use crate::user_input::mouse::{MouseMove, MouseMoveDirection, MouseScroll, MouseScrollDirection};
+#[cfg(feature = "gamepad")]
+use bevy::input::gamepad::GamepadButton;
+#[cfg(feature = "mouse")]
+use bevy::input::mouse::MouseButton;
+#[cfg(feature = "keyboard")]
+use bevy::prelude::KeyCode;
 
 /// An overarching store for all user inputs.
 ///
@@ -26,7 +40,7 @@ use crate::{InputControlKind, plugin::InputManagerSystem};
 /// and ensures that their values are only recomputed once per frame.
 ///
 /// To add a new kind of input, call [`InputRegistration::register_input_kind`] during [`App`] setup.
-#[derive(Resource, Default, Debug, Reflect)]
+#[derive(Resource, Default, Debug, Reflect, Clone)]
 pub struct CentralInputStore {
     /// Stores the updated values of each kind of input.
     updated_values: HashMap<TypeId, UpdatedValues>,
@@ -194,6 +208,149 @@ impl CentralInputStore {
             .copied()
             .unwrap_or(Vec3::ZERO)
     }
+
+    /// Returns a copy of this store where the suppressed primitive inputs behave as released.
+    pub fn with_suppressed(
+        &self,
+        suppressed_inputs: &HashSet<Box<dyn Buttonlike>>,
+        gamepad: Entity,
+    ) -> Self {
+        let mut filtered = self.clone();
+
+        for input in suppressed_inputs {
+            filtered.suppress_buttonlike_input(input.as_ref(), gamepad);
+        }
+
+        filtered
+    }
+
+    fn suppress_buttonlike<B: Buttonlike + Hash + Eq + Clone>(&mut self, buttonlike: B) {
+        let Some(UpdatedValues::Buttonlike(buttonlikes)) =
+            self.updated_values.get_mut(&TypeId::of::<B>())
+        else {
+            return;
+        };
+
+        let key: Box<dyn Buttonlike> = Box::new(buttonlike);
+        if let Some(value) = buttonlikes.get_mut(&key) {
+            *value = ButtonValue::from_pressed(false);
+        }
+    }
+
+    fn clip_axislike<A: Axislike + Hash + Eq + Clone>(
+        &mut self,
+        axislike: A,
+        clip: impl FnOnce(f32) -> f32,
+    ) {
+        let Some(UpdatedValues::Axislike(axislikes)) =
+            self.updated_values.get_mut(&TypeId::of::<A>())
+        else {
+            return;
+        };
+
+        let key: Box<dyn Axislike> = Box::new(axislike);
+        if let Some(value) = axislikes.get_mut(&key) {
+            *value = clip(*value);
+        }
+    }
+
+    fn clip_dual_axislike<D: DualAxislike + Hash + Eq + Clone>(
+        &mut self,
+        dual_axislike: D,
+        clip: impl FnOnce(Vec2) -> Vec2,
+    ) {
+        let Some(UpdatedValues::Dualaxislike(dual_axislikes)) =
+            self.updated_values.get_mut(&TypeId::of::<D>())
+        else {
+            return;
+        };
+
+        let key: Box<dyn DualAxislike> = Box::new(dual_axislike);
+        if let Some(value) = dual_axislikes.get_mut(&key) {
+            *value = clip(*value);
+        }
+    }
+
+    fn suppress_buttonlike_input(&mut self, input: &dyn Buttonlike, gamepad: Entity) {
+        #[cfg(feature = "keyboard")]
+        if let Some(keycode) = Reflect::as_any(input).downcast_ref::<KeyCode>() {
+            self.suppress_buttonlike(*keycode);
+            return;
+        }
+
+        #[cfg(feature = "mouse")]
+        if let Some(button) = Reflect::as_any(input).downcast_ref::<MouseButton>() {
+            self.suppress_buttonlike(*button);
+            return;
+        }
+
+        #[cfg(feature = "gamepad")]
+        if let Some(button) = Reflect::as_any(input).downcast_ref::<GamepadButton>() {
+            self.suppress_buttonlike(*button);
+            self.suppress_buttonlike(SpecificGamepadButton::new(gamepad, *button));
+            return;
+        }
+
+        #[cfg(feature = "gamepad")]
+        if let Some(button) = Reflect::as_any(input).downcast_ref::<SpecificGamepadButton>() {
+            self.suppress_buttonlike(*button);
+            self.suppress_buttonlike(button.button);
+            return;
+        }
+
+        #[cfg(feature = "gamepad")]
+        if let Some(direction) = Reflect::as_any(input).downcast_ref::<GamepadControlDirection>() {
+            self.suppress_gamepad_direction(*direction, gamepad);
+            return;
+        }
+
+        #[cfg(feature = "mouse")]
+        if let Some(direction) = Reflect::as_any(input).downcast_ref::<MouseMoveDirection>() {
+            self.suppress_mouse_move_direction(*direction);
+            return;
+        }
+
+        #[cfg(feature = "mouse")]
+        if let Some(direction) = Reflect::as_any(input).downcast_ref::<MouseScrollDirection>() {
+            self.suppress_mouse_scroll_direction(*direction);
+        }
+    }
+
+    #[cfg(feature = "gamepad")]
+    fn suppress_gamepad_direction(&mut self, direction: GamepadControlDirection, gamepad: Entity) {
+        let clip = |value| suppress_axis_direction(value, direction.direction);
+        self.clip_axislike(direction.axis, clip);
+        self.clip_axislike(SpecificGamepadAxis::new(gamepad, direction.axis), clip);
+    }
+
+    #[cfg(feature = "mouse")]
+    fn suppress_mouse_move_direction(&mut self, direction: MouseMoveDirection) {
+        self.clip_dual_axislike(MouseMove::default(), |value| {
+            suppress_dual_axis_direction(value, direction.direction.axis_direction())
+        });
+    }
+
+    #[cfg(feature = "mouse")]
+    fn suppress_mouse_scroll_direction(&mut self, direction: MouseScrollDirection) {
+        self.clip_dual_axislike(MouseScroll::default(), |value| {
+            suppress_dual_axis_direction(value, direction.direction.axis_direction())
+        });
+    }
+}
+
+fn suppress_axis_direction(value: f32, direction: AxisDirection) -> f32 {
+    match direction {
+        AxisDirection::Negative if value < 0.0 => 0.0,
+        AxisDirection::Positive if value > 0.0 => 0.0,
+        _ => value,
+    }
+}
+
+fn suppress_dual_axis_direction(value: Vec2, direction: AxisDirection) -> Vec2 {
+    match direction {
+        AxisDirection::Negative => Vec2::new(suppress_axis_direction(value.x, direction), value.y),
+        AxisDirection::Positive => Vec2::new(suppress_axis_direction(value.x, direction), value.y),
+    }
 }
 
 #[derive(Resource)]
@@ -295,7 +452,7 @@ pub(crate) fn register_standard_input_kinds(app: &mut App) {
 ///
 /// The key should be the default form of the input if there is no need to differentiate between possible inputs of the same type,
 /// and the value should be the updated value fetched from [`UpdatableInput::SourceData`].
-#[derive(Debug, Reflect)]
+#[derive(Debug, Reflect, Clone)]
 enum UpdatedValues {
     Buttonlike(HashMap<Box<dyn Buttonlike>, ButtonValue>),
     Axislike(HashMap<Box<dyn Axislike>, f32>),

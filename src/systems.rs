@@ -5,7 +5,10 @@ use bevy::ecs::query::QueryFilter;
 use bevy::log::debug;
 
 use crate::{
-    Actionlike, action_state::ActionState, clashing_inputs::ClashStrategy, input_map::InputMap,
+    Actionlike,
+    action_state::ActionState,
+    clashing_inputs::ClashStrategy,
+    input_map::{InputMap, InputMapState},
 };
 
 use bevy::ecs::prelude::*;
@@ -63,18 +66,32 @@ pub fn tick_action_state<A: Actionlike>(
 /// to update [`ActionState`] according to the [`InputMap`].
 ///
 /// Clashes will be resolved according to the [`ClashStrategy`] resource.
-pub fn update_action_state<A: Actionlike>(
+pub(crate) fn update_action_state<A: Actionlike>(
     input_store: Res<CentralInputStore>,
     clash_strategy: Res<ClashStrategy>,
     mut gamepads: Query<Entity, With<Gamepad>>,
-    mut query: Query<(&mut ActionState<A>, &InputMap<A>)>,
+    mut query: Query<(&mut ActionState<A>, Ref<InputMap<A>>, &mut InputMapState<A>)>,
 ) {
-    for (mut action_state, input_map) in query.iter_mut() {
-        action_state.update(input_map.process_actions(
+    for (mut action_state, input_map, mut input_map_state) in query.iter_mut() {
+        let gamepad = input_map.resolve_gamepad(Some(gamepads.reborrow()));
+
+        if input_map.is_added() {
+            input_map_state.clear();
+        } else if input_map.is_changed() {
+            input_map_state.suppress(
+                input_map.currently_pressed_inputs(&input_store, gamepad),
+                gamepad,
+            );
+        }
+
+        action_state.update(input_map.process_actions_with_state(
             Some(gamepads.reborrow()),
             &input_store,
             *clash_strategy,
+            Some(&input_map_state),
         ));
+
+        input_map_state.clear_released(&input_store);
     }
 }
 

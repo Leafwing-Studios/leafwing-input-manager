@@ -56,6 +56,16 @@ impl ActionData {
             ActionKindData::TripleAxis(ref mut _data) => {}
         }
     }
+
+    /// Resets the action back to its neutral value without generating transition events.
+    pub fn reset_silently(&mut self) {
+        match &mut self.kind_data {
+            ActionKindData::Button(data) => *data = ButtonData::RELEASED,
+            ActionKindData::Axis(data) => *data = AxisData::default(),
+            ActionKindData::DualAxis(data) => *data = DualAxisData::default(),
+            ActionKindData::TripleAxis(data) => *data = TripleAxisData::default(),
+        }
+    }
 }
 
 /// A wrapper over the various forms of data that an action can take.
