@@ -123,7 +123,9 @@ pub fn release_on_input_map_removed<A: Actionlike>(
     mut removed_components: RemovedComponents<InputMap<A>>,
     mut action_state_query: Query<&mut ActionState<A>>,
 ) {
-    let mut iter = action_state_query.iter_many_mut(removed_components.read());
+    let mut iter = action_state_query
+        .iter_many_mut(removed_components.read())
+        .matched();
     while let Some(mut action_state) = iter.fetch_next() {
         action_state.reset_all();
     }

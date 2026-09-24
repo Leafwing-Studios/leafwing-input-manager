@@ -6,7 +6,7 @@ use bevy::app::App;
 use bevy::prelude::{FromReflect, Reflect, ReflectDeserialize, ReflectSerialize, TypePath, Vec2};
 use bevy::reflect::utility::{GenericTypePathCell, NonGenericTypeInfoCell};
 use bevy::reflect::{
-    FromType, GetTypeRegistration, OpaqueInfo, PartialReflect, ReflectFromPtr, ReflectKind,
+    CreateTypeData, GetTypeRegistration, OpaqueInfo, PartialReflect, ReflectFromPtr, ReflectKind,
     ReflectMut, ReflectOwned, ReflectRef, TypeInfo, TypeRegistration, Typed, erased_serde,
 };
 use dyn_clone::DynClone;
@@ -244,9 +244,9 @@ impl TypePath for Box<dyn CustomDualAxisProcessor> {
 impl GetTypeRegistration for Box<dyn CustomDualAxisProcessor> {
     fn get_type_registration() -> TypeRegistration {
         let mut registration = TypeRegistration::of::<Self>();
-        registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-        registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-        registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
+        registration.insert::<ReflectDeserialize>(CreateTypeData::<Self, ()>::create_type_data(()));
+        registration.insert::<ReflectFromPtr>(CreateTypeData::<Self, ()>::create_type_data(()));
+        registration.insert::<ReflectSerialize>(CreateTypeData::<Self, ()>::create_type_data(()));
         registration
     }
 }

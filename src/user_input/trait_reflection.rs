@@ -5,7 +5,7 @@
 use std::any::Any;
 
 use bevy::reflect::{
-    FromReflect, FromType, GetTypeRegistration, OpaqueInfo, Reflect, ReflectDeserialize,
+    CreateTypeData, FromReflect, GetTypeRegistration, OpaqueInfo, Reflect, ReflectDeserialize,
     ReflectFromPtr, ReflectKind, ReflectMut, ReflectOwned, ReflectRef, ReflectSerialize, TypeInfo,
     TypePath, TypeRegistration, Typed,
     utility::{GenericTypePathCell, NonGenericTypeInfoCell},
@@ -160,9 +160,11 @@ mod buttonlike {
     impl GetTypeRegistration for Box<dyn Buttonlike> {
         fn get_type_registration() -> TypeRegistration {
             let mut registration = TypeRegistration::of::<Self>();
-            registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-            registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-            registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
+            registration
+                .insert::<ReflectDeserialize>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration.insert::<ReflectFromPtr>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration
+                .insert::<ReflectSerialize>(CreateTypeData::<Self, ()>::create_type_data(()));
             registration
         }
     }
@@ -321,9 +323,11 @@ mod axislike {
     impl GetTypeRegistration for Box<dyn Axislike> {
         fn get_type_registration() -> TypeRegistration {
             let mut registration = TypeRegistration::of::<Self>();
-            registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-            registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-            registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
+            registration
+                .insert::<ReflectDeserialize>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration.insert::<ReflectFromPtr>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration
+                .insert::<ReflectSerialize>(CreateTypeData::<Self, ()>::create_type_data(()));
             registration
         }
     }
@@ -482,9 +486,11 @@ mod dualaxislike {
     impl GetTypeRegistration for Box<dyn DualAxislike> {
         fn get_type_registration() -> TypeRegistration {
             let mut registration = TypeRegistration::of::<Self>();
-            registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-            registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-            registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
+            registration
+                .insert::<ReflectDeserialize>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration.insert::<ReflectFromPtr>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration
+                .insert::<ReflectSerialize>(CreateTypeData::<Self, ()>::create_type_data(()));
             registration
         }
     }
@@ -643,9 +649,11 @@ mod tripleaxislike {
     impl GetTypeRegistration for Box<dyn TripleAxislike> {
         fn get_type_registration() -> TypeRegistration {
             let mut registration = TypeRegistration::of::<Self>();
-            registration.insert::<ReflectDeserialize>(FromType::<Self>::from_type());
-            registration.insert::<ReflectFromPtr>(FromType::<Self>::from_type());
-            registration.insert::<ReflectSerialize>(FromType::<Self>::from_type());
+            registration
+                .insert::<ReflectDeserialize>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration.insert::<ReflectFromPtr>(CreateTypeData::<Self, ()>::create_type_data(()));
+            registration
+                .insert::<ReflectSerialize>(CreateTypeData::<Self, ()>::create_type_data(()));
             registration
         }
     }
