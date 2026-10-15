@@ -1,5 +1,12 @@
 # Release Notes
 
+## Version 0.22.0
+
+### Dependencies (0.22.0)
+
+- updated to Bevy 0.20.0
+- updated `itertools` to 0.15
+
 ## Version 0.21.0
 
 ### Breaking Changes (0.21.0)
