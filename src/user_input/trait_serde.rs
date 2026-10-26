@@ -320,6 +320,138 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "gamepad")]
+    #[test]
+    fn test_gamepad_axis_serde() {
+        use crate::prelude::Axislike;
+        use bevy::prelude::GamepadAxis;
+        use serde_test::{Token, assert_tokens};
+
+        register_input_deserializers();
+
+        let boxed_input: Box<dyn Axislike> = Box::new(GamepadAxis::LeftStickY);
+        assert_tokens(
+            &boxed_input,
+            &[
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("GamepadAxis"),
+                Token::UnitVariant {
+                    name: "GamepadAxis",
+                    variant: "LeftStickY",
+                },
+                Token::MapEnd,
+            ],
+        );
+    }
+
+    /// Every built-in input with `#[serde_typetag]` must be registered by the plugin,
+    /// otherwise an `InputMap` containing it cannot be deserialized.
+    #[test]
+    fn test_builtin_inputs_registered() {
+        use super::{
+            AXISLIKE_REGISTRY, BUTTONLIKE_REGISTRY, DUAL_AXISLIKE_REGISTRY,
+            TRIPLE_AXISLIKE_REGISTRY,
+        };
+        use crate::prelude::*;
+        use crate::typetag::InfallibleMapRegistry;
+        use bevy::reflect::TypePath;
+        use serde_flexitos::Registry;
+        use std::borrow::Cow;
+        use std::sync::RwLock;
+
+        fn assert_registered<O: ?Sized>(
+            registry: &RwLock<InfallibleMapRegistry<O>>,
+            names: &[&'static str],
+        ) {
+            let registry = registry.read().unwrap();
+            for name in names {
+                assert!(
+                    registry.get_deserialize_fn(Cow::Borrowed(*name)).is_ok(),
+                    "{name} is not registered as {}",
+                    registry.get_trait_object_name()
+                );
+            }
+        }
+
+        register_input_deserializers();
+
+        assert_registered(&BUTTONLIKE_REGISTRY, &[ButtonlikeChord::short_type_path()]);
+        assert_registered(
+            &AXISLIKE_REGISTRY,
+            &[
+                AxislikeChord::short_type_path(),
+                VirtualAxis::short_type_path(),
+            ],
+        );
+        assert_registered(
+            &DUAL_AXISLIKE_REGISTRY,
+            &[
+                DualAxislikeChord::short_type_path(),
+                VirtualDPad::short_type_path(),
+            ],
+        );
+        assert_registered(
+            &TRIPLE_AXISLIKE_REGISTRY,
+            &[
+                TripleAxislikeChord::short_type_path(),
+                VirtualDPad3D::short_type_path(),
+            ],
+        );
+
+        #[cfg(feature = "keyboard")]
+        assert_registered(
+            &BUTTONLIKE_REGISTRY,
+            &[
+                bevy::prelude::KeyCode::short_type_path(),
+                ModifierKey::short_type_path(),
+            ],
+        );
+
+        #[cfg(feature = "mouse")]
+        {
+            assert_registered(
+                &BUTTONLIKE_REGISTRY,
+                &[
+                    bevy::prelude::MouseButton::short_type_path(),
+                    MouseMoveDirection::short_type_path(),
+                    MouseScrollDirection::short_type_path(),
+                ],
+            );
+            assert_registered(
+                &AXISLIKE_REGISTRY,
+                &[
+                    MouseMoveAxis::short_type_path(),
+                    MouseScrollAxis::short_type_path(),
+                ],
+            );
+            assert_registered(
+                &DUAL_AXISLIKE_REGISTRY,
+                &[MouseMove::short_type_path(), MouseScroll::short_type_path()],
+            );
+        }
+
+        #[cfg(feature = "gamepad")]
+        {
+            assert_registered(
+                &BUTTONLIKE_REGISTRY,
+                &[
+                    bevy::prelude::GamepadButton::short_type_path(),
+                    GamepadControlDirection::short_type_path(),
+                    SpecificGamepadButton::short_type_path(),
+                ],
+            );
+            assert_registered(
+                &AXISLIKE_REGISTRY,
+                &[
+                    bevy::prelude::GamepadAxis::short_type_path(),
+                    GamepadControlAxis::short_type_path(),
+                    SpecificGamepadAxis::short_type_path(),
+                ],
+            );
+            assert_registered(&DUAL_AXISLIKE_REGISTRY, &[GamepadStick::short_type_path()]);
+        }
+    }
+
     #[cfg(feature = "mouse")]
     #[test]
     fn test_dual_axis_serde() {
