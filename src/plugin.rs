@@ -194,7 +194,10 @@ impl<A: Actionlike + TypePath + bevy::reflect::GetTypeRegistration> Plugin
         app.register_buttonlike_input::<GamepadControlDirection>()
             .register_axislike_input::<GamepadControlAxis>()
             .register_dual_axislike_input::<GamepadStick>()
-            .register_buttonlike_input::<GamepadButton>();
+            .register_buttonlike_input::<GamepadButton>()
+            .register_buttonlike_input::<SpecificGamepadButton>()
+            .register_axislike_input::<GamepadAxis>()
+            .register_axislike_input::<SpecificGamepadAxis>();
 
         // Virtual Axes
         app.register_axislike_input::<VirtualAxis>()

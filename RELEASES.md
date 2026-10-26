@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 0.22.1
+
+### Bugs (0.22.1)
+
+- `GamepadAxis`, `SpecificGamepadAxis` and `SpecificGamepadButton` are now registered as inputs, so an `InputMap` that uses them can be deserialized.
+
 ## Version 0.22.0
 
 ### Dependencies (0.22.0)
