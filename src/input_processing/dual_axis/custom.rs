@@ -14,7 +14,7 @@ use dyn_eq::DynEq;
 use dyn_hash::DynHash;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{Registry, serialize_trait_object};
+use serde_flexitos::serialize_trait_object;
 
 use crate::input_processing::DualAxisProcessor;
 use crate::typetag::{InfallibleMapRegistry, RegisterTypeTag};
@@ -276,8 +276,7 @@ impl<'de> Deserialize<'de> for Box<dyn CustomDualAxisProcessor> {
     where
         D: Deserializer<'de>,
     {
-        let registry = PROCESSOR_REGISTRY.read().unwrap();
-        registry.deserialize_trait_object(deserializer)
+        crate::typetag::deserialize_trait_object(&PROCESSOR_REGISTRY, deserializer)
     }
 }
 
