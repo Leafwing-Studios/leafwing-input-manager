@@ -5,6 +5,7 @@
 ### Bugs (0.22.1)
 
 - `GamepadAxis`, `SpecificGamepadAxis` and `SpecificGamepadButton` are now registered as inputs, so an `InputMap` that uses them can be deserialized.
+- Deserializing an `InputMap` with nested inputs (chords, virtual axes, ...) no longer holds the input registry's read lock while the nested inputs are deserialized, which could deadlock against an `InputManagerPlugin` being built on another thread.
 
 ## Version 0.22.0
 

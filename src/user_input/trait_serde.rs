@@ -6,7 +6,7 @@ use bevy::app::App;
 use bevy::reflect::GetTypeRegistration;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_flexitos::ser::require_erased_serialize_impl;
-use serde_flexitos::{Registry, serialize_trait_object};
+use serde_flexitos::serialize_trait_object;
 use std::sync::LazyLock;
 
 use super::{Axislike, Buttonlike, DualAxislike, TripleAxislike};
@@ -117,8 +117,7 @@ mod buttonlike {
         where
             D: Deserializer<'de>,
         {
-            let registry = BUTTONLIKE_REGISTRY.read().unwrap();
-            registry.deserialize_trait_object(deserializer)
+            crate::typetag::deserialize_trait_object(&BUTTONLIKE_REGISTRY, deserializer)
         }
     }
 }
@@ -147,8 +146,7 @@ mod axislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = AXISLIKE_REGISTRY.read().unwrap();
-            registry.deserialize_trait_object(deserializer)
+            crate::typetag::deserialize_trait_object(&AXISLIKE_REGISTRY, deserializer)
         }
     }
 }
@@ -177,8 +175,7 @@ mod dualaxislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = DUAL_AXISLIKE_REGISTRY.read().unwrap();
-            registry.deserialize_trait_object(deserializer)
+            crate::typetag::deserialize_trait_object(&DUAL_AXISLIKE_REGISTRY, deserializer)
         }
     }
 }
@@ -207,8 +204,7 @@ mod tripleaxislike {
         where
             D: Deserializer<'de>,
         {
-            let registry = TRIPLE_AXISLIKE_REGISTRY.read().unwrap();
-            registry.deserialize_trait_object(deserializer)
+            crate::typetag::deserialize_trait_object(&TRIPLE_AXISLIKE_REGISTRY, deserializer)
         }
     }
 }
@@ -251,6 +247,64 @@ mod tests {
                     name: "KeyCode",
                     variant: "KeyB",
                 },
+                Token::MapEnd,
+            ],
+        );
+    }
+
+    /// Composite inputs deserialize their nested inputs through the same registry.
+    /// Holding the registry's read lock while a nested input is deserialized
+    /// can deadlock against a thread that is waiting for the write lock to register inputs.
+    #[cfg(feature = "keyboard")]
+    #[test]
+    fn test_nested_deserialize_releases_registry_lock() {
+        use super::BUTTONLIKE_REGISTRY;
+        use crate::prelude::{Buttonlike, ButtonlikeChord};
+        use bevy::prelude::KeyCode;
+        use bevy::reflect::erased_serde;
+        use serde_flexitos::Registry;
+        use serde_test::{Token, assert_de_tokens};
+        use std::borrow::Cow;
+        use std::time::{Duration, Instant};
+
+        register_input_deserializers();
+
+        // Deserializes a `KeyCode`, but first checks that nobody holds the registry lock.
+        // Other tests may briefly hold it, so retry for a while before giving up.
+        BUTTONLIKE_REGISTRY.write().unwrap().register(
+            Cow::Borrowed("RegistryLockProbe"),
+            |deserializer| {
+                let deadline = Instant::now() + Duration::from_secs(5);
+                while BUTTONLIKE_REGISTRY.try_write().is_err() {
+                    assert!(
+                        Instant::now() < deadline,
+                        "registry lock is still held while deserializing a nested input"
+                    );
+                    std::thread::sleep(Duration::from_millis(1));
+                }
+                let key: KeyCode = erased_serde::deserialize(deserializer)?;
+                Ok(Box::new(key))
+            },
+        );
+
+        let expected: Box<dyn Buttonlike> = Box::new(ButtonlikeChord::new([KeyCode::KeyA]));
+        assert_de_tokens(
+            &expected,
+            &[
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("ButtonlikeChord"),
+                Token::NewtypeStruct {
+                    name: "ButtonlikeChord",
+                },
+                Token::Seq { len: Some(1) },
+                Token::Map { len: Some(1) },
+                Token::BorrowedStr("RegistryLockProbe"),
+                Token::UnitVariant {
+                    name: "KeyCode",
+                    variant: "KeyA",
+                },
+                Token::MapEnd,
+                Token::SeqEnd,
                 Token::MapEnd,
             ],
         );
