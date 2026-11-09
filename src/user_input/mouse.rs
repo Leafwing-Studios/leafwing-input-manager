@@ -11,7 +11,7 @@ use bevy::ecs::system::StaticSystemParam;
 use bevy::ecs::system::lifetimeless::SRes;
 use bevy::input::mouse::{
     AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButton, MouseButtonInput, MouseMotion,
-    MouseScrollUnit, MouseWheel,
+    MouseScrollPixelsPerLine, MouseScrollUnit, MouseWheel,
 };
 use bevy::input::touch::TouchPhase;
 use bevy::input::{ButtonInput, ButtonState};
@@ -694,13 +694,15 @@ impl Axislike for MouseScrollAxis {
     /// after processing by the associated processors.
     #[inline]
     fn get_value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<f32> {
-        input_store.pair(&MouseScroll::default()).map(|movement| {
-            let value = self.axis.get_value(movement);
+        input_store
+            .pair(&MouseScroll::from_unit(self.mouse_scroll_unit))
+            .map(|movement| {
+                let value = self.axis.get_value(movement);
 
-            self.processors
-                .iter()
-                .fold(value, |value, processor| processor.process(value))
-        })
+                self.processors
+                    .iter()
+                    .fold(value, |value, processor| processor.process(value))
+            })
     }
 
     /// Sends a [`MouseWheel`] message along the appropriate axis with the specified value in pixels.
@@ -795,23 +797,38 @@ pub struct MouseScroll {
     pub processors: Vec<DualAxisProcessor>,
 }
 
-impl Default for MouseScroll {
-    fn default() -> Self {
+impl MouseScroll {
+    fn from_unit(mouse_scroll_unit: MouseScrollUnit) -> Self {
         Self {
-            mouse_scroll_unit: MouseScrollUnit::Pixel,
+            mouse_scroll_unit,
             processors: Vec::new(),
         }
     }
 }
 
+impl Default for MouseScroll {
+    fn default() -> Self {
+        Self::from_unit(MouseScrollUnit::Pixel)
+    }
+}
+
 impl UpdatableInput for MouseScroll {
-    type SourceData = SRes<AccumulatedMouseScroll>;
+    type SourceData = (SRes<AccumulatedMouseScroll>, SRes<MouseScrollPixelsPerLine>);
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        central_input_store.update_dualaxislike(Self::default(), source_data.delta);
+        let (mouse_scroll, conversion_ratio) = source_data.into_inner();
+
+        central_input_store.update_dualaxislike(
+            Self::from_unit(MouseScrollUnit::Line),
+            mouse_scroll.to_lines(&conversion_ratio).delta,
+        );
+        central_input_store.update_dualaxislike(
+            Self::from_unit(MouseScrollUnit::Pixel),
+            mouse_scroll.to_pixels(&conversion_ratio).delta,
+        );
     }
 }
 
@@ -839,11 +856,13 @@ impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[inline]
     fn get_axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<Vec2> {
-        input_store.pair(&MouseScroll::default()).map(|movement| {
-            self.processors
-                .iter()
-                .fold(movement, |value, processor| processor.process(value))
-        })
+        input_store
+            .pair(&MouseScroll::from_unit(self.mouse_scroll_unit))
+            .map(|movement| {
+                self.processors
+                    .iter()
+                    .fold(movement, |value, processor| processor.process(value))
+            })
     }
 
     /// Sends a [`MouseWheel`] message with the specified displacement in pixels.
