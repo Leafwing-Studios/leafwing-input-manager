@@ -628,12 +628,12 @@ impl Hash for MouseScrollDirection {
 /// assert_eq!(input.mouse_scroll_unit, MouseScrollUnit::Line);
 ///
 /// // Scrolling on the chosen axis activates the input
-/// MouseScrollAxis::Y.set_value(app.world_mut(), 1.0);
+/// MouseScrollAxis::Y_LINES.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
-/// let doubled = MouseScrollAxis::Y.sensitivity(2.0);
+/// let doubled = MouseScrollAxis::Y_LINES.sensitivity(2.0);
 /// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
@@ -650,18 +650,32 @@ pub struct MouseScrollAxis {
 }
 
 impl MouseScrollAxis {
-    /// Horizontal scrolling of the mouse wheel. No processing is applied to raw data from the mouse.
+    /// Horizontal scrolling of the mouse wheel in pixels. No processing is applied to raw data from the mouse.
     pub const X: Self = Self {
         axis: DualAxisType::X,
         processors: Vec::new(),
         mouse_scroll_unit: MouseScrollUnit::Pixel,
     };
 
-    /// Vertical scrolling of the mouse wheel. No processing is applied to raw data from the mouse.
+    /// Vertical scrolling of the mouse wheel in pixels. No processing is applied to raw data from the mouse.
     pub const Y: Self = Self {
         axis: DualAxisType::Y,
         processors: Vec::new(),
         mouse_scroll_unit: MouseScrollUnit::Pixel,
+    };
+
+    /// Horizontal scrolling of the mouse wheel in lines. No processing is applied to raw data from the mouse.
+    pub const X_LINES: Self = Self {
+        axis: DualAxisType::X,
+        processors: Vec::new(),
+        mouse_scroll_unit: MouseScrollUnit::Line,
+    };
+
+    /// Vertical scrolling of the mouse wheel in lines. No processing is applied to raw data from the mouse.
+    pub const Y_LINES: Self = Self {
+        axis: DualAxisType::Y,
+        processors: Vec::new(),
+        mouse_scroll_unit: MouseScrollUnit::Line,
     };
 }
 
@@ -779,12 +793,12 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// assert_eq!(input.mouse_scroll_unit, MouseScrollUnit::Line);
 ///
 /// // Scrolling on either axis activates the input
-/// MouseScrollAxis::Y.set_value(app.world_mut(), 3.0);
+/// MouseScrollAxis::Y_LINES.set_value(app.world_mut(), 3.0);
 /// app.update();
 /// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
-/// let doubled = MouseScroll::default().sensitivity_y(2.0);
+/// let doubled = MouseScroll::LINES.sensitivity_y(2.0);
 /// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 6.0));
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
@@ -798,6 +812,12 @@ pub struct MouseScroll {
 }
 
 impl MouseScroll {
+    /// Mouse scrolling in lines. No processing is applied to raw data from the mouse.
+    pub const LINES: Self = Self {
+        mouse_scroll_unit: MouseScrollUnit::Line,
+        processors: Vec::new(),
+    };
+
     fn from_unit(mouse_scroll_unit: MouseScrollUnit) -> Self {
         Self {
             mouse_scroll_unit,
