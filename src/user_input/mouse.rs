@@ -11,7 +11,7 @@ use bevy::ecs::system::StaticSystemParam;
 use bevy::ecs::system::lifetimeless::SRes;
 use bevy::input::mouse::{
     AccumulatedMouseMotion, AccumulatedMouseScroll, MouseButton, MouseButtonInput, MouseMotion,
-    MouseScrollUnit, MouseWheel,
+    MouseScrollPixelsPerLine, MouseScrollUnit, MouseWheel,
 };
 use bevy::input::touch::TouchPhase;
 use bevy::input::{ButtonInput, ButtonState};
@@ -628,12 +628,12 @@ impl Hash for MouseScrollDirection {
 /// assert_eq!(input.mouse_scroll_unit, MouseScrollUnit::Line);
 ///
 /// // Scrolling on the chosen axis activates the input
-/// MouseScrollAxis::Y.set_value(app.world_mut(), 1.0);
+/// MouseScrollAxis::Y_LINES.set_value(app.world_mut(), 1.0);
 /// app.update();
 /// assert_eq!(app.read_axis_value(input), 1.0);
 ///
 /// // You can configure a processing pipeline (e.g., doubling the value)
-/// let doubled = MouseScrollAxis::Y.sensitivity(2.0);
+/// let doubled = MouseScrollAxis::Y_LINES.sensitivity(2.0);
 /// assert_eq!(app.read_axis_value(doubled), 2.0);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
@@ -650,18 +650,32 @@ pub struct MouseScrollAxis {
 }
 
 impl MouseScrollAxis {
-    /// Horizontal scrolling of the mouse wheel. No processing is applied to raw data from the mouse.
+    /// Horizontal scrolling of the mouse wheel in pixels. No processing is applied to raw data from the mouse.
     pub const X: Self = Self {
         axis: DualAxisType::X,
         processors: Vec::new(),
         mouse_scroll_unit: MouseScrollUnit::Pixel,
     };
 
-    /// Vertical scrolling of the mouse wheel. No processing is applied to raw data from the mouse.
+    /// Vertical scrolling of the mouse wheel in pixels. No processing is applied to raw data from the mouse.
     pub const Y: Self = Self {
         axis: DualAxisType::Y,
         processors: Vec::new(),
         mouse_scroll_unit: MouseScrollUnit::Pixel,
+    };
+
+    /// Horizontal scrolling of the mouse wheel in lines. No processing is applied to raw data from the mouse.
+    pub const X_LINES: Self = Self {
+        axis: DualAxisType::X,
+        processors: Vec::new(),
+        mouse_scroll_unit: MouseScrollUnit::Line,
+    };
+
+    /// Vertical scrolling of the mouse wheel in lines. No processing is applied to raw data from the mouse.
+    pub const Y_LINES: Self = Self {
+        axis: DualAxisType::Y,
+        processors: Vec::new(),
+        mouse_scroll_unit: MouseScrollUnit::Line,
     };
 }
 
@@ -694,13 +708,15 @@ impl Axislike for MouseScrollAxis {
     /// after processing by the associated processors.
     #[inline]
     fn get_value(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<f32> {
-        input_store.pair(&MouseScroll::default()).map(|movement| {
-            let value = self.axis.get_value(movement);
+        input_store
+            .pair(&MouseScroll::from_unit(self.mouse_scroll_unit))
+            .map(|movement| {
+                let value = self.axis.get_value(movement);
 
-            self.processors
-                .iter()
-                .fold(value, |value, processor| processor.process(value))
-        })
+                self.processors
+                    .iter()
+                    .fold(value, |value, processor| processor.process(value))
+            })
     }
 
     /// Sends a [`MouseWheel`] message along the appropriate axis with the specified value in pixels.
@@ -777,12 +793,12 @@ impl WithAxisProcessingPipelineExt for MouseScrollAxis {
 /// assert_eq!(input.mouse_scroll_unit, MouseScrollUnit::Line);
 ///
 /// // Scrolling on either axis activates the input
-/// MouseScrollAxis::Y.set_value(app.world_mut(), 3.0);
+/// MouseScrollAxis::Y_LINES.set_value(app.world_mut(), 3.0);
 /// app.update();
 /// assert_eq!(app.read_dual_axis_values(input), Vec2::new(0.0, 3.0));
 ///
 /// // You can configure a processing pipeline (e.g., doubling the Y value)
-/// let doubled = MouseScroll::default().sensitivity_y(2.0);
+/// let doubled = MouseScroll::LINES.sensitivity_y(2.0);
 /// assert_eq!(app.read_dual_axis_values(doubled), Vec2::new(0.0, 6.0));
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Reflect, Serialize, Deserialize)]
@@ -795,23 +811,44 @@ pub struct MouseScroll {
     pub processors: Vec<DualAxisProcessor>,
 }
 
-impl Default for MouseScroll {
-    fn default() -> Self {
+impl MouseScroll {
+    /// Mouse scrolling in lines. No processing is applied to raw data from the mouse.
+    pub const LINES: Self = Self {
+        mouse_scroll_unit: MouseScrollUnit::Line,
+        processors: Vec::new(),
+    };
+
+    fn from_unit(mouse_scroll_unit: MouseScrollUnit) -> Self {
         Self {
-            mouse_scroll_unit: MouseScrollUnit::Pixel,
+            mouse_scroll_unit,
             processors: Vec::new(),
         }
     }
 }
 
+impl Default for MouseScroll {
+    fn default() -> Self {
+        Self::from_unit(MouseScrollUnit::Pixel)
+    }
+}
+
 impl UpdatableInput for MouseScroll {
-    type SourceData = SRes<AccumulatedMouseScroll>;
+    type SourceData = (SRes<AccumulatedMouseScroll>, SRes<MouseScrollPixelsPerLine>);
 
     fn compute(
         mut central_input_store: ResMut<CentralInputStore>,
         source_data: StaticSystemParam<Self::SourceData>,
     ) {
-        central_input_store.update_dualaxislike(Self::default(), source_data.delta);
+        let (mouse_scroll, conversion_ratio) = source_data.into_inner();
+
+        central_input_store.update_dualaxislike(
+            Self::from_unit(MouseScrollUnit::Line),
+            mouse_scroll.to_lines(&conversion_ratio).delta,
+        );
+        central_input_store.update_dualaxislike(
+            Self::from_unit(MouseScrollUnit::Pixel),
+            mouse_scroll.to_pixels(&conversion_ratio).delta,
+        );
     }
 }
 
@@ -839,11 +876,13 @@ impl DualAxislike for MouseScroll {
     /// Retrieves the mouse scroll movement on both axes after processing by the associated processors.
     #[inline]
     fn get_axis_pair(&self, input_store: &CentralInputStore, _gamepad: Entity) -> Option<Vec2> {
-        input_store.pair(&MouseScroll::default()).map(|movement| {
-            self.processors
-                .iter()
-                .fold(movement, |value, processor| processor.process(value))
-        })
+        input_store
+            .pair(&MouseScroll::from_unit(self.mouse_scroll_unit))
+            .map(|movement| {
+                self.processors
+                    .iter()
+                    .fold(movement, |value, processor| processor.process(value))
+            })
     }
 
     /// Sends a [`MouseWheel`] message with the specified displacement in pixels.
