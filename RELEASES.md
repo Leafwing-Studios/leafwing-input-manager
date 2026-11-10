@@ -6,6 +6,7 @@
 
 - `GamepadAxis`, `SpecificGamepadAxis` and `SpecificGamepadButton` are now registered as inputs, so an `InputMap` that uses them can be deserialized.
 - Deserializing an `InputMap` with nested inputs (chords, virtual axes, ...) no longer holds the input registry's read lock while the nested inputs are deserialized, which could deadlock against an `InputManagerPlugin` being built on another thread.
+- `MouseScroll` and `MouseScrollAxis` now account for the mouse scroll unit using the global `MouseScrollPixelsPerLine` resource.
 
 ## Version 0.22.0
 
@@ -20,7 +21,7 @@
 
 - Updated to Bevy 0.19.
 - Removed the `ui` feature. This was a default feature. The `ui` feature would attempt to filter out mouse clicks captured by `bevy::ui::Interaction`s. This can be handled by temporarily disabling mouse click actions or entire action status during UI heavy scenes or interactions.
-- `ActionState<A>` and `InputMap<A>` can no longer be used as resources: they are components only. This is a consequence of Bevy 0.19's resources-as-components change, which broke the previous resource-or-component pattern (resource *and* component) usage. As a result:
+- `ActionState<A>` and `InputMap<A>` can no longer be used as resources: they are components only. This is a consequence of Bevy 0.19's resources-as-components change, which broke the previous resource-or-component pattern (resource _and_ component) usage. As a result:
   - If you were using resource-flavored `ActionState`/`InputMap` patterns, spawn a dummy entity to put them on. The `ActionState` and `InputMap` must be on the same entity.
   - The run condition helpers in `common_conditions` (`action_pressed`, `action_just_pressed`, `action_just_released`, `action_toggle_active`) now read the `ActionState<A>` of a single entity. The `ActionStateParam` system parameter has been removed.
   - `ActionDiffMessage.owner` is now `Entity` instead of `Option<Entity>` (there is no longer a global/resource action state, so every diff has an owning entity), and `SummarizedActionState::summarize`/`summarize_filtered` no longer take a global `ActionState` argument.
@@ -47,7 +48,7 @@
 - `ActionDiff`s generated will no longer include entries from disabled `ActionState`s or disabled `Action`s
 - `MouseScroll` and `MouseScrollAxis` now support specifying `MouseScrollUnit::Pixel` or `MouseScrollUnit::Line`
 - Fixed `Axislike` and `DualAxislike` actions getting stuck at a stale value when no input is present, most notably after rollback snapshot restoration in networked games.
- 
+
 ## Version 0.20.0
 
 ### Dependencies (0.20.0)
@@ -62,7 +63,7 @@
 
 ### Bugs (0.19.0)
 
-- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.02` 
+- analog gamepad buttons (triggers) will now report their values between `0.0` and `1.0` and will be considered pressed when above `0.02`
   - this prevents issues where triggers would report very small non-zero values as "pressed" when not physically pressed due to sensor imprecision
 - fixed a bug where `ActionLike::axis_data`, `ActionLike::button_data` and `ActionLike::dual_axis_data()` would return `Some` even though the inputs had never been triggered.
 - run conditions provided by `common_conditions` can now find `ActionState`s from either resources or singleton queries
@@ -855,4 +856,3 @@ Input processors allow you to create custom logic for axis-like input manipulati
 ## Version 0.1
 
 - Released!
-
