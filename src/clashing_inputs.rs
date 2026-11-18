@@ -9,7 +9,7 @@ use std::cmp::Ordering;
 use bevy::prelude::{Entity, Resource};
 use serde::{Deserialize, Serialize};
 
-use crate::input_map::{InputMap, UpdatedActions};
+use crate::input_map::{InputMap, InputMapState, UpdatedActions};
 use crate::prelude::updating::CentralInputStore;
 use crate::user_input::Buttonlike;
 use crate::{Actionlike, InputControlKind};
@@ -177,10 +177,26 @@ impl<A: Actionlike> InputMap<A> {
         clash_strategy: ClashStrategy,
         gamepad: Entity,
     ) {
-        for clash in self.get_clashes(updated_actions, input_store, gamepad) {
+        self.handle_clashes_with_state(updated_actions, input_store, clash_strategy, gamepad, None);
+    }
+
+    pub(crate) fn handle_clashes_with_state(
+        &self,
+        updated_actions: &mut UpdatedActions<A>,
+        input_store: &CentralInputStore,
+        clash_strategy: ClashStrategy,
+        gamepad: Entity,
+        input_map_state: Option<&InputMapState<A>>,
+    ) {
+        for clash in self.get_clashes(updated_actions, input_store, gamepad, input_map_state) {
             // Remove the action in the pair that was overruled, if any
-            if let Some(culled_action) = resolve_clash(&clash, clash_strategy, input_store, gamepad)
-            {
+            if let Some(culled_action) = resolve_clash_with_state(
+                &clash,
+                clash_strategy,
+                input_store,
+                gamepad,
+                input_map_state,
+            ) {
                 updated_actions.remove(&culled_action);
             }
         }
@@ -210,6 +226,7 @@ impl<A: Actionlike> InputMap<A> {
         updated_actions: &UpdatedActions<A>,
         input_store: &CentralInputStore,
         gamepad: Entity,
+        input_map_state: Option<&InputMapState<A>>,
     ) -> Vec<Clash<A>> {
         let mut clashes = Vec::default();
 
@@ -222,7 +239,9 @@ impl<A: Actionlike> InputMap<A> {
             // This is not strictly necessary, but saves work
             if pressed_a && pressed_b {
                 // Check if the potential clash occurred based on the pressed inputs
-                if let Some(clash) = check_clash(&clash, input_store, gamepad) {
+                if let Some(clash) =
+                    check_clash_with_state(&clash, input_store, gamepad, input_map_state)
+                {
                     clashes.push(clash)
                 }
             }
@@ -323,20 +342,28 @@ fn check_clash<A: Actionlike>(
     input_store: &CentralInputStore,
     gamepad: Entity,
 ) -> Option<Clash<A>> {
+    check_clash_with_state(clash, input_store, gamepad, None)
+}
+
+#[must_use]
+fn check_clash_with_state<A: Actionlike>(
+    clash: &Clash<A>,
+    input_store: &CentralInputStore,
+    gamepad: Entity,
+    input_map_state: Option<&InputMapState<A>>,
+) -> Option<Clash<A>> {
     let mut actual_clash: Clash<A> = clash.clone();
 
     // For all inputs actually pressed that match action A
     for input_a in clash
         .inputs_a
         .iter()
-        .filter(|&input| input.pressed(input_store, gamepad))
+        .filter(|input| buttonlike_is_active(input.as_ref(), input_store, gamepad, input_map_state))
     {
         // For all inputs actually pressed that match action B
-        for input_b in clash
-            .inputs_b
-            .iter()
-            .filter(|&input| input.pressed(input_store, gamepad))
-        {
+        for input_b in clash.inputs_b.iter().filter(|input| {
+            buttonlike_is_active(input.as_ref(), input_store, gamepad, input_map_state)
+        }) {
             // If a clash was detected
             if input_a.decompose().clashes_with(&input_b.decompose()) {
                 actual_clash.inputs_a.push(input_a.clone());
@@ -357,18 +384,29 @@ fn resolve_clash<A: Actionlike>(
     input_store: &CentralInputStore,
     gamepad: Entity,
 ) -> Option<A> {
+    resolve_clash_with_state(clash, clash_strategy, input_store, gamepad, None)
+}
+
+#[must_use]
+fn resolve_clash_with_state<A: Actionlike>(
+    clash: &Clash<A>,
+    clash_strategy: ClashStrategy,
+    input_store: &CentralInputStore,
+    gamepad: Entity,
+    input_map_state: Option<&InputMapState<A>>,
+) -> Option<A> {
     // Figure out why the actions are pressed
     let reasons_a_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_a
         .iter()
-        .filter(|input| input.pressed(input_store, gamepad))
+        .filter(|input| buttonlike_is_active(input.as_ref(), input_store, gamepad, input_map_state))
         .map(|input| input.as_ref())
         .collect();
 
     let reasons_b_is_pressed: Vec<&dyn Buttonlike> = clash
         .inputs_b
         .iter()
-        .filter(|input| input.pressed(input_store, gamepad))
+        .filter(|input| buttonlike_is_active(input.as_ref(), input_store, gamepad, input_map_state))
         .map(|input| input.as_ref())
         .collect();
 
@@ -408,6 +446,16 @@ fn resolve_clash<A: Actionlike>(
             }
         }
     }
+}
+
+fn buttonlike_is_active<A: Actionlike>(
+    input: &dyn Buttonlike,
+    input_store: &CentralInputStore,
+    gamepad: Entity,
+    input_map_state: Option<&InputMapState<A>>,
+) -> bool {
+    input.pressed(input_store, gamepad)
+        && !input_map_state.is_some_and(|state| state.suppresses(input))
 }
 
 #[cfg(feature = "keyboard")]
