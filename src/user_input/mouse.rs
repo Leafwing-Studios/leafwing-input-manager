@@ -54,6 +54,13 @@ impl UpdatableInput for MouseButton {
         for button in source_data.get_just_released() {
             central_input_store.update_buttonlike(*button, ButtonValue::from_pressed(false));
         }
+
+        // A press and a release can both happen within a single frame, for example when
+        // tapping a trackpad. The button is then no longer part of `get_pressed`, but it is
+        // still `just_pressed`, so report it as pressed to keep the press observable.
+        for button in source_data.get_just_pressed() {
+            central_input_store.update_buttonlike(*button, ButtonValue::from_pressed(true));
+        }
     }
 }
 

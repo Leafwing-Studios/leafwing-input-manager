@@ -213,6 +213,62 @@ fn buttonlike_actions_can_be_pressed_and_released_when_pressed() {
 }
 
 #[test]
+fn buttonlike_actions_can_be_pressed_and_released_in_the_same_frame() {
+    let mut app = TestContext::new().app;
+
+    let relevant_button = MouseButton::Left;
+
+    // Some input devices, such as trackpad taps, report a press and a release
+    // within a single frame.
+    relevant_button.press(app.world_mut());
+    relevant_button.release(app.world_mut());
+    app.update();
+
+    let action_state = get_action_state::<TestAction>(&mut app);
+    assert!(action_state.just_pressed(&TestAction::Throttle));
+    assert!(action_state.pressed(&TestAction::Throttle));
+    assert!(!action_state.released(&TestAction::Throttle));
+    assert!(!action_state.just_released(&TestAction::Throttle));
+
+    // The action is released on the following frame.
+    app.update();
+
+    let action_state = get_action_state::<TestAction>(&mut app);
+    assert!(!action_state.just_pressed(&TestAction::Throttle));
+    assert!(!action_state.pressed(&TestAction::Throttle));
+    assert!(action_state.just_released(&TestAction::Throttle));
+    assert!(action_state.released(&TestAction::Throttle));
+}
+
+#[test]
+fn keyboard_actions_can_be_pressed_and_released_in_the_same_frame() {
+    let mut app = TestContext::new().app;
+
+    let relevant_key = KeyCode::Space;
+
+    // Some input devices, such as trackpad taps, report a press and a release
+    // within a single frame.
+    relevant_key.press(app.world_mut());
+    relevant_key.release(app.world_mut());
+    app.update();
+
+    let action_state = get_action_state::<TestAction>(&mut app);
+    assert!(action_state.just_pressed(&TestAction::Throttle));
+    assert!(action_state.pressed(&TestAction::Throttle));
+    assert!(!action_state.released(&TestAction::Throttle));
+    assert!(!action_state.just_released(&TestAction::Throttle));
+
+    // The action is released on the following frame.
+    app.update();
+
+    let action_state = get_action_state::<TestAction>(&mut app);
+    assert!(!action_state.just_pressed(&TestAction::Throttle));
+    assert!(!action_state.pressed(&TestAction::Throttle));
+    assert!(action_state.just_released(&TestAction::Throttle));
+    assert!(action_state.released(&TestAction::Throttle));
+}
+
+#[test]
 fn buttonlike_actions_can_be_pressed_and_released_when_button_value_set() {
     let mut ctx = TestContext::new();
     let gamepad = ctx.send_gamepad_connection_event(None);
