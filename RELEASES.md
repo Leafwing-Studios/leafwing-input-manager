@@ -7,6 +7,7 @@
 - `GamepadAxis`, `SpecificGamepadAxis` and `SpecificGamepadButton` are now registered as inputs, so an `InputMap` that uses them can be deserialized.
 - Deserializing an `InputMap` with nested inputs (chords, virtual axes, ...) no longer holds the input registry's read lock while the nested inputs are deserialized, which could deadlock against an `InputManagerPlugin` being built on another thread.
 - `MouseScroll` and `MouseScrollAxis` now account for the mouse scroll unit using the global `MouseScrollPixelsPerLine` resource.
+- Key and mouse button inputs that are pressed and released within the same frame, such as trackpad taps, are now held for a single frame, so `just_pressed` no longer misses them.
 
 ## Version 0.22.0
 
